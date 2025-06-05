@@ -16,8 +16,6 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import TableConsultationModel from '../model/TableConsultationModel';
 
-const test =0;
-
 const headCells = [
     {
         id: 'dateMvt',
