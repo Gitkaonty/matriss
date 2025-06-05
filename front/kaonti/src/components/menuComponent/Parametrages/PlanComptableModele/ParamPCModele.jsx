@@ -1,0 +1,1569 @@
+import React from 'react';
+import { useState, useEffect } from 'react';
+import { Typography, Stack, Paper, RadioGroup, FormControlLabel, Radio, FormControl, 
+        InputLabel, Select, MenuItem, TextField, Box, Tab, 
+        FormHelperText} from '@mui/material';
+import Button from '@mui/material/Button';
+import Tooltip from '@mui/material/Tooltip';
+import { init } from '../../../../../init';
+import axios from '../../../../../config/axios';
+import toast from 'react-hot-toast';
+import { DataGrid, frFR } from '@mui/x-data-grid';
+import { styled } from '@mui/material/styles';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import IconButton from '@mui/material/IconButton';
+import CloseIcon from '@mui/icons-material/Close';
+import { TabContext, TabList, TabPanel } from '@mui/lab';
+import { IoMdTrash } from "react-icons/io";
+import { TbPlaylistAdd } from "react-icons/tb";
+import { FaRegPenToSquare } from "react-icons/fa6";
+import ParamPCModele_column from './ParamPCModele_column';
+import { useFormik, Field, Formik, Form, ErrorMessage } from 'formik';
+import * as Yup from "yup";
+import useAuth from '../../../../hooks/useAuth';
+import { jwtDecode } from 'jwt-decode';
+import QuickFilter from '../../../componentsTools/DatagridToolsStyle';
+import { DataGridStyle } from '../../../componentsTools/DatagridToolsStyle';
+import PopupConfirmDelete from '../../../componentsTools/popupConfirmDelete';
+import { format } from 'date-fns';
+
+const BootstrapDialog = styled(Dialog)(({ theme }) => ({
+    '& .MuiDialogContent-root': {
+      padding: theme.spacing(2),
+    },
+    '& .MuiDialogActions-root': {
+      padding: theme.spacing(1),
+    },
+  }));
+
+//header pour le tableau liste de modèle
+const columnHeaderModel = ParamPCModele_column.columnHeaderModel;
+
+//header pour le tableau détail
+const columnHeaderDetail = ParamPCModele_column.columnHeaderDetail;
+
+//header pour le tableau ajouter compte de charge et/ou compte de TVA dans le popup
+const columnHeaderAddNewRowModelDetail = ParamPCModele_column.columnHeaderAddNewRowModelDetail;
+
+export default function ParamPlanComptableModele() {
+    let initial = init[0];
+    const { auth } = useAuth();
+
+    let [listeModele, setListeModele] = useState([]);
+    const [openNewModel, setOpenNewModel] = useState(false);
+    const [modeleLibre, setModeleLibre] = useState(true);
+    const [listDossier, setListeDossier] = useState([]);
+
+    const [openDialogDeleteModel, setOpenDialogDeleteModel] = useState(false);
+    const [modelSelectedRow, setModelSelectedRow] = useState(null);
+    const [selectedModelName, setSelectedModelName] = useState(null);
+    const [modelId, setModelId] = useState(null);
+
+    const [detailModel, setDetailModel] = useState([]);
+    const [detailModelSelectedRow, setDetailModelSelectedRow] = useState([]);
+    const [detailModelSelectedRowListChgAssoc, setDetailModelSelectedRowListChgAssoc] = useState([]);
+    const [detailModelSelectedRowListTvaAssoc, setDetailModelSelectedRowListTvaAssoc] = useState([]);
+    const [openDialogAddModelDetail, setOpenDialogAddModelDetail] = useState(false);
+
+    const [listCptChg, setListCptChg] = useState([]);
+    const [listCptTva, setListCptTva] = useState([]);
+
+    const [tabValueAjoutNewRowModelDetail, setTabValueAjoutNewRowModelDetail] = useState("1");
+
+    const [openDialogAddNewCptModelDetail,setOpenDialogAddNewCptModelDetail] = useState(false);
+    const [pcHorsCollectif,setPcHorsCollectif] = useState([]);
+    const [selectedCptAssocChg,setSelectedCptAssocChg] = useState({idCpt: 0, compte:'', libelle:''});
+    const [selectedCptChgOnList,setSelectedCptChgOnList] = useState(0);
+    let [openDialogDeleteCptChgFromAddNewCpt, setOpenDialogDeleteCptChgFromAddNewCpt] = useState(false);
+
+    const [openDialogAddNewCptTvaModelDetail,setOpenDialogAddNewCptTvaModelDetail] = useState(false);
+    const [pcOnlyCptTva,setPcOnlyCptTva] = useState([]);
+    const [selectedCptAssocTva,setSelectedCptAssocTva] = useState({idCpt: 0, compte:'', libelle:''});
+    const [selectedCptTvaOnList,setSelectedCptTvaOnList] = useState(0);
+    const [openDialogDeleteCptTvaFromAddNewCpt, setOpenDialogDeleteCptTvaFromAddNewCpt] = useState(false);
+    const [formulaireTier, setFormulaireTier] = useState('sans-nif');
+    const [typeCptGeneral,setTypeCptGeneral] = useState(true);
+    const [pcAllselectedRow, setPcAllselectedRow] = useState([]);
+    const [openDialogDeleteItemsPc, setOpenDialogDeleteItemsPc] = useState(false);
+    const [listeCptCollectif, setListeCptCollectif] = useState([]);
+
+    //paramètres de connexion------------------------------------
+    const decoded = auth?.accessToken
+        ? jwtDecode(auth.accessToken)
+        : undefined
+    const compteId = decoded.UserInfo.compteId || 0;
+    const userId = decoded.UserInfo.userId || 0;
+
+    //Récupération de la liste des modèles de plan comptable
+    const GetListePlanComptableModele = () => {
+        axios.post(`/paramPlanComptableModele/model`, {compteId, userId}).then((response) =>{
+            const resData = response.data;
+            setListeModele(resData.modelList);
+        })
+    }
+
+    useEffect(() =>{
+        GetListePlanComptableModele();
+    }, [compteId]);
+
+    //AJOUT D'UN NOUVEAU MODELE DE PLAN COMPTABLE
+    const saveModelePcValue = (e) => {
+        formNewModel.setFieldValue('model', e);
+
+        if(e ==='modeleLibre'){
+            setModeleLibre(true);
+        }else{
+            setModeleLibre(false);
+        }
+    }
+
+    //Récupérer la liste des dossiers associés au comptes de l'utilisateur
+    const GetListeDossier = () => {
+        axios.post(`/paramPlanComptableModele/dossier`, {compteId, userId}).then((response) =>{
+            const resData = response.data;
+            setListeDossier(resData.dossierList);
+        })
+    }
+
+    const handleClickOpenNewModel = () => {
+        GetListeDossier();
+        setOpenNewModel(true);
+    };
+    const handleCloseNewModel = () => {
+        setOpenNewModel(false);
+    };
+
+    const formNewModel = useFormik({
+        initialValues: {
+            compteId: compteId,
+            model: '',
+            id_dossier: 0,
+            model_name: null,
+        },
+        validationSchema : Yup.object({
+            model: Yup.string().required("Choisir un modèle"),
+            id_dossier: Yup.mixed()
+            .when('model', {
+                is: (value) => value !== 'modeleLibre',
+                then: () => Yup.number().moreThan(0,'Sélectionner un dossier dans la liste'),
+                otherwise: () => Yup.number().notRequired(),
+            }),
+
+            model_name: Yup.string().required("Veuillez taper un nom pour le modèle")
+                .min(1, 'Veuillez ajouter au moin un caractère pour le nom du modèle')           
+        }),
+        onSubmit: (values) => {
+            axios.post(`/paramPlanComptableModele/createModel`, values).then((response) =>{
+                 const resData = response.data;
+                 GetListePlanComptableModele();
+                 handleCloseNewModel();
+                 toast.success(resData);
+            })
+        }
+    });
+
+    //Suppression d'un modèle de plan comptable
+    const deleteModelPC = (value) =>{
+        if(value === true){
+
+            if(modelId !== null){
+                const rowId = modelSelectedRow.id;
+                if(modelSelectedRow.pardefault){
+                    toast.error("Vous ne pouvez pas supprimer un modèle plan comptable natif de kaonty.");
+                }else{
+                    axios.post(`/paramPlanComptableModele/deleteModel`, {rowId}).then((response) =>{
+                    const resData = response.data;
+                    GetListePlanComptableModele();
+                    setOpenDialogDeleteModel(false);
+                    toast.success(resData);
+                    })
+                }
+                
+            }else{
+                toast.error("Veuillez sélectionner un seul modèle de plan comptable dans le tableau liste modèle.");
+            }
+            
+        }else{
+            setOpenDialogDeleteModel(false);
+        }
+    }
+
+    const handleClickOpenDialogDeleteModel = () => {
+        setOpenDialogDeleteModel(true);
+    }
+
+    //Récupération de l'ID de la ligne sélectionner dans le tableau de la liste de modèle
+    const listModelPCSelectedRow = (selectedRow) => {
+        if(selectedRow.length === 1){
+            const itemId = selectedRow[0];
+            const itemInfos = listeModele.find(row => row.id === itemId);
+
+            if(itemInfos){
+                setModelSelectedRow(itemInfos);
+                setSelectedModelName(itemInfos.nom);
+                setModelId(itemId);
+            }else{
+                setModelSelectedRow([]);
+                setSelectedModelName('');
+                setModelId(null);
+            }
+
+            if(itemId !==null){
+                showModelDetail(itemId);
+            }else{
+                showModelDetail([]);
+            }
+        }else{
+            setModelSelectedRow([]);
+            setSelectedModelName('');
+            setModelId(null);
+            showModelDetail([]);
+        }
+    }
+
+    //Affichage détails du modèle
+    const showModelDetail = (rowId) => {
+        axios.post(`/paramPlanComptableModele/detailModel`, {rowId}).then((response) =>{
+            const resData = response.data;
+            setDetailModel(resData.modelDetail);
+        })
+    }
+
+    //Ajouter un compte dans la liste du plan comptable
+    
+    const handleCloseDialogDetailModelAdd = () => {
+        setOpenDialogAddModelDetail(false);
+    }
+
+    const handleOpenDialogDetailModelAdd = (setFieldValue, resetForm) => () => {
+        if(modelId !== null){
+            resetForm();
+            setListCptChg([]);
+            setListCptTva([]);
+
+            setFieldValue("action", "new");
+            setFieldValue("idCompte", Number(compteId));
+            setFieldValue("idModele", modelId);
+
+            setFormulaireTier('sans-nif');
+            recupererListeCptCollectif();
+            setTypeCptGeneral(true);
+
+
+            setOpenDialogAddModelDetail(true);
+        }else{
+            toast.error("Veuillez sélectionner un seul modèle de plan comptable.");
+        }
+    }
+
+     //gestion tableau ajout compte de TVA associé au nouveau compte à créer
+     const recupererListeCptCollectif = () => {
+        const result = detailModel?.filter(item => item.nature === 'Collectif');
+        setListeCptCollectif(result);
+    }
+
+    const handleOpenDialogDetailModelModify = (setFieldValue) => () => {
+        recupererListeCptCollectif();
+
+        setFieldValue("action", "modify");
+        setFieldValue("itemId", detailModelSelectedRow.id);
+        setFieldValue("idCompte", Number(compteId));
+        setFieldValue("idModele", modelId);
+        setFieldValue("compte", detailModelSelectedRow.compte);
+        setFieldValue("libelle", detailModelSelectedRow.libelle);
+        setFieldValue("nature", detailModelSelectedRow.nature);
+        setFieldValue("baseCptCollectif", detailModelSelectedRow.baseaux);
+        setFieldValue("typeTier", detailModelSelectedRow.typetier);
+
+        setFormulaireTier(detailModelSelectedRow.typetier);
+
+        setFieldValue("nif", detailModelSelectedRow.nif);
+        setFieldValue("stat", detailModelSelectedRow.stat);
+        setFieldValue("adresse", detailModelSelectedRow.adresse);
+        setFieldValue("motcle", detailModelSelectedRow.motcle);
+        setFieldValue("cin", detailModelSelectedRow.cin);
+        setFieldValue("dateCin", detailModelSelectedRow.datecin? format(detailModelSelectedRow?.datecin,'yyyy-MM-dd'): null);
+        setFieldValue("autrePieceID", detailModelSelectedRow.autrepieceid);
+        setFieldValue("refPieceID", detailModelSelectedRow.refpieceid);
+        setFieldValue("adresseSansNIF", detailModelSelectedRow.adressesansnif);
+        setFieldValue("nifRepresentant", detailModelSelectedRow.nifrepresentant);
+        setFieldValue("adresseEtranger", detailModelSelectedRow.adresseetranger);
+        setFieldValue("pays", detailModelSelectedRow.pays);
+
+        setFieldValue("listeCptChg", listCptChg);
+        setFieldValue("listeCptTva", listCptTva);
+
+        //Activer ou non la listbox base compte auxiliaire
+        if(detailModelSelectedRow.nature === 'General' || detailModelSelectedRow.nature === 'Collectif'){
+            setTypeCptGeneral(true);
+        }else{
+            setTypeCptGeneral(false);
+        }
+       
+        setOpenDialogAddModelDetail(true);
+    }
+
+     //Choix TAB value pour dialog ajout de nouvelle ligne du tableau détail modèle plan comptable
+     const handleChangeTabValueAjoutNewRowModelDetail = (event, newValue) => {
+        setTabValueAjoutNewRowModelDetail(newValue);
+     };
+
+    const formAddCptModelInitialValues = {
+        action:'new',
+        itemId:0,
+        idCompte: 0,
+        idModele: 0,
+        compte:'',
+        libelle:'',
+        nature:'General',
+        baseCptCollectif:0,
+        typeTier:'sans-nif',
+        nif:'',
+        stat:'',
+        adresse:'',
+        motcle: '',
+        cin:'',
+        dateCin:'',
+        autrePieceID:'',
+        refPieceID:'',
+        adresseSansNIF:'',
+        nifRepresentant:'',
+        adresseEtranger:'',
+        pays:'',
+        listeCptChg:[],
+        listeCptTva:[],
+    };
+
+    const formAddCptModelValidationSchema = Yup.object({
+        compte: Yup.string().required("Veuillez tapez un numéro de compte"),
+        libelle: Yup.string().required("Veuillez insérer un libellé pour le numéro de compte"),
+        nature: Yup.string().required("Veuillez séléctionner dans la liste la nature du compte"),
+        baseCptCollectif: Yup.number()
+            .when('nature', {
+                is: (value) => value === 'Aux',
+                then: () => Yup.number().typeError("Veuillez entrer un nombre")
+                .moreThan(0,"Veuillez ajouter la base du compte collectif")
+                .required("Ce champ est requis"),
+                otherwise: () => Yup.number().notRequired(),
+            }),
+        nif: Yup.string()
+            .when('typeTier', {
+                is: (value) => value === 'avec-nif',
+                then: () => Yup.string().required("Veuillez ajouter le numéro NIF du tier").min(10,'Veuillez bien formater le numéro NIF'),
+                otherwise: () => Yup.string().notRequired(),
+            }),
+        dateCin: Yup.string()
+            .when('typeTier', {
+                is: (value) => value === 'sans-nif',
+                then: () => Yup.string()
+                    .matches(
+                        /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/, // = format du back pour la datapicker yyyy-MM-dd
+                        'La date doit être au format jj/mm/aaaa'
+                    )
+                    .test('is-valid-date', 'La date doit être valide', (value) => {
+                    if (!value) return false;
+            
+                    const [year, month, day] = value.split('-').map(Number);
+            
+                    // Vérifie les mois
+                    if (month < 1 || month > 12) return false;
+            
+                    // Vérifie les jours en fonction du mois
+                    const daysInMonth = new Date(year, month, 0).getDate();
+                    return day >= 1 && day <= daysInMonth;
+                    }).required('La date est requise'),
+            otherwise: () => Yup.string().notRequired(),
+        })
+    });
+
+    const formAddCptModelhandleSubmit = (values) => {
+        if(modelSelectedRow.pardefault){
+            toast.error("Vous ne pouvez pas modifier les comptes associés au modèle de plan comptable natif de kaonty.");
+        }else{
+            axios.post(`/paramPlanComptableModele/AddCptTodetailModel`, values).then((response) =>{
+            const resData = response.data;
+            if(resData.state === true){
+                showModelDetail(modelId);
+                toast.success(resData.msg);
+            }else{
+                toast.error(resData.msg);
+            }
+            setOpenDialogAddModelDetail(false);
+            })
+        }
+    }
+
+    //Action pour disable ou enable base compte collectif dans le formulaire nouveau compte pour le modèle
+    const handleChangeListBoxNature = (setFieldValue) => (e) => {
+        const value = e.target.value;
+        setFieldValue('nature', value)
+        if(value === 'General' || value === 'Collectif'){
+            setTypeCptGeneral(true);
+        }else{
+            setTypeCptGeneral(false);
+        }
+    }
+
+    //Action pour sauvegarder le choix base compte auxiliaire
+    const handleChangeListBoxBaseCompteAux = (setFieldValue) => (e) => {
+        const value = e.target.value;
+        setFieldValue('baseCptCollectif', value)
+    }
+
+    //gestion tableau ajout compte de charge associé au nouveau compte à créer
+    const handleOpenDialogAddNewCptModelDetail = () => {
+        const result = detailModel?.filter((item) => item.nature === 'General');
+        setPcHorsCollectif(result);
+        setOpenDialogAddNewCptModelDetail(true);
+    }
+
+    const handleCloseDialogAddNewCptModelDetail = () => {
+        setOpenDialogAddNewCptModelDetail(false);
+    }
+
+    const saveCptChg = (cpt_id) => {
+        const libelle = detailModel?.find((item) => item.id === cpt_id);
+        setSelectedCptAssocChg({idCpt: cpt_id, compte: libelle.compte , libelle : libelle.libelle});
+    }
+
+    const AddCptToTableCptChg = (setFieldValue) => () =>{
+        let interm = [...listCptChg];
+        interm.push({id: listCptChg.length + 1, idCpt: selectedCptAssocChg.idCpt, compte: selectedCptAssocChg.compte, libelle: selectedCptAssocChg.libelle});
+        setListCptChg(interm);
+
+        const newRow = {id: listCptChg.length+1, idCpt: selectedCptAssocChg.idCpt, compte: selectedCptAssocChg.compte, libelle: selectedCptAssocChg.libelle};
+        
+        setFieldValue('listeCptChg', interm);
+        handleCloseDialogAddNewCptModelDetail();
+    }
+    
+    const deleteCptFromTableCptChg = (setFieldValue, index, confirmDeleteCptChg) =>{
+        const rowId = index[0];
+
+        if(rowId > 0){
+            if(confirmDeleteCptChg){
+            const newListChg = listCptChg.filter((i) => i.id !== rowId);
+            setFieldValue('listeCptChg', newListChg);
+            setListCptChg(newListChg);
+            toast.success('Le compte a été supprimé avec succès.');
+            }
+        }else{
+            toast.error('Veuillez sélectionner un compte.');
+        }
+    }
+
+    const deleteCptChgPC = (setFieldValue) => (newState) => {
+        deleteCptFromTableCptChg(setFieldValue,selectedCptChgOnList, newState);
+        handleCloseDialogConfirmDeleteCptChgFromDialogAddNewCpte();
+    }
+
+    const handleOpenDialogConfirmDeleteCptChgFromDialogAddNewCpte = () => {
+        setOpenDialogDeleteCptChgFromAddNewCpt(true);
+    }
+
+    const handleCloseDialogConfirmDeleteCptChgFromDialogAddNewCpte = () => {
+        setOpenDialogDeleteCptChgFromAddNewCpt(false);
+    }
+
+    //gestion tableau ajout compte de TVA associé au nouveau compte à créer
+    const handleOpenDialogAddNewCptTvaModelDetail = () => {
+        //const prefixes = ['4456', '4457'];
+        //const result = detailModel?.filter((item) => prefixes.some((prefix) => item.compte.startsWith(prefix)) && item.nature === 'General');
+        const result = detailModel?.filter(item => item.compte.startsWith('4456') || item.compte.startsWith('4457'));
+        setPcOnlyCptTva(result);
+        setOpenDialogAddNewCptTvaModelDetail(true);
+    }
+
+    const handleCloseDialogAddNewCptTvaModelDetail = () => {
+        setOpenDialogAddNewCptTvaModelDetail(false);
+    }
+
+    const saveCptTva = (cpt_id) => {
+        const libelle = detailModel?.find((item) => item.id === cpt_id);
+        setSelectedCptAssocTva({idCpt: cpt_id, compte: libelle.compte , libelle : libelle.libelle});
+    }
+
+    const AddCptToTableCptTva = (setFieldValue) => () =>{
+        let interm = [...listCptTva];
+        interm.push({id: listCptTva.length + 1, idCpt: selectedCptAssocTva.idCpt, compte: selectedCptAssocTva.compte, libelle: selectedCptAssocTva.libelle});
+        setListCptTva(interm);
+
+        //const newRow = {id: listCptTva.length+1, idCpt: selectedCptAssocChg.idCpt, compte: selectedCptAssocTva.compte, libelle: selectedCptAssocTva.libelle};
+        setFieldValue('listeCptTva', interm);
+        handleCloseDialogAddNewCptTvaModelDetail();
+    }
+    
+    const deleteCptFromTableCptTva = (setFieldValue, index, confirmDeleteCptTva) =>{
+        const rowId = index[0];
+
+        if(rowId > 0){
+            if(confirmDeleteCptTva){
+            const newListTva = listCptTva.filter((i) => i.id !== rowId);
+
+            setFieldValue('listeCptTva', newListTva);
+            setListCptTva(newListTva);
+            toast.success('Le compte a été supprimé avec succès.');
+            }
+        }else{
+            toast.error('Veuillez sélectionner un compte.');
+        }
+    }
+
+    const deleteCptTvaPC = (setFieldValue) => (newState) => {
+        deleteCptFromTableCptTva(setFieldValue, selectedCptTvaOnList, newState);
+        handleCloseDialogConfirmDeleteCptTvaFromDialogAddNewCpte();
+    }
+
+    const handleOpenDialogConfirmDeleteCptTvaFromDialogAddNewCpte = () => {
+        setOpenDialogDeleteCptTvaFromAddNewCpt(true);
+    }
+
+    const handleCloseDialogConfirmDeleteCptTvaFromDialogAddNewCpte = () => {
+        setOpenDialogDeleteCptTvaFromAddNewCpt(false);
+    }
+
+    //Gestion formulaire de remplissage infos tiers dans la création d'un nouveau compte pour le modèle sélectionné
+    const handleOnChangeListBoxTypeTier = (setFieldValue) => (e) => {
+        const value = e.target.value;
+        setFieldValue('typeTier', value);
+        setFormulaireTier(value);
+    }
+
+    //Récupération de l'ID de la ligne sélectionner dans le tableau détail du modèle sélectionné
+    const listDetailModelPCSelectedRow = (selectedRow) => {
+        const itemId = selectedRow[0];
+        setPcAllselectedRow(selectedRow);
+
+        const itemInfos = detailModel.find(row => row.id === itemId);
+        if(itemInfos){
+            setDetailModelSelectedRow(itemInfos);
+
+            //récupérer la liste des comptes de charges et compte de TVA associées à la ligne sélectionnée
+            axios.get(`/paramPlanComptableModele/keepListCptChgTvaAssoc/${itemId}`).then((response) =>{
+                const resData = response.data;
+                if(resData.state){
+                    setListCptChg(resData.detailChg);
+                    setListCptTva(resData.detailTva);
+                }else{
+                    toast.error(resData.msg);
+                }
+            })
+        }
+    }
+
+    //Suppression des comptes sélectionnés dans le tableau du plan comptable
+    const handleOpenDialogDetailModelDelete = () => {
+        setOpenDialogDeleteItemsPc(true);
+    }
+
+    const deleteItemsPC = (value) =>{
+        if(value === true){
+            if(pcAllselectedRow.length >= 1){
+                const listId = pcAllselectedRow;
+                if(modelSelectedRow.pardefault){
+                    toast.error("Vous ne pouvez pas supprimer des comptes associés au modèle de plan comptable natif de kaonty.");
+                }else{
+                    axios.post(`/paramPlanComptableModele/deleteItemPc`, {listId, modelId, compteId}).then((response) =>{
+                        const resData = response.data;
+                        showModelDetail(modelId);
+                        setOpenDialogDeleteItemsPc(false);
+                        if(resData.state){
+                            toast.success(resData.msg);
+                        }else{
+                            toast.error(resData.msg);
+                        }
+
+                        if(resData.stateUndeletableCpt){
+                            toast.error(resData.msgUndeletableCpt);
+                        }
+                    });
+                }
+                
+            }else{
+                toast.error("Veuillez sélectionner au moins une ligne dans le tableau plan comptable.");
+            }
+        }else{
+            setOpenDialogDeleteItemsPc(false);
+        }
+    }
+
+  return (
+    <Paper sx={{elevation: "3", margin:"5px", padding:"10px", width:"100%", height:"150%"}}>
+        <Stack width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"} justifyContent={"stretch"}>
+            <Typography variant='h6' sx={{color: "black"}} align='left'>Paramétrages : Plan comptable - modèle</Typography>
+            
+            <Stack width={"100%"} height={"30px"} spacing={0} alignItems={"center"} alignContent={"center"} 
+                direction={"row"} style={{marginLeft:"0px", marginTop:"10px", justifyContent:"right"}}>
+                <Typography variant='h7' sx={{color: "black", fontWeight:"bold"}} align='left'>Modèle</Typography>
+                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"} 
+                direction={"row"} justifyContent={"right"}>
+                    
+                    <Tooltip title="Ajouter un nouveau modèle">
+                        <IconButton 
+                        onClick={handleClickOpenNewModel} 
+                        variant="contained" 
+                        style={{width:"35px", height:'35px', 
+                            borderRadius:"5px", borderColor: "transparent",
+                             backgroundColor: initial.theme,
+                             textTransform: 'none', outline: 'none'
+                            }}
+                        >
+                            <TbPlaylistAdd style={{width:'25px', height:'25px', color:'white'}}/>
+                        </IconButton>
+                    </Tooltip>
+                        
+                    <Tooltip title="Supprimer le modèle sélectionné">
+                        <span>
+                            <IconButton 
+                            onClick={handleClickOpenDialogDeleteModel} 
+                            variant="contained" 
+                            style={{width:"35px", height:'35px', 
+                                borderRadius:"5px", borderColor: "transparent", 
+                                backgroundColor: initial.button_delete_color,
+                                textTransform: 'none', outline: 'none'
+                            }}
+                            >
+                                <IoMdTrash style={{width:'40px', height:'40px',color: 'white'}}/>
+                            </IconButton>
+                        </span>
+                    </Tooltip>
+                  
+                </Stack>
+            </Stack>
+
+            {/* POP-UP POUR LA CREATION D'UN NOUVEAU MODELE */}
+            <form onSubmit={formNewModel.handleSubmit}>
+                <BootstrapDialog
+                    onClose={handleCloseNewModel}
+                    aria-labelledby="customized-dialog-title"
+                    open={openNewModel}
+                >
+                    {/* <DialogTitle sx={{ m: 0, p: 2 }} id="customized-dialog-title" style={{fontWeight:'semiBold', width:'600px',backgroundColor : initial.normal_pupup_header_color}}>
+                    Nouveau modèle de plan comptable
+                    </DialogTitle> */}
+                    <IconButton
+                        style={{color:'red', textTransform: 'none', outline: 'none'}}
+                        aria-label="close"
+                        onClick={handleCloseNewModel}
+                        sx={{
+                            position: 'absolute',
+                            right: 8,
+                            top: 8,
+                            color: (theme) => theme.palette.grey[500],
+                        }}
+                        >
+                    <CloseIcon />
+                    </IconButton>
+
+                    <Typography style={{marginTop: 75, marginLeft: 30}} variant='h5'>Nouveau modèle de plan comptable</Typography>
+
+                    <DialogContent >
+                    
+                    <Stack width={"90%"} height={"300px"} spacing={0} alignItems={'start'} alignContent={"center"} 
+                    direction={"column"} justifyContent={"left"} style={{marginLeft:'10px'}}>
+                        <Stack width={"100%"}  spacing={0} alignItems={"center"} alignContent={"center"} 
+                            direction={"row"} justifyContent={"left"} style={{marginLeft:'10px'}}>
+                            <FormControl
+                                sx={{ width: "100%" }}
+                                required
+                                error={formNewModel.errors.model && formNewModel.touched.model}
+                            >
+                                <RadioGroup
+                                    row
+                                    aria-labelledby="choixExercice"
+                                    name="choixExercice"
+                                    style={{marginRight:"10px", marginTop:"0px"}}
+                                    value={formNewModel.values.model}
+                                    >
+                                    <FormControlLabel onChange={(e) => saveModelePcValue(e.target.value)} value="modeleLibre" control={<Radio />} label="Modèle libre"/>
+                                    <FormControlLabel onChange={(e) => saveModelePcValue(e.target.value)} value="aPartirModelDossier" control={<Radio />} label="A partir d'un modèle de dossier existant" style={{marginTop:'-15px'}}/>
+                                </RadioGroup>
+                                <FormHelperText>
+                                    {formNewModel.errors.model && formNewModel.touched.model && formNewModel.errors.model}
+                                </FormHelperText>
+                            </FormControl>
+                        </Stack>
+
+                        <FormControl variant="standard" 
+                            sx={{ m: 1, minWidth: 250 }} 
+                            disabled={modeleLibre}
+                            error={formNewModel.errors.id_dossier && formNewModel.touched.id_dossier}
+                        >
+                            <InputLabel id="demo-simple-select-standard-label">Dossier</InputLabel>
+                            <Select
+                            labelId="demo-simple-select-standard-label"
+                            id="demo-simple-select-standard"
+                            value={formNewModel.values.id_dossier}
+                            label={"valSelectPC"}
+                            onChange={(e) => formNewModel.setFieldValue('id_dossier', e.target.value)}
+                            sx={{width:"300px", display:"flex", justifyContent:"left", alignItems:"flex-start", alignContent:"flex-start", textAlign:"left"}}
+                            >
+                                <MenuItem key={0} value={0}><em>Aucun dossier</em></MenuItem>
+                                {listDossier?.map((dossier) =>(
+                                    <MenuItem key={dossier.id} value={dossier.id}>{dossier.dossier}</MenuItem>
+                                ))}
+                            </Select>
+
+                            <FormHelperText>
+                                {formNewModel.errors.id_dossier && formNewModel.touched.id_dossier && formNewModel.errors.id_dossier}
+                            </FormHelperText>
+                        </FormControl>
+                        
+                        <FormControl variant="standard" 
+                            sx={{ m: 1, minWidth: 250 }} 
+                            error={formNewModel.errors.model_name && formNewModel.touched.model_name}
+                        >
+                            <TextField 
+                                onBlur={(e) => formNewModel.setFieldValue("model_name", e.target.value)}
+                                id="nom-modele" label="Nom du modèle" 
+                                variant="standard" 
+                                style={{width:"400px", marginLeft:"10px"}}
+                            />
+
+                            <FormHelperText>
+                                {formNewModel.errors.model_name && formNewModel.touched.model_name && formNewModel.errors.model_name}
+                            </FormHelperText>
+                        </FormControl>
+                        
+                    </Stack>
+
+                    </DialogContent>
+                    <DialogActions>
+                    <Button 
+                        autoFocus 
+                        style={{backgroundColor:initial.theme, color:'white', width:"100px", textTransform: 'none', outline: 'none'}}
+                        type='submit'
+                        onClick={formNewModel.handleSubmit}
+                    >
+                        Créer
+                    </Button>
+                    </DialogActions>
+                </BootstrapDialog>
+            </form>
+            
+            {/* MODAL POUR LA SUPPRESSION D'UN MODELE */}
+            {openDialogDeleteModel ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer le modèle sélectionné ?"} confirmationState={deleteModelPC}/>: null}
+            
+            {/* TABLEAU LISTE DES MODELES DE PLAN COMPTABLES */}
+            <Stack width={"100%"} height={"500px"} spacing={1} alignItems={"flex-start"} direction={"row"}>
+                <DataGrid
+                    disableMultipleSelection = {DataGridStyle.disableMultipleSelection}
+                    disableColumnSelector = {DataGridStyle.disableColumnSelector}
+                    disableDensitySelector = {DataGridStyle.disableDensitySelector}
+                    localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                    disableRowSelectionOnClick
+                    disableSelectionOnClick={true}
+                    slots={{toolbar : QuickFilter}}
+                    sx={ DataGridStyle.sx}
+                    rowHeight= {DataGridStyle.rowHeight}
+                    columnHeaderHeight= {DataGridStyle.columnHeaderHeight}
+                    onRowSelectionModelChange={listModelPCSelectedRow}
+                    rows={listeModele}
+                    columns={columnHeaderModel}
+                    initialState={{
+                        pagination: {
+                            paginationModel: { page: 0, pageSize: 100 },
+                        },
+                    }}
+                    pageSizeOptions={[50, 100]}
+                    pagination={DataGridStyle.pagination}
+                    checkboxSelection = {DataGridStyle.checkboxSelection}
+                    columnVisibilityModel={{
+                        id: false,
+                    }}
+                />
+            </Stack>
+
+            {/* MODAL POUR L'AJOUT/MODIFICATION D'UN NOUVEAU COMPTE POUR LE MODELE SELECTIONNE */}
+            {/* <form onSubmit={formAddCptModelDetail.handleSubmit}> */}
+                <Formik
+                    initialValues={formAddCptModelInitialValues}
+                    validationSchema={formAddCptModelValidationSchema}
+                    onSubmit = {(values) =>{
+                        formAddCptModelhandleSubmit(values);
+                        //();
+                    }}
+                >
+                    {({handleChange, handleSubmit, setFieldValue, resetForm}) => {
+                        // useEffect(() => {
+                        //     if (openDialogAddNewCptModelDetail) {
+                        //         resetForm();
+                        //     }
+                        // }, [openDialogAddNewCptModelDetail, resetForm]);
+                        
+                        return(
+                        <Form style={{width:'100%'}}>
+                            <Stack width={"100%"} height={"30px"} spacing={0} alignItems={"center"} alignContent={"center"} 
+                            direction={"row"} style={{marginLeft:"0px", marginTop:"30px", justifyContent:"right"}}>
+                            <Typography variant='h7' sx={{color: "black", fontWeight:"bold",width:"300px"}} align='left'>Plan de compte</Typography>
+
+                            <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"} 
+                            direction={"row"} justifyContent={"right"}>
+                                <Tooltip title="Ajouter un nouveau compte">
+                                    <IconButton
+                                    // disabled={statutDeleteButton}  
+                                    onClick={handleOpenDialogDetailModelAdd(setFieldValue, resetForm)} 
+                                    variant="contained" 
+                                    style={{width:"35px", height:'35px', 
+                                        borderRadius:"5px", borderColor: "transparent", 
+                                        backgroundColor: initial.theme,
+                                        textTransform: 'none', outline: 'none'
+                                    }}
+                                    >
+                                        <TbPlaylistAdd style={{width:'25px', height:'25px', color:'white'}}/>
+                                    </IconButton>
+                                </Tooltip>
+
+                                <Tooltip title="Modifier le compte sélectionné">
+                                    <IconButton
+                                    onClick={handleOpenDialogDetailModelModify(setFieldValue)} 
+                                    variant="contained" 
+                                    style={{width:"35px", height:'35px', 
+                                        borderRadius:"5px", borderColor: "transparent",
+                                        backgroundColor: initial.theme,
+                                        textTransform: 'none', outline: 'none'
+                                        }}
+                                    >
+                                        <FaRegPenToSquare style={{width:'25px', height:'25px', color:'white'}}/>
+                                    </IconButton>
+                                </Tooltip>
+
+                                <Tooltip title="Supprimer le compte sélectionné">
+                                    <span>
+                                        <IconButton 
+                                        onClick={handleOpenDialogDetailModelDelete} 
+                                        variant="contained" 
+                                        style={{width:"35px", height:'35px', 
+                                            borderRadius:"5px", borderColor: "transparent",
+                                            backgroundColor: initial.button_delete_color,
+                                            textTransform: 'none', outline: 'none'
+                                        }}
+                                        >
+                                            <IoMdTrash style={{width:'40px', height:'40px',color: 'white'}}/>
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
+                            </Stack>
+                        </Stack>
+                            <BootstrapDialog
+                                onClose={handleCloseDialogDetailModelAdd}
+                                aria-labelledby="customized-dialog-title"
+                                open={openDialogAddModelDetail}
+                                fullWidth={true}
+                                maxWidth={"lg"}
+                            >
+                                {/* <DialogTitle sx={{ m: 0, p: 2 }} id="customized-dialog-title" style={{fontWeight:'normal', width:'100%', height:'55px', backgroundColor : initial.normal_pupup_header_color}}>
+                                    <Typography variant='h8'>Ajout d'un nouveau compte pour le modèle : {selectedModelName}</Typography>
+                                </DialogTitle> */}
+                                <IconButton
+                                    style={{color:'red', textTransform: 'none', outline: 'none'}}
+                                    aria-label="close"
+                                    onClick={handleCloseDialogDetailModelAdd}
+                                    sx={{
+                                        position: 'absolute',
+                                        right: 8,
+                                        top: 8,
+                                        color: (theme) => theme.palette.grey[500],
+                                    }}
+                                    >
+                                <CloseIcon />
+                                </IconButton>
+
+                                <Typography style={{marginTop: 75, marginLeft: 30}} variant='h5'>Création d'un nouveau compte</Typography>
+
+                                <DialogContent style={{width:"100%"}} >
+                                
+                                <Stack width={"100%"} height={"650px"} spacing={0} alignItems={'start'} alignContent={"center"} 
+                                direction={"column"} justifyContent={"left"} style={{marginLeft:'0px'}}>
+                                    <Box sx={{ width: '100%', typography: 'body1' }}>
+                                        <TabContext value={tabValueAjoutNewRowModelDetail} sx={{width:'100%'}}>
+                                            <Box sx={{ borderBottom: 1, borderColor: 'transparent' }}>
+                                                <TabList onChange={handleChangeTabValueAjoutNewRowModelDetail} aria-label="lab API tabs example" variant='scrollable'>
+                                                    <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="infos générales" value="1" />
+                                                    <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="Compte de charges" value="2" />
+                                                    <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="Compte de TVA" value="3" />
+                                                </TabList>
+                                            </Box>
+
+                                            <TabPanel value="1">
+                                                <Stack width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"} 
+                                                    alignContent={"flex-start"} justifyContent={"stretch"} >
+                                                    <Stack direction={'row'} alignContent={'end'} 
+                                                    alignItems={'end'} justifyContent={'end'} spacing={5}
+                                                    style={{backgroundColor: 'transparent'}}
+                                                    >
+                                                        <Stack spacing={-0.5}>
+                                                            <label htmlFor="nature" style={{fontSize:12, color: '#3FA2F6'}}>Nature</label>
+                                                            <Field
+                                                            as={Select}
+                                                            labelId="nature-label"
+                                                            name="nature"
+                                                            onChange={handleChangeListBoxNature(setFieldValue)}
+                                                            sx={{
+                                                                borderRadius:0,
+                                                                width:200,
+                                                                height:40,
+                                                                '& .MuiOutlinedInput-notchedOutline': {
+                                                                    borderTop: 'none', // Supprime le cadre
+                                                                    borderLeft: 'none',
+                                                                    borderRight: 'none',
+                                                                    borderWidth:'0.5px'
+                                                                },
+                                                                '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                                    borderTop: 'none', // Supprime le cadre
+                                                                    borderLeft: 'none',
+                                                                    borderRight: 'none',
+                                                                    borderWidth:'0.5px'
+                                                                },
+                                                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                                    borderTop: 'none', // Supprime le cadre
+                                                                    borderLeft: 'none',
+                                                                    borderRight: 'none',
+                                                                    borderWidth:'0.5px'
+                                                                },
+                                                            }}
+                                                            >
+                                                                <MenuItem value={"General"}>Compte général</MenuItem>
+                                                                <MenuItem value={"Collectif"}>Compte collectif</MenuItem>
+                                                                <MenuItem value={"Aux"}>Compte auxiliaire</MenuItem>
+                                                            </Field>
+                                                            <ErrorMessage name='nature' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                        </Stack>
+
+                                                        <Stack spacing={-0.5}>
+                                                            <label htmlFor="baseCptCollectif" style={{fontSize:12, color: '#3FA2F6'}}>Centralisation / Base compte auxiliaire</label>
+                                                            <Field
+                                                            disabled={typeCptGeneral}
+                                                            as={Select}
+                                                            labelId="baseCptCollectif-label"
+                                                            name="baseCptCollectif"
+                                                            onChange={handleChangeListBoxBaseCompteAux(setFieldValue)}
+                                                            sx={{
+                                                                borderRadius:0,
+                                                                width:500,
+                                                                height:40,
+                                                                '& .MuiOutlinedInput-notchedOutline': {
+                                                                    borderTop: 'none', // Supprime le cadre
+                                                                    borderLeft: 'none',
+                                                                    borderRight: 'none',
+                                                                    borderWidth:'0.5px'
+                                                                },
+                                                                '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                                    borderTop: 'none', // Supprime le cadre
+                                                                    borderLeft: 'none',
+                                                                    borderRight: 'none',
+                                                                    borderWidth:'0.5px'
+                                                                },
+                                                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                                    borderTop: 'none', // Supprime le cadre
+                                                                    borderLeft: 'none',
+                                                                    borderRight: 'none',
+                                                                    borderWidth:'0.5px'
+                                                                },
+                                                            }}
+                                                            >
+                                                                {listeCptCollectif?.map((item) => (
+                                                                    <MenuItem key={item.id} value={item.id}>{item.compte} {item.libelle}</MenuItem>
+                                                                    ))
+                                                                }
+                                                            </Field>
+                                                            <ErrorMessage name='baseCptCollectif' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                        </Stack>
+
+                                                        {/* <Stack spacing={1.5}>
+                                                            <label htmlFor="baseCptCollectif" style={{fontSize:12, color: '#3FA2F6'}}>base compte collectif</label>
+                                                            <Field
+                                                            disabled={typeCptGeneral}
+                                                            name='baseCptCollectif'
+                                                            onChange={handleChange}
+                                                            type='text'
+                                                            placeholder=""
+                                                            style={{height:22, borderTop: 'none',borderLeft: 'none',borderRight: 'none', outline: 'none', fontSize:14, borderWidth:'0.5px' }}
+                                                            />
+                                                            <ErrorMessage name='baseCptCollectif' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                        </Stack> */}
+                                                    </Stack>
+                                                    
+                                                    <Stack direction={'row'} alignContent={'stard'} 
+                                                    alignItems={'start'} spacing={5}
+                                                    style={{backgroundColor:'transparent', width:'800px'}}
+                                                    >
+                                                        <Stack spacing={1}>
+                                                            <label htmlFor="compte" style={{fontSize:12, color: '#3FA2F6'}}>compte</label>
+                                                            <Field
+                                                            name='compte'
+                                                            onChange={handleChange}
+                                                            type='text'
+                                                            placeholder=""
+                                                            style={{height:22, borderTop: 'none',
+                                                                borderLeft: 'none',borderRight: 'none', 
+                                                                outline: 'none', fontSize:14, borderWidth:'0.5px',
+                                                                width:200,
+                                                            }}
+                                                            />
+                                                            <ErrorMessage name='compte' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                        </Stack>
+
+                                                        <Stack spacing={1}>
+                                                            <label htmlFor="libelle" style={{fontSize:12, color: '#3FA2F6'}}>libellé / raison sociale</label>
+                                                            <Field
+                                                            name='libelle'
+                                                            onChange={handleChange}
+                                                            type='text'
+                                                            placeholder=""
+                                                            style={{width: 500, height:22, borderTop: 'none',borderLeft: 'none',borderRight: 'none', outline: 'none', fontSize:14, borderWidth:'0.5px' }}
+                                                            />
+                                                            <ErrorMessage name='libelle' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                        </Stack>
+                                                    </Stack>
+
+                                                    <Stack spacing={-0.5} style={{marginTop:50}}>
+                                                        <label htmlFor="typeTier" style={{fontSize:12, color: '#3FA2F6'}}>Type du tier</label>
+                                                        <Field
+                                                        as={Select}
+                                                        labelId="typeTier-label"
+                                                        name="typeTier"
+                                                        onChange={handleOnChangeListBoxTypeTier(setFieldValue)}
+                                                        sx={{
+                                                            borderRadius:0,
+                                                            width:200,
+                                                            height:40,
+                                                            '& .MuiOutlinedInput-notchedOutline': {
+                                                                borderTop: 'none', // Supprime le cadre
+                                                                borderLeft: 'none',
+                                                                borderRight: 'none',
+                                                                borderWidth:'0.5px'
+                                                            },
+                                                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                                borderTop: 'none', // Supprime le cadre
+                                                                borderLeft: 'none',
+                                                                borderRight: 'none',
+                                                                borderWidth:'0.5px'
+                                                            },
+                                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                                borderTop: 'none', // Supprime le cadre
+                                                                borderLeft: 'none',
+                                                                borderRight: 'none',
+                                                                borderWidth:'0.5px'
+                                                            },
+                                                        }}
+                                                        >
+                                                            <MenuItem key={"sans-nif"} value={"sans-nif"}>Sans NIF</MenuItem>
+                                                            <MenuItem key={"avec-nif"} value={"avec-nif"}>Avec NIF</MenuItem>
+                                                            <MenuItem key={"etranger"} value={"etranger"}>Etranger</MenuItem>
+                                                            <MenuItem key={"general"} value={"general"}>Général</MenuItem>
+                                                        </Field>
+                                                        <ErrorMessage name='typeTier' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                    </Stack>
+                                                    
+                                                    <Stack >
+                                                        {formulaireTier ==='sans-nif'
+                                                            ?   <Stack margin={"0px"} alignContent={"start"} alignItems={"start"}>
+                                                                    <Stack direction={'row'} alignContent={'stard'} 
+                                                                    alignItems={'start'} spacing={6.5}
+                                                                    style={{backgroundColor:'transparent', width:'800px'}}
+                                                                    >
+                                                                        <Stack spacing={1.5}>
+                                                                            <label htmlFor="cin" style={{fontSize:12, color: '#3FA2F6'}}>cin</label>
+                                                                            <Field
+                                                                            name='cin'
+                                                                            onChange={handleChange}
+                                                                            type='text'
+                                                                            placeholder=""
+                                                                            style={{width: 200, height:22, borderTop: 'none',borderLeft: 'none',borderRight: 'none', outline: 'none', fontSize:14, borderWidth:'0.5px' }}
+                                                                            />
+                                                                            <ErrorMessage name='cin' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                                        </Stack>
+
+                                                                        <Stack spacing={1.5}>
+                                                                            <label htmlFor="dateCin" style={{fontSize:12, color: '#3FA2F6'}}>date cin</label>
+                                                                            <Field
+                                                                            name='dateCin'
+                                                                            onChange={handleChange}
+                                                                            type='date'
+                                                                            placeholder=""
+                                                                            style={{width: 100, height:22, borderTop: 'none',borderLeft: 'none',borderRight: 'none', outline: 'none', fontSize:14, borderWidth:'0.5px' }}
+                                                                            />
+                                                                            <ErrorMessage name='dateCin' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                                        </Stack>
+                                                                    </Stack>
+
+                                                                    <Stack direction={'row'} alignContent={'stard'} 
+                                                                    alignItems={'start'} spacing={6.5}
+                                                                    style={{backgroundColor:'transparent', width:'800px', marginTop:'10px'}}
+                                                                    >
+                                                                        <Stack spacing={1.5}>
+                                                                            <label htmlFor="autrePieceID" style={{fontSize:12, color: '#3FA2F6'}}>Autres pièces d'identité si pas de CIN</label>
+                                                                            <Field
+                                                                            name='autrePieceID'
+                                                                            onChange={handleChange}
+                                                                            type='text'
+                                                                            placeholder=""
+                                                                            style={{width: 400, height:22, borderTop: 'none',borderLeft: 'none',borderRight: 'none', outline: 'none', fontSize:14, borderWidth:'0.5px' }}
+                                                                            />
+                                                                            <ErrorMessage name='autrePieceID' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                                        </Stack>
+
+                                                                        <Stack spacing={1.5}>
+                                                                            <label htmlFor="refPieceID" style={{fontSize:12, color: '#3FA2F6'}}>Référence pièce d'identité</label>
+                                                                            <Field
+                                                                            name='refPieceID'
+                                                                            onChange={handleChange}
+                                                                            type='text'
+                                                                            placeholder=""
+                                                                            style={{width: 200, height:22, borderTop: 'none',borderLeft: 'none',borderRight: 'none', outline: 'none', fontSize:14, borderWidth:'0.5px' }}
+                                                                            />
+                                                                            <ErrorMessage name='refPieceID' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                                        </Stack>
+                                                                    </Stack>
+
+                                                                    <Stack spacing={1.5} style={{marginTop:15}}>
+                                                                        <label htmlFor="adresseSansNIF" style={{fontSize:12, color: '#3FA2F6'}}>Adresse</label>
+                                                                        <Field
+                                                                        name='adresseSansNIF'
+                                                                        onChange={handleChange}
+                                                                        type='text'
+                                                                        placeholder=""
+                                                                        style={{width: 200, height:22, borderTop: 'none',borderLeft: 'none',borderRight: 'none', outline: 'none', fontSize:14, borderWidth:'0.5px' }}
+                                                                        />
+                                                                        <ErrorMessage name='adresseSansNIF' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                                    </Stack>
+                                                                </Stack>
+                                                            : formulaireTier ==='avec-nif'
+                                                                    ?   <Stack >
+                                                                            <Stack spacing={1.5} style={{marginTop:15}}>
+                                                                                <label htmlFor="nif" style={{fontSize:12, color: '#3FA2F6'}}>Nif</label>
+                                                                                <Field
+                                                                                name='nif'
+                                                                                onChange={handleChange}
+                                                                                type='text'
+                                                                                placeholder=""
+                                                                                style={{width: 200, height:22, borderTop: 'none',borderLeft: 'none',borderRight: 'none', outline: 'none', fontSize:14, borderWidth:'0.5px' }}
+                                                                                />
+                                                                                <ErrorMessage name='nif' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                                            </Stack>
+
+                                                                            <Stack spacing={1.5} style={{marginTop:15}}>
+                                                                                <label htmlFor="stat" style={{fontSize:12, color: '#3FA2F6'}}>N° statistique</label>
+                                                                                <Field
+                                                                                name='stat'
+                                                                                onChange={handleChange}
+                                                                                type='text'
+                                                                                placeholder=""
+                                                                                style={{width: 200, height:22, borderTop: 'none',borderLeft: 'none',borderRight: 'none', outline: 'none', fontSize:14, borderWidth:'0.5px' }}
+                                                                                />
+                                                                                <ErrorMessage name='stat' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                                            </Stack>
+
+                                                                            <Stack spacing={1.5} style={{marginTop:15}}>
+                                                                                <label htmlFor="adresse" style={{fontSize:12, color: '#3FA2F6'}}>Adresse</label>
+                                                                                <Field
+                                                                                name='adresse'
+                                                                                onChange={handleChange}
+                                                                                type='text'
+                                                                                placeholder=""
+                                                                                style={{width: 200, height:22, borderTop: 'none',borderLeft: 'none',borderRight: 'none', outline: 'none', fontSize:14, borderWidth:'0.5px' }}
+                                                                                />
+                                                                                <ErrorMessage name='adresse' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                                            </Stack>
+                                                                        </Stack>
+                                                                    :   formulaireTier ==='etranger'
+                                                                    
+                                                                        ? <Stack margin={"0px"} alignContent={"start"} alignItems={"start"}>
+                                                                            <Stack spacing={1.5} style={{marginTop:15}}>
+                                                                                <label htmlFor="nifRepresentant" style={{fontSize:12, color: '#3FA2F6'}}>Nif du représentant</label>
+                                                                                <Field
+                                                                                name='nifRepresentant'
+                                                                                onChange={handleChange}
+                                                                                type='text'
+                                                                                placeholder=""
+                                                                                style={{width: 300, height:22, borderTop: 'none',borderLeft: 'none',borderRight: 'none', outline: 'none', fontSize:14, borderWidth:'0.5px' }}
+                                                                                />
+                                                                                <ErrorMessage name='nifRepresentant' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                                            </Stack>
+
+                                                                            <Stack spacing={1.5} style={{marginTop:15}}>
+                                                                                <label htmlFor="adresseEtranger" style={{fontSize:12, color: '#3FA2F6'}}>Adresse</label>
+                                                                                <Field
+                                                                                name='adresseEtranger'
+                                                                                onChange={handleChange}
+                                                                                type='text'
+                                                                                placeholder=""
+                                                                                style={{width: 400, height:22, borderTop: 'none',borderLeft: 'none',borderRight: 'none', outline: 'none', fontSize:14, borderWidth:'0.5px' }}
+                                                                                />
+                                                                                <ErrorMessage name='adresseEtranger' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                                            </Stack>
+
+                                                                            <Stack spacing={1.5} style={{marginTop:15}}>
+                                                                                <label htmlFor="pays" style={{fontSize:12, color: '#3FA2F6'}}>Pays</label>
+                                                                                <Field
+                                                                                name='pays'
+                                                                                onChange={handleChange}
+                                                                                type='text'
+                                                                                placeholder=""
+                                                                                style={{width: 250, height:22, borderTop: 'none',borderLeft: 'none',borderRight: 'none', outline: 'none', fontSize:14, borderWidth:'0.5px' }}
+                                                                                />
+                                                                                <ErrorMessage name='pays' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                                            </Stack>
+                                                                        </Stack>
+                                                                        : null
+                                                        }
+                                                    </Stack>
+
+                                                    <Stack spacing={1.5} style={{marginTop:15}}>
+                                                        <label htmlFor="motcle" style={{fontSize:12, color: '#3FA2F6'}}>Mot clé</label>
+                                                        <Field
+                                                        name='motcle'
+                                                        onChange={handleChange}
+                                                        type='text'
+                                                        placeholder=""
+                                                        style={{width: 200, height:22, borderTop: 'none',borderLeft: 'none',borderRight: 'none', outline: 'none', fontSize:14, borderWidth:'0.5px' }}
+                                                        />
+                                                        <ErrorMessage name='motcle' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                    </Stack>
+                                                </Stack>
+                                            </TabPanel>
+
+                                            <TabPanel value="2">
+                                                <Stack width={"100%"} height={"100%"} spacing={0}>
+                                                    
+                                                    <Stack width={"100%"} height={"20%"} spacing={0.5} alignItems={'end'} alignContent={'end'} 
+                                                    direction={"row"} justifyContent={'end'}> 
+                                                        
+                                                        <Tooltip title="Ajouter un nouveau compte">
+                                                            <IconButton
+                                                            variant="contained" 
+                                                            style={{width:"35px", height:'35px', 
+                                                                borderRadius:"5px", borderColor: "transparent", 
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                            onClick={handleOpenDialogAddNewCptModelDetail }
+                                                            >
+                                                                <TbPlaylistAdd style={{width:'25px', height:'25px', color:'white'}}/>
+                                                            </IconButton>
+                                                        </Tooltip>
+
+                                                        <Tooltip title="Supprimer le compte sélectionné">
+                                                            <span>
+                                                                <IconButton 
+                                                                onClick={handleOpenDialogConfirmDeleteCptChgFromDialogAddNewCpte}
+                                                                variant="contained" 
+                                                                style={{width:"35px", height:'35px', 
+                                                                    borderRadius:"5px", borderColor: "transparent",
+                                                                    backgroundColor: initial.button_delete_color,
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                                >
+                                                                    <IoMdTrash style={{width:'40px', height:'40px',color: 'white'}}/>
+                                                                </IconButton>
+                                                            </span>
+                                                        </Tooltip>
+                                                    </Stack>
+
+                                                    <Stack width={"100%"} height={"500px"}>
+                                                        <DataGrid
+                                                        disableMultipleSelection = {DataGridStyle.disableMultipleSelection}
+                                                        disableColumnSelector = {DataGridStyle.disableColumnSelector}
+                                                        disableDensitySelector = {DataGridStyle.disableDensitySelector}
+                                                        localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                                                        disableRowSelectionOnClick
+                                                        disableSelectionOnClick={true}
+                                                        slots={{toolbar : QuickFilter}}
+                                                        sx={ DataGridStyle.sx}
+                                                        rowHeight= {DataGridStyle.rowHeight}
+                                                        columnHeaderHeight= {DataGridStyle.columnHeaderHeight}
+                                                        onRowSelectionModelChange={ids => {
+                                                            
+                                                            if(ids.length === 1){
+                                                                //setDisableButtonAddCompteCharge(false);
+                                                                setSelectedCptChgOnList(ids);
+                                                            }else{
+                                                                setSelectedCptChgOnList([0]);
+                                                            }
+                                                        }}
+                                                        rows={listCptChg}
+                                                        columns={columnHeaderAddNewRowModelDetail}
+                                                        initialState={{
+                                                            pagination: {
+                                                                paginationModel: { page: 0, pageSize: 100 },
+                                                            },
+                                                        }}
+                                                        pageSizeOptions={[50, 100]}
+                                                        pagination={DataGridStyle.pagination}
+                                                        checkboxSelection = {DataGridStyle.checkboxSelection}
+                                                        columnVisibilityModel={{
+                                                            id: false,
+                                                        }}
+                                                        />     
+                                                    </Stack>
+                                                    
+                                                </Stack>
+                                            </TabPanel>
+
+                                            <TabPanel value="3">
+                                                <Stack width={"100%"} height={"90%"} spacing={0} alignItems={"flex-start"}>
+                                                    <Stack width={"100%"} height={"40px"} spacing={0.5} alignItems={'end'} alignContent={'end'} 
+                                                    direction={"row"} justifyContent={'end'}> 
+                                                        <Tooltip title="Ajouter un nouveau compte">
+                                                            <IconButton
+                                                            onClick={handleOpenDialogAddNewCptTvaModelDetail }
+                                                            variant="contained" 
+                                                            style={{width:"35px", height:'35px', 
+                                                                borderRadius:"5px", borderColor: "transparent", 
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                            >
+                                                                <TbPlaylistAdd style={{width:'25px', height:'25px', color:'white'}}/>
+                                                            </IconButton>
+                                                        </Tooltip>
+
+                                                        <Tooltip title="Supprimer le compte sélectionné">
+                                                            <span>
+                                                                <IconButton 
+                                                                onClick={handleOpenDialogConfirmDeleteCptTvaFromDialogAddNewCpte}
+                                                                variant="contained" 
+                                                                style={{width:"35px", height:'35px', 
+                                                                    borderRadius:"5px", borderColor: "transparent",
+                                                                    backgroundColor: initial.button_delete_color,
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                                >
+                                                                    <IoMdTrash style={{width:'40px', height:'40px',color: 'white'}}/>
+                                                                </IconButton>
+                                                            </span>
+                                                        </Tooltip>
+                                                    </Stack>
+
+                                                    <Stack width={"100%"} height={"500px"}>
+                                                        <DataGrid
+                                                        disableMultipleSelection = {DataGridStyle.disableMultipleSelection}
+                                                        disableColumnSelector = {DataGridStyle.disableColumnSelector}
+                                                        disableDensitySelector = {DataGridStyle.disableDensitySelector}
+                                                        localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                                                        disableRowSelectionOnClick
+                                                        disableSelectionOnClick={true}
+                                                        slots={{toolbar : QuickFilter}}
+                                                        sx={ DataGridStyle.sx}
+                                                        rowHeight= {DataGridStyle.rowHeight}
+                                                        columnHeaderHeight= {DataGridStyle.columnHeaderHeight}
+                                                        onRowSelectionModelChange={ids => {
+                                                            
+                                                            if(ids.length === 1){
+                                                                //setDisableButtonAddCompteTva(false);
+                                                                setSelectedCptTvaOnList(ids);
+                                                            }else{
+                                                                setSelectedCptTvaOnList([0]);
+                                                            }
+                                                        }}
+                                                        rows={listCptTva}
+                                                        columns={columnHeaderAddNewRowModelDetail}
+                                                        initialState={{
+                                                            pagination: {
+                                                                paginationModel: { page: 0, pageSize: 100 },
+                                                            },
+                                                        }}
+                                                        pageSizeOptions={[50, 100]}
+                                                        pagination={DataGridStyle.pagination}
+                                                        checkboxSelection = {DataGridStyle.checkboxSelection}
+                                                        columnVisibilityModel={{
+                                                            id: false,
+                                                        }}
+                                                        />     
+                                                    </Stack>
+                                                </Stack>
+                                            </TabPanel>
+
+                                        </TabContext>
+                                    </Box>
+                                </Stack>
+
+                                </DialogContent>
+                                <DialogActions>
+                                    <Button autoFocus
+                                    variant='outlined'
+                                    style={{backgroundColor:'transparent', 
+                                        color:initial.theme, 
+                                        width:"100px", 
+                                        textTransform: 'none', 
+                                        // outline: 'none'
+                                    }}
+                                    type='submit'
+                                    onClick={handleCloseDialogDetailModelAdd}
+                                    >
+                                        Annuler
+                                    </Button>
+                                    <Button autoFocus
+                                    style={{backgroundColor:initial.theme, color:'white', width:"100px", textTransform: 'none', outline: 'none'}}
+                                    type='submit'
+                                    onClick={handleSubmit}
+                                    >
+                                        Enregistrer
+                                    </Button>
+                                </DialogActions>
+                            </BootstrapDialog>
+
+                            {/* MODAL POUR AJOUTER UN COMPTE DANS LA LISTE DES COMPTES DE CHARGES RATTACHES AU COMPTE A CREER*/}
+                            <BootstrapDialog
+                                onClose={handleCloseDialogAddNewCptModelDetail }
+                                aria-labelledby="customized-dialog-title"
+                                open={openDialogAddNewCptModelDetail}
+                            >
+                                <DialogTitle sx={{ m: 0, p: 2 }} id="customized-dialog-title" style={{fontWeight:'normal', width:'600px',height:'55px',backgroundColor : initial.normal_pupup_header_color}}>
+                                    <Typography variant='h10'>Ajouter un nouveau compte</Typography>
+                                </DialogTitle>
+                                <IconButton
+                                    style={{color:'red'}}
+                                    aria-label="close"
+                                    onClick={handleCloseDialogAddNewCptModelDetail }
+                                    sx={{
+                                        position: 'absolute',
+                                        right: 8,
+                                        top: 8,
+                                        color: (theme) => theme.palette.grey[500],
+                                    }}
+                                    >
+                                <CloseIcon />
+                                </IconButton>
+                                <DialogContent dividers>
+                                
+                                <Stack width={"90%"} height={"150px"} spacing={2} alignItems={'center'} alignContent={"center"} 
+                                direction={"column"} justifyContent={"center"} style={{marginLeft:'10px'}}>
+                                    
+                                    <FormControl variant="standard" required sx={{ m: 1, minWidth: 250 }}>
+                                        <InputLabel id="demo-simple-select-standard-label">Compte</InputLabel>
+                                        <Select
+                                        labelId="demo-simple-select-standard-labelchg"
+                                        id="demo-simple-select-standardchg"
+                                        value={selectedCptAssocChg.idCpt}
+                                        label={"cptchg"}
+                                        onChange={(e) => saveCptChg(e.target.value)}
+                                        sx={{width:"500px", display:"flex", justifyContent:"left", alignItems:"flex-start", alignContent:"flex-start", textAlign:"left"}}
+                                        >
+                                            <MenuItem key={0} value={''}><em>Aucune sélection</em></MenuItem>
+                                            {pcHorsCollectif.map((cpt) =>(
+                                                <MenuItem key={cpt.id} value={cpt.id}>{cpt.compte}: {cpt.libelle}</MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                </Stack>
+
+                                </DialogContent>
+                                <DialogActions>
+                                <Button autoFocus
+                                style={{backgroundColor:initial.theme, color:'white', width:"100px", textTransform: 'none', outline: 'none'}}
+                                onClick={AddCptToTableCptChg(setFieldValue)}
+                                >
+                                    Ajouter
+                                </Button>
+                                </DialogActions>
+                            </BootstrapDialog>
+
+                            {/* MODAL DE CONFIRMATION DE SUPPRIMER DE COMPTE DE CHARGE RATTACHE AU COMPTE A CREER */}
+                            {openDialogDeleteCptChgFromAddNewCpt ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer le compte sélectionné ?"} confirmationState={deleteCptChgPC(setFieldValue)}/>: null}
+                            
+                            
+                            {/* MODAL POUR AJOUTER UN COMPTE DANS LA LISTE DES COMPTES DE TVA RATTACHES AU COMPTE A CREER*/}
+                            <BootstrapDialog
+                                onClose={handleCloseDialogAddNewCptTvaModelDetail }
+                                aria-labelledby="customized-dialog-title"
+                                open={openDialogAddNewCptTvaModelDetail}
+                            >
+                                <DialogTitle sx={{ m: 0, p: 2 }} id="customized-dialog-title" style={{fontWeight:'normal', width:'600px',height:'55px',backgroundColor : initial.normal_pupup_header_color}}>
+                                    <Typography variant='h10'>Ajouter un nouveau compte de TVA</Typography>
+                                </DialogTitle>
+                                <IconButton
+                                    style={{color:'red'}}
+                                    aria-label="close"
+                                    onClick={handleCloseDialogAddNewCptTvaModelDetail }
+                                    sx={{
+                                        position: 'absolute',
+                                        right: 8,
+                                        top: 8,
+                                        color: (theme) => theme.palette.grey[500],
+                                    }}
+                                    >
+                                <CloseIcon />
+                                </IconButton>
+                                <DialogContent dividers>
+                                
+                                <Stack width={"90%"} height={"150px"} spacing={2} alignItems={'center'} alignContent={"center"} 
+                                direction={"column"} justifyContent={"center"} style={{marginLeft:'10px'}}>
+                                    
+                                    <FormControl variant="standard" required sx={{ m: 1, minWidth: 250 }}>
+                                        <InputLabel id="demo-simple-select-standard-label">Compte</InputLabel>
+                                        <Select
+                                        labelId="demo-simple-select-standard-labelchg"
+                                        id="demo-simple-select-standardchg"
+                                        value={selectedCptAssocTva.idCpt}
+                                        label={"cptchg"}
+                                        onChange={(e) => saveCptTva(e.target.value)}
+                                        sx={{width:"500px", display:"flex", justifyContent:"left", alignItems:"flex-start", alignContent:"flex-start", textAlign:"left"}}
+                                        >
+                                            <MenuItem key={0} value={''}><em>Aucune sélection</em></MenuItem>
+                                            {pcOnlyCptTva.map((cpt) =>(
+                                                <MenuItem key={cpt.id} value={cpt.id}>{cpt.compte}: {cpt.libelle}</MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                </Stack>
+
+                                </DialogContent>
+                                <DialogActions>
+                                <Button autoFocus
+                                style={{backgroundColor:initial.theme, color:'white', width:"100px", textTransform: 'none', outline: 'none'}}
+                                onClick={AddCptToTableCptTva(setFieldValue)}
+                                >
+                                    Ajouter
+                                </Button>
+                                </DialogActions>
+                            </BootstrapDialog>
+
+                            {/* MODAL DE CONFIRMATION DE SUPPRESSION DE COMPTE DE TVA RATTACHE AU COMPTE A CREER */}
+                            {openDialogDeleteCptTvaFromAddNewCpt ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer le compte sélectionné ?"} confirmationState={deleteCptTvaPC(setFieldValue)}/>: null}
+                        </Form>
+                    )
+                }}
+            </Formik>
+                
+            {/* MODAL DE CONFIRMATION DE SUPPRESSION D'UN COMPTE DANS LE TABLEAU DU PLAN COMPTABLE */}
+            {openDialogDeleteItemsPc ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer les comptes sélectionnés ?"} confirmationState={deleteItemsPC}/>: null}
+
+            <Stack height={"750px"} width={'100%'}>
+                <DataGrid
+                    disableMultipleSelection = {DataGridStyle.disableMultipleSelection}
+                    disableColumnSelector = {DataGridStyle.disableColumnSelector}
+                    disableDensitySelector = {DataGridStyle.disableDensitySelector}
+                    localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                    disableRowSelectionOnClick
+                    disableSelectionOnClick={true}
+                    slots={{toolbar : QuickFilter}}
+                    sx={ DataGridStyle.sx}
+                    rowHeight= {DataGridStyle.rowHeight}
+                    columnHeaderHeight= {DataGridStyle.columnHeaderHeight}
+                    onRowSelectionModelChange={listDetailModelPCSelectedRow}
+                    rows={detailModel}
+                    columns={columnHeaderDetail}
+                    initialState={{
+                        pagination: {
+                            paginationModel: { page: 0, pageSize: 100 },
+                        },
+                    }}
+                    experimentalFeatures={{columnPinning: true}}
+                    pageSizeOptions={[50, 100]}
+                    pagination={DataGridStyle.pagination}
+                    checkboxSelection = {DataGridStyle.checkboxSelection}
+                    columnVisibilityModel={{
+                        id: false,
+                    }}
+                />
+            </Stack>
+            
+        </Stack>
+    </Paper>
+  )
+}

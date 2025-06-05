@@ -1,0 +1,382 @@
+import { React, useState, useEffect } from 'react';
+import { Typography, Stack, TextField, FormControl, InputLabel, Select, MenuItem, Divider, FormHelperText } from '@mui/material';
+import Button from '@mui/material/Button';
+import { styled } from '@mui/material/styles';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import IconButton from '@mui/material/IconButton';
+import CloseIcon from '@mui/icons-material/Close';
+import { init } from '../../../../init';
+import { CiWarning } from "react-icons/ci";
+import { IoIosWarning } from "react-icons/io";
+import toast from 'react-hot-toast';
+import axios from '../../../../config/axios';
+import InputAdornment from '@mui/material/InputAdornment';
+import { NumericFormat } from 'react-number-format';
+import { useFormik } from 'formik';
+import * as Yup from "yup";
+import FormatedInput from '../FormatedInput';
+
+let initial = init[0];
+
+const BootstrapDialog = styled(Dialog)(({ theme }) => ({
+    '& .MuiDialogContent-root': {
+      padding: theme.spacing(2),
+    },
+    '& .MuiDialogActions-root': {
+      padding: theme.spacing(1),
+    },
+  }));
+
+const PopupModifDP = ({choix, confirmationState, data}) =>{
+    const [formDataFinal, setFormDataFinal] = useState({
+        state: false,
+        id:-1,
+        nature_prov: '',
+        libelle: '',
+        type_calcul: '',
+        montant_debut_ex: 0,
+        augm_dot_ex: 0,
+        dim_repr_ex: 0,
+        montant_fin: 0,
+      });
+
+    const formData = useFormik({
+        initialValues : {
+            state: true,
+            id:-1,
+            nature_prov: '',
+            libelle: '',
+            type_calcul: '',
+            montant_debut_ex: 0,
+            augm_dot_ex: 0,
+            dim_repr_ex: 0,
+            montant_fin: 0,
+        },
+        validationSchema: Yup.object({
+            libelle : Yup.string().required("Veuillez ajouter un libellé pour la provision."),
+            // montant_debut_ex: Yup.number().positive("Veuillez entrer un montant valide").required("Veuillez entrer un montant valide"),
+            // augm_dot_ex: Yup.number().positive("Veuillez entrer un montant valide").required("Veuillez entrer un montant valide"),
+            // dim_repr_ex: Yup.number().positive("Veuillez entrer un montant valide").required("Veuillez entrer un montant valide"),
+        }),
+        //validateOnChange: false,
+        //validateOnBlur: true,
+        onSubmit: (values) => {
+            setFormDataFinal(prevFormDataFinal => {
+                const newFormDataFinal = { 
+                    ...prevFormDataFinal, 
+                    state: true, 
+                    id: values.id, 
+                    nature_prov: values.nature_prov,
+                    libelle: values.libelle,
+                    type_calcul: values.type_calcul,
+                    montant_debut_ex: values.montant_debut_ex,
+                    augm_dot_ex: values.augm_dot_ex,
+                    dim_repr_ex: values.dim_repr_ex,
+                    montant_fin: values.montant_fin,
+                };
+                confirmationState(newFormDataFinal);
+                return newFormDataFinal;
+            });  
+        }
+    });
+
+    const handleCloseDeleteModel = () => {
+        setFormDataFinal(prevFormDataFinal => {
+            const newFormDataFinal = { ...prevFormDataFinal, state: false };
+            confirmationState(newFormDataFinal); // Passer les nouvelles données immédiatement
+            return newFormDataFinal;
+        });
+    }
+
+    useEffect(() => {
+        if(data){
+            formData.setValues({
+                state: false,
+                id: data.id,
+                nature_prov: data.nature_prov,
+                libelle: data.libelle,
+                type_calcul: data.type_calcul,
+                montant_debut_ex: data.montant_debut_ex,
+                augm_dot_ex: data.augm_dot_ex,
+                dim_repr_ex: data.dim_repr_ex,
+                montant_fin: data.montant_fin,
+            });
+        }
+    }, [data]);
+
+    // Fonction pour calculer montant_fin
+    const updateValeurBrute = () => {
+        const { montant_debut_ex, augm_dot_ex, dim_repr_ex } = formData.values;
+        const montant_fin = montant_debut_ex + augm_dot_ex - dim_repr_ex;
+        formData.setFieldValue('montant_fin', montant_fin);
+    };
+
+    useEffect(() => {
+        updateValeurBrute();
+    }, [formData.values.montant_debut_ex, formData.values.augm_dot_ex, formData.values.dim_repr_ex]);
+
+    return (
+        <form onSubmit={formData.handleSubmit}>
+            <BootstrapDialog
+                onClose={handleCloseDeleteModel}
+                aria-labelledby="customized-dialog-title"
+                open={true}
+                fullWidth={true}
+                maxWidth="lg"
+            >
+                <DialogTitle sx={{ ml: 1, p: 2 }} id="customized-dialog-title" style={{fontWeight:'bold', width:'550px', height:'50px',backgroundColor : 'transparent'}}>
+                    <Typography variant={'h6'} style={{fontZise: 12}}>
+                        {choix} d'une ligne pour le formulaire DP
+                    </Typography>
+                </DialogTitle>
+                
+                <IconButton
+                    style={{color:'red', textTransform: 'none', outline: 'none'}}
+                    aria-label="close"
+                    onClick={handleCloseDeleteModel}
+                    sx={{
+                        position: 'absolute',
+                        right: 8,
+                        top: 8,
+                        color: (theme) => theme.palette.grey[500],
+                    }}
+                    >
+                <CloseIcon />
+                </IconButton>
+                <DialogContent>
+            
+                <Stack width={"95%"} height={"450px"} spacing={1} alignItems={'left'} alignContent={"center"} 
+                    direction={"column"} justifyContent={"center"} style={{marginLeft:'20px'}}
+                >
+                    <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '350px' }}>
+                        <InputLabel style={{ color: '#1976d2' }}>Nature des provisions</InputLabel>
+                        <Select
+                            disabled
+                            label="Nature des provisions"
+                            name="nature_prov"
+                            value={formData.values.nature_prov}
+                            onChange={formData.handleChange}
+                            fullWidth
+                            style={{ marginBottom: '0px', width:'350px' }}
+                        >
+                            {/* Remplacer ces options par celles dont tu as besoin */}
+                            <MenuItem key="RISQUE" value="RISQUE">Provisions pour risques et charges</MenuItem>
+                            <MenuItem key="DEPRECIATION" value="DEPRECIATION">Provisions pour dépréciation</MenuItem>
+                            <MenuItem key="AUTRE" value="AUTRE">Autres provisions</MenuItem>
+                        </Select>
+
+                        <FormHelperText style={{color:'red', width:'350px'}}>
+                            {formData.errors.nature_prov && formData.touched.nature_prov && formData.errors.nature_prov}
+                        </FormHelperText>
+                    </FormControl>
+
+                    <Stack direction={'row'} spacing={1}>
+                        <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '600px' }}>
+                            <TextField
+                                disabled={formData.values.nature_prov === 'AUTRE'? false: true}
+                                size="small"
+                                label="provision"
+                                name="libelle"
+                                value={formData.values.libelle}
+                                onChange={formData.handleChange}
+                                type="string"
+                                fullWidth
+                                style={{ marginBottom: '0px', width:'600px' }}
+                                InputLabelProps={{
+                                    style: {
+                                    color: '#1976d2',  // Couleur primary par défaut (bleu de Material-UI)
+                                    },
+                                }}
+                            />
+
+                        <FormHelperText style={{color:'red', width:'600px'}}>
+                            {formData.errors.libelle && formData.touched.libelle && formData.errors.libelle}
+                        </FormHelperText>
+                        </FormControl>
+                    </Stack>
+
+                    <Divider style={{marginTop:'10px', marginBottom:'30px'}}/>
+
+                    <Stack direction={'row'} spacing={1}>
+                        <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '250px' }}>
+                            <TextField
+                                size="small"
+                                label="Montant déb. exercice"
+                                name="montant_debut_ex"
+                                value={formData.values.montant_debut_ex}
+                                onChange={formData.handleChange}
+                                fullWidth
+                                style={{ 
+                                    marginBottom: '0px', 
+                                    width: '250px', 
+                                    textAlign: 'right', 
+                                    justifyContent:'right', 
+                                    justifyItems:'right',
+                                    backgroundColor: '#F4F9F9'
+                                }}
+                                InputProps={{
+                                    inputComponent: FormatedInput,
+                                    endAdornment: <InputAdornment position="end">Ar</InputAdornment>,
+                                    sx: {
+                                    '& input': {
+                                        textAlign: 'right', // Alignement du texte dans le champ à droite
+                                    },
+                                    },
+                                }}
+                                InputLabelProps={{
+                                style: {
+                                    color: '#1976d2',  // Couleur primary par défaut (bleu de Material-UI)
+                                },
+                                }}
+                            />
+
+                            <FormHelperText style={{color:'red', width:'250px'}}>
+                                {formData.errors.montant_debut_ex && formData.touched.montant_debut_ex && formData.errors.montant_debut_ex}
+                            </FormHelperText>
+                        </FormControl>
+                        
+                        <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '250px' }}>
+                            <TextField
+                                size="small"
+                                label="Augmentation dot. ex."
+                                name="augm_dot_ex"
+                                value={formData.values.augm_dot_ex}
+                                onChange={formData.handleChange}
+                                fullWidth
+                                style={{ 
+                                    marginBottom: '0px', 
+                                    width: '250px', 
+                                    textAlign: 'right', 
+                                    justifyContent:'right', 
+                                    justifyItems:'right',
+                                    backgroundColor: '#F4F9F9'
+                                }}
+                                InputProps={{
+                                    inputComponent: FormatedInput,
+                                    endAdornment: <InputAdornment position="end">Ar</InputAdornment>,
+                                    sx: {
+                                    '& input': {
+                                        textAlign: 'right', // Alignement du texte dans le champ à droite
+                                    },
+                                    },
+                                }}
+                                InputLabelProps={{
+                                style: {
+                                    color: '#1976d2',  // Couleur primary par défaut (bleu de Material-UI)
+                                },
+                                }}
+                            />
+
+                            <FormHelperText style={{color:'red', width:'250px'}}>
+                                {formData.errors.augm_dot_ex && formData.touched.augm_dot_ex && formData.errors.augm_dot_ex}
+                            </FormHelperText>
+                        </FormControl>
+                        
+                        <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '250px' }}>
+                            <TextField
+                                size="small"
+                                label="Diminution repr. ex."
+                                name="dim_repr_ex"
+                                value={formData.values.dim_repr_ex}
+                                onChange={formData.handleChange}
+                                fullWidth
+                                style={{ 
+                                    marginBottom: '0px', 
+                                    width: '250px', 
+                                    textAlign: 'right', 
+                                    justifyContent:'right', 
+                                    justifyItems:'right',
+                                    backgroundColor: '#F4F9F9'
+                                }}
+                                InputProps={{
+                                    inputComponent: FormatedInput,
+                                    endAdornment: <InputAdornment position="end">Ar</InputAdornment>,
+                                    sx: {
+                                    '& input': {
+                                        textAlign: 'right', // Alignement du texte dans le champ à droite
+                                    },
+                                    },
+                                }}
+                                InputLabelProps={{
+                                style: {
+                                    color: '#1976d2',  // Couleur primary par défaut (bleu de Material-UI)
+                                },
+                                }}
+                            />
+
+                            <FormHelperText style={{color:'red', width:'250px'}}>
+                                {formData.errors.dim_repr_ex && formData.touched.dim_repr_ex && formData.errors.dim_repr_ex}
+                            </FormHelperText>
+                        </FormControl>
+                        
+                        <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '250px' }}>
+                            <TextField
+                                disabled
+                                size="small"
+                                label="Montant fin exercice"
+                                name="montant_fin"
+                                value={formData.values.montant_fin}
+                                onChange={formData.handleChange}
+                                fullWidth
+                                style={{ 
+                                    marginBottom: '0px', 
+                                    width: '250px', 
+                                    textAlign: 'right', 
+                                    justifyContent:'right', 
+                                    justifyItems:'right',
+                                    backgroundColor: '#F4F9F9'
+                                }}
+                                InputProps={{
+                                    inputComponent: FormatedInput,
+                                    endAdornment: <InputAdornment position="end">Ar</InputAdornment>,
+                                    sx: {
+                                    '& input': {
+                                        textAlign: 'right', // Alignement du texte dans le champ à droite
+                                    },
+                                    },
+                                }}
+                                InputLabelProps={{
+                                style: {
+                                    color: '#1976d2',  // Couleur primary par défaut (bleu de Material-UI)
+                                },
+                                }}
+                            />
+
+                            <FormHelperText style={{color:'red', width:'250px'}}>
+                                {formData.errors.montant_fin && formData.touched.montant_fin && formData.errors.montant_fin}
+                            </FormHelperText>
+                        </FormControl>
+                    </Stack>
+                </Stack>
+
+                </DialogContent>
+                <DialogActions>
+                    <Button autoFocus
+                        variant='outlined'
+                        style={{backgroundColor:"transparent", 
+                            color:initial.theme, 
+                            width:"100px", 
+                            textTransform: 'none', 
+                            //outline: 'none',
+                        }}
+                        onClick={handleCloseDeleteModel}
+                        >
+                            Annuler
+                    </Button>
+                    <Button autoFocus 
+                    type="submit"
+                    onClick={formData.handleSubmit}
+                    style={{backgroundColor:initial.theme, color:'white', width:"100px", textTransform: 'none', outline: 'none'}}
+                    >
+                        Enregistrer
+                    </Button>
+                </DialogActions>
+            </BootstrapDialog>
+        </form>
+    )
+}
+
+export default PopupModifDP;

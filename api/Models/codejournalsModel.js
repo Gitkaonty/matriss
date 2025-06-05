@@ -1,0 +1,35 @@
+module.exports = (sequelize, DataTypes) => {
+    const codejournals = sequelize.define( "codejournals", {
+        id_compte: {
+            type: DataTypes.BIGINT,
+            allowNull: false
+        },
+        id_dossier: {
+            type: DataTypes.BIGINT,
+            allowNull: false,
+            defaultValue:0
+        },
+        code: {
+            type: DataTypes.STRING(10),
+            unique: false,
+            allowNull: true
+        },
+        libelle: {
+            type: DataTypes.STRING(100),
+            unique: false,
+            allowNull: true
+        },
+        type: {
+            type: DataTypes.STRING(20),
+            unique: false,
+            allowNull: true
+        },
+        compteassocie: {
+            type: DataTypes.STRING(30),
+            unique: false,
+            allowNull: true
+        },
+
+    }, {timestamps: true}, )
+    return codejournals
+ }

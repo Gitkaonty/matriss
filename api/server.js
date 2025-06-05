@@ -1,0 +1,133 @@
+const express = require('express');
+const errorHandler = require('./Middlewares/errorHandler');
+const cors = require('cors');
+const cookieParser = require('cookie-parser');
+const path = require('path');
+const db = require('./Models');
+const corsOptions = require('./config/corsOptions');
+const verifyJWT = require('./Middlewares/verifyJWT');
+const credentials = require('./Middlewares/credentials');
+
+//const userRoutes = require ('./Routes/UserRoutes/userRoutes');
+//const dossierRoutes = require ('./Routes/HomeRoutes/dossierRoutes');
+//const paramPCModeleRoute = require ('./Routes/Parametres/paramPCModeleRoute');
+//const modelePlanComptableDetailRoutes = require ('./Routes/modelePlanComptableRoutes/modelePlanComptableDetailRoutes');
+//const modelePlanComptableDetailAddRoutes = require ('./Routes/modelePlanComptableRoutes/modelePlanComptableDetailAddRoutes');
+//const modelePlanComptableAddNewRoutes = require('./Routes/modelePlanComptableRoutes/modelePlanComptableAddNewRoutes');
+//const modelePlanComptableDeleteRoutes = require('./Routes/modelePlanComptableRoutes/modelePlanComptableDeleteRoutes');
+require('dotenv').config();
+
+const PORT = process.env.DB_PORT || 5000;
+
+//Définition du moteur d'affichage
+const app = express();
+app.use(credentials);
+app.use(cors(corsOptions));
+
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb',extended: true }))
+app.use(express.json());
+app.use(cookieParser());
+app.use(express.static(path.join(__dirname, '/public')));
+
+//synchronizing the database and forcing it to false so we dont lose data (ito no ampiasaina ra toa ka executena ny DROP TABLE am sequelize)
+//db.sequelize.sync({ force: true }).then(() => {
+    //console.log("db has been re sync")
+//})
+
+//synchronizing the database and forcing it to false so we dont lose data
+db.sequelize.sync().then(() => {
+    console.log("db has been re synchronized")
+})
+
+//----------------------------------------------------------------------------------------------------------------
+// AUTHENTIFICATION
+//----------------------------------------------------------------------------------------------------------------
+
+//register
+app.use('/register', require('./Routes/registerRoute'));
+//Login
+app.use('/', require('./Routes/authRoute'));
+//refreshToken
+app.use('/refreshToken', require('./Routes/refreshRoute'));
+//logout
+app.use('/logout', require('./Routes/logoutRoute'));
+
+
+
+//placer la vérification pour les routes qui ne nécessite pas de vérification
+//app.use(verifyJWT);
+
+
+//routes pour l'authentification
+//app.use('/', userRoutes);
+
+//----------------------------------------------------------------------------------------------------------------
+// MENU HOME
+//----------------------------------------------------------------------------------------------------------------
+
+//routes pour home
+app.use('/home', require('./Routes/Home/homeRoutes'));
+
+//----------------------------------------------------------------------------------------------------------------
+// MENU ADMINISTRATION
+//----------------------------------------------------------------------------------------------------------------
+app.use('/administration/ImportJournal', require('./Routes/Administration/importJournalRoute'));
+app.use('/administration/ImportBalance', require('./Routes/Administration/importBalanceRoute'));
+app.use('/administration/ImportModelePc', require('./Routes/Administration/importModelePCRoute'));
+
+//export
+app.use('/administration/exportBalance', require('./Routes/Administration/exportBalanceRoute'));
+
+//----------------------------------------------------------------------------------------------------------------
+// MENU PARAMETRE
+//----------------------------------------------------------------------------------------------------------------
+
+//routes pour envoyer la liste des modèles de plan comptable associé au compte de l'utilisateur
+app.use('/paramPlanComptableModele', require('./Routes/Parametres/paramPCModeleRoute'));
+
+//routes pour les paramétrages plan comptable
+app.use('/paramPlanComptable', require('./Routes/Parametres/paramPCRoute'));
+
+//routes pour paramètres liste exercice
+app.use('/paramExercice', require('./Routes/Parametres/exerciceRoute'));
+
+//routes pour paramètres liste code journaux
+app.use('/paramCodeJournaux', require('./Routes/Parametres/codejournauxRoute'));
+
+//routes pour paramètres le CRM
+app.use('/paramCrm', require('./Routes/Parametres/crmRoute'));
+
+//routes pour paramètres compte de TVA
+app.use('/paramTva', require('./Routes/Parametres/paramTvaRoute'));
+
+//routes pour paramètres mapping de compte
+app.use('/paramMappingCompte', require('./Routes/Parametres/paramMappingCompte'));
+
+//----------------------------------------------------------------------------------------------------------------
+// MENU DECLARATION
+//----------------------------------------------------------------------------------------------------------------
+
+//Déclaration Ebilan-------------------------------------------
+app.use('/declaration/ebilan', require('./Routes/Declaration/declEbilanRoute'));
+
+/*app.all('*', (req,res) => {
+    res.status(404);
+    if(req.accepts('html')) {
+        res.sendFile(path.join(__dirname, 'views', '404.html'));
+    }else if (req.accepts('json')){
+        res.json({error: '404 Not Found'});
+    }else{
+        res.type('txt').send('404 Not Found');
+    }
+});*/
+
+//app.use(errorHandler);
+
+app.get('/', function (req, res) {
+    res.send('hello');
+})
+
+app.listen(PORT, () => {
+    console.log(`listen on port ${PORT}`);
+});
