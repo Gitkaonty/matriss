@@ -352,9 +352,9 @@ const refreshEVCP = async (compteId, fileId, exerciceId, refreshTotal) => {
 
     //const result = await updateBalanceSold.updateSold(compteId, fileId, exerciceId, [], true);
     //const updateSoldeTFTI = await UpdateEbilanSoldeRubrique.soldeRubrique(compteId, fileId, exerciceId);
-    const updateSoldeTotalTFTI = await UpdateEbilanSoldeTotalRubrique.totalRubriqueEVCP(compteId, fileId, exerciceId);
+    const updateSoldeTotalEVCP = await UpdateEbilanSoldeTotalRubrique.totalRubriqueEVCP(compteId, fileId, exerciceId);
 
-    if(updateSoldeTotalTFTI){
+    if(updateSoldeTotalEVCP){
       stateRefresh = true;
     }
     
@@ -364,12 +364,11 @@ const refreshEVCP = async (compteId, fileId, exerciceId, refreshTotal) => {
   }
 }
 
-const refreshDRF = async (compteId,fileId, exerciceId, matrix) => {
+const refreshDRF = async (compteId, fileId, exerciceId, refreshTotal) => {
   try{
-
     let stateRefresh = false;
 
-    if(matrix){
+    if(refreshTotal){
       await liassedrfs.destroy({
         where: 
         {
@@ -380,36 +379,84 @@ const refreshDRF = async (compteId,fileId, exerciceId, matrix) => {
         }
       });
 
-      matrix.map(async (item) => {
-        await liassedrfs.create({
-          id_compte: compteId,
-          id_dossier : fileId,
-          id_exercice: exerciceId,
-          id_etat: item.id_etat,
-          id_rubrique: item.id_rubrique,
-          note: item.note,
-          nature: item.nature,
-          ordre: item.ordre,
-          niveau: item.niveau,
-          signe: item.senscalcul
-        });
+      const matrixRubriqueListe = await rubriquesmatrices.findAll({
+        where: 
+        {
+          id_etat: 'DRF'
+        }
       });
+
+      if(matrixRubriqueListe.length > 0){
+        for(let item of matrixRubriqueListe){
+          await liassedrfs.create({
+            id_compte: compteId,
+            id_dossier : fileId,
+            id_exercice: exerciceId,
+            id_etat: item.id_etat,
+            id_rubrique: item.id_rubrique,
+            nature: item.nature,
+            note: item.note,
+            ordre: item.ordre,
+            signe: item.senscalcul,
+            niveau: item.niveau
+          });
+        }
+      }
+
+      //await UpdateEbilanBalanceRubrique.balanceColumnEVCP(compteId, fileId, exerciceId);
+    }
+
+    //const result = await updateBalanceSold.updateSold(compteId, fileId, exerciceId, [], true);
+    const updateSoldeDRF = await UpdateEbilanSoldeRubrique.soldeRubriqueDRF(compteId, fileId, exerciceId);
+    const updateSoldeTotalDRF = await UpdateEbilanSoldeTotalRubrique.totalRubriqueDRF(compteId, fileId, exerciceId);
+
+    if(updateSoldeDRF && updateSoldeTotalDRF){
       stateRefresh = true;
     }
-       
-
+    
     return { stateRefresh };
   }catch (error){
     console.log(error);
   }
 }
 
-const refreshDP = async (compteId,fileId, exerciceId, matrix) => {
+const refreshBHIAPC = async (compteId, fileId, exerciceId, refreshTotal) => {
+  try{
+    // let stateRefresh = false;
+
+    // if(refreshTotal){
+    //   await liassebhiapcs.destroy({
+    //     where: 
+    //     {
+    //       id_compte: compteId,
+    //       id_dossier: fileId,
+    //       id_exercice: exerciceId,
+    //     }
+    //   });
+
+    //   //await UpdateEbilanBalanceRubrique.balanceColumnEVCP(compteId, fileId, exerciceId);
+    // }
+
+    // //const result = await updateBalanceSold.updateSold(compteId, fileId, exerciceId, [], true);
+    // const updateSoldeDRF = await UpdateEbilanSoldeRubrique.soldeRubriqueDRF(compteId, fileId, exerciceId);
+    // const updateSoldeTotalDRF = await UpdateEbilanSoldeTotalRubrique.totalRubriqueDRF(compteId, fileId, exerciceId);
+
+    // if(updateSoldeDRF && updateSoldeTotalDRF){
+    //   stateRefresh = true;
+    // }
+    
+    // return { stateRefresh };
+  }catch (error){
+    console.log(error);
+  }
+}
+
+const refreshDP = async (compteId, fileId, exerciceId, refreshTotal) => {
   try{
 
     let stateRefresh = false;
 
-    if(matrix){
+    if(refreshTotal){
       await liassedps.destroy({
         where: 
         {
@@ -421,30 +468,37 @@ const refreshDP = async (compteId,fileId, exerciceId, matrix) => {
         }
       });
 
-      matrix.map(async (item) => {
-        if(item.nature === 'RISQUE' || item.nature === 'DEPRECIATION'){
-            await liassedps.create({
-          
-            id_compte: compteId,
-            id_dossier : fileId,
-            id_exercice: exerciceId,
-            id_etat: item.id_etat,
-            id_rubrique: item.id_rubrique,
-            note: item.note,
-            nature: item.nature,
-            nature_prov: item.nature,
-            libelle: item.libelle,
-            ordre: item.ordre,
-            niveau: item.niveau,
-            signe: item.senscalcul
-          });
+      const matrixRubriqueListe = await rubriquesmatrices.findAll({
+        where: 
+        {
+          id_etat: 'DP'
         }
-        
       });
-      stateRefresh = true;
-    }
-       
 
+      if(matrixRubriqueListe.length > 0){
+        for(let item of matrixRubriqueListe){
+          if(item.nature === 'RISQUE' || item.nature === 'DEPRECIATION'){
+            await liassedps.create({
+              id_compte: compteId,
+              id_dossier : fileId,
+              id_exercice: exerciceId,
+              id_etat: item.id_etat,
+              id_rubrique: item.id_rubrique,
+              note: item.note,
+              nature: item.nature,
+              nature_prov: item.nature,
+              libelle: item.libelle,
+              ordre: item.ordre,
+              niveau: item.niveau,
+              signe: item.senscalcul
+            });
+          }
+        }
+      }
+    }
+
+    stateRefresh = true;
+       
     return { stateRefresh };
   }catch (error){
     console.log(error);
@@ -466,12 +520,12 @@ const refreshEIAFNC = async (compteId,fileId, exerciceId, matrix) => {
   }
 }
 
-const refreshSAD = async (compteId,fileId, exerciceId, matrix) => {
+const refreshSAD = async (compteId, fileId, exerciceId, refreshTotal) => {
   try{
 
     let stateRefresh = false;
-
-    if(matrix){
+  
+    if(refreshTotal){
       await liassesads.destroy({
         where: 
         {
@@ -482,36 +536,49 @@ const refreshSAD = async (compteId,fileId, exerciceId, matrix) => {
         }
       });
 
-      matrix.map(async (item) => {
-            await liassesads.create({
+      const matrixRubriqueListe = await rubriquesmatrices.findAll({
+        where: 
+        {
+          id_etat: 'SAD'
+        }
+      });
+
+      if(matrixRubriqueListe.length > 0){
+        for(let item of matrixRubriqueListe){
+          await liassesads.create({
             id_compte: compteId,
             id_dossier : fileId,
             id_exercice: exerciceId,
             id_etat: item.id_etat,
             id_rubrique: item.id_rubrique,
-            note: item.note,
             nature: item.nature,
             libelle: item.libelle,
             ordre: item.ordre,
             niveau: item.niveau,
           });
-      });
+        }
+      }
+    }
+
+    const updateSoldeSAD = await UpdateEbilanSoldeRubrique.soldeRubriqueSAD(compteId, fileId, exerciceId);
+    const updateSoldeTotalSAD = await UpdateEbilanSoldeTotalRubrique.totalRubriqueSAD(compteId, fileId, exerciceId);
+
+    if(updateSoldeSAD && updateSoldeTotalSAD){
       stateRefresh = true;
     }
-       
-
+     
     return { stateRefresh };
   }catch (error){
     console.log(error);
   }
 }
 
-const refreshSDR = async (compteId,fileId, exerciceId, matrix) => {
+const refreshSDR = async (compteId, fileId, exerciceId, refreshTotal) => {
   try{
 
     let stateRefresh = false;
-
-    if(matrix){
+  
+    if(refreshTotal){
       await liassesdrs.destroy({
         where: 
         {
@@ -522,24 +589,37 @@ const refreshSDR = async (compteId,fileId, exerciceId, matrix) => {
         }
       });
 
-      matrix.map(async (item) => {
-            await liassesdrs.create({
+      const matrixRubriqueListe = await rubriquesmatrices.findAll({
+        where: 
+        {
+          id_etat: 'SDR'
+        }
+      });
+
+      if(matrixRubriqueListe.length > 0){
+        for(let item of matrixRubriqueListe){
+          await liassesdrs.create({
             id_compte: compteId,
             id_dossier : fileId,
             id_exercice: exerciceId,
             id_etat: item.id_etat,
             id_rubrique: item.id_rubrique,
-            note: item.note,
             nature: item.nature,
             libelle: item.libelle,
             ordre: item.ordre,
             niveau: item.niveau,
           });
-      });
+        }
+      }
+    }
+
+    const updateSoldeSDR = await UpdateEbilanSoldeRubrique.soldeRubriqueSDR(compteId, fileId, exerciceId);
+    const updateSoldeTotalSDR = await UpdateEbilanSoldeTotalRubrique.totalRubriqueSDR(compteId, fileId, exerciceId);
+
+    if(updateSoldeSDR && updateSoldeTotalSDR){
       stateRefresh = true;
     }
-       
-
+     
     return { stateRefresh };
   }catch (error){
     console.log(error);

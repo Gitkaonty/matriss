@@ -54,7 +54,10 @@ import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFil
 import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
 import { format } from 'date-fns';
 import VirtualTableEbilan from '../../../componentsTools/DeclarationEbilan/virtualTableEbilan';
+import VirtualTableDRFEbilan from '../../../componentsTools/DeclarationEbilan/virtualTableDRFEbilan';
 import VirtualTableEVCPEbilan from '../../../componentsTools/DeclarationEbilan/virtualTableEVCPEbilan';
+import VirtualTableSADEbilan from '../../../componentsTools/DeclarationEbilan/virtualTableSADEbilan';
+import VirtualTableSDREbilan from '../../../componentsTools/DeclarationEbilan/virtualTableSDREbilan';
 import VirtualTableModifiableEbilan from '../../../componentsTools/DeclarationEbilan/virtualTableModifiableEbilan';
 import VirtualTableModifiableGroupableEbilan from '../../../componentsTools/DeclarationEbilan/virtualTableModifiableGroupableEbilan';
 import VirtualTableModifiableGroupableEbilanDP from '../../../componentsTools/DeclarationEbilan/virtualTableModifiableGroupableEbilanDP';
@@ -468,18 +471,21 @@ export default function DeclarationEbilan() {
             minWidth: 700,
             align: 'left',
             //format: (value) => value.toLocaleString('en-US'),
+            isNumber: false
         },
         {
             id: 'note',
             label: 'Note',
             minWidth: 100,
             align: 'left',
+            isNumber: false
         },
         {
             id: 'signe',
             label: 'Signe',
             minWidth: 75,
             align: 'center',
+            isNumber: false
         },
         {
             id: 'montant_brut',
@@ -487,6 +493,7 @@ export default function DeclarationEbilan() {
             minWidth: 200,
             align: 'right',
             format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            isNumber: true
         },
     ];
 
@@ -857,11 +864,11 @@ export default function DeclarationEbilan() {
         {
             id: 'libelle',
             label: 'Constitution / Imputation',
-            minWidth: 100,
+            minWidth: 200,
             align: 'left',
             withSubTotal: false,
             sousgroupLabel:true,
-            isnumber: false
+            isNumber: false
         },
         {
             id: 'n6',
@@ -871,7 +878,7 @@ export default function DeclarationEbilan() {
             format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             withSubTotal: true,
             sousgroupLabel:true,
-            isnumber: true
+            isNumber: true
         },
         {
             id: 'n5',
@@ -881,7 +888,7 @@ export default function DeclarationEbilan() {
             format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             withSubTotal: true,
             sousgroupLabel:true,
-            isnumber: true
+            isNumber: true
         },
         {
             id: 'n4',
@@ -891,7 +898,7 @@ export default function DeclarationEbilan() {
             format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             withSubTotal: true,
             sousgroupLabel:true,
-            isnumber: true
+            isNumber: true
         },
         {
             id: 'n3',
@@ -901,7 +908,7 @@ export default function DeclarationEbilan() {
             format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             withSubTotal: true,
             sousgroupLabel:true,
-            isnumber: true
+            isNumber: true
         },
         {
             id: 'n2',
@@ -911,7 +918,7 @@ export default function DeclarationEbilan() {
             format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             withSubTotal: true,
             sousgroupLabel:true,
-            isnumber: true
+            isNumber: true
         },
         {
             id: 'n1',
@@ -921,7 +928,7 @@ export default function DeclarationEbilan() {
             format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             withSubTotal: true,
             sousgroupLabel:true,
-            isnumber: true
+            isNumber: true
         },
         {
             id: 'n',
@@ -931,7 +938,7 @@ export default function DeclarationEbilan() {
             format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             withSubTotal: true,
             sousgroupLabel:true,
-            isnumber: true
+            isNumber: true
         },
         {
             id: 'total_imputation',
@@ -941,7 +948,7 @@ export default function DeclarationEbilan() {
             format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             withSubTotal: true,
             sousgroupLabel:true,
-            isnumber: true
+            isNumber: true
         },
     ];
 
@@ -953,7 +960,7 @@ export default function DeclarationEbilan() {
             align: 'left',
             withSubTotal: false,
             sousgroupLabel:true,
-            isnumber: false
+            isNumber: false
         },
         {
             id: 'n6',
@@ -963,7 +970,7 @@ export default function DeclarationEbilan() {
             format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             withSubTotal: true,
             sousgroupLabel:true,
-            isnumber: true
+            isNumber: true
         },
         {
             id: 'n5',
@@ -973,7 +980,7 @@ export default function DeclarationEbilan() {
             format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             withSubTotal: true,
             sousgroupLabel:true,
-            isnumber: true
+            isNumber: true
         },
         {
             id: 'n4',
@@ -983,7 +990,7 @@ export default function DeclarationEbilan() {
             format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             withSubTotal: true,
             sousgroupLabel:true,
-            isnumber: true
+            isNumber: true
         },
         {
             id: 'n3',
@@ -993,7 +1000,7 @@ export default function DeclarationEbilan() {
             format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             withSubTotal: true,
             sousgroupLabel:true,
-            isnumber: true
+            isNumber: true
         },
         {
             id: 'n2',
@@ -1003,7 +1010,7 @@ export default function DeclarationEbilan() {
             format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             withSubTotal: true,
             sousgroupLabel:true,
-            isnumber: true
+            isNumber: true
         },
         {
             id: 'n1',
@@ -1013,7 +1020,7 @@ export default function DeclarationEbilan() {
             format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             withSubTotal: true,
             sousgroupLabel:true,
-            isnumber: true
+            isNumber: true
         },
         {
             id: 'exercice',
@@ -1023,7 +1030,7 @@ export default function DeclarationEbilan() {
             format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             withSubTotal: true,
             sousgroupLabel:true,
-            isnumber: true
+            isNumber: true
         },
         {
             id: 'total',
@@ -1033,7 +1040,7 @@ export default function DeclarationEbilan() {
             format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             withSubTotal: true,
             sousgroupLabel:true,
-            isnumber: true
+            isNumber: true
         },
         {
             id: 'solde_imputable',
@@ -1043,7 +1050,7 @@ export default function DeclarationEbilan() {
             format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             withSubTotal: true,
             sousgroupLabel:true,
-            isnumber: true
+            isNumber: true
         },
         {
             id: 'solde_non_imputable',
@@ -1053,7 +1060,7 @@ export default function DeclarationEbilan() {
             format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             withSubTotal: true,
             sousgroupLabel:true,
-            isnumber: true
+            isNumber: true
         },
     ];
 
@@ -1398,99 +1405,96 @@ export default function DeclarationEbilan() {
                 setTftdData(resData.tftd);
                 setTftiData(resData.tfti);
                 setEvcpData(resData.evcp);
-                // setDrfData(resData.drf);
-                // setBhiapcData(resData.bhiapc);
-                // setMpData(resData.mp);
-                // //setDaData(resData.da);
-                // //setDpData(resData.dp);
-                // //setEiafncData(resData.eiafnc);
-                // setSadData(resData.sad);
-                // setSdrData(resData.sdr);
-                // setSeData(resData.se);
-                // setNeData(resData.ne);
+                setDrfData(resData.drf);
+                setBhiapcData(resData.bhiapc);
+                setMpData(resData.mp);
+                setSadData(resData.sad);
+                setSdrData(resData.sdr);
+                setSeData(resData.se);
+                setNeData(resData.ne);
 
-                // const data = resData.da;
-                // const groupedData = data.reduce((acc, item) => {
-                // if (!acc[item.rubriques_poste]) {
-                //     acc[item.rubriques_poste] = [];
-                // }
-                // acc[item.rubriques_poste].push(item);
-                // return acc;
-                // }, {});
+                const data = resData.da;
+                const groupedData = data.reduce((acc, item) => {
+                if (!acc[item.rubriques_poste]) {
+                    acc[item.rubriques_poste] = [];
+                }
+                acc[item.rubriques_poste].push(item);
+                return acc;
+                }, {});
             
-                // // Transforme les données groupées en un tableau
-                // const groupedArray = Object.keys(groupedData).map(key => ({
-                // rubriques_poste: key,
-                // items: groupedData[key]
-                // }));
+                // Transforme les données groupées en un tableau
+                const groupedArray = Object.keys(groupedData).map(key => ({
+                rubriques_poste: key,
+                items: groupedData[key]
+                }));
 
-                // const rows = groupedArray.sort((a, b) => {
-                //     if (a.rubriques_poste < b.rubriques_poste) {
-                //     return -1;  // a vient avant b
-                //     }
-                //     if (a.rubriques_poste > b.rubriques_poste) {
-                //     return 1;   // b vient avant a
-                //     }
-                //     return 0;  // a et b sont égaux
-                // });
+                const rows = groupedArray.sort((a, b) => {
+                    if (a.rubriques_poste < b.rubriques_poste) {
+                    return -1;  // a vient avant b
+                    }
+                    if (a.rubriques_poste > b.rubriques_poste) {
+                    return 1;   // b vient avant a
+                    }
+                    return 0;  // a et b sont égaux
+                });
 
-                // setDaData(rows);
+                setDaData(rows);
 
                 // //données pour DP
-                // const data2 = resData.dp;
-                // const groupedData2 = data2.reduce((acc, item) => {
-                //     if (!acc[item.nature_prov]) {
-                //     acc[item.nature_prov] = [];
-                //     }
-                //     acc[item.nature_prov].push(item);
-                //     return acc;
-                // }, {});
+                const data2 = resData.dp;
+                const groupedData2 = data2.reduce((acc, item) => {
+                    if (!acc[item.nature_prov]) {
+                    acc[item.nature_prov] = [];
+                    }
+                    acc[item.nature_prov].push(item);
+                    return acc;
+                }, {});
                 
-                // // Transforme les données groupées en un tableau
-                // const groupedArray2 = Object.keys(groupedData2).map(key => ({
-                //     nature_prov: key,
-                //     items: groupedData2[key]
-                // }));
+                // Transforme les données groupées en un tableau
+                const groupedArray2 = Object.keys(groupedData2).map(key => ({
+                    nature_prov: key,
+                    items: groupedData2[key]
+                }));
 
-                // const rows2 = groupedArray2.sort((a, b) => {
-                //     if (a.nature_prov < b.nature_prov) {
-                //     return -1;  // a vient avant b
-                //     }
-                //     if (a.nature_prov > b.nature_prov) {
-                //     return 1;   // b vient avant a
-                //     }
-                //     return 0;  // a et b sont égaux
-                // });
+                const rows2 = groupedArray2.sort((a, b) => {
+                    if (a.ordre < b.ordre) {
+                    return -1;  // a vient avant b
+                    }
+                    if (a.ordre > b.ordre) {
+                    return 1;   // b vient avant a
+                    }
+                    return 0;  // a et b sont égaux
+                });
 
-                // setDpData(rows2);
+                setDpData(rows2);
 
                 // //données pour EIAFNC
-                // const data3 = resData.eiafnc;
-                // const groupedData3 = data3.reduce((acc, item) => {
-                //     if (!acc[item.rubriques_poste]) {
-                //     acc[item.rubriques_poste] = [];
-                //     }
-                //     acc[item.rubriques_poste].push(item);
-                //     return acc;
-                // }, {});
+                const data3 = resData.eiafnc;
+                const groupedData3 = data3.reduce((acc, item) => {
+                    if (!acc[item.rubriques_poste]) {
+                    acc[item.rubriques_poste] = [];
+                    }
+                    acc[item.rubriques_poste].push(item);
+                    return acc;
+                }, {});
                 
-                // // Transforme les données groupées en un tableau
-                // const groupedArray3 = Object.keys(groupedData3).map(key => ({
-                //     rubriques_poste: key,
-                //     items: groupedData3[key]
-                // }));
+                // Transforme les données groupées en un tableau
+                const groupedArray3 = Object.keys(groupedData3).map(key => ({
+                    rubriques_poste: key,
+                    items: groupedData3[key]
+                }));
 
-                // const rows3 = groupedArray3.sort((a, b) => {
-                //     if (a.rubriques_poste < b.rubriques_poste) {
-                //     return -1;  // a vient avant b
-                //     }
-                //     if (a.rubriques_poste > b.rubriques_poste) {
-                //     return 1;   // b vient avant a
-                //     }
-                //     return 0;  // a et b sont égaux
-                // });
+                const rows3 = groupedArray3.sort((a, b) => {
+                    if (a.rubriques_poste < b.rubriques_poste) {
+                    return -1;  // a vient avant b
+                    }
+                    if (a.rubriques_poste > b.rubriques_poste) {
+                    return 1;   // b vient avant a
+                    }
+                    return 0;  // a et b sont égaux
+                });
 
-                // setEiafncData(rows3);
+                setEiafncData(rows3);
             }else{
                 toast.error(resData.msg);
             }
@@ -1718,7 +1722,6 @@ export default function DeclarationEbilan() {
     //Mettre à jours les tableaux des états financiers après ajustement de montant
     useEffect(() => {
         if (updateCalculEtatfinancier.state) {
-
             setTableToRefresh(updateCalculEtatfinancier.tableName);
             ActivateTableCalcul(compteId, fileId, selectedPeriodeId, updateCalculEtatfinancier.tableName, false);
             setUpdateCalculEtatfinancier((prev) => ({
@@ -1729,184 +1732,68 @@ export default function DeclarationEbilan() {
         }
     }, [updateCalculEtatfinancier.state]);
 
-    //refresh table BILAN
-    const refreshBILAN = () => {
-        setTableToRefresh('BILAN');
-        setMsgRefresh(`Voulez-vous vraiment actualiser les calculs pour le tableau du Bilan?`);
-        handleOpenDialogConfirmRefresh();
-    }
-
-    //verouiller ou non le tableau de BILAN
-    const lockTableBILAN = () => {
-        verrouillerTableau(compteId, fileId, selectedPeriodeId, 'BILAN', verrBilan);
-        setVerrBilan(!verrBilan);
-    }
-
-    //------------------------------------------------------------------------------------------------
-    //------------------------------------------------------------------------------------------------
-
-    //refresh table CRN
-    const refreshCRN = () => {
-        setTableToRefresh('CRN');
-        setMsgRefresh(`Voulez-vous vraiment actualiser les calculs pour le tableau CRN?`);
-        handleOpenDialogConfirmRefresh();
-    }
-
-    //verouiller ou non le tableau de CRN
-    const lockTableCRN = () => {
-        verrouillerTableau(compteId, fileId, selectedPeriodeId, 'CRN', verrCrn);
-        setVerrCrn(!verrCrn);
-    }
-
-    //------------------------------------------------------------------------------------------------
-    //------------------------------------------------------------------------------------------------
-
-    //refresh table CRF
-    const refreshCRF = () => {
-        setTableToRefresh('CRF');
-        setMsgRefresh(`Voulez-vous vraiment actualiser les calculs pour le tableau CRF?`);
-        handleOpenDialogConfirmRefresh();
-    }
-
-    //verouiller ou non le tableau de CRF
-    const lockTableCRF = () => {
-        verrouillerTableau(compteId, fileId, selectedPeriodeId, 'CRF', verrCrf);
-        setVerrCrf(!verrCrf);
-    }
-
-    //------------------------------------------------------------------------------------------------
-    //------------------------------------------------------------------------------------------------
-
-    //refresh table TFTD
-    const refreshTFTD = () => {
-        setTableToRefresh('TFTD');
-        setMsgRefresh(`Voulez-vous vraiment actualiser les calculs pour le tableau TFTD?`);
-        handleOpenDialogConfirmRefresh();
-    }
-
-    //verouiller ou non le tableau de TFTD
-    const lockTableTFTD = () => {
-        verrouillerTableau(compteId, fileId, selectedPeriodeId, 'TFTD', verrTftd);
-        setVerrTftd(!verrTftd);
-    }
-
-    //------------------------------------------------------------------------------------------------
-    //------------------------------------------------------------------------------------------------
-
-    //refresh table TFTI
-    const refreshTFTI = () => {
-        setTableToRefresh('TFTI');
-        setMsgRefresh(`Voulez-vous vraiment actualiser les calculs pour le tableau TFTI?`);
-        handleOpenDialogConfirmRefresh();
-    }
-
-    //verouiller ou non le tableau de TFTI
-    const lockTableTFTI = () => {
-        verrouillerTableau(compteId, fileId, selectedPeriodeId, 'TFTI', verrTfti);
-        setVerrTfti(!verrTfti);
-    }
-
-    //------------------------------------------------------------------------------------------------
-    //------------------------------------------------------------------------------------------------
-
-    //refresh table EVCP
-    const refreshEVCP = () => {
-        setTableToRefresh('EVCP');
-        setMsgRefresh(`Voulez-vous vraiment actualiser les calculs pour le tableau EVCP?`);
-        handleOpenDialogConfirmRefresh();
-    }
-
-    //------------------------------------------------------------------------------------------------
-    //------------------------------------------------------------------------------------------------
-
-    //refresh table DRF
-    const refreshDRF = () => {
-        setTableToRefresh('DRF');
-        setMsgRefresh(`Voulez-vous vraiment actualiser les calculs pour le tableau DRF?`);
-        handleOpenDialogConfirmRefresh();
-    }
-
-    //refresh table BHIAPC
-    const refreshBHIAPC = () => {
-        setTableToRefresh('BHIAPC');
-        setMsgRefresh(`Voulez-vous vraiment actualiser les calculs pour le tableau BHIAPC?`);
-        handleOpenDialogConfirmRefresh();
-    }
-
-    //refresh table MP
-    const refreshMP = () => {
-        setTableToRefresh('MP');
-        setMsgRefresh(`Voulez-vous vraiment actualiser les calculs pour le tableau MP?`);
-        handleOpenDialogConfirmRefresh();
-    }
-
-    //refresh table DP
-    const refreshDP = () => {
-        setTableToRefresh('DP');
-        setMsgRefresh(`Voulez-vous vraiment actualiser les calculs pour le tableau DP?`);
-        handleOpenDialogConfirmRefresh();
-    }
-
-    //refresh table EIAFNC
-    const refreshEIAFNC = () => {
-        // setTableToRefresh('EIAFNC');
-        // setMsgRefresh(`Voulez-vous vraiment actualiser les calculs pour le tableau EIAFNC?`);
-        // handleOpenDialogConfirmRefresh();
-    }
-
-    //refresh table SAD
-    const refreshSAD = () => {
-        setTableToRefresh('SAD');
-        setMsgRefresh(`Voulez-vous vraiment actualiser les calculs pour le tableau SAD?`);
-        handleOpenDialogConfirmRefresh();
-    }
-
-    //refresh table SDR
-    const refreshSDR = () => {
-        setTableToRefresh('SDR');
-        setMsgRefresh(`Voulez-vous vraiment actualiser les calculs pour le tableau SDR?`);
-        handleOpenDialogConfirmRefresh();
-    }
-
- //============================================================================================================
- //ACTION POUR LE TABLEAU BHIAPC==========================================
- //===========================================================================================================
-
- const AddOrModifyRowBHIAPC = (formData) => {
-    if(formData.state){
-        const exerciceId = selectedPeriodeId;
-        const tableau = 'BHIAPC';
-        axios.post(`/declaration/ebilan/addmodifyTableau`, {compteId, fileId, exerciceId, tableau, formData}).then((response) =>{
-            const resData = response.data;
-            if(resData.state){
-                recupRubriqueIndividual(compteId, fileId, selectedPeriodeId, 'BHIAPC');
-                toast.success(resData.msg);
-                handleCloseFormBHIAPC();
-            }else{
-                toast.error(resData.msg);
-            }
-        });
-    }else{
-        handleCloseFormBHIAPC();
-    }
- }
-
- const handleOpenFormBHIAPC = () => {
-    setShowFormBHIAPC(true);
- }
-
- const handleCloseFormBHIAPC = () => {
-    setShowFormBHIAPC(false);
- }
-
- //fonction standard suppresion d'une ligne d'un tableau
+    //fonction standard suppresion d'une ligne d'un tableau
  const deleteOneRow = (value) => {
     if(value){
         const exerciceId = selectedPeriodeId;
         axios.post(`/declaration/ebilan/deleteTableOneRow`, {compteId, fileId, exerciceId, infoRowToDelete}).then((response) =>{
             const resData = response.data;
             if(resData.state){
-                recupRubriqueIndividual(compteId, fileId, selectedPeriodeId, infoRowToDelete.tableau);
+                const tableau = infoRowToDelete.tableau;
+
+                switch (tableau) {
+                    case 'BHIAPC':
+                        setBhiapcData(resData.liste);
+                        break;
+                    case 'MP':
+                        setMpData(resData.liste);
+                        break;
+                    case 'DA': {
+                        const data = resData.liste;
+                        const groupedData = data.reduce((acc, item) => {
+                            acc[item.rubriques_poste] = acc[item.rubriques_poste] || [];
+                            acc[item.rubriques_poste].push(item);
+                            return acc;
+                        }, {});
+                        const rows = Object.entries(groupedData).map(([key, items]) => ({ rubriques_poste: key, items }))
+                            .sort((a, b) => a.rubriques_poste.localeCompare(b.rubriques_poste));
+                        setDaData(rows);
+                        break;
+                    }
+                    case 'DP': {
+                        const data = resData.liste;
+                        const grouped = data.reduce((acc, item) => {
+                            acc[item.nature_prov] = acc[item.nature_prov] || [];
+                            acc[item.nature_prov].push(item);
+                            return acc;
+                        }, {});
+                        const rows = Object.entries(grouped).map(([key, items]) => ({ nature_prov: key, items }))
+                            .sort((a, b) => a.nature_prov.localeCompare(b.nature_prov));
+                        setDpData(rows);
+                        break;
+                    }
+                    case 'EIAFNC': {
+                        const data = resData.liste;
+                        const grouped = data.reduce((acc, item) => {
+                            acc[item.rubriques_poste] = acc[item.rubriques_poste] || [];
+                            acc[item.rubriques_poste].push(item);
+                            return acc;
+                        }, {});
+                        const rows = Object.entries(grouped).map(([key, items]) => ({ rubriques_poste: key, items }))
+                            .sort((a, b) => a.rubriques_poste.localeCompare(b.rubriques_poste));
+                        setEiafncData(rows);
+                        break;
+                    }
+                    case 'SE':
+                        setSeData(resData.liste);
+                        break;
+                    case 'NE':
+                        setNeData(resData.liste);
+                        break;
+                    default:
+                        console.warn("Tableau non reconnu :", tableau);
+                }
+
                 toast.success(resData.msg);
                 setConfirmDeleteOneRow(false);
             }else{
@@ -1925,7 +1812,58 @@ export default function DeclarationEbilan() {
         axios.post(`/declaration/ebilan/deleteTableAllRow`, {compteId, fileId, exerciceId, tableauToDeleteAllRow}).then((response) =>{
             const resData = response.data;
             if(resData.state){
-                recupRubriqueIndividual(compteId, fileId, selectedPeriodeId, tableauToDeleteAllRow);
+                switch (tableauToDeleteAllRow) {
+                    case 'BHIAPC':
+                        setBhiapcData(resData.liste);
+                        break;
+                    case 'MP':
+                        setMpData(resData.liste);
+                        break;
+                    case 'DA': {
+                        const data = resData.liste;
+                        const groupedData = data.reduce((acc, item) => {
+                            acc[item.rubriques_poste] = acc[item.rubriques_poste] || [];
+                            acc[item.rubriques_poste].push(item);
+                            return acc;
+                        }, {});
+                        const rows = Object.entries(groupedData).map(([key, items]) => ({ rubriques_poste: key, items }))
+                            .sort((a, b) => a.rubriques_poste.localeCompare(b.rubriques_poste));
+                        setDaData(rows);
+                        break;
+                    }
+                    case 'DP': {
+                        const data = resData.liste;
+                        const grouped = data.reduce((acc, item) => {
+                            acc[item.nature_prov] = acc[item.nature_prov] || [];
+                            acc[item.nature_prov].push(item);
+                            return acc;
+                        }, {});
+                        const rows = Object.entries(grouped).map(([key, items]) => ({ nature_prov: key, items }))
+                            .sort((a, b) => a.nature_prov.localeCompare(b.nature_prov));
+                        setDpData(rows);
+                        break;
+                    }
+                    case 'EIAFNC': {
+                        const data = resData.liste;
+                        const grouped = data.reduce((acc, item) => {
+                            acc[item.rubriques_poste] = acc[item.rubriques_poste] || [];
+                            acc[item.rubriques_poste].push(item);
+                            return acc;
+                        }, {});
+                        const rows = Object.entries(grouped).map(([key, items]) => ({ rubriques_poste: key, items }))
+                            .sort((a, b) => a.rubriques_poste.localeCompare(b.rubriques_poste));
+                        setEiafncData(rows);
+                        break;
+                    }
+                    case 'SE':
+                        setSeData(resData.liste);
+                        break;
+                    case 'NE':
+                        setNeData(resData.liste);
+                        break;
+                    default:
+                        console.warn("Tableau non reconnu :", tableau);
+                }
                 toast.success(resData.msg);
                 setConfirmDeleteAllRow(false);
             }else{
@@ -1935,6 +1873,176 @@ export default function DeclarationEbilan() {
     }else{
         setConfirmDeleteAllRow(false);
     }
+ }
+
+//===========================================================================================
+//TABLEAU BILAN
+//===========================================================================================
+
+//choix affichage tableau bilan (Actif ou passif = actif à l'ouverture)
+const choixAffichageBilan = (choix) =>{
+    setShowBilan(choix);
+
+    if(choix === 'actif'){
+            setButtonActifVariant('contained');
+            setButtonPassifVariant('outlined');
+    }else{
+            setButtonActifVariant('outlined');
+            setButtonPassifVariant('contained');
+    }
+}
+
+//refresh table BILAN
+const refreshBILAN = () => {
+    setTableToRefresh('BILAN');
+    setMsgRefresh(`Voulez-vous vraiment actualiser les calculs pour le tableau du Bilan?`);
+    handleOpenDialogConfirmRefresh();
+}
+
+//verouiller ou non le tableau de BILAN
+const lockTableBILAN = () => {
+    verrouillerTableau(compteId, fileId, selectedPeriodeId, 'BILAN', verrBilan);
+    setVerrBilan(!verrBilan);
+}
+
+//===========================================================================================
+//TABLEAU CRN
+//===========================================================================================
+
+//refresh table CRN
+const refreshCRN = () => {
+    setTableToRefresh('CRN');
+    setMsgRefresh(`Voulez-vous vraiment actualiser les calculs pour le tableau CRN?`);
+    handleOpenDialogConfirmRefresh();
+}
+
+//verouiller ou non le tableau de CRN
+const lockTableCRN = () => {
+    verrouillerTableau(compteId, fileId, selectedPeriodeId, 'CRN', verrCrn);
+    setVerrCrn(!verrCrn);
+}
+
+//===========================================================================================
+//TABLEAU CRF
+//===========================================================================================
+
+//refresh table CRF
+const refreshCRF = () => {
+    setTableToRefresh('CRF');
+    setMsgRefresh(`Voulez-vous vraiment actualiser les calculs pour le tableau CRF?`);
+    handleOpenDialogConfirmRefresh();
+}
+
+//verouiller ou non le tableau de CRF
+const lockTableCRF = () => {
+    verrouillerTableau(compteId, fileId, selectedPeriodeId, 'CRF', verrCrf);
+    setVerrCrf(!verrCrf);
+}
+
+//===========================================================================================
+//TABLEAU TFTD
+//===========================================================================================
+
+//refresh table TFTD
+const refreshTFTD = () => {
+    setTableToRefresh('TFTD');
+    setMsgRefresh(`Voulez-vous vraiment actualiser les calculs pour le tableau TFTD?`);
+    handleOpenDialogConfirmRefresh();
+}
+
+//verouiller ou non le tableau de TFTD
+const lockTableTFTD = () => {
+    verrouillerTableau(compteId, fileId, selectedPeriodeId, 'TFTD', verrTftd);
+    setVerrTftd(!verrTftd);
+}
+
+//===========================================================================================
+//TABLEAU TFTI
+//===========================================================================================
+
+//refresh table TFTI
+const refreshTFTI = () => {
+    setTableToRefresh('TFTI');
+    setMsgRefresh(`Voulez-vous vraiment actualiser les calculs pour le tableau TFTI?`);
+    handleOpenDialogConfirmRefresh();
+}
+
+//verouiller ou non le tableau de TFTI
+const lockTableTFTI = () => {
+    verrouillerTableau(compteId, fileId, selectedPeriodeId, 'TFTI', verrTfti);
+    setVerrTfti(!verrTfti);
+}
+
+//===========================================================================================
+//TABLEAU EVCP
+//===========================================================================================
+
+//refresh table EVCP
+const refreshEVCP = () => {
+    setTableToRefresh('EVCP');
+    setMsgRefresh(`Voulez-vous vraiment actualiser les calculs pour le tableau EVCP?`);
+    handleOpenDialogConfirmRefresh();
+}
+
+//verouiller ou non le tableau EVCP
+const lockTableEVCP = () => {
+    verrouillerTableau(compteId, fileId, selectedPeriodeId, 'EVCP', verrEvcp);
+    setVerrEvcp(!verrEvcp);
+}
+
+//===========================================================================================
+//TABLEAU DRF
+//===========================================================================================
+
+//refresh table DRF
+const refreshDRF = () => {
+    setTableToRefresh('DRF');
+    setMsgRefresh(`Voulez-vous vraiment actualiser les calculs pour le tableau DRF?`);
+    handleOpenDialogConfirmRefresh();
+}
+
+//verouiller ou non le tableau de DRF
+const lockTableDRF = () => {
+    verrouillerTableau(compteId, fileId, selectedPeriodeId, 'DRF', verrDrf);
+    setVerrDrf(!verrDrf);
+}
+
+//===========================================================================================
+//TABLEAU BHIAPC
+//===========================================================================================
+
+//refresh table BHIAPC
+const refreshBHIAPC = () => {
+    setTableToRefresh('BHIAPC');
+    setMsgRefresh(`Voulez-vous vraiment actualiser les calculs pour le tableau BHIAPC?`);
+    handleOpenDialogConfirmRefresh();
+}
+
+const AddOrModifyRowBHIAPC = (formData) => {
+    if(formData.state){
+        const exerciceId = selectedPeriodeId;
+        const tableau = 'BHIAPC';
+        axios.post(`/declaration/ebilan/addmodifyTableau`, {compteId, fileId, exerciceId, tableau, formData}).then((response) =>{
+            const resData = response.data;
+            if(resData.state){
+                setBhiapcData(resData.liste);
+                toast.success(resData.msg);
+                handleCloseFormBHIAPC();
+            }else{
+                toast.error(resData.msg);
+            }
+        });
+    }else{
+        handleCloseFormBHIAPC();
+    }
+ }
+
+ const handleOpenFormBHIAPC = () => {
+    setShowFormBHIAPC(true);
+ }
+
+ const handleCloseFormBHIAPC = () => {
+    setShowFormBHIAPC(false);
  }
 
  //supprimer une ligne de BHIAPC
@@ -1983,11 +2091,18 @@ export default function DeclarationEbilan() {
     setVerrBhiapc(!verrBhiapc);
  }
 
+//===========================================================================================
+//TABLEAU MP
+//===========================================================================================
 
- //============================================================================================================
- //ACTION POUR LE TABLEAU MP==========================================
- //===========================================================================================================
- //ajouter une nouvelle ligne dans la table MP
+//refresh table MP
+const refreshMP = () => {
+    setTableToRefresh('MP');
+    setMsgRefresh(`Voulez-vous vraiment actualiser les calculs pour le tableau MP?`);
+    handleOpenDialogConfirmRefresh();
+}
+
+//ajouter une nouvelle ligne dans la table MP
  const handleOpenFormMP = () => {
     setShowFormMP(true);
  }
@@ -2027,7 +2142,7 @@ export default function DeclarationEbilan() {
         axios.post(`/declaration/ebilan/addmodifyTableau`, {compteId, fileId, exerciceId, tableau, formData}).then((response) =>{
             const resData = response.data;
             if(resData.state){
-                recupRubriqueIndividual(compteId, fileId, selectedPeriodeId, 'MP');
+                setMpData(resData.liste);
                 handleCloseFormMP();
                 toast.success(resData.msg);
             }else{
@@ -2062,11 +2177,11 @@ verrouillerTableau(compteId, fileId, selectedPeriodeId, 'MP', verrMp);
 setVerrMp(!verrMp);
 }
 
- //============================================================================================================
- //ACTION POUR LE TABLEAU DA==========================================
- //===========================================================================================================
+//===========================================================================================
+//TABLEAU DA
+//===========================================================================================
 
- //ajouter une nouvelle ligne dans la table DA
+//ajouter une nouvelle ligne dans la table DA
  const handleOpenFormDA = () => {
     setShowFormDA(true);
  }
@@ -2098,12 +2213,6 @@ setVerrMp(!verrMp);
     handleOpenFormDA();
  }
 
- //supprimer toutes les lignes DA
- const deleteAllRowDA = () => {
-    setTableauToDeleteAllRow('DA');
-    setConfirmDeleteAllRow(true);
- }
-
  const AddOrModifyRowDA = (formData) => {
     if(formData.state){
         const exerciceId = selectedPeriodeId;
@@ -2111,7 +2220,32 @@ setVerrMp(!verrMp);
         axios.post(`/declaration/ebilan/addmodifyTableau`, {compteId, fileId, exerciceId, tableau, formData}).then((response) =>{
             const resData = response.data;
             if(resData.state){
-                recupRubriqueIndividual(compteId, fileId, selectedPeriodeId, 'DA');
+                const data = resData.liste;
+                const groupedData = data.reduce((acc, item) => {
+                if (!acc[item.rubriques_poste]) {
+                    acc[item.rubriques_poste] = [];
+                }
+                acc[item.rubriques_poste].push(item);
+                return acc;
+                }, {});
+            
+                // Transforme les données groupées en un tableau
+                const groupedArray = Object.keys(groupedData).map(key => ({
+                rubriques_poste: key,
+                items: groupedData[key]
+                }));
+
+                const rows = groupedArray.sort((a, b) => {
+                    if (a.rubriques_poste < b.rubriques_poste) {
+                    return -1;  // a vient avant b
+                    }
+                    if (a.rubriques_poste > b.rubriques_poste) {
+                    return 1;   // b vient avant a
+                    }
+                    return 0;  // a et b sont égaux
+                });
+
+                setDaData(rows);
                 handleCloseFormDA();
                 toast.success(resData.msg);
             }else{
@@ -2140,17 +2274,30 @@ setVerrMp(!verrMp);
     }
  }
 
+ //supprimer toutes les lignes DA
+ const deleteAllRowDA = () => {
+    setTableauToDeleteAllRow('DA');
+    setConfirmDeleteAllRow(true);
+ }
+
   //verouiller ou non le tableau de DA
   const lockTableDA = () => {
     verrouillerTableau(compteId, fileId, selectedPeriodeId, 'DA', verrDa);
     setVerrDa(!verrDa);
  }
 
- //============================================================================================================
- //ACTION POUR LE TABLEAU DP==========================================
- //===========================================================================================================
+//===========================================================================================
+//TABLEAU DP
+//===========================================================================================
 
- //ajouter une nouvelle ligne dans la table DP (pour les natures autres provisions seulement)
+//refresh table DP
+const refreshDP = () => {
+    setTableToRefresh('DP');
+    setMsgRefresh(`Voulez-vous vraiment actualiser les calculs pour le tableau DP?`);
+    handleOpenDialogConfirmRefresh();
+}
+
+//ajouter une nouvelle ligne dans la table DP (pour les natures autres provisions seulement)
  const handleOpenFormDP = () => {
     setShowFormDP(true);
  }
@@ -2190,7 +2337,32 @@ setVerrMp(!verrMp);
         axios.post(`/declaration/ebilan/addmodifyTableau`, {compteId, fileId, exerciceId, tableau, formData}).then((response) =>{
             const resData = response.data;
             if(resData.state){
-                recupRubriqueIndividual(compteId, fileId, selectedPeriodeId, 'DP');
+                const data2 = resData.liste;
+                const groupedData2 = data2.reduce((acc, item) => {
+                    if (!acc[item.nature_prov]) {
+                    acc[item.nature_prov] = [];
+                    }
+                    acc[item.nature_prov].push(item);
+                    return acc;
+                }, {});
+                
+                // Transforme les données groupées en un tableau
+                const groupedArray2 = Object.keys(groupedData2).map(key => ({
+                    nature_prov: key,
+                    items: groupedData2[key]
+                }));
+
+                const rows2 = groupedArray2.sort((a, b) => {
+                    if (a.ordre < b.ordre) {
+                    return 1;  // a vient avant b
+                    }
+                    if (a.ordre > b.ordre) {
+                    return -1;   // b vient avant a
+                    }
+                    return 0;  // a et b sont égaux
+                });
+
+                setDpData(rows2);
                 handleCloseFormDP();
                 toast.success(resData.msg);
             }else{
@@ -2225,11 +2397,18 @@ setVerrMp(!verrMp);
     setVerrDp(!verrDp);
  }
 
- //============================================================================================================
- //ACTION POUR LE TABLEAU EIAFNC==========================================
- //===========================================================================================================
+//===========================================================================================
+//TABLEAU EIAFNC
+//===========================================================================================
 
- //ajouter une nouvelle ligne dans la table EIAFNC
+//refresh table EIAFNC
+const refreshEIAFNC = () => {
+    // setTableToRefresh('EIAFNC');
+    // setMsgRefresh(`Voulez-vous vraiment actualiser les calculs pour le tableau EIAFNC?`);
+    // handleOpenDialogConfirmRefresh();
+}
+
+//ajouter une nouvelle ligne dans la table EIAFNC
  const handleOpenFormEIAFNC = () => {
     setShowFormEIAFNC(true);
  }
@@ -2269,7 +2448,32 @@ setVerrMp(!verrMp);
         axios.post(`/declaration/ebilan/addmodifyTableau`, {compteId, fileId, exerciceId, tableau, formData}).then((response) =>{
             const resData = response.data;
             if(resData.state){
-                recupRubriqueIndividual(compteId, fileId, selectedPeriodeId, 'EIAFNC');
+                const data3 = resData.liste;
+                const groupedData3 = data3.reduce((acc, item) => {
+                    if (!acc[item.rubriques_poste]) {
+                    acc[item.rubriques_poste] = [];
+                    }
+                    acc[item.rubriques_poste].push(item);
+                    return acc;
+                }, {});
+                
+                // Transforme les données groupées en un tableau
+                const groupedArray3 = Object.keys(groupedData3).map(key => ({
+                    rubriques_poste: key,
+                    items: groupedData3[key]
+                }));
+
+                const rows3 = groupedArray3.sort((a, b) => {
+                    if (a.rubriques_poste < b.rubriques_poste) {
+                    return -1;  // a vient avant b
+                    }
+                    if (a.rubriques_poste > b.rubriques_poste) {
+                    return 1;   // b vient avant a
+                    }
+                    return 0;  // a et b sont égaux
+                });
+
+                setEiafncData(rows3);
                 handleCloseFormEIAFNC();
                 toast.success(resData.msg);
             }else{
@@ -2304,31 +2508,45 @@ setVerrMp(!verrMp);
     setVerrEiafnc(!verrEiafnc);
  }
 
- //============================================================================================================
- //ACTION POUR LE TABLEAU SAD==========================================
- //===========================================================================================================
+//===========================================================================================
+//TABLEAU SAD
+//===========================================================================================
 
- //verouiller ou non le tableau de SAD
+//refresh table SAD
+const refreshSAD = () => {
+    setTableToRefresh('SAD');
+    setMsgRefresh(`Voulez-vous vraiment actualiser les calculs pour le tableau SAD?`);
+    handleOpenDialogConfirmRefresh();
+}
+
+//verouiller ou non le tableau de SAD
  const lockTableSAD = () => {
     verrouillerTableau(compteId, fileId, selectedPeriodeId, 'SAD', verrSad);
     setVerrSad(!verrSad);
  }
 
-//============================================================================================================
- //ACTION POUR LE TABLEAU SDR==========================================
- //===========================================================================================================
+//===========================================================================================
+//TABLEAU SDR
+//===========================================================================================
 
- //verouiller ou non le tableau de SDR
+//refresh table SDR
+const refreshSDR = () => {
+    setTableToRefresh('SDR');
+    setMsgRefresh(`Voulez-vous vraiment actualiser les calculs pour le tableau SDR?`);
+    handleOpenDialogConfirmRefresh();
+}
+
+//verouiller ou non le tableau de SDR
  const lockTableSDR = () => {
     verrouillerTableau(compteId, fileId, selectedPeriodeId, 'SDR', verrSdr);
     setVerrSdr(!verrSdr);
  }
 
- //============================================================================================================
- //ACTION POUR LE TABLEAU SE==========================================
- //===========================================================================================================
+//===========================================================================================
+//TABLEAU SE
+//===========================================================================================
 
- //ajouter une nouvelle ligne dans la table SE
+//ajouter une nouvelle ligne dans la table SE
  const handleOpenFormSE = () => {
     setShowFormSE(true);
  }
@@ -2372,7 +2590,7 @@ setVerrMp(!verrMp);
         axios.post(`/declaration/ebilan/addmodifyTableau`, {compteId, fileId, exerciceId, tableau, formData}).then((response) =>{
             const resData = response.data;
             if(resData.state){
-                recupRubriqueIndividual(compteId, fileId, selectedPeriodeId, 'SE');
+                setSeData(resData.liste);
                 handleCloseFormSE();
                 toast.success(resData.msg);
             }else{
@@ -2407,12 +2625,11 @@ setVerrMp(!verrMp);
     setVerrSe(!verrSe);
  }
 
+//===========================================================================================
+//TABLEAU NE
+//===========================================================================================
 
- //============================================================================================================
- //ACTION POUR LE TABLEAU NE==========================================
- //===========================================================================================================
-
- //ajouter une nouvelle ligne dans la table NE
+//ajouter une nouvelle ligne dans la table NE
  const handleOpenFormNE = () => {
     setShowFormNE(true);
  }
@@ -2448,7 +2665,7 @@ setVerrMp(!verrMp);
         axios.post(`/declaration/ebilan/addmodifyTableau`, {compteId, fileId, exerciceId, tableau, formData}).then((response) =>{
             const resData = response.data;
             if(resData.state){
-                recupRubriqueIndividual(compteId, fileId, selectedPeriodeId, 'NE');
+                setNeData(resData.liste);
                 handleCloseFormNE();
                 toast.success(resData.msg);
             }else{
@@ -2482,21 +2699,6 @@ setVerrMp(!verrMp);
     verrouillerTableau(compteId, fileId, selectedPeriodeId, 'NE', verrNote);
     setVerrNote(!verrNote);
  }
-
-
-
-    //choix affichage tableau bilan (Actif ou passif = actif à l'ouverture)
-    const choixAffichageBilan = (choix) =>{
-        setShowBilan(choix);
-
-        if(choix === 'actif'){
-                setButtonActifVariant('contained');
-                setButtonPassifVariant('outlined');
-        }else{
-                setButtonActifVariant('outlined');
-                setButtonPassifVariant('contained');
-        }
-    }
 
   return (
     <Paper sx={{elevation: "3", margin:"5px", padding:"10px", width:"99%", height:"auto"}}>
@@ -3166,7 +3368,8 @@ setVerrMp(!verrMp);
                                             style={{width:"45px", height:'45px', 
                                                 borderRadius:"1px", borderColor: "transparent", 
                                                 backgroundColor: initial.theme,
-                                                textTransform: 'none', outline: 'none'
+                                                textTransform: 'none', outline: 'none',
+                                                display: verrEvcp ? 'none' : 'inline-flex',
                                             }}
                                             >
                                                <TbRefresh style={{width:'25px', height:'25px', color:'white'}}/>
@@ -3175,6 +3378,7 @@ setVerrMp(!verrMp);
 
                                         <Tooltip title={verrEvcp? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
                                             <IconButton
+                                            onClick={lockTableEVCP}
                                             variant="contained" 
                                             style={{width:"45px", height:'45px', 
                                                 borderRadius:"2px", borderColor: "transparent", 
@@ -3215,7 +3419,7 @@ setVerrMp(!verrMp);
                                 
                                 <Stack width={"100%"} height={"50px"} spacing={0} alignItems={"center"} alignContent={"center"} 
                                     direction={"row"} style={{marginLeft:"0px", marginTop:"0px"}}>
-                                    <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"} 
+                                    <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"} 
                                     direction={"row"} justifyContent={"right"}>
                                         <Tooltip title="Liste des anomalies">
                                             <IconButton style={{textTransform: 'none', outline: 'none'}}>
@@ -3240,7 +3444,8 @@ setVerrMp(!verrMp);
                                             style={{width:"45px", height:'45px', 
                                                 borderRadius:"1px", borderColor: "transparent", 
                                                 backgroundColor: initial.theme,
-                                                textTransform: 'none', outline: 'none'
+                                                textTransform: 'none', outline: 'none',
+                                                display: verrDrf ? 'none' : 'inline-flex',
                                             }}
                                             >
                                                <TbRefresh style={{width:'25px', height:'25px', color:'white'}}/>
@@ -3249,6 +3454,7 @@ setVerrMp(!verrMp);
 
                                         <Tooltip title={verrDrf? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
                                             <IconButton
+                                            onClick={lockTableDRF}
                                             variant="contained" 
                                             style={{width:"45px", height:'45px', 
                                                 borderRadius:"2px", borderColor: "transparent", 
@@ -3266,7 +3472,7 @@ setVerrMp(!verrMp);
                                 </Stack>
 
                                 <Stack width={"100%"} height={"900px"} alignItems={'start'}>
-                                    <VirtualTableEbilan refreshTable={setUpdateCalculEtatfinancier} columns={drfColumn} rows={drfData} /> 
+                                    <VirtualTableDRFEbilan refreshTable={setUpdateCalculEtatfinancier} columns={drfColumn} rows={drfData} state={verrDrf}/> 
                                 </Stack>
                                 
                             </Stack>
@@ -3840,7 +4046,7 @@ setVerrMp(!verrMp);
                                 </Stack>
 
                                 <Stack width={"100%"} alignItems={'start'}>
-                                    <VirtualTableEbilan refreshTable={setUpdateCalculEtatfinancier} columns={sadColumn} rows={sadData} /> 
+                                    <VirtualTableSADEbilan refreshTable={setUpdateCalculEtatfinancier} columns={sadColumn} rows={sadData} state={verrSad}/> 
                                 </Stack>
                                 
                             </Stack>
@@ -3911,7 +4117,7 @@ setVerrMp(!verrMp);
                                 </Stack>
 
                                 <Stack width={"100%"} alignItems={'start'} style={{overflow:'auto'}}>
-                                    <VirtualTableEbilan refreshTable={setUpdateCalculEtatfinancier} columns={sdrColumn} rows={sdrData} /> 
+                                    <VirtualTableSDREbilan refreshTable={setUpdateCalculEtatfinancier} columns={sdrColumn} rows={sdrData} state={verrSdr}/> 
                                 </Stack>
                                 
                             </Stack>

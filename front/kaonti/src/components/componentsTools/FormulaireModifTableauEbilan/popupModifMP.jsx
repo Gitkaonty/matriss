@@ -132,7 +132,7 @@ const PopupModifMP = ({choix, confirmationState, data}) =>{
                 marche: data.marche,
                 refmarche: data.refmarche,
                 date: data.date,
-                datepaiement: data.datepaiement,
+                datepaiement: data.date_paiement,
                 montantht: data.montant_marche_ht,
                 montantpaye: data.montant_paye,
                 montanttmp: data.tmp,

@@ -369,7 +369,7 @@ const VirtualTableModifiableGroupableEbilanDP = ({columns, rows, deleteState, mo
                       paddingBottom: '5px',
                       borderTop: '1px solid #ddd',
                       minWidth: column.minWidth,
-                      fontSize: 14
+                      fontSize: 15
                     }}
                   >
                     {

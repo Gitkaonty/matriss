@@ -100,9 +100,25 @@ const VirtualTableModifiableImportJnl = ({columns, rows, deleteState, modifyStat
             </TableRow>
           </TableHead>
           <TableBody>
-            {rows.map((row) => {
+            {rows.map((row, index) => {
                 let rowStyle = {};
                 let cellStyle = {};
+
+                const currentNum = row.EcritureNum;
+                const previousNum = index > 0 ? rows[index - 1].EcritureNum : null;
+
+                const rowsToRender = [];
+
+                // Si le `num` a changé, ajouter une ligne rouge
+                if (index > 0 && currentNum !== previousNum) {
+                  rowsToRender.push(
+                    <TableRow key={`separator-${index}`}>
+                      <TableCell colSpan={columns.length + (!state ? 1 : 0)} style={{ padding: 0 }}>
+                        <div style={{ borderTop: '1px solid red', width: '100%' }} />
+                      </TableCell>
+                    </TableRow>
+                  );
+                }
   
                 switch (row.niveau) {
                   case 0:
@@ -130,7 +146,7 @@ const VirtualTableModifiableImportJnl = ({columns, rows, deleteState, modifyStat
                     cellStyle = {};
                 }
 
-                return (
+                rowsToRender.push(
                   <TableRow hover 
                     role="checkbox" tabIndex={-1} key={row.code} 
                     style={{height:'20px',...rowStyle}}
@@ -244,6 +260,7 @@ const VirtualTableModifiableImportJnl = ({columns, rows, deleteState, modifyStat
 
                   </TableRow>
                 );
+                return rowsToRender;
             })}
           </TableBody>
 

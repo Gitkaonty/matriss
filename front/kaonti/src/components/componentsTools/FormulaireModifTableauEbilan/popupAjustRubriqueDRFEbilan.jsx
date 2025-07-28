@@ -1,0 +1,663 @@
+import { React, useState, useEffect } from 'react';
+import { Typography, Stack, TextField, FormControl, Tooltip, Box, Input } from '@mui/material';
+import Button from '@mui/material/Button';
+import { styled } from '@mui/material/styles';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import IconButton from '@mui/material/IconButton';
+import CloseIcon from '@mui/icons-material/Close';
+import { init } from '../../../../init';
+import { CiWarning } from "react-icons/ci";
+import { IoIosWarning } from "react-icons/io";
+import toast from 'react-hot-toast';
+import axios from '../../../../config/axios';
+import InputAdornment from '@mui/material/InputAdornment';
+import { NumericFormat } from 'react-number-format';
+import { useFormik } from 'formik';
+import * as Yup from "yup";
+import FormatedInput from '../FormatedInput';
+import { DataGridStyle } from '../DatagridToolsStyle';
+import { TfiSave } from "react-icons/tfi";
+import QuickFilter from '../DatagridToolsStyle';
+import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes } from '@mui/x-data-grid';
+import { TbPlaylistAdd } from 'react-icons/tb';
+import { IoMdTrash } from 'react-icons/io';
+import { FaRegPenToSquare } from "react-icons/fa6";
+import { VscClose } from "react-icons/vsc";
+import PopupConfirmDelete from '../popupConfirmDelete';
+
+let initial = init[0];
+
+const BootstrapDialog = styled(Dialog)(({ theme }) => ({
+    '& .MuiDialogContent-root': {
+      padding: theme.spacing(2),
+    },
+    '& .MuiDialogActions-root': {
+      padding: theme.spacing(1),
+    },
+  }));
+
+const PopupAjustRubriqueDRFEbilan = ({actionState, row, column, value }) =>{
+    const [selectedRowId, setSelectedRowId] = useState([]);
+    const [rowModesModel, setRowModesModel] = useState({});
+    const [disableModifyBouton, setDisableModifyBouton] = useState(true);
+    const [disableCancelBouton, setDisableCancelBouton] = useState(true);
+    const [disableSaveBouton, setDisableSaveBouton] = useState(true);
+    const [disableDeleteBouton, setDisableDeleteBouton] = useState(true);
+    const [editableRow, setEditableRow] = useState(true);
+    const [openDialogDeleteRow, setOpenDialogDeleteRow] = useState(false);
+    const nature = 'BRUT';
+    const [listAjust, setListAjust] = useState([]);
+    const [totalNet, setTotalNet] = useState(0);
+    const [totalAjustement, setTotalAjustement] = useState(0);
+    const [stateUpdateTable, setStateUpdateTable] = useState({ tableName: '', state: false });
+
+    const data = {...row};
+    const rubriqueCaption = data['rubriquesmatrix.libelle'];
+    const idCompte = data.id_compte;
+    const idDossier = data.id_dossier;
+    const idExercice = data.id_exercice;
+    const idRubrique = data.id_rubrique;
+    const idEtat = data.id_etat;
+
+    const [formDataFinal, setFormDataFinal] = useState({
+        id:0,
+        state: false,
+        id_compte: idCompte,
+        id_dossier: idDossier,
+        id_exercice: idExercice,
+        id_rubrique: idRubrique,
+        id_etat: idEtat,
+        nature: nature,
+        motif: '',
+        montant: 0,
+    });
+
+    useEffect(() => {
+        setTotalAjustement(totalColumn(listAjust, 'montant'));
+    }, [listAjust]);
+
+    const totalColumn = (rows, columnId) => {
+      
+        const total = rows.reduce((acc, item) => {
+          const Value = parseFloat(item[columnId]) || 0; // Convertir en nombre
+          return acc + Value;
+        }, 0);
+  
+        return total;
+    };
+
+    useEffect(() => {
+        setListAjust(row.ajustsDRF);
+    }, [row]);
+
+    const columnHeader  = [
+        {
+            field: 'motif', 
+            headerName: 'Motif', 
+            type: 'text', 
+            sortable : true, 
+            width: 590, 
+            headerAlign: 'left',
+            headerClassName: 'HeaderbackColor',
+            disableClickEventBubbling: true,
+            editable: editableRow,
+            renderCell: (params) => {
+                return <div>{params.value}</div>;
+            },
+            renderEditCell: (params) => {
+                return (
+                    <FormControl fullWidth style={{height:'120%'}}>
+                        <Input
+                            style={{height:'100%', alignItems:'center', 
+                                outline: 'none', 
+                                backgroundColor: 'transparent'
+                            }}
+                            type="text"
+                            value={formDataFinal.motif}
+                            //onChange = {(e) => formData.setFieldValue('motif', e.target.value)}
+                            onChange={handleChange}
+                            label="motif"
+                            name="motif"
+                            disableUnderline={true}
+                        />
+                    </FormControl>
+                );
+            },
+        },
+        {
+            field: 'montant', 
+            headerName: 'Montant', 
+            type: 'text', 
+            sortable : true, 
+            width: 200, 
+            headerAlign: 'right',
+            headerClassName: 'HeaderbackColor',
+            disableClickEventBubbling: true,
+            editable: editableRow,
+            renderCell: (params) => {
+                return <div> <TextField
+                size="small"
+                name="montantcharge"
+                value={params.value}
+                fullWidth
+                variant="standard"
+                style={{
+                    width: '100%',
+                    textAlign: 'right',
+                }}
+                InputProps={{
+                    inputComponent: FormatedInput,
+                    disableUnderline: true,
+                    endAdornment: (
+                        <InputAdornment position="end" sx={{ fontSize: 12 }}>
+                            <span style={{ fontSize: 14 }}>Ar</span>
+                        </InputAdornment>
+                    ),
+                    sx: {
+                        height: '30px',
+                        padding: 0,
+                        '& .MuiInputBase-input': {
+                            textAlign: 'right',
+                            fontSize: 14,
+                            padding: '4px 0 4px', // haut / bas
+                            display: 'flex',
+                            alignItems: 'center',
+                        },
+                    },
+                }}
+            /></div>;
+            },
+            renderEditCell: (params) => {
+                return (
+                    <FormControl fullWidth style={{height:'120%'}}>
+                        <TextField
+                            size="small"
+                            name="montant"
+                            value={formDataFinal.montant}
+                            onChange={handleChange}
+                            fullWidth
+                            variant="standard"
+                            style={{
+                                width: '100%',
+                                textAlign: 'right',
+                            }}
+                            InputProps={{
+                                inputComponent: FormatedInput,
+                                disableUnderline: true,
+                                endAdornment: (
+                                    <InputAdornment position="end" sx={{ fontSize: 12 }}>
+                                        <span style={{ fontSize: 14 }}>Ar</span>
+                                    </InputAdornment>
+                                ),
+                                sx: {
+                                    height: '30px',
+                                    padding: 0,
+                                    '& .MuiInputBase-input': {
+                                        textAlign: 'right',
+                                        fontSize: 14,
+                                        padding: '4px 0 4px', // haut / bas
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                    },
+                                },
+                            }}
+                        />
+                    </FormControl>
+                );
+            },
+        },
+    ];
+
+    //update formData par les informations reçues
+    // useEffect(() => {
+    //     setFormDataFinal((prev) => ({
+    //         ...prev,
+    //         compteId: row.id_compte,
+    //         fileId: row.id_dossier,
+    //         exerciceId: row.id_exercice,
+    //         rubriqueId: row.id_rubrique,
+    //         etatId: row.id_etat,
+    //         nature: nature,
+    //     }));
+    // },[row]);
+
+    const getInfosAjust = (compteId, dossierId, exerciceId, etatId, rubriqueId, nature) => {
+        axios.get(`declaration/ebilan/listeAjust`, {
+            params: {
+                compteId, dossierId, exerciceId, etatId, rubriqueId, nature
+            }
+        }).then((response) =>{
+            const resData = response.data;
+    
+            if(resData.state){
+                setListAjust([]);
+                const filteredData = resData.liste.filter(item => item.nature === nature);
+                setListAjust(filteredData);
+            }else{
+                setListAjust([]);
+            }
+        });
+    }
+
+    const handleClose = async () => {
+        actionState(stateUpdateTable);
+    }
+
+    const saveSelectedRow = (ids) => {
+        if(ids.length === 1){
+            setSelectedRowId(ids);
+            setDisableModifyBouton(false);
+            setDisableSaveBouton(false);
+            setDisableCancelBouton(false);
+            setDisableDeleteBouton(false);
+        }else{
+            setSelectedRowId([]);
+            setDisableModifyBouton(true);
+            setDisableSaveBouton(true);
+            setDisableCancelBouton(true);
+            setDisableDeleteBouton(true);
+        }
+      }
+    
+    const handleRowEditStop = (params, event) => {
+        if (params.reason === GridRowEditStopReasons.rowFocusOut) {
+            event.defaultMuiPrevented = true;
+        }
+    };
+
+    const handleEditClick = (id) => () => {
+        //charger dans le formik les données de la ligne
+        const selectedRowInfos = listAjust?.filter((item) => item.id === id[0]);
+
+        setFormDataFinal((prev) => ({
+            ...prev,
+            id: selectedRowInfos[0].id,
+            id_compte: selectedRowInfos[0].id_compte,
+            id_dossier: selectedRowInfos[0].id_dossier,
+            id_exercice: selectedRowInfos[0].id_exercice,
+            id_rubrique: selectedRowInfos[0].id_rubrique,
+            id_etat: selectedRowInfos[0].id_etat,
+            nature: selectedRowInfos[0].nature,
+            motif: selectedRowInfos[0].motif,
+            montant: selectedRowInfos[0].montant,
+        }));
+
+        setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
+        setDisableSaveBouton(false);
+    };
+
+    const handleSaveClick = (id) => () => {
+        setRowModesModel({
+            ...rowModesModel,
+            [id]: { mode: GridRowModes.View, ignoreModifications: true },
+        });
+
+        //setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
+        const newFormDataFinal = { ...formDataFinal, state: true };
+        axios.post(`/declaration/ebilan/addModifyAjust`, newFormDataFinal).then((response) =>{
+            const resData = response.data;
+            if(resData.state){
+                setDisableSaveBouton(true);
+                setStateUpdateTable((prev) => ({
+                    ...prev,
+                    tableName: idEtat, 
+                    state: true
+                    })
+                );
+                getInfosAjust(idCompte, idDossier, idExercice, idEtat, idRubrique, nature);
+                toast.success(resData.msg);
+            }else{
+                toast.error(resData.msg);
+            }
+        });
+    };
+
+    const handleOpenDialogConfirmDelete = () => {
+    setOpenDialogDeleteRow(true);
+    }
+
+    const deleteRow = (value) => {
+    if(value === true){
+        if(selectedRowId.length === 1){
+            const idToDelete = selectedRowId[0];
+            axios.post(`/declaration/ebilan/deleteAjust`, {idCompte, idDossier, idExercice, idEtat, idRubrique, nature, idToDelete }).then((response) =>{
+                const resData = response.data;
+                
+                if(resData.state){
+                    setStateUpdateTable((prev) => ({
+                        ...prev,
+                        tableName: idEtat, 
+                        state: true
+                        })
+                    );
+                    
+                    getInfosAjust(idCompte, idDossier, idExercice, idEtat, idRubrique, nature);
+                    toast.success(resData.msg);
+                    setOpenDialogDeleteRow(false);
+                }else{
+                    setOpenDialogDeleteRow(false);
+                    toast.error(resData.msg);
+                }
+            });
+        }
+        setOpenDialogDeleteRow(false);
+        }else{
+            setOpenDialogDeleteRow(false);
+        }
+    }
+
+    const handleCancelClick = (id) => () => {
+        setRowModesModel({
+            ...rowModesModel,
+            [id]: { mode: GridRowModes.View, ignoreModifications: true },
+        });
+    };
+
+    const processRowUpdate = () => (newRow) => {
+        const updatedRow = { ...newRow, isNew: false };
+        setListAjust(listAjust.map((row) => (row.id === newRow.id ? updatedRow : row)));
+        return updatedRow;
+    };
+
+    const handleRowModesModelChange = (newRowModesModel) => {
+        setRowModesModel(newRowModesModel);
+    };
+
+    const handleCellEditCommit = (params) => {
+        if(selectedRowId.length > 1  || selectedRowId.length === 0){
+            setEditableRow(false);
+            setDisableModifyBouton(true);
+            setDisableSaveBouton(true);
+            setDisableCancelBouton(true);
+            //toast.error("sélectionnez une seule ligne pour pouvoir la modifier");
+        }else{
+            setDisableModifyBouton(false);
+            setDisableSaveBouton(false);
+            setDisableCancelBouton(false);
+            if (!selectedRowId.includes(params.id)) {
+            setEditableRow(false);
+            //toast.error("sélectionnez une ligne pour pouvoir la modifier");
+            }else{
+                setEditableRow(true);
+            }
+        }
+    };
+    
+    //Ajouter une ligne dans le tableau
+    const handleOpenDialogAddNew = () => {
+        const newId = -1*(getMaxID(listAjust)+1);
+        let arrayId = [];
+        arrayId = [...arrayId,newId];
+        
+        setFormDataFinal((prev) => ({
+            ...prev,
+            id: newId,
+        }));
+
+        const newRow = {
+            id: newId,
+            id_compte: idCompte,
+            id_dossier: idDossier,
+            id_exercice: idExercice,
+            id_rubrique: idRubrique,
+            id_etat: idEtat,
+            nature: nature,
+            motif:'',
+            montant:0
+        };
+        setListAjust([...listAjust, newRow]);
+    }
+
+    const getMaxID= (data) => {
+        if(data.length > 0){
+            const Ids = data.map(item => item.id);
+            return Math.max(...Ids);
+        }else{
+            return 0;
+        }
+    };
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormDataFinal((prev) => ({
+            ...prev,
+            [name]: value,
+        }));
+    };
+
+    return (
+        <div>
+            {openDialogDeleteRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer la ligne sélectionnée ?"} confirmationState={deleteRow}/>: null}
+            <BootstrapDialog
+                onClose={handleClose}
+                aria-labelledby="customized-dialog-title"
+                open={true}
+                fullWidth={true}
+                maxWidth='md'
+            >
+                <DialogTitle sx={{ ml: 1, p: 2 }} id="customized-dialog-title" style={{fontWeight:'normal', width:'850px', height:'50px',backgroundColor : 'transparent'}}>
+                    <Typography variant={'h8'} style={{fontZise: 10}}>
+                        Ajustement - {rubriqueCaption}
+                    </Typography>
+                </DialogTitle>
+                
+                <IconButton
+                    style={{color:'red', textTransform: 'none', outline: 'none'}}
+                    aria-label="close"
+                    onClick={handleClose}
+                    sx={{
+                        position: 'absolute',
+                        right: 8,
+                        top: 8,
+                        color: (theme) => theme.palette.grey[500],
+                    }}
+                    >
+                <CloseIcon />
+                </IconButton>
+                <DialogContent>
+            
+                <Stack width={"97%"} height={"500px"} spacing={2} alignItems={'left'} alignContent={"center"} 
+                    direction={"column"} justifyContent={"center"} style={{marginLeft:'10px',marginRight:'10px'}}
+                >
+                    <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"} 
+                        direction={"row"} justifyContent={"right"}
+                    >
+                        <Tooltip title="Ajouter une ligne">
+                            <IconButton
+                            onClick={handleOpenDialogAddNew}
+                            variant="contained"
+                            style={{width:"35px", height:'35px', 
+                                borderRadius:"2px", borderColor: "transparent", 
+                                backgroundColor: initial.theme,
+                                textTransform: 'none', outline: 'none'
+                            }}
+                            >
+                                <TbPlaylistAdd style={{width:'25px', height:'25px', color:'white'}}/>
+                            </IconButton>
+                        </Tooltip>
+
+                        <Tooltip title="Modifier la ligne sélectionnée">
+                            <IconButton
+                            disabled={disableModifyBouton}
+                            onClick={handleEditClick(selectedRowId)}
+                            variant="contained" 
+                            style={{width:"35px", height:'35px', 
+                                borderRadius:"2px", borderColor: "transparent",
+                                backgroundColor: initial.theme,
+                                textTransform: 'none', outline: 'none'
+                                }}
+                            >
+                                <FaRegPenToSquare style={{width:'25px', height:'25px', color:'white'}}/>
+                            </IconButton>
+                        </Tooltip>
+
+                        <Tooltip title="Sauvegarder les modifications">
+                            <span>
+                                <IconButton 
+                                onClick={handleSaveClick(selectedRowId)}
+                                disabled={disableSaveBouton}
+                                variant="contained" 
+                                style={{width:"35px", height:'35px', 
+                                    borderRadius:"2px", borderColor: "transparent",
+                                    backgroundColor: initial.theme,
+                                    textTransform: 'none', outline: 'none'
+                                }}
+                                >
+                                    <TfiSave style={{width:'50px', height:'50px',color: 'white'}}/>
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+
+                        <Tooltip title="Annuler les modifications">
+                            <span>
+                                <IconButton 
+                                disabled={disableCancelBouton}
+                                onClick={handleCancelClick(selectedRowId)}
+                                variant="contained" 
+                                style={{width:"35px", height:'35px', 
+                                    borderRadius:"2px", borderColor: "transparent",
+                                    backgroundColor: initial.button_delete_color,
+                                    textTransform: 'none', outline: 'none'
+                                }}
+                                >
+                                    <VscClose style={{width:'50px', height:'50px', color: 'white'}}/>
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+
+                        <Tooltip title="Supprimer la ligne sélectionné">
+                            <span>
+                                <IconButton 
+                                disabled={disableDeleteBouton}
+                                onClick={handleOpenDialogConfirmDelete}
+                                variant="contained" 
+                                style={{width:"35px", height:'35px', 
+                                    borderRadius:"2px", borderColor: "transparent",
+                                    backgroundColor: initial.button_delete_color,
+                                    textTransform: 'none', outline: 'none'
+                                }}
+                                >
+                                    <IoMdTrash style={{width:'50px', height:'50px',color: 'white'}}/>
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                    </Stack>
+                                                
+                    <Stack width={"100%"} height={'60vh'}>
+                        <DataGrid
+                        disableMultipleSelection = {DataGridStyle.disableMultipleSelection}
+                        disableColumnSelector = {DataGridStyle.disableColumnSelector}
+                        disableDensitySelector = {DataGridStyle.disableDensitySelector}
+                        disableRowSelectionOnClick
+                        disableSelectionOnClick={true}
+                        localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                        slots={{toolbar : QuickFilter}}
+                        sx={ DataGridStyle.sx}
+                        rowHeight= {DataGridStyle.rowHeight}
+                        columnHeaderHeight= {DataGridStyle.columnHeaderHeight}
+                        rows={listAjust}
+                        onRowClick={(e) => handleCellEditCommit(e.row)}
+                        onRowSelectionModelChange={ids => {
+                            saveSelectedRow(ids);
+                        }}
+                        editMode='row'
+                        selectionModel={selectedRowId}
+                        rowModesModel={rowModesModel}
+                        onRowModesModelChange={(newModel) => handleRowModesModelChange(newModel)}
+                        onRowEditStop={handleRowEditStop}
+                        processRowUpdate={processRowUpdate}
+
+                        columns={columnHeader}
+                        initialState={{
+                            pagination: {
+                                paginationModel: { page: 0, pageSize: 100 },
+                            },
+                        }}
+                        experimentalFeatures={{ newEditingApi: true }}
+                        pageSizeOptions={[50, 100]}
+                        pagination={DataGridStyle.pagination}
+                        checkboxSelection = {DataGridStyle.checkboxSelection}
+                        columnVisibilityModel={{
+                            id: false,
+                        }}
+                        />
+                    </Stack>
+
+                    <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"} 
+                        direction={"row"} justifyContent={"right"}
+                        style={{marginTop: 10}}
+                    >
+                        <Box display="flex" alignItems="center" mb={0}>
+                            <Typography 
+                                variant="body2" 
+                                style={{ marginRight: 1, width: '140px', color: '#1976d2' }}
+                            >
+                                total des ajustements:
+                            </Typography>
+                            <TextField
+                                size="small"
+                                name="montantcharge"
+                                value={totalAjustement}
+                                fullWidth
+                                variant="standard"
+                                style={{
+                                    width: '150px',
+                                    textAlign: 'right',
+                                }}
+                                InputProps={{
+                                    inputComponent: FormatedInput,
+                                    disableUnderline: true,
+                                    endAdornment: (
+                                        <InputAdornment position="end" sx={{ fontSize: 12 }}>
+                                            <span style={{ fontSize: 14 , color:'#1976d2'}}>Ar</span>
+                                        </InputAdornment>
+                                    ),
+                                    sx: {
+                                        height: '30px',
+                                        padding: 0,
+                                        '& .MuiInputBase-input': {
+                                            textAlign: 'right',
+                                            fontSize: 14,
+                                            padding: '4px 0 4px', // haut / bas
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            color:'#1976d2'
+                                        },
+                                    },
+                                }}
+                            />
+                        </Box>
+                    </Stack>
+                </Stack>
+
+                </DialogContent>
+                <DialogActions>
+                    {/* <Button autoFocus
+                        variant='outlined'
+                        style={{backgroundColor:"transparent", 
+                            color:initial.theme, 
+                            width:"100px", 
+                            textTransform: 'none', 
+                            //outline: 'none',
+                        }}
+                        onClick={handleClose}
+                        >
+                            Annuler
+                    </Button> */}
+                    <Button autoFocus 
+                    onClick={handleClose}
+                    style={{backgroundColor:initial.theme, color:'white', width:"100px", textTransform: 'none', outline: 'none'}}
+                    >
+                        Fermer
+                    </Button>
+                </DialogActions>
+            </BootstrapDialog>
+        </div>
+            
+    )
+}
+
+export default PopupAjustRubriqueDRFEbilan;

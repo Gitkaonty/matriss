@@ -20,6 +20,7 @@ const liassenotes = db.liassenotes;
 const liassesads = db.liassesads;
 const liassesdrs = db.liassesdrs;
 const liasseses = db.liasseses;
+const liassenes = db.liassenotes;
 const etats = db.etats;
 const balances = db.balances;
 const dossierplancomptables = db.dossierplancomptable;
@@ -599,6 +600,247 @@ const recupEVCP = async (compteId, fileId, exerciceId) => {
     }
 }
 
+const recupDRF = async (compteId, fileId, exerciceId) => {
+    try{
+        const listeBrute = await liassedrfs.findAll({
+            where: {
+                id_compte: compteId,
+                id_dossier: fileId,
+                id_exercice: exerciceId,
+                id_etat: 'DRF',
+            },
+            include: [
+                {
+                    model: rubriquesmatrices,
+                    attributes: [['libelle', 'libelle']],
+                    required: false,
+                    where: {
+                        id_etat: 'DRF',
+                    },
+                },
+                {
+                    model: ajustements,
+                    as: 'ajustsDRF',
+                    attributes: ['id', 'id_compte', 'id_dossier', 'id_exercice', 'id_etat', 'id_rubrique', 'nature', 'motif', 'montant'],
+                    required: false,
+                    where: {
+                        id_compte: compteId,
+                        id_dossier: fileId,
+                        id_exercice: exerciceId,
+                        id_etat: 'DRF',
+                    },
+                },
+            ],
+            raw: false,
+            order: [['ordre', 'ASC']],
+        });
+
+        const liste = listeBrute.map(rubrique => {
+            const plain = rubrique.get({ plain: true });
+            return {
+                ...plain,
+                'rubriquesmatrix.libelle': plain.rubriquesmatrix?.libelle || '',
+            };
+        });
+
+        return liste ;
+    }catch (error){
+        console.log(error);
+    }
+}
+
+const recupBHIAPC = async (compteId, fileId, exerciceId) => {
+    try{
+        const liste = await liassebhiapcs.findAll({
+            where: {
+                id_compte: compteId,
+                id_dossier: fileId,
+                id_exercice: exerciceId,
+            },
+            raw: true,
+            order: [['raison_sociale', 'ASC']],
+        });
+
+        return liste ;
+    }catch (error){
+        console.log(error);
+    }
+}
+
+const recupMP = async (compteId, fileId, exerciceId) => {
+    try{
+        const liste = await liassemps.findAll({
+            where: {
+                id_compte: compteId,
+                id_dossier: fileId,
+                id_exercice: exerciceId,
+            },
+            raw: true,
+            order: [['marche', 'ASC'],['ref_marche', 'ASC']],
+        });
+
+        return liste ;
+    }catch (error){
+        console.log(error);
+    }
+}
+
+const recupDA = async (compteId, fileId, exerciceId) => {
+    try{
+        const liste = await liassedas.findAll({
+            where: {
+                id_compte: compteId,
+                id_dossier: fileId,
+                id_exercice: exerciceId,
+            },
+            raw: true,
+            order: [['rubriques_poste', 'ASC'],['libelle', 'ASC']],
+        });
+
+        return liste ;
+    }catch (error){
+        console.log(error);
+    }
+}
+
+const recupDP = async (compteId, fileId, exerciceId) => {
+    try{
+        const liste = await liassedps.findAll({
+            where: {
+                id_compte: compteId,
+                id_dossier: fileId,
+                id_exercice: exerciceId,
+            },
+            raw: true,
+            order: [['ordre', 'ASC']],
+        });
+
+        return liste ;
+    }catch (error){
+        console.log(error);
+    }
+}
+
+const recupEIAFNC = async (compteId, fileId, exerciceId) => {
+    try{
+        const liste = await liasseeiafncs.findAll({
+            where: {
+                id_compte: compteId,
+                id_dossier: fileId,
+                id_exercice: exerciceId,
+            },
+            raw: true,
+            order: [['rubriques_poste', 'ASC'],['num_compte', 'ASC']],
+        });
+
+        return liste ;
+    }catch (error){
+        console.log(error);
+    }
+}
+
+const recupSAD = async (compteId, fileId, exerciceId) => {
+    try{
+        const liste = await liassesads.findAll({
+            where: {
+                id_compte: compteId,
+                id_dossier: fileId,
+                id_exercice: exerciceId,
+                id_etat: 'SAD',
+            },
+            include: [
+                {
+                    model: ajustements,
+                    as: 'ajustsSAD',
+                    attributes: ['id', 'id_compte', 'id_dossier', 'id_exercice', 'id_etat', 'id_rubrique', 'nature', 'motif', 'montant'],
+                    required: false,
+                    where: {
+                        id_compte: compteId,
+                        id_dossier: fileId,
+                        id_exercice: exerciceId,
+                        id_etat: 'SAD',
+                    },
+                },
+            ],
+            raw: false,
+            order: [['ordre', 'ASC']],
+        });
+
+        return liste ;
+    }catch (error){
+        console.log(error);
+    }
+}
+
+const recupSDR = async (compteId, fileId, exerciceId) => {
+    try{
+        const liste = await liassesdrs.findAll({
+            where: {
+                id_compte: compteId,
+                id_dossier: fileId,
+                id_exercice: exerciceId,
+                id_etat: 'SDR',
+            },
+            include: [
+                {
+                    model: ajustements,
+                    as: 'ajustsSDR',
+                    attributes: ['id', 'id_compte', 'id_dossier', 'id_exercice', 'id_etat', 'id_rubrique', 'nature', 'motif', 'montant'],
+                    required: false,
+                    where: {
+                        id_compte: compteId,
+                        id_dossier: fileId,
+                        id_exercice: exerciceId,
+                        id_etat: 'SDR',
+                    },
+                },
+            ],
+            raw: false,
+            order: [['ordre', 'ASC']],
+        });
+
+        return liste ;
+    }catch (error){
+        console.log(error);
+    }
+}
+
+const recupSE = async (compteId, fileId, exerciceId) => {
+    try{
+        const liste = await liasseses.findAll({
+            where: {
+                id_compte: compteId,
+                id_dossier: fileId,
+                id_exercice: exerciceId,
+            },
+            raw: true,
+            order: [['id', 'ASC']],
+        });
+
+        return liste ;
+    }catch (error){
+        console.log(error);
+    }
+}
+
+const recupNE = async (compteId, fileId, exerciceId) => {
+    try{
+        const liste = await liassenes.findAll({
+            where: {
+                id_compte: compteId,
+                id_dossier: fileId,
+                id_exercice: exerciceId,
+            },
+            raw: true,
+            order: [['id', 'ASC']],
+        });
+
+        return liste ;
+    }catch (error){
+        console.log(error);
+    }
+}
+
 module.exports = {
     recupBILAN_ACTIF,
     recupBILAN_PASSIF,
@@ -606,5 +848,15 @@ module.exports = {
     recupCRF,
     recupTFTI,
     recupTFTD,
-    recupEVCP
+    recupEVCP,
+    recupDRF,
+    recupBHIAPC,
+    recupMP,
+    recupDA,
+    recupDP,
+    recupEIAFNC,
+    recupSAD,
+    recupSDR,
+    recupSE,
+    recupNE
 };

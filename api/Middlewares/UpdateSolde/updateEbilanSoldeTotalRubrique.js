@@ -27,6 +27,7 @@ const liassesdrs = db.liassesdrs;
 const liasseses = db.liasseses;
 const liassetftds = db.liassetftds;
 const liassetftis = db.liassetftis;
+const dossiers = db.dossiers;
 
 const rubriques = db.rubriques;
 const compterubriques = db.compterubriques;
@@ -765,8 +766,6 @@ const totalRubriqueTFTI = async (compte_id, dossier_id, exercice_id) => {
                             equation = rubrik.equation === 'ADDITIF' ? '+': '-';
 
                             if(rubrik.nature === 'BILAN_ACTIF_VAR'){
-
-                                console.log("okokokok");
                                 await db.sequelize.query(`
                                     UPDATE rubriques as tabA SET
                                     montantbrut = montantbrut + (SELECT COALESCE(SUM(montantnetn1),0) FROM rubriques as tabB 
@@ -1154,11 +1153,416 @@ const totalRubriqueEVCP = async (compte_id, dossier_id, exercice_id) => {
     }
 }
 
+const totalRubriqueDRF = async (compte_id, dossier_id, exercice_id) => {
+    try{
+        //récuperer les informations sur l'exercice N-1
+        const {
+            id_exerciceN1, 
+            date_debutN1, 
+            date_finN1, 
+            libelleExerciceN1, 
+            rangN1, 
+            clotureN1 
+        } = await recupExerciceN1.recupInfos(compte_id, dossier_id, exercice_id);
+
+        const exercice_idN1 = id_exerciceN1? id_exerciceN1 : 0;
+
+        //mettre à jour les lignes totaux
+        const listRubriqueTotal = await liassedrfs.findAll({
+            where:
+            {
+                id_compte: compte_id,
+                id_dossier: dossier_id,
+                id_exercice: exercice_id,
+                id_etat: 'DRF',
+                nature: {[Op.like]: 'TOTAL%'}
+            },
+            order: [['ordre', 'ASC']]
+        });
+
+        if(listRubriqueTotal.length >= 1){
+            for(let total of listRubriqueTotal){
+                if(total.nature === 'TOTAL'){
+                    //Liste des rubriques à calculer en ADDITIF
+                    const listeAssociatedToRubriqueADDITIF = await compterubriques.findAll({
+                        where:
+                        {
+                            id_compte: compte_id,
+                            id_dossier: dossier_id,
+                            id_exercice: exercice_id,
+                            id_etat: 'DRF',
+                            id_rubrique : total.id_rubrique,
+                            equation: 'ADDITIF',
+                            active: true,
+                        }
+                    });
+
+                    //Liste des rubriques à calculer en SOUSTRACTIF
+                    const listeAssociatedToRubriqueSOUSTRACTIF = await compterubriques.findAll({
+                        where:
+                        {
+                            id_compte: compte_id,
+                            id_dossier: dossier_id,
+                            id_exercice: exercice_id,
+                            id_etat: 'DRF',
+                            id_rubrique : total.id_rubrique,
+                            equation: 'SOUSTRACTIF',
+                            active: true
+                        }
+                    });
+
+                    //réinitialiser à 0 la valeur 
+                    await db.sequelize.query(`
+                            UPDATE liassedrfs as tabA SET
+                            montant_brut = 0
+                            WHERE tabA.id_compte = :compte_id AND tabA.id_dossier = :dossier_id AND tabA.id_exercice = :exercice_id
+                            AND tabA.id_etat = 'DRF' AND tabA.nature IN ('TOTAL') AND tabA.id = ${total.id}
+                        `, 
+                        {
+                            replacements: { compte_id, dossier_id, exercice_id },
+                            type: db.Sequelize.QueryTypes.UPDATE
+                        }
+                    );
+                    
+                    //calcul le total des rubriques ADDITIFS
+                    if(listeAssociatedToRubriqueADDITIF.length >= 1){
+                        const arrayListADDITIF = listeAssociatedToRubriqueADDITIF.map(item => item.compte);
+                        const inClauseADDITIF = `(${arrayListADDITIF.join(',')})`;
+
+                        await db.sequelize.query(`
+                            UPDATE liassedrfs as tabA SET
+                            montant_brut = montant_brut + (SELECT COALESCE(SUM(montant_brut),0) FROM liassedrfs as tabB WHERE tabB.id_rubrique IN ${inClauseADDITIF}
+                            AND tabB.id_compte = :compte_id AND tabB.id_dossier = :dossier_id AND tabB.id_exercice = :exercice_id
+                            AND tabB.id_etat='DRF')
+
+                            WHERE tabA.id_compte = :compte_id AND tabA.id_dossier = :dossier_id AND tabA.id_exercice = :exercice_id
+                            AND tabA.id_etat = 'DRF' AND tabA.nature='TOTAL' AND tabA.id = ${total.id}
+                        `, 
+                        {
+                            replacements: { compte_id, dossier_id, exercice_id },
+                            type: db.Sequelize.QueryTypes.UPDATE
+                        }
+                        );
+
+                    }
+
+                    //calcul le total des rubriques SOUSTRACTIF
+                    if(listeAssociatedToRubriqueSOUSTRACTIF.length >= 1){
+                        const arrayListSOUSTRACTIFF = listeAssociatedToRubriqueSOUSTRACTIF.map(item => item.compte);
+                        const inClauseSOUSTRACTIF = `(${arrayListSOUSTRACTIFF.join(',')})`;
+
+                        await db.sequelize.query(`
+                            UPDATE liassedrfs as tabA SET
+                            montant_brut = montant_brut - (SELECT COALESCE(SUM(montant_brut),0) FROM liassedrfs as tabB WHERE tabB.id_rubrique IN ${inClauseSOUSTRACTIF}
+                            AND tabB.id_compte = :compte_id AND tabB.id_dossier = :dossier_id AND tabB.id_exercice = :exercice_id
+                            AND tabB.id_etat='DRF')
+
+                            WHERE tabA.id_compte = :compte_id AND tabA.id_dossier = :dossier_id AND tabA.id_exercice = :exercice_id
+                            AND tabA.id_etat = 'DRF' AND tabA.nature='TOTAL' AND tabA.id = ${total.id}
+                        `, 
+                        {
+                            replacements: { compte_id, dossier_id, exercice_id },
+                            type: db.Sequelize.QueryTypes.UPDATE
+                        }
+                        );
+                    }
+                }
+
+                if(total.nature === 'TOTALMIXTE'){
+                    //Liste des rubriques à calculer
+                    const listeAssociatedToRubrique = await compterubriques.findAll({
+                        where:
+                        {
+                            id_compte: compte_id,
+                            id_dossier: dossier_id,
+                            id_exercice: exercice_id,
+                            id_etat: 'DRF',
+                            id_rubrique : total.id_rubrique,
+                            active: true,
+                        }
+                    });
+
+                    //réinitialiser à 0 la valeur 
+                    await db.sequelize.query(`
+                            UPDATE liassedrfs as tabA SET
+                            montant_brut = 0
+                            WHERE tabA.id_compte = :compte_id AND tabA.id_dossier = :dossier_id AND tabA.id_exercice = :exercice_id
+                            AND tabA.id_etat = 'DRF' AND tabA.nature = 'TOTALMIXTE' AND tabA.id = ${total.id}
+                        `, 
+                        {
+                            replacements: { compte_id, dossier_id, exercice_id },
+                            type: db.Sequelize.QueryTypes.UPDATE
+                        }
+                    );
+
+                    if(listeAssociatedToRubrique.length > 0){
+                        for(let rubrik of listeAssociatedToRubrique){
+                            let exerciceAnterieur = 0;
+                            let equation = '';
+                            let variation = '';
+
+                            exerciceAnterieur = rubrik.exercice === 'N'
+                                                ? exercice_id
+                                                : exercice_idN1;
+                            equation = rubrik.equation === 'ADDITIF' ? '+': '-';
+
+                            if(rubrik.nature === 'CRN'){
+                                await db.sequelize.query(`
+                                    UPDATE liassedrfs as tabA SET
+                                    montant_brut = montant_brut ${equation} (SELECT COALESCE(SUM(montantnet),0) FROM rubriques as tabB 
+                                    WHERE tabB.id_rubrique = ${rubrik.compte}
+                                    AND tabB.id_compte = :compte_id AND tabB.id_dossier = :dossier_id AND tabB.id_exercice = :exerciceAnterieur
+                                    AND tabB.id_etat='${rubrik.nature}')
+                                    + (SELECT COALESCE(SUM(montant),0) FROM ajustements WHERE ajustements.id_rubrique = tabA.id_rubrique
+                                    AND ajustements.id_compte = :compte_id AND ajustements.id_dossier = :dossier_id AND ajustements.id_exercice = :exercice_id
+                                    AND ajustements.id_etat = 'DRF' AND ajustements.nature = 'BRUT')
+
+                                    WHERE tabA.id_compte = :compte_id AND tabA.id_dossier = :dossier_id AND tabA.id_exercice = :exercice_id
+                                    AND tabA.id_etat = 'DRF' AND tabA.nature = 'TOTALMIXTE' AND tabA.id = ${total.id}
+                                    `, 
+                                    {
+                                        replacements: { compte_id, dossier_id, exercice_id, exerciceAnterieur},
+                                        type: db.Sequelize.QueryTypes.UPDATE
+                                    }   
+                                );
+                            }else{
+                                await db.sequelize.query(`
+                                    UPDATE liassedrfs as tabA SET
+                                    montant_brut = montant_brut ${equation} (SELECT COALESCE(SUM(montant_brut),0) FROM liassedrfs as tabB 
+                                    WHERE tabB.id_rubrique = ${rubrik.compte}
+                                    AND tabB.id_compte = :compte_id AND tabB.id_dossier = :dossier_id AND tabB.id_exercice = :exerciceAnterieur
+                                    AND tabB.id_etat='${rubrik.nature}')
+                                    + (SELECT COALESCE(SUM(montant),0) FROM ajustements WHERE ajustements.id_rubrique = tabA.id_rubrique
+                                    AND ajustements.id_compte = :compte_id AND ajustements.id_dossier = :dossier_id AND ajustements.id_exercice = :exercice_id
+                                    AND ajustements.id_etat = 'DRF' AND ajustements.nature = 'BRUT')
+
+                                    WHERE tabA.id_compte = :compte_id AND tabA.id_dossier = :dossier_id AND tabA.id_exercice = :exercice_id
+                                    AND tabA.id_etat = 'DRF' AND tabA.nature = 'TOTALMIXTE' AND tabA.id = ${total.id}
+                                    `, 
+                                    {
+                                        replacements: { compte_id, dossier_id, exercice_id, exerciceAnterieur},
+                                        type: db.Sequelize.QueryTypes.UPDATE
+                                    }   
+                                );
+                            }
+                        }
+                    }
+
+                }
+
+                if(total.nature === 'TOTALREV_THE'){
+                    const taux = await db.sequelize.query(`
+                            SELECT SUM(tauxir) as taux FROM dossiers
+                            WHERE dossiers.id_compte = :compte_id AND dossiers.id = :dossier_id 
+                        `, 
+                        {
+                            replacements: { compte_id, dossier_id },
+                            type: db.Sequelize.QueryTypes.SELECT
+                        }
+                    );
+
+                    const tauxIr = taux[0]?.taux ?? 0;
+
+                    await db.sequelize.query(`
+                        UPDATE liassedrfs as tabA SET
+                        montant_brut = (SELECT COALESCE(SUM(montant_brut),0) FROM liassedrfs as tabB 
+                        WHERE tabB.id_rubrique = 15
+                        AND tabB.id_compte = :compte_id AND tabB.id_dossier = :dossier_id AND tabB.id_exercice = :exercice_id
+                        AND tabB.id_etat='DRF')*${tauxIr}/100
+                        
+                        WHERE tabA.id_compte = :compte_id AND tabA.id_dossier = :dossier_id AND tabA.id_exercice = :exercice_id
+                        AND tabA.id_etat = 'DRF' AND tabA.nature = 'TOTALREV_THE' AND tabA.id = ${total.id}
+                        `, 
+                        {
+                            replacements: { compte_id, dossier_id, exercice_id},
+                            type: db.Sequelize.QueryTypes.UPDATE
+                        }   
+                    );
+                }
+
+                if(total.nature === 'TOTALMIN_PER'){
+                    const dataCalculMinPer = await db.sequelize.query(`
+                            SELECT SUM(pourcentageca) as pourcentageca, SUM(montantmin) as montantmin FROM dossiers
+                            WHERE dossiers.id_compte = :compte_id AND dossiers.id = :dossier_id 
+                        `, 
+                        {
+                            replacements: { compte_id, dossier_id },
+                            type: db.Sequelize.QueryTypes.SELECT
+                        }
+                    );
+
+                    const pourcentageca = dataCalculMinPer[0]?.pourcentageca ?? 0;
+                    const montantmin = dataCalculMinPer[0]?.montantmin ?? 0;
+
+                    await db.sequelize.query(`
+                        UPDATE liassedrfs as tabA SET
+                        montant_brut = (SELECT COALESCE(SUM(montant_brut),0) FROM liassedrfs as tabB 
+                        WHERE tabB.id_rubrique = 1
+                        AND tabB.id_compte = :compte_id AND tabB.id_dossier = :dossier_id AND tabB.id_exercice = :exercice_id
+                        AND tabB.id_etat='DRF')*${pourcentageca}/100 + ${montantmin}
+                        
+                        WHERE tabA.id_compte = :compte_id AND tabA.id_dossier = :dossier_id AND tabA.id_exercice = :exercice_id
+                        AND tabA.id_etat = 'DRF' AND tabA.nature = 'TOTALMIN_PER' AND tabA.id = ${total.id}
+                        `, 
+                        {
+                            replacements: { compte_id, dossier_id, exercice_id},
+                            type: db.Sequelize.QueryTypes.UPDATE
+                        }   
+                    );
+                }
+
+                if(total.nature === 'TOTALIMP_DU'){
+                    await db.sequelize.query(`
+                        UPDATE liassedrfs as tabA SET
+                        montant_brut = GREATEST(
+                            (SELECT COALESCE(SUM(montant_brut),0) FROM liassedrfs as tabB 
+                            WHERE tabB.id_rubrique = 16
+                            AND tabB.id_compte = :compte_id AND tabB.id_dossier = :dossier_id AND tabB.id_exercice = :exercice_id
+                            AND tabB.id_etat='DRF'),
+
+                            (SELECT COALESCE(SUM(montant_brut),0) FROM liassedrfs as tabC 
+                            WHERE tabC.id_rubrique = 17
+                            AND tabC.id_compte = :compte_id AND tabC.id_dossier = :dossier_id AND tabC.id_exercice = :exercice_id
+                            AND tabC.id_etat='DRF')
+                        )
+                        
+                        WHERE tabA.id_compte = :compte_id AND tabA.id_dossier = :dossier_id AND tabA.id_exercice = :exercice_id
+                        AND tabA.id_etat = 'DRF' AND tabA.nature = 'TOTALIMP_DU' AND tabA.id = ${total.id}
+                        `, 
+                        {
+                            replacements: { compte_id, dossier_id, exercice_id},
+                            type: db.Sequelize.QueryTypes.UPDATE
+                        }   
+                    );
+                }
+
+                if(total.nature === 'TOTALIMP_DU1'){
+                    await db.sequelize.query(`
+                        UPDATE liassedrfs as tabA SET
+                        montant_brut = GREATEST(
+                            (SELECT COALESCE(SUM(montant_brut),0) FROM liassedrfs as tabB 
+                            WHERE tabB.id_rubrique = 18
+                            AND tabB.id_compte = :compte_id AND tabB.id_dossier = :dossier_id AND tabB.id_exercice = :exercice_id
+                            AND tabB.id_etat='DRF')
+                            -
+                            (SELECT COALESCE(SUM(montant_brut),0) FROM liassedrfs as tabC 
+                            WHERE tabC.id_rubrique = 19
+                            AND tabC.id_compte = :compte_id AND tabC.id_dossier = :dossier_id AND tabC.id_exercice = :exercice_id
+                            AND tabC.id_etat='DRF')
+                            ,
+                            (SELECT COALESCE(SUM(montant_brut),0) FROM liassedrfs as tabD 
+                            WHERE tabD.id_rubrique = 17
+                            AND tabD.id_compte = :compte_id AND tabD.id_dossier = :dossier_id AND tabD.id_exercice = :exercice_id
+                            AND tabD.id_etat='DRF')
+                        )
+                        
+                        WHERE tabA.id_compte = :compte_id AND tabA.id_dossier = :dossier_id AND tabA.id_exercice = :exercice_id
+                        AND tabA.id_etat = 'DRF' AND tabA.nature = 'TOTALIMP_DU1' AND tabA.id = ${total.id}
+                        `, 
+                        {
+                            replacements: { compte_id, dossier_id, exercice_id},
+                            type: db.Sequelize.QueryTypes.UPDATE
+                        }   
+                    );
+                }
+            }
+        }
+
+        return true;
+    }catch (error){
+        console.log(error);
+    }
+}
+
+const totalRubriqueSAD = async (compte_id, dossier_id, exercice_id) => {
+    try{
+        await db.sequelize.query(`
+            UPDATE liassesads as TabA SET
+            total_imputation = n6+n5+n4+n3+n2+n1+n
+            WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
+            `, 
+            {
+                replacements: { compte_id, dossier_id, exercice_id },
+                type: db.Sequelize.QueryTypes.UPDATE
+            }
+        );
+        return true;
+    }catch (error){
+        console.log(error);
+    }
+}
+
+const totalRubriqueSDR = async (compte_id, dossier_id, exercice_id) => {
+    try{
+        //calcul ligne total
+        await db.sequelize.query(`
+            UPDATE liassesdrs as TabA SET
+            n6 = (SELECT COALESCE(SUM(n6),0) FROM liassesdrs as tabB 
+            WHERE tabB.id_rubrique IN (1,2,3,4,5,6,7)
+            AND tabB.id_compte = :compte_id AND tabB.id_dossier = :dossier_id AND tabB.id_exercice = :exercice_id),
+
+            n5 = (SELECT COALESCE(SUM(n5),0) FROM liassesdrs as tabB 
+            WHERE tabB.id_rubrique IN (1,2,3,4,5,6,7)
+            AND tabB.id_compte = :compte_id AND tabB.id_dossier = :dossier_id AND tabB.id_exercice = :exercice_id),
+
+            n4 = (SELECT COALESCE(SUM(n4),0) FROM liassesdrs as tabB 
+            WHERE tabB.id_rubrique IN (1,2,3,4,5,6,7)
+            AND tabB.id_compte = :compte_id AND tabB.id_dossier = :dossier_id AND tabB.id_exercice = :exercice_id),
+
+            n3 = (SELECT COALESCE(SUM(n3),0) FROM liassesdrs as tabB 
+            WHERE tabB.id_rubrique IN (1,2,3,4,5,6,7)
+            AND tabB.id_compte = :compte_id AND tabB.id_dossier = :dossier_id AND tabB.id_exercice = :exercice_id),
+
+            n2 = (SELECT COALESCE(SUM(n2),0) FROM liassesdrs as tabB 
+            WHERE tabB.id_rubrique IN (1,2,3,4,5,6,7)
+            AND tabB.id_compte = :compte_id AND tabB.id_dossier = :dossier_id AND tabB.id_exercice = :exercice_id),
+
+            n1 = (SELECT COALESCE(SUM(n1),0) FROM liassesdrs as tabB 
+            WHERE tabB.id_rubrique IN (1,2,3,4,5,6,7)
+            AND tabB.id_compte = :compte_id AND tabB.id_dossier = :dossier_id AND tabB.id_exercice = :exercice_id),
+
+            exercice = (SELECT COALESCE(SUM(exercice),0) FROM liassesdrs as tabB 
+            WHERE tabB.id_rubrique IN (1,2,3,4,5,6,7)
+            AND tabB.id_compte = :compte_id AND tabB.id_dossier = :dossier_id AND tabB.id_exercice = :exercice_id)
+
+            WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
+            AND TabA.id_rubrique = 8
+            `, 
+            {
+                replacements: { compte_id, dossier_id, exercice_id },
+                type: db.Sequelize.QueryTypes.UPDATE
+            }
+        );
+
+
+
+
+
+        await db.sequelize.query(`
+            UPDATE liassesdrs as TabA SET
+            total = n6+n5+n4+n3+n2+n1+exercice
+            WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
+            `, 
+            {
+                replacements: { compte_id, dossier_id, exercice_id },
+                type: db.Sequelize.QueryTypes.UPDATE
+            }
+        );
+
+        return true;
+    }catch (error){
+        console.log(error);
+    }
+}
+
 module.exports = { 
     totalRubriqueBilan,
     totalRubriqueCRN,
     totalRubriqueCRF,
     totalRubriqueTFTD,
     totalRubriqueTFTI,
-    totalRubriqueEVCP 
+    totalRubriqueEVCP,
+    totalRubriqueDRF,
+    totalRubriqueSAD,
+    totalRubriqueSDR 
 };

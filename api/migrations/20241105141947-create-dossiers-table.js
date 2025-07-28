@@ -43,123 +43,126 @@ module.exports = {
         allowNull: true
     },
     denomination: {
-      type: DataTypes.STRING(150),
+      type: Sequelize.STRING(150),
       unique: false,
       allowNull: true
     },
     raisonsociale: {
-    type: DataTypes.STRING(150),
-    unique: false,
-    allowNull: true
+        type: Sequelize.STRING(150),
+        unique: false,
+        allowNull: true
     },
     rcs: {
-    type: DataTypes.STRING(35),
-    unique: false,
-    allowNull: true
+        type: Sequelize.STRING(35),
+        unique: false,
+        allowNull: true
     },
     formejuridique: {
-        type: DataTypes.STRING(10),
+        type: Sequelize.STRING(10),
         unique: false,
         allowNull: true
     },
     activite: {
-        type: DataTypes.STRING(150),
+        type: Sequelize.STRING(150),
         unique: false,
         allowNull: true
     },
     detailactivite: {
-        type: DataTypes.STRING(250),
+        type: Sequelize.STRING(250),
         unique: false,
         allowNull: true
     },
     adresse: {
-        type: DataTypes.STRING(200),
+        type: Sequelize.STRING(200),
         unique: false,
         allowNull: true
     },
     email: {
-        type: DataTypes.STRING(150),
+        type: Sequelize.STRING(150),
         unique: false,
         allowNull: true
     },
     telephone: {
-        type: DataTypes.STRING(15),
+        type: Sequelize.STRING(15),
         unique: false,
         allowNull: true
     },
     id_plancomptable: {
-        type: DataTypes.BIGINT,
+        type: Sequelize.BIGINT,
         unique: false,
         allowNull: true
     },
     longcomptestd: {
-        type: DataTypes.INTEGER,
+        type: Sequelize.INTEGER,
         unique: false,
         allowNull: false,
         defaultValue:0
     },
     longcompteaux: {
-        type: DataTypes.INTEGER,
+        type: Sequelize.INTEGER,
         unique: false,
         allowNull: false,
         defaultValue:0
     },
     autocompletion: {
-        type: DataTypes.BOOLEAN,
+        type: Sequelize.BOOLEAN,
         unique: false,
         allowNull: false,
         defaultValue:true
     },
     avecanalytique: {
-        type: DataTypes.BOOLEAN,
+        type: Sequelize.BOOLEAN,
         unique: false,
         allowNull: false,
         defaultValue:false
     },
-    tauxir: {
-        type: DataTypes.INTEGER,
-        unique: false,
-        allowNull: false,
-         autocompletion: {
-        type: DataTypes.BOOLEAN,
+     autocompletion: {
+        type: Sequelize.BOOLEAN,
         unique: false,
         allowNull: false,
         defaultValue:true
     },
+    tauxir: {
+        type: Sequelize.DOUBLE,
+        unique: false,
+        allowNull: false,
+        defaultValue:0
+    },
+    pourcentageca: {
+        type: Sequelize.DOUBLE,
+        unique: false,
+        allowNull: false,
+        defaultValue:0
+    },
+    montantmin: {
+        type: Sequelize.DOUBLE,
+        unique: false,
+        allowNull: false,
+        defaultValue:0
     },
     assujettitva: {
-        type: DataTypes.BOOLEAN,
+        type: Sequelize.BOOLEAN,
         unique: false,
         allowNull: false,
         defaultValue:false
     },
     capital: {
-        type: DataTypes.DOUBLE,
+        type: Sequelize.DOUBLE,
         unique: false,
         allowNull: false,
         defaultValue:0
     },
     nbrpart: {
-        type: DataTypes.INTEGER,
+        type: Sequelize.INTEGER,
         unique: false,
         allowNull: false,
-        autocompletion: {
-            type: DataTypes.BOOLEAN,
-            unique: false,
-            allowNull: false,
-            defaultValue:true
-        },
+        defaultValue:0
     },
     valeurpart: {
-        type: DataTypes.DOUBLE,
+        type: Sequelize.DOUBLE,
         unique: false,
         allowNull: false,
-        autocompletion: {
-            type: DataTypes.BOOLEAN,
-            unique: false,
-            allowNull: false,
-            defaultValue:true
-        },
+        defaultValue:0
     },
   },
   {timestamps: true}

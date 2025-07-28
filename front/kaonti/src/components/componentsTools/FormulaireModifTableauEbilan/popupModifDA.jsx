@@ -85,7 +85,7 @@ const PopupModifDA = ({choix, confirmationState, data}) =>{
                 const daysInMonth = new Date(year, month, 0).getDate();
                 return day >= 1 && day <= daysInMonth;
             }).required("La date d'acquisition est obligatoire."),
-            taux: Yup.number().positive("Veuillez entrer le taux d'amortissement.").required("Veuillez le taux d'amortissement."),
+            taux: Yup.number().min(0, "Veuillez entrer un taux supérieur ou égal à 0.").required("Veuillez le taux d'amortissement."),
             valeur_acquisition: Yup.number().positive("Veuillez entrer la valeur d'acquisition.").required("Veuillez entrer la valeur d'acquisition."),
         }),
         //validateOnChange: false,

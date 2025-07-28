@@ -63,7 +63,7 @@ const PopupModifBHIAPC = ({choix, confirmationState, data}) =>{
                     ...prevFormDataFinal, 
                     state: true, 
                     id: values.id, 
-                    nif: nif,
+                    nif: values.nif,
                     raisonsociale: values.raisonsociale,
                     adresse: values.adresse,
                     montantcharge: values.montantcharge,
