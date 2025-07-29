@@ -2085,42 +2085,42 @@ const lockTableDRF = () => {
     }
 
     //fonction standard suppresion d'une ligne d'un tableau
-    const deleteOneRow = (value) => {
-        if (value) {
-            const exerciceId = selectedPeriodeId;
-            axios.post(`/declaration/ebilan/deleteTableOneRow`, { compteId, fileId, exerciceId, infoRowToDelete }).then((response) => {
-                const resData = response.data;
-                if (resData.state) {
-                    recupRubriqueIndividual(compteId, fileId, selectedPeriodeId, infoRowToDelete.tableau);
-                    toast.success(resData.msg);
-                    setConfirmDeleteOneRow(false);
-                } else {
-                    toast.error(resData.msg);
-                }
-            });
-        } else {
-            setConfirmDeleteOneRow(false);
-        }
-    }
+    // const deleteOneRow = (value) => {
+    //     if (value) {
+    //         const exerciceId = selectedPeriodeId;
+    //         axios.post(`/declaration/ebilan/deleteTableOneRow`, { compteId, fileId, exerciceId, infoRowToDelete }).then((response) => {
+    //             const resData = response.data;
+    //             if (resData.state) {
+    //                 recupRubriqueIndividual(compteId, fileId, selectedPeriodeId, infoRowToDelete.tableau);
+    //                 toast.success(resData.msg);
+    //                 setConfirmDeleteOneRow(false);
+    //             } else {
+    //                 toast.error(resData.msg);
+    //             }
+    //         });
+    //     } else {
+    //         setConfirmDeleteOneRow(false);
+    //     }
+    // }
 
     //fonction standard suppresion d'une ligne d'un tableau
-    const deleteAllRow = (value) => {
-        if (value) {
-            const exerciceId = selectedPeriodeId;
-            axios.post(`/declaration/ebilan/deleteTableAllRow`, { compteId, fileId, exerciceId, tableauToDeleteAllRow }).then((response) => {
-                const resData = response.data;
-                if (resData.state) {
-                    recupRubriqueIndividual(compteId, fileId, selectedPeriodeId, tableauToDeleteAllRow);
-                    toast.success(resData.msg);
-                    setConfirmDeleteAllRow(false);
-                } else {
-                    toast.error(resData.msg);
-                }
-            });
-        } else {
-            setConfirmDeleteAllRow(false);
-        }
-    }
+    // const deleteAllRow = (value) => {
+    //     if (value) {
+    //         const exerciceId = selectedPeriodeId;
+    //         axios.post(`/declaration/ebilan/deleteTableAllRow`, { compteId, fileId, exerciceId, tableauToDeleteAllRow }).then((response) => {
+    //             const resData = response.data;
+    //             if (resData.state) {
+    //                 recupRubriqueIndividual(compteId, fileId, selectedPeriodeId, tableauToDeleteAllRow);
+    //                 toast.success(resData.msg);
+    //                 setConfirmDeleteAllRow(false);
+    //             } else {
+    //                 toast.error(resData.msg);
+    //             }
+    //         });
+    //     } else {
+    //         setConfirmDeleteAllRow(false);
+    //     }
+    // }
 
     //supprimer une ligne de BHIAPC
     const deleteOneRowBHIAPC = (row) => {
@@ -2666,21 +2666,6 @@ const lockTableDRF = () => {
     const lockTableNE = () => {
         verrouillerTableau(compteId, fileId, selectedPeriodeId, 'NE', verrNote);
         setVerrNote(!verrNote);
-    }
-
-
-
-    //choix affichage tableau bilan (Actif ou passif = actif à l'ouverture)
-    const choixAffichageBilan = (choix) => {
-        setShowBilan(choix);
-
-        if (choix === 'actif') {
-            setButtonActifVariant('contained');
-            setButtonPassifVariant('outlined');
-        } else {
-            setButtonActifVariant('outlined');
-            setButtonPassifVariant('contained');
-        }
     }
 
     return (
