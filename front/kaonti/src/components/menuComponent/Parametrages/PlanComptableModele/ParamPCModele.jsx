@@ -800,7 +800,7 @@ export default function ParamPlanComptableModele() {
                             direction={"row"} style={{marginLeft:"0px", marginTop:"30px", justifyContent:"right"}}>
                             <Typography variant='h7' sx={{color: "black", fontWeight:"bold",width:"300px"}} align='left'>Plan de compte</Typography>
 
-                            <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"} 
+                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"} 
                             direction={"row"} justifyContent={"right"}>
                                 <Tooltip title="Ajouter un nouveau compte">
                                     <IconButton
