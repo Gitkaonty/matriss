@@ -14,15 +14,15 @@ const dossierpcdetailcpttva = db.dossierpcdetailcpttva;
 const dombancaires = db.dombancaires;
 const pays = db.pays;
 
-dombancaires.belongsTo(pays, { as: 'tablepays', foreignKey: 'pays' , targetKey: 'code'});
+dombancaires.belongsTo(pays, { as: 'tablepays', foreignKey: 'pays', targetKey: 'code' });
 
 function isValidDate(date) {
   return date instanceof Date && !isNaN(date);
 }
 
 const recupListDossier = async (req, res) => {
- try {
-    const compteId  = req.params.compteId;
+  try {
+    const compteId = req.params.compteId;
 
     let resData = {
       state: false,
@@ -31,12 +31,12 @@ const recupListDossier = async (req, res) => {
     }
 
     const list = await dossier.findAll({
-    where: {
+      where: {
         id_compte: compteId
-        }
+      }
     });
 
-   if (list) {
+    if (list) {
       resData.state = true;
       resData.fileList = list;
     } else {
@@ -45,9 +45,9 @@ const recupListDossier = async (req, res) => {
     }
 
     return res.json(resData);
- } catch (error) {
-   console.log(error);
- }
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 const createNewFile = async (req, res) => {
@@ -57,7 +57,7 @@ const createNewFile = async (req, res) => {
       msg: '',
     }
 
-    const { 
+    const {
       action,
       itemId,
       idCompte,
@@ -90,7 +90,7 @@ const createNewFile = async (req, res) => {
       listeFiliales,
     } = req.body;
 
-    if(action === 'new'){
+    if (action === 'new') {
       const newFile = await dossier.create({
         id_compte: idCompte,
         dossier: nomdossier,
@@ -121,17 +121,17 @@ const createNewFile = async (req, res) => {
       });
 
       //copie la liste des associés
-      if(newFile.id){
-        if(listeAssocies.length > 0){
+      if (newFile.id) {
+        if (listeAssocies.length > 0) {
           for (const item of listeAssocies) {
-              await dossierassocies.create({
+            await dossierassocies.create({
               id_dossier: newFile.id,
               id_compte: idCompte,
               type: item.type,
               nom: item.nom,
               adresse: item.adresse,
-              dateentree: (item.dateentree && item.dateentree !== '')? item.dateentree : null,
-              datesortie: (item.datesortie && item.datesortie !== '')? item.datesortie : null,
+              dateentree: (item.dateentree && item.dateentree !== '') ? item.dateentree : null,
+              datesortie: (item.datesortie && item.datesortie !== '') ? item.datesortie : null,
               nbrpart: item.nbrpart,
               enactivite: item.enactivite
             });
@@ -140,8 +140,8 @@ const createNewFile = async (req, res) => {
       }
 
       //copie la liste des filiales
-      if(newFile.id){
-        if(listeFiliales.length > 0){
+      if (newFile.id) {
+        if (listeFiliales.length > 0) {
           for (const item of listeFiliales) {
             await dossierfiliales.create({
               id_dossier: newFile.id,
@@ -159,12 +159,12 @@ const createNewFile = async (req, res) => {
 
       //copie du plan comptable
       const modelePc = await modeleplancomptabledetail.findAll({
-        where: {id_modeleplancomptable : plancomptable }
+        where: { id_modeleplancomptable: plancomptable }
       });
 
       if (modelePc.length > 0) {
         //console.log("🔁 Début de la copie du plan comptable. Total lignes :", modelePc.length);
-      
+
         for (const [index, item] of modelePc.entries()) {
           try {
             // Sécurité : vérifie que les champs critiques existent
@@ -172,15 +172,15 @@ const createNewFile = async (req, res) => {
               //console.log(`⚠️ Ligne ${index + 1} ignorée : champ 'compte' invalide →`, item.compte);
               continue;
             }
-      
+
             if (!item.libelle) {
               //console.log(`⚠️ Ligne ${index + 1} ignorée : champ 'libelle' vide`);
               continue;
             }
-      
+
             let compteFormated = '';
             let baseAux = '';
-      
+
             // Formatage compte & baseaux selon les règles métier
             if (autocompletion) {
               if (item.nature === "Aux") {
@@ -199,7 +199,7 @@ const createNewFile = async (req, res) => {
                 baseAux = item.baseaux;
               }
             }
-      
+
             // Insertion sécurisée
             const newCptEntry = await dossierplancomptable.create({
               id_compte: idCompte,
@@ -225,11 +225,11 @@ const createNewFile = async (req, res) => {
               pays: item.pays,
               // baseaux_id: à gérer plus tard
             });
-      
+
             //console.log(`✅ [${index + 1}/${modelePc.length}] Insertion OK pour le compte :`, compteFormated);
 
             //copier les comptes de charges associés au compte s'il en existe 
-            if(item.cptcharge){
+            if (item.cptcharge) {
               const listCptCh = await modeleplancomptabledetailcptchg.findAll({
                 where:
                 {
@@ -239,7 +239,7 @@ const createNewFile = async (req, res) => {
                 }
               });
 
-              if(listCptCh.length > 0 ){
+              if (listCptCh.length > 0) {
                 for (const [index, item] of listCptCh.entries()) {
                   await dossierpcdetailcptchg.create({
                     id_compte: idCompte,
@@ -255,7 +255,7 @@ const createNewFile = async (req, res) => {
             }
 
             //copier les comptes de TVA associés au compte s'il en existe
-            if(item.cpttva){
+            if (item.cpttva) {
               const listCptTva = await modeleplancomptabledetailcpttva.findAll({
                 where:
                 {
@@ -265,7 +265,7 @@ const createNewFile = async (req, res) => {
                 }
               });
 
-              if(listCptTva.length > 0 ){
+              if (listCptTva.length > 0) {
                 for (const [index, item] of listCptTva.entries()) {
                   await dossierpcdetailcpttva.create({
                     id_compte: idCompte,
@@ -278,22 +278,22 @@ const createNewFile = async (req, res) => {
                 }
               }
             }
-      
+
           } catch (err) {
             //console.log(`❌ [${index + 1}] Erreur insertion compte : ${item.compte}`);
             console.log("💥 Message :", err.message);
           }
         }
-      
+
         //console.log("🏁 Fin de la boucle de copie du plan comptable");
       }
-      
 
-      if(newFile){
+
+      if (newFile) {
         updatebaseAuxID(idCompte, newFile.id, plancomptable);
         resData.state = true;
         resData.msg = 'Création du nouveau dossier terminée avec succès';
-      }else{
+      } else {
         resData.state = false;
         resData.msg = 'Une erreur est survenue lors de la création du nouveau dossier';
       }
@@ -305,8 +305,8 @@ const createNewFile = async (req, res) => {
   }
 }
 
-const updatebaseAuxID = async (idCompte, id_dossier,id_modelePC) => {
-  try{
+const updatebaseAuxID = async (idCompte, id_dossier, id_modelePC) => {
+  try {
     const importedModel = await dossierplancomptable.findAll({
       where:
       {
@@ -353,7 +353,7 @@ const updatebaseAuxID = async (idCompte, id_dossier,id_modelePC) => {
       }
     });
 
-    if(listCptCh.length > 0 ){
+    if (listCptCh.length > 0) {
       for (const [index, item] of listCptCh.entries()) {
         const dataInfosIDmodelePC = await modeleplancomptabledetail.findOne({
           where:
@@ -363,17 +363,17 @@ const updatebaseAuxID = async (idCompte, id_dossier,id_modelePC) => {
           }
         });
 
-        if(dataInfosIDmodelePC){
+        if (dataInfosIDmodelePC) {
           const dataInfosID = await dossierplancomptable.findOne({
             where:
             {
               id_compte: String(idCompte),
               id_dossier: String(id_dossier),
-              compte : dataInfosIDmodelePC.compte
+              compte: dataInfosIDmodelePC.compte
             }
           });
 
-          if(dataInfosID){
+          if (dataInfosID) {
             await dossierpcdetailcptchg.update(
               {
                 compte: dataInfosID.compte,
@@ -381,7 +381,7 @@ const updatebaseAuxID = async (idCompte, id_dossier,id_modelePC) => {
                 id_comptecompta: dataInfosID.id
               },
               {
-                where: {id : item.id}
+                where: { id: item.id }
               }
             );
           }
@@ -397,7 +397,7 @@ const updatebaseAuxID = async (idCompte, id_dossier,id_modelePC) => {
       }
     });
 
-    if(listCptTva.length > 0 ){
+    if (listCptTva.length > 0) {
       for (const [index, item] of listCptTva.entries()) {
         const dataInfosIDmodelePC = await modeleplancomptabledetail.findOne({
           where:
@@ -407,17 +407,17 @@ const updatebaseAuxID = async (idCompte, id_dossier,id_modelePC) => {
           }
         });
 
-        if(dataInfosIDmodelePC){
+        if (dataInfosIDmodelePC) {
           const dataInfosID = await dossierplancomptable.findOne({
             where:
             {
               id_compte: idCompte,
               id_dossier: id_dossier,
-              compte : dataInfosIDmodelePC.compte
+              compte: dataInfosIDmodelePC.compte
             }
           });
 
-          if(dataInfosID){
+          if (dataInfosID) {
             await modeleplancomptabledetailcpttva.update(
               {
                 compte: dataInfosID.compte,
@@ -425,7 +425,7 @@ const updatebaseAuxID = async (idCompte, id_dossier,id_modelePC) => {
                 id_comptecompta: dataInfosID.id
               },
               {
-                where: {id : item.id}
+                where: { id: item.id }
               }
             );
           }
@@ -433,12 +433,12 @@ const updatebaseAuxID = async (idCompte, id_dossier,id_modelePC) => {
       }
     }
   } catch (error) {
-  console.log(error);
+    console.log(error);
   }
 }
 
 const deleteCreatedFile = async (req, res) => {
-  try{
+  try {
     const { id_dossier } = req.body;
     let resData = {
       state: false,
@@ -446,30 +446,30 @@ const deleteCreatedFile = async (req, res) => {
     }
 
     const deleteState = await dossier.destroy({
-      where : {id : id_dossier}
+      where: { id: id_dossier }
     });
 
     await dossierplancomptable.destroy({
-      where : {id_dossier : id_dossier}
+      where: { id_dossier: id_dossier }
     });
 
-    if(deleteState){
+    if (deleteState) {
       resData.state = true;
       resData.msg = 'Suppression du dossier effectuée avec succès';
-    }else{
+    } else {
       resData.state = false;
       resData.msg = 'Une erreur est survenue lors de la suppression du dossier';
     }
 
     return res.json(resData);
   } catch (error) {
-   console.log(error);
+    console.log(error);
   }
 }
 
-const informationsFile = async (req, res)  => {
-  try{
-    const fileId  = req.params.id;
+const informationsFile = async (req, res) => {
+  try {
+    const fileId = req.params.id;
 
     let resData = {
       state: false,
@@ -479,29 +479,30 @@ const informationsFile = async (req, res)  => {
       domBank: [],
     }
 
-    if(fileId > 0){
+    if (fileId > 0) {
       const list = await dossier.findAll({
         where: {
-            id: fileId
-            }
-        });
+          id: fileId
+        }
+      });
 
       const listAssocie = await dossierassocies.findAll({
-        where: 
-            {
-              id_dossier: fileId,
-              enactivite: true
-            }
+        where:
+        {
+          id_dossier: fileId,
+          enactivite: true
+        }
       });
 
       const listDomBank = await dombancaires.findAll({
-        where: 
-          {
-            id_dossier: fileId,
-            enactivite: true
-          },
+        where:
+        {
+          id_dossier: fileId,
+          enactivite: true
+        },
         include: [
-          { model: pays, 
+          {
+            model: pays,
             as: 'tablepays',
             attributes: [
               ['nompays', 'nompays']
@@ -509,9 +510,9 @@ const informationsFile = async (req, res)  => {
             required: true,
           },
         ],
-        raw:true,
+        raw: true,
       });
-    
+
       if (list.length > 0) {
         resData.state = true;
         resData.fileInfos = list;
@@ -521,20 +522,20 @@ const informationsFile = async (req, res)  => {
         resData.state = false;
         resData.msg = 'une erreur est survenue lors du traitement.';
       }
-    }else{
+    } else {
       resData.state = false;
       resData.msg = "ce dossier n'existe pas.";
     }
-    
+
     return res.json(resData);
-  }catch (error){
+  } catch (error) {
     console.log(error);
   }
 }
 
 module.exports = {
-    recupListDossier,
-    createNewFile,
-    deleteCreatedFile,
-    informationsFile
+  recupListDossier,
+  createNewFile,
+  deleteCreatedFile,
+  informationsFile
 };

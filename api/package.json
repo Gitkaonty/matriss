@@ -21,6 +21,7 @@
     "fs.promises": "^0.1.2",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
+    "multer": "^2.0.1",
     "mysql2": "^3.11.3",
     "nodemon": "^3.0.3",
     "path": "^0.12.7",

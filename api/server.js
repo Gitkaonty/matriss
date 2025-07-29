@@ -25,15 +25,19 @@ app.use(credentials);
 app.use(cors(corsOptions));
 
 app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb',extended: true }))
+app.use(express.urlencoded({ limit: '50mb', extended: true }))
 app.use(express.json());
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, '/public')));
+// app.use(express.static(path.join(__dirname, '/public')));
+app.use('/public', express.static(path.join(__dirname, '/public')));
 
 //synchronizing the database and forcing it to false so we dont lose data (ito no ampiasaina ra toa ka executena ny DROP TABLE am sequelize)
 //db.sequelize.sync({ force: true }).then(() => {
-    //console.log("db has been re sync")
+//console.log("db has been re sync")
 //})
+
+// Static folder
+// app.use('/Uploads', express.static(path.join(__dirname, 'Uploads')));
 
 //synchronizing the database and forcing it to false so we dont lose data
 db.sequelize.sync().then(() => {
@@ -78,6 +82,9 @@ app.use('/administration/ImportModelePc', require('./Routes/Administration/impor
 
 //export
 app.use('/administration/exportBalance', require('./Routes/Administration/exportBalanceRoute'));
+
+//saisie
+app.use('/administration/traitementSaisie', require('./Routes/Administration/saisieRoute'));
 
 //----------------------------------------------------------------------------------------------------------------
 // MENU PARAMETRE

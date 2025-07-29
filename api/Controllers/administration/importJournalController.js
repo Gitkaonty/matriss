@@ -9,9 +9,9 @@ const journals = db.journals;
 const codejournals = db.codejournals;
 const dossierPlanComptable = db.dossierplancomptable;
 
-const createNotExistingCodeJournal = async (req, res)  => {
-  try{
-    const { compteId, fileId, codeJournalToCreate } = req.body; 
+const createNotExistingCodeJournal = async (req, res) => {
+  try {
+    const { compteId, fileId, codeJournalToCreate } = req.body;
 
     let resData = {
       state: false,
@@ -19,7 +19,7 @@ const createNotExistingCodeJournal = async (req, res)  => {
       list: []
     }
 
-    if(codeJournalToCreate.length > 0){
+    if (codeJournalToCreate.length > 0) {
       await codeJournalToCreate.map(item => {
         codejournals.create({
           id_compte: compteId,
@@ -32,25 +32,25 @@ const createNotExistingCodeJournal = async (req, res)  => {
 
       //récuperer la liste à jour des codes journaux
       const updatedList = await codejournals.findAll({
-      where: 
+        where:
         {
           id_compte: compteId,
           id_dossier: fileId
         },
-        raw:true,
+        raw: true,
       });
 
       resData.state = true;
       resData.list = updatedList;
-    }else{
+    } else {
       //récuperer la liste à jour des codes journaux
-    const updatedList = await codejournals.findAll({
-      where: 
+      const updatedList = await codejournals.findAll({
+        where:
         {
           id_compte: compteId,
           id_dossier: fileId
         },
-        raw:true,
+        raw: true,
       });
 
       resData.state = true;
@@ -58,14 +58,14 @@ const createNotExistingCodeJournal = async (req, res)  => {
     }
 
     return res.json(resData);
-  }catch (error){
+  } catch (error) {
     console.log(error);
   }
 }
 
-const createNotExistingCompte = async (req, res)  => {
-  try{
-    const { compteId, fileId, compteToCreateGen, compteToCreateAux } = req.body; 
+const createNotExistingCompte = async (req, res) => {
+  try {
+    const { compteId, fileId, compteToCreateGen, compteToCreateAux } = req.body;
 
     let resData = {
       state: false,
@@ -77,7 +77,7 @@ const createNotExistingCompte = async (req, res)  => {
     let validAux = false;
 
     //création des comptes généraux
-    if(compteToCreateGen.length > 0){
+    if (compteToCreateGen.length > 0) {
       await compteToCreateGen.map(item => {
         dossierPlanComptable.create({
           id_compte: compteId,
@@ -91,12 +91,12 @@ const createNotExistingCompte = async (req, res)  => {
         });
       })
       validGen = true;
-    }else{
+    } else {
       validAux = true;
     }
 
     //création des comptes auxiliaires
-    if(compteToCreateAux.length > 0){
+    if (compteToCreateAux.length > 0) {
 
       const baseauxID = dossierPlanComptable.findOne({
         where:
@@ -120,7 +120,7 @@ const createNotExistingCompte = async (req, res)  => {
         });
       })
       validAux = true;
-    }else{
+    } else {
       validAux = true;
     }
 
@@ -128,40 +128,40 @@ const createNotExistingCompte = async (req, res)  => {
       UPDATE dossierPlanComptables SET
       baseaux_id = id
       WHERE compte = baseaux AND id_compte = :compteId AND id_dossier = :fileId
-    `, 
-    {
-      replacements: { compteId, fileId },
-      type: db.Sequelize.QueryTypes.UPDATE
-    }
+    `,
+      {
+        replacements: { compteId, fileId },
+        type: db.Sequelize.QueryTypes.UPDATE
+      }
     );
 
     //récuperer la liste à jour des codes journaux
     const updatedList = await dossierPlanComptable.findAll({
-      where: 
-        {
-          id_compte: compteId,
-          id_dossier: fileId
-        },
-        raw:true,
-      });
+      where:
+      {
+        id_compte: compteId,
+        id_dossier: fileId
+      },
+      raw: true,
+    });
 
-    if(validAux && validGen){
+    if (validAux && validGen) {
       resData.state = true;
       resData.list = updatedList;
-    }else{
+    } else {
       resData.state = false;
       resData.list = updatedList;
     }
 
     return res.json(resData);
-  }catch (error){
+  } catch (error) {
     console.log(error);
   }
 }
 
-const importJournal = async (req, res)  => {
-  try{
-    const { compteId, userId, fileId, selectedPeriodeId, fileTypeCSV, valSelectCptDispatch, journalData } = req.body; 
+const importJournal = async (req, res) => {
+  try {
+    const { compteId, userId, fileId, selectedPeriodeId, fileTypeCSV, valSelectCptDispatch, journalData } = req.body;
 
     let resData = {
       state: false,
@@ -172,47 +172,47 @@ const importJournal = async (req, res)  => {
 
     let importSuccess = 1;
 
-    if(valSelectCptDispatch === 'ECRASER'){
+    if (valSelectCptDispatch === 'ECRASER') {
       journals.destroy({
-        where: 
-          {
-            id_compte: compteId,
-            id_dossier: fileId,
-            id_exercice: selectedPeriodeId,
-          }
+        where:
+        {
+          id_compte: compteId,
+          id_dossier: fileId,
+          id_exercice: selectedPeriodeId,
+        }
       });
     }
 
-    if(journalData.length > 0){
-      for(let item of journalData){
+    if (journalData.length > 0) {
+      for (let item of journalData) {
         let codeJournalId = 0;
-        const idCodeJournal =await codejournals.findOne({
-          where: 
+        const idCodeJournal = await codejournals.findOne({
+          where:
           {
             id_compte: compteId,
             id_dossier: fileId,
-            code : item.JournalCode
+            code: item.JournalCode
           },
         });
 
-        codeJournalId =idCodeJournal.id;
+        codeJournalId = idCodeJournal.id;
 
         let compteNumId = 0;
         let IdCompAuxNum = 0;
-        const idCompte =await dossierPlanComptable.findOne({
-          where: 
+        const idCompte = await dossierPlanComptable.findOne({
+          where:
           {
             id_compte: compteId,
             id_dossier: fileId,
-            compte : item.CompteNum
+            compte: item.CompteNum
           },
         });
 
-        if(idCompte){
+        if (idCompte) {
           compteNumId = idCompte.id;
           IdCompAuxNum = idCompte.baseaux_id;
         }
-        
+
         // if(item.CompAuxNum !== ""){
         //   const idCompteAux =await dossierPlanComptable.findOne({
         //     where: 
@@ -229,11 +229,11 @@ const importJournal = async (req, res)  => {
 
         //date écriture
         let dateEcrit = null;
-        if(item.EcritureDate !=='' && item.EcritureDate !== null){
-          if(item.EcritureDate.includes("/")){
+        if (item.EcritureDate !== '' && item.EcritureDate !== null) {
+          if (item.EcritureDate.includes("/")) {
             const [day, month, year] = item.EcritureDate.split("/");
             dateEcrit = new Date(`${year}-${month}-${day}`);
-          }else{
+          } else {
             let year = item.EcritureDate.substring(0, 4);
             let month = item.EcritureDate.substring(4, 6);
             let day = item.EcritureDate.substring(6, 8);
@@ -241,14 +241,14 @@ const importJournal = async (req, res)  => {
             dateEcrit = new Date(`${year}-${month}-${day}`);
           }
         }
-        
+
         //date pièce
         let datePiece = null;
-        if(item.PieceDate !=='' && item.PieceDate !== null){
-          if(item.PieceDate.includes("/")){
+        if (item.PieceDate !== '' && item.PieceDate !== null) {
+          if (item.PieceDate.includes("/")) {
             const [day1, month1, year1] = item.PieceDate.split("/");
             datePiece = new Date(`${year1}-${month1}-${day1}`);
-          }else{
+          } else {
             let year1 = item.PieceDate.substring(0, 4);
             let month1 = item.PieceDate.substring(4, 6);
             let day1 = item.PieceDate.substring(6, 8);
@@ -259,11 +259,11 @@ const importJournal = async (req, res)  => {
 
         //date lettrage
         let datelettrage = null;
-        if(item.DateLet !=='' && item.DateLet !== null){
-          if(item.DateLet.includes("/")){
+        if (item.DateLet !== '' && item.DateLet !== null) {
+          if (item.DateLet.includes("/")) {
             const [day2, month2, year2] = item.DateLet.split("/");
             datelettrage = new Date(`${year2}-${month2}-${day2}`);
-          }else{
+          } else {
             let year2 = item.DateLet.substring(0, 4);
             let month2 = item.DateLet.substring(4, 6);
             let day2 = item.DateLet.substring(6, 8);
@@ -274,23 +274,23 @@ const importJournal = async (req, res)  => {
 
         //transformation de débit en double précision si c'est null ou vide
         let debit = 0;
-        if(item.Debit !== null && item.Debit !==""){
-          debit = item.Debit.replace(',','.')
+        if (item.Debit !== null && item.Debit !== "") {
+          debit = item.Debit.replace(',', '.')
         }
 
         let credit = 0;
-        if(item.Credit !== null && item.Credit !==""){
-          credit = item.Credit.replace(',','.')
+        if (item.Credit !== null && item.Credit !== "") {
+          credit = item.Credit.replace(',', '.')
         }
 
         //import du journal dans la table journal
-        try{
+        try {
           await journals.create({
             id_compte: compteId,
             id_dossier: fileId,
             id_exercice: selectedPeriodeId,
             id_ecriture: item.EcritureNum,
-            dateecriture:dateEcrit,
+            dateecriture: dateEcrit,
             id_journal: codeJournalId,
             id_numcpt: compteNumId,
             id_numcptcentralise: IdCompAuxNum,
@@ -305,31 +305,31 @@ const importJournal = async (req, res)  => {
             saisiepar: userId,
           });
 
-          importSuccess = importSuccess*1;
-        }catch (error){
-          importSuccess = importSuccess*0;
+          importSuccess = importSuccess * 1;
+        } catch (error) {
+          importSuccess = importSuccess * 0;
           resData.msg = error;
         }
       };
-    }else{
+    } else {
       resData.msg = `${journalData.length} lignes ont été importées avec succès`;
       resData.nbrligne = journalData.length;
       resData.state = true;
     }
 
-    if(importSuccess === 1){
+    if (importSuccess === 1) {
 
       fonctionUpdateBalanceSold.updateSold(compteId, fileId, selectedPeriodeId, [], true);
 
       resData.msg = `${journalData.length} lignes ont été importées avec succès`;
       resData.nbrligne = journalData.length;
       resData.state = true;
-    }else{
+    } else {
       resData.state = false;
     }
-    
+
     return res.json(resData);
-  }catch (error){
+  } catch (error) {
     console.log(error);
   }
 }
