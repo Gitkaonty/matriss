@@ -6,6 +6,8 @@ const router = express.Router();
 //récupération de la liste des modèles dans le compte
 router.post('/model', paramPCModeleController.recupListModelePlanComptable );
 
+// router.get('/model', paramPCModeleController.recupListModelePlanComptable );
+
 //récupérer la liste de dossiers associé l'user et à son compte
 router.post('/dossier', paramPCModeleController.recupListDossier);
 

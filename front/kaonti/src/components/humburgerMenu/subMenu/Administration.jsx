@@ -10,12 +10,14 @@ const traitementList = [
     {
         text: 'Saisie',
         name: "saisie",
-        path: "/tab/saisie"
+        path: "/tab/saisie",
+        urldynamic: true
     },
     {
         text: 'Consultation',
         name: "consultation",
-        path: "/tab/consultation"
+        path: "/tab/consultation",
+        urldynamic: true
     },
 ];
 

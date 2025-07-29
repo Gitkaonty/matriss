@@ -1,4 +1,4 @@
-import {React, useState, useEffect } from 'react';
+import { React, useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Typography, Stack, Paper, Box, Tab, Badge, Button, Divider } from '@mui/material';
 import RadioGroup from '@mui/material/RadioGroup';
@@ -47,7 +47,7 @@ export default function ImportBalance() {
 
     //récupération infos de connexion
     const { auth } = useAuth();
-    const decoded = auth?.accessToken ? jwtDecode(auth.accessToken): undefined;
+    const decoded = auth?.accessToken ? jwtDecode(auth.accessToken) : undefined;
     const compteId = decoded.UserInfo.compteId || null;
     const userId = decoded.UserInfo.userId || null;
     const navigate = useNavigate();
@@ -55,8 +55,8 @@ export default function ImportBalance() {
     const [selectedExerciceId, setSelectedExerciceId] = useState(0);
     const [selectedPeriodeId, setSelectedPeriodeId] = useState(0);
     const [selectedPeriodeChoiceId, setSelectedPeriodeChoiceId] = useState(0);
-    const [listeExercice,setListeExercice] = useState([]);
-    const [listeSituation,setListeSituation] = useState([]);
+    const [listeExercice, setListeExercice] = useState([]);
+    const [listeSituation, setListeSituation] = useState([]);
 
     const [openDetailsAnomalie, setOpenDetailsAnomalie] = useState(false);
     const [nbrAnomalie, setNbrAnomalie] = useState(0);
@@ -67,14 +67,14 @@ export default function ImportBalance() {
     const [msgAnomalie, setMsgAnomalie] = useState([]);
     const [traitementBalanceWaiting, setTraitementBalanceWaiting] = useState(false);
     const [traitementBalanceMsg, setTraitementBalanceMsg] = useState('');
-    const [compteToCreate,setCompteToCreate] = useState([]);
+    const [compteToCreate, setCompteToCreate] = useState([]);
     const [balanceDesequilibre, setBalanceDesequilibre] = useState(false);
-    const [openDialogConfirmImport,setOpenDialogConfirmImport] = useState(false);
+    const [openDialogConfirmImport, setOpenDialogConfirmImport] = useState(false);
 
-    const [totalMvtDebit, setTotalMvtDebit] =useState("0,00");
-    const [totalMvtCredit, setTotalMvtCredit] =useState("0,00");
-    const [totalSoldeDebit, setTotalSoldeDebit] =useState("0,00");
-    const [totalSoldeCredit, setTotalSoldeCredit] =useState("0,00");
+    const [totalMvtDebit, setTotalMvtDebit] = useState("0,00");
+    const [totalMvtCredit, setTotalMvtCredit] = useState("0,00");
+    const [totalSoldeDebit, setTotalSoldeDebit] = useState("0,00");
+    const [totalSoldeCredit, setTotalSoldeCredit] = useState("0,00");
 
     //récupérer les informations du dossier sélectionné
     useEffect(() => {
@@ -88,8 +88,8 @@ export default function ImportBalance() {
                 const idDossier = sessionStorage.getItem("fileId");
                 setFileId(idDossier);
                 idFile = idDossier;
-            }else{
-                sessionStorage.setItem('fileId',id);
+            } else {
+                sessionStorage.setItem('fileId', id);
                 setFileId(id);
                 idFile = id;
             }
@@ -100,13 +100,13 @@ export default function ImportBalance() {
     }, []);
 
     const GetInfosIdDossier = (id) => {
-        axios.get(`/home/FileInfos/${id}`).then((response) =>{
+        axios.get(`/home/FileInfos/${id}`).then((response) => {
             const resData = response.data;
 
-            if(resData.state){
+            if (resData.state) {
                 setFileInfos(resData.fileInfos[0]);
                 setNoFile(false);
-            }else{
+            } else {
                 setFileInfos([]);
                 setNoFile(true);
             }
@@ -120,20 +120,20 @@ export default function ImportBalance() {
 
     //Récupérer la liste des exercices
     const GetListeExercice = (id) => {
-        axios.get(`/paramExercice/listeExercice/${id}`).then((response) =>{
+        axios.get(`/paramExercice/listeExercice/${id}`).then((response) => {
             const resData = response.data;
-            if(resData.state){
-            
+            if (resData.state) {
+
                 setListeExercice(resData.list);
-                
+
                 const exerciceNId = resData.list?.filter((item) => item.libelle_rang === "N");
                 setListeSituation(exerciceNId);
 
                 setSelectedExerciceId(exerciceNId[0].id);
                 setSelectedPeriodeChoiceId(0);
                 setSelectedPeriodeId(exerciceNId[0].id);
-                
-            }else{
+
+            } else {
                 setListeExercice([]);
                 toast.error("une erreur est survenue lors de la récupération de la liste des exercices");
             }
@@ -142,15 +142,15 @@ export default function ImportBalance() {
 
     //Récupérer la liste des exercices
     const GetListeSituation = (id) => {
-        axios.get(`/paramExercice/listeSituation/${id}`).then((response) =>{
+        axios.get(`/paramExercice/listeSituation/${id}`).then((response) => {
             const resData = response.data;
-            if(resData.state){
+            if (resData.state) {
                 const list = resData.list;
                 setListeSituation(resData.list);
-                if(list.length>0){
+                if (list.length > 0) {
                     setSelectedPeriodeId(list[0].id);
-                }  
-            }else{
+                }
+            } else {
                 setListeSituation([]);
                 toast.error("une erreur est survenue lors de la récupération de la liste des exercices");
             }
@@ -169,21 +169,21 @@ export default function ImportBalance() {
     const handleChangePeriode = (choix) => {
         setSelectedPeriodeChoiceId(choix);
 
-        if(choix === 0){
+        if (choix === 0) {
             setListeSituation(listeExercice?.filter((item) => item.id === selectedExerciceId));
             setSelectedPeriodeId(selectedExerciceId);
-        }else if(choix === 1){
+        } else if (choix === 1) {
             GetListeSituation(selectedExerciceId);
         }
     }
 
     //Récupération du plan comptable
     const recupPlanComptable = () => {
-        axios.post(`/paramPlanComptable/pc`, {fileId}).then((response) =>{
+        axios.post(`/paramPlanComptable/pc`, { fileId }).then((response) => {
             const resData = response.data;
-            if(resData.state){
+            if (resData.state) {
                 setPlanComptable(resData.liste);
-            }else{
+            } else {
                 toast.error(resData.msg);
             }
         });
@@ -191,7 +191,7 @@ export default function ImportBalance() {
 
     useEffect(() => {
         recupPlanComptable();
-    },[fileId]);
+    }, [fileId]);
 
     //afficher ou non les détails des anomalies de l'import
     const handleOpenAnomalieDetails = () => {
@@ -349,7 +349,7 @@ export default function ImportBalance() {
             format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             isnumber: true
         },
-       
+
         {
             id: 'soldedebit',
             label: 'Solde débit',
@@ -397,7 +397,7 @@ export default function ImportBalance() {
     //     };
 
     //     return (
-            
+
     //         <Stack alignItems={'end'}>
     //             <Stack direction={'row'} 
     //             backgroundColor={initial.theme} 
@@ -426,7 +426,7 @@ export default function ImportBalance() {
     //             </Stack>
     //             <GridFooterContainer >
     //                 <GridFooter sx={{ border: 'none' }}>
-                    
+
     //                 </GridFooter>
     //             </GridFooterContainer>
     //         </Stack> 
@@ -435,14 +435,14 @@ export default function ImportBalance() {
 
     //Formulaire pour l'import du journal
     const formikImport = useFormik({
-        initialValues : {
+        initialValues: {
             idCompte: compteId,
             idDossier: fileId,
             idExercice: selectedPeriodeId,
-            balanceData:[],
+            balanceData: [],
         },
         validationSchema: Yup.object({
-          
+
         }),
         onSubmit: (values) => {
             handleOpenDialogConfirmImport();
@@ -458,16 +458,16 @@ export default function ImportBalance() {
         link.click();
     }
 
-     //Test d'existance du compte par rapport aux données dans paramétrage
-     const existance = (param, liste) => {
+    //Test d'existance du compte par rapport aux données dans paramétrage
+    const existance = (param, liste) => {
         const missingCode = liste.filter(item => !param.includes(item));
         return missingCode;
     };
 
     //validation des entêtes si c'est bon ou pas
     const validateHeaders = (headers) => {
-        const expectedHeaders = ["compte", "libelle", "mvtdebit", "mvtcredit", "soldedebit","soldecredit"];
-       
+        const expectedHeaders = ["compte", "libelle", "mvtdebit", "mvtcredit", "soldedebit", "soldecredit"];
+
         // Comparer les en-têtes du CSV aux en-têtes attendus
         const missingHeaders = expectedHeaders.filter(header => !headers.includes(header));
         if (missingHeaders.length > 0) {
@@ -477,8 +477,8 @@ export default function ImportBalance() {
         return true;
     }
 
-     //Controle solde débit et solde crédit
-     const controleSolde = (array) => {
+    //Controle solde débit et solde crédit
+    const controleSolde = (array) => {
         let result = false;
 
         const totalDebit = array.reduce((acc, item) => {
@@ -491,7 +491,7 @@ export default function ImportBalance() {
             return acc + soldecreditValue;
         }, 0);
 
-        if(totalDebit === totalCredit){
+        if (totalDebit === totalCredit) {
             result = true;
         }
 
@@ -500,7 +500,7 @@ export default function ImportBalance() {
 
     //Calcul solde débit et solde crédit
     const calculTotal = (array) => {
-        
+
         const totalMvtDebit0 = array.reduce((acc, item) => {
             const Value = parseFloat(item["mvtdebit"].replace(',', '.')) || 0; // Convertir en nombre
             return acc + Value;
@@ -526,28 +526,28 @@ export default function ImportBalance() {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
             }
-        ).format(totalMvtDebit0) ;
+        ).format(totalMvtDebit0);
 
         const totalMvtCredit = new Intl.NumberFormat('fr-FR',
             {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
             }
-        ).format(totalMvtCredit0) ;
+        ).format(totalMvtCredit0);
 
         const totalSoldeDebit = new Intl.NumberFormat('fr-FR',
             {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
             }
-        ).format(totalSoldeDebit0) ;
+        ).format(totalSoldeDebit0);
 
         const totalSoldeCredit = new Intl.NumberFormat('fr-FR',
             {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
             }
-        ).format(totalSoldeCredit0) ;
+        ).format(totalSoldeCredit0);
 
         setTotalMvtDebit(totalMvtDebit);
         setTotalMvtCredit(totalMvtCredit);
@@ -561,12 +561,12 @@ export default function ImportBalance() {
 
         if (file) {
             // Utilise PapaParse pour parser le fichier CSV
-            
+
             Papa.parse(file, {
                 complete: (result) => {
                     const headers = result.meta.fields;
 
-                    if(validateHeaders(headers)){
+                    if (validateHeaders(headers)) {
                         setTraitementBalanceMsg('Traitement des données de la balance en cours...');
                         setTraitementBalanceWaiting(true);
 
@@ -580,24 +580,24 @@ export default function ImportBalance() {
                         setBalanceDesequilibre(false);
 
                         const listeUniqueCompteInitial = [...new Set(result.data.map(item => item.compte))];
-                        const listeUniqueCompte = listeUniqueCompteInitial.filter(item => item !=='');
+                        const listeUniqueCompte = listeUniqueCompteInitial.filter(item => item !== '');
 
                         const ListeCompteParams = [...new Set(planComptable.map(item => item.compte))];
 
                         const compteNotInParams = existance(ListeCompteParams, listeUniqueCompte);
-                     
-                        if(compteNotInParams.length > 0){
+
+                        if (compteNotInParams.length > 0) {
                             msg.push(`Les numéros de compte suivants n'existent pas encore dans votre dossier : ${compteNotInParams.join(', ')}`);
-                            
+
                             nbrAnom = nbrAnom + 1;
                             setNbrAnomalie(nbrAnom);
                             setCouleurBoutonAnomalie(couleurAnom);
                         }
                         calculTotal(result.data);
                         const verifSolde = controleSolde(result.data);
-                        if(!verifSolde){
+                        if (!verifSolde) {
                             msg.push(`Le total solde débit est différent du total solde crédit. La balance est déséquilibrée et vous ne pouvez pas poursuivre l'import.`);
-                            
+
                             nbrAnom = nbrAnom + 1;
                             setNbrAnomalie(nbrAnom);
                             setCouleurBoutonAnomalie(couleurAnom);
@@ -605,8 +605,8 @@ export default function ImportBalance() {
                         }
 
                         setMsgAnomalie(msg);
-                      
-                        const DataWithId = result.data.map((row, index) => ({...row, id: index}));
+
+                        const DataWithId = result.data.map((row, index) => ({ ...row, id: index }));
 
                         const reader = new FileReader();
 
@@ -629,8 +629,8 @@ export default function ImportBalance() {
         }
     }
 
-     //import de la balance
-     const handleOpenDialogConfirmImport = () => {
+    //import de la balance
+    const handleOpenDialogConfirmImport = () => {
         formikImport.setFieldValue("idCompte", compteId);
         formikImport.setFieldValue("idDossier", fileId);
         formikImport.setFieldValue("idExercice", selectedPeriodeId);
@@ -644,211 +644,211 @@ export default function ImportBalance() {
 
     //création des comptes qui n'existe pas encore avant import journal
     const createCompteNotExisting = async () => {
-        const response = await axios.post(`/administration/importBalance/createNotExistingCompte`, {compteId, fileId, compteToCreate});
+        const response = await axios.post(`/administration/importBalance/createNotExistingCompte`, { compteId, fileId, compteToCreate });
         const resData = response.data;
         return resData.list;
     }
 
     const handleImportBalance = async (value) => {
-        if(value){
+        if (value) {
             const UpdatedPlanComptable = await createCompteNotExisting();
 
-            if(UpdatedPlanComptable.length === 0){
+            if (UpdatedPlanComptable.length === 0) {
                 toast.error("Un problème est survenue lors de la création des comptes manquants.");
             }
 
-            if(UpdatedPlanComptable.length > 0){
+            if (UpdatedPlanComptable.length > 0) {
                 setTraitementBalanceMsg('Import de la balance en cours...');
                 setTraitementBalanceWaiting(true);
 
-                axios.post(`/administration/importBalance/importBalance`, {compteId, userId, fileId, selectedPeriodeId, balanceData}).then((response) =>{
+                axios.post(`/administration/importBalance/importBalance`, { compteId, userId, fileId, selectedPeriodeId, balanceData }).then((response) => {
                     const resData = response.data;
-                    if(resData.state){
+                    if (resData.state) {
                         setTraitementBalanceMsg('');
                         setTraitementBalanceWaiting(false);
                         toast.success(resData.msg);
                         setBalanceData([]);
                         setNbrAnomalie(0);
                         setMsgAnomalie([]);
-                    }else{
+                    } else {
                         setTraitementBalanceMsg('');
                         setTraitementBalanceWaiting(false);
                         toast.error(resData.msg);
                     }
                 });
             }
-            
+
             handleCloseDialogConfirmImport();
-        }else{
+        } else {
             handleCloseDialogConfirmImport();
         }
     }
 
-  return (
-    <Paper elevation={3} sx={{margin:"5px", padding:"0px", width:"99%", height:"98%"}}>
-        {noFile? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
-        {openDetailsAnomalie? <PopupViewDetailsImportBalance msg={msgAnomalie} confirmationState={handleCloseAnomalieDetails} /> : null}
-        {openDialogConfirmImport? <PopupActionConfirm msg={"Voulez-vous vraiment importer la balance en cours? Attention, les anciennes données de la balance seront écrasées par les nouvelles."} confirmationState={handleImportBalance} /> : null}
+    return (
+        <Paper elevation={3} sx={{ margin: "5px", padding: "0px", width: "99%", height: "98%" }}>
+            {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
+            {openDetailsAnomalie ? <PopupViewDetailsImportBalance msg={msgAnomalie} confirmationState={handleCloseAnomalieDetails} /> : null}
+            {openDialogConfirmImport ? <PopupActionConfirm msg={"Voulez-vous vraiment importer la balance en cours? Attention, les anciennes données de la balance seront écrasées par les nouvelles."} confirmationState={handleImportBalance} /> : null}
 
-        <TabContext value={"1"} >
-            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                <TabList aria-label="lab API tabs example">
-                    <Tab 
-                    style={{ 
-                        textTransform: 'none', 
-                        outline: 'none', 
-                        border: 'none',
-                        margin:-5
-                    }}
-                    label={InfoFileStyle(fileInfos?.dossier)} value="1" 
-                    />
-                </TabList>
-            </Box>
-            <TabPanel value="1" style={{height:'85%'}}>
-                <form onSubmit={formikImport.handleSubmit}>
-                    <Stack width={"100%"} height={"100%"} spacing={0} direction={'column'}>
-                        <Typography variant='h6' sx={{color: "black"}} align='left'>Administration - Import Balance</Typography>
+            <TabContext value={"1"} >
+                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                    <TabList aria-label="lab API tabs example">
+                        <Tab
+                            style={{
+                                textTransform: 'none',
+                                outline: 'none',
+                                border: 'none',
+                                margin: -5
+                            }}
+                            label={InfoFileStyle(fileInfos?.dossier)} value="1"
+                        />
+                    </TabList>
+                </Box>
+                <TabPanel value="1" style={{ height: '85%' }}>
+                    <form onSubmit={formikImport.handleSubmit}>
+                        <Stack width={"100%"} height={"100%"} spacing={0} direction={'column'}>
+                            <Typography variant='h6' sx={{ color: "black" }} align='left'>Administration - Import Balance</Typography>
 
-                        <Stack width={"100%"} height={"80px"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"row"} style={{marginLeft:"0px", marginTop:"20px"}}>
-                            <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                                <InputLabel id="demo-simple-select-standard-label">Exercice:</InputLabel>
-                                <Select
-                                labelId="demo-simple-select-standard-label"
-                                id="demo-simple-select-standard"
-                                value={selectedExerciceId}
-                                label={"valSelect"}
-                                onChange={(e) => handleChangeExercice(e.target.value)}
-                                sx={{width:"300px", display:"flex", justifyContent:"left", alignItems:"flex-start", alignContent:"flex-start", textAlign:"left"}}
-                                >
-                                    {listeExercice.map((option) => (
-                                        <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                                    ))
-                                    }
-                                </Select>
-                            </FormControl>
-
-                            <FormControl variant="standard" sx={{ m: 1, minWidth: 150 }}>
-                                <InputLabel id="demo-simple-select-standard-label">Période</InputLabel>
-                                <Select
-                                disabled
-                                labelId="demo-simple-select-standard-label"
-                                id="demo-simple-select-standard"
-                                value={selectedPeriodeChoiceId}
-                                label={"valSelect"}
-                                onChange={(e) => handleChangePeriode(e.target.value)}
-                                sx={{width:"150px", display:"flex", justifyContent:"left", alignItems:"flex-start", alignContent:"flex-start", textAlign:"left"}}
-                                >
-                                    <MenuItem value={0}>Toutes</MenuItem>
-                                    <MenuItem value={1}>Situations</MenuItem>
-                                </Select>
-                            </FormControl>
-
-                            <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                                <InputLabel id="demo-simple-select-standard-label">Du</InputLabel>
-                                <Select
-                                labelId="demo-simple-select-standard-label"
-                                id="demo-simple-select-standard"
-                                value={selectedPeriodeId}
-                                label={"valSelect"}
-                                onChange={(e) => handleChangeDateIntervalle(e.target.value)}
-                                sx={{width:"300px", display:"flex", justifyContent:"left", alignItems:"flex-start", alignContent:"flex-start", textAlign:"left"}}
-                                >
-                                {listeSituation?.map((option) => (
-                                        <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                                    ))
-                                    }
-                                </Select>
-                            </FormControl>
-                        </Stack>
-
-                        <Stack width={"100%"} height={"100px"} spacing={2} alignItems={"center"} alignContent={"center"} direction={"row"} style={{marginLeft:"0px", marginTop:"0px"}}>
-                            
-                            <Stack spacing={1} width={"380px"} height={"50px"} direction={"row"} 
-                                    style={{border: '2px dashed rgba(5,96,116,0.60)', marginLeft:"0px", paddingLeft:"20px"}}
-                                    alignContent={"center"} justifyContent={"left"} alignItems={"center"}
+                            <Stack width={"100%"} height={"80px"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "20px" }}>
+                                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
+                                    <InputLabel id="demo-simple-select-standard-label">Exercice:</InputLabel>
+                                    <Select
+                                        labelId="demo-simple-select-standard-label"
+                                        id="demo-simple-select-standard"
+                                        value={selectedExerciceId}
+                                        label={"valSelect"}
+                                        onChange={(e) => handleChangeExercice(e.target.value)}
+                                        sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
                                     >
-                                <Typography variant='h7' sx={{color: "black"}} align='left'>Télécharger ici le modèle d'import</Typography>
-                            
-                                <List style={{marginLeft:"10px"}}>
-                                    <ListItem style={{width:"100px", justifyContent:"center"}}>
-                                        <ListItemButton onClick={handleDownloadModel}>
-                                            <ListItemIcon > <LogoutIcon style={{width:"40px", height:"30px", color:'rgba(5,96,116,0.60)', transform:"rotate(270deg)"}}/> </ListItemIcon>
-                                        </ListItemButton>
-                                    </ListItem>
-                                </List>
+                                        {listeExercice.map((option) => (
+                                            <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
+                                        ))
+                                        }
+                                    </Select>
+                                </FormControl>
+
+                                <FormControl variant="standard" sx={{ m: 1, minWidth: 150 }}>
+                                    <InputLabel id="demo-simple-select-standard-label">Période</InputLabel>
+                                    <Select
+                                        disabled
+                                        labelId="demo-simple-select-standard-label"
+                                        id="demo-simple-select-standard"
+                                        value={selectedPeriodeChoiceId}
+                                        label={"valSelect"}
+                                        onChange={(e) => handleChangePeriode(e.target.value)}
+                                        sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                    >
+                                        <MenuItem value={0}>Toutes</MenuItem>
+                                        <MenuItem value={1}>Situations</MenuItem>
+                                    </Select>
+                                </FormControl>
+
+                                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
+                                    <InputLabel id="demo-simple-select-standard-label">Du</InputLabel>
+                                    <Select
+                                        labelId="demo-simple-select-standard-label"
+                                        id="demo-simple-select-standard"
+                                        value={selectedPeriodeId}
+                                        label={"valSelect"}
+                                        onChange={(e) => handleChangeDateIntervalle(e.target.value)}
+                                        sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                    >
+                                        {listeSituation?.map((option) => (
+                                            <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
+                                        ))
+                                        }
+                                    </Select>
+                                </FormControl>
                             </Stack>
 
-                            <Stack spacing={1} width={"350px"} height={"50px"} direction={"row"} 
-                            style={{border: '2px dashed rgba(5,96,116,0.60)', marginLeft:"30px", paddingLeft:"20px"}}
-                            alignContent={"center"} justifyContent={"left"} alignItems={"center"}
-                            backgroundColor={'rgba(5,96,116,0.05)'}
-                            >
-                                <input
-                                    type="file"
-                                    accept={".csv"}
-                                    // webkitdirectory="true"
-                                    onChange={handleFileSelect}
-                                    style={{ display: 'none' }}
-                                    id="fileInput"
-                                />
+                            <Stack width={"100%"} height={"100px"} spacing={2} alignItems={"center"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
 
-                                <Typography variant='h7' sx={{color: "black",fontWeight:"bold"}} align='left'>
-                                    Importer depuis le fichier
-                                </Typography>
-                            
-                                <List style={{marginLeft:"10px"}}>
-                                    <ListItem style={{width:"100px", justifyContent:"center"}}>
-                                        <ListItemButton onClick={() => document.getElementById('fileInput').click()}>
-                                            <ListItemIcon > <SaveAltIcon style={{width:"40px", height:"30px", color:'rgba(5,96,116,0.60)'}}/> </ListItemIcon>
-                                        </ListItemButton>
-                                    </ListItem>
-                                </List>
-                            </Stack>
+                                <Stack spacing={1} width={"380px"} height={"50px"} direction={"row"}
+                                    style={{ border: '2px dashed rgba(5,96,116,0.60)', marginLeft: "0px", paddingLeft: "20px" }}
+                                    alignContent={"center"} justifyContent={"left"} alignItems={"center"}
+                                >
+                                    <Typography variant='h7' sx={{ color: "black" }} align='left'>Télécharger ici le modèle d'import</Typography>
 
-                            <Badge badgeContent={nbrAnomalie} color="warning">
+                                    <List style={{ marginLeft: "10px" }}>
+                                        <ListItem style={{ width: "100px", justifyContent: "center" }}>
+                                            <ListItemButton onClick={handleDownloadModel}>
+                                                <ListItemIcon > <LogoutIcon style={{ width: "40px", height: "30px", color: 'rgba(5,96,116,0.60)', transform: "rotate(270deg)" }} /> </ListItemIcon>
+                                            </ListItemButton>
+                                        </ListItem>
+                                    </List>
+                                </Stack>
+
+                                <Stack spacing={1} width={"350px"} height={"50px"} direction={"row"}
+                                    style={{ border: '2px dashed rgba(5,96,116,0.60)', marginLeft: "30px", paddingLeft: "20px" }}
+                                    alignContent={"center"} justifyContent={"left"} alignItems={"center"}
+                                    backgroundColor={'rgba(5,96,116,0.05)'}
+                                >
+                                    <input
+                                        type="file"
+                                        accept={".csv"}
+                                        // webkitdirectory="true"
+                                        onChange={handleFileSelect}
+                                        style={{ display: 'none' }}
+                                        id="fileInput"
+                                    />
+
+                                    <Typography variant='h7' sx={{ color: "black", fontWeight: "bold" }} align='left'>
+                                        Importer depuis le fichier
+                                    </Typography>
+
+                                    <List style={{ marginLeft: "10px" }}>
+                                        <ListItem style={{ width: "100px", justifyContent: "center" }}>
+                                            <ListItemButton onClick={() => document.getElementById('fileInput').click()}>
+                                                <ListItemIcon > <SaveAltIcon style={{ width: "40px", height: "30px", color: 'rgba(5,96,116,0.60)' }} /> </ListItemIcon>
+                                            </ListItemButton>
+                                        </ListItem>
+                                    </List>
+                                </Stack>
+
+                                <Badge badgeContent={nbrAnomalie} color="warning">
+                                    <Button
+                                        onClick={handleOpenAnomalieDetails}
+                                        variant="contained"
+                                        style={{
+                                            height: "50px",
+                                            textTransform: 'none',
+                                            outline: 'none',
+                                            backgroundColor: initial.theme,
+                                            color: couleurBoutonAnomalie
+                                        }}
+                                    >
+                                        Anomalies
+                                    </Button>
+                                </Badge>
+
                                 <Button
-                                onClick={handleOpenAnomalieDetails}
-                                    variant="contained" 
+                                    disabled={balanceDesequilibre}
+                                    type='submit'
+                                    variant="contained"
                                     style={{
-                                        height:"50px", 
-                                        textTransform: 'none', 
+                                        height: "50px",
+                                        textTransform: 'none',
                                         outline: 'none',
                                         backgroundColor: initial.theme,
-                                        color: couleurBoutonAnomalie
+                                        color: "white"
                                     }}
                                 >
-                                    Anomalies
+                                    Importer
                                 </Button>
-                            </Badge>
-                            
-                            <Button
-                                disabled={balanceDesequilibre}
-                                type='submit'
-                                variant="contained" 
-                                style={{
-                                    height:"50px", 
-                                    textTransform: 'none', 
-                                    outline: 'none',
-                                    backgroundColor: initial.theme,
-                                    color:"white"
-                                }}
-                            >
-                                Importer
-                            </Button>
-                        </Stack>
-
-                        {traitementBalanceWaiting
-                            ? <Stack spacing={2} direction={'row'} width={"100%"} alignItems={'center'} justifyContent={'center'}>
-                                <CircularProgress />
-                                <Typography variant='h6' style={{color:'#2973B2'}}>{traitementBalanceMsg}</Typography>
-                                {/* <CircularProgressWithValueLabel value={50} msg={"Traitement du journal en cours..."} /> */}
                             </Stack>
-                            : null
-                        }
 
-                        <Stack width={"85%"} height={'50vh'}>
-                            <VirtualTableModifiableImportJnl columns={columns} rows={balanceData} state={true}/>
-                            {/* <DataGrid
+                            {traitementBalanceWaiting
+                                ? <Stack spacing={2} direction={'row'} width={"100%"} alignItems={'center'} justifyContent={'center'}>
+                                    <CircularProgress />
+                                    <Typography variant='h6' style={{ color: '#2973B2' }}>{traitementBalanceMsg}</Typography>
+                                    {/* <CircularProgressWithValueLabel value={50} msg={"Traitement du journal en cours..."} /> */}
+                                </Stack>
+                                : null
+                            }
+
+                            <Stack width={"85%"} height={'50vh'}>
+                                <VirtualTableModifiableImportJnl columns={columns} rows={balanceData} state={true} />
+                                {/* <DataGrid
                                 disableMultipleSelection = {DataGridStyle.disableMultipleSelection}
                                 disableColumnSelector = {DataGridStyle.disableColumnSelector}
                                 disableDensitySelector = {DataGridStyle.disableDensitySelector}
@@ -876,14 +876,14 @@ export default function ImportBalance() {
                                 // hideFooter={true}
                                 
                             />  */}
-                            
-                        </Stack>              
-                    </Stack>
-                </form>
-                
-            </TabPanel>
-        </TabContext>
-         
-    </Paper>
-  )
+
+                            </Stack>
+                        </Stack>
+                    </form>
+
+                </TabPanel>
+            </TabContext>
+
+        </Paper>
+    )
 }

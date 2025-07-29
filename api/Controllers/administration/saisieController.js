@@ -1,0 +1,489 @@
+const db = require("../../Models");
+require('dotenv').config();
+const devises = db.devises;
+const journals = db.journals;
+const dossierplancomptable = db.dossierplancomptable;
+const codejournals = db.codejournals;
+
+const fs = require('fs');
+const path = require('path');
+const basePath = path.join(__dirname, '..', '..', 'public', 'ScanEcriture');
+
+exports.getAllDevises = async (req, res) => {
+    try {
+        const id = req.params.id; // id du compte
+        if (!id) {
+            return res.status(400).json({ state: false, message: 'Id_compte non trouvé' })
+        }
+        const devisesData = await devises.findAll({ where: { compte_id: id } });
+        if (!devisesData) {
+            return res.status(404).json({ state: false, message: 'Devise non trouvé' })
+        }
+        return res.status(200).json({ state: true, list: devisesData });
+    } catch (err) {
+        res.status(500).json({ message: "Erreur serveur", error: err });
+    }
+};
+
+const formatDeuxChiffres = (val) => String(val).padStart(2, '0');
+
+const getDateSaisieNow = (id) => {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const hh = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    const ss = String(now.getSeconds()).padStart(2, '0');
+    return `${dd}${mm}${yyyy}${hh}${min}${ss}${id}`;
+};
+
+exports.addJournal = async (req, res) => {
+    try {
+        const jsonData = JSON.parse(req.body.data);
+        const file = req.file;
+
+        if (!jsonData) {
+            return res.status(400).json({ message: "Données ou fichier manquant" });
+        }
+
+        const id_compte = Number(jsonData.id_compte);
+        const id_dossier = Number(jsonData.id_dossier);
+        const id_exercice = Number(jsonData.id_exercice);
+        const id_journal = Number(jsonData.valSelectCodeJnl);
+        const id_devise = Number(jsonData.id_devise);
+
+        const codeJournal = await codejournals.findByPk(id_journal);
+        if (!codeJournal) {
+            return res.status(404).json({ message: "Code journal introuvable" });
+        }
+
+        const typeCodeJournal = codeJournal.type;
+
+        const mois = jsonData.valSelectMois;
+        const annee = jsonData.valSelectAnnee;
+        const currency = jsonData.currency;
+        const devise = jsonData.choixDevise === 'MGA' ? jsonData.choixDevise : currency;
+        const tableRows = jsonData.tableRows;
+        const taux = jsonData.taux;
+
+        let fichierCheminRelatif = null;
+
+        if (file) {
+            const dossierRelatif = path.join(
+                "public",
+                "ScanEcriture",
+                id_compte.toString(),
+                id_dossier.toString(),
+                id_exercice.toString(),
+                typeCodeJournal
+            );
+
+            const dossierAbsolu = path.resolve(dossierRelatif);
+            fs.mkdirSync(dossierAbsolu, { recursive: true });
+
+            const nomFichier = `journal_${Date.now()}${path.extname(file.originalname)}`;
+            const cheminComplet = path.join(dossierAbsolu, nomFichier);
+
+            fs.renameSync(file.path, cheminComplet);
+
+            fichierCheminRelatif = path.join(dossierRelatif, nomFichier).replace(/\\/g, '/'); // chemin relatif avec slashes compatibles URL
+        }
+
+        const newTableRows = await Promise.all(tableRows.map(async (row) => {
+            const dossierPc = await dossierplancomptable.findByPk(row.compte);
+            const comptebaseaux = dossierPc?.baseaux_id;
+
+            let id_numcptcentralise = null;
+            if (comptebaseaux) {
+                const cpt = await dossierplancomptable.findByPk(comptebaseaux);
+                id_numcptcentralise = cpt?.id || null;
+            }
+
+            return {
+                id_compte,
+                id_dossier,
+                id_exercice,
+                id_numcpt: row.compte,
+                id_journal,
+                id_devise,
+                // mois,
+                // annee,
+                taux,
+                devise,
+                saisiepar: id_compte,
+                id_ecriture: getDateSaisieNow(id_compte),
+                debit: row.debit === "" ? 0 : row.debit,
+                num_facture: row.num_facture,
+                credit: row.credit === "" ? 0 : row.credit,
+                montant_devise: row.montant_devise || 0,
+                // datesaisie: getDateSaisieNow(),
+                dateecriture: `${annee}/${formatDeuxChiffres(mois)}/${formatDeuxChiffres(row.jour)}`,
+                id_numcptcentralise,
+                libelle: row.libelle || '',
+                piece: row.piece || '',
+                piecedate: row.piecedate || null,
+                fichier: fichierCheminRelatif // chemin complet du fichier à sauvegarder
+            };
+        }));
+
+        let count = 0;
+
+        for (const row of newTableRows) {
+            await journals.create({ ...row });
+            count++;
+        }
+
+        return res.json({
+            message: `${count} ligne(s) ajoutée(s) avec succès`,
+            data: newTableRows
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Erreur serveur", error: error.message });
+    }
+};
+
+exports.modificationJournal = async (req, res) => {
+    try {
+        const jsonData = JSON.parse(req.body.data);
+        const file = req.file;
+        const conserverFichier = jsonData.conserverFichier === true;
+
+        if (!jsonData) {
+            return res.status(400).json({ message: "Données ou fichier manquant" });
+        }
+
+        const id_compte = Number(jsonData.id_compte);
+        const id_dossier = Number(jsonData.id_dossier);
+        const id_exercice = Number(jsonData.id_exercice);
+        const id_journal = Number(jsonData.valSelectCodeJnl);
+        const id_devise = Number(jsonData.id_devise);
+
+        const codeJournal = await codejournals.findByPk(id_journal);
+        if (!codeJournal) {
+            return res.status(404).json({ message: "Code journal introuvable" });
+        }
+
+        const typeCodeJournal = codeJournal.type;
+        const mois = jsonData.valSelectMois;
+        const annee = jsonData.valSelectAnnee;
+        const currency = jsonData.currency;
+        const devise = jsonData.choixDevise === 'MGA' ? jsonData.choixDevise : currency;
+        const tableRows = jsonData.tableRows;
+        const taux = jsonData.taux;
+        const deletedIds = jsonData.deletedIds || [];
+        const num_facture = jsonData.num_facture;
+
+        let fichierCheminRelatif = null;
+
+        if (file) {
+            const dossierRelatif = path.join(
+                "public",
+                "ScanEcriture",
+                id_compte.toString(),
+                id_dossier.toString(),
+                id_exercice.toString(),
+                typeCodeJournal
+            );
+
+            const dossierAbsolu = path.resolve(dossierRelatif);
+            fs.mkdirSync(dossierAbsolu, { recursive: true });
+
+            const nomFichier = `journal_${Date.now()}${path.extname(file.originalname)}`;
+            const cheminComplet = path.join(dossierAbsolu, nomFichier);
+
+            fs.renameSync(file.path, cheminComplet);
+
+            fichierCheminRelatif = path.join(dossierRelatif, nomFichier).replace(/\\/g, '/');
+        }
+
+        let ajout = 0;
+        let modification = 0;
+
+        for (const row of tableRows) {
+            const dossierPc = await dossierplancomptable.findByPk(row.compte);
+            const comptebaseaux = dossierPc?.baseaux_id;
+
+            let id_numcptcentralise = null;
+            if (comptebaseaux) {
+                const cpt = await dossierplancomptable.findByPk(comptebaseaux);
+                id_numcptcentralise = cpt?.id || null;
+            }
+
+            // Initialisation sans id_ecriture
+            const journalData = {
+                id_compte,
+                id_dossier,
+                id_exercice,
+                id_numcpt: row.compte,
+                id_journal,
+                id_devise,
+                num_facture,
+                // mois,
+                // annee,
+                taux,
+                devise,
+                modifierpar: id_compte,
+                debit: row.debit === "" ? 0 : row.debit,
+                credit: row.credit === "" ? 0 : row.credit,
+                num_facture: row.num_facture,
+                montant_devise: row.montant_devise || 0,
+                dateecriture: `${annee}/${formatDeuxChiffres(mois)}/${formatDeuxChiffres(row.jour + 1)}`,
+                id_numcptcentralise,
+                libelle: row.libelle || '',
+                piece: row.piece || '',
+                piecedate: row.piecedate || null,
+                fichier: null
+            };
+
+            if (row.id && Number(row.id) > 0) {
+                const journalExistant = await journals.findByPk(row.id);
+                if (!journalExistant) continue;
+
+                // Garder l'ancien id_ecriture
+                journalData.id_ecriture = journalExistant.id_ecriture;
+
+                if (file) {
+                    if (journalExistant.fichier) {
+                        const ancienChemin = path.resolve(process.cwd(), journalExistant.fichier);
+                        if (fs.existsSync(ancienChemin)) fs.unlinkSync(ancienChemin);
+                    }
+                    journalData.fichier = fichierCheminRelatif;
+
+                } else if (conserverFichier && journalExistant.fichier) {
+                    journalData.fichier = journalExistant.fichier;
+
+                } else if (!conserverFichier && journalExistant.fichier) {
+                    const ancienChemin = path.resolve(process.cwd(), journalExistant.fichier);
+                    if (fs.existsSync(ancienChemin)) fs.unlinkSync(ancienChemin);
+                    journalData.fichier = null;
+
+                } else {
+                    journalData.fichier = null;
+                }
+
+                await journals.update(journalData, { where: { id: row.id } });
+                modification++;
+
+            } else {
+                // Nouveau => générer un nouvel id_ecriture
+                journalData.id_ecriture = getDateSaisieNow(id_compte);
+                journalData.fichier = fichierCheminRelatif || null;
+
+                await journals.create(journalData);
+                ajout++;
+            }
+        }
+
+        if (deletedIds.length > 0) {
+            await journals.destroy({ where: { id: deletedIds } });
+        }
+
+        return res.json({
+            message: `${modification} ligne(s) modifiée(s), ${ajout} ajoutée(s), ${deletedIds.length} supprimée(s)`,
+            state: true
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Erreur serveur", error: error.message });
+    }
+};
+
+exports.getJournal = async (req, res) => {
+    try {
+        const { id_compte, id_dossier, id_exercice } = req.params;
+        if (!id_dossier) {
+            return res.status(400).json({ state: false, message: 'Id_dossier non trouvé' })
+        }
+        if (!id_exercice) {
+            return res.status(400).json({ state: false, message: 'Id_exercice non trouvé' })
+        }
+        const journalData = await journals.findAll({
+            where: {
+                id_compte,
+                id_dossier,
+                id_exercice
+            },
+            include: [
+                {
+                    model: dossierplancomptable,
+                    attributes: ['compte']
+                },
+                {
+                    model: codejournals,
+                    attributes: ['code']
+                }
+            ],
+            order: [
+                ['id_ecriture', 'ASC'],
+                ['id', 'DESC'],
+                [dossierplancomptable, 'compte', 'ASC'],
+                ['dateecriture', 'ASC']
+            ]
+        });
+
+        // Extraction simple du champ `compte`
+        const mappedData = journalData.map(journal => {
+            const { dossierplancomptable, codejournal, ...rest } = journal.toJSON();
+            return {
+                ...rest,
+                compte: dossierplancomptable?.compte || null,
+                journal: codejournal?.code || null
+            };
+        });
+
+        return res.json(mappedData);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Erreur serveur", error: error.message });
+    }
+}
+
+function nextLettrage(current) {
+    if (!current) return 'A';
+
+    const chars = current.toUpperCase().split('');
+    let i = chars.length - 1;
+
+    while (i >= 0) {
+        if (chars[i] !== 'Z') {
+            chars[i] = String.fromCharCode(chars[i].charCodeAt(0) + 1);
+            for (let j = i + 1; j < chars.length; j++) {
+                chars[j] = 'A';
+            }
+            return chars.join('');
+        }
+        i--;
+    }
+    return 'A'.repeat(current.length + 1);
+}
+
+exports.addLettrage = async (req, res) => {
+    try {
+        const { data, id_compte, id_dossier, id_exercice } = req.body;
+
+        if (!data || !Array.isArray(data) || data.length === 0 || !id_compte || !id_dossier || !id_exercice) {
+            return res.status(400).json({ state: false, message: 'Données manquantes ou invalides' });
+        }
+
+        // Récupérer le dernier lettrage existant
+        const dernierLettrage = await journals.max('lettrage', {
+            where: {
+                id_compte,
+                id_dossier,
+                id_exercice,
+            }
+        });
+
+        // Générer le nouveau lettrage (ex: si dernier = "AA", alors nouveau = "AB")
+        const nouveauLettrage = nextLettrage(dernierLettrage);
+
+        // Mettre à jour toutes les lignes avec le nouveau lettrage
+        await journals.update(
+            { lettrage: nouveauLettrage },
+            {
+                where: {
+                    id: data,
+                }
+            }
+        );
+
+        return res.status(200).json({
+            state: true,
+            message: `Lettrage "${nouveauLettrage}" ajouté avec succès à ${data.length} lignes`,
+            lettrage: nouveauLettrage
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Erreur serveur",
+            error: error.message
+        });
+    }
+};
+
+exports.deleteLettrage = async (req, res) => {
+    try {
+        const { data, id_compte, id_dossier, id_exercice } = req.body;
+
+        if (!data || !Array.isArray(data) || data.length === 0 || !id_compte || !id_dossier || !id_exercice) {
+            return res.status(400).json({ state: false, message: 'Données manquantes ou invalides' });
+        }
+
+        // Mettre à jour toutes les lignes avec l'ancien lettrage
+        const nouveauLettrage = await journals.update(
+            { lettrage: "" },
+            {
+                where: {
+                    id: data,
+                }
+            }
+        );
+
+        return res.status(200).json({
+            state: true,
+            message: `Lettrage "${nouveauLettrage}" supprimé avec succès à ${data.length} lignes`,
+            lettrage: nouveauLettrage
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Erreur serveur",
+            error: error.message
+        });
+    }
+};
+
+exports.deleteJournal = async (req, res) => {
+    try {
+        const { ids } = req.body;
+
+        if (!Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({ state: false, msg: "Aucun ID fourni" });
+        }
+
+        // 1. Récupérer un seul journal pour le fichier
+        const journal = await journals.findOne({
+            where: { id: ids[0] }
+        });
+
+        // 2. Supprimer le fichier s'il existe
+        if (journal?.fichier) {
+            const filePath = path.resolve(process.cwd(), journal.fichier);
+            try {
+                if (fs.existsSync(filePath)) {
+                    fs.unlinkSync(filePath);
+                } else {
+                    console.warn("Fichier introuvable :", filePath);
+                }
+            } catch (err) {
+                console.warn("Erreur suppression fichier :", err.message);
+            }
+        }
+
+        // 3. Supprimer toutes les lignes liées
+        const result = await journals.destroy({
+            where: {
+                id: ids
+            }
+        });
+
+        return res.json({
+            state: result > 0,
+            msg: result > 0 ? "Données supprimées avec succès" : "Aucune ligne supprimée"
+        });
+
+    } catch (error) {
+        console.error("Erreur deleteJournal :", error);
+        return res.status(500).json({
+            state: false,
+            message: "Erreur serveur",
+            error: error.message
+        });
+    }
+};

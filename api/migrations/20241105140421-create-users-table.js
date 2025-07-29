@@ -17,7 +17,7 @@ module.exports = {
           defaultValue:0,
           unique: false,
           references: {
-              model: userscomptes,
+              model: 'userscomptes',
               key: 'id'
           }
       },
