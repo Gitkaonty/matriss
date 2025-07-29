@@ -85,25 +85,6 @@ db.rubriques.hasMany(db.balances, { as: 'detailsCRF', foreignKey: 'rubriquecrf',
 db.rubriques.hasMany(db.balances, { as: 'detailsTFTI', foreignKey: 'rubriquetfti', sourceKey: 'id_rubrique' });
 db.rubriques.hasMany(db.balances, { as: 'detailsTFTD', foreignKey: 'rubriquetftd', sourceKey: 'id_rubrique' });
 
-<<<<<<< HEAD
-db.balances.belongsTo(db.dossierplancomptable, {as: 'infosCompte', foreignKey: 'id_numcompte', targetKey: 'id'});
-db.liassebhiapcs.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique' , targetKey: 'id_rubrique'});
-db.liassedas.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique' , targetKey: 'id_rubrique'});
-db.liassedps.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique' , targetKey: 'id_rubrique'});
-db.liassedrfs.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique' , targetKey: 'id_rubrique'});
-db.liassedrfs.hasMany(db.ajustements, { as: 'ajustsDRF',foreignKey: 'id_rubrique', sourceKey: 'id_rubrique'});
-db.liasseeiafncs.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique' , targetKey: 'id_rubrique'});
-db.liasseevcps.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique' , targetKey: 'id_rubrique'});
-db.liasseevcps.hasMany(db.ajustements, { as: 'ajustsEVCP',foreignKey: 'id_rubrique', sourceKey: 'id_rubrique'});
-db.liassempautres.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique' , targetKey: 'id_rubrique'});
-db.liassemps.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique' , targetKey: 'id_rubrique'});
-db.liassenotes.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique' , targetKey: 'id_rubrique'});
-db.liassesads.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique' , targetKey: 'id_rubrique'});
-db.liassesads.hasMany(db.ajustements, { as: 'ajustsSAD',foreignKey: 'id_rubrique', sourceKey: 'id_rubrique'});
-db.liassesdrs.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique' , targetKey: 'id_rubrique'});
-db.liassesdrs.hasMany(db.ajustements, { as: 'ajustsSDR',foreignKey: 'id_rubrique', sourceKey: 'id_rubrique'});
-db.liasseses.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique' , targetKey: 'id_rubrique'});
-=======
 //
 db.userscomptes.hasMany(db.devises, { foreignKey: 'compte_id', sourceKey: 'id' });
 db.dossierplancomptable.hasMany(db.journals, { foreignKey: 'id_numcpt', sourceKey: 'id' });
@@ -128,7 +109,6 @@ db.liasseses.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique', target
 db.devises.belongsTo(db.userscomptes, { foreignKey: 'compte_id', targetKey: 'id' });
 db.journals.belongsTo(db.dossierplancomptable, { foreignKey: 'id_numcpt', targetKey: 'id' });
 db.journals.belongsTo(db.codejournals, { foreignKey: 'id_journal', targetKey: 'id' });
->>>>>>> user1/jonathan-back
 
 //exporting the module
 module.exports = db;
