@@ -11,23 +11,25 @@ import CloseIcon from '@mui/icons-material/Close';
 import { init } from '../../../init';
 import { CiWarning } from "react-icons/ci";
 import { IoIosWarning } from "react-icons/io";
+import toast from 'react-hot-toast';
 
 let initial = init[0];
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialogContent-root': {
-      padding: theme.spacing(2),
+        padding: theme.spacing(2),
     },
     '& .MuiDialogActions-root': {
-      padding: theme.spacing(1),
+        padding: theme.spacing(1),
     },
-  }));
+}));
 
-const PopupConfirmDelete = ({msg, confirmationState}) =>{
-    
+const PopupConfirmDelete = ({ msg, confirmationState }) => {
+
     const confirmation = () => {
         confirmationState(true);
-      }
+        toast.success('Ligne supprimés avec succès');
+    }
 
     const handleCloseDeleteModel = () => {
         confirmationState(false);
@@ -39,12 +41,12 @@ const PopupConfirmDelete = ({msg, confirmationState}) =>{
             aria-labelledby="customized-dialog-title"
             open={true}
         >
-            <DialogTitle sx={{ m: 0, p: 2 }} id="customized-dialog-title" style={{fontWeight:'bold', width:'600px', height:'50px',backgroundColor : 'transparent'}}>
-            
+            <DialogTitle sx={{ m: 0, p: 2 }} id="customized-dialog-title" style={{ fontWeight: 'bold', width: '600px', height: '50px', backgroundColor: 'transparent' }}>
+
             </DialogTitle>
-            
+
             <IconButton
-                style={{color:'red', textTransform: 'none', outline: 'none'}}
+                style={{ color: 'red', textTransform: 'none', outline: 'none' }}
                 aria-label="close"
                 onClick={handleCloseDeleteModel}
                 sx={{
@@ -53,42 +55,43 @@ const PopupConfirmDelete = ({msg, confirmationState}) =>{
                     top: 8,
                     color: (theme) => theme.palette.grey[500],
                 }}
-                >
-            <CloseIcon />
+            >
+                <CloseIcon />
             </IconButton>
             <DialogContent >
-            <Stack width={'100%'} alignContent={'center'} alignItems={'center'}>
-                <IoIosWarning style={{width: '75px', height:'75px', color: '#FF8A8A'}}/>
-            </Stack>
-            
-            <Stack width={"90%"} height={"100px"} spacing={0} alignItems={'center'} alignContent={"center"} 
-            direction={"column"} justifyContent={"center"} style={{marginLeft:'10px'}}>
-                <Typography sx={{ ml: 2, flex: 1 }} variant="h7" component="div" >
-                    {msg}
-                </Typography>
-                
-                <Typography sx={{ ml: 2, flex: 1 }} variant="h7" component="div" color={'red'}>
-                    Attention, cette action est irréversible!
-                </Typography>
-            </Stack>
+                <Stack width={'100%'} alignContent={'center'} alignItems={'center'}>
+                    <IoIosWarning style={{ width: '75px', height: '75px', color: '#FF8A8A' }} />
+                </Stack>
+
+                <Stack width={"90%"} height={"100px"} spacing={0} alignItems={'center'} alignContent={"center"}
+                    direction={"column"} justifyContent={"center"} style={{ marginLeft: '10px' }}>
+                    <Typography sx={{ ml: 2, flex: 1 }} variant="h7" component="div" >
+                        {msg}
+                    </Typography>
+
+                    <Typography sx={{ ml: 2, flex: 1 }} variant="h7" component="div" color={'red'}>
+                        Attention, cette action est irréversible!
+                    </Typography>
+                </Stack>
 
             </DialogContent>
             <DialogActions>
                 <Button autoFocus
                     variant='outlined'
-                    style={{backgroundColor:"transparent", 
-                        color:initial.theme, 
-                        width:"100px", 
-                        textTransform: 'none', 
+                    style={{
+                        backgroundColor: "transparent",
+                        color: initial.theme,
+                        width: "100px",
+                        textTransform: 'none',
                         //outline: 'none',
                     }}
                     type='submit'
                     onClick={handleCloseDeleteModel}
-                    >
-                        Annuler
+                >
+                    Annuler
                 </Button>
-                <Button autoFocus onClick={confirmation} 
-                style={{backgroundColor:'#FF8A8A', color:'white', width:"100px", textTransform: 'none', outline: 'none'}}
+                <Button autoFocus onClick={confirmation}
+                    style={{ backgroundColor: '#FF8A8A', color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
                 >
                     Supprimer
                 </Button>

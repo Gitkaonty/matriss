@@ -4,16 +4,17 @@ const paramPCController = require('../../Controllers/Parametres/paramPCControlle
 const router = express.Router();
 
 //récupérer le tableau du plan comptable
-router.post('/pc', paramPCController.recupPc );
+router.post('/pc', paramPCController.recupPc);
+router.get('/PcIdLibelle/:id_compte/:id_dossier', paramPCController.recupPcIdLibelle)
 
 //Afficher les détails du modèl sélectionné
 router.post('/AddCpt', paramPCController.AddCptToPc);
 
 //Récupérer la liste des comptes de charges et TVA associé à la ligne sélectionné du plan comptable du modèl
-router.get('/keepListCptChgTvaAssoc/:itemId' , paramPCController.keepListCptChgTvaAssoc);
+router.get('/keepListCptChgTvaAssoc/:itemId', paramPCController.keepListCptChgTvaAssoc);
 
 //supprimer un compte dans le tableau du plan comptable
-router.post('/deleteItemPc' , paramPCController.deleteItemPc);
+router.post('/deleteItemPc', paramPCController.deleteItemPc);
 
 
 module.exports = router;

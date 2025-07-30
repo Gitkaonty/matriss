@@ -16,18 +16,18 @@ let initial = init[0];
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialogContent-root': {
-      padding: theme.spacing(2),
+        padding: theme.spacing(2),
     },
     '& .MuiDialogActions-root': {
-      padding: theme.spacing(1),
+        padding: theme.spacing(1),
     },
-  }));
+}));
 
-const PopupTestSelectedFile = ({confirmationState}) =>{
-    
+const PopupTestSelectedFile = ({ confirmationState }) => {
+
     const confirmation = () => {
         confirmationState(true);
-      }
+    }
 
     const handleCloseDeleteModel = () => {
         confirmationState(true);
@@ -39,12 +39,12 @@ const PopupTestSelectedFile = ({confirmationState}) =>{
             aria-labelledby="customized-dialog-title"
             open={true}
         >
-            <DialogTitle sx={{ m: 0, p: 2 }} id="customized-dialog-title" style={{fontWeight:'bold', width:'600px', height:'50px',backgroundColor : 'transparent'}}>
-            
+            <DialogTitle sx={{ m: 0, p: 2 }} id="customized-dialog-title" style={{ fontWeight: 'bold', width: '600px', height: '50px', backgroundColor: 'transparent' }}>
+
             </DialogTitle>
-            
+
             <IconButton
-                style={{color:'red', textTransform: 'none', outline: 'none'}}
+                style={{ color: 'red', textTransform: 'none', outline: 'none' }}
                 aria-label="close"
                 onClick={handleCloseDeleteModel}
                 sx={{
@@ -53,21 +53,21 @@ const PopupTestSelectedFile = ({confirmationState}) =>{
                     top: 8,
                     color: (theme) => theme.palette.grey[500],
                 }}
-                >
-            <CloseIcon />
+            >
+                <CloseIcon />
             </IconButton>
             <DialogContent >
-            <Stack width={"90%"} height={"40px"} spacing={0} alignItems={'center'} alignContent={"center"} 
-            direction={"column"} justifyContent={"center"} style={{marginLeft:'10px'}}>
-                <Typography sx={{ ml: 0, flex: 0 }} variant="h7" component="div" >
-                    Veuillez sélectionner un dossier.
-                </Typography>
-            </Stack>
+                <Stack width={"90%"} height={"40px"} spacing={0} alignItems={'center'} alignContent={"center"}
+                    direction={"column"} justifyContent={"center"} style={{ marginLeft: '10px' }}>
+                    <Typography sx={{ ml: 0, flex: 0 }} variant="h7" component="div" >
+                        Veuillez sélectionner un dossier.
+                    </Typography>
+                </Stack>
 
             </DialogContent>
             <DialogActions>
-                <Button autoFocus onClick={confirmation} 
-                style={{backgroundColor: initial.theme, color:'white', width:"100px", textTransform: 'none', outline: 'none'}}
+                <Button autoFocus onClick={confirmation}
+                    style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
                 >
                     OK
                 </Button>

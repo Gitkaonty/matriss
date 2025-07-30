@@ -1,5 +1,5 @@
 module.exports = (sequelize, DataTypes) => {
-    const journals = sequelize.define( "journals", {
+    const journals = sequelize.define("journals", {
         id_compte: {
             type: DataTypes.BIGINT,
             allowNull: false
@@ -7,12 +7,12 @@ module.exports = (sequelize, DataTypes) => {
         id_dossier: {
             type: DataTypes.BIGINT,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         id_exercice: {
             type: DataTypes.BIGINT,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         id_ecriture: {
             type: DataTypes.STRING(25),
@@ -32,17 +32,17 @@ module.exports = (sequelize, DataTypes) => {
         id_journal: {
             type: DataTypes.BIGINT,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         id_numcpt: {
             type: DataTypes.BIGINT,
             allowNull: true,
-            defaultValue:0
+            defaultValue: 0
         },
         id_numcptcentralise: {
             type: DataTypes.BIGINT,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         piece: {
             type: DataTypes.STRING(50),
@@ -62,12 +62,12 @@ module.exports = (sequelize, DataTypes) => {
         debit: {
             type: DataTypes.DOUBLE,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         credit: {
             type: DataTypes.DOUBLE,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         devise: {
             type: DataTypes.STRING(10),
@@ -87,13 +87,38 @@ module.exports = (sequelize, DataTypes) => {
         saisiepar: {
             type: DataTypes.BIGINT,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         modifierpar: {
             type: DataTypes.BIGINT,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
-    }, {timestamps: true}, )
+        fichier: {
+            type: DataTypes.STRING,
+            allowNull: true,
+            defaultValue: null
+        },
+        id_devise: {
+            type: DataTypes.BIGINT,
+            allowNull: true,
+            defaultValue : ''
+        },
+        taux: {
+            type: DataTypes.DOUBLE,
+            allowNull: true,
+            defaultValue: 0
+        },
+        montant_devise: {
+            type: DataTypes.DOUBLE,
+            allowNull: true,
+            defaultValue: 0
+        },
+        num_facture: {
+            type: DataTypes.CHAR,
+            allowNull: true,
+            defaultValue: ''
+        }
+    }, { timestamps: true },)
     return journals
- }
+}

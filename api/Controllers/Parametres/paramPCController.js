@@ -1,5 +1,6 @@
 const bcrypt = require("bcrypt");
 const db = require("../../Models");
+const { Sequelize } = require("sequelize");
 require('dotenv').config();
 
 const dossierPlanComptable = db.dossierplancomptable;
@@ -8,10 +9,10 @@ const dossierpcdetailcptchg = db.dossierpcdetailcptchg;
 const dossierpcdetailcpttva = db.dossierpcdetailcpttva;
 const dossiers = db.dossiers;
 
-dossierPlanComptable.belongsTo(dossierPlanComptableCopy, { as: 'BaseAux', foreignKey: 'baseaux_id' , targetKey: 'id'});
+dossierPlanComptable.belongsTo(dossierPlanComptableCopy, { as: 'BaseAux', foreignKey: 'baseaux_id', targetKey: 'id' });
 
 const recupPc = async (req, res) => {
- try {
+  try {
     const { fileId } = req.body;
 
     let resData = {
@@ -21,12 +22,13 @@ const recupPc = async (req, res) => {
     }
 
     const listepc = await dossierPlanComptable.findAll({
-      where: 
-        {
-          id_dossier: fileId
-        },
+      where:
+      {
+        id_dossier: fileId
+      },
       include: [
-        { model: dossierPlanComptable, 
+        {
+          model: dossierPlanComptable,
           as: 'BaseAux',
           attributes: [
             ['compte', 'comptecentr']
@@ -37,29 +39,29 @@ const recupPc = async (req, res) => {
           }
         },
       ],
-      raw:true,
+      raw: true,
       order: [['compte', 'ASC']]
     });
 
-    if(listepc){
+    if (listepc) {
       resData.state = true;
       resData.liste = listepc;
-    }else{
+    } else {
       resData.state = false;
       resData.msg = "Une erreur est survenue au moment du traitement des données";
     }
 
     return res.json(resData);
- } catch (error) {
-   console.log(error);
- }
+  } catch (error) {
+    console.log(error);
+  }
 };
 
- const AddCptToPc = async (req, res) => {
-  try{
+const AddCptToPc = async (req, res) => {
+  try {
     const {
       action,
-      itemId, 
+      itemId,
       idCompte,
       idDossier,
       compte,
@@ -85,7 +87,7 @@ const recupPc = async (req, res) => {
 
     const DossierParam = await dossiers.findOne({
       where: {
-        id : idDossier,
+        id: idDossier,
         id_compte: idCompte
       }
     });
@@ -94,49 +96,49 @@ const recupPc = async (req, res) => {
     const longueurcptstd = DossierParam.longcomptestd;
     const autocompletion = DossierParam.autocompletion;
 
-     if(action === "new"){
+    if (action === "new") {
       let resData = {
         state: false,
         msg: ''
       };
 
-      if(typeTier === "sans-nif"){
+      if (typeTier === "sans-nif") {
         let baseauxiliaire = '';
         let baseaux_id = 0;
 
-        if(nature ==='General' || nature ==='Collectif'){
+        if (nature === 'General' || nature === 'Collectif') {
           baseauxiliaire = compte;
 
           const findedID = await dossierPlanComptable.findOne({
             where:
-              {
-                id_compte: idCompte,
-                id_dossier: idDossier,
-                compte: compte
-              }
+            {
+              id_compte: idCompte,
+              id_dossier: idDossier,
+              compte: compte
+            }
           });
 
-          if(findedID){
+          if (findedID) {
             baseaux_id = findedID.id;
           }
-        }else{
+        } else {
           const findedID = await dossierPlanComptable.findOne({
             where:
-              {
-                id: baseCptCollectif
-              }
+            {
+              id: baseCptCollectif
+            }
           });
 
           baseaux_id = baseCptCollectif;
 
-          if(findedID){
+          if (findedID) {
             baseauxiliaire = findedID.compte;
           }
         }
 
         let compteFormated = '';
         let baseAux = '';
-  
+
         // Formatage compte & baseaux selon les règles métier
         if (autocompletion) {
           if (nature === "Aux") {
@@ -157,15 +159,15 @@ const recupPc = async (req, res) => {
         }
 
         let cptChNb = 0;
-        if(listeCptChg.length > 0){
+        if (listeCptChg.length > 0) {
           cptChNb = listeCptChg.length;
         }
-  
+
         let cptTvaNb = 0;
-        if(listeCptTva.length > 0){
+        if (listeCptTva.length > 0) {
           cptTvaNb = listeCptTva.length;
         }
-  
+
         const NewCptAdded = await dossierPlanComptable.create({
           id_compte: idCompte,
           id_dossier: idDossier,
@@ -175,7 +177,7 @@ const recupPc = async (req, res) => {
           baseaux: baseAux,
           cptcharge: cptChNb,
           cpttva: cptTvaNb,
-  
+
           typetier: typeTier,
           cin: cin,
           datecin: dateCin,
@@ -185,13 +187,13 @@ const recupPc = async (req, res) => {
           motcle: motcle,
           baseaux_id: baseaux_id
         });
-  
+
         //Enregistrer les compte de charges et TVA associés au compte
-        if(listeCptChg.length > 0){
+        if (listeCptChg.length > 0) {
           listeCptChg.map(async (item) => {
             const saveCptCh = await dossierpcdetailcptchg.create({
               id_compte: idCompte,
-              id_dossier : idDossier,
+              id_dossier: idDossier,
               id_detail: NewCptAdded.id,
               compte: item.compte,
               libelle: item.libelle,
@@ -199,12 +201,12 @@ const recupPc = async (req, res) => {
             });
           });
         }
-  
-        if(listeCptTva.length > 0){
+
+        if (listeCptTva.length > 0) {
           listeCptTva.map(async (item) => {
             const saveCptTva = await dossierpcdetailcpttva.create({
               id_compte: idCompte,
-              id_dossier : idDossier,
+              id_dossier: idDossier,
               id_detail: NewCptAdded.id,
               compte: item.compte,
               libelle: item.libelle,
@@ -212,48 +214,48 @@ const recupPc = async (req, res) => {
             });
           });
         }
-        
+
         resData.state = true;
         resData.msg = "Le nouveau compte a été enregistré avec succès";
       }
-  
-      if(typeTier === "avec-nif"){
+
+      if (typeTier === "avec-nif") {
         let baseauxiliaire = '';
         let baseaux_id = 0;
 
-        if(nature ==='General' || nature ==='Collectif'){
+        if (nature === 'General' || nature === 'Collectif') {
           baseauxiliaire = compte;
 
           const findedID = await dossierPlanComptable.findOne({
             where:
-              {
-                id_compte: idCompte,
-                id_dossier: idDossier,
-                compte: compte
-              }
+            {
+              id_compte: idCompte,
+              id_dossier: idDossier,
+              compte: compte
+            }
           });
 
-          if(findedID){
+          if (findedID) {
             baseaux_id = findedID.id;
           }
-        }else{
+        } else {
           const findedID = await dossierPlanComptable.findOne({
             where:
-              {
-                id: baseCptCollectif
-              }
+            {
+              id: baseCptCollectif
+            }
           });
 
           baseaux_id = baseCptCollectif;
 
-          if(findedID){
+          if (findedID) {
             baseauxiliaire = findedID.compte;
           }
         }
 
         let compteFormated = '';
         let baseAux = '';
-  
+
         // Formatage compte & baseaux selon les règles métier
         if (autocompletion) {
           if (nature === "Aux") {
@@ -272,27 +274,27 @@ const recupPc = async (req, res) => {
             baseAux = baseauxiliaire;
           }
         }
-  
+
         let cptChNb = 0;
-        if(listeCptChg.length > 0){
+        if (listeCptChg.length > 0) {
           cptChNb = listeCptChg.length;
         }
-  
+
         let cptTvaNb = 0;
-        if(listeCptTva.length > 0){
+        if (listeCptTva.length > 0) {
           cptTvaNb = listeCptTva.length;
         }
-  
+
         const NewCptAdded = await dossierPlanComptable.create({
           id_compte: idCompte,
-          id_dossier : idDossier,
+          id_dossier: idDossier,
           compte: compteFormated,
           libelle: libelle,
           nature: nature,
           baseaux: baseAux,
           cptcharge: cptChNb,
           cpttva: cptTvaNb,
-  
+
           typetier: typeTier,
           nif: nif,
           statistique: stat,
@@ -300,13 +302,13 @@ const recupPc = async (req, res) => {
           motcle: motcle,
           baseaux_id: baseaux_id
         });
-  
+
         //Enregistrer les compte de charges et TVA associés au compte
-        if(listeCptChg.length > 0){
+        if (listeCptChg.length > 0) {
           listeCptChg.map(async (item) => {
             const saveCptCh = await dossierpcdetailcptchg.create({
               id_compte: idCompte,
-              id_dossier : idDossier,
+              id_dossier: idDossier,
               id_detail: NewCptAdded.id,
               compte: item.compte,
               libelle: item.libelle,
@@ -314,12 +316,12 @@ const recupPc = async (req, res) => {
             });
           });
         }
-  
-        if(listeCptTva.length > 0){
+
+        if (listeCptTva.length > 0) {
           listeCptTva.map(async (item) => {
             const saveCptTva = await dossierpcdetailcpttva.create({
               id_compte: idCompte,
-              id_dossier : idDossier,
+              id_dossier: idDossier,
               id_detail: NewCptAdded.id,
               compte: item.compte,
               libelle: item.libelle,
@@ -327,48 +329,48 @@ const recupPc = async (req, res) => {
             });
           });
         }
-        
+
         resData.state = true;
         resData.msg = "Le nouveau compte a été enregistré avec succès";
       }
-  
-      if(typeTier === "etranger"){
+
+      if (typeTier === "etranger") {
         let baseauxiliaire = '';
         let baseaux_id = 0;
 
-        if(nature ==='General' || nature ==='Collectif'){
+        if (nature === 'General' || nature === 'Collectif') {
           baseauxiliaire = compte;
 
           const findedID = await dossierPlanComptable.findOne({
             where:
-              {
-                id_compte: idCompte,
-                id_dossier: idDossier,
-                compte: compte
-              }
+            {
+              id_compte: idCompte,
+              id_dossier: idDossier,
+              compte: compte
+            }
           });
 
-          if(findedID){
+          if (findedID) {
             baseaux_id = findedID.id;
           }
-        }else{
+        } else {
           const findedID = await dossierPlanComptable.findOne({
             where:
-              {
-                id: baseCptCollectif
-              }
+            {
+              id: baseCptCollectif
+            }
           });
 
           baseaux_id = baseCptCollectif;
 
-          if(findedID){
+          if (findedID) {
             baseauxiliaire = findedID.compte;
           }
         }
 
         let compteFormated = '';
         let baseAux = '';
-  
+
         // Formatage compte & baseaux selon les règles métier
         if (autocompletion) {
           if (nature === "Aux") {
@@ -387,27 +389,27 @@ const recupPc = async (req, res) => {
             baseAux = baseauxiliaire;
           }
         }
-  
+
         let cptChNb = 0;
-        if(listeCptChg.length > 0){
+        if (listeCptChg.length > 0) {
           cptChNb = listeCptChg.length;
         }
-  
+
         let cptTvaNb = 0;
-        if(listeCptTva.length > 0){
+        if (listeCptTva.length > 0) {
           cptTvaNb = listeCptTva.length;
         }
-  
+
         const NewCptAdded = await dossierPlanComptable.create({
           id_compte: idCompte,
-          id_dossier : idDossier,
+          id_dossier: idDossier,
           compte: compteFormated,
           libelle: libelle,
           nature: nature,
           baseaux: baseAux,
           cptcharge: cptChNb,
           cpttva: cptTvaNb,
-  
+
           typetier: typeTier,
           nifrepresentant: nifRepresentant,
           adresseetranger: adresseEtranger,
@@ -415,13 +417,13 @@ const recupPc = async (req, res) => {
           motcle: motcle,
           baseaux_id: baseaux_id
         });
-  
+
         //Enregistrer les compte de charges et TVA associés au compte
-        if(listeCptChg.length > 0){
+        if (listeCptChg.length > 0) {
           listeCptChg.map(async (item) => {
             const saveCptCh = await dossierpcdetailcptchg.create({
               id_compte: idCompte,
-              id_dossier : idDossier,
+              id_dossier: idDossier,
               id_detail: NewCptAdded.id,
               compte: item.compte,
               libelle: item.libelle,
@@ -429,12 +431,12 @@ const recupPc = async (req, res) => {
             });
           });
         }
-  
-        if(listeCptTva.length > 0){
+
+        if (listeCptTva.length > 0) {
           listeCptTva.map(async (item) => {
             const saveCptTva = await dossierpcdetailcpttva.create({
               id_compte: idCompte,
-              id_dossier : idDossier,
+              id_dossier: idDossier,
               id_detail: NewCptAdded.id,
               compte: item.compte,
               libelle: item.libelle,
@@ -442,48 +444,48 @@ const recupPc = async (req, res) => {
             });
           });
         }
-        
+
         resData.state = true;
         resData.msg = "Le nouveau compte a été enregistré avec succès";
       }
 
-      if(typeTier === "general"){
+      if (typeTier === "general") {
         let baseauxiliaire = '';
         let baseaux_id = 0;
 
-        if(nature ==='General' || nature ==='Collectif'){
+        if (nature === 'General' || nature === 'Collectif') {
           baseauxiliaire = compte;
 
           const findedID = await dossierPlanComptable.findOne({
             where:
-              {
-                id_compte: idCompte,
-                id_dossier: idDossier,
-                compte: compte
-              }
+            {
+              id_compte: idCompte,
+              id_dossier: idDossier,
+              compte: compte
+            }
           });
 
-          if(findedID){
+          if (findedID) {
             baseaux_id = findedID.id;
           }
-        }else{
+        } else {
           const findedID = await dossierPlanComptable.findOne({
             where:
-              {
-                id: baseCptCollectif
-              }
+            {
+              id: baseCptCollectif
+            }
           });
 
           baseaux_id = baseCptCollectif;
 
-          if(findedID){
+          if (findedID) {
             baseauxiliaire = findedID.compte;
           }
         }
 
         let compteFormated = '';
         let baseAux = '';
-  
+
         // Formatage compte & baseaux selon les règles métier
         if (autocompletion) {
           if (nature === "Aux") {
@@ -502,39 +504,39 @@ const recupPc = async (req, res) => {
             baseAux = baseauxiliaire;
           }
         }
-  
+
         let cptChNb = 0;
-        if(listeCptChg.length > 0){
+        if (listeCptChg.length > 0) {
           cptChNb = listeCptChg.length;
         }
-  
+
         let cptTvaNb = 0;
-        if(listeCptTva.length > 0){
+        if (listeCptTva.length > 0) {
           cptTvaNb = listeCptTva.length;
         }
-  
+
         const NewCptAdded = await dossierPlanComptable.create({
           id_compte: idCompte,
-          id_dossier : idDossier,
+          id_dossier: idDossier,
           compte: compteFormated,
           libelle: libelle,
           nature: nature,
           baseaux: baseAux,
           cptcharge: cptChNb,
           cpttva: cptTvaNb,
-  
+
           typetier: typeTier,
           pays: 'Madagascar',
           motcle: motcle,
           baseaux_id: baseaux_id
         });
-  
+
         //Enregistrer les compte de charges et TVA associés au compte
-        if(listeCptChg.length > 0){
+        if (listeCptChg.length > 0) {
           listeCptChg.map(async (item) => {
             const saveCptCh = await dossierpcdetailcptchg.create({
               id_compte: idCompte,
-              id_dossier : idDossier,
+              id_dossier: idDossier,
               id_detail: NewCptAdded.id,
               compte: item.compte,
               libelle: item.libelle,
@@ -542,12 +544,12 @@ const recupPc = async (req, res) => {
             });
           });
         }
-  
-        if(listeCptTva.length > 0){
+
+        if (listeCptTva.length > 0) {
           listeCptTva.map(async (item) => {
             const saveCptTva = await dossierpcdetailcpttva.create({
               id_compte: idCompte,
-              id_dossier : idDossier,
+              id_dossier: idDossier,
               id_detail: NewCptAdded.id,
               compte: item.compte,
               libelle: item.libelle,
@@ -555,56 +557,56 @@ const recupPc = async (req, res) => {
             });
           });
         }
-        
+
         resData.state = true;
         resData.msg = "Le nouveau compte a été enregistré avec succès";
       }
-    
+
       res.json(resData);
 
-     }else{
-        let resData = {
-          state: false,
-          msg: ''
-        };
+    } else {
+      let resData = {
+        state: false,
+        msg: ''
+      };
 
-        if(typeTier === "sans-nif"){
-          let baseauxiliaire = '';
-          let baseaux_id = 0;
+      if (typeTier === "sans-nif") {
+        let baseauxiliaire = '';
+        let baseaux_id = 0;
 
-          if(nature ==='General' || nature ==='Collectif'){
-            baseauxiliaire = compte;
+        if (nature === 'General' || nature === 'Collectif') {
+          baseauxiliaire = compte;
 
-            const findedID = await dossierPlanComptable.findOne({
-              where:
-                {
-                  id_compte: idCompte,
-                  id_dossier: idDossier,
-                  compte: compte
-                }
-            });
-  
-            if(findedID){
-              baseaux_id = findedID.id;
+          const findedID = await dossierPlanComptable.findOne({
+            where:
+            {
+              id_compte: idCompte,
+              id_dossier: idDossier,
+              compte: compte
             }
-          }else{
-            const findedID = await dossierPlanComptable.findOne({
-              where:
-                {
-                  id: baseCptCollectif
-                }
-            });
-  
-            baseaux_id = baseCptCollectif;
-  
-            if(findedID){
-              baseauxiliaire = findedID.compte;
-            }
+          });
+
+          if (findedID) {
+            baseaux_id = findedID.id;
           }
+        } else {
+          const findedID = await dossierPlanComptable.findOne({
+            where:
+            {
+              id: baseCptCollectif
+            }
+          });
 
-          let compteFormated = '';
+          baseaux_id = baseCptCollectif;
+
+          if (findedID) {
+            baseauxiliaire = findedID.compte;
+          }
+        }
+
+        let compteFormated = '';
         let baseAux = '';
-  
+
         // Formatage compte & baseaux selon les règles métier
         if (autocompletion) {
           if (nature === "Aux") {
@@ -624,464 +626,464 @@ const recupPc = async (req, res) => {
           }
         }
 
-          let cptChNb = 0;
-          if(listeCptChg.length > 0){
-            cptChNb = listeCptChg.length;
-          }
-    
-          let cptTvaNb = 0;
-          if(listeCptTva.length > 0){
-            cptTvaNb = listeCptTva.length;
-          }
-    
-          const NewCptAdded = await dossierPlanComptable.update(
-              {
-              id_compte: idCompte,
-              id_dossier : idDossier,
-              compte: compteFormated,
-              libelle: libelle,
-              nature: nature,
-              baseaux: baseAux,
-              cptcharge: cptChNb,
-              cpttva: cptTvaNb,
-      
-              typetier: typeTier,
-              cin: cin,
-              datecin: dateCin,
-              autrepieceid: autrePieceID,
-              refpieceid: refPieceID,
-              adressesansnif: adresseSansNIF,
-              motcle: motcle,
-              baseaux_id: baseaux_id
-            },
-            {
-              where: {
-                id: itemId,
-              }
-            }
-          );
-    
-          //Enregistrer les compte de charges et TVA associés au compte
-          if(listeCptChg.length > 0){
-            listeCptChg.map(async (item) => {
-              //supprimer l'ancienne ligne
-              await dossierpcdetailcptchg.destroy({where: {id: item.id}});
-
-              const saveCptCh = await dossierpcdetailcptchg.create({
-                id_compte: idCompte,
-                id_dossier : idDossier,
-                id_detail: itemId,
-                compte: item.compte,
-                libelle: item.libelle,
-                id_comptecompta: item.idCpt
-              });
-            });
-          }
-    
-          if(listeCptTva.length > 0){
-            listeCptTva.map(async (item) => {
-              //supprimer l'ancienne ligne
-              await dossierpcdetailcpttva.destroy({where: {id: item.id}});
-
-              const saveCptTva = await dossierpcdetailcpttva.create({
-                id_compte: idCompte,
-                id_dossier : idDossier,
-                id_detail: itemId,
-                compte: item.compte,
-                libelle: item.libelle,
-                id_comptecompta: item.idCpt
-              });
-            });
-          }
-          
-          resData.state = true;
-          resData.msg = "Les modifications ont été enregistrées avec succès";
+        let cptChNb = 0;
+        if (listeCptChg.length > 0) {
+          cptChNb = listeCptChg.length;
         }
-    
-        if(typeTier === "avec-nif"){
-          let baseauxiliaire = '';
-          let baseaux_id = 0;
 
-          if(nature ==='General' || nature ==='Collectif'){
-            baseauxiliaire = compte;
-
-            const findedID = await dossierPlanComptable.findOne({
-              where:
-                {
-                  id_compte: idCompte,
-                  id_dossier: idDossier,
-                  compte: compte
-                }
-            });
-  
-            if(findedID){
-              baseaux_id = findedID.id;
-            }
-          }else{
-            const findedID = await dossierPlanComptable.findOne({
-              where:
-                {
-                  id: baseCptCollectif
-                }
-            });
-  
-            baseaux_id = baseCptCollectif;
-  
-            if(findedID){
-              baseauxiliaire = findedID.compte;
-            }
-          }
-
-          let compteFormated = '';
-        let baseAux = '';
-  
-        // Formatage compte & baseaux selon les règles métier
-        if (autocompletion) {
-          if (nature === "Aux") {
-            compteFormated = compte.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
-            baseAux = baseauxiliaire.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux) || '';
-          } else {
-            compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
-          }
-        } else {
-          if (nature !== "Aux") {
-            compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
-          } else {
-            compteFormated = compte;
-            baseAux = baseauxiliaire;
-          }
+        let cptTvaNb = 0;
+        if (listeCptTva.length > 0) {
+          cptTvaNb = listeCptTva.length;
         }
-    
-          let cptChNb = 0;
-          if(listeCptChg.length > 0){
-            cptChNb = listeCptChg.length;
-          }
-    
-          let cptTvaNb = 0;
-          if(listeCptTva.length > 0){
-            cptTvaNb = listeCptTva.length;
-          }
-    
-          const NewCptAdded = await dossierPlanComptable.update(
-            {
-              id_compte: idCompte,
-              id_dossier : idDossier,
-              compte: compteFormated,
-              libelle: libelle,
-              nature: nature,
-              baseaux: baseAux,
-              cptcharge: cptChNb,
-              cpttva: cptTvaNb,
-      
-              typetier: typeTier,
-              nif: nif,
-              statistique: stat,
-              adresse: adresse,
-              motcle: motcle,
-              baseaux_id: baseaux_id
-            },
-            {
-              where: {id : itemId}
+
+        const NewCptAdded = await dossierPlanComptable.update(
+          {
+            id_compte: idCompte,
+            id_dossier: idDossier,
+            compte: compteFormated,
+            libelle: libelle,
+            nature: nature,
+            baseaux: baseAux,
+            cptcharge: cptChNb,
+            cpttva: cptTvaNb,
+
+            typetier: typeTier,
+            cin: cin,
+            datecin: dateCin,
+            autrepieceid: autrePieceID,
+            refpieceid: refPieceID,
+            adressesansnif: adresseSansNIF,
+            motcle: motcle,
+            baseaux_id: baseaux_id
+          },
+          {
+            where: {
+              id: itemId,
             }
+          }
         );
-    
-          //Enregistrer les compte de charges et TVA associés au compte
-          if(listeCptChg.length > 0){
-            listeCptChg.map(async (item) => {
-              //supprimer l'ancienne ligne
-              await dossierpcdetailcptchg.destroy({where: {id: item.id}});
 
-              const saveCptCh = await dossierpcdetailcptchg.create({
-                id_compte: idCompte,
-                id_dossier : idDossier,
-                id_detail: itemId,
-                compte: item.compte,
-                libelle: item.libelle,
-                id_comptecompta: item.idCpt
-              });
-            });
-          }
-    
-          if(listeCptTva.length > 0){
-            listeCptTva.map(async (item) => {
-              //supprimer l'ancienne ligne
-              await dossierpcdetailcpttva.destroy({where: {id: item.id}});
+        //Enregistrer les compte de charges et TVA associés au compte
+        if (listeCptChg.length > 0) {
+          listeCptChg.map(async (item) => {
+            //supprimer l'ancienne ligne
+            await dossierpcdetailcptchg.destroy({ where: { id: item.id } });
 
-              const saveCptTva = await dossierpcdetailcpttva.create({
-                id_compte: idCompte,
-                id_dossier : idDossier,
-                id_detail: itemId,
-                compte: item.compte,
-                libelle: item.libelle,
-                id_comptecompta: item.idCpt
-              });
+            const saveCptCh = await dossierpcdetailcptchg.create({
+              id_compte: idCompte,
+              id_dossier: idDossier,
+              id_detail: itemId,
+              compte: item.compte,
+              libelle: item.libelle,
+              id_comptecompta: item.idCpt
             });
-          }
-          
-          resData.state = true;
-          resData.msg = "Les modifications ont été enregistrées avec succès";
+          });
         }
-    
-        if(typeTier === "etranger"){
-          let baseauxiliaire = '';
-          let baseaux_id = 0;
 
-          if(nature ==='General' || nature ==='Collectif'){
-            baseauxiliaire = compte;
+        if (listeCptTva.length > 0) {
+          listeCptTva.map(async (item) => {
+            //supprimer l'ancienne ligne
+            await dossierpcdetailcpttva.destroy({ where: { id: item.id } });
 
-            const findedID = await dossierPlanComptable.findOne({
-              where:
-                {
-                  id_compte: idCompte,
-                  id_dossier: idDossier,
-                  compte: compte
-                }
+            const saveCptTva = await dossierpcdetailcpttva.create({
+              id_compte: idCompte,
+              id_dossier: idDossier,
+              id_detail: itemId,
+              compte: item.compte,
+              libelle: item.libelle,
+              id_comptecompta: item.idCpt
             });
-  
-            if(findedID){
-              baseaux_id = findedID.id;
-            }
-          }else{
-            const findedID = await dossierPlanComptable.findOne({
-              where:
-                {
-                  id: baseCptCollectif
-                }
-            });
-  
-            baseaux_id = baseCptCollectif;
-  
-            if(findedID){
-              baseauxiliaire = findedID.compte;
-            }
-          }
+          });
+        }
 
-          let compteFormated = '';
-          let baseAux = '';
-    
-          // Formatage compte & baseaux selon les règles métier
-          if (autocompletion) {
-            if (nature === "Aux") {
-              compteFormated = compte.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
-              baseAux = baseauxiliaire.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux) || '';
-            } else {
-              compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-              baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
-            }
-          } else {
-            if (nature !== "Aux") {
-              compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-              baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
-            } else {
-              compteFormated = compte;
-              baseAux = baseauxiliaire;
-            }
-          }
-    
-          let cptChNb = 0;
-          if(listeCptChg.length > 0){
-            cptChNb = listeCptChg.length;
-          }
-    
-          let cptTvaNb = 0;
-          if(listeCptTva.length > 0){
-            cptTvaNb = listeCptTva.length;
-          }
-    
-          const NewCptAdded = await dossierPlanComptable.update(
+        resData.state = true;
+        resData.msg = "Les modifications ont été enregistrées avec succès";
+      }
+
+      if (typeTier === "avec-nif") {
+        let baseauxiliaire = '';
+        let baseaux_id = 0;
+
+        if (nature === 'General' || nature === 'Collectif') {
+          baseauxiliaire = compte;
+
+          const findedID = await dossierPlanComptable.findOne({
+            where:
             {
               id_compte: idCompte,
-              id_dossier : idDossier,
-              compte: compteFormated,
-              libelle: libelle,
-              nature: nature,
-              baseaux: baseAux,
-              cptcharge: cptChNb,
-              cpttva: cptTvaNb,
-      
-              typetier: typeTier,
-              nifrepresentant: nifRepresentant,
-              adresseetranger: adresseEtranger,
-              pays: pays,
-              motcle: motcle,
-              baseaux_id: baseaux_id
-            },
-            {
-              where: {id : itemId}
+              id_dossier: idDossier,
+              compte: compte
             }
-          );
-    
-          //Enregistrer les compte de charges et TVA associés au compte
-          if(listeCptChg.length > 0){
-            listeCptChg.map(async (item) => {
-              //supprimer l'ancienne ligne
-              await dossierpcdetailcptchg.destroy({where: {id: item.id}});
+          });
 
-              const saveCptCh = await dossierpcdetailcptchg.create({
-                id_compte: idCompte,
-                id_dossier : idDossier,
-                id_detail: itemId,
-                compte: item.compte,
-                libelle: item.libelle,
-                id_comptecompta: item.idCpt
-              });
-            });
+          if (findedID) {
+            baseaux_id = findedID.id;
           }
-    
-          if(listeCptTva.length > 0){
-            listeCptTva.map(async (item) => {
-              //supprimer l'ancienne ligne
-              await dossierpcdetailcpttva.destroy({where: {id: item.id}});
+        } else {
+          const findedID = await dossierPlanComptable.findOne({
+            where:
+            {
+              id: baseCptCollectif
+            }
+          });
 
-              const saveCptTva = await dossierpcdetailcpttva.create({
-                id_compte: idCompte,
-                id_dossier : idDossier,
-                id_detail: itemId,
-                compte: item.compte,
-                libelle: item.libelle,
-                id_comptecompta: item.idCpt
-              });
-            });
+          baseaux_id = baseCptCollectif;
+
+          if (findedID) {
+            baseauxiliaire = findedID.compte;
           }
-          
-          resData.state = true;
-          resData.msg = "Les modifications ont été enregistrées avec succès";
         }
 
-        if(typeTier === "general"){
-          let baseauxiliaire = '';
-          let baseaux_id = 0;
+        let compteFormated = '';
+        let baseAux = '';
 
-          if(nature ==='General' || nature ==='Collectif'){
-            baseauxiliaire = compte;
-
-            const findedID = await dossierPlanComptable.findOne({
-              where:
-                {
-                  id_compte: idCompte,
-                  id_dossier: idDossier,
-                  compte: compte
-                }
-            });
-  
-            if(findedID){
-              baseaux_id = findedID.id;
-            }
-          }else{
-            const findedID = await dossierPlanComptable.findOne({
-              where:
-                {
-                  id: baseCptCollectif
-                }
-            });
-  
-            baseaux_id = baseCptCollectif;
-  
-            if(findedID){
-              baseauxiliaire = findedID.compte;
-            }
-          }
-
-          let compteFormated = '';
-          let baseAux = '';
-    
-          // Formatage compte & baseaux selon les règles
-          if (autocompletion) {
-            if (nature === "Aux") {
-              compteFormated = compte.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
-              baseAux = baseauxiliaire.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux) || '';
-            } else {
-              compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-              baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
-            }
+        // Formatage compte & baseaux selon les règles métier
+        if (autocompletion) {
+          if (nature === "Aux") {
+            compteFormated = compte.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
+            baseAux = baseauxiliaire.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux) || '';
           } else {
-            if (nature !== "Aux") {
-              compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-              baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
-            } else {
-              compteFormated = compte;
-              baseAux = baseauxiliaire;
-            }
+            compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
+            baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
           }
-    
-          let cptChNb = 0;
-          if(listeCptChg.length > 0){
-            cptChNb = listeCptChg.length;
+        } else {
+          if (nature !== "Aux") {
+            compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
+            baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
+          } else {
+            compteFormated = compte;
+            baseAux = baseauxiliaire;
           }
-    
-          let cptTvaNb = 0;
-          if(listeCptTva.length > 0){
-            cptTvaNb = listeCptTva.length;
+        }
+
+        let cptChNb = 0;
+        if (listeCptChg.length > 0) {
+          cptChNb = listeCptChg.length;
+        }
+
+        let cptTvaNb = 0;
+        if (listeCptTva.length > 0) {
+          cptTvaNb = listeCptTva.length;
+        }
+
+        const NewCptAdded = await dossierPlanComptable.update(
+          {
+            id_compte: idCompte,
+            id_dossier: idDossier,
+            compte: compteFormated,
+            libelle: libelle,
+            nature: nature,
+            baseaux: baseAux,
+            cptcharge: cptChNb,
+            cpttva: cptTvaNb,
+
+            typetier: typeTier,
+            nif: nif,
+            statistique: stat,
+            adresse: adresse,
+            motcle: motcle,
+            baseaux_id: baseaux_id
+          },
+          {
+            where: { id: itemId }
           }
-    
-          const NewCptAdded = await dossierPlanComptable.update(
+        );
+
+        //Enregistrer les compte de charges et TVA associés au compte
+        if (listeCptChg.length > 0) {
+          listeCptChg.map(async (item) => {
+            //supprimer l'ancienne ligne
+            await dossierpcdetailcptchg.destroy({ where: { id: item.id } });
+
+            const saveCptCh = await dossierpcdetailcptchg.create({
+              id_compte: idCompte,
+              id_dossier: idDossier,
+              id_detail: itemId,
+              compte: item.compte,
+              libelle: item.libelle,
+              id_comptecompta: item.idCpt
+            });
+          });
+        }
+
+        if (listeCptTva.length > 0) {
+          listeCptTva.map(async (item) => {
+            //supprimer l'ancienne ligne
+            await dossierpcdetailcpttva.destroy({ where: { id: item.id } });
+
+            const saveCptTva = await dossierpcdetailcpttva.create({
+              id_compte: idCompte,
+              id_dossier: idDossier,
+              id_detail: itemId,
+              compte: item.compte,
+              libelle: item.libelle,
+              id_comptecompta: item.idCpt
+            });
+          });
+        }
+
+        resData.state = true;
+        resData.msg = "Les modifications ont été enregistrées avec succès";
+      }
+
+      if (typeTier === "etranger") {
+        let baseauxiliaire = '';
+        let baseaux_id = 0;
+
+        if (nature === 'General' || nature === 'Collectif') {
+          baseauxiliaire = compte;
+
+          const findedID = await dossierPlanComptable.findOne({
+            where:
             {
               id_compte: idCompte,
-              id_dossier : idDossier,
-              compte: compteFormated,
-              libelle: libelle,
-              nature: nature,
-              baseaux: baseAux,
-              cptcharge: cptChNb,
-              cpttva: cptTvaNb,
-      
-              typetier: typeTier,
-              pays: 'Madagascar',
-              motcle: motcle,
-              baseaux_id: baseaux_id
-            },
-            {
-              where: {id : itemId}
+              id_dossier: idDossier,
+              compte: compte
             }
-          );
-    
-          //Enregistrer les compte de charges et TVA associés au compte
-          if(listeCptChg.length > 0){
-            listeCptChg.map(async (item) => {
-              //supprimer l'ancienne ligne
-              await dossierpcdetailcptchg.destroy({where: {id: item.id}});
+          });
 
-              const saveCptCh = await dossierpcdetailcptchg.create({
-                id_compte: idCompte,
-                id_dossier : idDossier,
-                id_detail: itemId,
-                compte: item.compte,
-                libelle: item.libelle,
-                id_comptecompta: item.idCpt
-              });
-            });
+          if (findedID) {
+            baseaux_id = findedID.id;
           }
-    
-          if(listeCptTva.length > 0){
-            listeCptTva.map(async (item) => {
-              //supprimer l'ancienne ligne
-              await dossierpcdetailcpttva.destroy({where: {id: item.id}});
+        } else {
+          const findedID = await dossierPlanComptable.findOne({
+            where:
+            {
+              id: baseCptCollectif
+            }
+          });
 
-              const saveCptTva = await dossierpcdetailcpttva.create({
-                id_compte: idCompte,
-                id_dossier : idDossier,
-                id_detail: itemId,
-                compte: item.compte,
-                libelle: item.libelle,
-                id_comptecompta: item.idCpt
-              });
-            });
+          baseaux_id = baseCptCollectif;
+
+          if (findedID) {
+            baseauxiliaire = findedID.compte;
           }
-          
-          resData.state = true;
-          resData.msg = "Les modifications ont été enregistrées avec succès";
         }
-      
-        res.json(resData);
-     }
-  }catch (error) {
+
+        let compteFormated = '';
+        let baseAux = '';
+
+        // Formatage compte & baseaux selon les règles métier
+        if (autocompletion) {
+          if (nature === "Aux") {
+            compteFormated = compte.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
+            baseAux = baseauxiliaire.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux) || '';
+          } else {
+            compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
+            baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
+          }
+        } else {
+          if (nature !== "Aux") {
+            compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
+            baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
+          } else {
+            compteFormated = compte;
+            baseAux = baseauxiliaire;
+          }
+        }
+
+        let cptChNb = 0;
+        if (listeCptChg.length > 0) {
+          cptChNb = listeCptChg.length;
+        }
+
+        let cptTvaNb = 0;
+        if (listeCptTva.length > 0) {
+          cptTvaNb = listeCptTva.length;
+        }
+
+        const NewCptAdded = await dossierPlanComptable.update(
+          {
+            id_compte: idCompte,
+            id_dossier: idDossier,
+            compte: compteFormated,
+            libelle: libelle,
+            nature: nature,
+            baseaux: baseAux,
+            cptcharge: cptChNb,
+            cpttva: cptTvaNb,
+
+            typetier: typeTier,
+            nifrepresentant: nifRepresentant,
+            adresseetranger: adresseEtranger,
+            pays: pays,
+            motcle: motcle,
+            baseaux_id: baseaux_id
+          },
+          {
+            where: { id: itemId }
+          }
+        );
+
+        //Enregistrer les compte de charges et TVA associés au compte
+        if (listeCptChg.length > 0) {
+          listeCptChg.map(async (item) => {
+            //supprimer l'ancienne ligne
+            await dossierpcdetailcptchg.destroy({ where: { id: item.id } });
+
+            const saveCptCh = await dossierpcdetailcptchg.create({
+              id_compte: idCompte,
+              id_dossier: idDossier,
+              id_detail: itemId,
+              compte: item.compte,
+              libelle: item.libelle,
+              id_comptecompta: item.idCpt
+            });
+          });
+        }
+
+        if (listeCptTva.length > 0) {
+          listeCptTva.map(async (item) => {
+            //supprimer l'ancienne ligne
+            await dossierpcdetailcpttva.destroy({ where: { id: item.id } });
+
+            const saveCptTva = await dossierpcdetailcpttva.create({
+              id_compte: idCompte,
+              id_dossier: idDossier,
+              id_detail: itemId,
+              compte: item.compte,
+              libelle: item.libelle,
+              id_comptecompta: item.idCpt
+            });
+          });
+        }
+
+        resData.state = true;
+        resData.msg = "Les modifications ont été enregistrées avec succès";
+      }
+
+      if (typeTier === "general") {
+        let baseauxiliaire = '';
+        let baseaux_id = 0;
+
+        if (nature === 'General' || nature === 'Collectif') {
+          baseauxiliaire = compte;
+
+          const findedID = await dossierPlanComptable.findOne({
+            where:
+            {
+              id_compte: idCompte,
+              id_dossier: idDossier,
+              compte: compte
+            }
+          });
+
+          if (findedID) {
+            baseaux_id = findedID.id;
+          }
+        } else {
+          const findedID = await dossierPlanComptable.findOne({
+            where:
+            {
+              id: baseCptCollectif
+            }
+          });
+
+          baseaux_id = baseCptCollectif;
+
+          if (findedID) {
+            baseauxiliaire = findedID.compte;
+          }
+        }
+
+        let compteFormated = '';
+        let baseAux = '';
+
+        // Formatage compte & baseaux selon les règles
+        if (autocompletion) {
+          if (nature === "Aux") {
+            compteFormated = compte.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
+            baseAux = baseauxiliaire.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux) || '';
+          } else {
+            compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
+            baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
+          }
+        } else {
+          if (nature !== "Aux") {
+            compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
+            baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
+          } else {
+            compteFormated = compte;
+            baseAux = baseauxiliaire;
+          }
+        }
+
+        let cptChNb = 0;
+        if (listeCptChg.length > 0) {
+          cptChNb = listeCptChg.length;
+        }
+
+        let cptTvaNb = 0;
+        if (listeCptTva.length > 0) {
+          cptTvaNb = listeCptTva.length;
+        }
+
+        const NewCptAdded = await dossierPlanComptable.update(
+          {
+            id_compte: idCompte,
+            id_dossier: idDossier,
+            compte: compteFormated,
+            libelle: libelle,
+            nature: nature,
+            baseaux: baseAux,
+            cptcharge: cptChNb,
+            cpttva: cptTvaNb,
+
+            typetier: typeTier,
+            pays: 'Madagascar',
+            motcle: motcle,
+            baseaux_id: baseaux_id
+          },
+          {
+            where: { id: itemId }
+          }
+        );
+
+        //Enregistrer les compte de charges et TVA associés au compte
+        if (listeCptChg.length > 0) {
+          listeCptChg.map(async (item) => {
+            //supprimer l'ancienne ligne
+            await dossierpcdetailcptchg.destroy({ where: { id: item.id } });
+
+            const saveCptCh = await dossierpcdetailcptchg.create({
+              id_compte: idCompte,
+              id_dossier: idDossier,
+              id_detail: itemId,
+              compte: item.compte,
+              libelle: item.libelle,
+              id_comptecompta: item.idCpt
+            });
+          });
+        }
+
+        if (listeCptTva.length > 0) {
+          listeCptTva.map(async (item) => {
+            //supprimer l'ancienne ligne
+            await dossierpcdetailcpttva.destroy({ where: { id: item.id } });
+
+            const saveCptTva = await dossierpcdetailcpttva.create({
+              id_compte: idCompte,
+              id_dossier: idDossier,
+              id_detail: itemId,
+              compte: item.compte,
+              libelle: item.libelle,
+              id_comptecompta: item.idCpt
+            });
+          });
+        }
+
+        resData.state = true;
+        resData.msg = "Les modifications ont été enregistrées avec succès";
+      }
+
+      res.json(resData);
+    }
+  } catch (error) {
     console.log(error);
   }
- }
+}
 
- const keepListCptChgTvaAssoc = async (req, res) => {
+const keepListCptChgTvaAssoc = async (req, res) => {
   try {
     let resData = {
       state: false,
@@ -1090,101 +1092,170 @@ const recupPc = async (req, res) => {
       detailTva: []
     }
 
-     const itemId = req.params.itemId;
-     const listeDetailModelCptChgData = await dossierpcdetailcptchg.findAll({
-       where: {
-           id_detail: itemId
-           },
-       order: [['compte', 'ASC']]
-     });
-
-     const listeDetailModelCptTvaData = await dossierpcdetailcpttva.findAll({
+    const itemId = req.params.itemId;
+    const listeDetailModelCptChgData = await dossierpcdetailcptchg.findAll({
       where: {
-          id_detail: itemId
-          },
+        id_detail: itemId
+      },
       order: [['compte', 'ASC']]
     });
- 
+
+    const listeDetailModelCptTvaData = await dossierpcdetailcpttva.findAll({
+      where: {
+        id_detail: itemId
+      },
+      order: [['compte', 'ASC']]
+    });
+
     if (listeDetailModelCptChgData || listeDetailModelCptTvaData) {
-     
-        resData.state = true;
-        resData.msg =  '';
-        resData.detailChg = listeDetailModelCptChgData;
-        resData.detailTva = listeDetailModelCptTvaData;
-        
-      } else {
-        resData.state = false;
-        resData.msg =  'Une erreur est survenue lors de la récupération des données';
-      }
+
+      resData.state = true;
+      resData.msg = '';
+      resData.detailChg = listeDetailModelCptChgData;
+      resData.detailTva = listeDetailModelCptTvaData;
+
+    } else {
+      resData.state = false;
+      resData.msg = 'Une erreur est survenue lors de la récupération des données';
+    }
     return res.json(resData);
   } catch (error) {
     console.log(error);
   }
- };
+};
 
- const deleteItemPc = async (req, res) => {
-    try{
-      let resData = {
-        state: false,
-        stateUndeletableCpt: false,
-        msg: 'Une erreur est survenue lors du traitement.',
-        msgUndeletableCpt:''
-      }
+const deleteItemPc = async (req, res) => {
+  try {
+    let resData = {
+      state: false,
+      stateUndeletableCpt: false,
+      msg: 'Une erreur est survenue lors du traitement.',
+      msgUndeletableCpt: ''
+    }
 
-      let msgErrorDelete = '';
-      const {listId, compteId, fileId } = req.body;
+    let msgErrorDelete = '';
+    const { listId, compteId, fileId } = req.body;
 
-      if(listId.length >= 1){
-        for (let i = 0; i < listId.length; i++){
-          //tester si le compte est lié à un compte auxiliaire
-          const infosCpt = await dossierPlanComptable.findOne({
-            where: {id : listId[i]}
-          });
+    if (listId.length >= 1) {
+      for (let i = 0; i < listId.length; i++) {
+        //tester si le compte est lié à un compte auxiliaire
+        const infosCpt = await dossierPlanComptable.findOne({
+          where: { id: listId[i] }
+        });
 
-          let cpt = '';
-          if(infosCpt){
-            cpt = infosCpt.compte;
-          }
-          
-          const cptInUse = await dossierPlanComptable.findAll({
-            where: {
-              id_compte: compteId,
-              id_dossier: fileId,
-              baseaux : cpt,
-            }
-          });
-
-          if(cptInUse.length > 1){
-            resData.stateUndeletableCpt = true;
-            if(msgErrorDelete === ''){
-              msgErrorDelete = `Impossible de supprimer les comptes suivants car ils sont utilisés comme base des comptes auxiliaires: ${cpt}`;
-            }else{
-              msgErrorDelete = `${msgErrorDelete}, ${cpt}`;
-            }
-            
-          }else{
-            await dossierPlanComptable.destroy({where: {id: listId[i]}});
-
-            //supprimer si la ligne possède des comptes de charges ou TVA associés
-            await dossierpcdetailcptchg.destroy({where: {id_detail: listId[i]}});
-            await dossierpcdetailcpttva.destroy({where: {id_detail: listId[i]}});
-          }
+        let cpt = '';
+        if (infosCpt) {
+          cpt = infosCpt.compte;
         }
 
-        resData.state = true;
-        resData.msg ="Les comptes séléctionés ont été supprimés avec succès.";
+        const cptInUse = await dossierPlanComptable.findAll({
+          where: {
+            id_compte: compteId,
+            id_dossier: fileId,
+            baseaux: cpt,
+          }
+        });
+
+        if (cptInUse.length > 1) {
+          resData.stateUndeletableCpt = true;
+          if (msgErrorDelete === '') {
+            msgErrorDelete = `Impossible de supprimer les comptes suivants car ils sont utilisés comme base des comptes auxiliaires: ${cpt}`;
+          } else {
+            msgErrorDelete = `${msgErrorDelete}, ${cpt}`;
+          }
+
+        } else {
+          await dossierPlanComptable.destroy({ where: { id: listId[i] } });
+
+          //supprimer si la ligne possède des comptes de charges ou TVA associés
+          await dossierpcdetailcptchg.destroy({ where: { id_detail: listId[i] } });
+          await dossierpcdetailcpttva.destroy({ where: { id_detail: listId[i] } });
+        }
       }
 
-      resData.msgUndeletableCpt = msgErrorDelete;
-      return res.json(resData);
-    } catch (error) {
-      console.log(error);
+      resData.state = true;
+      resData.msg = "Les comptes séléctionés ont été supprimés avec succès.";
     }
- }
+
+    resData.msgUndeletableCpt = msgErrorDelete;
+    return res.json(resData);
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+const recupPcIdLibelle = async (req, res) => {
+  try {
+    const { id_dossier, id_compte } = req.params;
+
+    const listepc = await dossierPlanComptable.findAll({
+      where: {
+        id_dossier: id_dossier,
+        id_compte: id_compte,
+        libelle: { [Sequelize.Op.ne]: 'Collectif' }
+      },
+      include: [
+        {
+          model: dossierPlanComptable,
+          as: 'BaseAux',
+          attributes: ['compte'],
+          required: false,
+          where: {
+            id_dossier: id_dossier,
+            id_compte: id_compte
+          }
+        }
+      ],
+      // raw: true,
+      order: [['compte', 'ASC']],
+      attributes: ['libelle', 'id']
+    });
+
+    // return res.json(listepc)
+
+    // Étape 1: transformer
+    const mappedListe = listepc.map(item => ({
+      id: item.id,
+      libelle: item.libelle,
+      compte: item.BaseAux?.compte || null
+    }));
+
+    // Étape 2: supprimer les doublons sur libelle + compte
+    const uniqueListe = [];
+    const seen = new Set();
+
+    for (const item of mappedListe) {
+      const key = `${item.libelle}-${item.compte}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        uniqueListe.push(item);
+      }
+    }
+
+    const resData = {
+      state: true,
+      msg: "Donnée reçues avec succes !",
+      liste: uniqueListe
+    };
+
+    if (listepc) {
+      resData.state = true;
+      resData.msg = "Donnée reçues avec succes !"
+    } else {
+      resData.state = false;
+      resData.msg = "Une erreur est survenue au moment du traitement des données";
+    }
+
+    return res.json(resData);
+  } catch (error) {
+    console.log(error);
+  }
+}
 
 module.exports = {
   recupPc,
   AddCptToPc,
   keepListCptChgTvaAssoc,
-  deleteItemPc
+  deleteItemPc,
+  recupPcIdLibelle
 };

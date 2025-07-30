@@ -67,7 +67,7 @@ export default function QuickFilter(){
             '& .MuiDataGrid-footerContainer': {
               left : 100
            
-            },
+            },  
         },
     checkboxSelection: true,
     pagination: true

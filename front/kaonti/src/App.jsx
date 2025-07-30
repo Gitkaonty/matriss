@@ -32,52 +32,52 @@ import ParamCRM from './components/menuComponent/Parametrages/crm/ParamCRM';
 import ParamMappingComponent from './components/menuComponent/Parametrages/mappingcompte/ParamMapping';
 
 const ROLES = {
-  'SuperAdmin':3355,
+  'SuperAdmin': 3355,
   'User': 2001,
-  'Editor':1984,
+  'Editor': 1984,
   'Admin': 5150
 }
 
 export default function App() {
   return (
     <Routes>
-        <Route path="/" element={<Layout />} >
-          {/*Publics routes */}
-          <Route path='/' element={<Login />} />
-          <Route path='/unauthorized' element={<Unauthorized />} />
-          
-          {/*Protected routes */}
-          <Route element={<PersistLogin />}>
-            <Route element={<RequireAuth allowedRoles={[ROLES.Admin]} />}>
-              <Route path='/tab' element={<MainPage />} >
-                <Route path='/tab/home' element={<Home />} />
-                <Route path='/tab/dashboard/:id' element={<DashboardComponent />} />
-                <Route path='/tab/saisie' element={<SaisieComponent />} />
-                <Route path='/tab/consultation' element={<ConsultationComponent />} />
-                <Route path='/tab/importBalance/:id' element={<ImportBalance />} />
-                <Route path='/tab/importJournal/:id' element={<ImportJournal />} />
-                <Route path='/tab/importModelePlanComptable' element={<ImportModelePlanComptable />} />
-                <Route path='/tab/ImportAnnexe' element={<ImportAnnexeComponent />} />
-                <Route path='/tab/importAnnexeDeclarationFiscale' element={<ImportAnnexeDeclarationFiscaleComponent />} />
-                <Route path='/tab/exportBalance/:id' element={<ExportBalance />} />
-                <Route path='/tab/declarationEbilan/:id' element={<DeclarationEbilan />} />
-                <Route path='/tab/revisionAnomalieEbilan' element={<RevisionAnomalieEbilanComponent />} />
-                <Route path='/tab/revisionPrecontrolFiscal' element={<RevisionPrecontroleFiscalComponent />} />
-                <Route path='/tab/paramCodeJournal/:id' element={<ParamCodeJournalComponent />} />
-                <Route path='/tab/paramPlanComptable/:id' element={<ParamPlanComptableComponent />} />
-                <Route path='/tab/paramPlanComptableModele' element={<ParamPCModele />} />
-                <Route path='/tab/paramTVA/:id' element={<ParamTVAComponent />} />
-                <Route path='/tab/paramDevise' element={<ParamDeviseComponent />} />
-                <Route path='/tab/paramExercice/:id' element={<ParamExerciceComponent />} />
-                <Route path='/tab/paramAnalytique' element={<ParamAnalytiqueComponent />} />
-                <Route path='/tab/paramCrm/:id' element={<ParamCRM />} />
-                <Route path='/tab/paramMapping/:id' element={<ParamMappingComponent />} />
-              </Route>
+      <Route path="/" element={<Layout />} >
+        {/*Publics routes */}
+        <Route path='/' element={<Login />} />
+        <Route path='/unauthorized' element={<Unauthorized />} />
+
+        {/*Protected routes */}
+        <Route element={<PersistLogin />}>
+          <Route element={<RequireAuth allowedRoles={[ROLES.Admin]} />}>
+            <Route path='/tab' element={<MainPage />} >
+              <Route path='/tab/home' element={<Home />} />
+              <Route path='/tab/dashboard/:id' element={<DashboardComponent />} />
+              <Route path='/tab/saisie/:id' element={<SaisieComponent />} />
+              <Route path='/tab/consultation/:id' element={<ConsultationComponent />} />
+              <Route path='/tab/importBalance/:id' element={<ImportBalance />} />
+              <Route path='/tab/importJournal/:id' element={<ImportJournal />} />
+              <Route path='/tab/importModelePlanComptable' element={<ImportModelePlanComptable />} />
+              <Route path='/tab/ImportAnnexe' element={<ImportAnnexeComponent />} />
+              <Route path='/tab/importAnnexeDeclarationFiscale' element={<ImportAnnexeDeclarationFiscaleComponent />} />
+              <Route path='/tab/exportBalance/:id' element={<ExportBalance />} />
+              <Route path='/tab/declarationEbilan/:id' element={<DeclarationEbilan />} />
+              <Route path='/tab/revisionAnomalieEbilan' element={<RevisionAnomalieEbilanComponent />} />
+              <Route path='/tab/revisionPrecontrolFiscal' element={<RevisionPrecontroleFiscalComponent />} />
+              <Route path='/tab/paramCodeJournal/:id' element={<ParamCodeJournalComponent />} />
+              <Route path='/tab/paramPlanComptable/:id' element={<ParamPlanComptableComponent />} />
+              <Route path='/tab/paramPlanComptableModele' element={<ParamPCModele />} />
+              <Route path='/tab/paramTVA/:id' element={<ParamTVAComponent />} />
+              <Route path='/tab/paramDevise' element={<ParamDeviseComponent />} />
+              <Route path='/tab/paramExercice/:id' element={<ParamExerciceComponent />} />
+              <Route path='/tab/paramAnalytique' element={<ParamAnalytiqueComponent />} />
+              <Route path='/tab/paramCrm/:id' element={<ParamCRM />} />
+              <Route path='/tab/paramMapping/:id' element={<ParamMappingComponent />} />
             </Route>
           </Route>
-          {/* catch all */}
-          <Route path='*' element={<NotFoundPage />} />
         </Route>
+        {/* catch all */}
+        <Route path='*' element={<NotFoundPage />} />
+      </Route>
     </Routes>
   )
 }

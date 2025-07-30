@@ -13,8 +13,8 @@ const etats = db.etats;
 const ajustements = db.ajustements;
 
 const infosVerrouillage = async (req, res) => {
-  try{
-    const {compteId, fileId, exerciceId} = req.body;
+  try {
+    const { compteId, fileId, exerciceId } = req.body;
 
     let resData = {
       state: false,
@@ -23,29 +23,29 @@ const infosVerrouillage = async (req, res) => {
     }
 
     const infosListe = await etats.findAll({
-      where : 
-        {
-          id_compte: compteId,
-          id_dossier: fileId,
-          id_exercice: exerciceId
-        }
+      where:
+      {
+        id_compte: compteId,
+        id_dossier: fileId,
+        id_exercice: exerciceId
+      }
     });
 
-    if(infosListe){
+    if (infosListe) {
       resData.state = true;
       resData.liste = infosListe;
       resData.msg = 'traitement terminé avec succès.';
     }
 
     return res.json(resData);
-  }catch (error){
+  } catch (error) {
     console.log(error);
   }
 }
 
-const verrouillerTableau = async(req, res) => {
-  try{
-    const {compteId, fileId, exerciceId, tableau, verr} = req.body;
+const verrouillerTableau = async (req, res) => {
+  try {
+    const { compteId, fileId, exerciceId, tableau, verr } = req.body;
 
     let resData = {
       state: false,
@@ -58,30 +58,30 @@ const verrouillerTableau = async(req, res) => {
         valide: verr
       },
       {
-        where: 
-          {
-            id_compte: compteId,
-            id_dossier: fileId,
-            id_exercice: exerciceId,
-            code: tableau,
-          }
+        where:
+        {
+          id_compte: compteId,
+          id_dossier: fileId,
+          id_exercice: exerciceId,
+          code: tableau,
+        }
       }
     );
 
-    if(infosUpdate){
+    if (infosUpdate) {
       resData.state = true;
       resData.msg = 'traitement terminé avec succès.';
     }
 
     return res.json(resData);
-  }catch (error){
+  } catch (error) {
     console.log(error);
   }
 }
 
-const getListeRubriqueGlobal = async (req, res)  => {
-  try{
-    const {compteId, fileId, exerciceId} = req.body;
+const getListeRubriqueGlobal = async (req, res) => {
+  try {
+    const { compteId, fileId, exerciceId } = req.body;
 
     let resData = {
       state: false,
@@ -125,16 +125,16 @@ const getListeRubriqueGlobal = async (req, res)  => {
 
     resData.state = true;
     return res.json(resData);
-  }catch (error){
+  } catch (error) {
     console.log(error);
   }
 }
 
 const getListeOneTable = async (req, res) => {
-  try{
+  try {
 
-  
-  const {compteId, fileId, exerciceId, tableau} = req.body;
+
+    const { compteId, fileId, exerciceId, tableau } = req.body;
 
   let resData = {
     state: false,
@@ -146,32 +146,32 @@ const getListeOneTable = async (req, res) => {
   resData.list1 = await recupTableau.recupBILAN_ACTIF(compteId, fileId, exerciceId);
   resData.list2 = await recupTableau.recupBILAN_PASSIF(compteId, fileId, exerciceId);
 
-  // resData.list1  = await getTableau(Number(compteId), Number(fileId), Number(exerciceId), tableau, 1);
-  // resData.list2  = await getTableau(Number(compteId), Number(fileId), Number(exerciceId), tableau, 2);
- 
-  // if(tableau === 'BILAN' || tableau === 'CRN' || tableau === 'CRF'|| tableau === 'TFTD'|| tableau === 'TFTI'){
-  //   if(tableau === 'BILAN'){
-  //     resData.list1  = await getTableau(Number(compteId), Number(fileId), Number(exerciceId), tableau, 1);
-  //     resData.list2  = await getTableau(Number(compteId), Number(fileId), Number(exerciceId), tableau, 2);
-  //     resData.state = true;
-  //   }else{
-  //     resData.list1  = await getTableau(Number(compteId), Number(fileId), Number(exerciceId), tableau, 0);
-  //     resData.state = true;
-  //   }
-    
-  // }else{
-  //   resData.list1 = await getAutreTableau(Number(compteId), Number(fileId), Number(exerciceId), tableau, 0);
-  //   resData.state = true;
-  // }
-  
+    // resData.list1  = await getTableau(Number(compteId), Number(fileId), Number(exerciceId), tableau, 1);
+    // resData.list2  = await getTableau(Number(compteId), Number(fileId), Number(exerciceId), tableau, 2);
+
+    // if(tableau === 'BILAN' || tableau === 'CRN' || tableau === 'CRF'|| tableau === 'TFTD'|| tableau === 'TFTI'){
+    //   if(tableau === 'BILAN'){
+    //     resData.list1  = await getTableau(Number(compteId), Number(fileId), Number(exerciceId), tableau, 1);
+    //     resData.list2  = await getTableau(Number(compteId), Number(fileId), Number(exerciceId), tableau, 2);
+    //     resData.state = true;
+    //   }else{
+    //     resData.list1  = await getTableau(Number(compteId), Number(fileId), Number(exerciceId), tableau, 0);
+    //     resData.state = true;
+    //   }
+
+    // }else{
+    //   resData.list1 = await getAutreTableau(Number(compteId), Number(fileId), Number(exerciceId), tableau, 0);
+    //   resData.state = true;
+    // }
+
     resData.state = true;
     res.status(200).json(resData);
 
-  }catch (error){
+  } catch (error) {
     console.error('ERREUR getListeOneTable:', error);
     res.status(500).json({ state: false, error: error.message });
   }
-    
+
 }
 
 // const getListeRubriqueIndividual = async (req, res)  => {
@@ -260,110 +260,110 @@ const getListeOneTable = async (req, res) => {
 //     }
 //   }
 
-  const getListeCompteRubrique = async (req, res)  => {
-      try{
-        let {compteId, fileId, exerciceId, tableau, choixPoste, rubriqueId} = req.body;
+const getListeCompteRubrique = async (req, res) => {
+  try {
+    let { compteId, fileId, exerciceId, tableau, choixPoste, rubriqueId } = req.body;
 
-        compteId = Number(compteId);
-        fileId = Number(fileId);
-        exerciceId = Number(exerciceId);
-  
-        let resData = {
-          state: false,
-          msg: 'une erreur est survenue lors du traitement.',
-          liste: []
-          }
-  
-        if(rubriqueId){
-          const liste= await compterubriques.findAll({
-            where: {
-              id_compte: compteId,
-              id_dossier: fileId,
-              id_exercice: exerciceId,
-              id_etat: tableau,
-              nature: choixPoste,
-              id_rubrique: rubriqueId
-            },
-            raw:true,
-            order: [['compte', 'ASC']]
-          });
-      
-          if(liste){
-            resData.state = true;
-            resData.liste = liste;
-          }else{
-            resData.state = false;
-            resData.msg = "Une erreur est survenue au moment du traitement des données";
-          }
-        }else{
-          resData.state = true;
-            resData.liste = [];
-        }
-        
-        return res.json(resData);
-      }catch (error){
-        console.log(error);
-      }
+    compteId = Number(compteId);
+    fileId = Number(fileId);
+    exerciceId = Number(exerciceId);
+
+    let resData = {
+      state: false,
+      msg: 'une erreur est survenue lors du traitement.',
+      liste: []
     }
 
-    const activateCalcul = async (req, res) => {
-      try{
-        let {compteId, fileId, exerciceId, tableau, refreshTotal } = req.body;
+    if (rubriqueId) {
+      const liste = await compterubriques.findAll({
+        where: {
+          id_compte: compteId,
+          id_dossier: fileId,
+          id_exercice: exerciceId,
+          id_etat: tableau,
+          nature: choixPoste,
+          id_rubrique: rubriqueId
+        },
+        raw: true,
+        order: [['compte', 'ASC']]
+      });
 
-        compteId = Number(compteId);
-        fileId = Number(fileId);
-        exerciceId = Number(exerciceId);
-  
-        let resData = {
-          state: false,
-          msg: 'une erreur est survenue lors du traitement.',
-          list1: [],
-          list2: []
-        }
+      if (liste) {
+        resData.state = true;
+        resData.liste = liste;
+      } else {
+        resData.state = false;
+        resData.msg = "Une erreur est survenue au moment du traitement des données";
+      }
+    } else {
+      resData.state = true;
+      resData.liste = [];
+    }
 
-        if(tableau === 'BILAN'){
-          const { stateRefresh } = await declEbilanRefreshFunction.refreshBILAN(compteId, fileId, exerciceId, refreshTotal);
+    return res.json(resData);
+  } catch (error) {
+    console.log(error);
+  }
+}
 
-          if(stateRefresh){
-            resData.list1 = await recupTableau.recupBILAN_ACTIF(compteId, fileId, exerciceId);
-            resData.list2 = await recupTableau.recupBILAN_PASSIF(compteId, fileId, exerciceId);
-            resData.state = true;
-            resData.msg = `Mise à jour des calculs du tableau ${tableau} terminées avec succès.`
-          }
-        }else if(tableau === 'CRN'){
-          const { stateRefresh } = await declEbilanRefreshFunction.refreshCRN(compteId, fileId, exerciceId, refreshTotal);
+const activateCalcul = async (req, res) => {
+  try {
+    let { compteId, fileId, exerciceId, tableau, refreshTotal } = req.body;
 
-          if(stateRefresh){
-            resData.list1 = await recupTableau.recupCRN(compteId, fileId, exerciceId);
-            resData.state = true;
-            resData.msg = `Mise à jour des calculs du tableau ${tableau} terminées avec succès.`
-          }       
-        }else if(tableau === 'CRF'){
-          const { stateRefresh } = await declEbilanRefreshFunction.refreshCRF(compteId, fileId, exerciceId, refreshTotal);
+    compteId = Number(compteId);
+    fileId = Number(fileId);
+    exerciceId = Number(exerciceId);
 
-          if(stateRefresh){
-            resData.list1 = await recupTableau.recupCRF(compteId, fileId, exerciceId);
-            resData.state = true;
-            resData.msg = `Mise à jour des calculs du tableau ${tableau} terminées avec succès.`
-          }       
-        }else if(tableau === 'TFTD'){
-          const { stateRefresh } = await declEbilanRefreshFunction.refreshTFTD(compteId, fileId, exerciceId, refreshTotal);
+    let resData = {
+      state: false,
+      msg: 'une erreur est survenue lors du traitement.',
+      list1: [],
+      list2: []
+    }
 
-          if(stateRefresh){
-            resData.list1 = await recupTableau.recupTFTD(compteId, fileId, exerciceId);
-            resData.state = true;
-            resData.msg = `Mise à jour des calculs du tableau ${tableau} terminées avec succès.`
-          }       
-        }else if(tableau === 'TFTI'){
-          const { stateRefresh } = await declEbilanRefreshFunction.refreshTFTI(compteId, fileId, exerciceId, refreshTotal);
+    if (tableau === 'BILAN') {
+      const { stateRefresh } = await declEbilanRefreshFunction.refreshBILAN(compteId, fileId, exerciceId, refreshTotal);
 
-          if(stateRefresh){
-            resData.list1 = await recupTableau.recupTFTI(compteId, fileId, exerciceId);
-            resData.state = true;
-            resData.msg = `Mise à jour des calculs du tableau ${tableau} terminées avec succès.`
-          }       
-        }else if(tableau === 'EVCP'){
-          const { stateRefresh } = await declEbilanRefreshFunction.refreshEVCP(compteId, fileId, exerciceId, refreshTotal);
+      if (stateRefresh) {
+        resData.list1 = await recupTableau.recupBILAN_ACTIF(compteId, fileId, exerciceId);
+        resData.list2 = await recupTableau.recupBILAN_PASSIF(compteId, fileId, exerciceId);
+        resData.state = true;
+        resData.msg = `Mise à jour des calculs du tableau ${tableau} terminées avec succès.`
+      }
+    } else if (tableau === 'CRN') {
+      const { stateRefresh } = await declEbilanRefreshFunction.refreshCRN(compteId, fileId, exerciceId, refreshTotal);
+
+      if (stateRefresh) {
+        resData.list1 = await recupTableau.recupCRN(compteId, fileId, exerciceId);
+        resData.state = true;
+        resData.msg = `Mise à jour des calculs du tableau ${tableau} terminées avec succès.`
+      }
+    } else if (tableau === 'CRF') {
+      const { stateRefresh } = await declEbilanRefreshFunction.refreshCRF(compteId, fileId, exerciceId, refreshTotal);
+
+      if (stateRefresh) {
+        resData.list1 = await recupTableau.recupCRF(compteId, fileId, exerciceId);
+        resData.state = true;
+        resData.msg = `Mise à jour des calculs du tableau ${tableau} terminées avec succès.`
+      }
+    } else if (tableau === 'TFTD') {
+      const { stateRefresh } = await declEbilanRefreshFunction.refreshTFTD(compteId, fileId, exerciceId, refreshTotal);
+
+      if (stateRefresh) {
+        resData.list1 = await recupTableau.recupTFTD(compteId, fileId, exerciceId);
+        resData.state = true;
+        resData.msg = `Mise à jour des calculs du tableau ${tableau} terminées avec succès.`
+      }
+    } else if (tableau === 'TFTI') {
+      const { stateRefresh } = await declEbilanRefreshFunction.refreshTFTI(compteId, fileId, exerciceId, refreshTotal);
+
+      if (stateRefresh) {
+        resData.list1 = await recupTableau.recupTFTI(compteId, fileId, exerciceId);
+        resData.state = true;
+        resData.msg = `Mise à jour des calculs du tableau ${tableau} terminées avec succès.`
+      }
+    } else if (tableau === 'EVCP') {
+      const { stateRefresh } = await declEbilanRefreshFunction.refreshEVCP(compteId, fileId, exerciceId, refreshTotal);
 
           if(stateRefresh){
             resData.list1 = await recupTableau.recupEVCP(compteId, fileId, exerciceId);
@@ -540,17 +540,17 @@ const getListeOneTable = async (req, res) => {
     //   }
     // }
 
-    const addmodifyTableau = async (req, res) => {
-      try{
-        const {compteId, fileId, exerciceId, tableau, formData } = req.body;
-    
-        let resData = {
-          state: false,
-          msg: 'une erreur est survenue lors du traitement.',
-          liste: []
-        }
+const addmodifyTableau = async (req, res) => {
+  try {
+    const { compteId, fileId, exerciceId, tableau, formData } = req.body;
 
-        let tableSource = db;
+    let resData = {
+      state: false,
+      msg: 'une erreur est survenue lors du traitement.',
+      liste: []
+    }
+
+    let tableSource = db;
 
         if(tableau === 'BHIAPC'){
           const {stateModify, stateAdd } = await functionAddOrModifyRow.addOrmodifyRowBHIAPC(compteId,fileId, exerciceId, formData);
@@ -668,53 +668,53 @@ const getListeOneTable = async (req, res) => {
           }
         }
 
-        return res.json(resData);
-      }catch (error){
-        console.log(error);
-      }
+    return res.json(resData);
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+const deleteTableOneRow = async (req, res) => {
+  try {
+    const { compteId, fileId, exerciceId, infoRowToDelete } = req.body;
+
+    let resData = {
+      state: false,
+      msg: 'une erreur est survenue lors du traitement.',
+      liste: []
     }
 
-    const deleteTableOneRow = async (req, res) => {
-      try{
-        const {compteId, fileId, exerciceId, infoRowToDelete } = req.body;
-    
-        let resData = {
-          state: false,
-          msg: 'une erreur est survenue lors du traitement.',
-          liste: []
-        }
+    let tableSource = db;
 
-        let tableSource = db;
+    if (infoRowToDelete.tableau === 'BHIAPC') {
+      tableSource = db.liassebhiapcs;
+    } else if (infoRowToDelete.tableau === 'MP') {
+      tableSource = db.liassemps;
+    } else if (infoRowToDelete.tableau === 'DA') {
+      tableSource = db.liassedas;
+    } else if (infoRowToDelete.tableau === 'DP') {
+      tableSource = db.liassedps;
+    } else if (infoRowToDelete.tableau === 'EIAFNC') {
+      tableSource = db.liasseeiafncs;
+    } else if (infoRowToDelete.tableau === 'SAD') {
+      tableSource = db.liassesads;
+    } else if (infoRowToDelete.tableau === 'SDR') {
+      tableSource = db.liassesdrs;
+    } else if (infoRowToDelete.tableau === 'SE') {
+      tableSource = db.liasseses;
+    } else if (infoRowToDelete.tableau === 'NE') {
+      tableSource = db.liassenotes;
+    }
 
-        if(infoRowToDelete.tableau === 'BHIAPC'){
-          tableSource = db.liassebhiapcs;
-        }else if(infoRowToDelete.tableau === 'MP'){
-          tableSource = db.liassemps;
-        }else if(infoRowToDelete.tableau === 'DA'){
-          tableSource = db.liassedas;
-        }else if(infoRowToDelete.tableau === 'DP'){
-          tableSource = db.liassedps;
-        }else if(infoRowToDelete.tableau === 'EIAFNC'){
-          tableSource = db.liasseeiafncs;
-        }else if(infoRowToDelete.tableau === 'SAD'){
-          tableSource = db.liassesads;
-        }else if(infoRowToDelete.tableau === 'SDR'){
-          tableSource = db.liassesdrs;
-        }else if(infoRowToDelete.tableau === 'SE'){
-          tableSource = db.liasseses;
-        }else if(infoRowToDelete.tableau === 'NE'){
-          tableSource = db.liassenotes;
-        }
-
-        const deletedRow = await tableSource.destroy({
-          where: 
-            {
-              id : infoRowToDelete.id,
-              id_compte: compteId,
-              id_dossier : fileId,
-              id_exercice: exerciceId,
-            }
-        });
+    const deletedRow = await tableSource.destroy({
+      where:
+      {
+        id: infoRowToDelete.id,
+        id_compte: compteId,
+        id_dossier: fileId,
+        id_exercice: exerciceId,
+      }
+    });
 
         if(deletedRow){
           if(infoRowToDelete.tableau === 'BHIAPC'){
@@ -741,23 +741,23 @@ const getListeOneTable = async (req, res) => {
           resData.msg = "Suppression de la ligne effectuée avec succès.";
         }
 
-        return res.json(resData);
-      }catch (error){
-        console.log(error);
-      }
+    return res.json(resData);
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+const deleteTableAllRow = async (req, res) => {
+  try {
+    const { compteId, fileId, exerciceId, tableauToDeleteAllRow } = req.body;
+
+    let resData = {
+      state: false,
+      msg: 'une erreur est survenue lors du traitement.',
+      liste: []
     }
 
-    const deleteTableAllRow = async (req, res) => {
-      try{
-        const {compteId, fileId, exerciceId, tableauToDeleteAllRow } = req.body;
-
-        let resData = {
-          state: false,
-          msg: 'une erreur est survenue lors du traitement.',
-          liste: []
-        }
-
-        let tableSource = db;
+    let tableSource = db;
 
         if(tableauToDeleteAllRow === 'BHIAPC'){
           const stateDeleting = await declEbilanDeleteFunction.deleteAllRowBHIAPC(compteId, fileId, exerciceId);
@@ -824,178 +824,178 @@ const getListeOneTable = async (req, res) => {
           }
         }
 
-        return res.json(resData);
-      }catch (error){
-        console.log(error);
-      }
+    return res.json(resData);
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+const listeAjustement = async (req, res) => {
+  try {
+    const { compteId, dossierId, exerciceId, etatId, rubriqueId, nature } = req.query;
+
+    let resData = {
+      state: false,
+      msg: 'une erreur est survenue lors du traitement.',
+      liste: [],
     }
 
-    const listeAjustement = async (req, res) => {
-      try{
-        const { compteId, dossierId, exerciceId, etatId, rubriqueId, nature } = req.query;
-
-        let resData = {
-          state: false,
-          msg: 'une erreur est survenue lors du traitement.',
-          liste: [],
-        }
-  
-        const liste = await ajustements.findAll({
-          where : 
-            {
-              id_compte: compteId,
-              id_dossier: dossierId,
-              id_exercice: exerciceId,
-              id_etat: etatId,
-              id_rubrique: rubriqueId,
-              nature: nature
-            }
-        });
-    
-        if(liste){
-          resData.state = true;
-          resData.liste = liste;
-          resData.msg = 'traitement terminé avec succès.';
-        }
-    
-        return res.json(resData);
-      }catch (error){
-        console.log(error);
+    const liste = await ajustements.findAll({
+      where:
+      {
+        id_compte: compteId,
+        id_dossier: dossierId,
+        id_exercice: exerciceId,
+        id_etat: etatId,
+        id_rubrique: rubriqueId,
+        nature: nature
       }
+    });
+
+    if (liste) {
+      resData.state = true;
+      resData.liste = liste;
+      resData.msg = 'traitement terminé avec succès.';
     }
 
-    const addModifyAjustement = async (req, res) => {
-      try{
-        const { id,
-          state,
-          id_compte,
-          id_dossier,
-          id_exercice,
-          id_rubrique,
-          id_etat,
-          nature,
-          motif,
-          montant} = req.body;
+    return res.json(resData);
+  } catch (error) {
+    console.log(error);
+  }
+}
 
-        let resData = {
-          state: false,
-          msg: 'une erreur est survenue lors du traitement.',
-          liste: [],
-        }
-    
-        const testIfExist = await ajustements.findAll({
-          where: 
-            {
-              id: id,
-              id_compte: id_compte,
-              id_dossier: id_dossier,
-              id_exercice: id_exercice,
-              id_etat: id_etat,
-              id_rubrique: id_rubrique,
-              nature: nature
-            }
-        });
-  
-        if(testIfExist.length === 0){
-          const addAjust = await ajustements.create({
+const addModifyAjustement = async (req, res) => {
+  try {
+    const { id,
+      state,
+      id_compte,
+      id_dossier,
+      id_exercice,
+      id_rubrique,
+      id_etat,
+      nature,
+      motif,
+      montant } = req.body;
+
+    let resData = {
+      state: false,
+      msg: 'une erreur est survenue lors du traitement.',
+      liste: [],
+    }
+
+    const testIfExist = await ajustements.findAll({
+      where:
+      {
+        id: id,
+        id_compte: id_compte,
+        id_dossier: id_dossier,
+        id_exercice: id_exercice,
+        id_etat: id_etat,
+        id_rubrique: id_rubrique,
+        nature: nature
+      }
+    });
+
+    if (testIfExist.length === 0) {
+      const addAjust = await ajustements.create({
+        id_compte: id_compte,
+        id_dossier: id_dossier,
+        id_exercice: id_exercice,
+        id_etat: id_etat,
+        id_rubrique: id_rubrique,
+        nature: nature,
+        motif: motif,
+        montant: montant
+      });
+
+      if (addAjust) {
+        resData.state = true;
+        resData.msg = "Traitement effectué avec succès.";
+      } else {
+        resData.state = false;
+        resData.msg = "Une erreur est survenue au moment du traitement des données";
+      }
+    } else {
+      const ModifyAjust = await ajustements.update(
+        {
+          motif: motif,
+          montant: montant
+        },
+        {
+          where:
+          {
+            id: id,
             id_compte: id_compte,
             id_dossier: id_dossier,
             id_exercice: id_exercice,
             id_etat: id_etat,
             id_rubrique: id_rubrique,
-            nature: nature,
-            motif: motif,
-            montant: montant
-          });
-  
-          if(addAjust){
-            resData.state = true;
-            resData.msg = "Traitement effectué avec succès.";
-          }else{
-            resData.state = false;
-            resData.msg = "Une erreur est survenue au moment du traitement des données";
-          }
-        }else{
-          const ModifyAjust = await ajustements.update(
-            {
-              motif: motif,
-              montant: montant
-            },
-            {
-              where: 
-                {
-                  id: id,
-                  id_compte: id_compte,
-                  id_dossier: id_dossier,
-                  id_exercice: id_exercice,
-                  id_etat: id_etat,
-                  id_rubrique: id_rubrique,
-                  nature: nature
-                }
-            }
-          );
-  
-          if(ModifyAjust){
-            resData.state = true;
-            resData.msg = "Modification effectuée avec succès.";
-          }else{
-            resData.state = false;
-            resData.msg = "Une erreur est survenue au moment du traitement des données";
-          }
-        }
-    
-        return res.json(resData);
-      }catch (error){
-        console.log(error);
-      }
-    }
-
-    const deleteAjustement = async (req, res) => {
-      try{
-        const {idCompte, idDossier, idExercice, idEtat, idRubrique, nature, idToDelete } = req.body;
-
-        let resData = {
-          state: false,
-          msg: 'une erreur est survenue lors du traitement.',
-          liste: [],
-        }
-
-        const stateDeleting = await ajustements.destroy({
-          where: 
-          {
-            id: idToDelete,
-            id_compte: idCompte,
-            id_dossier: idDossier,
-            id_exercice: idExercice,
-            id_etat: idEtat,
-            id_rubrique: idRubrique,
             nature: nature
           }
-        });
-
-        if(stateDeleting){
-          resData.state = true;
-          resData.msg = "Suppression de la ligne effectuée avec succès.";
         }
+      );
 
-        return res.json(resData);
-      }catch (error){
-        console.log(error);
+      if (ModifyAjust) {
+        resData.state = true;
+        resData.msg = "Modification effectuée avec succès.";
+      } else {
+        resData.state = false;
+        resData.msg = "Une erreur est survenue au moment du traitement des données";
       }
     }
 
-    module.exports = {
-      infosVerrouillage,
-      verrouillerTableau,
-      getListeRubriqueGlobal,
-      //getListeRubriqueIndividual,
-      getListeOneTable,
-      getListeCompteRubrique,
-      activateCalcul,
-      addmodifyTableau,
-      deleteTableOneRow,
-      deleteTableAllRow,
-      addModifyAjustement,
-      listeAjustement,
-      deleteAjustement
-    };
+    return res.json(resData);
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+const deleteAjustement = async (req, res) => {
+  try {
+    const { idCompte, idDossier, idExercice, idEtat, idRubrique, nature, idToDelete } = req.body;
+
+    let resData = {
+      state: false,
+      msg: 'une erreur est survenue lors du traitement.',
+      liste: [],
+    }
+
+    const stateDeleting = await ajustements.destroy({
+      where:
+      {
+        id: idToDelete,
+        id_compte: idCompte,
+        id_dossier: idDossier,
+        id_exercice: idExercice,
+        id_etat: idEtat,
+        id_rubrique: idRubrique,
+        nature: nature
+      }
+    });
+
+    if (stateDeleting) {
+      resData.state = true;
+      resData.msg = "Suppression de la ligne effectuée avec succès.";
+    }
+
+    return res.json(resData);
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+module.exports = {
+  infosVerrouillage,
+  verrouillerTableau,
+  getListeRubriqueGlobal,
+  //getListeRubriqueIndividual,
+  getListeOneTable,
+  getListeCompteRubrique,
+  activateCalcul,
+  addmodifyTableau,
+  deleteTableOneRow,
+  deleteTableAllRow,
+  addModifyAjustement,
+  listeAjustement,
+  deleteAjustement
+};
