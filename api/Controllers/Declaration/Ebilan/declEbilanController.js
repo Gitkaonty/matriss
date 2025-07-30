@@ -162,15 +162,6 @@ const getListeOneTable = async (req, res) => {
   
   resData.list1 = await recupTableau.recupBILAN_ACTIF(compteId, fileId, exerciceId);
   resData.list2 = await recupTableau.recupBILAN_PASSIF(compteId, fileId, exerciceId);
-  let resData = {
-    state: false,
-    msg: '',
-    list1: [],
-    list2: [],
-  }
-  
-  resData.list1 = await recupTableau.recupBILAN_ACTIF(compteId, fileId, exerciceId);
-  resData.list2 = await recupTableau.recupBILAN_PASSIF(compteId, fileId, exerciceId);
 
   // resData.list1  = await getTableau(Number(compteId), Number(fileId), Number(exerciceId), tableau, 1);
   // resData.list2  = await getTableau(Number(compteId), Number(fileId), Number(exerciceId), tableau, 2);
@@ -391,48 +382,6 @@ const getListeOneTable = async (req, res) => {
         }else if(tableau === 'EVCP'){
           const { stateRefresh } = await declEbilanRefreshFunction.refreshEVCP(compteId, fileId, exerciceId, refreshTotal);
 
-          if(stateRefresh){
-            resData.list1 = await recupTableau.recupEVCP(compteId, fileId, exerciceId);
-            resData.state = true;
-            resData.msg = `Mise à jour des calculs du tableau ${tableau} terminées avec succès.`
-          }       
-        }else if(tableau === 'DRF'){
-          const { stateRefresh } = await declEbilanRefreshFunction.refreshDRF(compteId, fileId, exerciceId, refreshTotal);
-
-          if(stateRefresh){
-            resData.list1 = await recupTableau.recupDRF(compteId, fileId, exerciceId);
-            resData.state = true;
-            resData.msg = `Mise à jour des calculs du tableau ${tableau} terminées avec succès.`
-          }       
-        }else if(tableau === 'DP'){
-          const { stateRefresh } = await declEbilanRefreshFunction.refreshDP(compteId, fileId, exerciceId, refreshTotal);
-
-          if(stateRefresh){
-            resData.list1 = await recupTableau.recupDP(compteId, fileId, exerciceId);
-            resData.state = true;
-            resData.msg = `Mise à jour des calculs du tableau ${tableau} terminées avec succès.`
-          }       
-        }else if(tableau === 'SAD'){
-          const { stateRefresh } = await declEbilanRefreshFunction.refreshSAD(compteId, fileId, exerciceId, refreshTotal);
-          if(stateRefresh){
-            resData.list1 = await recupTableau.recupSAD(compteId, fileId, exerciceId);
-            resData.state = true;
-            resData.msg = `Mise à jour des calculs du tableau ${tableau} terminées avec succès.`
-          }       
-        }else if(tableau === 'SDR'){
-          const { stateRefresh } = await declEbilanRefreshFunction.refreshSDR(compteId, fileId, exerciceId, refreshTotal);
-          if(stateRefresh){
-            resData.list1 = await recupTableau.recupSDR(compteId, fileId, exerciceId);
-            resData.state = true;
-            resData.msg = `Mise à jour des calculs du tableau ${tableau} terminées avec succès.`
-          }       
-        }
-        
-        return res.json(resData);
-      }catch (error){
-        console.log(error);
-      }
-    }
           if(stateRefresh){
             resData.list1 = await recupTableau.recupEVCP(compteId, fileId, exerciceId);
             resData.state = true;
@@ -1127,13 +1076,7 @@ const getListeOneTable = async (req, res) => {
             resData.msg = "Suppression de toute les lignes du tableau effectuée avec succès.";
             resData.liste = await recupTableau.recupDP(compteId, fileId, exerciceId);
           }
-          const stateDeleting = await declEbilanDeleteFunction.deleteAllRowDP(compteId, fileId, exerciceId);
-          if(stateDeleting){
-            resData.state = true;
-            resData.msg = "Suppression de toute les lignes du tableau effectuée avec succès.";
-            resData.liste = await recupTableau.recupDP(compteId, fileId, exerciceId);
-          }
-
+         
         }else if(tableauToDeleteAllRow === 'EIAFNC'){
           
           const stateDeleting = await declEbilanDeleteFunction.deleteAllRowEIAFNC(compteId, fileId, exerciceId);
