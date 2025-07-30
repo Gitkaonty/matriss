@@ -47,6 +47,9 @@ import QuickFilter from '../../../componentsTools/DatagridToolsStyle';
 import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes } from '@mui/x-data-grid';
 import { TbPlaylistAdd } from 'react-icons/tb';
 import { IoMdTrash } from 'react-icons/io';
+import InputAdornment from '@mui/material/InputAdornment';
+import FormatedInput from '../../../componentsTools/FormatedInput';
+import { NumericFormat } from 'react-number-format';
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialogContent-root': {
@@ -294,6 +297,8 @@ const InfosNewFileInitialValues = {
     autocompletion: true,
     avecanalytique: false,
     tauxir:'',
+    pourcentageca:0,
+    montantmin:0,
     assujettitva: false,
     montantcapital:0,
     nbrpart: 0,
@@ -1646,7 +1651,6 @@ const handlSubmitModification = (values) => {
                                 if(resData.state){
                                     setCrm(resData.list);
                                     const crmData = resData.list;
-
                                     setFieldValue('action','modify');
                                     setFieldValue('itemId', crmData.id);
                                     setFieldValue('idDossier', crmData.id);
@@ -1672,6 +1676,8 @@ const handlSubmitModification = (values) => {
                                     setFieldValue('autocompletion', crmData.autocompletion);
                                     setFieldValue('avecanalytique', crmData.avecanalytique);
                                     setFieldValue('tauxir',crmData.tauxir);
+                                    setFieldValue('pourcentageca',crmData.pourcentageca);
+                                    setFieldValue('montantmin',crmData.montantmin);
                                     setFieldValue('assujettitva', crmData.assujettitva);
                                     setFieldValue('montantcapital',crmData.capital);
                                     setFieldValue('nbrpart', crmData.nbrpart);
@@ -2229,6 +2235,8 @@ const handlSubmitModification = (values) => {
                                             <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"} 
                                                     alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"20px"} 
                                             >
+                                                <Typography style={{fontWeight:'bold', fontSize:"18px", marginLeft:"0px", marginTop:"5px"}}>Impôt sur le revenu (IR)</Typography>
+
                                                 <Stack spacing={1}>
                                                     <label htmlFor="tauxir" style={{fontSize:12, color: '#3FA2F6'}}>Taux IR</label>
                                                     <Field
@@ -2246,8 +2254,52 @@ const handlSubmitModification = (values) => {
                                                     <ErrorMessage name='tauxir' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
                                                 </Stack>
 
+                                                <Typography style={{fontWeight:'bold', fontSize:"14px", marginLeft:"0px", marginTop:"30px"}}>Paramétrages minimum de perception</Typography>
+                                                
+                                                <Stack width={"100%"} height={"30px"} spacing={10} alignItems={"center"} 
+                                                    alignContent={"center"} justifyContent={"stretch"} direction={"row"}
+                                                    style={{marginLeft:"0px"}}
+                                                >
+                                                    <Stack spacing={1}>
+                                                        <label htmlFor="pourcentageca" style={{fontSize:12, color: '#3FA2F6'}}>Pourcentage CA</label>
+                                                        <Field
+                                                        required
+                                                        name='pourcentageca'
+                                                        onChange={handleChange}
+                                                        type='text'
+                                                        placeholder=""
+                                                        style={{height:22, borderTop: 'none',
+                                                            borderLeft: 'none',borderRight: 'none', 
+                                                            outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                            width: '100px'
+                                                        }}
+                                                        />
+                                                        <ErrorMessage name='pourcentageca' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                    </Stack>
+
+                                                    <Stack spacing={1}>
+                                                        <label htmlFor="montantmin" style={{fontSize:12, color: '#3FA2F6'}}>Montant minimum</label>
+                                                        <Field
+                                                        required
+                                                        name='montantmin'
+                                                        onChange={handleChange}
+                                                        type='number'
+                                                        placeholder=""
+                                                        style={{height:22, borderTop: 'none',
+                                                            borderLeft: 'none',borderRight: 'none', 
+                                                            outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                            width: '150px', textAlign: 'right',
+                                                        }}
+
+                                                        />
+                                                        <ErrorMessage name='montantmin' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                    </Stack>
+                                                </Stack>
+
+                                                <Typography style={{fontWeight:'bold', fontSize:"18px", marginLeft:"0px", marginTop:"50px"}}>Taxe sur la valeur ajoutée (TVA)</Typography>
+                                            
                                                 <Stack spacing={0} direction={'row'}
-                                                        style={{alignItems:'center', marginTop: 40}}
+                                                        style={{alignItems:'center', marginTop: 20}}
                                                 >
                                                     <Field
                                                     required

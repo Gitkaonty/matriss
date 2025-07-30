@@ -38,6 +38,75 @@ liassesads.belongsTo(rubriquesmatrices, { foreignKey: 'id_rubrique' , targetKey:
 liassesdrs.belongsTo(rubriquesmatrices, { foreignKey: 'id_rubrique' , targetKey: 'id_rubrique'});
 liasseses.belongsTo(rubriquesmatrices, { foreignKey: 'id_rubrique' , targetKey: 'id_rubrique'});
 
+const deleteAllRowBHIAPC = async (compteId, fileId, exerciceId) => {
+  try{
+    let stateDeleting = false;
+
+    if(liassebhiapcs.destroy({
+        where: 
+        {
+          id_compte: compteId,
+          id_dossier: fileId,
+          id_exercice: exerciceId,
+        }
+      })
+      ){
+      stateDeleting = true;
+    }
+
+    return stateDeleting;
+  }catch (error){
+    console.log(error);
+    return false;
+  }
+}
+
+const deleteAllRowMP = async (compteId, fileId, exerciceId) => {
+  try{
+    let stateDeleting = false;
+
+    if(liassemps.destroy({
+        where: 
+        {
+          id_compte: compteId,
+          id_dossier: fileId,
+          id_exercice: exerciceId,
+        }
+      })
+      ){
+      stateDeleting = true;
+    }
+
+    return stateDeleting;
+  }catch (error){
+    console.log(error);
+    return false;
+  }
+}
+
+const deleteAllRowDA = async (compteId, fileId, exerciceId) => {
+  try{
+    let stateDeleting = false;
+
+    if(liassedas.destroy({
+        where: 
+        {
+          id_compte: compteId,
+          id_dossier: fileId,
+          id_exercice: exerciceId,
+        }
+      })
+      ){
+      stateDeleting = true;
+    }
+
+    return stateDeleting;
+  }catch (error){
+    console.log(error);
+    return false;
+  }
+}
+
 const deleteAllRowDP = async (compteId, fileId, exerciceId) => {
   try{
     let stateDeleting = false;
@@ -133,6 +202,9 @@ const deleteAllRowNE = async (compteId, fileId, exerciceId) => {
 }
 
 module.exports = {
+  deleteAllRowBHIAPC,
+  deleteAllRowMP,
+  deleteAllRowDA,
   deleteAllRowDP,
   deleteAllRowEIAFNC,
   deleteAllRowSE,

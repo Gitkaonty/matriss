@@ -326,7 +326,7 @@ const PopupModifSE = ({choix, confirmationState, data}) =>{
                                 label="Montant emprunt"
                                 name="montant_emprunt"
                                 value={formData.values.montant_emprunt}
-                                
+                                onChange={formData.handleChange}
                                 fullWidth
                                 style={{ 
                                     marginBottom: '0px', 

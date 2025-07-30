@@ -114,7 +114,19 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue:false
         },
         tauxir: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.DOUBLE,
+            unique: false,
+            allowNull: false,
+            defaultValue:0
+        },
+        pourcentageca: {
+            type: DataTypes.DOUBLE,
+            unique: false,
+            allowNull: false,
+            defaultValue:0
+        },
+        montantmin: {
+            type: DataTypes.DOUBLE,
             unique: false,
             allowNull: false,
             defaultValue:0

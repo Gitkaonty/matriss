@@ -47,65 +47,72 @@ module.exports = {
         updatedAt: new Date()
       },
       {
+        code: 'EVCP',
+        nom: 'Détermination du résultat fiscal',
+        ordre: 7,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
         code: 'BHIAPC',
         nom: 'Etat des bénéficiaires d\'honoraires, d\'intérêts ou d\'arrerages portes en charge',
-        ordre: 7,
+        ordre: 8,
         createdAt: new Date(),
         updatedAt: new Date()
       },
       {
         code: 'MP',
         nom: 'Etat séparé et détaillé des produits relatifs aux marché publics et autres que marchés publics de la période',
-        ordre: 8,
+        ordre: 9,
         createdAt: new Date(),
         updatedAt: new Date()
       },
       {
         code: 'DA',
         nom: 'Détails des amortissements',
-        ordre: 9,
+        ordre: 10,
         createdAt: new Date(),
         updatedAt: new Date()
       },
       {
         code: 'DP',
         nom: 'Détails des provisions',
-        ordre: 10,
+        ordre: 11,
         createdAt: new Date(),
         updatedAt: new Date()
       },
       {
         code: 'EIAFNC',
         nom: 'Evolution des immobilisations et des actifs financiers non courants',
-        ordre: 11,
+        ordre: 12,
         createdAt: new Date(),
         updatedAt: new Date()
       },
       {
         code: 'SAD',
         nom: 'Suivi des amortissements différés',
-        ordre: 12,
+        ordre: 13,
         createdAt: new Date(),
         updatedAt: new Date()
       },
       {
         code: 'SDR',
         nom: 'Suivi des déficits reportables (Hors amortissements différés)',
-        ordre: 13,
+        ordre: 14,
         createdAt: new Date(),
         updatedAt: new Date()
       },
       {
         code: 'SE',
         nom: 'Suivi des emprunts',
-        ordre: 3,
+        ordre: 15,
         createdAt: new Date(),
         updatedAt: new Date()
       },
       {
         code: 'NE',
         nom: 'Note explicative',
-        ordre: 3,
+        ordre: 16,
         createdAt: new Date(),
         updatedAt: new Date()
       },

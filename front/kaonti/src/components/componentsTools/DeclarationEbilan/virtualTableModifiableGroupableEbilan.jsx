@@ -362,9 +362,10 @@ const VirtualTableModifiableGroupableEbilan = ({columns, rows, deleteState, modi
                     fontWeight: 'bold',
                     paddingTop: '5px',
                     paddingBottom: '5px',
+                    paddingRight: '28px',
                     borderTop: '1px solid #ddd',
                     minWidth: columnWidths[column.id],
-                    fontSize: 14
+                    fontSize: 15
                   }}
                 >
                   {
