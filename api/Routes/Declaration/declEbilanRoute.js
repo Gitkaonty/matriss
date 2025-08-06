@@ -40,4 +40,7 @@ router.get('/listeAjust', declEbilanController.listeAjustement);
 //supprimer un ajustement 
 router.post('/deleteAjust', declEbilanController.deleteAjustement);
 
+//sauvegarder les modifications et commentaires sur les anomalies des tableaux
+router.put('/savemodifAnom/:id', declEbilanController.savemodifAnom);
+
 module.exports = router;

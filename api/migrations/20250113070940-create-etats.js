@@ -46,7 +46,13 @@ module.exports = {
           unique: false,
           allowNull: false,
           defaultValue:false
-      }
+      },
+      nbranomalie: {
+            type: Sequelize.INTEGER,
+            unique: false,
+            allowNull: false,
+            defaultValue:0
+        },
     },
     {timestamps: true}
     );

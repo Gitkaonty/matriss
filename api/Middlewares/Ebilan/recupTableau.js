@@ -25,6 +25,7 @@ const etats = db.etats;
 const balances = db.balances;
 const dossierplancomptables = db.dossierplancomptable;
 const ajustements = db.ajustements;
+const controles = db.controles;
 
 const recupBILAN_ACTIF = async (compteId, fileId, exerciceId) => {
     try{
@@ -841,6 +842,43 @@ const recupNE = async (compteId, fileId, exerciceId) => {
     }
 }
 
+const recupETAT = async (compteId, fileId, exerciceId) => {
+    try{
+        const liste = await etats.findAll({
+            where: {
+                id_compte: compteId,
+                id_dossier: fileId,
+                id_exercice: exerciceId,
+            },
+            raw: true,
+            order: [['ordre', 'ASC']],
+        });
+
+        return liste ;
+    }catch (error){
+        console.log(error);
+    }
+}
+
+const recupETATDETAIL = async (compteId, fileId, exerciceId, tableau) => {
+    try{
+        const liste = await controles.findAll({
+            where: {
+                id_compte: compteId,
+                id_dossier: fileId,
+                id_exercice: exerciceId,
+                etat_id: tableau
+            },
+            raw: true,
+            order: [['id', 'ASC']],
+        });
+
+        return liste ;
+    }catch (error){
+        console.log(error);
+    }
+}
+
 module.exports = {
     recupBILAN_ACTIF,
     recupBILAN_PASSIF,
@@ -858,5 +896,7 @@ module.exports = {
     recupSAD,
     recupSDR,
     recupSE,
-    recupNE
+    recupNE,
+    recupETAT,
+    recupETATDETAIL
 };

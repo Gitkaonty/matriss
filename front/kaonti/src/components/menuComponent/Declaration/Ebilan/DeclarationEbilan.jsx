@@ -68,6 +68,7 @@ import { CiLock } from "react-icons/ci";
 import { CiUnlock } from "react-icons/ci";
 import PopupActionConfirm from '../../../componentsTools/popupActionConfirm';
 import PopupConfirmDelete from '../../../componentsTools/popupConfirmDelete';
+import PopupDetailAnomalie from '../../../componentsTools/popupDetailAnomalie';
 import PopupModifBHIAPC from '../../../componentsTools/FormulaireModifTableauEbilan/popupModifBHIAPC';
 import PopupModifMP from '../../../componentsTools/FormulaireModifTableauEbilan/popupModifMP';
 import PopupModifDA from '../../../componentsTools/FormulaireModifTableauEbilan/popupModifDA';
@@ -182,8 +183,42 @@ export default function DeclarationEbilan() {
     const [infoRowToDelete, setInfoRowToDelete] = useState({ id: 0, tableau: '' });
     const [tableauToDeleteAllRow, setTableauToDeleteAllRow] = useState('');
     const [confirmDeleteAllRow, setConfirmDeleteAllRow] = useState(false);
+    const [confirmShowAnomalie, setConfirmShowAnomalie] = useState(false);
 
     const [updateCalculEtatfinancier, setUpdateCalculEtatfinancier] = useState(false);
+
+    const [etatGlobal, setEtatGlobal] = useState([]);
+    const [listeAnomalie, setListeAnomalie] = useState([]);
+    const [detailAnombilan, setDetailAnombilan] = useState([]);
+    const [detailAnomcrn, setDetailAnomcrn] = useState([]);
+    const [detailAnomcrf, setDetailAnomcrf] = useState([]);
+    const [detailAnomtftd, setDetailAnomtftd] = useState([]);
+    const [detailAnomtfti, setDetailAnomtfti] = useState([]);
+    const [detailAnomevcp, setDetailAnomevcp] = useState([]);
+    const [detailAnomdrf, setDetailAnomdrf] = useState([]);
+    const [detailAnombhiapc, setDetailAnombhiapc] = useState([]);
+    const [detailAnommp, setDetailAnommp] = useState([]);
+    const [detailAnomda, setDetailAnomda] = useState([]);
+    const [detailAnomdp, setDetailAnomdp] = useState([]);
+    const [detailAnomeiafnc, setDetailAnomeiafnc] = useState([]);
+    const [detailAnomsad, setDetailAnomsad] = useState([]);
+    const [detailAnomsdr, setDetailAnomsdr] = useState([]);
+    const [detailAnomse, setDetailAnomse] = useState([]);
+    const [nbrAnomalieBILAN, setNbrAnomalieBILAN] = useState(0);
+    const [nbrAnomalieCRN, setNbrAnomalieCRN] = useState(0);
+    const [nbrAnomalieCRF, setNbrAnomalieCRF] = useState(0);
+    const [nbrAnomalieTFTD, setNbrAnomalieTFTD] = useState(0);
+    const [nbrAnomalieTFTI, setNbrAnomalieTFTI] = useState(0);
+    const [nbrAnomalieEVCP, setNbrAnomalieEVCP] = useState(0);
+    const [nbrAnomalieDRF, setNbrAnomalieDRF] = useState(0);
+    const [nbrAnomalieBHIAPC, setNbrAnomalieBHIAPC] = useState(0);
+    const [nbrAnomalieMP, setNbrAnomalieMP] = useState(0);
+    const [nbrAnomalieDA, setNbrAnomalieDA] = useState(0);
+    const [nbrAnomalieDP, setNbrAnomalieDP] = useState(0);
+    const [nbrAnomalieEIAFNC, setNbrAnomalieEIAFNC] = useState(0);
+    const [nbrAnomalieSAD, setNbrAnomalieSAD] = useState(0);
+    const [nbrAnomalieSDR, setNbrAnomalieSDR] = useState(0);
+    const [nbrAnomalieSE, setNbrAnomalieSE] = useState(0);
 
     const theme = useTheme();
 
@@ -608,7 +643,7 @@ export default function DeclarationEbilan() {
         {
             id: 'rubriques_poste',
             label: 'Groupe',
-            minWidth: 250,
+            minWidth: 275,
             align: 'left',
             withSubTotal: false,
             sousgroupLabel: false,
@@ -1504,6 +1539,26 @@ export default function DeclarationEbilan() {
                 });
 
                 setEiafncData(rows3);
+
+                //=================================================================
+                //RECUPERATION INFOS ANOMALIES
+                //==================================================================
+                setDetailAnombilan(resData.detailAnomBilan);
+                setNbrAnomalieBILAN(resData.etatglobal.find((item) => item.code === 'BILAN')?.nbranomalie);
+                setNbrAnomalieCRN(resData.etatglobal.find((item) => item.code === 'CRN')?.nbranomalie);
+                setNbrAnomalieCRF(resData.etatglobal.find((item) => item.code === 'CRF')?.nbranomalie);
+                setNbrAnomalieTFTD(resData.etatglobal.find((item) => item.code === 'TFTD')?.nbranomalie);
+                setNbrAnomalieTFTI(resData.etatglobal.find((item) => item.code === 'TFTI')?.nbranomalie);
+                setNbrAnomalieEVCP(resData.etatglobal.find((item) => item.code === 'EVCP')?.nbranomalie);
+                setNbrAnomalieDRF(resData.etatglobal.find((item) => item.code === 'DRF')?.nbranomalie);
+                setNbrAnomalieBHIAPC(resData.etatglobal.find((item) => item.code === 'BHIAPC')?.nbranomalie);
+                setNbrAnomalieMP(resData.etatglobal.find((item) => item.code === 'MP')?.nbranomalie);
+                setNbrAnomalieDA(resData.etatglobal.find((item) => item.code === 'DA')?.nbranomalie);
+                setNbrAnomalieDP(resData.etatglobal.find((item) => item.code === 'DP')?.nbranomalie);
+                setNbrAnomalieEIAFNC(resData.etatglobal.find((item) => item.code === 'EIAFNC')?.nbranomalie);
+                setNbrAnomalieSAD(resData.etatglobal.find((item) => item.code === 'SAD')?.nbranomalie);
+                setNbrAnomalieSDR(resData.etatglobal.find((item) => item.code === 'SDR')?.nbranomalie);
+                setNbrAnomalieSE(resData.etatglobal.find((item) => item.code === 'SE')?.nbranomalie);
             }else{
                 toast.error(resData.msg);
             }
@@ -1616,30 +1671,66 @@ export default function DeclarationEbilan() {
                     case 'BILAN':
                         setBilanActifData(resData.list1 ? resData.list1 : []);
                         setBilanPassifData(resData.list2 ? resData.list2 : []);
+
+                        setDetailAnombilan(resData.detailAnom);
+                        setNbrAnomalieBILAN(resData.etatglobal.find((item) => item.code === 'BILAN')?.nbranomalie);
+
                         break;
                     case 'CRN':
                         setCrnData(resData.list1);
+
+                        setDetailAnomcrn(resData.detailAnom);
+                        setNbrAnomalieCRN(resData.etatglobal.find((item) => item.code === 'CRN')?.nbranomalie);
+
                         break;
                     case 'CRF':
                         setCrfData(resData.list1);
+
+                        setDetailAnomcrf(resData.detailAnom);
+                        setNbrAnomalieCRF(resData.etatglobal.find((item) => item.code === 'CRF')?.nbranomalie);
+
                         break;
                     case 'TFTD':
                         setTftdData(resData.list1);
+
+                        setDetailAnomtftd(resData.detailAnom);
+                        setNbrAnomalieTFTD(resData.etatglobal.find((item) => item.code === 'TFTD')?.nbranomalie); 
+
                         break;
                     case 'TFTI':
                         setTftiData(resData.list1);
+
+                        setDetailAnomtfti(resData.detailAnom);
+                        setNbrAnomalieTFTI(resData.etatglobal.find((item) => item.code === 'TFTI')?.nbranomalie);
+
                         break;
                     case 'EVCP':
                         setEvcpData(resData.list1);
+
+                        setDetailAnomevcp(resData.detailAnom);
+                        setNbrAnomalieEVCP(resData.etatglobal.find((item) => item.code === 'EVCP')?.nbranomalie);
+
                         break;
                     case 'BHIAPC':
                         setBhiapcData(resData.list1);
+
+                        setDetailAnombhiapc(resData.detailAnom);
+                        setNbrAnomalieBHIAPC(resData.etatglobal.find((item) => item.code === 'BHIAPC')?.nbranomalie);
+
                         break;
                     case 'DRF':
                         setDrfData(resData.list1);
+
+                        setDetailAnomdrf(resData.detailAnom);
+                        setNbrAnomalieDRF(resData.etatglobal.find((item) => item.code === 'DRF')?.nbranomalie);
+
                         break;
                     case 'MP':
                         setMpData(resData.list1);
+
+                        setDetailAnommp(resData.detailAnom);
+                        setNbrAnomalieMP(resData.etatglobal.find((item) => item.code === 'MP')?.nbranomalie);
+
                         break;
                     case 'DA': {
                         const data = resData.list1;
@@ -1651,6 +1742,10 @@ export default function DeclarationEbilan() {
                         const rows = Object.entries(groupedData).map(([key, items]) => ({ rubriques_poste: key, items }))
                             .sort((a, b) => a.rubriques_poste.localeCompare(b.rubriques_poste));
                         setDaData(rows);
+
+                        setDetailAnomda(resData.detailAnom);
+                        setNbrAnomalieDA(resData.etatglobal.find((item) => item.code === 'DA')?.nbranomalie);
+
                         break;
                     }
                     case 'DP': {
@@ -1663,6 +1758,10 @@ export default function DeclarationEbilan() {
                         const rows = Object.entries(grouped).map(([key, items]) => ({ nature_prov: key, items }))
                             .sort((a, b) => a.nature_prov.localeCompare(b.nature_prov));
                         setDpData(rows);
+
+                        setDetailAnomdp(resData.detailAnom);
+                        setNbrAnomalieDP(resData.etatglobal.find((item) => item.code === 'DP')?.nbranomalie);
+
                         break;
                     }
                     case 'EIAFNC': {
@@ -1675,16 +1774,32 @@ export default function DeclarationEbilan() {
                         const rows = Object.entries(grouped).map(([key, items]) => ({ rubriques_poste: key, items }))
                             .sort((a, b) => a.rubriques_poste.localeCompare(b.rubriques_poste));
                         setEiafncData(rows);
+
+                        setDetailAnomeiafnc(resData.detailAnom);
+                        setNbrAnomalieEIAFNC(resData.etatglobal.find((item) => item.code === 'EIAFNC')?.nbranomalie);
+
                         break;
                     }
                     case 'SAD':
                         setSadData(resData.list1);
+
+                        setDetailAnomsad(resData.detailAnom);
+                        setNbrAnomalieSAD(resData.etatglobal.find((item) => item.code === 'SAD')?.nbranomalie);
+
                         break;
                     case 'SDR':
                         setSdrData(resData.list1);
+
+                        setDetailAnomsdr(resData.detailAnom);
+                        setNbrAnomalieSDR(resData.etatglobal.find((item) => item.code === 'SDR')?.nbranomalie);
+
                         break;
                     case 'SE':
                         setSeData(resData.list1);
+
+                        setDetailAnomse(resData.detailAnom);
+                        setNbrAnomalieSE(resData.etatglobal.find((item) => item.code === 'SE')?.nbranomalie);
+
                         break;
                     case 'NE':
                         setNeData(resData.list1);
@@ -2724,12 +2839,58 @@ const refreshSDR = () => {
     setVerrNote(!verrNote);
  }
 
+ //==============================================================================================
+ //Affichage anomalie par tableau
+ const showAnomalie = (tableau) => {
+    setTableToRefresh(tableau);
+    if(tableau === 'BILAN'){
+        setListeAnomalie(detailAnombilan);
+    }else if(tableau === 'CRN'){
+        setListeAnomalie(detailAnomcrn);
+    }else if(tableau === 'CRF'){
+        setListeAnomalie(detailAnomcrf);
+    }else if(tableau === 'TFTD'){
+        setListeAnomalie(detailAnomtftd);
+    }else if(tableau === 'TFTI'){
+        setListeAnomalie(detailAnomtfti);
+    }else if(tableau === 'EVCP'){
+        setListeAnomalie(detailAnomevcp);
+    }else if(tableau === 'DRF'){
+        setListeAnomalie(detailAnomdrf);
+    }else if(tableau === 'BHIAPC'){
+        setListeAnomalie(detailAnombhiapc);
+    }else if(tableau === 'MP'){
+        setListeAnomalie(detailAnommp);
+    }else if(tableau === 'DA'){
+        setListeAnomalie(detailAnomda);
+    }else if(tableau === 'DP'){
+        setListeAnomalie(detailAnomdp);
+    }else if(tableau === 'EIAFNC'){
+        setListeAnomalie(detailAnomeiafnc);
+    }else if(tableau === 'SAD'){
+        setListeAnomalie(detailAnomsad);
+    }else if(tableau === 'SDR'){
+        setListeAnomalie(detailAnomsdr);
+    }else if(tableau === 'SE'){
+        setListeAnomalie(detailAnomse);
+    }
+    
+    setConfirmShowAnomalie(true);
+ }
+
+ const closeDetailAnomalie = (value) => {
+    if(value){
+        setConfirmShowAnomalie(false);
+    }
+ }
+
     return (
         <Paper sx={{ elevation: "3", margin: "5px", padding: "10px", width: "99%", height: "auto" }}>
             {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
             {showTableRefresh ? <PopupActionConfirm msg={msgRefresh} confirmationState={handleRefreshTable} /> : null}
             {confirmDeleteOneRow ? <PopupConfirmDelete msg={'Voulez-vous vraiement supprimer la ligne sélectionnée?'} confirmationState={deleteOneRow} /> : null}
             {confirmDeleteAllRow ? <PopupConfirmDelete msg={'Voulez-vous vraiement supprimer toutes les lignes du tableau?'} confirmationState={deleteAllRow} /> : null}
+            {confirmShowAnomalie ? <PopupDetailAnomalie title={tableToRefresh} rows={listeAnomalie} confirmationState={closeDetailAnomalie}/> : null}
 
             {showFormBHIAPC ? <PopupModifBHIAPC choix={choixActionBHIAPC} confirmationState={AddOrModifyRowBHIAPC} data={rowToModifyBHIAPC} /> : null}
             {showFormMP ? <PopupModifMP choix={choixActionMP} confirmationState={AddOrModifyRowMP} data={rowToModifyMP} /> : null}
@@ -2968,11 +3129,12 @@ const refreshSDR = () => {
                                                 direction={"row"} justifyContent={"right"}>
                                                 <Tooltip title="Liste des anomalies">
                                                     <IconButton
+                                                        onClick={() => showAnomalie('BILAN')}
                                                         style={{
                                                             textTransform: 'none', outline: 'none'
                                                         }}
                                                     >
-                                                        <Badge badgeContent={4} >
+                                                        <Badge badgeContent={nbrAnomalieBILAN} >
                                                             <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
                                                         </Badge>
                                                     </IconButton>
@@ -2991,10 +3153,10 @@ const refreshSDR = () => {
                                                 </Tooltip>
 
                                                 {/* <Tooltip title="Actualiser les calculs">
-                                            <Button variant="outlined" style={{borderRadius:"0"}}>
-                                                <TbRefresh style={{width:'30px', height:'30px'}}/>
-                                            </Button>
-                                        </Tooltip> */}
+                                                    <Button variant="outlined" style={{borderRadius:"0"}}>
+                                                        <TbRefresh style={{width:'30px', height:'30px'}}/>
+                                                    </Button>
+                                                </Tooltip> */}
 
                                                 <Tooltip title="Actualiser les calculs">
                                                     <IconButton
@@ -3076,8 +3238,11 @@ const refreshSDR = () => {
                                             <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
                                                 direction={"row"} justifyContent={"right"}>
                                                 <Tooltip title="Liste des anomalies">
-                                                    <IconButton style={{ textTransform: 'none', outline: 'none' }}>
-                                                        <Badge badgeContent={4} >
+                                                    <IconButton 
+                                                        style={{ textTransform: 'none', outline: 'none' }}
+                                                        onClick={() => showAnomalie('CRN')}
+                                                    >
+                                                        <Badge badgeContent={nbrAnomalieCRN} >
                                                             <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
                                                         </Badge>
                                                     </IconButton>
@@ -3150,8 +3315,11 @@ const refreshSDR = () => {
                                             <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
                                                 direction={"row"} justifyContent={"right"}>
                                                 <Tooltip title="Liste des anomalies">
-                                                    <IconButton style={{ textTransform: 'none', outline: 'none' }}>
-                                                        <Badge badgeContent={4} >
+                                                    <IconButton 
+                                                        style={{ textTransform: 'none', outline: 'none' }}
+                                                        onClick={() => showAnomalie('CRF')}
+                                                    >
+                                                        <Badge badgeContent={nbrAnomalieCRF} >
                                                             <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
                                                         </Badge>
                                                     </IconButton>
@@ -3224,8 +3392,11 @@ const refreshSDR = () => {
                                             <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
                                                 direction={"row"} justifyContent={"right"}>
                                                 <Tooltip title="Liste des anomalies">
-                                                    <IconButton style={{ textTransform: 'none', outline: 'none' }}>
-                                                        <Badge badgeContent={4} >
+                                                    <IconButton 
+                                                        style={{ textTransform: 'none', outline: 'none' }}
+                                                        onClick={() => showAnomalie('TFTD')}
+                                                    >
+                                                        <Badge badgeContent={nbrAnomalieTFTD} >
                                                             <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
                                                         </Badge>
                                                     </IconButton>
@@ -3302,8 +3473,11 @@ const refreshSDR = () => {
                                             <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
                                                 direction={"row"} justifyContent={"right"}>
                                                 <Tooltip title="Liste des anomalies">
-                                                    <IconButton style={{ textTransform: 'none', outline: 'none' }}>
-                                                        <Badge badgeContent={4} >
+                                                    <IconButton 
+                                                        style={{ textTransform: 'none', outline: 'none' }}
+                                                        onClick={() => showAnomalie('TFTI')}
+                                                    >
+                                                        <Badge badgeContent={nbrAnomalieTFTI} >
                                                             <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
                                                         </Badge>
                                                     </IconButton>
@@ -3380,8 +3554,11 @@ const refreshSDR = () => {
                                     <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"} 
                                     direction={"row"} justifyContent={"right"}>
                                         <Tooltip title="Liste des anomalies">
-                                            <IconButton style={{textTransform: 'none', outline: 'none'}}>
-                                                <Badge badgeContent={4} >
+                                            <IconButton 
+                                                style={{textTransform: 'none', outline: 'none'}}
+                                                onClick={() => showAnomalie('EVCP')}
+                                            >
+                                                <Badge badgeContent={nbrAnomalieEVCP} >
                                                     <GoAlert color='#FF8A8A' style={{width:'30px', height:'30px'}}/>
                                                 </Badge>
                                             </IconButton>
@@ -3456,8 +3633,11 @@ const refreshSDR = () => {
                                     <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"} 
                                     direction={"row"} justifyContent={"right"}>
                                         <Tooltip title="Liste des anomalies">
-                                            <IconButton style={{textTransform: 'none', outline: 'none'}}>
-                                                <Badge badgeContent={4} >
+                                            <IconButton 
+                                                style={{textTransform: 'none', outline: 'none'}}
+                                                onClick={() => showAnomalie('DRF')}
+                                            >
+                                                <Badge badgeContent={nbrAnomalieDRF} >
                                                     <GoAlert color='#FF8A8A' style={{width:'30px', height:'30px'}}/>
                                                 </Badge>
                                             </IconButton>
@@ -3527,8 +3707,11 @@ const refreshSDR = () => {
                                             <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
                                                 direction={"row"} justifyContent={"right"}>
                                                 <Tooltip title="Liste des anomalies">
-                                                    <IconButton style={{ textTransform: 'none', outline: 'none' }}>
-                                                        <Badge badgeContent={4} >
+                                                    <IconButton 
+                                                        style={{ textTransform: 'none', outline: 'none' }}
+                                                        onClick={() => showAnomalie('BHIAPC')}
+                                                    >
+                                                        <Badge badgeContent={nbrAnomalieBHIAPC} >
                                                             <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
                                                         </Badge>
                                                     </IconButton>
@@ -3632,8 +3815,11 @@ const refreshSDR = () => {
                                             <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
                                                 direction={"row"} justifyContent={"right"}>
                                                 <Tooltip title="Liste des anomalies">
-                                                    <IconButton style={{ textTransform: 'none', outline: 'none' }}>
-                                                        <Badge badgeContent={4} >
+                                                    <IconButton 
+                                                        style={{ textTransform: 'none', outline: 'none' }}
+                                                        onClick={() => showAnomalie('MP')}
+                                                    >
+                                                        <Badge badgeContent={nbrAnomalieMP} >
                                                             <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
                                                         </Badge>
                                                     </IconButton>
@@ -3735,8 +3921,11 @@ const refreshSDR = () => {
                                             <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
                                                 direction={"row"} justifyContent={"right"}>
                                                 <Tooltip title="Liste des anomalies">
-                                                    <IconButton style={{ textTransform: 'none', outline: 'none' }}>
-                                                        <Badge badgeContent={4} >
+                                                    <IconButton 
+                                                        style={{ textTransform: 'none', outline: 'none' }}
+                                                        onClick={() => showAnomalie('DA')}
+                                                    >
+                                                        <Badge badgeContent={nbrAnomalieDA} >
                                                             <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
                                                         </Badge>
                                                     </IconButton>
@@ -3845,8 +4034,11 @@ const refreshSDR = () => {
                                             <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
                                                 direction={"row"} justifyContent={"right"}>
                                                 <Tooltip title="Liste des anomalies">
-                                                    <IconButton style={{ textTransform: 'none', outline: 'none' }}>
-                                                        <Badge badgeContent={4} >
+                                                    <IconButton 
+                                                        style={{ textTransform: 'none', outline: 'none' }}
+                                                        onClick={() => showAnomalie('DP')}
+                                                    >
+                                                        <Badge badgeContent={nbrAnomalieDP} >
                                                             <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
                                                         </Badge>
                                                     </IconButton>
@@ -3954,8 +4146,11 @@ const refreshSDR = () => {
                                             <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
                                                 direction={"row"} justifyContent={"right"}>
                                                 <Tooltip title="Liste des anomalies">
-                                                    <IconButton style={{ textTransform: 'none', outline: 'none', }}>
-                                                        <Badge badgeContent={4} >
+                                                    <IconButton 
+                                                        style={{ textTransform: 'none', outline: 'none', }}
+                                                        onClick={() => showAnomalie('EIAFNC')}
+                                                    >
+                                                        <Badge badgeContent={nbrAnomalieEIAFNC} >
                                                             <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
                                                         </Badge>
                                                     </IconButton>
@@ -4048,8 +4243,11 @@ const refreshSDR = () => {
                                             <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
                                                 direction={"row"} justifyContent={"right"}>
                                                 <Tooltip title="Liste des anomalies">
-                                                    <IconButton style={{ textTransform: 'none', outline: 'none', }}>
-                                                        <Badge badgeContent={4} >
+                                                    <IconButton 
+                                                        style={{ textTransform: 'none', outline: 'none', }}
+                                                        onClick={() => showAnomalie('SAD')}
+                                                    >
+                                                        <Badge badgeContent={nbrAnomalieSAD} >
                                                             <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
                                                         </Badge>
                                                     </IconButton>
@@ -4121,8 +4319,11 @@ const refreshSDR = () => {
                                             <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
                                                 direction={"row"} justifyContent={"right"}>
                                                 <Tooltip title="Liste des anomalies">
-                                                    <IconButton style={{ textTransform: 'none', outline: 'none', }}>
-                                                        <Badge badgeContent={4} >
+                                                    <IconButton 
+                                                        style={{ textTransform: 'none', outline: 'none', }}
+                                                        onClick={() => showAnomalie('SDR')}
+                                                    >
+                                                        <Badge badgeContent={nbrAnomalieSDR} >
                                                             <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
                                                         </Badge>
                                                     </IconButton>
@@ -4194,8 +4395,11 @@ const refreshSDR = () => {
                                             <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
                                                 direction={"row"} justifyContent={"right"}>
                                                 <Tooltip title="Liste des anomalies">
-                                                    <IconButton style={{ textTransform: 'none', outline: 'none', }}>
-                                                        <Badge badgeContent={4} >
+                                                    <IconButton 
+                                                        style={{ textTransform: 'none', outline: 'none', }}
+                                                        onClick={() => showAnomalie('SE')}
+                                                    >
+                                                        <Badge badgeContent={nbrAnomalieSE} >
                                                             <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
                                                         </Badge>
                                                     </IconButton>

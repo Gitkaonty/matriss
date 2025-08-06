@@ -7,10 +7,12 @@ const functionAddOrModifyRow = require('../../../Middlewares/Ebilan/declEbilanAd
 const declEbilanRefreshFunction = require('../../../Middlewares/Ebilan/declEbilanRefreshFunction');
 const declEbilanDeleteFunction = require('../../../Middlewares/Ebilan/declEbilanDeleteFunction');
 const recupTableau = require('../../../Middlewares/Ebilan/recupTableau');
+const functionControles = require('../../../Middlewares/Ebilan/controles');
 
 const compterubriques = db.compterubriques;
 const etats = db.etats;
 const ajustements = db.ajustements;
+const controles = db.controles;
 
 const infosVerrouillage = async (req, res) => {
   try{
@@ -103,6 +105,22 @@ const getListeRubriqueGlobal = async (req, res) => {
       sdr: [],
       se: [],
       ne: [],
+      etatglobal: [],
+      detailAnomBilan: [],
+      detailAnomCrn: [],
+      detailAnomCrf: [],
+      detailAnomTfti: [],
+      detailAnomTftd: [],
+      detailAnomEvcp: [],
+      detailAnomDrf: [],
+      detailAnomBhiapc: [],
+      detailAnomMp: [],
+      detailAnomDa: [],
+      detailAnomDp: [],
+      detailAnomEiafnc: [],
+      detailAnomSad: [],
+      detailAnomSdr: [],
+      detailAnomSe: [],
     }
 
       resData.bilanActif = await recupTableau.recupBILAN_ACTIF(compteId, fileId, exerciceId);
@@ -140,6 +158,24 @@ const getListeRubriqueGlobal = async (req, res) => {
       resData.se = await recupTableau.recupSE(compteId, fileId, exerciceId);
       resData.ne = await recupTableau.recupNE(compteId, fileId, exerciceId);
 
+      //récupération nombre anomalies et détails anomalies
+      resData.etatglobal = await recupTableau.recupETAT(compteId, fileId, exerciceId);
+      resData.detailAnomBilan = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, 'BILAN');
+      resData.detailAnomCrn = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, 'CRN');
+      resData.detailAnomCrf = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, 'CRF');
+      resData.detailAnomTftd = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, 'TFTD');
+      resData.detailAnomTfti = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, 'TFTI');
+      resData.detailAnomEvcp = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, 'EVCP');
+      resData.detailAnomDrf = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, 'DRF');
+      resData.detailAnomBhiapc = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, 'BHIAPC');
+      resData.detailAnomMp = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, 'MP');
+      resData.detailAnomDa = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, 'DA');
+      resData.detailAnomDp = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, 'DP');
+      resData.detailAnomEiafnc = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, 'EIAFNC');
+      resData.detailAnomSad = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, 'SAD');
+      resData.detailAnomSdr = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, 'SDR');
+      resData.detailAnomSe = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, 'SE');
+
     resData.state = true;
     return res.json(resData);
   }catch (error){
@@ -149,37 +185,17 @@ const getListeRubriqueGlobal = async (req, res) => {
 
 const getListeOneTable = async (req, res) => {
   try{
+    const {compteId, fileId, exerciceId, tableau} = req.body;
 
-  
-  const {compteId, fileId, exerciceId, tableau} = req.body;
-
-  let resData = {
-    state: false,
-    msg: '',
-    list1: [],
-    list2: [],
-  }
-  
-  resData.list1 = await recupTableau.recupBILAN_ACTIF(compteId, fileId, exerciceId);
-  resData.list2 = await recupTableau.recupBILAN_PASSIF(compteId, fileId, exerciceId);
-
-  // resData.list1  = await getTableau(Number(compteId), Number(fileId), Number(exerciceId), tableau, 1);
-  // resData.list2  = await getTableau(Number(compteId), Number(fileId), Number(exerciceId), tableau, 2);
- 
-  // if(tableau === 'BILAN' || tableau === 'CRN' || tableau === 'CRF'|| tableau === 'TFTD'|| tableau === 'TFTI'){
-  //   if(tableau === 'BILAN'){
-  //     resData.list1  = await getTableau(Number(compteId), Number(fileId), Number(exerciceId), tableau, 1);
-  //     resData.list2  = await getTableau(Number(compteId), Number(fileId), Number(exerciceId), tableau, 2);
-  //     resData.state = true;
-  //   }else{
-  //     resData.list1  = await getTableau(Number(compteId), Number(fileId), Number(exerciceId), tableau, 0);
-  //     resData.state = true;
-  //   }
+    let resData = {
+      state: false,
+      msg: '',
+      list1: [],
+      list2: [],
+    }
     
-  // }else{
-  //   resData.list1 = await getAutreTableau(Number(compteId), Number(fileId), Number(exerciceId), tableau, 0);
-  //   resData.state = true;
-  // }
+    resData.list1 = await recupTableau.recupBILAN_ACTIF(compteId, fileId, exerciceId);
+    resData.list2 = await recupTableau.recupBILAN_PASSIF(compteId, fileId, exerciceId);
   
     resData.state = true;
     res.status(200).json(resData);
@@ -190,92 +206,6 @@ const getListeOneTable = async (req, res) => {
   }
     
 }
-
-// const getListeRubriqueIndividual = async (req, res)  => {
-//     try{
-//       const {compteId, fileId, exerciceId, tableau} = req.body;
-
-//       let resData = {
-//         state: false,
-//         msg: '',
-//         bilanActif: [],
-//         bilanPassif: [],
-//         crn: [],
-//         crf: [],
-//         tftd: [],
-//         tfti: [],
-//         evcp: [],
-//         drf: [],
-//         bhiapc: [],
-//         mp: [],
-//         da: [],
-//         dp: [],
-//         eiafnc: [],
-//         sad: [],
-//         sdr: [],
-//         se: [],
-//         ne: [],
-//       }
-
-//       if(tableau === 'BILAN'){
-//         resData.bilanActif  = await getTableau(compteId, fileId, exerciceId, 'BILAN', 1);
-//         resData.bilanPassif = await getTableau(compteId, fileId, exerciceId, 'BILAN', 2);
-//         resData.state = true;
-//       }else if(tableau === 'CRN'){
-//         resData.crn = await getTableau(compteId, fileId, exerciceId, 'CRN', 0);
-//         resData.state = true;
-//       }else if(tableau === 'CRF'){
-//         resData.crf = await getTableau(compteId, fileId, exerciceId, 'CRF', 0);
-//         resData.state = true;
-//       }else if(tableau === 'TFTD'){
-//         resData.tftd = await getTableau(compteId, fileId, exerciceId, 'TFTD', 0);
-//         resData.state = true;
-//       }else if(tableau === 'TFTI'){
-//         resData.tfti = await getTableau(compteId, fileId, exerciceId, 'TFTI', 0);
-//         resData.state = true;
-//       }else if(tableau === 'EVCP'){
-//         resData.evcp = await getAutreTableau(compteId, fileId, exerciceId, 'EVCP');
-//         resData.state = true;
-//       }else if(tableau === 'DRF'){
-//         resData.drf = await getAutreTableau(compteId, fileId, exerciceId, 'DRF', 0);
-//         resData.state = true;
-//       }else if(tableau === 'BHIAPC'){
-//         resData.bhiapc = await getAutreTableau(compteId, fileId, exerciceId, 'BHIAPC', 0);
-//         resData.state = true;
-//       }else if(tableau === 'MP'){
-//         resData.mp = await getAutreTableau(compteId, fileId, exerciceId, 'MP', 0);
-//         resData.state = true;
-//       }else if(tableau === 'DA'){
-//         const { liste } = await getAutreTableau(compteId, fileId, exerciceId, 'DA', 0);
-//         resData.da = liste;
-//         resData.state = true;
-//       }else if(tableau === 'DP'){
-//         resData.dp = await getAutreTableau(compteId, fileId, exerciceId, 'DP', 0);
-//         resData.state = true;
-//       }else if(tableau === 'EIAFNC'){
-//         resData.eiafnc = await getAutreTableau(compteId, fileId, exerciceId, 'EIAFNC', 0);
-//         resData.state = true;
-//       }else if(tableau === 'SAD'){
-//         resData.sad = await getAutreTableau(compteId, fileId, exerciceId, 'SAD', 0);
-//         resData.state = true;
-//       }else if(tableau === 'SDR'){
-//         resData.sdr = await getAutreTableau(compteId, fileId, exerciceId, 'SDR', 0);
-//         resData.state = true;
-//       }else if(tableau === 'SE'){
-//         resData.se = await getAutreTableau(compteId, fileId, exerciceId, 'SE', 0);
-//         resData.state = true;
-//       }else if(tableau === 'NE'){
-//         resData.ne = await getAutreTableau(compteId, fileId, exerciceId, 'NE', 0);
-//         resData.state = true;
-//       }
-
-//       return res.json(resData);
-//     }catch (error){
-//       //console.log(error);
-//       console.error("Erreur dans getListeRubriqueIndividual :", error);
-//       return res.status(500).json({ state: false, msg: "Erreur serveur", error });
-//     }
-//   }
 
   const getListeCompteRubrique = async (req, res)  => {
       try{
@@ -335,7 +265,9 @@ const getListeOneTable = async (req, res) => {
           state: false,
           msg: 'une erreur est survenue lors du traitement.',
           list1: [],
-          list2: []
+          list2: [],
+          etatglobal: [],
+          detailAnom: []
         }
 
         if(tableau === 'BILAN'){
@@ -344,6 +276,11 @@ const getListeOneTable = async (req, res) => {
           if(stateRefresh){
             resData.list1 = await recupTableau.recupBILAN_ACTIF(compteId, fileId, exerciceId);
             resData.list2 = await recupTableau.recupBILAN_PASSIF(compteId, fileId, exerciceId);
+
+            const etatControl = await functionControles.controletableau('EBILAN', tableau, compteId, fileId, exerciceId);
+            resData.etatglobal = await recupTableau.recupETAT(compteId, fileId, exerciceId);
+            resData.detailAnom = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, tableau);
+
             resData.state = true;
             resData.msg = `Mise à jour des calculs du tableau ${tableau} terminées avec succès.`
           }
@@ -352,6 +289,11 @@ const getListeOneTable = async (req, res) => {
 
           if(stateRefresh){
             resData.list1 = await recupTableau.recupCRN(compteId, fileId, exerciceId);
+
+            const etatControl = await functionControles.controletableau('EBILAN', tableau, compteId, fileId, exerciceId);
+            resData.etatglobal = await recupTableau.recupETAT(compteId, fileId, exerciceId);
+            resData.detailAnom = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, tableau);
+
             resData.state = true;
             resData.msg = `Mise à jour des calculs du tableau ${tableau} terminées avec succès.`
           }       
@@ -360,6 +302,11 @@ const getListeOneTable = async (req, res) => {
 
           if(stateRefresh){
             resData.list1 = await recupTableau.recupCRF(compteId, fileId, exerciceId);
+
+            const etatControl = await functionControles.controletableau('EBILAN', tableau, compteId, fileId, exerciceId);
+            resData.etatglobal = await recupTableau.recupETAT(compteId, fileId, exerciceId);
+            resData.detailAnom = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, tableau);
+
             resData.state = true;
             resData.msg = `Mise à jour des calculs du tableau ${tableau} terminées avec succès.`
           }       
@@ -368,6 +315,11 @@ const getListeOneTable = async (req, res) => {
 
           if(stateRefresh){
             resData.list1 = await recupTableau.recupTFTD(compteId, fileId, exerciceId);
+
+            const etatControl = await functionControles.controletableau('EBILAN', tableau, compteId, fileId, exerciceId);
+            resData.etatglobal = await recupTableau.recupETAT(compteId, fileId, exerciceId);
+            resData.detailAnom = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, tableau);
+
             resData.state = true;
             resData.msg = `Mise à jour des calculs du tableau ${tableau} terminées avec succès.`
           }       
@@ -376,6 +328,11 @@ const getListeOneTable = async (req, res) => {
 
           if(stateRefresh){
             resData.list1 = await recupTableau.recupTFTI(compteId, fileId, exerciceId);
+
+            const etatControl = await functionControles.controletableau('EBILAN', tableau, compteId, fileId, exerciceId);
+            resData.etatglobal = await recupTableau.recupETAT(compteId, fileId, exerciceId);
+            resData.detailAnom = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, tableau);
+
             resData.state = true;
             resData.msg = `Mise à jour des calculs du tableau ${tableau} terminées avec succès.`
           }       
@@ -384,6 +341,11 @@ const getListeOneTable = async (req, res) => {
 
           if(stateRefresh){
             resData.list1 = await recupTableau.recupEVCP(compteId, fileId, exerciceId);
+
+            const etatControl = await functionControles.controletableau('EBILAN', tableau, compteId, fileId, exerciceId);
+            resData.etatglobal = await recupTableau.recupETAT(compteId, fileId, exerciceId);
+            resData.detailAnom = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, tableau);
+
             resData.state = true;
             resData.msg = `Mise à jour des calculs du tableau ${tableau} terminées avec succès.`
           }       
@@ -392,6 +354,11 @@ const getListeOneTable = async (req, res) => {
 
           if(stateRefresh){
             resData.list1 = await recupTableau.recupDRF(compteId, fileId, exerciceId);
+
+            const etatControl = await functionControles.controletableau('EBILAN', tableau, compteId, fileId, exerciceId);
+            resData.etatglobal = await recupTableau.recupETAT(compteId, fileId, exerciceId);
+            resData.detailAnom = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, tableau);
+
             resData.state = true;
             resData.msg = `Mise à jour des calculs du tableau ${tableau} terminées avec succès.`
           }       
@@ -400,6 +367,11 @@ const getListeOneTable = async (req, res) => {
 
           if(stateRefresh){
             resData.list1 = await recupTableau.recupDP(compteId, fileId, exerciceId);
+
+            const etatControl = await functionControles.controletableau('EBILAN', tableau, compteId, fileId, exerciceId);
+            resData.etatglobal = await recupTableau.recupETAT(compteId, fileId, exerciceId);
+            resData.detailAnom = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, tableau);
+
             resData.state = true;
             resData.msg = `Mise à jour des calculs du tableau ${tableau} terminées avec succès.`
           }       
@@ -407,6 +379,11 @@ const getListeOneTable = async (req, res) => {
           const { stateRefresh } = await declEbilanRefreshFunction.refreshSAD(compteId, fileId, exerciceId, refreshTotal);
           if(stateRefresh){
             resData.list1 = await recupTableau.recupSAD(compteId, fileId, exerciceId);
+
+            const etatControl = await functionControles.controletableau('EBILAN', tableau, compteId, fileId, exerciceId);
+            resData.etatglobal = await recupTableau.recupETAT(compteId, fileId, exerciceId);
+            resData.detailAnom = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, tableau);
+
             resData.state = true;
             resData.msg = `Mise à jour des calculs du tableau ${tableau} terminées avec succès.`
           }       
@@ -414,6 +391,11 @@ const getListeOneTable = async (req, res) => {
           const { stateRefresh } = await declEbilanRefreshFunction.refreshSDR(compteId, fileId, exerciceId, refreshTotal);
           if(stateRefresh){
             resData.list1 = await recupTableau.recupSDR(compteId, fileId, exerciceId);
+
+            const etatControl = await functionControles.controletableau('EBILAN', tableau, compteId, fileId, exerciceId);
+            resData.etatglobal = await recupTableau.recupETAT(compteId, fileId, exerciceId);
+            resData.detailAnom = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, tableau);
+
             resData.state = true;
             resData.msg = `Mise à jour des calculs du tableau ${tableau} terminées avec succès.`
           }       
@@ -424,255 +406,6 @@ const getListeOneTable = async (req, res) => {
         console.log(error);
       }
     }
-
-    // const updateTableau = async (compteId, fileId, exerciceId, tableau, refreshTotal) => {
-    //   try{
-    //     let actionStatus = false;
-    // const updateTableau = async (compteId, fileId, exerciceId, tableau, refreshTotal) => {
-    //   try{
-    //     let actionStatus = false;
-
-    //     const liste= await rubriquesmatrices.findAll({
-    //       where: {
-    //         id_etat: tableau,
-    //       },
-    //       raw:true,
-    //       order: [['ordre', 'ASC']]
-    //     });
-    //     const liste= await rubriquesmatrices.findAll({
-    //       where: {
-    //         id_etat: tableau,
-    //       },
-    //       raw:true,
-    //       order: [['ordre', 'ASC']]
-    //     });
-
-    //     let tableSource = db;
-    //     let tableSource = db;
-
-    //     if(tableau === 'BILAN'){
-    //     if(tableau === 'BILAN'){
-
-    //       const { refresh } = await declEbilanRefreshFunction.refreshBILAN(compteId, fileId, exerciceId, refreshTotal);
-    //       const { refresh } = await declEbilanRefreshFunction.refreshBILAN(compteId, fileId, exerciceId, refreshTotal);
-
-    //       if(refresh){
-    //         actionStatus = true;
-    //       }
-    //     }else if(tableau === 'CRN'){
-    //       tableSource = db.liassecrns;
-    //     }else if(tableau === 'CRF'){
-    //       tableSource = db.liassecrfs;
-    //     }else if(tableau === 'TFTD'){
-    //       tableSource = db.liassetftds;
-    //     }else if(tableau === 'TFTI'){
-    //       tableSource = db.liassetftis;
-    //     }else if(tableau === 'EVCP'){
-    //       tableSource = db.liasseevcps;
-    //     }else if(tableau === 'DRF'){
-    //       const { refresh } = await declEbilanRefreshFunction.refreshDRF(compteId, fileId, exerciceId, liste);
-    //       if(refresh){
-    //         actionStatus = true;
-    //       }
-    //     }else if(tableau === 'CRN'){
-    //       tableSource = db.liassecrns;
-    //     }else if(tableau === 'CRF'){
-    //       tableSource = db.liassecrfs;
-    //     }else if(tableau === 'TFTD'){
-    //       tableSource = db.liassetftds;
-    //     }else if(tableau === 'TFTI'){
-    //       tableSource = db.liassetftis;
-    //     }else if(tableau === 'EVCP'){
-    //       tableSource = db.liasseevcps;
-    //     }else if(tableau === 'DRF'){
-    //       const { refresh } = await declEbilanRefreshFunction.refreshDRF(compteId, fileId, exerciceId, liste);
-
-    //       if(refresh){
-    //         actionStatus = true;
-    //       }
-    //     }else if(tableau === 'BHIAPC'){
-    //       tableSource = db.liassebhiapcs;
-    //     }else if(tableau === 'MP'){
-    //       tableSource = db.liassemps;
-    //     }else if(tableau === 'DA'){
-    //       tableSource = db.liassedas;
-    //     }else if(tableau === 'DP'){
-    //       const { refresh } = await declEbilanRefreshFunction.refreshDP(compteId, fileId, exerciceId, liste);
-    //       if(refresh){
-    //         actionStatus = true;
-    //       }
-    //     }else if(tableau === 'BHIAPC'){
-    //       tableSource = db.liassebhiapcs;
-    //     }else if(tableau === 'MP'){
-    //       tableSource = db.liassemps;
-    //     }else if(tableau === 'DA'){
-    //       tableSource = db.liassedas;
-    //     }else if(tableau === 'DP'){
-    //       const { refresh } = await declEbilanRefreshFunction.refreshDP(compteId, fileId, exerciceId, liste);
-
-    //       if(refresh){
-    //         actionStatus = true;
-    //       }
-    //       if(refresh){
-    //         actionStatus = true;
-    //       }
-
-    //     }else if(tableau === 'EIAFNC'){
-          
-    //       const { refresh } = await declEbilanRefreshFunction.refreshEIAFNC(compteId, fileId, exerciceId, liste);
-    //     }else if(tableau === 'EIAFNC'){
-          
-    //       const { refresh } = await declEbilanRefreshFunction.refreshEIAFNC(compteId, fileId, exerciceId, liste);
-
-    //       if(refresh){
-    //         actionStatus = true;
-    //       }
-
-    //     }else if(tableau === 'SAD'){
-          
-    //       const { refresh } = await declEbilanRefreshFunction.refreshSAD(compteId, fileId, exerciceId, liste);
-    //       if(refresh){
-    //         actionStatus = true;
-    //       }
-
-    //     }else if(tableau === 'SAD'){
-          
-    //       const { refresh } = await declEbilanRefreshFunction.refreshSAD(compteId, fileId, exerciceId, liste);
-
-    //       if(refresh){
-    //         actionStatus = true;
-    //       }
-
-    //     }else if(tableau === 'SDR'){
-          
-    //       const { refresh } = await declEbilanRefreshFunction.refreshSDR(compteId, fileId, exerciceId, liste);
-    //       if(refresh){
-    //         actionStatus = true;
-    //       }
-
-    //     }else if(tableau === 'SDR'){
-          
-    //       const { refresh } = await declEbilanRefreshFunction.refreshSDR(compteId, fileId, exerciceId, liste);
-
-    //       if(refresh){
-    //         actionStatus = true;
-    //         // resData.state = true;
-    //         // resData.msg = "Actualisation des calculs terminée avec succès.";
-    //       }
-    //       if(refresh){
-    //         actionStatus = true;
-    //         // resData.state = true;
-    //         // resData.msg = "Actualisation des calculs terminée avec succès.";
-    //       }
-
-    //     }else if(tableau === 'SE'){
-    //       tableSource = db.liasseses;
-    //     }else if(tableau === 'NE'){
-    //       tableSource = db.liassenotes;
-    //     }
-    //     }else if(tableau === 'SE'){
-    //       tableSource = db.liasseses;
-    //     }else if(tableau === 'NE'){
-    //       tableSource = db.liassenotes;
-    //     }
-
-    //     // if(liste){
-    //     //   await tableSource.destroy({
-    //     //     where: 
-    //     //     {
-    //     //       id_compte: compteId,
-    //     //       id_dossier: fileId,
-    //     //       id_exercice: exerciceId,
-    //     //       id_etat: tableau
-    //     //     }
-    //     //   });
-    //     // if(liste){
-    //     //   await tableSource.destroy({
-    //     //     where: 
-    //     //     {
-    //     //       id_compte: compteId,
-    //     //       id_dossier: fileId,
-    //     //       id_exercice: exerciceId,
-    //     //       id_etat: tableau
-    //     //     }
-    //     //   });
-
-    //     //   if(tableau === 'DRF'){
-    //     //     liste.map(async (item) => {
-    //     //       await tableSource.create({
-    //     //         id_compte: compteId,
-    //     //         id_dossier : fileId,
-    //     //         id_exercice: exerciceId,
-    //     //         id_etat: item.id_etat,
-    //     //         id_rubrique: item.id_rubrique,
-    //     //         note: item.note,
-    //     //         nature: item.nature,
-    //     //         ordre: item.ordre,
-    //     //         niveau: item.niveau,
-    //     //         signe: item.senscalcul
-    //     //       });
-    //     //     });
-    //     //   }else{
-    //     //     liste.map(async (item) => {
-    //     //       await tableSource.create({
-    //     //         id_compte: compteId,
-    //     //         id_dossier : fileId,
-    //     //         id_exercice: exerciceId,
-    //     //         id_etat: item.id_etat,
-    //     //         id_rubrique: item.id_rubrique,
-    //     //         note: item.note,
-    //     //         nature: item.nature,
-    //     //         ordre: item.ordre,
-    //     //         niveau: item.niveau,
-              
-    //     //       });
-    //     //     });
-    //     //   }
-          
-    //     //}
-    //     return { actionStatus };
-    //   }catch (error){
-    //     console.log(error);
-    //   }
-    // }
-    //     //   if(tableau === 'DRF'){
-    //     //     liste.map(async (item) => {
-    //     //       await tableSource.create({
-    //     //         id_compte: compteId,
-    //     //         id_dossier : fileId,
-    //     //         id_exercice: exerciceId,
-    //     //         id_etat: item.id_etat,
-    //     //         id_rubrique: item.id_rubrique,
-    //     //         note: item.note,
-    //     //         nature: item.nature,
-    //     //         ordre: item.ordre,
-    //     //         niveau: item.niveau,
-    //     //         signe: item.senscalcul
-    //     //       });
-    //     //     });
-    //     //   }else{
-    //     //     liste.map(async (item) => {
-    //     //       await tableSource.create({
-    //     //         id_compte: compteId,
-    //     //         id_dossier : fileId,
-    //     //         id_exercice: exerciceId,
-    //     //         id_etat: item.id_etat,
-    //     //         id_rubrique: item.id_rubrique,
-    //     //         note: item.note,
-    //     //         nature: item.nature,
-    //     //         ordre: item.ordre,
-    //     //         niveau: item.niveau,
-              
-    //     //       });
-    //     //     });
-    //     //   }
-          
-    //     //}
-    //     return { actionStatus };
-    //   }catch (error){
-    //     console.log(error);
-    //   }
-    // }
 
     const addmodifyTableau = async (req, res) => {
       try{
@@ -694,34 +427,11 @@ const getListeOneTable = async (req, res) => {
             resData.msg = "Modification effectuée avec succès.";
             resData.liste = await recupTableau.recupBHIAPC(compteId, fileId, exerciceId);
           }
-        if(tableau === 'BHIAPC'){
-          const {stateModify, stateAdd } = await functionAddOrModifyRow.addOrmodifyRowBHIAPC(compteId,fileId, exerciceId, formData);
-          
-          if(stateModify){
-            resData.state = true;
-            resData.msg = "Modification effectuée avec succès.";
-            resData.liste = await recupTableau.recupBHIAPC(compteId, fileId, exerciceId);
-          }
 
           if(stateAdd){
             resData.state = true;
             resData.msg = "Ajout de nouvelle ligne effectué avec succès.";
             resData.liste = await recupTableau.recupBHIAPC(compteId, fileId, exerciceId);
-          }
-          if(stateAdd){
-            resData.state = true;
-            resData.msg = "Ajout de nouvelle ligne effectué avec succès.";
-            resData.liste = await recupTableau.recupBHIAPC(compteId, fileId, exerciceId);
-          }
-
-        }else if(tableau === 'MP'){
-          
-          const {stateModify, stateAdd } = await functionAddOrModifyRow.addOrmodifyRowMP(compteId,fileId, exerciceId, formData);
-          
-          if(stateModify){
-            resData.state = true;
-            resData.msg = "Modification effectuée avec succès.";
-            resData.liste = await recupTableau.recupMP(compteId, fileId, exerciceId);
           }
         }else if(tableau === 'MP'){
           
@@ -738,11 +448,6 @@ const getListeOneTable = async (req, res) => {
             resData.msg = "Ajout de nouvelle ligne effectué avec succès.";
             resData.liste = await recupTableau.recupMP(compteId, fileId, exerciceId);
           }
-          if(stateAdd){
-            resData.state = true;
-            resData.msg = "Ajout de nouvelle ligne effectué avec succès.";
-            resData.liste = await recupTableau.recupMP(compteId, fileId, exerciceId);
-          }
 
         }else if(tableau === 'DA'){
           
@@ -753,35 +458,11 @@ const getListeOneTable = async (req, res) => {
             resData.msg = "Modification effectuée avec succès.";
             resData.liste = await recupTableau.recupDA(compteId, fileId, exerciceId);
           }
-        }else if(tableau === 'DA'){
-          
-          const {stateModify, stateAdd } = await functionAddOrModifyRow.addOrmodifyRowDA(compteId,fileId, exerciceId, formData);
-          
-          if(stateModify){
-            resData.state = true;
-            resData.msg = "Modification effectuée avec succès.";
-            resData.liste = await recupTableau.recupDA(compteId, fileId, exerciceId);
-          }
 
           if(stateAdd){
             resData.state = true;
             resData.msg = "Ajout de nouvelle ligne effectué avec succès.";
             resData.liste = await recupTableau.recupDA(compteId, fileId, exerciceId);
-          }
-          if(stateAdd){
-            resData.state = true;
-            resData.msg = "Ajout de nouvelle ligne effectué avec succès.";
-            resData.liste = await recupTableau.recupDA(compteId, fileId, exerciceId);
-          }
-
-        }else if(tableau === 'DP'){
-          
-          const {stateModify, stateAdd } = await functionAddOrModifyRow.addOrmodifyRowDP(compteId,fileId, exerciceId, formData);
-          
-          if(stateModify){
-            resData.state = true;
-            resData.msg = "Modification effectuée avec succès.";
-            resData.liste = await recupTableau.recupDP(compteId, fileId, exerciceId);
           }
         }else if(tableau === 'DP'){
           
@@ -798,21 +479,6 @@ const getListeOneTable = async (req, res) => {
             resData.msg = "Ajout de nouvelle ligne effectué avec succès.";
             resData.liste = await recupTableau.recupDP(compteId, fileId, exerciceId);
           }
-          if(stateAdd){
-            resData.state = true;
-            resData.msg = "Ajout de nouvelle ligne effectué avec succès.";
-            resData.liste = await recupTableau.recupDP(compteId, fileId, exerciceId);
-          }
-
-        }else if(tableau === 'EIAFNC'){
-          
-          const {stateModify, stateAdd } = await functionAddOrModifyRow.addOrmodifyRowEIAFNC(compteId,fileId, exerciceId, formData);
-          
-          if(stateModify){
-            resData.state = true;
-            resData.msg = "Modification effectuée avec succès.";
-            resData.liste = await recupTableau.recupEIAFNC(compteId, fileId, exerciceId);
-          }
         }else if(tableau === 'EIAFNC'){
           
           const {stateModify, stateAdd } = await functionAddOrModifyRow.addOrmodifyRowEIAFNC(compteId,fileId, exerciceId, formData);
@@ -827,25 +493,6 @@ const getListeOneTable = async (req, res) => {
             resData.state = true;
             resData.msg = "Ajout de nouvelle ligne effectué avec succès.";
             resData.liste = await recupTableau.recupEIAFNC(compteId, fileId, exerciceId);
-          }
-          if(stateAdd){
-            resData.state = true;
-            resData.msg = "Ajout de nouvelle ligne effectué avec succès.";
-            resData.liste = await recupTableau.recupEIAFNC(compteId, fileId, exerciceId);
-          }
-
-        }else if(tableau === 'SAD'){
-          tableSource = db.liassesads;
-        }else if(tableau === 'SDR'){
-          tableSource = db.liassesdrs;
-        }else if(tableau === 'SE'){
-          
-          const {stateModify, stateAdd } = await functionAddOrModifyRow.addOrmodifyRowSE(compteId,fileId, exerciceId, formData);
-          
-          if(stateModify){
-            resData.state = true;
-            resData.msg = "Modification effectuée avec succès.";
-            resData.liste = await recupTableau.recupSE(compteId, fileId, exerciceId);
           }
         }else if(tableau === 'SAD'){
           tableSource = db.liassesads;
@@ -866,11 +513,6 @@ const getListeOneTable = async (req, res) => {
             resData.msg = "Ajout de nouvelle ligne effectué avec succès.";
             resData.liste = await recupTableau.recupSE(compteId, fileId, exerciceId);
           }
-          if(stateAdd){
-            resData.state = true;
-            resData.msg = "Ajout de nouvelle ligne effectué avec succès.";
-            resData.liste = await recupTableau.recupSE(compteId, fileId, exerciceId);
-          }
 
         }else if(tableau === 'NE'){
           
@@ -881,22 +523,7 @@ const getListeOneTable = async (req, res) => {
             resData.msg = "Modification effectuée avec succès.";
             resData.liste = await recupTableau.recupNE(compteId, fileId, exerciceId);
           }
-        }else if(tableau === 'NE'){
-          
-          const {stateModify, stateAdd } = await functionAddOrModifyRow.addOrmodifyRowNE(compteId,fileId, exerciceId, formData);
-          
-          if(stateModify){
-            resData.state = true;
-            resData.msg = "Modification effectuée avec succès.";
-            resData.liste = await recupTableau.recupNE(compteId, fileId, exerciceId);
-          }
 
-          if(stateAdd){
-            resData.state = true;
-            resData.msg = "Ajout de nouvelle ligne effectué avec succès.";
-            resData.liste = await recupTableau.recupNE(compteId, fileId, exerciceId);
-          }
-        }
           if(stateAdd){
             resData.state = true;
             resData.msg = "Ajout de nouvelle ligne effectué avec succès.";
@@ -917,7 +544,9 @@ const getListeOneTable = async (req, res) => {
         let resData = {
           state: false,
           msg: 'une erreur est survenue lors du traitement.',
-          liste: []
+          liste: [],
+          etatglobal: [],
+          detailAnom: []
         }
 
         let tableSource = db;
@@ -955,44 +584,50 @@ const getListeOneTable = async (req, res) => {
         if(deletedRow){
           if(infoRowToDelete.tableau === 'BHIAPC'){
             resData.liste = await recupTableau.recupBHIAPC(compteId, fileId, exerciceId);
-          }else if(infoRowToDelete.tableau === 'MP'){
-            resData.liste = await recupTableau.recupMP(compteId, fileId, exerciceId);
-          }else if(infoRowToDelete.tableau === 'DA'){
-            resData.liste = await recupTableau.recupDA(compteId, fileId, exerciceId);
-          }else if(infoRowToDelete.tableau === 'DP'){
-            resData.liste = await recupTableau.recupDP(compteId, fileId, exerciceId);
-          }else if(infoRowToDelete.tableau === 'EIAFNC'){
-            resData.liste = await recupTableau.recupEIAFNC(compteId, fileId, exerciceId);
-          }else if(infoRowToDelete.tableau === 'SAD'){
-            
-          }else if(infoRowToDelete.tableau === 'SDR'){
-            
-          }else if(infoRowToDelete.tableau === 'SE'){
-            resData.liste = await recupTableau.recupSE(compteId, fileId, exerciceId);
-          }else if(infoRowToDelete.tableau === 'NE'){
-            resData.liste = await recupTableau.recupNE(compteId, fileId, exerciceId);
-          }
 
-          resData.state = true;
-          resData.msg = "Suppression de la ligne effectuée avec succès.";
-        }
-        if(deletedRow){
-          if(infoRowToDelete.tableau === 'BHIAPC'){
-            resData.liste = await recupTableau.recupBHIAPC(compteId, fileId, exerciceId);
+            const etatControl = await functionControles.controletableau('EBILAN', infoRowToDelete.tableau, compteId, fileId, exerciceId);
+            resData.etatglobal = await recupTableau.recupETAT(compteId, fileId, exerciceId);
+            resData.detailAnom = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, infoRowToDelete.tableau);
+
           }else if(infoRowToDelete.tableau === 'MP'){
             resData.liste = await recupTableau.recupMP(compteId, fileId, exerciceId);
+
+            const etatControl = await functionControles.controletableau('EBILAN', infoRowToDelete.tableau, compteId, fileId, exerciceId);
+            resData.etatglobal = await recupTableau.recupETAT(compteId, fileId, exerciceId);
+            resData.detailAnom = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, infoRowToDelete.tableau);
+
           }else if(infoRowToDelete.tableau === 'DA'){
             resData.liste = await recupTableau.recupDA(compteId, fileId, exerciceId);
+
+            const etatControl = await functionControles.controletableau('EBILAN', infoRowToDelete.tableau, compteId, fileId, exerciceId);
+            resData.etatglobal = await recupTableau.recupETAT(compteId, fileId, exerciceId);
+            resData.detailAnom = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, infoRowToDelete.tableau);
+
           }else if(infoRowToDelete.tableau === 'DP'){
             resData.liste = await recupTableau.recupDP(compteId, fileId, exerciceId);
+
+            const etatControl = await functionControles.controletableau('EBILAN', infoRowToDelete.tableau, compteId, fileId, exerciceId);
+            resData.etatglobal = await recupTableau.recupETAT(compteId, fileId, exerciceId);
+            resData.detailAnom = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, infoRowToDelete.tableau);
+
           }else if(infoRowToDelete.tableau === 'EIAFNC'){
             resData.liste = await recupTableau.recupEIAFNC(compteId, fileId, exerciceId);
+
+            const etatControl = await functionControles.controletableau('EBILAN', infoRowToDelete.tableau, compteId, fileId, exerciceId);
+            resData.etatglobal = await recupTableau.recupETAT(compteId, fileId, exerciceId);
+            resData.detailAnom = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, infoRowToDelete.tableau);
+
           }else if(infoRowToDelete.tableau === 'SAD'){
             
           }else if(infoRowToDelete.tableau === 'SDR'){
             
           }else if(infoRowToDelete.tableau === 'SE'){
             resData.liste = await recupTableau.recupSE(compteId, fileId, exerciceId);
+
+            const etatControl = await functionControles.controletableau('EBILAN', infoRowToDelete.tableau, compteId, fileId, exerciceId);
+            resData.etatglobal = await recupTableau.recupETAT(compteId, fileId, exerciceId);
+            resData.detailAnom = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, infoRowToDelete.tableau);
+
           }else if(infoRowToDelete.tableau === 'NE'){
             resData.liste = await recupTableau.recupNE(compteId, fileId, exerciceId);
           }
@@ -1014,17 +649,24 @@ const getListeOneTable = async (req, res) => {
         let resData = {
           state: false,
           msg: 'une erreur est survenue lors du traitement.',
-          liste: []
+          liste: [],
+          etatglobal: [],
+          detailAnom: []
         }
 
         let tableSource = db;
 
         if(tableauToDeleteAllRow === 'BHIAPC'){
           const stateDeleting = await declEbilanDeleteFunction.deleteAllRowBHIAPC(compteId, fileId, exerciceId);
+
           if(stateDeleting){
             resData.state = true;
             resData.msg = "Suppression de toute les lignes du tableau effectuée avec succès.";
             resData.liste = await recupTableau.recupBHIAPC(compteId, fileId, exerciceId);
+
+            const etatControl = await functionControles.controletableau('EBILAN', tableauToDeleteAllRow, compteId, fileId, exerciceId);
+            resData.etatglobal = await recupTableau.recupETAT(compteId, fileId, exerciceId);
+            resData.detailAnom = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, tableauToDeleteAllRow);
           }
 
         }else if(tableauToDeleteAllRow === 'MP'){
@@ -1033,39 +675,23 @@ const getListeOneTable = async (req, res) => {
             resData.state = true;
             resData.msg = "Suppression de toute les lignes du tableau effectuée avec succès.";
             resData.liste = await recupTableau.recupMP(compteId, fileId, exerciceId);
+
+            const etatControl = await functionControles.controletableau('EBILAN', tableauToDeleteAllRow, compteId, fileId, exerciceId);
+            resData.etatglobal = await recupTableau.recupETAT(compteId, fileId, exerciceId);
+            resData.detailAnom = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, tableauToDeleteAllRow);
           }
 
         }else if(tableauToDeleteAllRow === 'DA'){
           const stateDeleting = await declEbilanDeleteFunction.deleteAllRowDA(compteId, fileId, exerciceId);
+
           if(stateDeleting){
             resData.state = true;
             resData.msg = "Suppression de toute les lignes du tableau effectuée avec succès.";
             resData.liste = await recupTableau.recupDA(compteId, fileId, exerciceId);
-          }
 
-        }else if(tableauToDeleteAllRow === 'DP'){
-        if(tableauToDeleteAllRow === 'BHIAPC'){
-          const stateDeleting = await declEbilanDeleteFunction.deleteAllRowBHIAPC(compteId, fileId, exerciceId);
-          if(stateDeleting){
-            resData.state = true;
-            resData.msg = "Suppression de toute les lignes du tableau effectuée avec succès.";
-            resData.liste = await recupTableau.recupBHIAPC(compteId, fileId, exerciceId);
-          }
-
-        }else if(tableauToDeleteAllRow === 'MP'){
-          const stateDeleting = await declEbilanDeleteFunction.deleteAllRowMP(compteId, fileId, exerciceId);
-          if(stateDeleting){
-            resData.state = true;
-            resData.msg = "Suppression de toute les lignes du tableau effectuée avec succès.";
-            resData.liste = await recupTableau.recupMP(compteId, fileId, exerciceId);
-          }
-
-        }else if(tableauToDeleteAllRow === 'DA'){
-          const stateDeleting = await declEbilanDeleteFunction.deleteAllRowDA(compteId, fileId, exerciceId);
-          if(stateDeleting){
-            resData.state = true;
-            resData.msg = "Suppression de toute les lignes du tableau effectuée avec succès.";
-            resData.liste = await recupTableau.recupDA(compteId, fileId, exerciceId);
+            const etatControl = await functionControles.controletableau('EBILAN', tableauToDeleteAllRow, compteId, fileId, exerciceId);
+            resData.etatglobal = await recupTableau.recupETAT(compteId, fileId, exerciceId);
+            resData.detailAnom = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, tableauToDeleteAllRow);
           }
 
         }else if(tableauToDeleteAllRow === 'DP'){
@@ -1075,15 +701,24 @@ const getListeOneTable = async (req, res) => {
             resData.state = true;
             resData.msg = "Suppression de toute les lignes du tableau effectuée avec succès.";
             resData.liste = await recupTableau.recupDP(compteId, fileId, exerciceId);
+
+            const etatControl = await functionControles.controletableau('EBILAN', tableauToDeleteAllRow, compteId, fileId, exerciceId);
+            resData.etatglobal = await recupTableau.recupETAT(compteId, fileId, exerciceId);
+            resData.detailAnom = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, tableauToDeleteAllRow);
           }
          
         }else if(tableauToDeleteAllRow === 'EIAFNC'){
           
           const stateDeleting = await declEbilanDeleteFunction.deleteAllRowEIAFNC(compteId, fileId, exerciceId);
+
           if(stateDeleting){
             resData.state = true;
             resData.msg = "Suppression de toute les lignes du tableau effectuée avec succès.";
             resData.liste = await recupTableau.recupEIAFNC(compteId, fileId, exerciceId);
+
+            const etatControl = await functionControles.controletableau('EBILAN', tableauToDeleteAllRow, compteId, fileId, exerciceId);
+            resData.etatglobal = await recupTableau.recupETAT(compteId, fileId, exerciceId);
+            resData.detailAnom = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, tableauToDeleteAllRow);
           }
         }else if(tableauToDeleteAllRow === 'EIAFNC'){
           
@@ -1092,6 +727,10 @@ const getListeOneTable = async (req, res) => {
             resData.state = true;
             resData.msg = "Suppression de toute les lignes du tableau effectuée avec succès.";
             resData.liste = await recupTableau.recupEIAFNC(compteId, fileId, exerciceId);
+
+            const etatControl = await functionControles.controletableau('EBILAN', tableauToDeleteAllRow, compteId, fileId, exerciceId);
+            resData.etatglobal = await recupTableau.recupETAT(compteId, fileId, exerciceId);
+            resData.detailAnom = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, tableauToDeleteAllRow);
           }
 
         }else if(tableauToDeleteAllRow === 'SAD'){
@@ -1105,29 +744,12 @@ const getListeOneTable = async (req, res) => {
             resData.state = true;
             resData.msg = "Suppression de toute les lignes du tableau effectuée avec succès.";
             resData.liste = await recupTableau.recupSE(compteId, fileId, exerciceId);
-          }
-        }else if(tableauToDeleteAllRow === 'SAD'){
-          tableSource = db.liassesads;
-        }else if(tableauToDeleteAllRow === 'SDR'){
-          tableSource = db.liassesdrs;
-        }else if(tableauToDeleteAllRow === 'SE'){
-          
-          const stateDeleting = await declEbilanDeleteFunction.deleteAllRowSE(compteId, fileId, exerciceId);
-          if(stateDeleting){
-            resData.state = true;
-            resData.msg = "Suppression de toute les lignes du tableau effectuée avec succès.";
-            resData.liste = await recupTableau.recupSE(compteId, fileId, exerciceId);
+
+            const etatControl = await functionControles.controletableau('EBILAN', tableauToDeleteAllRow, compteId, fileId, exerciceId);
+            resData.etatglobal = await recupTableau.recupETAT(compteId, fileId, exerciceId);
+            resData.detailAnom = await recupTableau.recupETATDETAIL(compteId, fileId, exerciceId, tableauToDeleteAllRow);
           }
 
-        }else if(tableauToDeleteAllRow === 'NE'){
-          
-          const stateDeleting = await declEbilanDeleteFunction.deleteAllRowNE(compteId, fileId, exerciceId);
-          if(stateDeleting){
-            resData.state = true;
-            resData.msg = "Suppression de toute les lignes du tableau effectuée avec succès.";
-            resData.liste = await recupTableau.recupNE(compteId, fileId, exerciceId);
-          }
-        }
         }else if(tableauToDeleteAllRow === 'NE'){
           
           const stateDeleting = await declEbilanDeleteFunction.deleteAllRowNE(compteId, fileId, exerciceId);
@@ -1152,6 +774,8 @@ const getListeOneTable = async (req, res) => {
           state: false,
           msg: 'une erreur est survenue lors du traitement.',
           liste: [],
+          etatglobal: [],
+          detailAnom: []
         }
   
         const liste = await ajustements.findAll({
@@ -1195,6 +819,8 @@ const getListeOneTable = async (req, res) => {
           state: false,
           msg: 'une erreur est survenue lors du traitement.',
           liste: [],
+          etatglobal: [],
+          detailAnom: []
         }
     
         const testIfExist = await ajustements.findAll({
@@ -1225,6 +851,10 @@ const getListeOneTable = async (req, res) => {
           if(addAjust){
             resData.state = true;
             resData.msg = "Traitement effectué avec succès.";
+
+            const etatControl = await functionControles.controletableau('EBILAN', id_etat, id_compte, id_dossier, id_exercice);
+            resData.etatglobal = await recupTableau.recupETAT(id_compte, id_dossier, id_exercice);
+            resData.detailAnom = await recupTableau.recupETATDETAIL(id_compte, id_dossier, id_exercice, id_etat);
           }else{
             resData.state = false;
             resData.msg = "Une erreur est survenue au moment du traitement des données";
@@ -1252,6 +882,10 @@ const getListeOneTable = async (req, res) => {
           if(ModifyAjust){
             resData.state = true;
             resData.msg = "Modification effectuée avec succès.";
+
+            const etatControl = await functionControles.controletableau('EBILAN', id_etat, id_compte, id_dossier, id_exercice);
+            resData.etatglobal = await recupTableau.recupETAT(id_compte, id_dossier, id_exercice);
+            resData.detailAnom = await recupTableau.recupETATDETAIL(id_compte, id_dossier, id_exercice, id_etat);
           }else{
             resData.state = false;
             resData.msg = "Une erreur est survenue au moment du traitement des données";
@@ -1290,9 +924,47 @@ const getListeOneTable = async (req, res) => {
         if(stateDeleting){
           resData.state = true;
           resData.msg = "Suppression de la ligne effectuée avec succès.";
+
+          const etatControl = await functionControles.controletableau('EBILAN', idEtat, idCompte, idDossier, idExercice);
+          resData.etatglobal = await recupTableau.recupETAT(idCompte, idDossier, idExercice);
+          resData.detailAnom = await recupTableau.recupETATDETAIL(idCompte, idDossier, idExercice, idEtat);
         }
 
         return res.json(resData);
+      }catch (error){
+        console.log(error);
+      }
+    }
+
+    const savemodifAnom = async (req, res) => {
+      try{
+        const id = req.params.id;
+        const {id_compte, id_dossier, id_exercice, valide, comments, etat_id } = req.body;
+
+        let resData = {
+          state: false,
+          msg: 'une erreur est survenue lors du traitement.',
+          liste: [],
+        }
+
+        if(await controles.update(
+            {
+              comments: comments,
+              valide: valide
+            },
+            {
+              where: 
+                {
+                  id: id,
+                }
+            }
+          )){
+            resData.liste = await recupTableau.recupETATDETAIL(id_compte, id_dossier, id_exercice, etat_id);
+            resData.state = true;
+            resData.msg = 'Sauvegardes des modifications terminés avec succès.'
+          }
+
+          return res.json(resData);
       }catch (error){
         console.log(error);
       }
@@ -1311,5 +983,6 @@ const getListeOneTable = async (req, res) => {
       deleteTableAllRow,
       addModifyAjustement,
       listeAjustement,
-      deleteAjustement
+      deleteAjustement,
+      savemodifAnom
     };

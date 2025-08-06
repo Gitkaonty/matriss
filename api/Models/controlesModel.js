@@ -1,8 +1,5 @@
-//user model
-const {Sequelize, DataTypes} = require('sequelize');
-
 module.exports = (sequelize, DataTypes) => {
-    const etats = sequelize.define( "etats", {
+    const controles = sequelize.define( "controles", {
         id: {
             type: DataTypes.BIGINT,
             allowNull: false,
@@ -24,21 +21,30 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue:0
         },
-        code: {
-            type: DataTypes.STRING(15),
+        declaration: {
+            type: DataTypes.STRING(20),
             unique: false,
-            allowNull: false
+            allowNull: true
         },
-        nom: {
-            type: DataTypes.STRING(250),
+        etat_id: {
+            type: DataTypes.STRING(20),
             unique: false,
-            allowNull: false
+            allowNull: true
         },
-        ordre: {
+        control_id: {
             type: DataTypes.INTEGER,
             unique: false,
-            allowNull: false,
             defaultValue:0
+        },
+        nbranomalie: {
+            type: DataTypes.INTEGER,
+            unique: false,
+            defaultValue:0
+        },
+        anomalie: {
+            type: DataTypes.STRING(255),
+            unique: false,
+            allowNull: true
         },
         valide: {
             type: DataTypes.BOOLEAN,
@@ -46,12 +52,11 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue:false
         },
-        nbranomalie: {
-            type: DataTypes.INTEGER,
+        comments: {
+            type: DataTypes.STRING(255),
             unique: false,
-            allowNull: false,
-            defaultValue:0
+            allowNull: true
         },
     }, {timestamps: true}, )
-    return etats;
+    return controles
  }
