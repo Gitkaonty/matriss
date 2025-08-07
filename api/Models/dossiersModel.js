@@ -1,5 +1,5 @@
 module.exports = (sequelize, DataTypes) => {
-    const dossiers = sequelize.define( "dossiers", {
+    const dossiers = sequelize.define("dossiers", {
         id_compte: {
             type: DataTypes.BIGINT,
             allowNull: false
@@ -7,7 +7,7 @@ module.exports = (sequelize, DataTypes) => {
         id_user: {
             type: DataTypes.BIGINT,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         dossier: {
             type: DataTypes.STRING(150),
@@ -93,68 +93,78 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.INTEGER,
             unique: false,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         longcompteaux: {
             type: DataTypes.INTEGER,
             unique: false,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         autocompletion: {
             type: DataTypes.BOOLEAN,
             unique: false,
             allowNull: false,
-            defaultValue:true
+            defaultValue: true
         },
         avecanalytique: {
             type: DataTypes.BOOLEAN,
             unique: false,
             allowNull: false,
-            defaultValue:false
+            defaultValue: false
         },
         tauxir: {
             type: DataTypes.DOUBLE,
             unique: false,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         pourcentageca: {
             type: DataTypes.DOUBLE,
             unique: false,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         montantmin: {
             type: DataTypes.DOUBLE,
             unique: false,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         assujettitva: {
             type: DataTypes.BOOLEAN,
             unique: false,
             allowNull: false,
-            defaultValue:false
+            defaultValue: false
         },
         capital: {
             type: DataTypes.DOUBLE,
             unique: false,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         nbrpart: {
             type: DataTypes.INTEGER,
             unique: false,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         valeurpart: {
             type: DataTypes.DOUBLE,
             unique: false,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
-    }, {timestamps: true}, )
+        pourcentageca: {
+            type: DataTypes.DOUBLE,
+            allowNull: false,
+            defaultValue: 0
+        },
+        montantmin: {
+            type: DataTypes.DOUBLE,
+            allowNull: false,
+            defaultValue: 0
+        }
+    }, { timestamps: true },)
     return dossiers
- }
+}

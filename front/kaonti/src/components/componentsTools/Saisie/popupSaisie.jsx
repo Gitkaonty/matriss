@@ -431,7 +431,7 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
                             defaultValue={params.value}
                             fullWidth
                             InputProps={{
-                                disableUnderline: true, //Supprimer le soulignement noir par défaut
+                                disableUnderline: true,
                             }}
                             sx={{
                                 backgroundColor: 'white',
@@ -636,7 +636,7 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
                 type: 'string',
                 sortable: true,
                 editable: true,
-                flex: 1.35,
+                flex: 1.3,
                 headerAlign: 'left',
                 align: 'left',
                 headerClassName: 'HeaderbackColor',
@@ -648,7 +648,7 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
                             defaultValue={params.value}
                             fullWidth
                             InputProps={{
-                                disableUnderline: true, //Supprimer le soulignement noir par défaut
+                                disableUnderline: true,
                             }}
                             sx={{
                                 backgroundColor: 'white',
@@ -665,9 +665,6 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
                                     border: 'none',
                                     boxShadow: 'none',
                                 },
-                                '& input:focus-visible': {
-                                    outline: 'none !important',
-                                },
                                 '&.Mui-focused': {
                                     outline: 'none',
                                     border: 'none',
@@ -677,30 +674,26 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
                                     borderBottom: 'none !important',
                                 },
                             }}
-
-
                             onChange={(e) => {
                                 const value = e.target.value;
 
-                                //Met à jour la valeur dans la table
+                                // Met à jour la valeur dans la table
                                 params.api.setEditCellValue({
                                     id: params.id,
                                     field: 'num_facture',
                                     value: value,
                                 }, e);
 
-                                // Mise à jour dynamique des erreurs
+                                //Met à jour les erreurs
                                 setInvalidRows((prev) => {
                                     const row = prev.find(r => r.id === params.id);
 
                                     if (value.trim() === '') {
-                                        // Ajoute l’erreur si vide
+                                        // Ajoute l’erreur si champ vide
                                         if (row) {
                                             if (!row.fields.includes('num_facture')) {
                                                 return prev.map(r =>
-                                                    r.id === params.id
-                                                        ? { ...r, fields: [...r.fields, 'num_facture'] }
-                                                        : r
+                                                    r.id === params.id ? { ...r, fields: [...r.fields, 'num_facture'] } : r
                                                 );
                                             }
                                             return prev;
@@ -708,7 +701,7 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
                                             return [...prev, { id: params.id, fields: ['num_facture'] }];
                                         }
                                     } else {
-                                        // Supprime l’erreur si rempli
+                                        // Supprime l’erreur si valeur valide
                                         if (!row) return prev;
 
                                         const updatedFields = row.fields.filter(f => f !== 'num_facture');
@@ -717,9 +710,7 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
                                         }
 
                                         return prev.map(r =>
-                                            r.id === params.id
-                                                ? { ...r, fields: updatedFields }
-                                                : r
+                                            r.id === params.id ? { ...r, fields: updatedFields } : r
                                         );
                                     }
                                 });
@@ -727,20 +718,23 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
                         />
                     );
                 },
+
                 cellClassName: (params) => {
                     const classes = [];
 
+                    // Appliquer l'erreur uniquement sur le champ "num_facture"
                     const rowInvalid = invalidRows.find(row => row.id === params.id);
                     if (params.field === 'num_facture' && rowInvalid?.fields.includes('num_facture')) {
                         classes.push('cell-error');
                     }
 
+                    // Appliquer la sélection uniquement sur la cellule "num_facture"
                     if (selectedCell.id === params.id && selectedCell.field === 'num_facture') {
                         classes.push('cell-selected');
                     }
 
                     return classes.join(' ');
-                }
+                },
             }
         ];
 

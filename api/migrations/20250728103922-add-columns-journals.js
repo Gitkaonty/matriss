@@ -20,7 +20,7 @@ module.exports = {
     });
 
     await queryInterface.addColumn('journals', 'num_facture', {
-      type: Sequelize.CHAR,
+      type: Sequelize.STRING(50),
       allowNull: true,
       defaultValue: '',
     });

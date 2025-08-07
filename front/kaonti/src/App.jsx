@@ -27,9 +27,10 @@ import ParamPCModele from './components/menuComponent/Parametrages/PlanComptable
 import ParamTVAComponent from './components/menuComponent/Parametrages/Tva/ParamTva';
 import ParamDeviseComponent from './components/ParamDeviseComponent';
 import ParamExerciceComponent from './components/menuComponent/Parametrages/Exercice/Exercice';
-import ParamAnalytiqueComponent from './components/ParamAnalytiqueComponent';
 import ParamCRM from './components/menuComponent/Parametrages/crm/ParamCRM';
 import ParamMappingComponent from './components/menuComponent/Parametrages/mappingcompte/ParamMapping';
+import AnalitiqueComponent from './components/menuComponent/Parametrages/analytiques/AnalitiqueComponent';
+import DeclarationComm from './components/menuComponent/Declaration/Dcom/DeclarationComm';
 
 const ROLES = {
   'SuperAdmin': 3355,
@@ -61,6 +62,7 @@ export default function App() {
               <Route path='/tab/importAnnexeDeclarationFiscale' element={<ImportAnnexeDeclarationFiscaleComponent />} />
               <Route path='/tab/exportBalance/:id' element={<ExportBalance />} />
               <Route path='/tab/declarationEbilan/:id' element={<DeclarationEbilan />} />
+              <Route path='/tab/declarationDroitComm/:id' element={<DeclarationComm />} />
               <Route path='/tab/revisionAnomalieEbilan' element={<RevisionAnomalieEbilanComponent />} />
               <Route path='/tab/revisionPrecontrolFiscal' element={<RevisionPrecontroleFiscalComponent />} />
               <Route path='/tab/paramCodeJournal/:id' element={<ParamCodeJournalComponent />} />
@@ -69,7 +71,7 @@ export default function App() {
               <Route path='/tab/paramTVA/:id' element={<ParamTVAComponent />} />
               <Route path='/tab/paramDevise' element={<ParamDeviseComponent />} />
               <Route path='/tab/paramExercice/:id' element={<ParamExerciceComponent />} />
-              <Route path='/tab/paramAnalytique' element={<ParamAnalytiqueComponent />} />
+              <Route path='/tab/paramAnalytique/:id' element={<AnalitiqueComponent />} />
               <Route path='/tab/paramCrm/:id' element={<ParamCRM />} />
               <Route path='/tab/paramMapping/:id' element={<ParamMappingComponent />} />
             </Route>

@@ -1,14 +1,14 @@
 //user model
-const {Sequelize, DataTypes} = require('sequelize');
+const { Sequelize, DataTypes } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
-    const etats = sequelize.define( "etats", {
+    const etats = sequelize.define("etats", {
         id: {
             type: DataTypes.BIGINT,
             allowNull: false,
             unique: true,
-            autoIncrement:true,
-            primaryKey:true
+            autoIncrement: true,
+            primaryKey: true
         },
         id_compte: {
             type: DataTypes.BIGINT,
@@ -17,12 +17,12 @@ module.exports = (sequelize, DataTypes) => {
         id_dossier: {
             type: DataTypes.BIGINT,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         id_exercice: {
             type: DataTypes.BIGINT,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         code: {
             type: DataTypes.STRING(15),
@@ -38,14 +38,14 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.INTEGER,
             unique: false,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         valide: {
             type: DataTypes.BOOLEAN,
             unique: false,
             allowNull: false,
-            defaultValue:false
+            defaultValue: false
         }
-    }, {timestamps: true}, )
+    }, { timestamps: true },)
     return etats;
- }
+}

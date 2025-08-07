@@ -111,9 +111,15 @@ app.use('/paramTva', require('./Routes/Parametres/paramTvaRoute'));
 //routes pour paramètres mapping de compte
 app.use('/paramMappingCompte', require('./Routes/Parametres/paramMappingCompte'));
 
+//routes pour paramètres compabilité analytique
+app.use('/paramCa', require('./Routes/Parametres/paramCARoute'));
+
 //----------------------------------------------------------------------------------------------------------------
 // MENU DECLARATION
 //----------------------------------------------------------------------------------------------------------------
+
+//Déclaration Droit de communication---------------------------
+app.use('/declaration/comm', require('./Routes/Declaration/Dcom/DeclarationCommRoute'));
 
 //Déclaration Ebilan-------------------------------------------
 app.use('/declaration/ebilan', require('./Routes/Declaration/declEbilanRoute'));
