@@ -20,6 +20,7 @@ import { VscClose } from "react-icons/vsc";
 import { TfiSave } from "react-icons/tfi";
 import axios from '../../../../kaonti/config/axios';
 import toast from 'react-hot-toast';
+import { BsCheckLg } from "react-icons/bs";
 
 let initial = init[0];
 
@@ -59,20 +60,28 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
         { 
             field: 'anomalie', 
             headerName: 'Anomalies', 
-            width: 520, 
+            width: 900, 
             editable: false 
         },
         { 
             field: 'valide', 
             headerName: 'Validée', 
-            width: 90, 
+            width: 80, 
             editable: true, 
-            type: 'boolean' 
+            type: 'boolean',
+            renderCell: (params) => (
+            <span style={{
+                color: params.value ? 'green' : 'red',
+                fontWeight: 'bold'
+            }}>
+                {params.value ? <BsCheckLg style={{width: 25, height: 25}}/> : <CloseIcon />}
+            </span>
+            ) 
         },
         { 
             field: 'comments', 
             headerName: 'Commentaires', 
-            width: 500, 
+            width: 470, 
             editable: true,  
         },
     ];
@@ -161,7 +170,7 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
             onClose={handleCloseDeleteModel}
             aria-labelledby="customized-dialog-title"
             open={true}
-            maxWidth="lg"
+            maxWidth='xl'
             fullWidth={true}
         >
             <DialogTitle sx={{ m: 0, p: 2 }} id="customized-dialog-title" style={{fontWeight:'normal', width:'600px', height:'50px',backgroundColor : 'transparent'}}>

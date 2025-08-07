@@ -101,7 +101,7 @@ const controletableau = async (declaration, tableau, id_compte, id_dossier, id_e
                                 etat_id: item.etat_id,
                                 control_id: item.control_id,
                                 nbranomalie: 1,
-                                anomalie: `${item.comments} Ecart de ${total.toFixed(2)}`,
+                                anomalie: `${item.comments} Ecart de ${total.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
                             });
 
                             const tableNbrAnom = await controles.findAll({
