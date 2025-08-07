@@ -5,8 +5,15 @@ const Sequelize = require('sequelize');
 const { Op } = require('sequelize');
 
 const exercice = db.exercices;
+
 const etats = db.etats;
 const etatsmatrices = db.etatsmatrices;
+const etatsplp = db.etatsplp;
+
+const etatscomms = db.etatscomms;
+const etatscomatrices = db.etatscomatrices;
+const etatsplpmatrices = db.etatsplpmatrices;
+
 const rubriques = db.rubriques;
 const rubriquesmatrices = db.rubriquesmatrices;
 const compterubriques = db.compterubriques;
@@ -94,6 +101,8 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
   //copier Etats, les rubriques et les comptes rubriques
 
   const listeEtat = await etatsmatrices.findAll({});
+  const listeEtatComm = await etatscomatrices.findAll({});
+  const listeEtatPlp = await etatsplpmatrices.findAll({});
   const listeRubrique = await rubriquesmatrices.findAll({});
 
   const createdExerciceInfosData = await exercice.findOne({
@@ -148,6 +157,32 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
       ordre: item.ordre,
     });
   });
+
+  listeEtatComm.map(async (item) => {
+    await etatscomms.create({
+      id_compte: id_compte,
+      id_dossier: id_dossier,
+      id_exercice: createExercice.id,
+      code: item.code,
+      nom: item.nom,
+      ordre: item.ordre,
+    })
+  })
+
+  listeEtatPlp.map(async (item) => {
+    await etatsplp.create({
+      id_compte: id_compte,
+      id_dossier: id_dossier,
+      id_exercice: createExercice.id,
+      code_cn: item.code_cn,
+      nature_produit: item.nature_produit,
+      unite_quantite: item.unite_quantite,
+      commercant_quantite: item.commercant_quantite,
+      commercant_valeur: item.commercant_valeur,
+      producteur_quantite: item.producteur_quantite,
+      producteur_valeur: item.producteur_valeur,
+    })
+  })
 
   listeRubrique.map(async (item) => {
     const copyrubriques = await rubriques.create({

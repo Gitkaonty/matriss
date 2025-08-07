@@ -79,6 +79,20 @@ db.controles = require('./controlesModel')(sequelize, DataTypes);
 db.controlematrices = require('./controlematricesModel')(sequelize, DataTypes);
 db.controlematricedetails = require('./controlematricedetailsModel')(sequelize, DataTypes);
 
+// 
+db.droitcommas = require('./droitCommModelA')(sequelize, DataTypes);
+db.droitcommbs = require('./droitCommModelB')(sequelize, DataTypes);
+db.etatscomms = require('./etatsCommModel')(sequelize, DataTypes);
+db.etatscomatrices = require('./etatsCommMatriceModel')(sequelize, DataTypes);
+db.etatsplp = require('./etatsPlpModel')(sequelize, DataTypes);
+db.etatsplpmatrices = require('./etatsPlpMatriceModel')(sequelize, DataTypes);
+//
+
+//
+db.caSections = require('./caSectionMolel')(sequelize, DataTypes);
+db.caAxes = require('./caAxeModel')(sequelize, DataTypes);
+//
+
 //définition des associations
 db.rubriques.belongsTo(db.rubriquesmatrices, { as: 'rubriquematrix', foreignKey: 'id_rubrique', targetKey: 'id_rubrique' });
 db.rubriques.hasMany(db.ajustements, { as: 'ajusts', foreignKey: 'id_rubrique', sourceKey: 'id_rubrique' });
@@ -115,6 +129,66 @@ db.liasseses.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique' , targe
 db.devises.belongsTo(db.userscomptes, { foreignKey: 'compte_id', targetKey: 'id' });
 db.journals.belongsTo(db.dossierplancomptable, { foreignKey: 'id_numcpt', targetKey: 'id' });
 db.journals.belongsTo(db.codejournals, { foreignKey: 'id_journal', targetKey: 'id' });
+
+// Droit de communication
+// Premier table
+db.userscomptes.hasMany(db.droitcommas, { foreignKey: 'id_compte', sourceKey: 'id' });
+db.droitcommas.belongsTo(db.userscomptes, { foreignKey: 'id_compte', targetKey: 'id' });
+
+db.dossiers.hasMany(db.droitcommas, { foreignKey: 'id_dossier', sourceKey: 'id' });
+db.droitcommas.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id' });
+
+db.exercices.hasMany(db.droitcommas, { foreignKey: 'id_exercice', sourceKey: 'id' });
+db.droitcommas.belongsTo(db.exercices, { foreignKey: 'id_exercice', targetKey: 'id' });
+
+// Deuxième table
+db.userscomptes.hasMany(db.droitcommbs, { foreignKey: 'id_compte', sourceKey: 'id' });
+db.droitcommbs.belongsTo(db.userscomptes, { foreignKey: 'id_compte', targetKey: 'id' });
+
+db.dossiers.hasMany(db.droitcommas, { foreignKey: 'id_dossier', sourceKey: 'id' });
+db.droitcommbs.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id' });
+
+db.exercices.hasMany(db.droitcommbs, { foreignKey: 'id_exercice', sourceKey: 'id' });
+db.droitcommbs.belongsTo(db.exercices, { foreignKey: 'id_exercice', targetKey: 'id' });
+
+// Etat comm
+db.userscomptes.hasMany(db.etatscomms, { foreignKey: 'id_compte', sourceKey: 'id' });
+db.etatscomms.belongsTo(db.userscomptes, { foreignKey: 'id_compte', targetKey: 'id' });
+
+db.dossiers.hasMany(db.droitcommas, { foreignKey: 'id_dossier', sourceKey: 'id' });
+db.etatscomms.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id' });
+
+db.exercices.hasMany(db.etatscomms, { foreignKey: 'id_exercice', sourceKey: 'id' });
+db.etatscomms.belongsTo(db.exercices, { foreignKey: 'id_exercice', targetKey: 'id' });
+
+// Etat plp
+db.userscomptes.hasMany(db.etatsplp, { foreignKey: 'id_compte', sourceKey: 'id' });
+db.etatsplp.belongsTo(db.userscomptes, { foreignKey: 'id_compte', targetKey: 'id' });
+
+db.dossiers.hasMany(db.droitcommas, { foreignKey: 'id_dossier', sourceKey: 'id' });
+db.etatsplp.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id' });
+
+db.exercices.hasMany(db.etatsplp, { foreignKey: 'id_exercice', sourceKey: 'id' });
+db.etatsplp.belongsTo(db.exercices, { foreignKey: 'id_exercice', targetKey: 'id' });
+
+// Comptabilité analitique
+
+// Axe
+db.userscomptes.hasMany(db.caAxes, { foreignKey: 'id_compte', sourceKey: 'id' });
+db.caAxes.belongsTo(db.userscomptes, { foreignKey: 'id_compte', targetKey: 'id' });
+
+db.dossiers.hasMany(db.caAxes, { foreignKey: 'id_dossier', sourceKey: 'id' });
+db.caAxes.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id' });
+
+// Section
+db.userscomptes.hasMany(db.caSections, { foreignKey: 'id_compte', sourceKey: 'id' });
+db.caSections.belongsTo(db.userscomptes, { foreignKey: 'id_compte', targetKey: 'id' });
+
+db.dossiers.hasMany(db.caSections, { foreignKey: 'id_dossier', sourceKey: 'id' });
+db.caSections.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id' });
+
+db.caSections.belongsTo(db.caAxes, { foreignKey: 'id_axe', targetKey: 'id' });
+db.caAxes.hasMany(db.caSections, { foreignKey: 'id_axe', sourceKey: 'id' });
 
 //exporting the module
 module.exports = db;

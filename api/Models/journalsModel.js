@@ -115,9 +115,8 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: 0
         },
         num_facture: {
-            type: DataTypes.CHAR,
+            type: DataTypes.STRING(50),
             allowNull: true,
-            defaultValue: ''
         }
     }, { timestamps: true },)
     return journals

@@ -280,6 +280,16 @@ export default function SaisieComponent() {
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
+        },
+        {
+            field: 'num_facture',
+            headerName: 'N° Facture',
+            type: 'string',
+            sortable: true,
+            flex: 1,
+            headerAlign: 'left',
+            align: 'left',
+            headerClassName: 'HeaderbackColor',
         }, {
             field: 'debit',
             headerName: 'Débit',
@@ -834,7 +844,7 @@ export default function SaisieComponent() {
                             style={{
                                 marginLeft: "0px",
                                 marginTop: "20px",
-                                overflow: "auto", // ✅ permet à Stack de scroller
+                                overflow: "auto",
                             }}
                         >
                             <DataGrid

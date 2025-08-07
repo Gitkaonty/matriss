@@ -1,7 +1,7 @@
 const express = require('express');
 const paramExerciceController = require('../../Controllers/Parametres/paramExerciceController');
 
-const router = express.Router();
+    const router = express.Router();
 
 //récupérer la liste de dossiers associé l'user et à son compte
 router.get('/listeExercice/:id', paramExerciceController.getListeExercice);
