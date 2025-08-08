@@ -28,6 +28,6 @@ router.post('/deverrouillerExercice', paramExerciceController.deverrouillerExerc
 router.post('/deleteExercice', paramExerciceController.deleteExercice);
 
 //récupérer une exercice par son identifiant
-router.get('/listeExerciceById/:id', paramExerciceController.getListeExerciceById)
+router.get('/listeExerciceById/:id', paramExerciceController.getListeExerciceById);
 
 module.exports = router;

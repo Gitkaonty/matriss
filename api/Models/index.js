@@ -93,6 +93,22 @@ db.caSections = require('./caSectionMolel')(sequelize, DataTypes);
 db.caAxes = require('./caAxeModel')(sequelize, DataTypes);
 //
 
+const Devise = require('./deviseModel')(sequelize, DataTypes);
+db.Devise = Devise;
+db.Devise.belongsTo(db.userscomptes, { foreignKey: 'id_compte' });
+db.userscomptes.hasMany(db.Devise, { foreignKey: 'id_compte' });
+db.classifications = require('./classificationModel')(sequelize, DataTypes);
+db.fonctions = require('./fonctionModel')(sequelize, DataTypes);
+db.personnels = require('./personnelModel')(sequelize, DataTypes);
+db.irsa = require('./irsaModel')(sequelize, DataTypes);
+db.paies = require('./paie')(sequelize, DataTypes);
+db.historiqueirsa = require('./historiqueIrsaModel')(sequelize, DataTypes);
+
+// Appel explicite de la méthode associate pour HistoriqueIrsa
+if (db.historiqueirsa.associate) {
+    db.historiqueirsa.associate(db);
+}
+
 //définition des associations
 db.rubriques.belongsTo(db.rubriquesmatrices, { as: 'rubriquematrix', foreignKey: 'id_rubrique', targetKey: 'id_rubrique' });
 db.rubriques.hasMany(db.ajustements, { as: 'ajusts', foreignKey: 'id_rubrique', sourceKey: 'id_rubrique' });
@@ -189,6 +205,22 @@ db.caSections.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id'
 
 db.caSections.belongsTo(db.caAxes, { foreignKey: 'id_axe', targetKey: 'id' });
 db.caAxes.hasMany(db.caSections, { foreignKey: 'id_axe', sourceKey: 'id' });
+
+db.classifications.belongsTo(db.dossiers, { foreignKey: 'id_dossier' });
+db.dossiers.hasMany(db.classifications, { foreignKey: 'id_dossier' });
+
+db.fonctions.hasMany(db.personnels, { foreignKey: 'id_fonction' });
+db.personnels.belongsTo(db.fonctions, { foreignKey: 'id_fonction', as: 'fonction' });
+
+db.classifications.hasMany(db.personnels, { foreignKey: 'id_classe' });
+db.personnels.belongsTo(db.classifications, { foreignKey: 'id_classe', as: 'classification' });
+
+db.personnels.hasMany(db.irsa, { foreignKey: 'personnelId' });
+db.irsa.belongsTo(db.personnels, { foreignKey: 'personnelId', as: 'personnel' });
+
+db.personnels.hasMany(db.paies, { foreignKey: 'personnelId' });
+db.paies.belongsTo(db.personnels, { foreignKey: 'personnelId', as: 'personnel' });
+
 
 //exporting the module
 module.exports = db;

@@ -79,6 +79,12 @@ const socialesList = [
         path: "#",
         urldynamic: true
     },
+    {
+        text: 'Classification',
+        name: "classification",
+        path: "/tab/paramClassification",
+        urldynamic: true
+    },
 ];
 
 export default function Parametrages({onWindowState, pathToNavigate, humburgerMenuState}){

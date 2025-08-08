@@ -46,8 +46,8 @@ const declFiscalesList = [
     {
         text: 'IRSA - Impôts sur les revenus salariaux et assimilés',
         name: "irsa",
-        path: "#",
-        urldynamic: false
+        path: "/tab/declarationIRSA",
+        urldynamic: true
     },
     {
         text: 'IRCM - impôt sur le Revenu des Capitaux Mobiliers',
@@ -79,6 +79,16 @@ const declSocialesList = [
         text: 'Prévoyances sociales',
         name: "prevoyancesociales",
         path: "#"
+    },
+    {
+        text: 'Indemnités',
+        name: "indemnites",
+        path: "/tab/indemnites"
+    },
+    {
+        text: 'Avantages en nature',
+        name: "avantagesnature",
+        path: "/tab/avantagesnature"
     },
 ];
 

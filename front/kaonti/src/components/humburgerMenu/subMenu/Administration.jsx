@@ -19,6 +19,18 @@ const traitementList = [
         path: "/tab/consultation",
         urldynamic: true
     },
+    {
+        text: 'Personnel',
+        name: "personnel",
+        path: "/tab/personnel",
+        urldynamic: true
+    },
+    {
+        text: 'Fonctions',
+        name: "fonctions",
+        path: "/tab/fonctions",
+        urldynamic: true
+    },
 ];
 
 const importList = [

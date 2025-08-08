@@ -79,6 +79,7 @@ app.use('/home', require('./Routes/Home/homeRoutes'));
 app.use('/administration/ImportJournal', require('./Routes/Administration/importJournalRoute'));
 app.use('/administration/ImportBalance', require('./Routes/Administration/importBalanceRoute'));
 app.use('/administration/ImportModelePc', require('./Routes/Administration/importModelePCRoute'));
+app.use('/sociales/personnel', require('./Routes/personnels/personnelRoute'));
 
 //export
 app.use('/administration/exportBalance', require('./Routes/Administration/exportBalanceRoute'));
@@ -114,6 +115,12 @@ app.use('/paramMappingCompte', require('./Routes/Parametres/paramMappingCompte')
 //routes pour paramètres compabilité analytique
 app.use('/paramCa', require('./Routes/Parametres/paramCARoute'));
 
+app.use('/devises/devise', require('./Routes/Devises/deviseRoutes'));
+
+app.use('/sociales/classification', require('./Routes/Sociales/classificationRoute'));
+
+app.use('/sociales/fonctions', require('./Routes/personnels/fonctionsRoute'));
+
 //----------------------------------------------------------------------------------------------------------------
 // MENU DECLARATION
 //----------------------------------------------------------------------------------------------------------------
@@ -123,6 +130,12 @@ app.use('/declaration/comm', require('./Routes/Declaration/Dcom/DeclarationCommR
 
 //Déclaration Ebilan-------------------------------------------
 app.use('/declaration/ebilan', require('./Routes/Declaration/declEbilanRoute'));
+
+app.use('/irsa/irsa', require('./routes/irsa/irsaRoutes'));
+
+app.use('/paie/paie', require('./Routes/paie/paieRoutes'));
+
+app.use('/historique/irsa', require('./routes/historiqueIrsaRoutes'));
 
 /*app.all('*', (req,res) => {
     res.status(404);

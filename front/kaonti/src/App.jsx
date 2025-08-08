@@ -31,6 +31,11 @@ import ParamCRM from './components/menuComponent/Parametrages/crm/ParamCRM';
 import ParamMappingComponent from './components/menuComponent/Parametrages/mappingcompte/ParamMapping';
 import AnalitiqueComponent from './components/menuComponent/Parametrages/analytiques/AnalitiqueComponent';
 import DeclarationComm from './components/menuComponent/Declaration/Dcom/DeclarationComm';
+import ClassificationSalariesComponent from './components/ClassificationSalariesComponent';
+import PersonnelComponent from './components/PersonnelComponent';
+import FonctionsComponent from './components/FonctionsComponent';
+import DeclarationIRSAComponent from './components/menuComponent/Declaration/Ebilan/DeclarationIRSAComponent';
+import HistoriqueIrsaTable from './components/menuComponent/Declaration/Ebilan/HistoriqueIrsaTable';
 
 const ROLES = {
   'SuperAdmin': 3355,
@@ -69,11 +74,16 @@ export default function App() {
               <Route path='/tab/paramPlanComptable/:id' element={<ParamPlanComptableComponent />} />
               <Route path='/tab/paramPlanComptableModele' element={<ParamPCModele />} />
               <Route path='/tab/paramTVA/:id' element={<ParamTVAComponent />} />
-              <Route path='/tab/paramDevise' element={<ParamDeviseComponent />} />
+              <Route path='/tab/paramDevise/:id' element={<ParamDeviseComponent />} />
               <Route path='/tab/paramExercice/:id' element={<ParamExerciceComponent />} />
               <Route path='/tab/paramAnalytique/:id' element={<AnalitiqueComponent />} />
               <Route path='/tab/paramCrm/:id' element={<ParamCRM />} />
               <Route path='/tab/paramMapping/:id' element={<ParamMappingComponent />} />
+              <Route path='/tab/paramClassification/:id' element={<ClassificationSalariesComponent />} />
+              <Route path='/tab/personnel/:id' element={<PersonnelComponent />} />
+              <Route path='/tab/fonctions/:id' element={<FonctionsComponent />} />
+              <Route path='/tab/declarationIRSA/:id' element={<DeclarationIRSAComponent />} />
+              <Route path='/tab/historiqueIRSA' element={<HistoriqueIrsaTable />} />
             </Route>
           </Route>
         </Route>
