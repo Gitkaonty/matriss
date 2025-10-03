@@ -1,5 +1,5 @@
 import React from 'react';
-import { Typography, Stack, Paper, Button } from '@mui/material';
+import { Typography, Stack, Paper, Button, Box } from '@mui/material';
 import RadioGroup from '@mui/material/RadioGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Radio from '@mui/material/Radio';
@@ -46,16 +46,16 @@ const headCells = [
         label: 'Validé',
         width: '60px'
     }
-  ];
-  
-  function createData(id, anomalie, liasse, commentaire, valide) {
-    return {id, anomalie, liasse, commentaire, valide};
-  }
-  
-  const rows = [
-    createData(1, 'Le compte 58000 doit être soldé.', 'Bilan',"normal","OUI"),
-    createData(2, 'Le compte 58000 doit être soldé.', 'Bilan',"normal","OUI")
-  ];
+];
+
+function createData(id, anomalie, liasse, commentaire, valide) {
+    return { id, anomalie, liasse, commentaire, valide };
+}
+
+const rows = [
+    createData(1, 'Le compte 58000 doit être soldé.', 'Bilan', "normal", "OUI"),
+    createData(2, 'Le compte 58000 doit être soldé.', 'Bilan', "normal", "OUI")
+];
 
 export default function RevisionAnomalieEbilanComponent() {
     //Valeur du listbox choix exercice ou situation-----------------------------------------------------
@@ -65,12 +65,12 @@ export default function RevisionAnomalieEbilanComponent() {
         setValSelect(event.target.value);
     };
 
-     //Valeur du listbox choix Type exercice-----------------------------------------------------
-     const [valSelectType, setValSelectType] = useState('');
+    //Valeur du listbox choix Type exercice-----------------------------------------------------
+    const [valSelectType, setValSelectType] = useState('');
 
-     const handleChangeType = (event) => {
-         setValSelectType(event.target.value);
-     };
+    const handleChangeType = (event) => {
+        setValSelectType(event.target.value);
+    };
 
     //Valeur du listbox choix compte à dispatcher----------------------------------------------------
     const [valSelectCptDispatch, setValSelectCptDispatch] = useState('');
@@ -79,49 +79,49 @@ export default function RevisionAnomalieEbilanComponent() {
         setValSelectCptDispatch(event.target.value);
     };
 
-  return (
-    <Paper sx={{elevation: "3", margin:"5px", padding:"10px", width:"98%", height:"110%"}}>
-         <Stack width={"100%"} height={"100%"} spacing={6} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
-         <Typography variant='h4' sx={{color: "black"}} align='left'>Révision anomalies Ebilan</Typography>
+    return (
+        <Box>
+            <Stack width={"100%"} height={"100%"} spacing={6} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
+                <Typography variant='h4' sx={{ color: "black" }} align='left'>Révision anomalies Ebilan</Typography>
 
-            <Stack width={"100%"} height={"100px"} spacing={2} alignItems={"center"} alignContent={"center"} direction={"row"} style={{marginLeft:"100px", marginTop:"-20px"}}>
-                <RadioGroup
-                    row
-                    aria-labelledby="choixExercice"
-                    name="choixExercice"
-                    style={{marginRight:"50px", marginTop:"20px"}}
+                <Stack width={"100%"} height={"100px"} spacing={2} alignItems={"center"} alignContent={"center"} direction={"row"} style={{ marginLeft: "100px", marginTop: "-20px" }}>
+                    <RadioGroup
+                        row
+                        aria-labelledby="choixExercice"
+                        name="choixExercice"
+                        style={{ marginRight: "50px", marginTop: "20px" }}
                     >
-                    <FormControlLabel value="exercice" control={<Radio />} label="Exercice"/>
-                    <FormControlLabel value="situation" control={<Radio />} label="Situation" />
-                </RadioGroup>
+                        <FormControlLabel value="exercice" control={<Radio />} label="Exercice" />
+                        <FormControlLabel value="situation" control={<Radio />} label="Situation" />
+                    </RadioGroup>
 
-                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                    <InputLabel id="demo-simple-select-standard-label">Du</InputLabel>
-                    <Select
-                    labelId="demo-simple-select-standard-label"
-                    id="demo-simple-select-standard"
-                    value={valSelect}
-                    label={"valSelect"}
-                    onChange={handleChange}
-                    sx={{width:"300px", display:"flex", justifyContent:"left", alignItems:"flex-start", alignContent:"flex-start", textAlign:"left"}}
-                    >
-                    <MenuItem value="">
-                        <em>None</em>
-                    </MenuItem>
-                    <MenuItem value={1}>N   : 01/01/2023 - 31/12/2023</MenuItem>
-                    <MenuItem value={2}>N-1 : 01/01/2022 - 31/12/2022</MenuItem>
-                    <MenuItem value={3}>N-2 : 01/01/2021 - 31/12/2021</MenuItem>
-                    </Select>
-                </FormControl>
+                    <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
+                        <InputLabel id="demo-simple-select-standard-label">Du</InputLabel>
+                        <Select
+                            labelId="demo-simple-select-standard-label"
+                            id="demo-simple-select-standard"
+                            value={valSelect}
+                            label={"valSelect"}
+                            onChange={handleChange}
+                            sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                        >
+                            <MenuItem value="">
+                                <em>None</em>
+                            </MenuItem>
+                            <MenuItem value={1}>N   : 01/01/2023 - 31/12/2023</MenuItem>
+                            <MenuItem value={2}>N-1 : 01/01/2022 - 31/12/2022</MenuItem>
+                            <MenuItem value={3}>N-2 : 01/01/2021 - 31/12/2021</MenuItem>
+                        </Select>
+                    </FormControl>
+                </Stack>
+
+                <Stack width={"100%"} height={"100px"} spacing={10} alignItems={"center"} alignContent={"flex-end"} justifyContent={"right"} direction={"row"} style={{ marginTop: "-20px" }}>
+                    <Button variant="contained" style={{ borderRadius: "0", height: '43px', marginLeft: "5px", backgroundColor: "rgba(9, 77, 31, 0.8)" }}>Valider</Button>
+                    <Button variant="contained" style={{ borderRadius: "0", height: '43px', marginLeft: "5px", backgroundColor: "rgba(240, 43, 33, 1)" }}>Dévalider</Button>
+                </Stack>
+
+                <TableRevisionAnomalieEbilanModel headCells={headCells} rows={rows} />
             </Stack>
-
-            <Stack width={"100%"} height={"100px"} spacing={10} alignItems={"center"} alignContent={"flex-end"} justifyContent={"right"} direction={"row"} style={{marginTop:"-20px"}}>
-                <Button variant="contained" style={{borderRadius:"0", height:'43px', marginLeft:"5px", backgroundColor:"rgba(9, 77, 31, 0.8)"}}>Valider</Button>
-                <Button variant="contained" style={{borderRadius:"0", height:'43px', marginLeft:"5px",backgroundColor:"rgba(240, 43, 33, 1)"}}>Dévalider</Button>
-            </Stack>
-
-            <TableRevisionAnomalieEbilanModel headCells={headCells} rows={rows}/>
-         </Stack>
-    </Paper>
-  )
+        </Box>
+    )
 }

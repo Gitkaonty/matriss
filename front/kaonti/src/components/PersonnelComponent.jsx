@@ -405,7 +405,7 @@ export default function PersonnelComponent() {
     );
 
     return (
-        <Paper sx={{ elevation: "3", margin: "5px", padding: "10px", width: "98%", height: "110%" }}>
+        <Box>
             {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
             {openDialogDeleteRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer le personnel sélectionné ?"} confirmationState={deleteRow} /> : null}
 
@@ -556,6 +556,6 @@ export default function PersonnelComponent() {
                     </Stack>
                 </TabPanel>
             </TabContext>
-        </Paper>
+        </Box>
     )
 }

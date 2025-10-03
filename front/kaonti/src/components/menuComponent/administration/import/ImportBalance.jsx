@@ -685,7 +685,7 @@ export default function ImportBalance() {
     }
 
     return (
-        <Paper elevation={3} sx={{ margin: "5px", padding: "0px", width: "99%", height: "98%" }}>
+        <Box>
             {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
             {openDetailsAnomalie ? <PopupViewDetailsImportBalance msg={msgAnomalie} confirmationState={handleCloseAnomalieDetails} /> : null}
             {openDialogConfirmImport ? <PopupActionConfirm msg={"Voulez-vous vraiment importer la balance en cours? Attention, les anciennes données de la balance seront écrasées par les nouvelles."} confirmationState={handleImportBalance} /> : null}
@@ -884,6 +884,6 @@ export default function ImportBalance() {
                 </TabPanel>
             </TabContext>
 
-        </Paper>
+        </Box>
     )
 }

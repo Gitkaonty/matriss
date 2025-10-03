@@ -102,7 +102,7 @@ module.exports = (sequelize, DataTypes) => {
         id_devise: {
             type: DataTypes.BIGINT,
             allowNull: true,
-            defaultValue : ''
+            defaultValue: ''
         },
         taux: {
             type: DataTypes.DOUBLE,
@@ -117,6 +117,21 @@ module.exports = (sequelize, DataTypes) => {
         num_facture: {
             type: DataTypes.STRING(50),
             allowNull: true,
+        },
+        declisimois: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            defaultValue: 0
+        },
+        declisiannee: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            defaultValue: 0
+        },
+        declisi: {
+            type: DataTypes.BOOLEAN,
+            allowNull: true,
+            defaultValue: false
         }
     }, { timestamps: true },)
     return journals

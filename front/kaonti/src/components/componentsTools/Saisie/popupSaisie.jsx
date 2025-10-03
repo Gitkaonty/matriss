@@ -20,7 +20,7 @@ import OptionJoy from '@mui/joy/Option';
 import SelectJoy from '@mui/joy/Select';
 import InputJoy from '@mui/joy/Input';
 import { DataGridStyle } from '../DatagridToolsStyle';
-import { DataGrid, frFR } from '@mui/x-data-grid';
+import { DataGrid, frFR, useGridApiRef } from '@mui/x-data-grid';
 import QuickFilter from '../DatagridToolsStyle';
 
 import ClearIcon from '@mui/icons-material/Clear';
@@ -89,6 +89,8 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
 
     const [selectedCell, setSelectedCell] = useState({ id: null, field: null });
 
+    const apiRef = useGridApiRef();
+
     //récupération des informations de connexion
     const { auth } = useAuth();
     const decoded = auth?.accessToken ? jwtDecode(auth.accessToken) : undefined;
@@ -107,6 +109,7 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
 
     //Supprimer la ligne pour ajout
     const handleDeleteRowAdd = (value) => {
+        exitEditingToDatagrid();
         if (value) {
             setTableRows((prevRows) => prevRows.filter((row) => row.id !== selectedIdToDelete));
             setOpenDialogDeleteSaisie(false);
@@ -116,6 +119,7 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
     };
 
     const handleDeleteRowEdit = (value) => {
+        exitEditingToDatagrid();
         if (value) {
             setTableRows((prevRows) => prevRows.filter((row) => row.id !== selectedIdToDelete));
             setOpenDialogDeleteSaisie(false);
@@ -359,6 +363,7 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
                                     });
                                 }
                             }}
+                            noOptionsText="Aucun compte trouvé"
                             renderInput={(paramsInput) => (
                                 <TextField
                                     {...paramsInput}
@@ -506,10 +511,10 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
                     const classes = [];
 
                     // Appliquer l'erreur uniquement sur le champ "piece"
-                    const rowInvalid = invalidRows.find(row => row.id === params.id);
-                    if (params.field === 'piece' && rowInvalid?.fields.includes('piece')) {
-                        classes.push('cell-error');
-                    }
+                    // const rowInvalid = invalidRows.find(row => row.id === params.id);
+                    // if (params.field === 'piece' && rowInvalid?.fields.includes('piece')) {
+                    //     classes.push('cell-error');
+                    // }
 
                     // Appliquer la sélection uniquement sur la cellule "piece"
                     if (selectedCell.id === params.id && selectedCell.field === 'piece') {
@@ -723,10 +728,10 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
                     const classes = [];
 
                     // Appliquer l'erreur uniquement sur le champ "num_facture"
-                    const rowInvalid = invalidRows.find(row => row.id === params.id);
-                    if (params.field === 'num_facture' && rowInvalid?.fields.includes('num_facture')) {
-                        classes.push('cell-error');
-                    }
+                    // const rowInvalid = invalidRows.find(row => row.id === params.id);
+                    // if (params.field === 'num_facture' && rowInvalid?.fields.includes('num_facture')) {
+                    //     classes.push('cell-error');
+                    // }
 
                     // Appliquer la sélection uniquement sur la cellule "num_facture"
                     if (selectedCell.id === params.id && selectedCell.field === 'num_facture') {
@@ -1017,7 +1022,7 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
                                 <span>
                                     <Button
                                         onClick={() => handleOpenDialogConfirmDeleteSaisie(params.id)}
-                                        disabled={tableRows.length === 1}
+                                        disabled={tableRows.length === 1 || isDatagridEditing()}
                                         color="error"
                                         sx={{
                                             outline: 'none',
@@ -1031,7 +1036,7 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
                                                 boxShadow: 'none',
                                             },
                                             ml: 0,
-                                            pointerEvents: tableRows.length === 1 ? 'none' : 'auto', // empêche le clic sur le span
+                                            pointerEvents: tableRows.length === 1 ? 'none' : 'auto',
                                         }}
                                     >
                                         <GoX style={{ width: '30px', height: '30px' }} />
@@ -1050,6 +1055,7 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
                                                 boxShadow: 'none',
                                             }
                                         }}
+                                        disabled={isDatagridEditing()}
                                     >
                                         <IoAddSharp style={{ width: '30px', height: '30px' }} />
                                     </Button>
@@ -1093,8 +1099,24 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
         setSelectedRow(row);
     };
 
+    const exitEditingToDatagrid = () => {
+        const editingRows = Object.keys(apiRef.current.state.editRows || {});
+
+        editingRows.forEach((id) => {
+            const rowInEdit = apiRef.current.getRow(id);
+
+            // 🔹 Commit la ligne dans le state DataGrid
+            apiRef.current.updateRows([rowInEdit]);
+
+            // 🔹 Quitte le row edit mode
+            apiRef.current.stopRowEditMode({ id, ignoreModifications: false });
+        });
+    };
+
     //Ajouter une ligne
-    const ajouterNouvelleLigne = () => {
+    const ajouterNouvelleLigne = async () => {
+        // exitEditingToDatagrid();
+        // await new Promise(resolve => setTimeout(resolve, 1000));
         // const newId = tableRows.length > 0 ? Math.max(...tableRows.map(r => r.id)) + 1 * -1 : 1 * -1;
         if (!formSaisie.values.valSelectCodeJnl && !formSaisie.values.valSelectMois && !formSaisie.values.valSelectAnnee) {
             toast.error("Veuillez remplir les formulaires s'il vous plaît !");
@@ -1131,9 +1153,9 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
                 }
 
                 // Si `pièce` est défini et non vide
-                if (row.piece !== null && row.piece !== '' && dernierPiece === '') {
-                    dernierPiece = row.piece;
-                }
+                // if (row.piece !== null && row.piece !== '' && dernierPiece === '') {
+                //     dernierPiece = row.piece;
+                // }
 
                 // Si `compte` est défini et non vide
                 if (row.compte !== null && row.compte !== '' && dernierCompte === '') {
@@ -1141,9 +1163,9 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
                 }
 
                 // Si `num_facture` est défini et non vide
-                if (row.num_facture !== null && row.num_facture !== '' && dernierNumfacture === '') {
-                    dernierNumfacture = row.num_facture;
-                }
+                // if (row.num_facture !== null && row.num_facture !== '' && dernierNumfacture === '') {
+                //     dernierNumfacture = row.num_facture;
+                // }
 
                 // Si les deux sont trouvés, on arrête
                 if (dernierJour !== '' && dernierLibelle !== '' && dernierPiece !== '' && dernierCompte !== '') break;
@@ -1165,7 +1187,7 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
     };
 
     //Afficher les contenus de tableRows
-    const addTableRows = () => {
+    const addTableRows = async () => {
         const rowsInvalides = [];
 
         tableRows.forEach((row) => {
@@ -1173,16 +1195,15 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
 
             if (!row.jour) champsVides.push('jour');
             if (!row.compte) champsVides.push('compte');
-            if (!row.piece) champsVides.push('piece');
+            // if (!row.piece) champsVides.push('piece');
             if (!row.libelle) champsVides.push('libelle');
-            if (!row.num_facture) champsVides.push('num_facture');
+            // if (!row.num_facture) champsVides.push('num_facture');
             if (formSaisie.values.choixDevise !== 'MGA') {
                 if (!row.montant_devise) champsVides.push('montant_devise');
             }
 
-            // Pour debit et credit : les deux doivent être vides pour signaler erreur
-            const debitVide = !row.debit || Number(row.debit) === 0;
-            const creditVide = !row.credit || Number(row.credit) === 0;
+            const debitVide = !row.debit || isNaN(Number(row.debit)) || Number(row.debit) === 0;
+            const creditVide = !row.credit || isNaN(Number(row.credit)) || Number(row.credit) === 0;
 
             if (debitVide && creditVide) {
                 champsVides.push('debit', 'credit');
@@ -1201,7 +1222,6 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
 
         setInvalidRows(rowsInvalides);
 
-        //Vérifie s’il y a des erreurs
         if (rowsInvalides.length === 0) {
             if (total !== 0) {
                 toast.error('Total débit doit être égal à total crédit');
@@ -1212,11 +1232,9 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
 
                     const valeursSansFichier = {
                         ...formSaisie.values,
-                        file: undefined, // Exclure le fichier
+                        file: undefined,
                         tableRows: tableRows
                     };
-
-                    console.log('tableRows : ', tableRows);
 
                     formData.append("data", JSON.stringify(valeursSansFichier));
 
@@ -1228,25 +1246,26 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
                         headers: {
                             'Content-Type': 'multipart/form-data'
                         }
-                    }).then((response) => {
-                        toast.success("Informations sauvegardées");
-                        setRefresh();
-                        setInvalidRows([]);
-                    }).catch((error) => {
-                        console.error("Erreur API :", error);
-                    });
+                    })
+                        .then((response) => {
+                            toast.success(response?.data?.message);
+                            setRefresh();
+                            setInvalidRows([]);
+                        })
+                        .catch((error) => {
+                            toast.error(response?.data?.message);
+                        });
                 } catch (error) {
-                    console.error("Erreur inattendue :", error);
-                    toast.error("Erreur inattendue lors de l'envoi");
+                    toast.error(error);
                 }
             }
         } else {
             toast.error('Les champs en surbrillance sont obligatoires');
-            console.log("invalidRows :", rowsInvalides); //Logger rowsInvalides et pas invalidRows (état async)
         }
     };
 
     const editTableRows = () => {
+        exitEditingToDatagrid();
         const rowsInvalides = [];
 
         tableRows.forEach((row) => {
@@ -1254,16 +1273,15 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
 
             if (!row.jour) champsVides.push('jour');
             if (!row.compte) champsVides.push('compte');
-            if (!row.piece) champsVides.push('piece');
+            // if (!row.piece) champsVides.push('piece');
             if (!row.libelle) champsVides.push('libelle');
-            if (!row.num_facture) champsVides.push('num_facture');
+            // if (!row.num_facture) champsVides.push('num_facture');
             if (formSaisie.values.choixDevise !== 'MGA') {
                 if (!row.montant_devise) champsVides.push('montant_devise');
             }
 
-            // Pour debit et credit : les deux doivent être vides pour signaler erreur
-            const debitVide = !row.debit || Number(row.debit) === 0;
-            const creditVide = !row.credit || Number(row.credit) === 0;
+            const debitVide = !row.debit || isNaN(Number(row.debit)) || Number(row.debit) === 0;
+            const creditVide = !row.credit || isNaN(Number(row.credit)) || Number(row.credit) === 0;
 
             if (debitVide && creditVide) {
                 champsVides.push('debit', 'credit');
@@ -1282,7 +1300,6 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
 
         setInvalidRows(rowsInvalides);
 
-        //Vérifie s’il y a des erreurs
         if (rowsInvalides.length === 0) {
             if (total !== 0) {
                 toast.error('Total débit doit être égal à total crédit');
@@ -1294,7 +1311,7 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
 
                     const valeursSansFichier = {
                         ...formSaisie.values,
-                        file: undefined, // Exclure le fichier
+                        file: undefined,
                         tableRows: tableRows,
                         conserverFichier,
                         deletedIds: deletedRowIds
@@ -1310,34 +1327,33 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
                         headers: {
                             'Content-Type': 'multipart/form-data'
                         }
-                    }).then((response) => {
-                        if (response.data.state) {
-                            toast.success("Informations modifiés");
-                            setRowSelectionModel();
-                            setRefresh();
-                            setInvalidRows([]);
-                        } else {
-                            toast.error("Une erreur est survenus lors de la modification")
-                        }
-                    }).catch((error) => {
-                        console.error("Erreur API :", error);
-                    });
+                    })
+                        .then((response) => {
+                            if (response.data.state) {
+                                toast.success("Informations modifiés");
+                                setRowSelectionModel();
+                                setRefresh();
+                                setInvalidRows([]);
+                            } else {
+                                toast.error(response?.data?.message);
+                            }
+                        })
+                        .catch((error) => {
+                            toast.error(error)
+                        });
                 } catch (error) {
-                    console.error("Erreur inattendue :", error);
-                    toast.error("Erreur inattendue lors de l'envoi");
+                    toast.error(error);
                 }
             }
         } else {
             toast.error('Les champs en surbrillance sont obligatoires');
-            console.log("invalidRows :", rowsInvalides); //Logger rowsInvalides et pas invalidRows (état async)
         }
     };
 
     const viewTableRows = type === 'ajout' ? addTableRows : editTableRows;
 
-    // Calcul débit et crédit
     const totalDebitNotParsed = tableRows.reduce((total, row) => {
-        const debit = parseFloat(row.debit) || 0; // conversion sécurisée
+        const debit = parseFloat(row.debit) || 0;
         return total + debit;
     }, 0);
 
@@ -1533,13 +1549,23 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
         }
     };
 
+    const clearData = () => {
+        formSaisie.resetForm();
+        setTaux(0);
+        setTableRows(rows);
+        setFile(null);
+    }
+
+    const isDatagridEditing = () => {
+        return Object.keys(apiRef.current?.state?.editRows || {}).length > 0;
+    };
+
     useEffect(() => {
         const handleKeyDown = (event) => {
             if (event.ctrlKey && (event.key === ' ' || event.key === 'Spacebar')) {
                 if (selectedCell) {
                     const { id, field } = selectedCell;
 
-                    // La fonction qui vas équilibrer les debits et les credits
                     if (field === 'debit') {
                         EquilibrateDebitCredit(id, 'debit');
                     } else if (field === 'credit') {
@@ -1570,10 +1596,8 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
                 el = el.parentElement;
             }
 
-            // Si le clic est **pas** sur une cellule, on annule la sélection
             if (!clickedOnCell) {
                 setSelectedCell({ id: null, field: null });
-                // setInvalidRows([]);
             }
         };
 
@@ -1837,8 +1861,8 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
                                         color: "white",
                                         marginTop: '0px'
                                     }}
-                                    onClick={viewTableRows}
-                                    disabled={!formSaisie.values.valSelectCodeJnl || !formSaisie.values.valSelectMois || !formSaisie.values.valSelectAnnee}
+                                    onClick={() => { viewTableRows(); clearData() }}
+                                    disabled={!formSaisie.values.valSelectCodeJnl || !formSaisie.values.valSelectMois || !formSaisie.values.valSelectAnnee || isDatagridEditing()}
                                 >
                                     {type === 'ajout' ? 'Enregistrer' : 'Modifier'}
                                 </Button>
@@ -1852,6 +1876,7 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
                                 }}
                             >
                                 <DataGrid
+                                    apiRef={apiRef}
                                     disableMultipleSelection={DataGridStyle.disableMultipleSelection}
                                     disableColumnSelector={DataGridStyle.disableColumnSelector}
                                     disableDensitySelector={DataGridStyle.disableDensitySelector}

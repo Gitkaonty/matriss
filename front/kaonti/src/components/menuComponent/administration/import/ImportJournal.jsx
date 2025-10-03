@@ -1,4 +1,4 @@
-import {React, useState, useEffect, useRef } from 'react';
+import { React, useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Typography, Stack, Paper, Box, Tab, Tooltip, IconButton, FormHelperText, Button, Badge, Divider } from '@mui/material';
 import RadioGroup from '@mui/material/RadioGroup';
@@ -53,8 +53,8 @@ export default function ImportJournal() {
     const [selectedExerciceId, setSelectedExerciceId] = useState(0);
     const [selectedPeriodeId, setSelectedPeriodeId] = useState(0);
     const [selectedPeriodeChoiceId, setSelectedPeriodeChoiceId] = useState(0);
-    const [listeExercice,setListeExercice] = useState([]);
-    const [listeSituation,setListeSituation] = useState([]);
+    const [listeExercice, setListeExercice] = useState([]);
+    const [listeSituation, setListeSituation] = useState([]);
 
     const [journalData, setJournalData] = useState([]);
     const [planComptable, setPlanComptable] = useState([]);
@@ -72,17 +72,17 @@ export default function ImportJournal() {
     const [traitementJournalWaiting, setTraitementJournalWaiting] = useState(false);
     const [traitementJournalMsg, setTraitementJournalMsg] = useState('');
 
-    const [totalDebit, setTotalDebit] =useState("0,00");
-    const [totalCredit, setTotalCredit] =useState("0,00");
+    const [totalDebit, setTotalDebit] = useState("0,00");
+    const [totalCredit, setTotalCredit] = useState("0,00");
 
     //récupération infos de connexion
     const { auth } = useAuth();
-    const decoded = auth?.accessToken ? jwtDecode(auth.accessToken): undefined;
+    const decoded = auth?.accessToken ? jwtDecode(auth.accessToken) : undefined;
     const compteId = decoded.UserInfo.compteId || null;
     const userId = decoded.UserInfo.userId || null;
     const navigate = useNavigate();
 
-     //récupérer les informations du dossier sélectionné
+    //récupérer les informations du dossier sélectionné
     useEffect(() => {
         //tester si la page est renvoyer par useNavigate
         const navigationEntries = performance.getEntriesByType('navigation');
@@ -94,8 +94,8 @@ export default function ImportJournal() {
                 const idDossier = sessionStorage.getItem("fileId");
                 setFileId(idDossier);
                 idFile = idDossier;
-            }else{
-                sessionStorage.setItem('fileId',id);
+            } else {
+                sessionStorage.setItem('fileId', id);
                 setFileId(id);
                 idFile = id;
             }
@@ -106,13 +106,13 @@ export default function ImportJournal() {
     }, []);
 
     const GetInfosIdDossier = (id) => {
-        axios.get(`/home/FileInfos/${id}`).then((response) =>{
+        axios.get(`/home/FileInfos/${id}`).then((response) => {
             const resData = response.data;
 
-            if(resData.state){
+            if (resData.state) {
                 setFileInfos(resData.fileInfos[0]);
                 setNoFile(false);
-            }else{
+            } else {
                 setFileInfos([]);
                 setNoFile(true);
             }
@@ -449,7 +449,7 @@ export default function ImportJournal() {
     //     ModeRglt : '',
     //     DateRglt : '',
     //   };
-    
+
     const footerRef = useRef(null);  // Référence pour le footer
     const dataGridRef = useRef(null); // Référence pour le DataGrid
 
@@ -482,20 +482,20 @@ export default function ImportJournal() {
     useEffect(() => {
         const dataGridElement = dataGridRef.current?.querySelector('.MuiDataGrid-viewport');
         if (dataGridElement) {
-          dataGridElement.addEventListener('scroll', handleDataGridScroll);
+            dataGridElement.addEventListener('scroll', handleDataGridScroll);
         }
-    
+
         // Nettoyage du listener lorsque le composant est démonté
         return () => {
-          const dataGridElement = dataGridRef.current?.querySelector('.MuiDataGrid-viewport');
-          if (dataGridElement) {
-            dataGridElement.removeEventListener('scroll', handleDataGridScroll);
-          }
+            const dataGridElement = dataGridRef.current?.querySelector('.MuiDataGrid-viewport');
+            if (dataGridElement) {
+                dataGridElement.removeEventListener('scroll', handleDataGridScroll);
+            }
         };
-      }, []);
+    }, []);
 
     // const CustomFooter = () => {
-        
+
     //     const styleTextLeft = (width) => ({
     //         marginLeft:5, 
     //         color:'white', 
@@ -505,7 +505,7 @@ export default function ImportJournal() {
     //         textAlign:'left',
     //         flexShrink: 0,
     //     });
-    
+
     //     const style = (width) => ({
     //         marginLeft:5, 
     //         color:'white', 
@@ -552,34 +552,34 @@ export default function ImportJournal() {
     //                 </div>
     //                 <GridFooterContainer >
     //                     <GridFooter sx={{ border: 'none' }}>
-                        
+
     //                     </GridFooter>
     //                 </GridFooterContainer>
-                
+
     //         </div>
-            
-           
-                
-           
+
+
+
+
     //     );
     // };                    
 
     //Récupérer la liste des exercices
     const GetListeExercice = (id) => {
-        axios.get(`/paramExercice/listeExercice/${id}`).then((response) =>{
+        axios.get(`/paramExercice/listeExercice/${id}`).then((response) => {
             const resData = response.data;
-            if(resData.state){
-            
+            if (resData.state) {
+
                 setListeExercice(resData.list);
-                
+
                 const exerciceNId = resData.list?.filter((item) => item.libelle_rang === "N");
                 setListeSituation(exerciceNId);
 
                 setSelectedExerciceId(exerciceNId[0].id);
                 setSelectedPeriodeChoiceId(0);
                 setSelectedPeriodeId(exerciceNId[0].id);
-                
-            }else{
+
+            } else {
                 setListeExercice([]);
                 toast.error("une erreur est survenue lors de la récupération de la liste des exercices");
             }
@@ -588,15 +588,15 @@ export default function ImportJournal() {
 
     //Récupérer la liste des exercices
     const GetListeSituation = (id) => {
-        axios.get(`/paramExercice/listeSituation/${id}`).then((response) =>{
+        axios.get(`/paramExercice/listeSituation/${id}`).then((response) => {
             const resData = response.data;
-            if(resData.state){
+            if (resData.state) {
                 const list = resData.list;
                 setListeSituation(resData.list);
-                if(list.length>0){
+                if (list.length > 0) {
                     setSelectedPeriodeId(list[0].id);
-                }  
-            }else{
+                }
+            } else {
                 setListeSituation([]);
                 toast.error("une erreur est survenue lors de la récupération de la liste des exercices");
             }
@@ -615,33 +615,33 @@ export default function ImportJournal() {
     const handleChangePeriode = (choix) => {
         setSelectedPeriodeChoiceId(choix);
 
-        if(choix === 0){
+        if (choix === 0) {
             setListeSituation(listeExercice?.filter((item) => item.id === selectedExerciceId));
             setSelectedPeriodeId(selectedExerciceId);
-        }else if(choix === 1){
+        } else if (choix === 1) {
             GetListeSituation(selectedExerciceId);
         }
     }
 
     //Récupération du plan comptable
     const recupPlanComptable = () => {
-        axios.post(`/paramPlanComptable/pc`, {fileId}).then((response) =>{
+        axios.post(`/paramPlanComptable/pc`, { fileId }).then((response) => {
             const resData = response.data;
-            if(resData.state){
+            if (resData.state) {
                 setPlanComptable(resData.liste);
-            }else{
+            } else {
                 toast.error(resData.msg);
             }
         });
     }
 
-     //récupération données liste code journaux
-     const GetListeCodeJournaux = (id) => {
-        axios.get(`/paramCodeJournaux/listeCodeJournaux/${id}`).then((response) =>{
+    //récupération données liste code journaux
+    const GetListeCodeJournaux = (id) => {
+        axios.get(`/paramCodeJournaux/listeCodeJournaux/${id}`).then((response) => {
             const resData = response.data;
-            if(resData.state){
+            if (resData.state) {
                 setCodeJournal(resData.list);
-            }else{
+            } else {
                 setCodeJournal([]);
                 toast.error(resData.msg);
             }
@@ -651,35 +651,35 @@ export default function ImportJournal() {
     useEffect(() => {
         GetListeCodeJournaux(fileId);
         recupPlanComptable();
-    },[fileId]);
+    }, [fileId]);
 
-     //Valeur du listbox choix Type exercice-----------------------------------------------------
-     const handleChangeType = (event) => {
-        formikImport.setFieldValue('type',event.target.value);
-         setValSelectType(event.target.value);
+    //Valeur du listbox choix Type exercice-----------------------------------------------------
+    const handleChangeType = (event) => {
+        formikImport.setFieldValue('type', event.target.value);
+        setValSelectType(event.target.value);
 
-         if(event.target.value === 'CSV'){
+        if (event.target.value === 'CSV') {
             setFileTypeCSV(true);
-         }else{
+        } else {
             setFileTypeCSV(false);
-         }
-     };
+        }
+    };
 
     //Valeur du listbox choix compte à dispatcher----------------------------------------------------
     const handleChangeCptDispatch = (event) => {
-        formikImport.setFieldValue('choixImport',event.target.value);
+        formikImport.setFieldValue('choixImport', event.target.value);
         setValSelectCptDispatch(event.target.value);
     };
 
     //Formulaire pour l'import du journal
     const formikImport = useFormik({
-        initialValues : {
+        initialValues: {
             idCompte: compteId,
             idDossier: fileId,
             idExercice: selectedPeriodeId,
             type: 'CSV',
-            choixImport : '',
-            journalData:[],
+            choixImport: '',
+            journalData: [],
         },
         validationSchema: Yup.object({
             type: Yup.string().required("Veuillez choisir le type de fichier à importer"),
@@ -702,17 +702,17 @@ export default function ImportJournal() {
 
     //validation des entêtes si c'est bon ou pas
     const validateHeaders = (headers) => {
-        
+
         let expectedHeaders = [];
-        const expectedHeadersCSV = ["EcritureNum", "datesaisie", "EcritureDate", "JournalCode", "CompteNum","CompAuxNum", "PieceRef","PieceDate", "EcritureLib", "Debit", "Credit", "Idevise", "EcritureLet", "DateLet", "ModeRglt","DateRglt"];
-        const expectedHeadersFEC = ["EcritureNum", "EcritureDate", "JournalCode", "CompteNum","CompAuxNum", "PieceRef","PieceDate", "EcritureLib", "Debit", "Credit", "Idevise", "EcritureLet", "DateLet"];
-        
-        if(fileTypeCSV){
+        const expectedHeadersCSV = ["EcritureNum", "datesaisie", "EcritureDate", "JournalCode", "CompteNum", "CompAuxNum", "PieceRef", "PieceDate", "EcritureLib", "Debit", "Credit", "Idevise", "EcritureLet", "DateLet", "ModeRglt", "DateRglt"];
+        const expectedHeadersFEC = ["EcritureNum", "EcritureDate", "JournalCode", "CompteNum", "CompAuxNum", "PieceRef", "PieceDate", "EcritureLib", "Debit", "Credit", "Idevise", "EcritureLet", "DateLet"];
+
+        if (fileTypeCSV) {
             expectedHeaders = expectedHeadersCSV;
-        }else{
+        } else {
             expectedHeaders = expectedHeadersFEC;
         }
-        
+
         // Comparer les en-têtes du CSV aux en-têtes attendus
         const missingHeaders = expectedHeaders.filter(header => !headers.includes(header));
         if (missingHeaders.length > 0) {
@@ -723,37 +723,37 @@ export default function ImportJournal() {
     };
 
     //Calcul solde débit et solde crédit
-        const calculTotal = (array) => {
-            
-            const totDebit0 = array.reduce((acc, item) => {
-                const Value = parseFloat(item["Debit"].replace(',', '.')) || 0; // Convertir en nombre
-                return acc + Value;
-            }, 0);
-    
-            const totCredit0 = array.reduce((acc, item) => {
-                const Value = parseFloat(item["Credit"].replace(',', '.')) || 0; // Convertir en nombre
-                return acc + Value;
-            }, 0);
-    
-            const totDebit = new Intl.NumberFormat('fr-FR',
-                {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                }
-            ).format(totDebit0) ;
-    
-            const totCredit = new Intl.NumberFormat('fr-FR',
-                {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                }
-            ).format(totCredit0) ;
-    
-            setTotalDebit(totDebit);
-            setTotalCredit(totCredit);
-        };
+    const calculTotal = (array) => {
 
-      //Test d'existance de code journal ou de compte par rapport aux données dans paramétrage
+        const totDebit0 = array.reduce((acc, item) => {
+            const Value = parseFloat(item["Debit"].replace(',', '.')) || 0; // Convertir en nombre
+            return acc + Value;
+        }, 0);
+
+        const totCredit0 = array.reduce((acc, item) => {
+            const Value = parseFloat(item["Credit"].replace(',', '.')) || 0; // Convertir en nombre
+            return acc + Value;
+        }, 0);
+
+        const totDebit = new Intl.NumberFormat('fr-FR',
+            {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            }
+        ).format(totDebit0);
+
+        const totCredit = new Intl.NumberFormat('fr-FR',
+            {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            }
+        ).format(totCredit0);
+
+        setTotalDebit(totDebit);
+        setTotalCredit(totCredit);
+    };
+
+    //Test d'existance de code journal ou de compte par rapport aux données dans paramétrage
     const existance = (param, liste) => {
         const missingCode = liste.filter(item => !param.includes(item));
         return missingCode;
@@ -769,7 +769,7 @@ export default function ImportJournal() {
                 complete: (result) => {
                     const headers = result.meta.fields;
 
-                    if(validateHeaders(headers)){
+                    if (validateHeaders(headers)) {
                         setTraitementJournalMsg('Traitement du journal en cours...');
                         setTraitementJournalWaiting(true);
 
@@ -782,21 +782,21 @@ export default function ImportJournal() {
                         setNbrAnomalie(0);
 
                         const listeUniqueCodeJnlInitial = [...new Set(result.data.map(item => item.JournalCode))];
-                        const listeUniqueCodeJnl = listeUniqueCodeJnlInitial.filter(item => item !=='');
+                        const listeUniqueCodeJnl = listeUniqueCodeJnlInitial.filter(item => item !== '');
 
                         const listeUniqueCompteInitial = [...new Set([
                             ...result.data.map(item => item.CompteNum),
                             ...result.data.map(item => item.CompAuxNum),
-                            ])
+                        ])
                         ];
-                        const listeUniqueCompte = listeUniqueCompteInitial.filter(item => item !=='');
+                        const listeUniqueCompte = listeUniqueCompteInitial.filter(item => item !== '');
 
                         //stocker en 2 variables les comptes généraux et comptesaux pour la création
                         const listeUniqueCompteGenInitial = [...new Set(result.data.map(item => item.CompteNum))];
-                        const listeUniqueCompteGen = listeUniqueCompteGenInitial.filter(item => item !=='');
+                        const listeUniqueCompteGen = listeUniqueCompteGenInitial.filter(item => item !== '');
 
                         const listeUniqueCompteAuxInitial = [...new Set(result.data.map(item => item.CompAuxNum))];
-                        const listeUniqueCompteAux = listeUniqueCompteAuxInitial.filter(item => item !=='');
+                        const listeUniqueCompteAux = listeUniqueCompteAuxInitial.filter(item => item !== '');
 
                         const ListeCodeJnlParams = [...new Set(codeJournal.map(item => item.code))];
                         const ListeCompteParams = [...new Set(planComptable.map(item => item.compte))];
@@ -806,7 +806,7 @@ export default function ImportJournal() {
                         const compteNotInParamsGen = existance(ListeCompteParams, listeUniqueCompteGen);
                         const compteNotInParamsAux = existance(ListeCompteParams, listeUniqueCompteAux);
 
-                        if(codeJournalNotInParams.length > 0){
+                        if (codeJournalNotInParams.length > 0) {
                             msg.push(`Les codes journaux suivants n'existent pas encore dans votre dossier : ${codeJournalNotInParams.join(', ')}`);
                             nbrAnom = nbrAnom + 1;
                             setNbrAnomalie(nbrAnom);
@@ -814,22 +814,22 @@ export default function ImportJournal() {
                             setCodeJournalToCreate(codeJournalNotInParams);
                         }
 
-                        if(compteNotInParams.length > 0){
+                        if (compteNotInParams.length > 0) {
                             msg.push(`Les numéros de compte suivants n'existent pas encore dans votre dossier : ${compteNotInParams.join(', ')}`);
-                            
+
                             nbrAnom = nbrAnom + 1;
                             setNbrAnomalie(nbrAnom);
                             setCouleurBoutonAnomalie(couleurAnom);
                         }
 
                         setMsgAnomalie(msg);
-                        let DataWithId =[];
-                        if(fileTypeCSV){
-                            DataWithId = result.data.map((row, index) => ({...row, id: index, CompteLib:'', CompAuxLib:''}));
-                        }else{
-                            DataWithId = result.data.map((row, index) => ({...row, id: index}));
+                        let DataWithId = [];
+                        if (fileTypeCSV) {
+                            DataWithId = result.data.map((row, index) => ({ ...row, id: index, CompteLib: '', CompAuxLib: '' }));
+                        } else {
+                            DataWithId = result.data.map((row, index) => ({ ...row, id: index }));
                         }
-                        
+
                         //const dataWithFooter = [...DataWithId, footerRow];
                         setJournalData(DataWithId);
                         calculTotal(DataWithId);
@@ -876,233 +876,233 @@ export default function ImportJournal() {
 
     //création des journaux qui n'existe pas encore avant import journal
     const createCodeJournalNotExisting = async () => {
-        const response = await axios.post(`/administration/importJournal/createNotExistingCodeJournal`, {compteId, fileId, codeJournalToCreate});
+        const response = await axios.post(`/administration/importJournal/createNotExistingCodeJournal`, { compteId, fileId, codeJournalToCreate });
         const resData = response.data;
         return resData.list;
     }
 
     //création des comptes qui n'existe pas encore avant import journal
     const createCompteNotExisting = async () => {
-        const response = await axios.post(`/administration/importJournal/createNotExistingCompte`, {compteId, fileId, compteToCreateGen, compteToCreateAux});
+        const response = await axios.post(`/administration/importJournal/createNotExistingCompte`, { compteId, fileId, compteToCreateGen, compteToCreateAux });
         const resData = response.data;
         return resData.list;
     }
 
     const handleImportJournal = async (value) => {
-        if(value){
+        if (value) {
             const UpdatedCodeJournal = await createCodeJournalNotExisting();
             const UpdatedPlanComptable = await createCompteNotExisting();
 
-            if(!Array.isArray(UpdatedCodeJournal)){
+            if (!Array.isArray(UpdatedCodeJournal)) {
                 toast.error("Un problème est survenu lors de la création des codes journaux manquants.");
             }
 
-            if(!Array.isArray(UpdatedPlanComptable)){
+            if (!Array.isArray(UpdatedPlanComptable)) {
                 toast.error("Un problème est survenu lors de la création des comptes manquants.");
             }
 
-            if(Array.isArray(UpdatedCodeJournal) && Array.isArray(UpdatedPlanComptable)){
+            if (Array.isArray(UpdatedCodeJournal) && Array.isArray(UpdatedPlanComptable)) {
                 setTraitementJournalMsg('Importation du journal en cours...');
                 setTraitementJournalWaiting(true);
 
-                axios.post(`/administration/importJournal/importJournal`, {compteId, userId, fileId, selectedPeriodeId, fileTypeCSV, valSelectCptDispatch, journalData}).then((response) =>{
+                axios.post(`/administration/importJournal/importJournal`, { compteId, userId, fileId, selectedPeriodeId, fileTypeCSV, valSelectCptDispatch, journalData }).then((response) => {
                     const resData = response.data;
-                    if(resData.state){
+                    if (resData.state) {
                         setTraitementJournalMsg('');
                         setTraitementJournalWaiting(false);
                         toast.success(resData.msg);
                         setJournalData([]);
                         setNbrAnomalie(0);
                         setMsgAnomalie([]);
-                    }else{
+                    } else {
                         setTraitementJournalMsg('');
                         setTraitementJournalWaiting(false);
                         toast.error(resData.msg);
                     }
                 });
             }
-            
+
             handleCloseDialogConfirmImport();
-        }else{
+        } else {
             handleCloseDialogConfirmImport();
         }
     }
 
-  return (
-    <Paper sx={{elevation: "3", margin:"5px", padding:"0px", width:"99%", height:"98%"}}>
-        {noFile? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
-        {openDialogConfirmImport? <PopupActionConfirm msg={"Voulez-vous vraiment importer le journal en cours?"} confirmationState={handleImportJournal} /> : null}
-        {openDetailsAnomalie? <PopupViewDetailsImportJournal msg={msgAnomalie} confirmationState={handleCloseAnomalieDetails} /> : null}
+    return (
+        <Box>
+            {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
+            {openDialogConfirmImport ? <PopupActionConfirm msg={"Voulez-vous vraiment importer le journal en cours?"} confirmationState={handleImportJournal} /> : null}
+            {openDetailsAnomalie ? <PopupViewDetailsImportJournal msg={msgAnomalie} confirmationState={handleCloseAnomalieDetails} /> : null}
 
-        <TabContext value={"1"}>
-            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                <TabList aria-label="lab API tabs example">
-                    <Tab 
-                    style={{ 
-                        textTransform: 'none', 
-                        outline: 'none', 
-                        border: 'none',
-                        margin:-5
-                    }}
-                    label={InfoFileStyle(fileInfos?.dossier)} value="1" 
-                    />
-                </TabList>
-            </Box>
-            <TabPanel value="1" style={{height:'85%'}}>
-                <form onSubmit={formikImport.handleSubmit}>
-                    <Stack width={"100%"} height={"100%"} spacing={4} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
-                        <Typography variant='h6' sx={{color: "black"}} align='left'>Administration - Import Journal</Typography>
+            <TabContext value={"1"}>
+                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                    <TabList aria-label="lab API tabs example">
+                        <Tab
+                            style={{
+                                textTransform: 'none',
+                                outline: 'none',
+                                border: 'none',
+                                margin: -5
+                            }}
+                            label={InfoFileStyle(fileInfos?.dossier)} value="1"
+                        />
+                    </TabList>
+                </Box>
+                <TabPanel value="1" style={{ height: '85%' }}>
+                    <form onSubmit={formikImport.handleSubmit}>
+                        <Stack width={"100%"} height={"100%"} spacing={4} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
+                            <Typography variant='h6' sx={{ color: "black" }} align='left'>Administration - Import Journal</Typography>
 
-                        <Stack width={"100%"} height={"80px"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"row"} style={{marginLeft:"0px", marginTop:"20px"}}>
-                            <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                                <InputLabel id="demo-simple-select-standard-label">Exercice:</InputLabel>
-                                <Select
-                                labelId="demo-simple-select-standard-label"
-                                id="demo-simple-select-standard"
-                                value={selectedExerciceId}
-                                label={"valSelect"}
-                                onChange={(e) => handleChangeExercice(e.target.value)}
-                                sx={{width:"300px", display:"flex", justifyContent:"left", alignItems:"flex-start", alignContent:"flex-start", textAlign:"left"}}
-                                >
-                                    {listeExercice.map((option) => (
-                                        <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                                    ))
-                                    }
-                                </Select>
-                            </FormControl>
+                            <Stack width={"100%"} height={"80px"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "20px" }}>
+                                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
+                                    <InputLabel id="demo-simple-select-standard-label">Exercice:</InputLabel>
+                                    <Select
+                                        labelId="demo-simple-select-standard-label"
+                                        id="demo-simple-select-standard"
+                                        value={selectedExerciceId}
+                                        label={"valSelect"}
+                                        onChange={(e) => handleChangeExercice(e.target.value)}
+                                        sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                    >
+                                        {listeExercice.map((option) => (
+                                            <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
+                                        ))
+                                        }
+                                    </Select>
+                                </FormControl>
 
-                            <FormControl variant="standard" sx={{ m: 1, minWidth: 150 }}>
-                                <InputLabel id="demo-simple-select-standard-label">Période</InputLabel>
-                                <Select
-                                disabled
-                                labelId="demo-simple-select-standard-label"
-                                id="demo-simple-select-standard"
-                                value={selectedPeriodeChoiceId}
-                                label={"valSelect"}
-                                onChange={(e) => handleChangePeriode(e.target.value)}
-                                sx={{width:"150px", display:"flex", justifyContent:"left", alignItems:"flex-start", alignContent:"flex-start", textAlign:"left"}}
-                                >
-                                    <MenuItem value={0}>Toutes</MenuItem>
-                                    <MenuItem value={1}>Situations</MenuItem>
-                                </Select>
-                            </FormControl>
+                                <FormControl variant="standard" sx={{ m: 1, minWidth: 150 }}>
+                                    <InputLabel id="demo-simple-select-standard-label">Période</InputLabel>
+                                    <Select
+                                        disabled
+                                        labelId="demo-simple-select-standard-label"
+                                        id="demo-simple-select-standard"
+                                        value={selectedPeriodeChoiceId}
+                                        label={"valSelect"}
+                                        onChange={(e) => handleChangePeriode(e.target.value)}
+                                        sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                    >
+                                        <MenuItem value={0}>Toutes</MenuItem>
+                                        <MenuItem value={1}>Situations</MenuItem>
+                                    </Select>
+                                </FormControl>
 
-                            <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                                <InputLabel id="demo-simple-select-standard-label">Du</InputLabel>
-                                <Select
-                                labelId="demo-simple-select-standard-label"
-                                id="demo-simple-select-standard"
-                                value={selectedPeriodeId}
-                                label={"valSelect"}
-                                onChange={(e) => handleChangeDateIntervalle(e.target.value)}
-                                sx={{width:"300px", display:"flex", justifyContent:"left", alignItems:"flex-start", alignContent:"flex-start", textAlign:"left"}}
-                                >
-                                {listeSituation?.map((option) => (
-                                        <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                                    ))
-                                    }
-                                </Select>
-                            </FormControl>
+                                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
+                                    <InputLabel id="demo-simple-select-standard-label">Du</InputLabel>
+                                    <Select
+                                        labelId="demo-simple-select-standard-label"
+                                        id="demo-simple-select-standard"
+                                        value={selectedPeriodeId}
+                                        label={"valSelect"}
+                                        onChange={(e) => handleChangeDateIntervalle(e.target.value)}
+                                        sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                    >
+                                        {listeSituation?.map((option) => (
+                                            <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
+                                        ))
+                                        }
+                                    </Select>
+                                </FormControl>
 
-                        </Stack>
+                            </Stack>
 
-                        <Stack width={"100%"} height={"60px"} spacing={2} alignItems={"center"} alignContent={"center"} direction={"row"} style={{marginLeft:"0px", marginTop:"0px"}}>
-                            <FormControl variant="standard" sx={{ m: 0, minWidth: 250 }}>
-                                <InputLabel id="demo-simple-select-standard-label">Type de fichier</InputLabel>
-                                <Select
-                                labelId="demo-simple-select-standard-label"
-                                id="demo-simple-select-standard"
-                                value={formikImport.values.type}
-                                label={"valSelectType"}
-                                onChange={handleChangeType}
-                                sx={{width:"140px", display:"flex", justifyContent:"left", alignItems:"flex-start", alignContent:"flex-start", textAlign:"left"}}
-                                >
-                                    {/* <MenuItem key="None" value="">
+                            <Stack width={"100%"} height={"60px"} spacing={2} alignItems={"center"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
+                                <FormControl variant="standard" sx={{ m: 0, minWidth: 250 }}>
+                                    <InputLabel id="demo-simple-select-standard-label">Type de fichier</InputLabel>
+                                    <Select
+                                        labelId="demo-simple-select-standard-label"
+                                        id="demo-simple-select-standard"
+                                        value={formikImport.values.type}
+                                        label={"valSelectType"}
+                                        onChange={handleChangeType}
+                                        sx={{ width: "140px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                    >
+                                        {/* <MenuItem key="None" value="">
                                         <em>None</em>
                                     </MenuItem> */}
-                                    <MenuItem key={"CSV"} value={"CSV"}>CSV</MenuItem>
-                                    <MenuItem key={"FEC"} value={"FEC"}>FEC</MenuItem>
-                                </Select>
+                                        <MenuItem key={"CSV"} value={"CSV"}>CSV</MenuItem>
+                                        <MenuItem key={"FEC"} value={"FEC"}>FEC</MenuItem>
+                                    </Select>
 
-                                <FormHelperText style={{color:'red'}}>
-                                    {formikImport.errors.type && formikImport.touched.type && formikImport.errors.type}
-                                </FormHelperText>
-                            </FormControl>
+                                    <FormHelperText style={{ color: 'red' }}>
+                                        {formikImport.errors.type && formikImport.touched.type && formikImport.errors.type}
+                                    </FormHelperText>
+                                </FormControl>
 
-                            <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                                <InputLabel id="demo-simple-select-standard-label">Choix d'import</InputLabel>
-                                <Select
-                                labelId="demo-simple-select-standard-label"
-                                id="demo-simple-select-standard"
-                                value={formikImport.values.choixImport}
-                                label={"valSelectCptDispatch"}
-                                onChange={handleChangeCptDispatch}
-                                sx={{width:"300px", display:"flex", justifyContent:"left", alignItems:"flex-start", alignContent:"flex-start", textAlign:"left"}}
-                                >
-                                    <MenuItem key={"None"} value={""}>
-                                        <em>None</em>
-                                    </MenuItem>
-                                    <MenuItem key={"ECRASER"} value={"ECRASER"}>Ecraser les données déjà existantes</MenuItem>
-                                    <MenuItem key={"UPDATE"} value={"UPDATE"}>Importer sans écraser</MenuItem>
-                                </Select>
-
-                                <FormHelperText style={{color:'red'}}>
-                                    {formikImport.errors.choixImport && formikImport.touched.choixImport && formikImport.errors.choixImport}
-                                </FormHelperText>
-                            </FormControl>
-                        
-                            <Stack spacing={1} width={"400px"} height={"50px"} direction={"row"} 
-                                    style={{border: '2px dashed rgba(5,96,116,0.60)', marginLeft:"30px", paddingLeft:"20px"}}
-                                    alignContent={"center"} justifyContent={"left"} alignItems={"center"}
+                                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
+                                    <InputLabel id="demo-simple-select-standard-label">Choix d'import</InputLabel>
+                                    <Select
+                                        labelId="demo-simple-select-standard-label"
+                                        id="demo-simple-select-standard"
+                                        value={formikImport.values.choixImport}
+                                        label={"valSelectCptDispatch"}
+                                        onChange={handleChangeCptDispatch}
+                                        sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
                                     >
-                                <Typography variant='h7' sx={{color: "black",fontWeight:"bold"}} align='left'>
-                                    Télécharger ici le modèle d'import
-                                </Typography>
-                            
-                                <List style={{marginLeft:"10px"}}>
-                                    <ListItem style={{width:"100px", justifyContent:"center"}}>
-                                        <ListItemButton onClick={handleDownloadModel}>
-                                            <ListItemIcon > 
-                                                <LogoutIcon style={{width:"40px", height:"30px", color:'rgba(5,96,116,0.60)', transform:"rotate(270deg)"}}/> 
-                                            </ListItemIcon>
-                                        </ListItemButton>
-                                    </ListItem>
-                                </List>
-                            </Stack>
+                                        <MenuItem key={"None"} value={""}>
+                                            <em>None</em>
+                                        </MenuItem>
+                                        <MenuItem key={"ECRASER"} value={"ECRASER"}>Ecraser les données déjà existantes</MenuItem>
+                                        <MenuItem key={"UPDATE"} value={"UPDATE"}>Importer sans écraser</MenuItem>
+                                    </Select>
 
-                            <Stack spacing={1} width={"350px"} height={"50px"} direction={"row"} 
-                                style={{border: '2px dashed rgba(5,96,116,0.60)', marginLeft:"30px", paddingLeft:"20px"}}
-                                alignContent={"center"} justifyContent={"left"} alignItems={"center"}
-                                backgroundColor={'rgba(5,96,116,0.05)'}
-                            >
-                                <input
-                                    type="file"
-                                    accept={fileTypeCSV? ".csv": ".txt"}
-                                    // webkitdirectory="true"
-                                    onChange={handleFileSelect}
-                                    style={{ display: 'none' }}
-                                    id="fileInput"
-                                />
+                                    <FormHelperText style={{ color: 'red' }}>
+                                        {formikImport.errors.choixImport && formikImport.touched.choixImport && formikImport.errors.choixImport}
+                                    </FormHelperText>
+                                </FormControl>
 
-                                <Typography variant='h7' sx={{color: "black",fontWeight:"bold"}} align='left'>
-                                    Importer depuis le fichier
-                                </Typography>
-                            
-                                <List style={{marginLeft:"10px"}}>
-                                    <ListItem style={{width:"100px", justifyContent:"center"}}>
-                                        <ListItemButton onClick={() => document.getElementById('fileInput').click()}>
-                                            <ListItemIcon > 
-                                                <SaveAltIcon style={{width:"40px", height:"30px", color:'rgba(5,96,116,0.60)'}}/> 
-                                            </ListItemIcon>
-                                        </ListItemButton>
-                                    </ListItem>
-                                </List>
-                            </Stack>
+                                <Stack spacing={1} width={"400px"} height={"50px"} direction={"row"}
+                                    style={{ border: '2px dashed rgba(5,96,116,0.60)', marginLeft: "30px", paddingLeft: "20px" }}
+                                    alignContent={"center"} justifyContent={"left"} alignItems={"center"}
+                                >
+                                    <Typography variant='h7' sx={{ color: "black", fontWeight: "bold" }} align='left'>
+                                        Télécharger ici le modèle d'import
+                                    </Typography>
 
-                            <Tooltip title="Importer le fichier">
-                                <span>
+                                    <List style={{ marginLeft: "10px" }}>
+                                        <ListItem style={{ width: "100px", justifyContent: "center" }}>
+                                            <ListItemButton onClick={handleDownloadModel}>
+                                                <ListItemIcon >
+                                                    <LogoutIcon style={{ width: "40px", height: "30px", color: 'rgba(5,96,116,0.60)', transform: "rotate(270deg)" }} />
+                                                </ListItemIcon>
+                                            </ListItemButton>
+                                        </ListItem>
+                                    </List>
+                                </Stack>
 
-                                    {/* <IconButton 
+                                <Stack spacing={1} width={"350px"} height={"50px"} direction={"row"}
+                                    style={{ border: '2px dashed rgba(5,96,116,0.60)', marginLeft: "30px", paddingLeft: "20px" }}
+                                    alignContent={"center"} justifyContent={"left"} alignItems={"center"}
+                                    backgroundColor={'rgba(5,96,116,0.05)'}
+                                >
+                                    <input
+                                        type="file"
+                                        accept={fileTypeCSV ? ".csv" : ".txt"}
+                                        // webkitdirectory="true"
+                                        onChange={handleFileSelect}
+                                        style={{ display: 'none' }}
+                                        id="fileInput"
+                                    />
+
+                                    <Typography variant='h7' sx={{ color: "black", fontWeight: "bold" }} align='left'>
+                                        Importer depuis le fichier
+                                    </Typography>
+
+                                    <List style={{ marginLeft: "10px" }}>
+                                        <ListItem style={{ width: "100px", justifyContent: "center" }}>
+                                            <ListItemButton onClick={() => document.getElementById('fileInput').click()}>
+                                                <ListItemIcon >
+                                                    <SaveAltIcon style={{ width: "40px", height: "30px", color: 'rgba(5,96,116,0.60)' }} />
+                                                </ListItemIcon>
+                                            </ListItemButton>
+                                        </ListItem>
+                                    </List>
+                                </Stack>
+
+                                <Tooltip title="Importer le fichier">
+                                    <span>
+
+                                        {/* <IconButton 
                                     variant="contained"
                                     style={{width:"130px", height:'50px', 
                                         borderRadius:"2px", borderColor: "transparent",
@@ -1120,53 +1120,53 @@ export default function ImportJournal() {
                                         <Typography style={{color:'white', fontWeight:'bold'}}>Importer</Typography>
                                     </IconButton> */}
 
-                                    
-                                </span>
-                            </Tooltip>
 
-                            <Badge badgeContent={nbrAnomalie} color="warning">
+                                    </span>
+                                </Tooltip>
+
+                                <Badge badgeContent={nbrAnomalie} color="warning">
+                                    <Button
+                                        onClick={handleOpenAnomalieDetails}
+                                        variant="contained"
+                                        style={{
+                                            height: "50px",
+                                            textTransform: 'none',
+                                            outline: 'none',
+                                            backgroundColor: initial.theme,
+                                            color: couleurBoutonAnomalie
+                                        }}
+                                    >
+                                        Anomalies
+                                    </Button>
+                                </Badge>
+
+
                                 <Button
-                                onClick={handleOpenAnomalieDetails}
-                                    variant="contained" 
+                                    type='submit'
+                                    variant="contained"
                                     style={{
-                                        height:"50px", 
-                                        textTransform: 'none', 
+                                        height: "50px",
+                                        textTransform: 'none',
                                         outline: 'none',
-                                        backgroundColor: initial.theme,
-                                        color: couleurBoutonAnomalie
+                                        backgroundColor: initial.theme
                                     }}
                                 >
-                                    Anomalies
+                                    Importer
                                 </Button>
-                            </Badge>
-                            
-                            
-                            <Button
-                                type='submit'
-                                variant="contained" 
-                                style={{
-                                    height:"50px", 
-                                    textTransform: 'none', 
-                                    outline: 'none',
-                                    backgroundColor: initial.theme
-                                }}
-                            >
-                                Importer
-                            </Button>
-                        </Stack>
-                        
-                        {traitementJournalWaiting
-                            ? <Stack spacing={2} direction={'row'} width={"100%"} alignItems={'center'} justifyContent={'center'}>
-                                <CircularProgress />
-                                <Typography variant='h6' style={{color:'#2973B2'}}>{traitementJournalMsg}</Typography>
-                                {/* <CircularProgressWithValueLabel value={50} msg={"Traitement du journal en cours..."} /> */}
                             </Stack>
-                            : null
-                        }
-                        
-                        <Stack  width={"100%"} height={'70vh'} >
-                            <VirtualTableModifiableImportJnl columns={columns} rows={journalData} state={true}/> 
-                            {/* <DataGrid
+
+                            {traitementJournalWaiting
+                                ? <Stack spacing={2} direction={'row'} width={"100%"} alignItems={'center'} justifyContent={'center'}>
+                                    <CircularProgress />
+                                    <Typography variant='h6' style={{ color: '#2973B2' }}>{traitementJournalMsg}</Typography>
+                                    {/* <CircularProgressWithValueLabel value={50} msg={"Traitement du journal en cours..."} /> */}
+                                </Stack>
+                                : null
+                            }
+
+                            <Stack width={"100%"} height={'70vh'} >
+                                <VirtualTableModifiableImportJnl columns={columns} rows={journalData} state={true} />
+                                {/* <DataGrid
                                 ref={dataGridRef}
                                 disableMultipleSelection = {DataGridStyle.disableMultipleSelection}
                                 disableColumnSelector = {DataGridStyle.disableColumnSelector}
@@ -1258,11 +1258,11 @@ export default function ImportJournal() {
                                 }
                                 
                             /> */}
+                            </Stack>
                         </Stack>
-                    </Stack>
-                </form>
-            </TabPanel>
-        </TabContext>
-    </Paper>
-  )
+                    </form>
+                </TabPanel>
+            </TabContext>
+        </Box>
+    )
 }

@@ -1,20 +1,20 @@
 //user model
-const {Sequelize, DataTypes} = require('sequelize');
+const { Sequelize, DataTypes } = require('sequelize');
 
 const userscomptes = require('./compteModel');
 module.exports = (sequelize, DataTypes) => {
-    const User = sequelize.define( "user", {
+    const User = sequelize.define("user", {
         id: {
             type: DataTypes.BIGINT,
             allowNull: false,
             unique: true,
-            autoIncrement:true,
-            primaryKey:true
+            autoIncrement: true,
+            primaryKey: true
         },
         compte_id: {
             type: DataTypes.BIGINT,
             allowNull: false,
-            defaultValue:0,
+            defaultValue: 0,
             unique: false,
             references: {
                 model: userscomptes,
@@ -29,7 +29,7 @@ module.exports = (sequelize, DataTypes) => {
         email: {
             type: DataTypes.STRING(150),
             unique: true,
-            isEmail: true, //checks for email format
+            isEmail: true,
             allowNull: false
         },
         password: {
@@ -44,6 +44,6 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING(350),
             allowNull: true
         },
-    }, {timestamps: true}, )
+    }, { timestamps: true },)
     return User
- }
+}

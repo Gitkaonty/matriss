@@ -1,10 +1,8 @@
-// Migration Sequelize pour la table historique_irsa
-
+// Migration Sequelize pour la table historique déclaration
 'use strict';
-
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('historique_irsa', {
+    await queryInterface.createTable('historique_declaration', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -15,18 +13,17 @@ module.exports = {
       idCompte: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        comment: 'ID du compte utilisateur lié à l\'export IRSA'
+        comment: 'ID du compte utilisateur lié à l\'export'
       },
       // Dossier concerné par l\'export
       idDossier: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        comment: 'ID du dossier concerné par l\'export IRSA'
+        comment: 'ID du dossier concerné par l\'export'
       },
       declaration: {
         type: Sequelize.STRING(16),
-        allowNull: false,
-        defaultValue: 'IRSA'
+        allowNull: false
       },
       designation: {
         type: Sequelize.STRING(255),
@@ -51,6 +48,6 @@ module.exports = {
   },
 
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('historique_irsa');
+    await queryInterface.dropTable('historique_declaration');
   }
 };

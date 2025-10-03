@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Typography, Stack, Paper, Box, Tab, Badge, Button } from '@mui/material';
-import { IconButton, Card, CardActionArea, CardContent, Divider, Tooltip } from '@mui/material';
+import { Typography, Stack, Box, Tab } from '@mui/material';
+import { IconButton, Tooltip } from '@mui/material';
 
 import { TabContext, TabList, TabPanel } from '@mui/lab';
 import InputLabel from '@mui/material/InputLabel';
@@ -12,8 +12,8 @@ import Select from '@mui/material/Select';
 import { CiLock } from "react-icons/ci";
 import { CiUnlock } from "react-icons/ci";
 import { IoMdTrash } from "react-icons/io";
-import { TbPlaylistAdd } from "react-icons/tb";
 import { TbRefresh } from "react-icons/tb";
+import { TbPlaylistAdd } from "react-icons/tb";
 
 import { init } from '../../../../../init';
 import axios from '../../../../../config/axios';
@@ -21,39 +21,23 @@ import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFil
 import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
-import { DataGridStyle } from '../../../componentsTools/DatagridToolsStyle';
-import { DataGrid, frFR } from '@mui/x-data-grid';
-import QuickFilter from '../../../componentsTools/DatagridToolsStyle';
-import { CgImport } from "react-icons/cg";
+import { CiImport } from "react-icons/ci";
 
-
-import PopupSaisie from '../../../componentsTools/Saisie/popupSaisie';
 import PopupConfirmDelete from '../../../componentsTools/popupConfirmDelete';
 import PopupImportComma from '../../../componentsTools/DeclarationDroitComm/Popup/Import/PopupImportComma';
 
-import { Autocomplete, TextField } from '@mui/material';
-
-import { IoMdAdd } from "react-icons/io";
-import { AiFillEdit } from "react-icons/ai";
-import { MdDelete } from "react-icons/md";
-
 import useAuth from '../../../../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
-import { useFormik } from 'formik';
-import { MdFilePresent } from "react-icons/md";
-import { GridPagination } from '@mui/x-data-grid';
-import { MdFilterAlt } from "react-icons/md";
-import { MdFilterAltOff } from "react-icons/md";
-import { URL } from '../../../../../config/axios';
 
 import VirtualTableDroitComm from '../../../componentsTools/DeclarationDroitComm/VirtualTableDroitComm';
 import PopupDeclarationComm from '../../../componentsTools/DeclarationDroitComm/Popup/PopupDeclarationComm';
 import PopupPlpEdit from '../../../componentsTools/DeclarationDroitComm/Popup/PopupPlpEdit';
 
 //Colonne
-import droitCommColumnsA from '../../../componentsTools/DeclarationDroitComm/TableColumn/DroitCommColumnsA';
-import droitCommColumnsB from '../../../componentsTools/DeclarationDroitComm/TableColumn/DroitCommColumnsB';
-import droitCommColumnPL from '../../../componentsTools/DeclarationDroitComm/TableColumn/DroitColumnPL';
+import VirtualTableDroitCommasColumns from '../../../componentsTools/DeclarationDroitComm/TableColumn/VirtualTableDroitCommasColumns.jsx';
+import VirtualTableDroitCommbsColumns from '../../../componentsTools/DeclarationDroitComm/TableColumn/VirtualTableDroitCommbsColumns.jsx';
+import VirtualTableDroitCommPLColumns from '../../../componentsTools/DeclarationDroitComm/TableColumn/VirtualTableDroitCommPLColumns.jsx';
+import droitCommColumnPL from '../../../componentsTools/DeclarationDroitComm/TableColumn/VirtualTableDroitCommPLColumns.jsx';
 import droitCommColumnPLP from '../../../componentsTools/DeclarationDroitComm/TableColumn/DroitColumnPLP';
 
 export default function DeclarationComm() {
@@ -79,6 +63,8 @@ export default function DeclarationComm() {
 
     const [rowToModify, setRowToModify] = useState(null);
     const [idToDelete, setIdToDelete] = useState(null);
+    const [typeDelete, setTypeDelete] = useState(null);
+    const [idNumcptToDelete, setIdNumcptToDelete] = useState(null);
 
     const [isRefreshed, setIsRefreshed] = useState(false);
 
@@ -124,19 +110,8 @@ export default function DeclarationComm() {
     const [openDialogDeleteAllComm, setOpenDialogDeleteAllComm] = useState(false);
     const [openDialogDeleteOneComm, setOpenDialogDeleteOneComm] = useState(false);
 
-    const GetInfosIdDossier = (id) => {
-        axios.get(`/home/FileInfos/${id}`).then((response) => {
-            const resData = response.data;
-
-            if (resData.state) {
-                setFileInfos(resData.fileInfos[0]);
-                setNoFile(false);
-            } else {
-                setFileInfos([]);
-                setNoFile(true);
-            }
-        })
-    }
+    //Modal de confirmation de génération auto
+    const [openDialogGenerateAuto, setOpenDialogGenerateAuto] = useState(false);
 
     const sendToHome = (value) => {
         setNoFile(!value);
@@ -149,44 +124,6 @@ export default function DeclarationComm() {
         setSelectedPeriodeChoiceId("0");
         setListeSituation(listeExercice?.filter((item) => item.id === exercice_id));
         setSelectedPeriodeId(exercice_id);
-    }
-
-    //Récupérer la liste des exercices
-    const GetListeExercice = (id) => {
-        axios.get(`/paramExercice/listeExercice/${id}`).then((response) => {
-            const resData = response.data;
-            if (resData.state) {
-                setListeExercice(resData.list);
-
-                const exerciceNId = resData.list?.filter((item) => item.libelle_rang === "N");
-                setListeSituation(exerciceNId);
-
-                setSelectedExerciceId(exerciceNId[0].id);
-                setSelectedPeriodeChoiceId(0);
-                setSelectedPeriodeId(exerciceNId[0].id);
-
-            } else {
-                setListeExercice([]);
-                toast.error("une erreur est survenue lors de la récupération de la liste des exercices");
-            }
-        })
-    }
-
-    //Récupérer la liste des exercices
-    const GetListeSituation = (id) => {
-        axios.get(`/paramExercice/listeSituation/${id}`).then((response) => {
-            const resData = response.data;
-            if (resData.state) {
-                const list = resData.list;
-                setListeSituation(resData.list);
-                if (list.length > 0) {
-                    setSelectedPeriodeId(list[0].id);
-                }
-            } else {
-                setListeSituation([]);
-                toast.error("une erreur est survenue lors de la récupération de la liste des exercices");
-            }
-        })
     }
 
     //Choix période
@@ -261,132 +198,74 @@ export default function DeclarationComm() {
         setOpenDialogDeleteAllComm(true);
     }
 
-    //Suppression droit de communication par type
-    const handleDeleteAllCommByType = (value) => {
-        if (value) {
-            console.log('nature : ', nature);
-            axios.delete('/declaration/comm/deleteAllCommByType', { data: { type: nature } })
-                .then((response) => {
-                    if (response.data.state) {
-                        setIsRefreshed(!isRefreshed);
-                    } else {
-                        toast.error(response.data.message);
-                    }
-                })
-            setOpenDialogDeleteAllComm(false);
-        } else {
-            setOpenDialogDeleteAllComm(false);
-        }
-    }
-
-    //Recupération des données de la table comm global
-    const handleGetDroitCommGLobal = () => {
-        axios.get(`/declaration/comm/getDroitCommGlobal/${compteId}/${fileId}/${selectedExerciceId}`).then((response) => {
-            const data = response?.data?.data;
-            if (response?.data?.state) {
-                setDataSvt(data?.SVT);
-                setDataAdr(data?.ADR);
-                setDataAc(data?.AC);
-                setDataAi(data?.AI);
-                setDataDeb(data?.DEB);
-                setDataMv(data?.MV);
-                setDataPsv(data?.PSV);
-                setDataPl(data?.PL);
-                setDataPlp(data?.PLP);
-
-            } else {
-                toast.error(response?.data?.message);
-            }
-        })
-    }
-
-    //Récupération des vérouillages des tableaux
-    const handleGetVerrouillage = () => {
-        axios.get(`/declaration/comm/getVerrouillageComm/${compteId}/${fileId}/${selectedExerciceId}`).then((response) => {
-            const data = response?.data?.data;
-            if (response?.data?.state) {
-                setVerrouillageSvt(data?.find((item) => item.code === 'SVT')?.valide);
-                setVerrouillageAdr(data?.find((item) => item.code === 'ADR')?.valide);
-                setVerrouillageAc(data?.find((item) => item.code === 'AC')?.valide);
-                setVerrouillageAi(data?.find((item) => item.code === 'AI')?.valide);
-                setVerrouillageDeb(data?.find((item) => item.code === 'DEB')?.valide);
-                setVerrouillageMv(data?.find((item) => item.code === 'MV')?.valide);
-                setVerrouillagePsv(data?.find((item) => item.code === 'PSV')?.valide);
-                setVerrouillagePl(data?.find((item) => item.code === 'PL')?.valide);
-                setVerrouillagePlp(data?.find((item) => item.code === 'PLP')?.valide);
-            }
-        })
-    }
-
     //Suppression ligne ----------------------------------------------------------------------------------
+
     const deleteOneRowSvt = (row) => {
         setIdToDelete(Number(row.id));
+        setIdNumcptToDelete(Number(row.id_numcpt));
+        setTypeDelete(row.type);
         setOpenDialogDeleteOneComm(true);
         setNature('SVT');
     }
 
     const deleteOneRowAdr = (row) => {
         setIdToDelete(Number(row.id));
+        setIdNumcptToDelete(Number(row.id_numcpt));
+        setTypeDelete(row.type);
         setOpenDialogDeleteOneComm(true);
         setNature('ADR');
     }
 
     const deleteOneRowAc = (row) => {
         setIdToDelete(Number(row.id));
+        setIdNumcptToDelete(Number(row.id_numcpt));
+        setTypeDelete(row.type);
         setOpenDialogDeleteOneComm(true);
         setNature('AC');
     }
 
     const deleteOneRowAi = (row) => {
         setIdToDelete(Number(row.id));
+        setIdNumcptToDelete(Number(row.id_numcpt));
+        setTypeDelete(row.type);
         setOpenDialogDeleteOneComm(true);
         setNature('AI');
     }
 
     const deleteOneRowDeb = (row) => {
         setIdToDelete(Number(row.id));
+        setIdNumcptToDelete(Number(row.id_numcpt));
+        setTypeDelete(row.type);
         setOpenDialogDeleteOneComm(true);
         setNature('DEB');
     }
 
     const deleteOneRowMv = (row) => {
         setIdToDelete(Number(row.id));
+        setIdNumcptToDelete(Number(row.id_numcpt));
+        setTypeDelete(row.type);
         setOpenDialogDeleteOneComm(true);
         setNature('MV');
     }
 
     const deleteOneRowPsv = (row) => {
         setIdToDelete(Number(row.id));
+        setIdNumcptToDelete(Number(row.id_numcpt));
+        setTypeDelete(row.type);
         setOpenDialogDeleteOneComm(true);
         setNature('PSV');
     }
 
     const deleteOneRowPl = (row) => {
         setIdToDelete(Number(row.id));
+        setIdNumcptToDelete(Number(row.id_numcpt));
+        setTypeDelete(row.type);
         setOpenDialogDeleteOneComm(true);
         setNature('PL');
     }
 
-    const handleDeleteOneCommByType = (value) => {
-        if (value) {
-            setOpenDialogDeleteOneComm(false);
-            axios.delete('/declaration/comm/deleteOneCommByType',
-                {
-                    data: { id: idToDelete, type: nature }
-                }).then((response) => {
-                    if (response?.data?.state) {
-                        setIsRefreshed(!isRefreshed);
-                    } else {
-                        toast.error(response?.data?.message);
-                    }
-                })
-        } else {
-            setOpenDialogDeleteOneComm(false);
-        }
-    }
-    //Suppression ligne ----------------------------------------------------------------------------------
-
     //Modification ligne ---------------------------------------------------------------------------------
+
     const modifyOneRowSvt = (row) => {
         setRowToModify(row);
         setShowFormSVT(true);
@@ -443,32 +322,10 @@ export default function DeclarationComm() {
         setNature('PL');
     }
 
-    //Modification ligne ---------------------------------------------------------------------------------
-
     //Modification Plp
     const modifyOneRowPlp = (row) => {
         setRowToModify(row);
         setShowFormEditPlp(true);
-    }
-
-    //Verrouillage d'un tableau ---------------------------------------------------------------------------
-    const lockTableFunction = (tableau, verrouillage) => {
-        const valide = !verrouillage;
-        axios.post('/declaration/comm/verrouillerTableComm',
-            {
-                tableau,
-                valide,
-                id_dossier: Number(fileId),
-                id_exercice: Number(selectedExerciceId),
-                id_compte: Number(compteId)
-            }
-        )
-            .then((response) => {
-                if (response?.data?.state) {
-                } else {
-                    toast.error(response?.data?.message);
-                }
-            })
     }
 
     const lockTableSvt = () => {
@@ -518,6 +375,189 @@ export default function DeclarationComm() {
 
     //Verrouillage d'un tableau ---------------------------------------------------------------------------
 
+    // Appel API
+    const GetInfosIdDossier = (id) => {
+        axios.get(`/home/FileInfos/${id}`).then((response) => {
+            const resData = response.data;
+
+            if (resData.state) {
+                setFileInfos(resData.fileInfos[0]);
+                setNoFile(false);
+            } else {
+                setFileInfos([]);
+                setNoFile(true);
+            }
+        })
+    }
+
+    //Récupérer la liste des exercices
+    const GetListeExercice = (id) => {
+        axios.get(`/paramExercice/listeExercice/${id}`).then((response) => {
+            const resData = response.data;
+            if (resData.state) {
+                setListeExercice(resData.list);
+
+                const exerciceNId = resData.list?.filter((item) => item.libelle_rang === "N");
+                setListeSituation(exerciceNId);
+
+                setSelectedExerciceId(exerciceNId[0].id);
+                setSelectedPeriodeChoiceId(0);
+                setSelectedPeriodeId(exerciceNId[0].id);
+
+            } else {
+                setListeExercice([]);
+                toast.error("une erreur est survenue lors de la récupération de la liste des exercices");
+            }
+        })
+    }
+
+    //Récupérer la liste des exercices
+    const GetListeSituation = (id) => {
+        axios.get(`/paramExercice/listeSituation/${id}`).then((response) => {
+            const resData = response.data;
+            if (resData.state) {
+                const list = resData.list;
+                setListeSituation(resData.list);
+                if (list.length > 0) {
+                    setSelectedPeriodeId(list[0].id);
+                }
+            } else {
+                setListeSituation([]);
+                toast.error("une erreur est survenue lors de la récupération de la liste des exercices");
+            }
+        })
+    }
+
+    const handleDeleteOneCommByType = (value) => {
+        if (value) {
+            setOpenDialogDeleteOneComm(false);
+            axios.delete('/declaration/comm/deleteOneCommByType',
+                {
+                    data: { id: idToDelete, type: nature, action: typeDelete, id_numcpt: idNumcptToDelete }
+                }).then((response) => {
+                    if (response?.data?.state) {
+                        setIsRefreshed(!isRefreshed);
+                    } else {
+                        toast.error(response?.data?.message);
+                    }
+                })
+        } else {
+            setOpenDialogDeleteOneComm(false);
+        }
+    }
+
+    //Verrouillage d'un tableau ---------------------------------------------------------------------------
+    const lockTableFunction = (tableau, verrouillage) => {
+        const valide = !verrouillage;
+        axios.post('/declaration/comm/verrouillerTableComm',
+            {
+                tableau,
+                valide,
+                id_dossier: Number(fileId),
+                id_exercice: Number(selectedExerciceId),
+                id_compte: Number(compteId)
+            }
+        )
+            .then((response) => {
+                if (response?.data?.state) {
+                } else {
+                    toast.error(response?.data?.message);
+                }
+            })
+    }
+
+    //Suppression droit de communication par type
+    const handleDeleteAllCommByType = (value) => {
+        if (value) {
+            axios.delete('/declaration/comm/deleteAllCommByType', { data: { type: nature } })
+                .then((response) => {
+                    if (response.data.state) {
+                        setIsRefreshed(!isRefreshed);
+                    } else {
+                        toast.error(response.data.message);
+                    }
+                })
+            setOpenDialogDeleteAllComm(false);
+        } else {
+            setOpenDialogDeleteAllComm(false);
+        }
+    }
+
+    //Recupération des données de la table comm global
+    const handleGetDroitCommGLobal = () => {
+        axios.get(`/declaration/comm/getDroitCommGlobal/${compteId}/${fileId}/${selectedExerciceId}`).then((response) => {
+            const data = response?.data?.data;
+            if (response?.data?.state) {
+                setDataSvt(data?.SVT);
+                setDataAdr(data?.ADR);
+                setDataAc(data?.AC);
+                setDataAi(data?.AI);
+                setDataDeb(data?.DEB);
+                setDataMv(data?.MV);
+                setDataPsv(data?.PSV);
+                setDataPl(data?.PL);
+                setDataPlp(data?.PLP);
+
+            } else {
+                toast.error(response?.data?.message);
+            }
+        })
+    }
+
+    //Récupération des vérouillages des tableaux
+    const handleGetVerrouillage = () => {
+        axios.get(`/declaration/comm/getVerrouillageComm/${compteId}/${fileId}/${selectedExerciceId}`).then((response) => {
+            const data = response?.data?.data;
+            if (response?.data?.state) {
+                setVerrouillageSvt(data?.find((item) => item.code === 'SVT')?.valide);
+                setVerrouillageAdr(data?.find((item) => item.code === 'ADR')?.valide);
+                setVerrouillageAc(data?.find((item) => item.code === 'AC')?.valide);
+                setVerrouillageAi(data?.find((item) => item.code === 'AI')?.valide);
+                setVerrouillageDeb(data?.find((item) => item.code === 'DEB')?.valide);
+                setVerrouillageMv(data?.find((item) => item.code === 'MV')?.valide);
+                setVerrouillagePsv(data?.find((item) => item.code === 'PSV')?.valide);
+                setVerrouillagePl(data?.find((item) => item.code === 'PL')?.valide);
+                setVerrouillagePlp(data?.find((item) => item.code === 'PLP')?.valide);
+            }
+        })
+    }
+
+    //Afficher le modal de confirmation de génération automatique
+    const handleOpenDialogConfirmGenerateAuto = (nature) => {
+        setOpenDialogGenerateAuto(true);
+        setNature(nature);
+    }
+
+    //Génération automatique d'une table
+    const handleGenerateDComAuto = (value) => {
+        if (value) {
+            axios.post(`/declaration/comm/generateDCommAuto`, {
+                id_dossier: Number(fileId),
+                id_exercice: Number(selectedExerciceId),
+                id_compte: Number(compteId),
+                nature
+            }).then((response) => {
+                const resData = response.data;
+                if (resData.state) {
+                    toast.success(response?.data?.message);
+                    setIsRefreshed(prev => !prev);
+                } else {
+                    toast.error(resData.message)
+                }
+            })
+                .catch((error) => {
+                    toast.error(error.response?.data?.message || error.message);
+                })
+            setOpenDialogGenerateAuto(false);
+        } else {
+            setOpenDialogGenerateAuto(false);
+        }
+    }
+
+    const droitCommColumnsA = VirtualTableDroitCommasColumns(fileId);
+    const droitCommColumnsB = VirtualTableDroitCommbsColumns(fileId);
+    const droitCommColumnPL = VirtualTableDroitCommPLColumns(fileId);
+
     //récupérer les informations du dossier sélectionné
     useEffect(() => {
         //tester si la page est renvoyer par useNavigate
@@ -547,7 +587,8 @@ export default function DeclarationComm() {
     }, [compteId, fileId, selectedExerciceId, isRefreshed])
 
     return (
-        <Box>
+        <Box
+        >
             {
                 noFile
                     ?
@@ -575,18 +616,20 @@ export default function DeclarationComm() {
                     :
                     null
             }
-            {showFormSVT ?
-                <PopupDeclarationComm
-                    type={typeActionSVT}
-                    confirmationState={handleCloseFormSVT}
-                    selectedExerciceId={selectedExerciceId}
-                    fileId={fileId}
-                    compteId={compteId}
-                    nature={nature}
-                    rowToModify={rowToModify}
-                    setIsRefreshed={() => setIsRefreshed(!isRefreshed)}
-                    textTitle={textTitle}
-                /> : null
+            {
+                showFormSVT ?
+                    <PopupDeclarationComm
+                        type={typeActionSVT}
+                        confirmationState={handleCloseFormSVT}
+                        selectedExerciceId={selectedExerciceId}
+                        fileId={fileId}
+                        compteId={compteId}
+                        nature={nature}
+                        // rowToModify={rowToModify?.lignes[0]}
+                        rowToModify={rowToModify}
+                        setIsRefreshed={() => setIsRefreshed(!isRefreshed)}
+                        textTitle={textTitle}
+                    /> : null
             }
             {
                 showFormEditPlp ?
@@ -610,6 +653,13 @@ export default function DeclarationComm() {
                     />
                     :
                     null
+            }
+            {
+                openDialogGenerateAuto ? <PopupConfirmDelete
+                    msg={`Voulez-vous vraiment générer automatiquement les ${nature} ? Toutes les anciennes données seront supprimées.`}
+                    confirmationState={handleGenerateDComAuto}
+                    type={"Generer"}
+                /> : null
             }
             <TabContext value={"1"} >
                 <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -641,6 +691,9 @@ export default function DeclarationComm() {
                                         label={"valSelect"}
                                         onChange={(e) => handleChangeExercice(e.target.value)}
                                         sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                        MenuProps={{
+                                            disableScrollLock: true
+                                        }}
                                     >
                                         {listeExercice.map((option) => (
                                             <MenuItem
@@ -662,6 +715,9 @@ export default function DeclarationComm() {
                                         label={"valSelect"}
                                         onChange={(e) => handleChangePeriode(e.target.value)}
                                         sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                        MenuProps={{
+                                            disableScrollLock: true
+                                        }}
                                     >
                                         <MenuItem value={0}>Toutes</MenuItem>
                                         <MenuItem value={1}>Situations</MenuItem>
@@ -677,6 +733,9 @@ export default function DeclarationComm() {
                                         label={"valSelect"}
                                         onChange={(e) => handleChangeDateIntervalle(e.target.value)}
                                         sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                        MenuProps={{
+                                            disableScrollLock: true
+                                        }}
                                     >
                                         {listeSituation?.map((option) => (
                                             <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
@@ -706,7 +765,9 @@ export default function DeclarationComm() {
                                         <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="PLP" value="9" />
                                     </TabList>
                                 </Box>
-                                <TabPanel value="1">
+                                <TabPanel
+                                    value="1"
+                                >
                                     <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
                                         alignContent={"flex-start"} justifyContent={"stretch"} >
                                         <Stack width={"100%"} height={"20px"} spacing={1} alignItems={"center"}
@@ -723,13 +784,17 @@ export default function DeclarationComm() {
                                                         onClick={() => handleOpenPopupImport('SVT')}
                                                         variant="contained"
                                                         style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: 'rgba(5,96,116,0.60)',
-                                                            textTransform: 'none', outline: 'none',
+                                                            width: "45px",
+                                                            height: "45px",
+                                                            borderRadius: "2px",
+                                                            border: "2px solid rgba(5,96,116,0.60)",
+                                                            backgroundColor: "transparent",
+                                                            textTransform: "none",
+                                                            outline: "none",
+                                                            display: verrouillageSvt ? 'none' : 'inline-flex',
                                                         }}
                                                     >
-                                                        <CgImport style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        <CiImport style={{ width: '25px', height: '25px', color: 'rgba(5,96,116,0.60)' }} />
                                                     </IconButton>
                                                 </Tooltip>
 
@@ -765,6 +830,23 @@ export default function DeclarationComm() {
                                                     </IconButton>
                                                 </Tooltip>
 
+                                                <Tooltip title="Actualiser les calculs">
+                                                    <IconButton
+                                                        // onClick={refreshBHIAPC}
+                                                        onClick={() => handleOpenDialogConfirmGenerateAuto('SVT')}
+                                                        variant="contained"
+                                                        style={{
+                                                            width: "45px", height: '45px',
+                                                            borderRadius: "1px", borderColor: "transparent",
+                                                            backgroundColor: initial.theme,
+                                                            textTransform: 'none', outline: 'none',
+                                                            display: verrouillageSvt ? 'none' : 'inline-flex',
+                                                        }}
+                                                    >
+                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                    </IconButton>
+                                                </Tooltip>
+
                                                 <Tooltip
                                                     title={verrouillageSvt ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}
                                                 >
@@ -793,7 +875,7 @@ export default function DeclarationComm() {
                                             alignItems={'start'}
                                             style={{ overflow: 'auto' }}
                                         >
-                                            <VirtualTableDroitComm columns={droitCommColumnsA} rows={dataSvt} verrouillage={verrouillageSvt} deleteState={deleteOneRowSvt} modifyState={modifyOneRowSvt} />
+                                            <VirtualTableDroitComm nature={'SVT'} columns={droitCommColumnsA} rows={dataSvt} verrouillage={verrouillageSvt} deleteState={deleteOneRowSvt} modifyState={modifyOneRowSvt} />
                                         </Stack>
                                     </Stack>
                                 </TabPanel>
@@ -815,13 +897,17 @@ export default function DeclarationComm() {
                                                         onClick={() => handleOpenPopupImport('ADR')}
                                                         variant="contained"
                                                         style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: 'rgba(5,96,116,0.60)',
-                                                            textTransform: 'none', outline: 'none',
+                                                            width: "45px",
+                                                            height: "45px",
+                                                            borderRadius: "2px",
+                                                            border: "2px solid rgba(5,96,116,0.60)",
+                                                            backgroundColor: "transparent",
+                                                            textTransform: "none",
+                                                            outline: "none",
+                                                            display: verrouillageAdr ? 'none' : 'inline-flex',
                                                         }}
                                                     >
-                                                        <CgImport style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        <CiImport style={{ width: '25px', height: '25px', color: 'rgba(5,96,116,0.60)' }} />
                                                     </IconButton>
                                                 </Tooltip>
 
@@ -857,6 +943,23 @@ export default function DeclarationComm() {
                                                     </IconButton>
                                                 </Tooltip>
 
+                                                <Tooltip title="Actualiser les calculs">
+                                                    <IconButton
+                                                        // onClick={refreshBHIAPC}
+                                                        onClick={() => handleOpenDialogConfirmGenerateAuto('ADR')}
+                                                        variant="contained"
+                                                        style={{
+                                                            width: "45px", height: '45px',
+                                                            borderRadius: "1px", borderColor: "transparent",
+                                                            backgroundColor: initial.theme,
+                                                            textTransform: 'none', outline: 'none',
+                                                            display: verrouillageAdr ? 'none' : 'inline-flex',
+                                                        }}
+                                                    >
+                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                    </IconButton>
+                                                </Tooltip>
+
                                                 <Tooltip
                                                     title={verrouillageAdr ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}
                                                 >
@@ -887,7 +990,7 @@ export default function DeclarationComm() {
                                             alignItems={'start'}
                                             style={{ overflow: 'auto' }}
                                         >
-                                            <VirtualTableDroitComm columns={droitCommColumnsA} rows={dataAdr} verrouillage={verrouillageAdr} deleteState={deleteOneRowAdr} modifyState={modifyOneRowAdr} />
+                                            <VirtualTableDroitComm nature={'ADR'} columns={droitCommColumnsA} rows={dataAdr} verrouillage={verrouillageAdr} deleteState={deleteOneRowAdr} modifyState={modifyOneRowAdr} />
                                         </Stack>
                                     </Stack>
                                 </TabPanel>
@@ -906,15 +1009,18 @@ export default function DeclarationComm() {
                                                 <Tooltip title="Importer des données">
                                                     <IconButton
                                                         onClick={() => handleOpenPopupImport('AC')}
-                                                        variant="contained"
                                                         style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: 'rgba(5,96,116,0.60)',
-                                                            textTransform: 'none', outline: 'none',
+                                                            width: "45px",
+                                                            height: "45px",
+                                                            borderRadius: "2px",
+                                                            border: "2px solid rgba(5,96,116,0.60)",
+                                                            backgroundColor: "transparent",
+                                                            textTransform: "none",
+                                                            outline: "none",
+                                                            display: verrouillageAc ? 'none' : 'inline-flex',
                                                         }}
                                                     >
-                                                        <CgImport style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        <CiImport style={{ width: '25px', height: '25px', color: 'rgba(5,96,116,0.60)' }} />
                                                     </IconButton>
                                                 </Tooltip>
 
@@ -950,6 +1056,23 @@ export default function DeclarationComm() {
                                                     </IconButton>
                                                 </Tooltip>
 
+                                                <Tooltip title="Actualiser les calculs">
+                                                    <IconButton
+                                                        // onClick={refreshBHIAPC}
+                                                        onClick={() => handleOpenDialogConfirmGenerateAuto('AC')}
+                                                        variant="contained"
+                                                        style={{
+                                                            width: "45px", height: '45px',
+                                                            borderRadius: "1px", borderColor: "transparent",
+                                                            backgroundColor: initial.theme,
+                                                            textTransform: 'none', outline: 'none',
+                                                            display: verrouillageAc ? 'none' : 'inline-flex',
+                                                        }}
+                                                    >
+                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                    </IconButton>
+                                                </Tooltip>
+
                                                 <Tooltip
                                                     title={verrouillageAc ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}
                                                 >
@@ -980,7 +1103,7 @@ export default function DeclarationComm() {
                                             alignItems={'start'}
                                             style={{ overflow: 'auto' }}
                                         >
-                                            <VirtualTableDroitComm columns={droitCommColumnsA} verrouillage={verrouillageAc} rows={dataAc} deleteState={deleteOneRowAc} modifyState={modifyOneRowAc} />
+                                            <VirtualTableDroitComm nature={'AC'} columns={droitCommColumnsA} verrouillage={verrouillageAc} rows={dataAc} deleteState={deleteOneRowAc} modifyState={modifyOneRowAc} />
                                         </Stack>
                                     </Stack>
                                 </TabPanel>
@@ -1000,15 +1123,18 @@ export default function DeclarationComm() {
                                                 <Tooltip title="Importer des données">
                                                     <IconButton
                                                         onClick={() => handleOpenPopupImport('AI')}
-                                                        variant="contained"
                                                         style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: 'rgba(5,96,116,0.60)',
-                                                            textTransform: 'none', outline: 'none',
+                                                            width: "45px",
+                                                            height: "45px",
+                                                            borderRadius: "2px",
+                                                            border: "2px solid rgba(5,96,116,0.60)",
+                                                            backgroundColor: "transparent",
+                                                            textTransform: "none",
+                                                            outline: "none",
+                                                            display: verrouillageAi ? 'none' : 'inline-flex',
                                                         }}
                                                     >
-                                                        <CgImport style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        <CiImport style={{ width: '25px', height: '25px', color: 'rgba(5,96,116,0.60)' }} />
                                                     </IconButton>
                                                 </Tooltip>
 
@@ -1044,6 +1170,23 @@ export default function DeclarationComm() {
                                                     </IconButton>
                                                 </Tooltip>
 
+                                                <Tooltip title="Actualiser les calculs">
+                                                    <IconButton
+                                                        // onClick={refreshBHIAPC}
+                                                        onClick={() => handleOpenDialogConfirmGenerateAuto('AI')}
+                                                        variant="contained"
+                                                        style={{
+                                                            width: "45px", height: '45px',
+                                                            borderRadius: "1px", borderColor: "transparent",
+                                                            backgroundColor: initial.theme,
+                                                            textTransform: 'none', outline: 'none',
+                                                            display: verrouillageAi ? 'none' : 'inline-flex',
+                                                        }}
+                                                    >
+                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                    </IconButton>
+                                                </Tooltip>
+
                                                 <Tooltip
                                                     title={verrouillageAi ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}
                                                 >
@@ -1073,7 +1216,7 @@ export default function DeclarationComm() {
                                             alignItems={'start'}
                                             style={{ overflow: 'auto' }}
                                         >
-                                            <VirtualTableDroitComm columns={droitCommColumnsA} rows={dataAi} verrouillage={verrouillageAi} deleteState={deleteOneRowAi} modifyState={modifyOneRowAi} />
+                                            <VirtualTableDroitComm nature={'AI'} columns={droitCommColumnsA} rows={dataAi} verrouillage={verrouillageAi} deleteState={deleteOneRowAi} modifyState={modifyOneRowAi} />
                                         </Stack>
                                     </Stack>
                                 </TabPanel>
@@ -1093,15 +1236,18 @@ export default function DeclarationComm() {
                                                 <Tooltip title="Importer des données">
                                                     <IconButton
                                                         onClick={() => handleOpenPopupImport('DEB')}
-                                                        variant="contained"
                                                         style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
+                                                            width: "45px",
+                                                            height: "45px",
+                                                            borderRadius: "2px",
+                                                            border: "2px solid rgba(5,96,116,0.60)",
+                                                            backgroundColor: "transparent",
+                                                            textTransform: "none",
+                                                            outline: "none",
+                                                            display: verrouillageDeb ? 'none' : 'inline-flex',
                                                         }}
                                                     >
-                                                        <CgImport style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        <CiImport style={{ width: '25px', height: '25px', color: 'rgba(5,96,116,0.60)' }} />
                                                     </IconButton>
                                                 </Tooltip>
 
@@ -1118,6 +1264,39 @@ export default function DeclarationComm() {
                                                         }}
                                                     >
                                                         <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                    </IconButton>
+                                                </Tooltip>
+
+                                                <Tooltip title="Supprimer toutes les lignes du tableau">
+                                                    <IconButton
+                                                        onClick={() => handleOpenDialogConfirmDeleteComm('DEB')}
+                                                        variant="contained"
+                                                        style={{
+                                                            width: "45px", height: '45px',
+                                                            borderRadius: "1px", borderColor: "transparent",
+                                                            backgroundColor: initial.button_delete_color,
+                                                            textTransform: 'none', outline: 'none',
+                                                            display: verrouillageDeb ? 'none' : 'inline-flex',
+                                                        }}
+                                                    >
+                                                        <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                    </IconButton>
+                                                </Tooltip>
+
+                                                <Tooltip title="Actualiser les calculs">
+                                                    <IconButton
+                                                        // onClick={refreshBHIAPC}
+                                                        onClick={() => handleOpenDialogConfirmGenerateAuto('DEB')}
+                                                        variant="contained"
+                                                        style={{
+                                                            width: "45px", height: '45px',
+                                                            borderRadius: "1px", borderColor: "transparent",
+                                                            backgroundColor: initial.theme,
+                                                            textTransform: 'none', outline: 'none',
+                                                            display: verrouillageDeb ? 'none' : 'inline-flex',
+                                                        }}
+                                                    >
+                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
                                                     </IconButton>
                                                 </Tooltip>
 
@@ -1150,7 +1329,7 @@ export default function DeclarationComm() {
                                             alignItems={'start'}
                                             style={{ overflow: 'auto' }}
                                         >
-                                            <VirtualTableDroitComm columns={droitCommColumnsA} verrouillage={verrouillageDeb} rows={dataDeb} deleteState={deleteOneRowDeb} modifyState={modifyOneRowDeb} />
+                                            <VirtualTableDroitComm nature={'DEB'} columns={droitCommColumnsA} verrouillage={verrouillageDeb} rows={dataDeb} deleteState={deleteOneRowDeb} modifyState={modifyOneRowDeb} />
                                         </Stack>
                                     </Stack>
                                 </TabPanel>
@@ -1170,15 +1349,18 @@ export default function DeclarationComm() {
                                                 <Tooltip title="Importer des données">
                                                     <IconButton
                                                         onClick={() => handleOpenPopupImport('MV')}
-                                                        variant="contained"
                                                         style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
+                                                            width: "45px",
+                                                            height: "45px",
+                                                            borderRadius: "2px",
+                                                            border: "2px solid rgba(5,96,116,0.60)",
+                                                            backgroundColor: "transparent",
+                                                            textTransform: "none",
+                                                            outline: "none",
+                                                            display: verrouillageMv ? 'none' : 'inline-flex',
                                                         }}
                                                     >
-                                                        <CgImport style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        <CiImport style={{ width: '25px', height: '25px', color: 'rgba(5,96,116,0.60)' }} />
                                                     </IconButton>
                                                 </Tooltip>
 
@@ -1214,6 +1396,23 @@ export default function DeclarationComm() {
                                                     </IconButton>
                                                 </Tooltip>
 
+                                                <Tooltip title="Actualiser les calculs">
+                                                    <IconButton
+                                                        // onClick={refreshBHIAPC}
+                                                        onClick={() => handleOpenDialogConfirmGenerateAuto('MV')}
+                                                        variant="contained"
+                                                        style={{
+                                                            width: "45px", height: '45px',
+                                                            borderRadius: "1px", borderColor: "transparent",
+                                                            backgroundColor: initial.theme,
+                                                            textTransform: 'none', outline: 'none',
+                                                            display: verrouillageMv ? 'none' : 'inline-flex',
+                                                        }}
+                                                    >
+                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                    </IconButton>
+                                                </Tooltip>
+
                                                 <Tooltip
                                                     title={verrouillageMv ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}
                                                 >
@@ -1243,7 +1442,7 @@ export default function DeclarationComm() {
                                             alignItems={'start'}
                                             style={{ overflow: 'auto' }}
                                         >
-                                            <VirtualTableDroitComm columns={droitCommColumnsB} verrouillage={verrouillageMv} rows={dataMv} deleteState={deleteOneRowMv} modifyState={modifyOneRowMv} />
+                                            <VirtualTableDroitComm nature={'MV'} columns={droitCommColumnsB} verrouillage={verrouillageMv} rows={dataMv} deleteState={deleteOneRowMv} modifyState={modifyOneRowMv} />
                                         </Stack>
                                     </Stack>
                                 </TabPanel>
@@ -1263,15 +1462,18 @@ export default function DeclarationComm() {
                                                 <Tooltip title="Importer des données">
                                                     <IconButton
                                                         onClick={() => handleOpenPopupImport('PSV')}
-                                                        variant="contained"
                                                         style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: 'rgba(5,96,116,0.60)',
-                                                            textTransform: 'none', outline: 'none',
+                                                            width: "45px",
+                                                            height: "45px",
+                                                            borderRadius: "2px",
+                                                            border: "2px solid rgba(5,96,116,0.60)",
+                                                            backgroundColor: "transparent",
+                                                            textTransform: "none",
+                                                            outline: "none",
+                                                            display: verrouillagePsv ? 'none' : 'inline-flex',
                                                         }}
                                                     >
-                                                        <CgImport style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        <CiImport style={{ width: '25px', height: '25px', color: 'rgba(5,96,116,0.60)' }} />
                                                     </IconButton>
                                                 </Tooltip>
 
@@ -1307,6 +1509,23 @@ export default function DeclarationComm() {
                                                     </IconButton>
                                                 </Tooltip>
 
+                                                <Tooltip title="Actualiser les calculs">
+                                                    <IconButton
+                                                        // onClick={refreshBHIAPC}
+                                                        onClick={() => handleOpenDialogConfirmGenerateAuto('PSV')}
+                                                        variant="contained"
+                                                        style={{
+                                                            width: "45px", height: '45px',
+                                                            borderRadius: "1px", borderColor: "transparent",
+                                                            backgroundColor: initial.theme,
+                                                            textTransform: 'none', outline: 'none',
+                                                            display: verrouillagePsv ? 'none' : 'inline-flex',
+                                                        }}
+                                                    >
+                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                    </IconButton>
+                                                </Tooltip>
+
                                                 <Tooltip
                                                     title={verrouillagePsv ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}
                                                 >
@@ -1336,7 +1555,7 @@ export default function DeclarationComm() {
                                             alignItems={'start'}
                                             style={{ overflow: 'auto' }}
                                         >
-                                            <VirtualTableDroitComm columns={droitCommColumnsB} verrouillage={verrouillagePsv} rows={dataPsv} deleteState={deleteOneRowPsv} modifyState={modifyOneRowPsv} />
+                                            <VirtualTableDroitComm nature={'PSV'} columns={droitCommColumnsB} verrouillage={verrouillagePsv} rows={dataPsv} deleteState={deleteOneRowPsv} modifyState={modifyOneRowPsv} />
                                         </Stack>
                                     </Stack>
                                 </TabPanel>
@@ -1356,15 +1575,18 @@ export default function DeclarationComm() {
                                                 <Tooltip title="Importer des données">
                                                     <IconButton
                                                         onClick={() => handleOpenPopupImport('PL')}
-                                                        variant="contained"
                                                         style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: 'rgba(5,96,116,0.60)',
-                                                            textTransform: 'none', outline: 'none',
+                                                            width: "45px",
+                                                            height: "45px",
+                                                            borderRadius: "2px",
+                                                            border: "2px solid rgba(5,96,116,0.60)",
+                                                            backgroundColor: "transparent",
+                                                            textTransform: "none",
+                                                            outline: "none",
+                                                            display: verrouillagePl ? 'none' : 'inline-flex',
                                                         }}
                                                     >
-                                                        <CgImport style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        <CiImport style={{ width: '25px', height: '25px', color: 'rgba(5,96,116,0.60)' }} />
                                                     </IconButton>
                                                 </Tooltip>
 
@@ -1400,6 +1622,24 @@ export default function DeclarationComm() {
                                                     </IconButton>
                                                 </Tooltip>
 
+                                                <Tooltip title="Actualiser les calculs">
+                                                    <IconButton
+                                                        // onClick={refreshBHIAPC}
+                                                        onClick={() => handleOpenDialogConfirmGenerateAuto('PL')}
+                                                        variant="contained"
+                                                        style={{
+                                                            width: "45px", height: '45px',
+                                                            borderRadius: "1px", borderColor: "transparent",
+                                                            backgroundColor: initial.theme,
+                                                            textTransform: 'none', outline: 'none',
+                                                            display: verrouillagePl ? 'none' : 'inline-flex',
+                                                        }}
+                                                    >
+                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                    </IconButton>
+                                                </Tooltip>
+
+
                                                 <Tooltip
                                                     title={verrouillagePl ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}
                                                 >
@@ -1428,7 +1668,7 @@ export default function DeclarationComm() {
                                             alignItems={'start'}
                                             style={{ overflow: 'auto' }}
                                         >
-                                            <VirtualTableDroitComm columns={droitCommColumnPL} verrouillage={verrouillagePl} rows={dataPl} deleteState={deleteOneRowPl} modifyState={modifyOneRowPl} />
+                                            <VirtualTableDroitComm nature={'PL'} columns={droitCommColumnPL} verrouillage={verrouillagePl} rows={dataPl} deleteState={deleteOneRowPl} modifyState={modifyOneRowPl} />
                                         </Stack>
                                     </Stack>
                                 </TabPanel>

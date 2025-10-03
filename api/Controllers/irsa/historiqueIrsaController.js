@@ -1,6 +1,6 @@
 // Controller pour historique des exports IRSA
 const db = require('../../Models');
-const HistoriqueIrsa = db.historiqueirsa;
+const HistoriqueIrsa = db.historiquedeclaration;
 
 // Créer un enregistrement d'export IRSA
 exports.createHistoriqueIrsa = async (req, res) => {
@@ -14,7 +14,7 @@ exports.createHistoriqueIrsa = async (req, res) => {
       date_export: new Date()
     });
     res.status(201).json({ success: true, historique: record });
-  }catch (error) {
+  } catch (error) {
     console.error('[HISTORIQUE IRSA]', error); // ← DÉJÀ PRÉSENT
     res.status(500).json({ success: false, message: error.message });
   }

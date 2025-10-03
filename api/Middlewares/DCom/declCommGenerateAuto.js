@@ -1,0 +1,216 @@
+const db = require('../../Models');
+const journals = db.journals;
+const dossierplancomptable = db.dossierplancomptable;
+const droitcommas = db.droitcommas;
+const droitcommbs = db.droitcommbs;
+
+const calculateSolde = (sens, data) => {
+    if (!data || data.length === 0) return 0;
+
+    let total = 0;
+
+    if (sens === 'D-C') {
+        total = data.reduce((sum, l) => {
+            const debit = parseFloat(l.debit) || 0;
+            const credit = parseFloat(l.credit) || 0;
+            return sum + (debit - credit);
+        }, 0);
+    } else if (sens === 'C-D') {
+        total = data.reduce((sum, l) => {
+            const debit = parseFloat(l.debit) || 0;
+            const credit = parseFloat(l.credit) || 0;
+            return sum + (credit - debit);
+        }, 0);
+    }
+
+    return parseFloat(total.toFixed(2));
+};
+
+// Fonction pour plurieliser un mot
+function pluralize(count, word) {
+    return count > 1 ? word + 's' : word;
+}
+
+const generateDroitComm = async (res, nature, list, id_compte, id_dossier, id_exercice) => {
+    try {
+        const compteSensMapTemp = list.reduce((acc, val) => {
+            if (!acc[val.compte]) {
+                acc[val.compte] = new Set();
+            }
+            acc[val.compte].add(val.senscalcul);
+            return acc;
+        }, {});
+
+        // return console.log(compteSensMapTemp);
+
+        const compteSensMap = Object.fromEntries(
+            Object.entries(compteSensMapTemp)
+                .filter(([compte, sensSet]) => sensSet.size === 1)
+                .map(([compte, sensSet]) => [compte, [...sensSet][0]])
+        );
+
+        const uniqueComptes = Object.keys(compteSensMap);
+
+        const journalData = await journals.findAll({
+            where: { id_compte, id_dossier, id_exercice },
+            include: [
+                {
+                    model: dossierplancomptable,
+                    attributes: ['compte'],
+                    required: true
+                },
+            ],
+            order: [['dateecriture', 'ASC']]
+        });
+
+        const mappedAllJournalsData = journalData.map(journal => {
+            const { dossierplancomptable, ...rest } = journal.toJSON();
+            return {
+                ...rest,
+                compte: dossierplancomptable?.compte || null,
+            };
+        });
+
+        // return res.json(mappedAllJournalsData)
+
+        const groupedData = Object.values(
+            mappedAllJournalsData.reduce((acc, item) => {
+                const compteStr = item.compte?.toString() || "";
+
+                if (!acc[item.id_ecriture]) {
+                    acc[item.id_ecriture] = {
+                        id_ecriture: item.id_ecriture,
+                        id_numcpt: item.id_numcpt,
+                        dateecriture: item.dateecriture,
+                        lignes: [],
+                    };
+                }
+
+                const matchingCompte = uniqueComptes.find(c => compteStr.startsWith(c)) || (compteStr.startsWith("401") ? "401" : null);
+
+                if (matchingCompte) {
+                    acc[item.id_ecriture].lignes.push({
+                        compte: item.compte,
+                        libelle: item.libelle,
+                        debit: item.debit,
+                        credit: item.credit,
+                        id_numcpt: item.id_numcpt,
+                        dateecriture: item.dateecriture,
+                        senscalcul: compteSensMap[matchingCompte] || null,
+                    });
+                }
+
+                return acc;
+            }, {})
+        )
+            .filter(ecriture => {
+                const has401 = ecriture.lignes.some(l => l.compte.startsWith("401"));
+                const hasUniqueCompte = ecriture.lignes.some(l =>
+                    uniqueComptes.some(c => l.compte.startsWith(c))
+                );
+                return has401 && hasUniqueCompte;
+            });
+
+        // return res.json(groupedData)
+
+        if (groupedData.length === 0) {
+            return res.status(400).json({
+                state: true,
+                message: "Aucune données à générer automatiquement"
+            });
+        }
+
+        const only401Lines = groupedData.map(ecriture => {
+            const senscalcul = ecriture.lignes.find(l => !l.compte.startsWith("401"))?.senscalcul || null;
+
+            const lignes401 = ecriture.lignes.filter(l => l.compte.startsWith("401"));
+
+            return {
+                id_ecriture: ecriture.id_ecriture,
+                id_numcpt: ecriture.id_numcpt,
+                dateecriture: ecriture.dateecriture,
+                senscalcul,
+                lignes: lignes401,
+            };
+        });
+
+        // return res.json(only401Lines);
+
+        const result = await Promise.all(
+            only401Lines.map(async (group) => {
+                const senscalcul = group.senscalcul || "D-C";
+                const montant = calculateSolde(senscalcul, group.lignes);
+                const dossierPlanComptableData = await dossierplancomptable.findByPk(group.lignes[0].id_numcpt);
+                return {
+                    id_compte,
+                    id_dossier,
+                    id_exercice,
+                    id_ecriture: group.id_ecriture,
+                    id_numcpt: dossierPlanComptableData?.id || null,
+                    // date: group.dateecriture,
+                    comptabilisees: montant,
+                    // versees: comptabilisees,
+                    montanth_tva: montant,
+                    nif: dossierPlanComptableData?.nif || null,
+                    nif_representaires: dossierPlanComptableData?.nifrepresentant || null,
+                    num_stat: dossierPlanComptableData?.statistique || null,
+                    cin: dossierPlanComptableData?.cin || null,
+                    date_cin: dossierPlanComptableData?.datecin || null,
+                    raison_sociale: dossierPlanComptableData?.libelle,
+                    nom_commercial: dossierPlanComptableData?.libelle,
+                    adresse: dossierPlanComptableData?.adresse || null,
+                    fokontany: dossierPlanComptableData?.fokontany || null,
+                    pays: dossierPlanComptableData?.pays || null,
+                    ville: dossierPlanComptableData?.commune || null,
+                    ex_province: dossierPlanComptableData?.province || null,
+                    typeTier: 'avecNif',
+                    type: nature
+                }
+            })
+        )
+
+        // return res.json(result);
+
+        const mergedResult = Object.values(
+            result.reduce((acc, item) => {
+                if (!item.id_numcpt) return acc;
+
+                if (!acc[item.id_numcpt]) {
+                    acc[item.id_numcpt] = { ...item };
+                } else {
+                    acc[item.id_numcpt].comptabilisees += item.comptabilisees;
+                    acc[item.id_numcpt].montanth_tva += item.montanth_tva;
+                    // acc[item.id_numcpt].versees += item.versees;
+                }
+
+                return acc;
+            }, {})
+        );
+
+        // return res.json(mergedResult);
+
+        const mergedResultLenght = mergedResult.length;
+        if (['SVT', 'ADR', 'AC', 'AI', 'DEB'].includes(nature)) {
+            await droitcommas.bulkCreate(result, {
+                returning: true
+            })
+        } else {
+            await droitcommbs.bulkCreate(result, {
+                returning: true
+            })
+        }
+
+        return res.json({
+            state: true,
+            message: `${mergedResultLenght} ${nature} ${pluralize(mergedResultLenght, 'générée')} avec succès`
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Une erreur est survenue" });
+    }
+};
+
+module.exports = {
+    generateDroitComm
+};

@@ -164,6 +164,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.DOUBLE,
             allowNull: false,
             defaultValue: 0
+        },
+        compteisi: {
+            type: DataTypes.STRING(30),
+            allowNull: true
         }
     }, { timestamps: true },)
     return dossiers

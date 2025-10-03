@@ -1,207 +1,246 @@
-import { useState, React, useRef, useEffect } from 'react';
-import {Link, Stack, Box, TextField, Button, Typography, Checkbox} from "@mui/material";
+import { useState } from 'react';
+import { Link, Stack, Box, TextField, Button, Typography, Checkbox } from "@mui/material";
 import axios from '../../config/axios';
-import { toast } from 'react-hot-toast';
 import { init } from '../../init';
-import InputLabel from '@mui/material/InputLabel';
 import InputAdornment from '@mui/material/InputAdornment';
 import FormControl from '@mui/material/FormControl';
-import Input from '@mui/material/Input';
 import IconButton from '@mui/material/IconButton';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import useAuth from '../hooks/useAuth';
-import { useNavigate, useLocation } from 'react-router-dom';
-import useAxiosPrivate from '../hooks/useAxiosPrivate';
+import { useNavigate } from 'react-router-dom';
+import { useTheme, useMediaQuery } from "@mui/material";
+import toast from 'react-hot-toast';
 
-function Login() {
+import { useFormik } from 'formik';
 
+const Login = () => {
   let initial = init[0];
-  const serverUrl = `${initial.REACT_APP_API_URL}:${initial.REACT_APP_API_PORT}` ;
-
-  //Envoi requete de connexion---------------------------------------------------------------------
-  const { setAuth } = useAuth();
-  const axiosPrivate = useAxiosPrivate();
 
   const navigate = useNavigate();
-  const location = useLocation();
-  const from = location.state?.from?.pathname || "/";
 
-  const userRef =useRef();
-  const errRef =useRef();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [errMsg, setErrMsg] = useState('');
+  //Envoi requete de connexion
+  const { setAuth } = useAuth();
 
-  useEffect(() => {
-    userRef.current.focus();
-  }, []);
-
-  useEffect(() => {
-    setErrMsg('');
-  }, [email, password]);
-
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    try {
-
-        const response = await axios.post('/',{email, password},
-          {
-            headers:{'Content-Type': 'application/json'},
-            withCredentials: true
-          }
-        );
-      
-        const accessToken = response?.data?.accessToken;
-        setAuth({ accessToken }); 
-        //navigate(from, { replace: true });
-        navigate("/tab/home");
-    }catch (err){
-        if(!err.response) {
-          setErrMsg('Le serveur ne repond pas');
-        } else if (err.response?.status === 400){
-          setErrMsg('Veuillez insérer votre email et mot de passe correctement');
-        }else if (err.response?.status === 401){
-          setErrMsg('Unauthorized');
-        }else {
-          setErrMsg('Erreur de connexion');
-        }
-
-        //errRef.current.focus();
-    }
-  }
-
-  //Option de choix d'afficher ou non du mot de passe-----------------------------------------------------------------
+  //Option de choix d'afficher ou non du mot de passe
   const [showPassword, setShowPassword] = useState(false);
+
   const handleClickShowPassword = () => setShowPassword((show) => !show);
+
   const handleMouseDownPassword = (event) => {
     event.preventDefault();
   };
 
-  return (<Stack alignItems={"center"}
-                justifyContent={"center"}
-                backgroundColor={initial.theme}
-                width={"100vw"}
-                height={"48vw"}
-                 direction={"column"}
-                 display={"inline-flex"} 
-          >
+  const handleMouseUpPassword = (event) => {
+    event.preventDefault();
+  };
 
-          <Stack alignItems={"center"}
-                    justifyContent={"center"}
-                    width={"28%"}
-                    height={"35vw"}
-                    display={"inline-block"}
-                    backgroundColor={"white"}
-                    borderRadius={"2%"}
-                    marginTop={"10px"}
-                    >
- 
-            <Box width={"100%"}>
-              <form style={{marginTop: 5}} onSubmit={handleSubmit}>
-                  <Stack direction={"column"} 
-                        gap={3}
-                        width={"80%"}
-                        alignItems={"center"}
-                        paddingLeft={"50px"}
-                        justifyContent={"center"}
+  // const validationSchema = Yup.object({
+  //     email:
+  //         Yup.string().required("L'adresse email est obligatoire")
+  //             .email("L'adresse email n'est pas valide"),
+  //     password: Yup.string().required("Le mot de passe est obligatoire"),
+  // })
+
+  const formData = useFormik({
+    initialValues: {
+      email: '',
+      password: ''
+    },
+    // validationSchema,
+
+    onSubmit: async (values) => {
+      try {
+        const response = await axios.post('/', { email: values.email, password: values.password },
+          {
+            headers: { 'Content-Type': 'application/json' },
+            withCredentials: true
+          }
+        );
+        const accessToken = response?.data?.accessToken;
+        setAuth({ accessToken });
+        navigate("/tab/home");
+      } catch (err) {
+        if (!err.response) {
+          toast.error('Le serveur ne repond pas');
+        } else if (err.response?.status === 400) {
+          toast.error('Veuillez insérer votre email et mot de passe correctement');
+        } else if (err.response?.status === 401) {
+          toast.error('Unauthorized');
+        } else {
+          toast.error('Erreur de connexion');
+        }
+      }
+    }
+  })
+
+  return (
+    <Stack
+      alignItems="center"
+      justifyContent="center"
+      style={{
+        backgroundColor: initial.theme,
+        width: '100vw',
+        height: '100vh',
+      }}
+    >
+      <Stack
+        alignItems="center"
+        justifyContent="center"
+        width={isMobile ? '80%' : '400px'}
+        maxWidth="90vw"
+        bgcolor="white"
+        borderRadius={2}
+        boxShadow={3}
+        py={4}
+        px={3}
+        mt={2}
+      >
+        <Box width="100%">
+          <form onSubmit={formData.handleSubmit}>
+            <Stack
+              direction="column"
+              spacing={3}
+              alignItems="center"
+              justifyContent="center"
+            >
+              <img
+                src="/src/img/Logo Kaonty_2.png"
+                alt="Logo Kaonty"
+                style={{
+                  border: '1px solid #FFF',
+                  borderRadius: '8px',
+                  width: '40px',
+                  height: '40px',
+                  marginTop: '10px'
+                }}
+              />
+
+              <Typography
+                variant="h4"
+                fontFamily="Bahnschrift Condensed"
+                fontWeight="light"
+                color="rgba(112, 112, 112, 0.96)"
+                mt={-1}
+              >
+                Kaonty
+              </Typography>
+
+              <Typography
+                variant="body1"
+                fontFamily="Bahnschrift"
+                fontWeight="light"
+                fontSize="16px"
+                color="rgba(192, 190, 190, 0.96)"
+                mt={-2}
+              >
+                Connectez-vous à votre compte
+              </Typography>
+
+              <TextField
+                type="email"
+                name="email"
+
+                value={formData.values.email}
+                onChange={formData.handleChange}
+                // onBlur={formData.handleBlur}
+                // error={Boolean(formData.touched.email && formData.errors.email)}
+                // helperText={formData.touched.email && formData.errors.email}
+
+                label="Adresse mail"
+                variant="standard"
+                fullWidth
+                size="small"
+                required
+              />
+
+              <FormControl variant="standard" fullWidth>
+                <TextField
+                  id="standard-adornment-password"
+                  label="Mot de passe"
+                  variant="standard"
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  fullWidth
+                  required
+
+                  value={formData.values.password}
+                  onChange={formData.handleChange}
+                  // onBlur={formData.handleBlur}
+                  // error={Boolean(formData.touched.password && formData.errors.password)}
+                  // helperText={formData.touched.password && formData.errors.password}
+
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label={showPassword ? 'hide password' : 'show password'}
+                          onClick={handleClickShowPassword}
+                          onMouseDown={handleMouseDownPassword}
+                          onMouseUp={handleMouseUpPassword}
                         >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </FormControl>
 
-                      <img style={{border:'1px solid #FFF',borderRadius: '8px', marginTop:'40px'}} 
-                        src='/src/img/Logo Kaonty_2.png' 
-                        width={"40px"} 
-                        height={"40px"}
-                      />
+              <Stack alignItems="flex-end" width="100%" mt={-1}>
+                <Typography variant="caption">
+                  <Link
+                    href="#"
+                    sx={{
+                      textDecoration: 'none',
+                      color: 'rgba(0, 34, 107, 0.81)',
+                      '&:hover': {
+                        color: 'rgba(8, 55, 157, 0.81)',
+                        textDecoration: 'none',
+                      },
+                    }}
+                  >
+                    Mot de passe oublié ?
+                  </Link>
+                </Typography>
+              </Stack>
 
-                      <Typography 
-                      variant='h4' 
-                      marginTop={"-20px"} 
-                      paddingLeft={"0px"}
-                      fontFamily={"Bahnschrift Condensed"}
-                      fontWeight={'light'}
-                      >
-                        Kaonty
-                      </Typography>
-                      <Typography 
-                      variant='h6' 
-                      marginTop={"-25px"} 
-                      paddingLeft={"0px"}
-                      fontFamily={"Bahnschrift"}
-                      fontWeight={'light'}
-                      fontSize={"16px"}
-                      >
-                        Connectez-vous à votre compte
-                      </Typography>
-                      
-                      <TextField ref={userRef}  type='email' onChange={e => setEmail(e.target.value)} id="standard-basic01" label="adresse mail" variant="standard" fullWidth size='small' required/>
+              <Button
+                type="submit"
+                variant="contained"
+                fullWidth
+                sx={{ mt: 1 }}
+                style={{
+                  textTransform: 'none',
+                  outline: 'none',
+                }}
+              >
+                Se connecter
+              </Button>
+            </Stack>
 
-                      <FormControl sx={{ m: 1, width: '100%' }} variant="standard">
-                        <InputLabel htmlFor="standard-adornment-password" sx={{color:"black"}}>mot de passe</InputLabel>
-                        <Input
-                          onChange={e => setPassword(e.target.value)}
-                          id="standard-adornment-password"
-                          type={showPassword ? 'text' : 'password'}
-                          endAdornment={
-                            <InputAdornment position="end">
-                              <IconButton
-                                sx={{backgroundColor:"transparent"}}
-                                aria-label="toggle password visibility"
-                                onClick={handleClickShowPassword}
-                                onMouseDown={handleMouseDownPassword}
-                              >
-                                {showPassword ? <VisibilityOff /> : <Visibility />}
-                              </IconButton>
-                            </InputAdornment>
-                          }
-                        />
-                      </FormControl>
-                      <Stack alignItems={'flex-end'}
-                            justifyContent={"right"}
-                            width={"100%"}
-                            marginTop={"-15px"}>
-                        <Typography variant='h10' ><Link>mot de passe oublier?</Link></Typography>
-                      </Stack>
-                      
-                      <Button type='submit' variant="contained" sx={{
-                        marginTop:5,
-                        width: '100%',
-                        marginLeft:'0px'
-                      }}>Se connecter</Button>
+            <Stack direction="row" alignItems="center" justifyContent="flex-start" mt={2}>
+              <Checkbox defaultChecked />
+              <Typography
+                variant="body2"
+                fontSize="14px"
+                color="rgba(0, 0, 0, 0.96)"
+              >
+                J'ai lu et j'accepte les conditions générales d'utilisation
+              </Typography>
+            </Stack>
+          </form>
+        </Box>
+      </Stack>
 
-                  </Stack>
-                  
-                  <Stack alignItems={"center"}
-                          justifyContent={"left"}
-                          width={"100%"}
-                          direction={"row"}
-                          paddingTop={"10px"}
-                          marginLeft={"40px"}
-                          >
-                    <Checkbox defaultChecked/>
-                    <Typography 
-                    variant='h10'
-                    fontSize={'14px'}
-                    >
-                      J'ai lu et j'accepte les conditions générales d'utilisation
-                    </Typography>
-                    
-                  </Stack>
-              </form>
-            </Box>
-          </Stack>
-
-
-          <Typography 
-          variant='h7'
-          color={"white"}
-          marginTop={"10px"}
-          >
-            © Kaonti v1.0.0.0
-          </Typography>
-        </Stack>
-  )
-};
+      <Typography variant="caption" color="white" mt={2}>
+        © Kaonty v1.0.0.0
+      </Typography>
+    </Stack>
+  );
+}
 
 export default Login

@@ -3,7 +3,7 @@ const { Devise } = require('../../Models');
 // Liste toutes les devises
 exports.getAllDevises = async (req, res) => {
   try {
-    const { id_compte, id_dossier } = req.params; 
+    const { id_compte, id_dossier } = req.params;
     const devises = await Devise.findAll({ where: { id_compte: id_compte, id_dossier: id_dossier } });
     res.json(devises);
   } catch (err) {

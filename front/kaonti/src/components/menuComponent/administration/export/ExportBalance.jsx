@@ -1,4 +1,4 @@
-import {React, useState, useEffect, useRef } from 'react';
+import { React, useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Typography, Stack, Paper, Box, Tab, Tooltip, IconButton, FormHelperText, Button, Badge, Divider, Switch } from '@mui/material';
 import RadioGroup from '@mui/material/RadioGroup';
@@ -38,8 +38,8 @@ export default function ExportBalance() {
     const [selectedExerciceId, setSelectedExerciceId] = useState(0);
     const [selectedPeriodeId, setSelectedPeriodeId] = useState(0);
     const [selectedPeriodeChoiceId, setSelectedPeriodeChoiceId] = useState(0);
-    const [listeExercice,setListeExercice] = useState([]);
-    const [listeSituation,setListeSituation] = useState([]);
+    const [listeExercice, setListeExercice] = useState([]);
+    const [listeSituation, setListeSituation] = useState([]);
 
     const [balance, setBalance] = useState([]);
 
@@ -48,12 +48,12 @@ export default function ExportBalance() {
 
     //récupération infos de connexion
     const { auth } = useAuth();
-    const decoded = auth?.accessToken ? jwtDecode(auth.accessToken): undefined;
+    const decoded = auth?.accessToken ? jwtDecode(auth.accessToken) : undefined;
     const compteId = decoded.UserInfo.compteId || null;
     const userId = decoded.UserInfo.userId || null;
     const navigate = useNavigate();
 
-     //récupérer les informations du dossier sélectionné
+    //récupérer les informations du dossier sélectionné
     useEffect(() => {
         //tester si la page est renvoyer par useNavigate
         const navigationEntries = performance.getEntriesByType('navigation');
@@ -65,8 +65,8 @@ export default function ExportBalance() {
                 const idDossier = sessionStorage.getItem("fileId");
                 setFileId(idDossier);
                 idFile = idDossier;
-            }else{
-                sessionStorage.setItem('fileId',id);
+            } else {
+                sessionStorage.setItem('fileId', id);
                 setFileId(id);
                 idFile = id;
             }
@@ -77,13 +77,13 @@ export default function ExportBalance() {
     }, []);
 
     const GetInfosIdDossier = (id) => {
-        axios.get(`/home/FileInfos/${id}`).then((response) =>{
+        axios.get(`/home/FileInfos/${id}`).then((response) => {
             const resData = response.data;
 
-            if(resData.state){
+            if (resData.state) {
                 setFileInfos(resData.fileInfos[0]);
                 setNoFile(false);
-            }else{
+            } else {
                 setFileInfos([]);
                 setNoFile(true);
             }
@@ -143,15 +143,15 @@ export default function ExportBalance() {
             isnumber: true
         },
     ];
-  
+
     //Récupérer la liste des exercices
     const GetListeExercice = (id) => {
-        axios.get(`/paramExercice/listeExercice/${id}`).then((response) =>{
+        axios.get(`/paramExercice/listeExercice/${id}`).then((response) => {
             const resData = response.data;
-            if(resData.state){
-            
+            if (resData.state) {
+
                 setListeExercice(resData.list);
-                
+
                 const exerciceNId = resData.list?.filter((item) => item.libelle_rang === "N");
                 setListeSituation(exerciceNId);
 
@@ -159,7 +159,7 @@ export default function ExportBalance() {
                 setSelectedPeriodeChoiceId(0);
                 setSelectedPeriodeId(exerciceNId[0].id);
                 recupBalance(checked, unsoldedCompte, compteId, fileId, exerciceNId[0].id);
-            }else{
+            } else {
                 setListeExercice([]);
                 toast.error("une erreur est survenue lors de la récupération de la liste des exercices");
             }
@@ -168,15 +168,15 @@ export default function ExportBalance() {
 
     //Récupérer la liste des exercices
     const GetListeSituation = (id) => {
-        axios.get(`/paramExercice/listeSituation/${id}`).then((response) =>{
+        axios.get(`/paramExercice/listeSituation/${id}`).then((response) => {
             const resData = response.data;
-            if(resData.state){
+            if (resData.state) {
                 const list = resData.list;
                 setListeSituation(resData.list);
-                if(list.length>0){
+                if (list.length > 0) {
                     setSelectedPeriodeId(list[0].id);
-                }  
-            }else{
+                }
+            } else {
                 setListeSituation([]);
                 toast.error("une erreur est survenue lors de la récupération de la liste des exercices");
             }
@@ -196,22 +196,22 @@ export default function ExportBalance() {
     const handleChangePeriode = (choix) => {
         setSelectedPeriodeChoiceId(choix);
 
-        if(choix === 0){
+        if (choix === 0) {
             setListeSituation(listeExercice?.filter((item) => item.id === selectedExerciceId));
             setSelectedPeriodeId(selectedExerciceId);
             recupBalance(checked, unsoldedCompte, compteId, fileId, selectedExerciceId);
-        }else if(choix === 1){
+        } else if (choix === 1) {
             GetListeSituation(selectedExerciceId);
         }
     }
 
     //Récupération de la balance
     const recupBalance = (centraliser, unSolded, movmentedCpt, compteId, fileId, exerciceId) => {
-        axios.post(`/administration/exportBalance/recupBalance`, {centraliser, unSolded, movmentedCpt, compteId, fileId, exerciceId}).then((response) =>{
+        axios.post(`/administration/exportBalance/recupBalance`, { centraliser, unSolded, movmentedCpt, compteId, fileId, exerciceId }).then((response) => {
             const resData = response.data;
-            if(resData.state){
+            if (resData.state) {
                 setBalance(resData.list);
-            }else{
+            } else {
                 toast.error(resData.msg);
             }
         });
@@ -219,17 +219,17 @@ export default function ExportBalance() {
 
     useEffect(() => {
         recupBalance(checked, unsoldedCompte, movmentedCpt, compteId, fileId, selectedPeriodeId);
-    },[fileId, selectedPeriodeId, checked, unsoldedCompte, movmentedCpt]);
+    }, [fileId, selectedPeriodeId, checked, unsoldedCompte, movmentedCpt]);
 
     //Formulaire pour l'import du journal
     const formikImport = useFormik({
-        initialValues : {
+        initialValues: {
             idCompte: compteId,
             idDossier: fileId,
             idExercice: selectedPeriodeId,
             type: 'CSV',
-            choixImport : '',
-            journalData:[],
+            choixImport: '',
+            journalData: [],
         },
         validationSchema: Yup.object({
             type: Yup.string().required("Veuillez choisir le type de fichier à importer"),
@@ -237,7 +237,7 @@ export default function ExportBalance() {
             compteassocie: Yup.string()
         }),
         onSubmit: (values) => {
-          
+
         },
     });
 
@@ -264,130 +264,130 @@ export default function ExportBalance() {
     };
 
     return (
-    <Paper sx={{elevation: "3", margin:"5px", padding:"0px", width:"99%", height:"98%"}}>
-        {noFile? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
-     
-        <TabContext value={"1"}>
-            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                <TabList aria-label="lab API tabs example">
-                    <Tab 
-                    style={{ 
-                        textTransform: 'none', 
-                        outline: 'none', 
-                        border: 'none',
-                        margin:-5
-                    }}
-                    label={InfoFileStyle(fileInfos?.dossier)} value="1" 
-                    />
-                </TabList>
-            </Box>
-            <TabPanel value="1" style={{height:'85%'}}>
-                <form onSubmit={formikImport.handleSubmit}>
-                    <Stack width={"100%"} height={"100%"} spacing={4} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
-                        <Typography variant='h6' sx={{color: "black"}} align='left'>Administration - Export balance</Typography>
+        <Box>
+            {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
 
-                        <Stack width={"100%"} height={"80px"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"row"} style={{marginLeft:"0px", marginTop:"20px"}}>
-                            <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                                <InputLabel id="demo-simple-select-standard-label">Exercice:</InputLabel>
-                                <Select
-                                labelId="demo-simple-select-standard-label"
-                                id="demo-simple-select-standard"
-                                value={selectedExerciceId}
-                                label={"valSelect"}
-                                onChange={(e) => handleChangeExercice(e.target.value)}
-                                sx={{width:"300px", display:"flex", justifyContent:"left", alignItems:"flex-start", alignContent:"flex-start", textAlign:"left"}}
-                                >
-                                    {listeExercice.map((option) => (
-                                        <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                                    ))
-                                    }
-                                </Select>
-                            </FormControl>
+            <TabContext value={"1"}>
+                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                    <TabList aria-label="lab API tabs example">
+                        <Tab
+                            style={{
+                                textTransform: 'none',
+                                outline: 'none',
+                                border: 'none',
+                                margin: -5
+                            }}
+                            label={InfoFileStyle(fileInfos?.dossier)} value="1"
+                        />
+                    </TabList>
+                </Box>
+                <TabPanel value="1" style={{ height: '85%' }}>
+                    <form onSubmit={formikImport.handleSubmit}>
+                        <Stack width={"100%"} height={"100%"} spacing={4} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
+                            <Typography variant='h6' sx={{ color: "black" }} align='left'>Administration - Export balance</Typography>
 
-                            <FormControl variant="standard" sx={{ m: 1, minWidth: 150 }}>
-                                <InputLabel id="demo-simple-select-standard-label">Période</InputLabel>
-                                <Select
-                                disabled
-                                labelId="demo-simple-select-standard-label"
-                                id="demo-simple-select-standard"
-                                value={selectedPeriodeChoiceId}
-                                label={"valSelect"}
-                                onChange={(e) => handleChangePeriode(e.target.value)}
-                                sx={{width:"150px", display:"flex", justifyContent:"left", alignItems:"flex-start", alignContent:"flex-start", textAlign:"left"}}
-                                >
-                                    <MenuItem value={0}>Toutes</MenuItem>
-                                    <MenuItem value={1}>Situations</MenuItem>
-                                </Select>
-                            </FormControl>
+                            <Stack width={"100%"} height={"80px"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "20px" }}>
+                                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
+                                    <InputLabel id="demo-simple-select-standard-label">Exercice:</InputLabel>
+                                    <Select
+                                        labelId="demo-simple-select-standard-label"
+                                        id="demo-simple-select-standard"
+                                        value={selectedExerciceId}
+                                        label={"valSelect"}
+                                        onChange={(e) => handleChangeExercice(e.target.value)}
+                                        sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                    >
+                                        {listeExercice.map((option) => (
+                                            <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
+                                        ))
+                                        }
+                                    </Select>
+                                </FormControl>
 
-                            <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                                <InputLabel id="demo-simple-select-standard-label">Du</InputLabel>
-                                <Select
-                                labelId="demo-simple-select-standard-label"
-                                id="demo-simple-select-standard"
-                                value={selectedPeriodeId}
-                                label={"valSelect"}
-                                onChange={(e) => handleChangeDateIntervalle(e.target.value)}
-                                sx={{width:"300px", display:"flex", justifyContent:"left", alignItems:"flex-start", alignContent:"flex-start", textAlign:"left"}}
-                                >
-                                {listeSituation?.map((option) => (
-                                        <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                                    ))
-                                    }
-                                </Select>
-                            </FormControl>
+                                <FormControl variant="standard" sx={{ m: 1, minWidth: 150 }}>
+                                    <InputLabel id="demo-simple-select-standard-label">Période</InputLabel>
+                                    <Select
+                                        disabled
+                                        labelId="demo-simple-select-standard-label"
+                                        id="demo-simple-select-standard"
+                                        value={selectedPeriodeChoiceId}
+                                        label={"valSelect"}
+                                        onChange={(e) => handleChangePeriode(e.target.value)}
+                                        sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                    >
+                                        <MenuItem value={0}>Toutes</MenuItem>
+                                        <MenuItem value={1}>Situations</MenuItem>
+                                    </Select>
+                                </FormControl>
 
-                        </Stack>
-                        
-                        <Stack width={"100%"} height={"60px"} spacing={2} alignItems={"center"} alignContent={"center"} direction={"row"} style={{marginLeft:"0px", marginTop:"0px"}}>
-                            <FormControlLabel
-                                control={<Switch checked={checked} onChange={handleChange} name="centralisation" />}
-                                label="Centraliser la balance"
-                                style={{width: "15%"}}
-                            />
+                                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
+                                    <InputLabel id="demo-simple-select-standard-label">Du</InputLabel>
+                                    <Select
+                                        labelId="demo-simple-select-standard-label"
+                                        id="demo-simple-select-standard"
+                                        value={selectedPeriodeId}
+                                        label={"valSelect"}
+                                        onChange={(e) => handleChangeDateIntervalle(e.target.value)}
+                                        sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                    >
+                                        {listeSituation?.map((option) => (
+                                            <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
+                                        ))
+                                        }
+                                    </Select>
+                                </FormControl>
 
-                            <FormControlLabel
-                                control={<Switch checked={unsoldedCompte} onChange={handleChangeUnsoldedCompte} name="unSoldedCompte" />}
-                                label="Seulement les comptes non soldés"
-                                style={{width: "22%"}}
-                            />
-
-                            <FormControlLabel
-                                control={<Switch checked={movmentedCpt} onChange={handleChangeMovmentedCpt} name="movmentedCpt" />}
-                                label="Seulement les comptes mouvementés"
-                                style={{width: "56%"}}
-                            />
-                            
-                            <Button
-                                type='submit'
-                                variant="contained" 
-                                style={{
-                                    height:"50px", 
-                                    textTransform: 'none', 
-                                    outline: 'none',
-                                    backgroundColor: initial.theme,
-                                    width: "7%"
-                                }}
-                            >
-                                Exporter
-                            </Button>
-                        </Stack>
-                        
-                        {traitementJournalWaiting
-                            ? <Stack spacing={2} direction={'row'} width={"100%"} alignItems={'center'} justifyContent={'center'}>
-                                <CircularProgress />
-                                <Typography variant='h6' style={{color:'#2973B2'}}>{traitementJournalMsg}</Typography>
                             </Stack>
-                            : null
-                        }
-                        
-                        <Stack  width={"100%"} height={'50vh'} >
-                            <VirtualTableModifiableExport columns={columns} rows={balance} state={true}/> 
+
+                            <Stack width={"100%"} height={"60px"} spacing={2} alignItems={"center"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
+                                <FormControlLabel
+                                    control={<Switch checked={checked} onChange={handleChange} name="centralisation" />}
+                                    label="Centraliser la balance"
+                                    style={{ width: "15%" }}
+                                />
+
+                                <FormControlLabel
+                                    control={<Switch checked={unsoldedCompte} onChange={handleChangeUnsoldedCompte} name="unSoldedCompte" />}
+                                    label="Seulement les comptes non soldés"
+                                    style={{ width: "22%" }}
+                                />
+
+                                <FormControlLabel
+                                    control={<Switch checked={movmentedCpt} onChange={handleChangeMovmentedCpt} name="movmentedCpt" />}
+                                    label="Seulement les comptes mouvementés"
+                                    style={{ width: "56%" }}
+                                />
+
+                                <Button
+                                    type='submit'
+                                    variant="contained"
+                                    style={{
+                                        height: "50px",
+                                        textTransform: 'none',
+                                        outline: 'none',
+                                        backgroundColor: initial.theme,
+                                        width: "7%"
+                                    }}
+                                >
+                                    Exporter
+                                </Button>
+                            </Stack>
+
+                            {traitementJournalWaiting
+                                ? <Stack spacing={2} direction={'row'} width={"100%"} alignItems={'center'} justifyContent={'center'}>
+                                    <CircularProgress />
+                                    <Typography variant='h6' style={{ color: '#2973B2' }}>{traitementJournalMsg}</Typography>
+                                </Stack>
+                                : null
+                            }
+
+                            <Stack width={"100%"} height={'50vh'} >
+                                <VirtualTableModifiableExport columns={columns} rows={balance} state={true} />
+                            </Stack>
                         </Stack>
-                    </Stack>
-                </form>
-            </TabPanel>
-        </TabContext>
-    </Paper>
-  )
+                    </form>
+                </TabPanel>
+            </TabContext>
+        </Box>
+    )
 }

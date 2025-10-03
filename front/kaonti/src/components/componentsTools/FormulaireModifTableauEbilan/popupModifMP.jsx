@@ -23,86 +23,96 @@ let initial = init[0];
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialogContent-root': {
-      padding: theme.spacing(2),
+        padding: theme.spacing(2),
     },
     '& .MuiDialogActions-root': {
-      padding: theme.spacing(1),
+        padding: theme.spacing(1),
     },
-  }));
+    '& .MuiPaper-root': {
+        minHeight: '10%',
+        maxHeight: '95%',
+    },
+}));
 
-const PopupModifMP = ({choix, confirmationState, data}) =>{
+const PopupModifMP = ({ choix, confirmationState, data }) => {
     const [formDataFinal, setFormDataFinal] = useState({
         state: false,
-        id:-1,
+        id: -1,
         marche: '',
-        refmarche: '',
+        ref_marche: '',
         date: '',
         datepaiement: '',
         montantht: 0,
         montantpaye: 0,
         montanttmp: 0,
-      });
+    });
+
+    const validationSchema = Yup.object({
+        marche: Yup.string().required("Veuillez choisir le type de marché"),
+        ref_marche: Yup.string().required("Veuillez entrer la référence du marché"),
+        // date: Yup.string()
+        //     .matches(
+        //         /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/, // = format du back pour la datapicker yyyy-MM-dd
+        //         'La date doit être au format jj/mm/aaaa'
+        //     )
+        //     .test('is-valid-date', 'La date doit être valide', (value) => {
+        //         if (!value) return false;
+
+        //         const [year, month, day] = value.split('-').map(Number);
+
+        //         // Vérifie les mois
+        //         if (month < 1 || month > 12) return false;
+
+        //         // Vérifie les jours en fonction du mois
+        //         const daysInMonth = new Date(year, month, 0).getDate();
+        //         return day >= 1 && day <= daysInMonth;
+        //     }).required("La date du marché est obligatoire"),
+        // datepaiement: Yup.string()
+        //     .matches(
+        //         /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/, // = format du back pour la datapicker yyyy-MM-dd
+        //         'La date doit être au format jj/mm/aaaa'
+        //     )
+        //     .test('is-valid-date', 'La date doit être valide', (value) => {
+        //         if (!value) return false;
+
+        //         const [year, month, day] = value.split('-').map(Number);
+
+        //         // Vérifie les mois
+        //         if (month < 1 || month > 12) return false;
+
+        //         // Vérifie les jours en fonction du mois
+        //         const daysInMonth = new Date(year, month, 0).getDate();
+        //         return day >= 1 && day <= daysInMonth;
+        //     })
+        //     .required("La date de paiement est obligatoire"),
+        montantht: Yup.number().positive("Veuillez entrer le montant du marché.").required("Veuillez entrer le montant du marché."),
+        // montantpaye: Yup.number().positive("Veuillez entrer le montant du marché.").required("Veuillez entrer le montant payé."),
+        // montanttmp: Yup.number().positive("Veuillez entrer le montant du marché.").required("Veuillez entrer le montant du tmp."),
+    })
 
     const formData = useFormik({
-        initialValues : {
+        initialValues: {
             state: true,
-            id:-1,
+            id: -1,
             marche: '',
-            refmarche: '',
+            ref_marche: '',
             date: '',
             datepaiement: '',
             montantht: 0,
             montantpaye: 0,
             montanttmp: 0,
         },
-        validationSchema: Yup.object({
-            marche : Yup.string().required("Veuillez choisir le type de marché."),
-            date: Yup.string()
-                .matches(
-                    /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/, // = format du back pour la datapicker yyyy-MM-dd
-                    'La date doit être au format jj/mm/aaaa'
-                )
-                .test('is-valid-date', 'La date doit être valide', (value) => {
-                if (!value) return false;
-    
-                const [year, month, day] = value.split('-').map(Number);
-    
-                // Vérifie les mois
-                if (month < 1 || month > 12) return false;
-    
-                // Vérifie les jours en fonction du mois
-                const daysInMonth = new Date(year, month, 0).getDate();
-                return day >= 1 && day <= daysInMonth;
-            }).required("La date du marché est obligatoire."),
-            datepaiement: Yup.string()
-                .matches(
-                    /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/, // = format du back pour la datapicker yyyy-MM-dd
-                    'La date doit être au format jj/mm/aaaa'
-                )
-                .test('is-valid-date', 'La date doit être valide', (value) => {
-                if (!value) return false;
-    
-                const [year, month, day] = value.split('-').map(Number);
-    
-                // Vérifie les mois
-                if (month < 1 || month > 12) return false;
-    
-                // Vérifie les jours en fonction du mois
-                const daysInMonth = new Date(year, month, 0).getDate();
-                return day >= 1 && day <= daysInMonth;
-            }).required("La date de paiement est obligatoire."),
-            montantht: Yup.number().positive("Veuillez entrer le montant du marché.").required("Veuillez entrer le montant du marché."),
-        }),
+        validationSchema,
         //validateOnChange: false,
         //validateOnBlur: true,
         onSubmit: (values) => {
             setFormDataFinal(prevFormDataFinal => {
-                const newFormDataFinal = { 
-                    ...prevFormDataFinal, 
-                    state: true, 
-                    id: values.id, 
+                const newFormDataFinal = {
+                    ...prevFormDataFinal,
+                    state: true,
+                    id: values.id,
                     marche: values.marche,
-                    refmarche: values.refmarche,
+                    ref_marche: values.ref_marche,
                     date: values.date,
                     datepaiement: values.datepaiement,
                     montantht: values.montantht,
@@ -111,7 +121,7 @@ const PopupModifMP = ({choix, confirmationState, data}) =>{
                 };
                 confirmationState(newFormDataFinal);
                 return newFormDataFinal;
-            });  
+            });
         }
     });
 
@@ -124,13 +134,13 @@ const PopupModifMP = ({choix, confirmationState, data}) =>{
     }
 
     // Fonction pour gérer le clic sur le bouton "Modifier"
-   useEffect(() => {
-        if(data){
+    useEffect(() => {
+        if (data) {
             formData.setValues({
                 state: false,
                 id: data.id,
                 marche: data.marche,
-                refmarche: data.refmarche,
+                ref_marche: data.ref_marche,
                 date: data.date,
                 datepaiement: data.date_paiement,
                 montantht: data.montant_marche_ht,
@@ -138,7 +148,7 @@ const PopupModifMP = ({choix, confirmationState, data}) =>{
                 montanttmp: data.tmp,
             });
         }
-   }, [data]);
+    }, [data]);
 
     return (
         <form onSubmit={formData.handleSubmit}>
@@ -147,16 +157,15 @@ const PopupModifMP = ({choix, confirmationState, data}) =>{
                 aria-labelledby="customized-dialog-title"
                 open={true}
                 fullWidth={true}
-                maxWidth="md"
             >
-                <DialogTitle sx={{ ml: 1, p: 2 }} id="customized-dialog-title" style={{fontWeight:'bold', width:'550px', height:'50px',backgroundColor : 'transparent'}}>
-                    <Typography variant={'h6'} style={{fontZise: 12}}>
+                <DialogTitle sx={{ ml: 1, p: 2 }} id="customized-dialog-title" style={{ fontWeight: 'bold', width: '550px', height: '50px', backgroundColor: 'transparent' }}>
+                    <Typography variant={'h6'} style={{ fontZise: 12 }}>
                         {choix} d'une ligne pour le formulaire MP
                     </Typography>
                 </DialogTitle>
-                
+
                 <IconButton
-                    style={{color:'red', textTransform: 'none', outline: 'none'}}
+                    style={{ color: 'red', textTransform: 'none', outline: 'none' }}
                     aria-label="close"
                     onClick={handleCloseDeleteModel}
                     sx={{
@@ -165,226 +174,304 @@ const PopupModifMP = ({choix, confirmationState, data}) =>{
                         top: 8,
                         color: (theme) => theme.palette.grey[500],
                     }}
-                    >
-                <CloseIcon />
+                >
+                    <CloseIcon />
                 </IconButton>
                 <DialogContent>
-            
-                <Stack width={"95%"} height={"450px"} spacing={2} alignItems={'left'} alignContent={"center"} 
-                    direction={"column"} justifyContent={"center"} style={{marginLeft:'10px'}}
-                >
-                    <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '200px' }}>
-                        <InputLabel style={{ color: '#1976d2' }}>Marché</InputLabel>
-                        <Select
-                            label="Marché"
-                            name="marche"
-                            value={formData.values.marche}
-                            onChange={formData.handleChange}
-                            fullWidth
-                            style={{ marginBottom: '0px' }}
-                        >
-                            {/* Remplacer ces options par celles dont tu as besoin */}
-                            <MenuItem key="MP" value="MP">Marché public</MenuItem>
-                            <MenuItem key="AUTRE" value="AUTRE">Autres marchés</MenuItem>
-                        </Select>
 
-                        <FormHelperText style={{color:'red', width: '300px'}}>
-                            {formData.errors.marche && formData.touched.marche && formData.errors.marche}
-                        </FormHelperText>
-                    </FormControl>
+                    <Stack
+                        spacing={2}
+                        alignItems={'left'}
+                        direction={"column"}
+                        style={{ marginLeft: '10px' }}
+                    >
+                        <Stack flexDirection={'row'} justifyContent={'space-between'}>
 
-                    <FormControl size="small" fullWidth style={{ marginBottom: '10px' }}>
-                        <TextField
-                            size="small"
-                            label="réf. du marché"
-                            name="refmarche"
-                            value={formData.values.refmarche}
-                            onChange={formData.handleChange}
-                            type="string"
-                            fullWidth
-                            style={{ marginBottom: '0px' }}
-                            InputLabelProps={{
-                                style: {
-                                color: '#1976d2',  // Couleur primary par défaut (bleu de Material-UI)
-                                },
-                            }}
-                        />
-
-                        <FormHelperText style={{color:'red', width: '300px'}}>
-                            {formData.errors.refmarche && formData.touched.refmarche && formData.errors.refmarche}
-                        </FormHelperText>
-                    </FormControl>
-                    
-                    <Divider style={{marginTop:'10px', marginBottom:'30px'}}/>
-
-                    <Stack direction={'row'} spacing={2}>
-                        <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '200px' }}>
-                            <TextField
+                            <FormControl
                                 size="small"
-                                label="Date"
-                                name="date"
-                                type="date"
-                                value={formData.values.date}
-                                onChange={formData.handleChange}
+                                variant='standard'
                                 fullWidth
-                                style={{ marginBottom: '0px', width: '200px' }}
-                                InputLabelProps={{
-                                    style: {
-                                    color: '#1976d2',  // Couleur primary par défaut (bleu de Material-UI)
-                                    },
-                                    shrink: true,  // Cela fait "flotter" le label au-dessus du champ
+                                style={{
+                                    width: '35%'
                                 }}
-                            />
+                                error={Boolean(formData.touched.marche && formData.errors.marche)}
+                            >
+                                <InputLabel style={{ color: '#1976d2', fontSize: '13px' }}>Marché</InputLabel>
+                                <Select
+                                    label="Marché"
+                                    name="marche"
+                                    value={formData.values.marche}
+                                    onChange={formData.handleChange}
+                                    onBlur={formData.handleBlur}
+                                    fullWidth
+                                    sx={{
+                                        fontSize: '13px',
+                                        height: '30px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        '& .MuiSelect-select': {
+                                            padding: '1px 8px',
+                                        }
+                                    }}
+                                >
+                                    <MenuItem key="MP" value="MP">Marché public</MenuItem>
+                                    <MenuItem key="AUTRE" value="AUTRE">Autres marchés</MenuItem>
+                                </Select>
+                                {formData.touched.marche && formData.errors.marche && (
+                                    <FormHelperText>{formData.errors.marche}</FormHelperText>
+                                )}
+                            </FormControl>
 
-                            <FormHelperText style={{color:'red', width: '200px'}}>
-                                {formData.errors.date && formData.touched.date && formData.errors.date}
-                            </FormHelperText>
-                        </FormControl>
-                        
-
-                        <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '200px' }}>
-                            <TextField
+                            <FormControl
                                 size="small"
-                                label="Date paiement"
-                                name="datepaiement"
-                                type="date"
-                                value={formData.values.datepaiement}
-                                onChange={formData.handleChange}
                                 fullWidth
-                                style={{ marginBottom: '0px', width: '200px' }}
-                                InputLabelProps={{
-                                    style: {
-                                    color: '#1976d2',  // Couleur primary par défaut (bleu de Material-UI)
-                                    },
-                                    shrink: true,  // Cela fait "flotter" le label au-dessus du champ
+                                style={{
+                                    width: '62%'
                                 }}
-                            />
+                            >
+                                <TextField
+                                    size="small"
+                                    label="Référence du marché"
+                                    name="ref_marche"
+                                    value={formData.values.ref_marche}
+                                    onChange={formData.handleChange}
+                                    onBlur={formData.handleBlur}
+                                    type="string"
+                                    fullWidth
+                                    variant='standard'
+                                    InputProps={{
+                                        style: {
+                                            fontSize: '13px',
+                                            padding: '2px 4px',
+                                            height: '30px',
+                                        },
+                                        sx: {
+                                            '& input': {
+                                                height: '30px',
+                                            },
+                                        },
+                                    }}
+                                    InputLabelProps={{
+                                        style: {
+                                            color: '#1976d2',
+                                            fontSize: '13px',
+                                            marginTop: '-2px',
+                                        },
+                                    }}
+                                    error={Boolean(formData.touched.ref_marche && formData.errors.ref_marche)}
+                                    helperText={formData.touched.ref_marche && formData.errors.ref_marche}
+                                />
+                            </FormControl>
 
-                            <FormHelperText style={{color:'red', width: '200px'}}>
-                                {formData.errors.datepaiement && formData.touched.datepaiement && formData.errors.datepaiement}
-                            </FormHelperText>
-                        </FormControl>
+                        </Stack>
+
+                        <Divider />
+                        <Typography fontWeight="bold">Date</Typography>
+
+                        <Stack flexDirection={'row'} justifyContent={'space-between'}>
+                            <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '45%' }}>
+                                <TextField
+                                    size="small"
+                                    label="Date"
+                                    name="date"
+                                    type="date"
+                                    value={formData.values.date}
+                                    onChange={formData.handleChange}
+                                    onBlur={formData.handleBlur}
+                                    fullWidth
+                                    InputLabelProps={{ shrink: true }}
+                                    sx={{
+                                        '& input::-webkit-calendar-picker-indicator': {
+                                            filter: 'brightness(0) saturate(100%) invert(21%) sepia(31%) saturate(684%) hue-rotate(165deg) brightness(93%) contrast(90%)',
+                                            cursor: 'pointer',
+                                        },
+                                    }}
+                                    variant="standard"
+                                    disabled={formData.values.marche === 'AUTRE'}
+                                    error={Boolean(formData.touched.date && formData.errors.date)}
+                                    helperText={formData.touched.date && formData.errors.date}
+                                />
+                            </FormControl>
+
+
+                            <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '45%' }}>
+                                <TextField
+                                    size="small"
+                                    label="Date paiement"
+                                    name="datepaiement"
+                                    type="date"
+                                    value={formData.values.datepaiement}
+                                    onChange={formData.handleChange}
+                                    onBlur={formData.handleBlur}
+                                    fullWidth
+                                    InputLabelProps={{ shrink: true }}
+                                    sx={{
+                                        '& input::-webkit-calendar-picker-indicator': {
+                                            filter: 'brightness(0) saturate(100%) invert(21%) sepia(31%) saturate(684%) hue-rotate(165deg) brightness(93%) contrast(90%)',
+                                            cursor: 'pointer',
+                                        },
+                                    }}
+                                    variant="standard"
+                                    disabled={formData.values.marche === 'AUTRE'}
+                                    error={Boolean(formData.touched.datepaiement && formData.errors.datepaiement)}
+                                    helperText={formData.touched.datepaiement && formData.errors.datepaiement}
+                                />
+                            </FormControl>
+                        </Stack>
+
+                        <Divider />
+                        <Typography fontWeight="bold">Montant</Typography>
+
+                        <Stack flexDirection={'row'} justifyContent={'space-between'}>
+                            <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '32%' }}>
+                                <TextField
+                                    size="small"
+                                    label="Montant marché"
+                                    name="montantht"
+                                    value={formData.values.montantht}
+                                    onChange={formData.handleChange}
+                                    onBlur={formData.handleBlur}
+                                    fullWidth
+                                    style={{
+                                        textAlign: 'right',
+                                        justifyContent: 'right',
+                                        justifyItems: 'right'
+                                    }}
+                                    InputProps={{
+                                        style: {
+                                            fontSize: '13px',
+                                            padding: '2px 4px',
+                                            height: '30px',
+                                        },
+                                        inputComponent: FormatedInput,
+                                        endAdornment: <InputAdornment position="end">Ar</InputAdornment>,
+                                        sx: {
+                                            '& input': {
+                                                textAlign: 'right',
+                                                height: '30px',
+                                            },
+                                        },
+                                    }}
+                                    InputLabelProps={{
+                                        style: {
+                                            color: '#1976d2',
+                                            fontSize: '13px',
+                                            marginTop: '-2px',
+                                        },
+                                    }}
+                                    variant='standard'
+                                    error={Boolean(formData.touched.montantht && formData.errors.montantht)}
+                                    helperText={formData.touched.montantht && formData.errors.montantht}
+                                />
+                            </FormControl>
+
+                            <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '32%' }}>
+                                <TextField
+                                    size="small"
+                                    label="Montant payé"
+                                    name="montantpaye"
+                                    value={formData.values.montantpaye}
+                                    onChange={formData.handleChange}
+                                    onBlur={formData.handleBlur}
+                                    fullWidth
+                                    style={{
+                                        textAlign: 'right',
+                                        justifyContent: 'right',
+                                        justifyItems: 'right'
+                                    }}
+                                    InputProps={{
+                                        style: {
+                                            fontSize: '13px',
+                                            padding: '2px 4px',
+                                            height: '30px',
+                                        },
+                                        inputComponent: FormatedInput,
+                                        endAdornment: <InputAdornment position="end">Ar</InputAdornment>,
+                                        sx: {
+                                            '& input': {
+                                                textAlign: 'right',
+                                                height: '30px',
+                                            },
+                                        },
+                                    }}
+                                    InputLabelProps={{
+                                        style: {
+                                            color: '#1976d2',
+                                            fontSize: '13px',
+                                            marginTop: '-2px',
+                                        },
+                                    }}
+                                    variant='standard'
+                                    disabled={formData.values.marche === 'AUTRE'}
+                                    error={Boolean(formData.touched.montantpaye && formData.errors.montantpaye)}
+                                    helperText={formData.touched.montantpaye && formData.errors.montantpaye}
+                                />
+                            </FormControl>
+
+                            <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '32%' }}>
+                                <TextField
+                                    size="small"
+                                    label="Montant tmp"
+                                    name="montanttmp"
+                                    value={formData.values.montanttmp}
+                                    onChange={formData.handleChange}
+                                    onBlur={formData.handleBlur}
+                                    fullWidth
+                                    style={{
+                                        textAlign: 'right',
+                                        justifyContent: 'right',
+                                        justifyItems: 'right'
+                                    }}
+                                    InputProps={{
+                                        style: {
+                                            fontSize: '13px',
+                                            padding: '2px 4px',
+                                            height: '30px',
+                                        },
+                                        inputComponent: FormatedInput,
+                                        endAdornment: <InputAdornment position="end">Ar</InputAdornment>,
+                                        sx: {
+                                            '& input': {
+                                                textAlign: 'right',
+                                                height: '30px',
+                                            },
+                                        },
+                                    }}
+                                    InputLabelProps={{
+                                        style: {
+                                            color: '#1976d2',
+                                            fontSize: '13px',
+                                            marginTop: '-2px',
+                                        },
+                                    }}
+                                    variant='standard'
+                                    disabled={formData.values.marche === 'AUTRE'}
+                                    error={Boolean(formData.touched.montanttmp && formData.errors.montanttmp)}
+                                    helperText={formData.touched.montanttmp && formData.errors.montanttmp}
+                                />
+                            </FormControl>
+                        </Stack>
                     </Stack>
-
-                    <Divider style={{marginTop:'10px', marginBottom:'30px'}}/>
-                    
-                    <Stack direction={'row'} spacing={2}>
-                        <FormControl size="small" fullWidth style={{ marginBottom: '10px' , width: '200px'}}>
-                            <TextField
-                                size="small"
-                                label="Montant marché"
-                                name="montantht"
-                                value={formData.values.montantht}
-                                onChange={formData.handleChange}
-                                fullWidth
-                                style={{ 
-                                    marginBottom: '0px', 
-                                    width: '200px', 
-                                    textAlign: 'right', 
-                                    justifyContent:'right', 
-                                    justifyItems:'right'
-                                }}
-                                 InputProps={{
-                                    inputComponent: FormatedInput,
-                                    endAdornment: <InputAdornment position="end">Ar</InputAdornment>,
-                                    sx: {
-                                    '& input': {
-                                        textAlign: 'right', // Alignement du texte dans le champ à droite
-                                    },
-                                    },
-                                }}
-                                InputLabelProps={{
-                                style: {
-                                    color: '#1976d2',  // Couleur primary par défaut (bleu de Material-UI)
-                                },
-                                }}
-                            />
-
-                            <FormHelperText style={{color:'red', width: '200px'}}>
-                                {formData.errors.montantht && formData.touched.montantht && formData.errors.montantht}
-                            </FormHelperText>
-                        </FormControl>
-                        
-                        <FormControl size="small" fullWidth style={{ marginBottom: '10px' , width: '200px'}}>
-                            <TextField
-                                size="small"
-                                label="Montant payé"
-                                name="montantpaye"
-                                value={formData.values.montantpaye}
-                                onChange={formData.handleChange}
-                                fullWidth
-                                style={{ marginBottom: '0px', width: '200px' }}
-                                 InputProps={{
-                                    inputComponent: FormatedInput,
-                                    endAdornment: <InputAdornment position="end">Ar</InputAdornment>,
-                                    sx: {
-                                    '& input': {
-                                        textAlign: 'right', // Alignement du texte dans le champ à droite
-                                    },
-                                    },
-                                }}
-                                InputLabelProps={{
-                                    style: {
-                                    color: '#1976d2',  // Couleur primary par défaut (bleu de Material-UI)
-                                    },
-                                }}
-                            />
-
-                            <FormHelperText style={{color:'red', width: '200px'}}>
-                                {formData.errors.montantpaye && formData.touched.montantpaye && formData.errors.montantpaye}
-                            </FormHelperText>
-                        </FormControl>
-                        
-                        <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '200px' }}>
-                            <TextField
-                                size="small"
-                                label="Montant tmp"
-                                name="montanttmp"
-                                value={formData.values.montanttmp}
-                                onChange={formData.handleChange}
-                                fullWidth
-                                style={{ marginBottom: '0px', width: '200px' }}
-                                InputProps={{
-                                    inputComponent: FormatedInput,
-                                    endAdornment: <InputAdornment position="end">Ar</InputAdornment>,
-                                    sx: {
-                                    '& input': {
-                                        textAlign: 'right', // Alignement du texte dans le champ à droite
-                                    },
-                                    },
-                                }}
-                                InputLabelProps={{
-                                    style: {
-                                    color: '#1976d2',  // Couleur primary par défaut (bleu de Material-UI)
-                                    },
-                                }}
-                            />
-
-                            <FormHelperText style={{color:'red', width: '200px'}}>
-                                {formData.errors.montanttmp && formData.touched.montanttmp && formData.errors.montanttmp}
-                            </FormHelperText>
-                        </FormControl>
-                    </Stack>
-                </Stack>
 
                 </DialogContent>
                 <DialogActions>
                     <Button autoFocus
                         variant='outlined'
-                        style={{backgroundColor:"transparent", 
-                            color:initial.theme, 
-                            width:"100px", 
-                            textTransform: 'none', 
+                        style={{
+                            backgroundColor: "transparent",
+                            color: initial.theme,
+                            width: "100px",
+                            textTransform: 'none',
                             //outline: 'none',
                         }}
                         onClick={handleCloseDeleteModel}
-                        >
-                            Annuler
+                    >
+                        Annuler
                     </Button>
-                    <Button autoFocus 
-                    type="submit"
-                    onClick={formData.handleSubmit}
-                    style={{backgroundColor:initial.theme, color:'white', width:"100px", textTransform: 'none', outline: 'none'}}
+                    <Button autoFocus
+                        type="submit"
+                        onClick={formData.handleSubmit}
+                        style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
                     >
                         Enregistrer
                     </Button>

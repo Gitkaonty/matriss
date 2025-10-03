@@ -16,332 +16,323 @@ import { IoMdCreate } from "react-icons/io";
 import { format } from 'date-fns';
 import { ExpandMore, ExpandLess } from '@mui/icons-material';
 
-const VirtualTableModifiableGroupableEbilanEIAFNC = ({columns, rows, deleteState, modifyState, state}) => {
-    const initial = init[0];
-    const targetColumnId = 'rubriquesmatrix.libelle';
-  
-    const handleRowModifClick = (row) => {
-      modifyState(row);
-    }
+const VirtualTableModifiableGroupableEbilanEIAFNC = ({ columns, rows, deleteState, modifyState, state }) => {
+  const initial = init[0];
+  const targetColumnId = 'rubriquesmatrix.libelle';
 
-    const handleRowDeleteClick = (row) => {
-      deleteState(row);
-    }
+  const handleRowModifClick = (row) => {
+    modifyState(row);
+  }
 
-    const [expanded, setExpanded] = useState({}); // Contient l'état d'expansion de chaque groupe
+  const handleRowDeleteClick = (row) => {
+    deleteState(row);
+  }
 
-    const handleToggleCollapse = (groupName) => {
-      setExpanded((prevExpanded) => ({
-        ...prevExpanded,
-        [groupName]: !prevExpanded[groupName], // Inverse l'état d'expansion
-      }));
-    };
+  const [expanded, setExpanded] = useState({}); // Contient l'état d'expansion de chaque groupe
 
-    const columnWidths = columns.reduce((acc, column) => {
-      acc[column.id] = column.minWidth;
-      return acc;
-    }, {});
+  const handleToggleCollapse = (groupName) => {
+    setExpanded((prevExpanded) => ({
+      ...prevExpanded,
+      [groupName]: !prevExpanded[groupName], // Inverse l'état d'expansion
+    }));
+  };
 
-    const soustotalGroup = (item, columnId) => {
-      return rows.reduce((totals, group) => {
-        // Vérifier si le groupe correspond à celui que nous recherchons (ex: "GOODWILL")
-        if (group.rubriques_poste === item) {
-          // Parcourir les items du groupe
-          group.items.forEach((item) => {
-            // Vérifier si 'augmentation' existe et est un nombre valide
-            const value = item[columnId];
-            
-            // Si la valeur est définie et un nombre, on l'ajoute au total
-            if (value != null && !isNaN(value)) {
-              totals += value; 
-            }
-          });
-        }
-        return totals;
-      }, 0); 
-    };
+  const columnWidths = columns.reduce((acc, column) => {
+    acc[column.id] = column.minWidth;
+    return acc;
+  }, {});
 
-    const totalGroup = (columnId) => {
-      return rows.reduce((totals, group) => {
-        
+  const soustotalGroup = (item, columnId) => {
+    return rows.reduce((totals, group) => {
+      // Vérifier si le groupe correspond à celui que nous recherchons (ex: "GOODWILL")
+      if (group.rubriques_poste === item) {
         // Parcourir les items du groupe
         group.items.forEach((item) => {
           // Vérifier si 'augmentation' existe et est un nombre valide
           const value = item[columnId];
-          
+
           // Si la valeur est définie et un nombre, on l'ajoute au total
           if (value != null && !isNaN(value)) {
-            totals += value; 
+            totals += value;
           }
         });
-       
-        return totals;
-      }, 0); 
-    };
+      }
+      return totals;
+    }, 0);
+  };
 
-    //triage des données par ordre croissant
-    useEffect(() => {
-      rows = rows.sort((a, b) => {
-        if (a.rubriques_poste < b.rubriques_poste) {
-          return -1;  // a vient avant b
+  console.log('rows : ', rows);
+
+  const totalGroup = (columnId) => {
+    return rows.reduce((totals, group) => {
+
+      // Parcourir les items du groupe
+      group.items.forEach((item) => {
+        // Vérifier si 'augmentation' existe et est un nombre valide
+        const value = item[columnId];
+
+        // Si la valeur est définie et un nombre, on l'ajoute au total
+        if (value != null && !isNaN(value)) {
+          totals += value;
         }
-        if (a.rubriques_poste > b.rubriques_poste) {
-          return 1;   // b vient avant a
-        }
-        return 0;  // a et b sont égaux
       });
-    },[rows]);
 
-    const stickyColumnStyle = {
-      position: 'sticky',
-      left: 200,
-      backgroundColor: '#fff', // Assurez-vous que le fond est blanc ou transparent
-      zIndex: 1, // Assurez-vous que la colonne est au-dessus des autres
-    };
+      return totals;
+    }, 0);
+  };
 
-    return (
-      <TableContainer  
-      // component={Paper}
-      style={{ 
-        display: 'inline-block', 
-        width: 'auto', 
-        overflowX: 'auto',
-       }}
-      >
-        <Table sx={{ width: 320, border: '1px solid #ddd' }} aria-label="simple table">
-          <TableHead 
-            style={{
-              backgroundColor: initial.theme,
-              position: 'sticky',
-              top: 0,
-              zIndex: 1,
-            }}
-          >
+  //triage des données par ordre croissant
+  useEffect(() => {
+    rows = rows.sort((a, b) => {
+      if (a.rubriques_poste < b.rubriques_poste) {
+        return -1;  // a vient avant b
+      }
+      if (a.rubriques_poste > b.rubriques_poste) {
+        return 1;   // b vient avant a
+      }
+      return 0;  // a et b sont égaux
+    });
+  }, [rows]);
+
+  const colWidths = columns.map((c) => (typeof c.minWidth === "number" ? `${c.minWidth}px` : c.minWidth || "auto"));
+
+  return (
+    <Box sx={{ width: "100%", p: 0, m: 0 }}>
+      <TableContainer component={Paper} sx={{ width: "100%", overflowX: "auto" }}>
+        {/* Table principale avec colgroup (garantit alignement avec les tables internes) */}
+        <Table aria-label="grouped-table" sx={{ tableLayout: "fixed", width: "100%" }}>
+          {/* colgroup principal */}
+          <colgroup>
+            {colWidths.map((w, i) => (
+              <col key={columns[i].id} style={{ width: w }} />
+            ))}
+            <col key="action-col" style={{ width: "100px" }} />
+          </colgroup>
+
+          <TableHead sx={{ backgroundColor: initial.theme || "#1976d2", position: "sticky", top: 0, zIndex: 2 }}>
             <TableRow>
-                {columns.map((column) => (
-                    <TableCell
-                    key={column.id}
-                    align={column.align}
-                    style={{
-                      fontWeight:'bold', 
-                      top: 5, 
-                      minWidth: column.minWidth, 
-                      paddingTop: '5px', 
-                      paddingBottom: '5px', 
-                      borderRight: '1px solid #ddd', 
-                      borderLeft: '1px solid #ddd',
-                      fontSize:15,
-                      color:'white',
-                    }}
-                    >
-                      {column.label}
-                    </TableCell>
-                ))}
-
+              {columns.map((col) => (
                 <TableCell
-                    key={'00modif'}
-                    align={"center"}
-                    style={{
-                      fontWeight:'bold', 
-                      top: 5, 
-                      width: "100px", 
-                      paddingTop: '5px', 
-                      paddingBottom: '5px', 
-                      borderRight: '1px solid #ddd', 
-                      borderLeft: '1px solid #ddd',
-                      fontSize:15,
-                      color:'white'
-                    }}
+                  key={col.id}
+                  align={col.align || "left"}
+                  sx={{
+                    fontWeight: "bold",
+                    py: "6px",
+                    borderRight: "1px solid #ddd",
+                    borderLeft: "1px solid #ddd",
+                    fontSize: 15,
+                    color: "white",
+                    minWidth: col.minWidth,
+                  }}
                 >
-                  Action
+                  {col.label}
                 </TableCell>
-               
+              ))}
+
+              <TableCell
+                align="center"
+                sx={{
+                  fontWeight: "bold",
+                  py: "6px",
+                  borderRight: "1px solid #ddd",
+                  borderLeft: "1px solid #ddd",
+                  fontSize: 15,
+                  color: "white",
+                  width: 25,
+                  maxWidth: 25,
+                }}
+              >
+                Action
+              </TableCell>
+
             </TableRow>
           </TableHead>
+
           <TableBody>
             {rows.map((group) => (
               <React.Fragment key={group.rubriques_poste} >
                 {/* Ligne pour afficher le nom du groupe et l'icône de dépliage/repliage */}
-                <TableRow
-                  style={{border:'none', height:'20px', width:'100%'}}
-                >
-                  <TableCell 
-                    colSpan={10} 
-                    style={{ 
-                      fontWeight: 'bold', 
-                      border:'none', 
-                      //backgroundColor:"green",
-                      paddingTop: '5px', 
-                      paddingBottom: '2px', 
-                      minWidth: columnWidths["rubriques_poste"],
-                    }}
-                  >
-                    <IconButton 
-                    onClick={() => handleToggleCollapse(group.rubriques_poste)}
-                    style={{ 
-                      width:'20px', height:'20px',
-                      textTransform: 'none', outline: 'none',
-                      backgroundColor:"#67AE6E", 
-                      color:'white',
-                      marginRight:5 
-                    }}
-                    >
-                      {expanded[group.rubriques_poste] ? <ExpandLess /> : <ExpandMore />}
-                    </IconButton>
-                    {
-                    group.rubriques_poste === "AUTREACTIF"
-                      ? "Autres actifs financiers non courant"
-                      : group.rubriques_poste === "IMMOCORP"
-                        ? "Immobilisation corporelle"
-                        : group.rubriques_poste === "IMMOINCORP"
-                          ? "Immobilisation incorporelle"
-                          : group.rubriques_poste === "IMMOENCOUR"
-                            ? "Immobilisation en cours"
-                            : group.rubriques_poste === "IMMOFIN"
-                              ? "Immobilisation financière"
-                              : "Participation"
-                    }
-                  </TableCell>
+                <TableRow  >
+                  {
+                    columns.map((column) => {
+                      if (column.id === 'rubriques_poste') {
+                        const label = group.rubriques_poste === "AUTREACTIF"
+                          ? "Autres actifs financiers non courant"
+                          : group.rubriques_poste === "IMMOCORP"
+                            ? "Immobilisation corporelle"
+                            : group.rubriques_poste === "IMMOINCORP"
+                              ? "Immobilisation incorporelle"
+                              : group.rubriques_poste === "IMMOENCOUR"
+                                ? "Immobilisation en cours"
+                                : group.rubriques_poste === "IMMOFIN"
+                                  ? "Immobilisation financière"
+                                  : "Participation"
+                        return (
+                          <TableCell key={column.id} colSpan={1} sx={{ fontWeight: "bold", py: 1 }}>
+                            <Stack direction="row" alignItems="center" spacing={1}>
+                              <IconButton
+                                onClick={() => handleToggleCollapse(group.rubriques_poste)}
+                                sx={{
+                                  width: 20,
+                                  height: 20,
+                                  mr: 1,
+                                }}
+                                style={{
+                                  textTransform: 'none',
+                                  outline: 'none',
+                                  backgroundColor: "#67AE6E",
+                                  color: 'white',
+                                }}
+                              >
+                                {expanded[group.rubriques_poste] ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
+                              </IconButton>
+                              <Typography fontWeight="bold" fontSize={14}>{label}</Typography>
+                            </Stack>
+                          </TableCell>
+                        )
+                      }
+                      const numericColumns = [
+                        'valeur_acquisition', 'augmentation', 'diminution', 'valeur_brute'
+                      ];
+
+                      if (numericColumns.includes(column.id)) {
+                        const value = group[column.id] || 0;
+                        return (
+                          <TableCell key={column.id} sx={{ fontWeight: 'bold', py: 1 }} align={column.align}>
+                            <Typography fontWeight="bold" fontSize={14}>
+                              {value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </Typography>
+                          </TableCell>
+                        );
+                      }
+
+                      return <TableCell key={column.id} />;
+                    })
+                  }
+
                 </TableRow>
 
                 {/* Les lignes du groupe avec Collapse */}
-                <TableRow
-                  style={{border:'none'}}
-                >
-                  <TableCell 
-                    colSpan={8}
-                    style={{
-                      height:'0px', 
-                      padding: '5px', 
-                      paddingBottom: '0px',
-                    }}
-                  >
-                    <Collapse 
-                    in={expanded[group.rubriques_poste]} 
-                    timeout="auto" unmountOnExit
-                    style={{
-                      marginLeft: "-5px", 
-                      height:'20px', 
-                      width:'100%',
-                     display:'table'
-                    }}
-                    >
-                      {/* Liste des éléments du groupe */}
-                      {group.items.map((item) => (
-                        <TableRow 
-                          key={item.id} 
-                          style={{
-                            border:'none', 
-                            padding:'5px',
-                          }}
-                        >
-                          {columns.map((column) => {
-                            const value = column.sousgroupLabel? item[column.id] : "";
+                <TableRow   >
+                  <TableCell colSpan={columns.length + 1} sx={{ p: 0 }}>
+                    <Collapse in={!!expanded[group.rubriques_poste]} timeout="auto" unmountOnExit>
+                      <Table size="small" sx={{ tableLayout: "fixed", width: "100%" }}>
 
-                            return (
+                        <colgroup>
+                          {colWidths.map((w, i) => (
+                            <col key={`c-${columns[i].id}`} style={{ width: w }} />
+                          ))}
+                          <col key="c-action" style={{ width: "100px" }} />
+                        </colgroup>
+
+                        <TableBody>
+                          {group.items.map((item) => (
+                            <TableRow key={item.id}>
+                              {columns.map((column) => {
+                                const value = column.sousgroupLabel ? item[column.id] : "";
+
+                                return (
+                                  <TableCell
+                                    key={column.id}
+                                    align={column.align || "left"}
+                                    sx={{
+                                      fontSize: 15,
+                                      py: 0.1,
+                                      borderBottom: column.sousgroupLabel ? "1px solid #ddd" : "transparent",
+                                      // ensure content wraps neatly
+                                      whiteSpace: column.isnumber ? "nowrap" : "normal",
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                    }}
+                                  >
+                                    {column.format && value
+                                      ? typeof value === 'number'
+                                        ? column.format(value)
+                                        : format(value, "dd/MM/yyy")
+                                      : value
+                                    }
+                                  </TableCell>
+                                )
+                              })
+                              }
                               <TableCell
-                              key={column.id} 
-                              align={column.align} 
-                              style={{ 
-                                paddingTop: '5px', 
-                                paddingBottom: '5px',
-                                borderBottom : column.sousgroupLabel? '1px solid #ddd': '1px solid transparent',
-                                // borderRight: '1px solid #ddd', borderLeft: '1px solid #ddd' ,
-                                //backgroundColor: column.id === 'dim_repr_ex' ? 'red' : 'green',
-                                fontSize:15,
-                                minwidth: columnWidths[column.id],
-                                
+                                align="center"
+                                sx={{
+                                  width: 25,
+                                  maxWidth: 25,
                                 }}
                               >
-                                {column.format && value
-                                  ? typeof value === 'number'
-                                    ? column.format(value)
-                                    : format(value, "dd/MM/yyy")
-                                    : value
-                                }
-                              </TableCell>
-                            )
-                          })
-                        }
-                        {
-                        !state
-                          ?<TableCell
-                              key={"boutonModif"} 
-                              align={"center"} 
-                              style={{ 
-                                paddingTop: '5px', 
-                                paddingBottom: '5px',
-                                // borderRight: '1px solid #ddd', borderLeft: '1px solid #ddd' ,
-                                fontSize:15,
-                                width: "50px",
-                                }}
-                            >
-                              <Stack direction={'row'} alignItems={'center'} spacing={1}>
-                                <IconButton
-                                onClick={() => handleRowModifClick(item)}
-                                variant="contained" 
-                                style={{
-                                    width:"25px", height:'25px', 
-                                    borderRadius:"1px", borderColor: "transparent", 
-                                    backgroundColor: "transparent",
-                                    textTransform: 'none', outline: 'none'
-                                }}
-                                >
-                                    <IoMdCreate style={{width:'25px', height:'25px', color:initial.theme, position: 'absolute',}}/>
-                                </IconButton>
-                                
-                                <IconButton
-                                onClick={() => handleRowDeleteClick(item)}
-                                variant="contained" 
-                                style={{
-                                  width:"25px", height:'25px', 
-                                    borderRadius:"1px", borderColor: "transparent", 
-                                    backgroundColor: "transparent",
-                                    textTransform: 'none', outline: 'none'
-                                }}
-                                >
-                                  <IoMdTrash style={{width:'25px', height:'25px', color:initial.button_delete_color, position: 'absolute',}}/>
-                                </IconButton>
-                              </Stack>
-                            </TableCell>
-                          : null
-                        }
-                        
-                      </TableRow>
-                    ))}
+                                {!state ? (
+                                  <Stack direction={'row'} alignItems={'center'} justifyContent={'space-evenly'}>
+                                    <IconButton
+                                      onClick={() => handleRowModifClick(item)}
+                                      variant="contained"
+                                      style={{
+                                        width: "25px", height: '25px',
+                                        borderRadius: "1px", borderColor: "transparent",
+                                        backgroundColor: "transparent",
+                                        textTransform: 'none', outline: 'none'
+                                      }}
+                                    >
+                                      <IoMdCreate style={{ width: '25px', height: '25px', color: initial.theme, position: 'absolute', }} />
+                                    </IconButton>
 
-                      <TableRow
-                        key={'subtotal'} 
-                        style={{padingLeft: -5, border:'none'}}
-                      >
-                        {columns.map((column) => {
-                            return (
-                              <TableCell
-                              key={column.id} 
-                              align={column.align} 
-                              style={{ 
-                                paddingTop: '2px', 
-                                paddingBottom: '2px',
-                                fontSize:15,
-                                fontWeight:'bold',
-                                minWidth: column.minWidth,
-                                backgroundColor: column.id === "rubriques_poste" ? 'transparent' : '#f0f0f0'
-                                }}
-                              >
-                                {
-                                  column.id === "rubriques_poste"
-                                    ? ""
-                                    : column.id === "libelle"
-                                      ? "Sous Total"
-                                      : column.isnumber
-                                        ? soustotalGroup(group.rubriques_poste, column.id).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                                        : ""
-                                }
+                                    {
+                                      group.rubriques_poste === 'AUTRE'
+                                        ? <IconButton
+                                          onClick={() => handleRowDeleteClick(item)}
+                                          variant="contained"
+                                          style={{
+                                            width: "25px", height: '25px',
+                                            borderRadius: "1px", borderColor: "transparent",
+                                            backgroundColor: "transparent",
+                                            textTransform: 'none', outline: 'none'
+                                          }}
+                                        >
+                                          <IoMdTrash style={{ width: '25px', height: '25px', color: initial.button_delete_color, position: 'absolute', }} />
+                                        </IconButton>
+                                        : null
+                                    }
+
+                                  </Stack>
+                                ) : (
+                                  <span />
+                                )}
                               </TableCell>
-                            )
-                          })
-                        }
-                      </TableRow>
+
+                            </TableRow>
+                          ))}
+
+                          {/* <TableRow  >
+                            {columns.map((column) => {
+                              return (
+                                <TableCell
+                                  key={`subtotal-${column.id}`}
+                                  align={column.align || "left"}
+                                  sx={{
+                                    fontWeight: "bold",
+                                    fontSize: 15,
+                                    backgroundColor: column.id === "rubriques_poste" ? "transparent" : "#f0f0f0",
+                                    py: 0.6,
+                                  }}
+                                >
+                                  {
+                                    column.id === "rubriques_poste"
+                                      ? ""
+                                      : column.id === "num_compte"
+                                        ? "Sous Total"
+                                        : column.isnumber
+                                          ? soustotalGroup(group.rubriques_poste, column.id).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                          : ""
+                                  }
+                                </TableCell>
+                              )
+                            })
+                            }
+                          </TableRow> */}
+                        </TableBody>
+                      </Table>
+
                     </Collapse>
                   </TableCell>
                 </TableRow>
@@ -349,42 +340,30 @@ const VirtualTableModifiableGroupableEbilanEIAFNC = ({columns, rows, deleteState
             ))}
           </TableBody>
 
-            <TableFooter
-              style={{
-                backgroundColor: '#89A8B2',
-                position: 'sticky',
-                bottom: 0,
-                zIndex: 1,
-              }}
-            >
-              <TableRow>
-                {columns.map((column) => (
-                  <TableCell
-                    key={column.id}
-                    align={column.align}
-                    style={{
-                      fontWeight: 'bold',
-                      paddingTop: '5px',
-                      paddingBottom: '5px',
-                      borderTop: '1px solid #ddd',
-                      minWidth: column.minWidth,
-                      fontSize: 15
-                    }}
-                  >
-                    {
-                      column.id === "rubriques_poste"
-                        ? "Total"
-                        : column.isnumber
-                            ? totalGroup(column.id).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                            : ""
-                    }
-                  </TableCell>
-                ))}
-              </TableRow>
-            </TableFooter>
+          <TableFooter >
+            <TableRow sx={{ backgroundColor: "#89A8B2", position: "sticky", bottom: 0 }}>
+              {columns.map((column) => (
+                <TableCell
+                  key={`footer-${column.id}`}
+                  align={column.align || "left"}
+                  sx={{ fontWeight: "bold", py: 1, minWidth: column.minWidth, fontSize: 15 }}
+                >
+                  {
+                    column.id === "rubriques_poste"
+                      ? "Total"
+                      : column.isnumber
+                        ? totalGroup(column.id).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                        : ""
+                  }
+                </TableCell>
+              ))}
+              <TableCell sx={{ fontWeight: "bold" }} />
+            </TableRow>
+          </TableFooter>
         </Table>
       </TableContainer>
-    );
-  }
+    </Box>
+  );
+}
 
-  export default VirtualTableModifiableGroupableEbilanEIAFNC;
+export default VirtualTableModifiableGroupableEbilanEIAFNC;

@@ -84,6 +84,7 @@ const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeIds, setSe
                 selectedRowAxeIds
             }).then((response) => {
                 if (response?.data?.state) {
+                    toast.success(response?.data?.message);
                     const updatedRowsList = rows.filter((row) => !selectedRowAxeIds.includes(row.id));
                     setRows(updatedRowsList);
                     setSelectedRowAxeIds([]);
@@ -128,6 +129,7 @@ const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeIds, setSe
                     <PopupConfirmDelete
                         msg={`Voulez-vous vraiment supprimer ${selectedRowAxeIds.length > 1 ? 'les lignes sélectionnées ?' : 'la ligne sélectionnée ?'}`}
                         confirmationState={handleDeleteRow}
+                        presonalisedMessage={true}
                     />
                     :
                     null

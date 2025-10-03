@@ -7,6 +7,11 @@ const caAxes = db.caAxes;
 const caSections = db.caSections;
 const dossier = db.dossiers;
 
+// Fonction pour plurieliser un mot
+function pluralize(count, word) {
+    return count > 1 ? word + 's' : word;
+}
+
 exports.getAxes = async (req, res) => {
     try {
         const { id_dossier, id_compte } = req.params;
@@ -74,8 +79,6 @@ exports.getSectionsByAxeIds = async (req, res) => {
         const { id_compte, id_dossier } = req.params;
         const { selectedRowAxeIds } = req.body;
 
-        console.log(selectedRowAxeIds)
-
         if (!id_compte || !id_dossier || !selectedRowAxeIds || !Array.isArray(selectedRowAxeIds)) {
             return res.status(400).json({
                 state: false,
@@ -83,7 +86,7 @@ exports.getSectionsByAxeIds = async (req, res) => {
             });
         }
 
-        const sections = await db.caSections.findAll({
+        const sections = await caSections.findAll({
             where: {
                 id_compte,
                 id_dossier,
@@ -138,7 +141,7 @@ exports.addOrUpdateAxes = async (req, res) => {
             }
 
             if (id < 0) {
-                const newAxe = await db.caAxes.create({
+                const newAxe = await caAxes.create({
                     code,
                     libelle,
                     id_compte: idCompte,
@@ -146,7 +149,7 @@ exports.addOrUpdateAxes = async (req, res) => {
                 });
                 inserted.push(newAxe);
             } else {
-                const [updatedCount] = await db.caAxes.update(
+                const [updatedCount] = await caAxes.update(
                     { code, libelle },
                     { where: { id: parseInt(id) } }
                 );
@@ -203,7 +206,7 @@ exports.addOrUpdateSections = async (req, res) => {
             }
 
             if (id < 0) {
-                const newAxe = await db.caSections.create({
+                const newAxe = await caSections.create({
                     section,
                     intitule,
                     compte,
@@ -217,7 +220,7 @@ exports.addOrUpdateSections = async (req, res) => {
                 });
                 inserted.push(newAxe);
             } else {
-                const [updatedCount] = await db.caSections.update(
+                const [updatedCount] = await caSections.update(
                     {
                         section,
                         intitule,
@@ -262,13 +265,13 @@ exports.deleteAxes = async (req, res) => {
             });
         }
 
-        const result = await db.caAxes.destroy({
+        const result = await caAxes.destroy({
             where: { id: selectedRowAxeIds }
         });
 
         return res.status(200).json({
             state: true,
-            message: `${result} axe(s) supprimé(s) avec succès`
+            message: `${result} ${pluralize(result, 'axe')} ${pluralize(result, 'supprimé')} avec succès`
         });
 
     } catch (error) {
@@ -291,13 +294,13 @@ exports.deleteSections = async (req, res) => {
             });
         }
 
-        const result = await db.caSections.destroy({
+        const result = await caSections.destroy({
             where: { id: selectedRowSectionIds }
         });
 
         return res.status(200).json({
             state: true,
-            message: `${result} axe(s) supprimé(s) avec succès`
+            message: `${result} ${pluralize(result, 'section')} ${pluralize(result, 'supprimé')} avec succès`
         });
 
     } catch (error) {

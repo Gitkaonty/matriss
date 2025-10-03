@@ -137,6 +137,19 @@ app.use('/paie/paie', require('./Routes/paie/paieRoutes'));
 
 app.use('/historique/irsa', require('./routes/historiqueIrsaRoutes'));
 
+//Déclaration ISI
+app.use('/declaration/isi', require('./Routes/Declaration/DIsi/DeclarationISIRoute'));
+
+//----------------------------------------------------------------------------------------------------------------
+// COMPTE ET SOUS-COMPTE
+//----------------------------------------------------------------------------------------------------------------
+
+// Compte
+app.use('/compte', require('./Routes/User/Compte/compteRoutes'));
+
+// Sous compte
+app.use('/sous-compte', require('./Routes/User/SousComptes/sousCompteRoutes'));
+
 /*app.all('*', (req,res) => {
     res.status(404);
     if(req.accepts('html')) {

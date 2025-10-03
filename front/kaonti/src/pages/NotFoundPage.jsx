@@ -1,17 +1,48 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { Box, Typography, Button } from "@mui/material";
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 
 const NotFoundPage = () => {
+    const handleReturnLogin = () => {
+        window.location.href = '/';
+    }
     return (
-        <article style={{ padding: "100px" }}>
-            <h1>Oops!</h1>
-            <h2> Error 404: Page Not Found</h2>
-            <div className="flexGrow">
-                <p>La page que vous chercher n'existe pas.</p>
-                <Link to="/">Cliquer ici pour revenir à la page d'authentification</Link>
-            </div>
-        </article>
-    )
-}
+        <Box
+            sx={{
+                width: '95vw',
+                height: '94vh',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                textAlign: 'center',
+                padding: 2,
+            }}
+        >
+            <ErrorOutlineIcon color="error" sx={{ fontSize: 80, mb: 2 }} />
+            <Typography variant="h3" gutterBottom>
+                Oops!
+            </Typography>
+            <Typography variant="h5" gutterBottom>
+                Erreur 404 : Page introuvable
+            </Typography>
+            <Typography variant="body1" sx={{ mb: 4 }}>
+                La page que vous cherchez n'existe pas ou a été déplacée.
+            </Typography>
+            <Button
+                onClick={handleReturnLogin}
+                variant="contained"
+                sx={{ mt: 1 }}
+                style={{
+                    textTransform: 'none',
+                    outline: 'none',
+                }}
+            >
+                {"Retour à l’authentification"}
+            </Button>
+        </Box>
+    );
+};
 
 export default NotFoundPage;

@@ -6,10 +6,15 @@ const fs = require('fs');
 const { Op } = require('sequelize');
 const csv = require('csv-parser');
 
+const generateDComAuto = require('../../../Middlewares/DCom/declCommGenerateAuto');
+const generateDroitComm = generateDComAuto.generateDroitComm;
+
 const droitcommas = db.droitcommas;
 const droitcommbs = db.droitcommbs;
 const etatscomms = db.etatscomms;
 const etatsplp = db.etatsplp;
+const compterubriques = db.compterubriques;
+const dossierplancomptable = db.dossierplancomptable;
 
 exports.addDroitCommA = async (req, res) => {
     try {
@@ -72,7 +77,14 @@ exports.getDroitCommGlobal = async (req, res) => {
                     id_dossier,
                     id_compte,
                     type: ['SVT', 'ADR', 'AC', 'AI', 'DEB']
-                }
+                },
+                include: [
+                    {
+                        model: dossierplancomptable,
+                        attributes: ['compte']
+                    }
+                ],
+                order: [['id', 'ASC']]
             }),
             droitcommbs.findAll({
                 where: {
@@ -80,7 +92,14 @@ exports.getDroitCommGlobal = async (req, res) => {
                     id_dossier,
                     id_compte,
                     type: ['MV', 'PSV', 'PL']
-                }
+                },
+                include: [
+                    {
+                        model: dossierplancomptable,
+                        attributes: ['compte']
+                    }
+                ],
+                order: [['id', 'ASC']]
             }),
             etatsplp.findAll({
                 where: {
@@ -90,19 +109,34 @@ exports.getDroitCommGlobal = async (req, res) => {
                 },
                 order: [['id', 'ASC']]
             })
-
         ]);
+
+        const regroupedDataA = dataA.map((val) => {
+            const { dossierplancomptable, ...rest } = val.toJSON();
+            return {
+                ...rest,
+                compte: dossierplancomptable?.compte || null,
+            };
+        })
+
+        const regroupedDataB = dataB.map((val) => {
+            const { dossierplancomptable, ...rest } = val.toJSON();
+            return {
+                ...rest,
+                compte: dossierplancomptable?.compte || null,
+            };
+        })
 
         // Regroupement par types
         const regrouped = {
-            SVT: dataA.filter(el => el.type === 'SVT'),
-            ADR: dataA.filter(el => el.type === 'ADR'),
-            AC: dataA.filter(el => el.type === 'AC'),
-            AI: dataA.filter(el => el.type === 'AI'),
-            DEB: dataA.filter(el => el.type === 'DEB'),
-            MV: dataB.filter(el => el.type === 'MV'),
-            PSV: dataB.filter(el => el.type === 'PSV'),
-            PL: dataB.filter(el => el.type === 'PL'),
+            SVT: regroupedDataA.filter(el => el.type === 'SVT'),
+            ADR: regroupedDataA.filter(el => el.type === 'ADR'),
+            AC: regroupedDataA.filter(el => el.type === 'AC'),
+            AI: regroupedDataA.filter(el => el.type === 'AI'),
+            DEB: regroupedDataA.filter(el => el.type === 'DEB'),
+            MV: regroupedDataB.filter(el => el.type === 'MV'),
+            PSV: regroupedDataB.filter(el => el.type === 'PSV'),
+            PL: regroupedDataB.filter(el => el.type === 'PL'),
             PLP: dataPlp
         };
 
@@ -154,17 +188,52 @@ exports.deleteAllCommByType = async (req, res) => {
 
 exports.deleteOneCommByType = async (req, res) => {
     try {
-        const { id, type } = req.body;
-        if (!type || !id) {
+        const { id, type, action, id_numcpt } = req.body;
+        if (!type || !id || !action || !id_numcpt) {
             return res.status(400).json({
                 state: false,
                 message: "Données manquant"
             })
         }
+
+        // return console.log(req.body);
         if (type === 'SVT' || type === 'ADR' || type === 'AC' || type === 'AI' || type === 'DEB') {
-            await droitcommas.destroy({ where: { id, type } });
+            const droitCommAData = droitcommas.findByPk(id);
+            if (!droitCommAData) {
+                return res.status(400).json({
+                    state: false,
+                    message: "Données non trouvées"
+                });
+            }
+
+            const id_dossier = Number(droitCommAData.id_dossier);
+            const id_compte = Number(droitCommAData.id_compte);
+            const id_exercice = Number(droitCommAData.id_exercice);
+
+            if (action === 'group') {
+                await droitcommas.destroy({ where: { id_numcpt, type, id_dossier, id_compte, id_exercice } });
+            }
+            else {
+                await droitcommas.destroy({ where: { id, type, id_dossier, id_compte, id_exercice } });
+            }
         } else if (type === 'MV' || type === 'PSV' || type === 'PL') {
-            await droitcommbs.destroy({ where: { id, type } });
+            const droitCommBData = droitcommbs.findByPk(id);
+            if (!droitCommBData) {
+                return res.status(400).json({
+                    state: false,
+                    message: "Données non trouvées"
+                });
+            }
+
+            const id_dossier = Number(droitCommBData.id_dossier);
+            const id_compte = Number(droitCommBData.id_compte);
+            const id_exercice = Number(droitCommBData.id_exercice);
+
+            if (action === 'group') {
+                await droitcommbs.destroy({ where: { id_numcpt, type, id_dossier, id_compte, id_exercice } });
+            } else {
+                await droitcommbs.destroy({ where: { id, type, id_dossier, id_compte, id_exercice } });
+            }
         }
         return res.status(200).json({
             state: true,
@@ -183,14 +252,37 @@ exports.updateDroitCommA = async (req, res) => {
     try {
         const { id } = req.params;
         const { formData } = req.body;
+        const id_numcpt = Number(formData?.id_numcpt);
+
         if (!formData) {
             return res.status(400).json({
                 state: false,
-                message: "Données manquant"
+                message: "Données manquantes"
             });
         }
-        console.log('formData : ', formData);
-        await droitcommas.update(formData, { where: { id } });
+
+        if (!id) {
+            return res.status(400).json({
+                state: false,
+                message: "Id manquantes"
+            });
+        }
+
+        const droitCommAData = droitcommas.findByPk(id);
+        if (!droitCommAData) {
+            return res.status(400).json({
+                state: false,
+                message: "Données non trouvées"
+            });
+        }
+
+        const id_dossier = Number(droitCommAData.id_dossier);
+        const id_compte = Number(droitCommAData.id_compte);
+        const id_exercice = Number(droitCommAData.id_exercice);
+
+        const { comptabilisees, versees, ...filteredData } = formData;
+        await droitcommas.update(filteredData, { where: { id_numcpt, id_dossier, id_compte, id_exercice } });
+
         return res.status(200).json({
             state: true,
             message: `Droit de communication modifié`
@@ -207,13 +299,36 @@ exports.updateDroitCommB = async (req, res) => {
     try {
         const { id } = req.params;
         const { formData } = req.body;
+        const id_numcpt = Number(formData?.id_numcpt);
+
         if (!formData) {
             return res.status(400).json({
                 state: false,
                 message: "Données manquant"
             });
         }
-        await droitcommbs.update(formData, { where: { id } });
+
+        if (!id) {
+            return res.status(400).json({
+                state: false,
+                message: "Id manquantes"
+            });
+        }
+
+        const droitCommBData = droitcommbs.findByPk(id);
+        if (!droitCommBData) {
+            return res.status(400).json({
+                state: false,
+                message: "Données non trouvées"
+            });
+        }
+
+        const id_dossier = Number(droitCommBData.id_dossier);
+        const id_compte = Number(droitCommBData.id_compte);
+        const id_exercice = Number(droitCommBData.id_exercice);
+
+        const { montanth_tva, tva, ...filteredData } = formData;
+        await droitcommbs.update(filteredData, { where: { id_numcpt, id_dossier, id_compte, id_exercice } });
         return res.status(200).json({
             state: true,
             message: `Droit de communication modifié`
@@ -373,7 +488,6 @@ exports.importdroitCommA = async (req, res) => {
 exports.importdroitCommB = async (req, res) => {
     try {
         const { data } = req.body;
-        console.log('data : ', data);
 
         if (!data || !Array.isArray(data)) {
             return res.status(400).json({ state: false, message: "Données manquantes ou invalides" });
@@ -393,3 +507,90 @@ exports.importdroitCommB = async (req, res) => {
         return res.status(500).json({ state: false, message: "Erreur serveur", error: error.message });
     }
 };
+
+const getIdRubrique = (nature) => {
+    let id_rubrique = 0;
+    if (nature === 'SVT') {
+        id_rubrique = 1;
+    } else if (nature === 'ADR') {
+        id_rubrique = 2;
+    } else if (nature === 'AC') {
+        id_rubrique = 3;
+    } else if (nature === 'AI') {
+        id_rubrique = 4;
+    } else if (nature === 'DEB') {
+        id_rubrique = 5;
+    } else if (nature === 'MV') {
+        id_rubrique = 6;
+    } else if (nature === 'PSV') {
+        id_rubrique = 7;
+    } else if (nature === 'PL') {
+        id_rubrique = 8;
+    }
+    return id_rubrique;
+}
+
+exports.generateDCommAuto = async (req, res) => {
+    try {
+        const { id_compte, id_dossier, id_exercice, nature } = req.body;
+        if (!id_exercice || !id_dossier || !id_compte || !nature) {
+            return res.status(400).json({
+                state: false,
+                message: "Données manquantes"
+            });
+        }
+
+        const id_rubrique = getIdRubrique(nature);
+
+        const compteRubriques = await compterubriques.findAll({
+            where: {
+                id_dossier,
+                id_compte,
+                id_exercice,
+                id_etat: 'DCOM',
+                id_rubrique,
+                active: true
+            }
+        })
+
+        if (!compteRubriques || compteRubriques.length === 0) {
+            return res.status(400).json({
+                state: true,
+                message: "Aucune données à générer automatiquement"
+            });
+        }
+
+        if (['SVT', 'ADR', 'AC', 'AI', 'DEB'].includes(nature)) {
+            await droitcommas.destroy({
+                where: {
+                    id_compte,
+                    id_dossier,
+                    id_exercice,
+                    type: nature
+                }
+            })
+        } else {
+            await droitcommbs.destroy({
+                where: {
+                    id_compte,
+                    id_dossier,
+                    id_exercice,
+                    type: nature
+                }
+            })
+        }
+
+        // return res.status(202).json(compteRubriques);
+
+        if (nature) {
+            await generateDroitComm(res, nature, compteRubriques, id_compte, id_dossier, id_exercice);
+        } else {
+            return res.status(400).json({
+                state: false,
+                message: "Nature non trouvé"
+            });
+        }
+    } catch (error) {
+        return res.status(500).json({ state: false, message: "Erreur serveur", error: error.message });
+    }
+}

@@ -14,15 +14,15 @@ const declFiscalesList = [
         urldynamic: false
     },
     {
-        text: 'DCom - droit de communication',
+        text: 'DCom - Droit de communication',
         name: "dcom",
-        path: "/tab/declarationDroitComm",
+        path: "/tab/declaration/declarationDroitComm",
         urldynamic: true
     },
     {
         text: 'E-bilan',
         name: "ebilan",
-        path: "/tab/declarationEbilan",
+        path: "/tab/declaration/declarationEbilan",
         urldynamic: true
     },
     {
@@ -46,7 +46,7 @@ const declFiscalesList = [
     {
         text: 'IRSA - Impôts sur les revenus salariaux et assimilés',
         name: "irsa",
-        path: "/tab/declarationIRSA",
+        path: "/tab/declaration/declarationIRSA",
         urldynamic: true
     },
     {
@@ -58,8 +58,8 @@ const declFiscalesList = [
     {
         text: 'ISI - impôt synthétique intermittent',
         name: "isi",
-        path: "#",
-        urldynamic: false
+        path: "/tab/declaration/declarationISI",
+        urldynamic: true
     },
     {
         text: 'TVA - taxes sur la valeur ajoutée',
@@ -83,16 +83,16 @@ const declSocialesList = [
     {
         text: 'Indemnités',
         name: "indemnites",
-        path: "/tab/indemnites"
+        path: "/tab/declaration/indemnites"
     },
     {
         text: 'Avantages en nature',
         name: "avantagesnature",
-        path: "/tab/avantagesnature"
+        path: "/tab/declaration/avantagesnature"
     },
 ];
 
-export default function Declaration({ onWindowState, pathToNavigate, humburgerMenuState }) {
+export default function Declaration({ onWindowState, pathToNavigate, humburgerMenuState, closeDrawer }) {
     let initial = init[0];
 
     const SendStateToParent = () => {
@@ -104,31 +104,44 @@ export default function Declaration({ onWindowState, pathToNavigate, humburgerMe
     }
 
     return (
-        <Stack backgroundColor={initial.theme}
-            width={humburgerMenuState ? '85.5vw' : '95vw'}
+        <Stack
+            backgroundColor={initial.theme}
+            width={'100%'}
             height={'100vh'}
             zIndex={"10"}
-            position={"absolute"}
+            position={"fixed"}
             visibility={'visible'}
             sx={{ opacity: "0.95" }}
-            marginTop={"-27px"}
+            marginTop={"-40px"}
             marginLeft={"-8px"}
         >
-            <SubMenuHeader caption={"Déclarations"} openWindow={SendStateToParent} />
+            <SubMenuHeader
+                caption={"Déclarations"}
+                openWindow={SendStateToParent}
+                humburgerMenuState={humburgerMenuState}
+                closeDrawer={closeDrawer}
+            />
 
-            <Stack marginTop={"50px"} width={"100%"} height={"75%"} spacing={2} alignItems={"flex-start"} direction={"row"} marginLeft={"20px"}>
-                <Stack marginTop={"50px"} width={"25%"} height={"30px"} spacing={0.1} alignItems={"flex-start"} direction={"column"}>
+            <Stack
+                width={"100%"}
+                height={"100%"}
+                spacing={2}
+                alignItems={"flex-start"}
+                direction={"row"}
+                marginLeft={"20px"}
+                marginTop={"-25px"}
+            >
+                <Stack width={"40%"} height={"30px"} spacing={0.1} alignItems={"flex-start"} direction={"column"}>
                     <Typography variant='h6' marginLeft={"50px"} color={"white"}>Liasses fiscales</Typography>
                     <SubMenuList list={declFiscalesList} navigatePath={HandlePath} />
                 </Stack>
 
                 <Divider orientation='vertical' color={"white"} style={{ height: "100%", opacity: "0.2" }} />
 
-                <Stack marginTop={"50px"} width={"25%"} height={"30px"} spacing={0.1} alignItems={"flex-start"} direction={"column"}>
+                <Stack width={"40%"} height={"30px"} spacing={0.1} alignItems={"flex-start"} direction={"column"}>
                     <Typography variant='h6' marginLeft={"50px"} color={"white"}>Organismes</Typography>
                     <SubMenuList list={declSocialesList} navigatePath={HandlePath} />
                 </Stack>
-                <Divider orientation='vertical' color={"white"} style={{ height: "100%", opacity: "0.2" }} />
 
             </Stack>
         </Stack>

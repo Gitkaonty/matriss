@@ -16,5 +16,22 @@ router.get('/keepListCptChgTvaAssoc/:itemId', paramPCController.keepListCptChgTv
 //supprimer un compte dans le tableau du plan comptable
 router.post('/deleteItemPc', paramPCController.deleteItemPc);
 
+//Récupérer les comptes de classe 6
+router.get('/recupPcClasseSix/:id_compte/:id_dossier', paramPCController.recupPcClasseSix);
+
+//Récupérer les comptes de classe du commpte isi
+router.get('/recupPcCompteIsi/:id_compte/:id_dossier', paramPCController.recupPcCompteIsi);
+
+// Récupérer les provinces
+router.get('/getProvinces', paramPCController.getProvinces);
+
+// Récupérer les régions
+router.get('/getRegions/:province', paramPCController.getRegions);
+
+// Récupérer les districts
+router.get('/getDistricts/:province/:region', paramPCController.getDistricts);
+
+// Récupérer les communes
+router.get('/getCommunes/:province/:region/:district', paramPCController.getCommunes);
 
 module.exports = router;

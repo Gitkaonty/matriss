@@ -21,4 +21,7 @@ router.post('/restaureDefaultParameter', paramMappingCompteController.restaureDe
 //mettre à jour les paramétrages par défaut
 router.post('/updateDefaultParameter', paramMappingCompteController.updateDefaultParameter);
 
+//récupérer listes des rubirques pour le D. Com
+router.get('/getListeRubriqueDCom/:id_compte/:id_dossier/:id_exercice', paramMappingCompteController.getListeRubriqueDCom);
+
 module.exports = router;

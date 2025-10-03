@@ -16,32 +16,32 @@ import ErrorIcon from '@mui/icons-material/Error';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 export default function CsvAnomaliesDialog({ open, onClose, anomalies = [], personnels = [] }) {
-  
+
   // Debug: Tracer les anomalies reçues
   React.useEffect(() => {
     console.log('[DEBUG] CsvAnomaliesDialog - Anomalies reçues:', anomalies);
     console.log('[DEBUG] CsvAnomaliesDialog - Nombre d\'anomalies:', anomalies.length);
     console.log('[DEBUG] CsvAnomaliesDialog - Dialog ouvert:', open);
   }, [anomalies, open]);
-  
+
   // Colonnes pour le tableau des anomalies
   const columns = [
-    { 
-      field: 'ligne', 
-      headerName: 'Ligne', 
+    {
+      field: 'ligne',
+      headerName: 'Ligne',
       width: 80,
       renderCell: (params) => (
-        <Chip 
-          label={params.value} 
-          size="small" 
-          color="primary" 
+        <Chip
+          label={params.value}
+          size="small"
+          color="primary"
           variant="outlined"
         />
       )
     },
-    { 
-      field: 'personnelId', 
-      headerName: 'Personnel ID', 
+    {
+      field: 'personnelId',
+      headerName: 'Personnel ID',
       width: 120,
       renderCell: (params) => {
         // Récupérer l'ID depuis les données CSV
@@ -53,52 +53,52 @@ export default function CsvAnomaliesDialog({ open, onClose, anomalies = [], pers
         );
       }
     },
-    { 
-      field: 'nom_prenom', 
-      headerName: 'Nom/Prénom', 
+    {
+      field: 'nom_prenom',
+      headerName: 'Nom/Prénom',
       width: 150,
       renderCell: (params) => {
         // Récupérer l'ID du personnel depuis les données CSV
         const personnelId = params.row.data.personnel_id || params.row.data.personnelId;
-        
+
         // Chercher le personnel dans la liste
         const personnel = personnels.find(p => String(p.id) === String(personnelId));
-        
+
         if (personnel) {
           return `${personnel.nom || ''} ${personnel.prenom || ''}`.trim();
         }
-        
+
         return 'Personnel introuvable';
       }
     },
-    { 
-      field: 'type_erreur', 
-      headerName: 'Type d\'erreur', 
+    {
+      field: 'type_erreur',
+      headerName: 'Type d\'erreur',
       width: 150,
       renderCell: (params) => {
         const errorTypes = params.row.errors;
-        const severity = errorTypes.includes('personnel_introuvable') ? 'error' : 
-                        errorTypes.includes('champ_manquant') ? 'warning' :
-                        errorTypes.includes('valeur_negative') ? 'error' : 'info';
-        
+        const severity = errorTypes.includes('personnel_introuvable') ? 'error' :
+          errorTypes.includes('champ_manquant') ? 'warning' :
+            errorTypes.includes('valeur_negative') ? 'error' : 'info';
+
         return (
-          <Chip 
-            label={errorTypes[0]?.replace('_', ' ') || 'Erreur inconnue'} 
-            size="small" 
+          <Chip
+            label={errorTypes[0]?.replace('_', ' ') || 'Erreur inconnue'}
+            size="small"
             color={severity}
             icon={severity === 'error' ? <ErrorIcon /> : <WarningIcon />}
           />
         );
       }
     },
-    { 
-      field: 'description', 
-      headerName: 'Description', 
+    {
+      field: 'description',
+      headerName: 'Description',
       width: 300,
       renderCell: (params) => {
         const errors = params.row.errors;
         const descriptions = [];
-        
+
         if (errors.includes('personnel_introuvable')) {
           descriptions.push(`Personnel ID ${params.row.data.personnel_id || params.row.data.personnelId} introuvable`);
         }
@@ -111,7 +111,7 @@ export default function CsvAnomaliesDialog({ open, onClose, anomalies = [], pers
         if (errors.includes('valeur_negative')) {
           descriptions.push('Valeurs négatives non autorisées');
         }
-        
+
         return (
           <Typography variant="body2" color="text.secondary">
             {descriptions.join(', ') || 'Erreur non spécifiée'}
@@ -119,14 +119,14 @@ export default function CsvAnomaliesDialog({ open, onClose, anomalies = [], pers
         );
       }
     },
-    { 
-      field: 'donnees_brutes', 
-      headerName: 'Champs problématiques', 
+    {
+      field: 'donnees_brutes',
+      headerName: 'Champs problématiques',
       width: 250,
       renderCell: (params) => {
         const { data, errors } = params.row;
         const problematicFields = [];
-        
+
         // Extraire les champs problématiques selon le type d'erreur
         if (errors.includes('personnel_introuvable') || errors.includes('champ_manquant')) {
           const personnelId = data.personnel_id || data.personnelId;
@@ -136,14 +136,14 @@ export default function CsvAnomaliesDialog({ open, onClose, anomalies = [], pers
             problematicFields.push('personnel_id: manquant');
           }
         }
-        
+
         if (errors.includes('valeur_invalide') || errors.includes('valeur_negative')) {
           // Champs numériques à vérifier
           const numericFields = ['salaireBase', 'prime', 'heuresSup', 'indemnites', 'remunerationFerieDimanche', 'assurance', 'carburant', 'entretienReparation', 'loyerMensuel', 'depenseTelephone', 'autresAvantagesNature', 'avanceQuinzaineAutres', 'avancesSpeciales', 'allocationFamiliale', 'nombre_enfants_charge'];
-          
+
           for (const field of numericFields) {
             const value = data[field];
-            if (value !== undefined && value !== null && value !== '') {  
+            if (value !== undefined && value !== null && value !== '') {
               const numValue = parseFloat(value);
               // Afficher si c'est invalide ou négatif
               if (isNaN(numValue) || numValue < 0) {
@@ -152,7 +152,7 @@ export default function CsvAnomaliesDialog({ open, onClose, anomalies = [], pers
             }
           }
         }
-        
+
         return (
           <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '0.7rem', color: 'error.main' }}>
             {problematicFields.length > 0 ? problematicFields.join(', ') : 'Erreur non identifiée'}
@@ -179,7 +179,7 @@ export default function CsvAnomaliesDialog({ open, onClose, anomalies = [], pers
           Anomalies détectées lors de l'import CSV
         </Typography>
       </DialogTitle>
-      
+
       <DialogContent sx={{ pt: 2 }}>
         {anomalies.length === 0 ? (
           <Alert severity="success" icon={<CheckCircleIcon />} sx={{ mb: 2 }}>
@@ -191,36 +191,36 @@ export default function CsvAnomaliesDialog({ open, onClose, anomalies = [], pers
           <>
             {/* Statistiques */}
             <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <Chip 
-                label={`Total: ${stats.total}`} 
-                color="primary" 
+              <Chip
+                label={`Total: ${stats.total}`}
+                color="primary"
                 variant="outlined"
               />
               {stats.personnel_introuvable > 0 && (
-                <Chip 
-                  label={`Personnel introuvable: ${stats.personnel_introuvable}`} 
-                  color="error" 
+                <Chip
+                  label={`Personnel introuvable: ${stats.personnel_introuvable}`}
+                  color="error"
                   size="small"
                 />
               )}
               {stats.champ_manquant > 0 && (
-                <Chip 
-                  label={`Champs manquants: ${stats.champ_manquant}`} 
-                  color="warning" 
+                <Chip
+                  label={`Champs manquants: ${stats.champ_manquant}`}
+                  color="warning"
                   size="small"
                 />
               )}
               {stats.valeur_invalide > 0 && (
-                <Chip 
-                  label={`Valeurs invalides: ${stats.valeur_invalide}`} 
-                  color="info" 
+                <Chip
+                  label={`Valeurs invalides: ${stats.valeur_invalide}`}
+                  color="info"
                   size="small"
                 />
               )}
               {stats.valeur_negative > 0 && (
-                <Chip 
-                  label={`Valeurs négatives: ${stats.valeur_negative}`} 
-                  color="error" 
+                <Chip
+                  label={`Valeurs négatives: ${stats.valeur_negative}`}
+                  color="error"
                   size="small"
                 />
               )}
@@ -245,14 +245,14 @@ export default function CsvAnomaliesDialog({ open, onClose, anomalies = [], pers
 
             <Alert severity="info" sx={{ mt: 2 }}>
               <Typography variant="body2">
-                💡 <strong>Conseil :</strong> Corrigez les données dans votre fichier CSV et réimportez. 
+                💡 <strong>Conseil :</strong> Corrigez les données dans votre fichier CSV et réimportez.
                 Les lignes avec des erreurs n'ont pas été ajoutées à la base de données.
               </Typography>
             </Alert>
           </>
         )}
       </DialogContent>
-      
+
       <DialogActions>
         <Button onClick={onClose} variant="contained" color="primary">
           Fermer

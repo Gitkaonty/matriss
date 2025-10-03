@@ -1,16 +1,16 @@
-const {Sequelize, DataTypes} = require('sequelize');
+const { Sequelize, DataTypes } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
-    const dossierplancomptables = sequelize.define( "dossierplancomptables", {
+    const dossierplancomptables = sequelize.define("dossierplancomptables", {
         id_compte: {
             type: DataTypes.BIGINT,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         id_dossier: {
             type: DataTypes.BIGINT,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         compte: {
             type: DataTypes.STRING(50),
@@ -31,7 +31,7 @@ module.exports = (sequelize, DataTypes) => {
         cptcharge: {
             type: DataTypes.INTEGER,
             allowNull: true,
-            defaultValue:0
+            defaultValue: 0
         },
         typetier: {
             type: DataTypes.STRING(15),
@@ -40,7 +40,7 @@ module.exports = (sequelize, DataTypes) => {
         cpttva: {
             type: DataTypes.INTEGER,
             allowNull: true,
-            defaultValue:0
+            defaultValue: 0
         },
         nif: {
             type: DataTypes.STRING(20),
@@ -94,98 +94,122 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.DOUBLE,
             unique: false,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         mvtcredit: {
             type: DataTypes.DOUBLE,
             unique: false,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         soldedebit: {
             type: DataTypes.DOUBLE,
             unique: false,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         soldecredit: {
             type: DataTypes.DOUBLE,
             unique: false,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         mvtdebittreso: {
             type: DataTypes.DOUBLE,
             unique: false,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         mvtcredittreso: {
             type: DataTypes.DOUBLE,
             unique: false,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         soldedebittreso: {
             type: DataTypes.DOUBLE,
             unique: false,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         soldecredittreso: {
             type: DataTypes.DOUBLE,
             unique: false,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         valeur: {
             type: DataTypes.DOUBLE,
             unique: false,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         valeurtreso: {
             type: DataTypes.DOUBLE,
             unique: false,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         rubriquebilan: {
             type: DataTypes.INTEGER,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         rubriquecrn: {
             type: DataTypes.INTEGER,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         rubriquecrf: {
             type: DataTypes.INTEGER,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         rubriquetftd: {
             type: DataTypes.INTEGER,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         rubriquetfti: {
             type: DataTypes.INTEGER,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         rubriqueevcp: {
             type: DataTypes.INTEGER,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         baseaux_id: {
             type: DataTypes.BIGINT,
             allowNull: false,
-            defaultValue:0,
+            defaultValue: 0,
         },
-    }, {timestamps: true}, )
+        nom: {
+            type: DataTypes.STRING(150),
+            allowNull: true
+        },
+        province: {
+            type: DataTypes.STRING(100),
+            allowNull: true,
+        },
+        region: {
+            type: DataTypes.STRING(100),
+            allowNull: true,
+        },
+        district: {
+            type: DataTypes.STRING(100),
+            allowNull: true,
+        },
+        commune: {
+            type: DataTypes.STRING(100),
+            allowNull: true,
+        },
+        fokontany: {
+            type: DataTypes.STRING(100),
+            allowNull: true,
+        },
+    }, { timestamps: true },)
 
     dossierplancomptables.associate = (models) => {
         dossierplancomptables.belongsTo(models.dossierplancomptables, {
@@ -195,4 +219,4 @@ module.exports = (sequelize, DataTypes) => {
     };
 
     return dossierplancomptables
- }
+}

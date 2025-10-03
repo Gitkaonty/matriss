@@ -30,17 +30,12 @@ const rubriques = db.rubriques;
 const compterubriques = db.compterubriques;
 
 const soldeRubriqueBilan = async (compte_id, dossier_id, exercice_id) => {
-    try{
+    try {
         const {
-            id_exerciceN1, 
-            date_debutN1, 
-            date_finN1, 
-            libelleExerciceN1, 
-            rangN1, 
-            clotureN1 
+            id_exerciceN1,
         } = await recupExerciceN1.recupInfos(compte_id, dossier_id, exercice_id);
 
-        const exercice_idN1 = id_exerciceN1? id_exerciceN1 : 0;
+        const exercice_idN1 = id_exerciceN1 ? id_exerciceN1 : 0;
 
         //mettre à jour les montants pour chaque rubrique - ACTIF
         await db.sequelize.query(`
@@ -69,11 +64,11 @@ const soldeRubriqueBilan = async (compte_id, dossier_id, exercice_id) => {
          
             WHERE rubriques.id_compte = :compte_id AND rubriques.id_dossier = :dossier_id AND rubriques.id_exercice = :exercice_id
             AND rubriques.id_etat = 'BILAN' AND NOT rubriques.nature IN('TOTAL','TITRE')
-        `, 
-        {
-            replacements: { compte_id, dossier_id, exercice_id },
-            type: db.Sequelize.QueryTypes.UPDATE
-        }
+        `,
+            {
+                replacements: { compte_id, dossier_id, exercice_id },
+                type: db.Sequelize.QueryTypes.UPDATE
+            }
         );
 
         //calculer les montants net du tableau
@@ -82,11 +77,11 @@ const soldeRubriqueBilan = async (compte_id, dossier_id, exercice_id) => {
             montantnet = montantbrut - montantamort
             WHERE rubriques.id_compte = :compte_id AND rubriques.id_dossier = :dossier_id AND rubriques.id_exercice = :exercice_id
             AND rubriques.id_etat = 'BILAN' AND NOT rubriques.nature IN('TOTAL','TITRE')
-        `, 
-        {
-            replacements: { compte_id, dossier_id, exercice_id },
-            type: db.Sequelize.QueryTypes.UPDATE
-        }
+        `,
+            {
+                replacements: { compte_id, dossier_id, exercice_id },
+                type: db.Sequelize.QueryTypes.UPDATE
+            }
         );
 
         //mettre à jour les montants pour l'exercice N-1
@@ -98,32 +93,27 @@ const soldeRubriqueBilan = async (compte_id, dossier_id, exercice_id) => {
 
             WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
             AND TabA.id_etat = 'BILAN'
-        `, 
-        {
-            replacements: { compte_id, dossier_id, exercice_id, exercice_idN1 },
-            type: db.Sequelize.QueryTypes.UPDATE
-        }
+        `,
+            {
+                replacements: { compte_id, dossier_id, exercice_id, exercice_idN1 },
+                type: db.Sequelize.QueryTypes.UPDATE
+            }
         );
 
         return true;
-       
-    }catch (error){
+
+    } catch (error) {
         console.log(error);
     }
 }
 
 const soldeRubriqueCRN = async (compte_id, dossier_id, exercice_id) => {
-    try{
+    try {
         const {
-            id_exerciceN1, 
-            date_debutN1, 
-            date_finN1, 
-            libelleExerciceN1, 
-            rangN1, 
-            clotureN1 
+            id_exerciceN1,
         } = await recupExerciceN1.recupInfos(compte_id, dossier_id, exercice_id);
 
-        const exercice_idN1 = id_exerciceN1? id_exerciceN1 : 0;
+        const exercice_idN1 = id_exerciceN1 ? id_exerciceN1 : 0;
 
         //mettre à jour les montants dans la colonne montantbrut pour les rubriques charges (senscalcul = '+')
         await db.sequelize.query(`
@@ -141,11 +131,11 @@ const soldeRubriqueCRN = async (compte_id, dossier_id, exercice_id) => {
             
             WHERE rubriques.id_compte = :compte_id AND rubriques.id_dossier = :dossier_id AND rubriques.id_exercice = :exercice_id
             AND rubriques.id_etat = 'CRN' AND rubriques.subtable = 0 AND NOT rubriques.nature IN('TOTAL','TITRE')
-        `, 
-        {
-            replacements: { compte_id, dossier_id, exercice_id },
-            type: db.Sequelize.QueryTypes.UPDATE
-        }
+        `,
+            {
+                replacements: { compte_id, dossier_id, exercice_id },
+                type: db.Sequelize.QueryTypes.UPDATE
+            }
         );
 
         //calculer les montants net
@@ -154,11 +144,11 @@ const soldeRubriqueCRN = async (compte_id, dossier_id, exercice_id) => {
             montantnet = montantbrut
             WHERE rubriques.id_compte = :compte_id AND rubriques.id_dossier = :dossier_id AND rubriques.id_exercice = :exercice_id
             AND rubriques.id_etat = 'CRN' AND rubriques.subtable = 0 AND NOT rubriques.nature IN('TOTAL','TITRE')
-        `, 
-        {
-            replacements: { compte_id, dossier_id, exercice_id },
-            type: db.Sequelize.QueryTypes.UPDATE
-        }
+        `,
+            {
+                replacements: { compte_id, dossier_id, exercice_id },
+                type: db.Sequelize.QueryTypes.UPDATE
+            }
         );
 
         //mettre à jour les montants pour l'exercice N-1
@@ -170,32 +160,27 @@ const soldeRubriqueCRN = async (compte_id, dossier_id, exercice_id) => {
 
             WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
             AND TabA.id_etat = 'CRN'
-        `, 
-        {
-            replacements: { compte_id, dossier_id, exercice_id, exercice_idN1 },
-            type: db.Sequelize.QueryTypes.UPDATE
-        }
+        `,
+            {
+                replacements: { compte_id, dossier_id, exercice_id, exercice_idN1 },
+                type: db.Sequelize.QueryTypes.UPDATE
+            }
         );
 
         return true;
-       
-    }catch (error){
+
+    } catch (error) {
         console.log(error);
     }
 }
 
 const soldeRubriqueCRF = async (compte_id, dossier_id, exercice_id) => {
-    try{
+    try {
         const {
-            id_exerciceN1, 
-            date_debutN1, 
-            date_finN1, 
-            libelleExerciceN1, 
-            rangN1, 
-            clotureN1 
+            id_exerciceN1,
         } = await recupExerciceN1.recupInfos(compte_id, dossier_id, exercice_id);
 
-        const exercice_idN1 = id_exerciceN1? id_exerciceN1 : 0;
+        const exercice_idN1 = id_exerciceN1 ? id_exerciceN1 : 0;
 
         //mettre à jour les montants dans la colonne montantbrut
         await db.sequelize.query(`
@@ -213,11 +198,11 @@ const soldeRubriqueCRF = async (compte_id, dossier_id, exercice_id) => {
             
             WHERE rubriques.id_compte = :compte_id AND rubriques.id_dossier = :dossier_id AND rubriques.id_exercice = :exercice_id
             AND rubriques.id_etat = 'CRF' AND rubriques.subtable = 0 AND NOT rubriques.nature IN('TOTAL','TITRE')
-        `, 
-        {
-            replacements: { compte_id, dossier_id, exercice_id },
-            type: db.Sequelize.QueryTypes.UPDATE
-        }
+        `,
+            {
+                replacements: { compte_id, dossier_id, exercice_id },
+                type: db.Sequelize.QueryTypes.UPDATE
+            }
         );
 
         //calculer les montants net
@@ -226,11 +211,11 @@ const soldeRubriqueCRF = async (compte_id, dossier_id, exercice_id) => {
             montantnet = montantbrut
             WHERE rubriques.id_compte = :compte_id AND rubriques.id_dossier = :dossier_id AND rubriques.id_exercice = :exercice_id
             AND rubriques.id_etat = 'CRF' AND rubriques.subtable = 0 AND NOT rubriques.nature IN('TOTAL','TITRE')
-        `, 
-        {
-            replacements: { compte_id, dossier_id, exercice_id },
-            type: db.Sequelize.QueryTypes.UPDATE
-        }
+        `,
+            {
+                replacements: { compte_id, dossier_id, exercice_id },
+                type: db.Sequelize.QueryTypes.UPDATE
+            }
         );
 
         //mettre à jour les montants pour l'exercice N-1
@@ -242,32 +227,27 @@ const soldeRubriqueCRF = async (compte_id, dossier_id, exercice_id) => {
 
             WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
             AND TabA.id_etat = 'CRF'
-        `, 
-        {
-            replacements: { compte_id, dossier_id, exercice_id, exercice_idN1 },
-            type: db.Sequelize.QueryTypes.UPDATE
-        }
+        `,
+            {
+                replacements: { compte_id, dossier_id, exercice_id, exercice_idN1 },
+                type: db.Sequelize.QueryTypes.UPDATE
+            }
         );
 
         return true;
-       
-    }catch (error){
+
+    } catch (error) {
         console.log(error);
     }
 }
 
 const soldeRubriqueTFTD = async (compte_id, dossier_id, exercice_id) => {
-    try{
+    try {
         const {
-            id_exerciceN1, 
-            date_debutN1, 
-            date_finN1, 
-            libelleExerciceN1, 
-            rangN1, 
-            clotureN1 
+            id_exerciceN1,
         } = await recupExerciceN1.recupInfos(compte_id, dossier_id, exercice_id);
 
-        const exercice_idN1 = id_exerciceN1? id_exerciceN1 : 0;
+        const exercice_idN1 = id_exerciceN1 ? id_exerciceN1 : 0;
 
         //mettre à jour les montants dans la colonne montantbrut
         await db.sequelize.query(`
@@ -285,11 +265,11 @@ const soldeRubriqueTFTD = async (compte_id, dossier_id, exercice_id) => {
             
             WHERE rubriques.id_compte = :compte_id AND rubriques.id_dossier = :dossier_id AND rubriques.id_exercice = :exercice_id
             AND rubriques.id_etat = 'TFTD' AND rubriques.subtable = 0 AND rubriques.nature IN('BRUT')
-        `, 
-        {
-            replacements: { compte_id, dossier_id, exercice_id },
-            type: db.Sequelize.QueryTypes.UPDATE
-        }
+        `,
+            {
+                replacements: { compte_id, dossier_id, exercice_id },
+                type: db.Sequelize.QueryTypes.UPDATE
+            }
         );
 
         //calculer les montants net
@@ -298,11 +278,11 @@ const soldeRubriqueTFTD = async (compte_id, dossier_id, exercice_id) => {
             montantnet = montantbrut
             WHERE rubriques.id_compte = :compte_id AND rubriques.id_dossier = :dossier_id AND rubriques.id_exercice = :exercice_id
             AND rubriques.id_etat = 'TFTD' AND rubriques.subtable = 0 AND rubriques.nature IN('BRUT')
-        `, 
-        {
-            replacements: { compte_id, dossier_id, exercice_id },
-            type: db.Sequelize.QueryTypes.UPDATE
-        }
+        `,
+            {
+                replacements: { compte_id, dossier_id, exercice_id },
+                type: db.Sequelize.QueryTypes.UPDATE
+            }
         );
 
         //mettre à jour les montants pour l'exercice N-1
@@ -314,32 +294,27 @@ const soldeRubriqueTFTD = async (compte_id, dossier_id, exercice_id) => {
 
             WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
             AND TabA.id_etat = 'TFTD'
-        `, 
-        {
-            replacements: { compte_id, dossier_id, exercice_id, exercice_idN1 },
-            type: db.Sequelize.QueryTypes.UPDATE
-        }
+        `,
+            {
+                replacements: { compte_id, dossier_id, exercice_id, exercice_idN1 },
+                type: db.Sequelize.QueryTypes.UPDATE
+            }
         );
 
         return true;
-       
-    }catch (error){
+
+    } catch (error) {
         console.log(error);
     }
 }
 
 const soldeRubriqueTFTI = async (compte_id, dossier_id, exercice_id) => {
-    try{
+    try {
         const {
-            id_exerciceN1, 
-            date_debutN1, 
-            date_finN1, 
-            libelleExerciceN1, 
-            rangN1, 
-            clotureN1 
+            id_exerciceN1,
         } = await recupExerciceN1.recupInfos(compte_id, dossier_id, exercice_id);
 
-        const exercice_idN1 = id_exerciceN1? id_exerciceN1 : 0;
+        const exercice_idN1 = id_exerciceN1 ? id_exerciceN1 : 0;
 
         //mettre à jour les montants dans la colonne montantbrut
         await db.sequelize.query(`
@@ -357,11 +332,11 @@ const soldeRubriqueTFTI = async (compte_id, dossier_id, exercice_id) => {
             
             WHERE rubriques.id_compte = :compte_id AND rubriques.id_dossier = :dossier_id AND rubriques.id_exercice = :exercice_id
             AND rubriques.id_etat = 'TFTI' AND rubriques.subtable = 0 AND rubriques.nature IN('BRUT')
-        `, 
-        {
-            replacements: { compte_id, dossier_id, exercice_id },
-            type: db.Sequelize.QueryTypes.UPDATE
-        }
+        `,
+            {
+                replacements: { compte_id, dossier_id, exercice_id },
+                type: db.Sequelize.QueryTypes.UPDATE
+            }
         );
 
         //calculer les montants net
@@ -370,7 +345,7 @@ const soldeRubriqueTFTI = async (compte_id, dossier_id, exercice_id) => {
             montantnet = montantbrut
             WHERE rubriques.id_compte = :compte_id AND rubriques.id_dossier = :dossier_id AND rubriques.id_exercice = :exercice_id
             AND rubriques.id_etat = 'TFTI' AND rubriques.subtable = 0 AND rubriques.nature IN('BRUT')
-            `, 
+            `,
             {
                 replacements: { compte_id, dossier_id, exercice_id },
                 type: db.Sequelize.QueryTypes.UPDATE
@@ -386,7 +361,7 @@ const soldeRubriqueTFTI = async (compte_id, dossier_id, exercice_id) => {
 
             WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
             AND TabA.id_etat = 'TFTI'
-            `, 
+            `,
             {
                 replacements: { compte_id, dossier_id, exercice_id, exercice_idN1 },
                 type: db.Sequelize.QueryTypes.UPDATE
@@ -394,24 +369,32 @@ const soldeRubriqueTFTI = async (compte_id, dossier_id, exercice_id) => {
         );
 
         return true;
-       
-    }catch (error){
+
+    } catch (error) {
         console.log(error);
     }
 }
 
 const soldeRubriqueDRF = async (compte_id, dossier_id, exercice_id) => {
-    try{
+    try {
         const {
-            id_exerciceN1, 
-            date_debutN1, 
-            date_finN1, 
-            libelleExerciceN1, 
-            rangN1, 
-            clotureN1 
+            id_exerciceN1,
         } = await recupExerciceN1.recupInfos(compte_id, dossier_id, exercice_id);
 
-        const exercice_idN1 = id_exerciceN1? id_exerciceN1 : 0;
+        const exercice_idN1 = id_exerciceN1 ? id_exerciceN1 : 0;
+
+        await db.sequelize.query(`
+            UPDATE liassedrfs SET
+            montant_brut = 0
+            
+            WHERE liassedrfs.id_compte = :compte_id AND liassedrfs.id_dossier = :dossier_id AND liassedrfs.id_exercice = :exercice_id
+            AND liassedrfs.id_etat = 'DRF' AND liassedrfs.nature IN('BRUT')
+            `,
+            {
+                replacements: { compte_id, dossier_id, exercice_id },
+                type: db.Sequelize.QueryTypes.UPDATE
+            }
+        );
 
         await db.sequelize.query(`
             UPDATE liassedrfs SET
@@ -421,32 +404,27 @@ const soldeRubriqueDRF = async (compte_id, dossier_id, exercice_id) => {
             
             WHERE liassedrfs.id_compte = :compte_id AND liassedrfs.id_dossier = :dossier_id AND liassedrfs.id_exercice = :exercice_id
             AND liassedrfs.id_etat = 'DRF' AND liassedrfs.nature IN('BRUT')
-            `, 
+            `,
             {
                 replacements: { compte_id, dossier_id, exercice_id },
                 type: db.Sequelize.QueryTypes.UPDATE
             }
         );
-        
+
         return true;
-       
-    }catch (error){
+
+    } catch (error) {
         console.log(error);
     }
 }
 
 const soldeRubriqueSAD = async (compte_id, dossier_id, exercice_id) => {
-    try{
+    try {
         const {
-            id_exerciceN1, 
-            date_debutN1, 
-            date_finN1, 
-            libelleExerciceN1, 
-            rangN1, 
-            clotureN1 
+            id_exerciceN1,
         } = await recupExerciceN1.recupInfos(compte_id, dossier_id, exercice_id);
 
-        const exercice_idN1 = id_exerciceN1? id_exerciceN1 : 0;
+        const exercice_idN1 = id_exerciceN1 ? id_exerciceN1 : 0;
 
         //Mise à jour de la colonne N-6 de l'exercice ( = colonne N-5 de l'exercice N-1)
         await db.sequelize.query(`
@@ -459,7 +437,7 @@ const soldeRubriqueSAD = async (compte_id, dossier_id, exercice_id) => {
             AND ajustements.id_etat = 'SAD' AND ajustements.nature = 'N6')
             
             WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
-            `, 
+            `,
             {
                 replacements: { compte_id, dossier_id, exercice_idN1, exercice_id },
                 type: db.Sequelize.QueryTypes.UPDATE
@@ -477,7 +455,7 @@ const soldeRubriqueSAD = async (compte_id, dossier_id, exercice_id) => {
             AND ajustements.id_etat = 'SAD' AND ajustements.nature = 'N5')
             
             WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
-            `, 
+            `,
             {
                 replacements: { compte_id, dossier_id, exercice_idN1, exercice_id },
                 type: db.Sequelize.QueryTypes.UPDATE
@@ -495,7 +473,7 @@ const soldeRubriqueSAD = async (compte_id, dossier_id, exercice_id) => {
             AND ajustements.id_etat = 'SAD' AND ajustements.nature = 'N4')
             
             WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
-            `, 
+            `,
             {
                 replacements: { compte_id, dossier_id, exercice_idN1, exercice_id },
                 type: db.Sequelize.QueryTypes.UPDATE
@@ -513,7 +491,7 @@ const soldeRubriqueSAD = async (compte_id, dossier_id, exercice_id) => {
             AND ajustements.id_etat = 'SAD' AND ajustements.nature = 'N3')
             
             WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
-            `, 
+            `,
             {
                 replacements: { compte_id, dossier_id, exercice_idN1, exercice_id },
                 type: db.Sequelize.QueryTypes.UPDATE
@@ -531,7 +509,7 @@ const soldeRubriqueSAD = async (compte_id, dossier_id, exercice_id) => {
             AND ajustements.id_etat = 'SAD' AND ajustements.nature = 'N2')
             
             WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
-            `, 
+            `,
             {
                 replacements: { compte_id, dossier_id, exercice_idN1, exercice_id },
                 type: db.Sequelize.QueryTypes.UPDATE
@@ -549,7 +527,7 @@ const soldeRubriqueSAD = async (compte_id, dossier_id, exercice_id) => {
             AND ajustements.id_etat = 'SAD' AND ajustements.nature = 'N1')
             
             WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
-            `, 
+            `,
             {
                 replacements: { compte_id, dossier_id, exercice_idN1, exercice_id },
                 type: db.Sequelize.QueryTypes.UPDATE
@@ -564,7 +542,7 @@ const soldeRubriqueSAD = async (compte_id, dossier_id, exercice_id) => {
             AND ajustements.id_etat = 'SAD' AND ajustements.nature = 'N')
             
             WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
-            `, 
+            `,
             {
                 replacements: { compte_id, dossier_id, exercice_idN1, exercice_id },
                 type: db.Sequelize.QueryTypes.UPDATE
@@ -583,32 +561,27 @@ const soldeRubriqueSAD = async (compte_id, dossier_id, exercice_id) => {
             
             WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
             AND TabA.id_rubrique = 8
-            `, 
+            `,
             {
                 replacements: { compte_id, dossier_id, exercice_idN1, exercice_id },
                 type: db.Sequelize.QueryTypes.UPDATE
             }
         );
-      
+
         return true;
-       
-    }catch (error){
+
+    } catch (error) {
         console.log(error);
     }
 }
 
 const soldeRubriqueSDR = async (compte_id, dossier_id, exercice_id) => {
-    try{
+    try {
         const {
-            id_exerciceN1, 
-            date_debutN1, 
-            date_finN1, 
-            libelleExerciceN1, 
-            rangN1, 
-            clotureN1 
+            id_exerciceN1,
         } = await recupExerciceN1.recupInfos(compte_id, dossier_id, exercice_id);
 
-        const exercice_idN1 = id_exerciceN1? id_exerciceN1 : 0;
+        const exercice_idN1 = id_exerciceN1 ? id_exerciceN1 : 0;
 
         //Mise à jour de la colonne N-6 de l'exercice ( = colonne N-5 de l'exercice N-1)
         await db.sequelize.query(`
@@ -621,7 +594,7 @@ const soldeRubriqueSDR = async (compte_id, dossier_id, exercice_id) => {
             AND ajustements.id_etat = 'SDR' AND ajustements.nature = 'N6')
             
             WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
-            `, 
+            `,
             {
                 replacements: { compte_id, dossier_id, exercice_idN1, exercice_id },
                 type: db.Sequelize.QueryTypes.UPDATE
@@ -639,7 +612,7 @@ const soldeRubriqueSDR = async (compte_id, dossier_id, exercice_id) => {
             AND ajustements.id_etat = 'SDR' AND ajustements.nature = 'N5')
             
             WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
-            `, 
+            `,
             {
                 replacements: { compte_id, dossier_id, exercice_idN1, exercice_id },
                 type: db.Sequelize.QueryTypes.UPDATE
@@ -657,7 +630,7 @@ const soldeRubriqueSDR = async (compte_id, dossier_id, exercice_id) => {
             AND ajustements.id_etat = 'SDR' AND ajustements.nature = 'N4')
             
             WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
-            `, 
+            `,
             {
                 replacements: { compte_id, dossier_id, exercice_idN1, exercice_id },
                 type: db.Sequelize.QueryTypes.UPDATE
@@ -675,7 +648,7 @@ const soldeRubriqueSDR = async (compte_id, dossier_id, exercice_id) => {
             AND ajustements.id_etat = 'SDR' AND ajustements.nature = 'N3')
             
             WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
-            `, 
+            `,
             {
                 replacements: { compte_id, dossier_id, exercice_idN1, exercice_id },
                 type: db.Sequelize.QueryTypes.UPDATE
@@ -693,7 +666,7 @@ const soldeRubriqueSDR = async (compte_id, dossier_id, exercice_id) => {
             AND ajustements.id_etat = 'SDR' AND ajustements.nature = 'N2')
             
             WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
-            `, 
+            `,
             {
                 replacements: { compte_id, dossier_id, exercice_idN1, exercice_id },
                 type: db.Sequelize.QueryTypes.UPDATE
@@ -711,7 +684,7 @@ const soldeRubriqueSDR = async (compte_id, dossier_id, exercice_id) => {
             AND ajustements.id_etat = 'SDR' AND ajustements.nature = 'N1')
             
             WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
-            `, 
+            `,
             {
                 replacements: { compte_id, dossier_id, exercice_idN1, exercice_id },
                 type: db.Sequelize.QueryTypes.UPDATE
@@ -726,7 +699,7 @@ const soldeRubriqueSDR = async (compte_id, dossier_id, exercice_id) => {
             AND ajustements.id_etat = 'SDR' AND ajustements.nature = 'EXERCICE')
             
             WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
-            `, 
+            `,
             {
                 replacements: { compte_id, dossier_id, exercice_idN1, exercice_id },
                 type: db.Sequelize.QueryTypes.UPDATE
@@ -741,7 +714,7 @@ const soldeRubriqueSDR = async (compte_id, dossier_id, exercice_id) => {
             AND ajustements.id_etat = 'SDR' AND ajustements.nature = 'SOLDE_IMPUTABLE')
             
             WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
-            `, 
+            `,
             {
                 replacements: { compte_id, dossier_id, exercice_idN1, exercice_id },
                 type: db.Sequelize.QueryTypes.UPDATE
@@ -756,7 +729,7 @@ const soldeRubriqueSDR = async (compte_id, dossier_id, exercice_id) => {
             AND ajustements.id_etat = 'SDR' AND ajustements.nature = 'SOLDE_NON_IMPUTABLE')
             
             WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
-            `, 
+            `,
             {
                 replacements: { compte_id, dossier_id, exercice_idN1, exercice_id },
                 type: db.Sequelize.QueryTypes.UPDATE
@@ -775,7 +748,7 @@ const soldeRubriqueSDR = async (compte_id, dossier_id, exercice_id) => {
             
             WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
             AND TabA.id_rubrique = 9
-            `, 
+            `,
             {
                 replacements: { compte_id, dossier_id, exercice_idN1, exercice_id },
                 type: db.Sequelize.QueryTypes.UPDATE
@@ -794,7 +767,7 @@ const soldeRubriqueSDR = async (compte_id, dossier_id, exercice_id) => {
             
             WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
             AND TabA.id_rubrique = 10
-            `, 
+            `,
             {
                 replacements: { compte_id, dossier_id, exercice_idN1, exercice_id },
                 type: db.Sequelize.QueryTypes.UPDATE
@@ -813,7 +786,7 @@ const soldeRubriqueSDR = async (compte_id, dossier_id, exercice_id) => {
             
             WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
             AND TabA.id_rubrique = 11
-            `, 
+            `,
             {
                 replacements: { compte_id, dossier_id, exercice_idN1, exercice_id },
                 type: db.Sequelize.QueryTypes.UPDATE
@@ -901,7 +874,7 @@ const soldeRubriqueSDR = async (compte_id, dossier_id, exercice_id) => {
             
             WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
             AND TabA.id_rubrique = 12
-            `, 
+            `,
             {
                 replacements: { compte_id, dossier_id, exercice_idN1, exercice_id },
                 type: db.Sequelize.QueryTypes.UPDATE
@@ -1011,21 +984,21 @@ const soldeRubriqueSDR = async (compte_id, dossier_id, exercice_id) => {
             
             WHERE TabA.id_compte = :compte_id AND TabA.id_dossier = :dossier_id AND TabA.id_exercice = :exercice_id
             AND TabA.id_rubrique = 14
-            `, 
+            `,
             {
                 replacements: { compte_id, dossier_id, exercice_idN1, exercice_id },
                 type: db.Sequelize.QueryTypes.UPDATE
             }
         );
-      
+
         return true;
-       
-    }catch (error){
+
+    } catch (error) {
         console.log(error);
     }
 }
 
-module.exports = { 
+module.exports = {
     soldeRubriqueBilan,
     soldeRubriqueCRN,
     soldeRubriqueCRF,

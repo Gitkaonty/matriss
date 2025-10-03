@@ -1,15 +1,15 @@
 //user model
-const {Sequelize, DataTypes} = require('sequelize');
+const { Sequelize, DataTypes } = require('sequelize');
 const rubriquesMatrices = require('./rubriquesMatriceModel');
 
 module.exports = (sequelize, DataTypes) => {
-    const liassebhiapcs = sequelize.define( "liassebhiapcs", {
+    const liassebhiapcs = sequelize.define("liassebhiapcs", {
         id: {
             type: DataTypes.BIGINT,
             allowNull: false,
             unique: true,
-            autoIncrement:true,
-            primaryKey:true
+            autoIncrement: true,
+            primaryKey: true
         },
         id_compte: {
             type: DataTypes.BIGINT,
@@ -18,27 +18,27 @@ module.exports = (sequelize, DataTypes) => {
         id_dossier: {
             type: DataTypes.BIGINT,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         id_exercice: {
             type: DataTypes.BIGINT,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         id_etat: {
             type: DataTypes.STRING(25),
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         id_rubrique: {
             type: DataTypes.INTEGER,
             allowNull: false,
-            defaultValue:0,
-             references:
-                        {
-                            model: rubriquesMatrices,
-                            key: 'id_rubrique'
-                        }
+            defaultValue: 0,
+            references:
+            {
+                model: rubriquesMatrices,
+                key: 'id_rubrique'
+            }
         },
         libelle: {
             type: DataTypes.STRING(150),
@@ -59,12 +59,12 @@ module.exports = (sequelize, DataTypes) => {
         montant_charge: {
             type: DataTypes.DOUBLE,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         montant_beneficiaire: {
             type: DataTypes.DOUBLE,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         compte: {
             type: DataTypes.STRING(50),
@@ -77,8 +77,13 @@ module.exports = (sequelize, DataTypes) => {
         ordre: {
             type: DataTypes.INTEGER,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
-    }, {timestamps: true}, )
+        anomalie: {
+            type: DataTypes.BOOLEAN,
+            allowNull: true,
+            defaultValue: false
+        }
+    }, { timestamps: true },)
     return liassebhiapcs;
- }
+}

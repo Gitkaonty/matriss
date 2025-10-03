@@ -35,7 +35,7 @@ export default function ParamDeviseComponent() {
     const [noFile, setNoFile] = useState(false);
     const [rows, setRows] = useState([]);
     const { auth } = useAuth();
-    const decoded = auth?.accessToken ? jwtDecode(auth.accessToken): undefined;
+    const decoded = auth?.accessToken ? jwtDecode(auth.accessToken) : undefined;
     const compteId = decoded?.UserInfo?.compteId || null;
     const userId = decoded?.UserInfo?.userId || null;
     const navigate = useNavigate();
@@ -61,7 +61,7 @@ export default function ParamDeviseComponent() {
                 setFileId(idDossier);
                 idFile = idDossier;
             } else {
-                sessionStorage.setItem('fileId',id);
+                sessionStorage.setItem('fileId', id);
                 setFileId(id);
                 idFile = id;
             }
@@ -70,12 +70,12 @@ export default function ParamDeviseComponent() {
     }, []);
 
     const GetInfosIdDossier = (id) => {
-        axios.get(`/home/FileInfos/${id}`).then((response) =>{
+        axios.get(`/home/FileInfos/${id}`).then((response) => {
             const resData = response.data;
-            if(resData.state){
+            if (resData.state) {
                 setFileInfos(resData.fileInfos[0]);
                 setNoFile(false);
-            }else{
+            } else {
                 setFileInfos([]);
                 setNoFile(true);
             }
@@ -128,13 +128,13 @@ export default function ParamDeviseComponent() {
 
     // Sélection d'une ligne
     const saveSelectedRow = (ids) => {
-        if(ids.length === 1){
+        if (ids.length === 1) {
             setSelectedRowId(ids);
             setDisableModifyBouton(false);
             setDisableSaveBouton(false);
             setDisableCancelBouton(false);
             setDisableDeleteBouton(false);
-        }else{
+        } else {
             setSelectedRowId([]);
             setDisableModifyBouton(true);
             setDisableSaveBouton(true);
@@ -145,7 +145,7 @@ export default function ParamDeviseComponent() {
 
     // Edition
     const handleEditClick = (ids) => () => {
-        if(ids.length === 1){
+        if (ids.length === 1) {
             const row = rows.find(r => r.id === ids[0]);
             setEditRow(row);
             setNewRow(null);
@@ -159,7 +159,7 @@ export default function ParamDeviseComponent() {
 
         if (newRow) return;
         const newId = -(Math.max(0, ...rows.map(r => r.id || 0)) + 1);
-        const newDevise = { id: newId, code: '', libelle: '', id_compte: compteId, id_dossier : fileId };
+        const newDevise = { id: newId, code: '', libelle: '', id_compte: compteId, id_dossier: fileId };
         setRows([...rows, newDevise]);
         setNewRow(newDevise);
         setEditRow(null);
@@ -173,10 +173,10 @@ export default function ParamDeviseComponent() {
 
     // Sauvegarde
     const handleSaveClick = (ids) => () => {
-        if(editRow){
+        if (editRow) {
             axios.put(`/devises/devise/${editRow.id}`, editRow)
                 .then(res => {
-                    if(res.data && res.data.state){
+                    if (res.data && res.data.state) {
                         fetchDevises();
                         setEditRow(null);
                         setNewRow(null);
@@ -187,15 +187,15 @@ export default function ParamDeviseComponent() {
                         setDisableCancelBouton(true);
                         setDisableDeleteBouton(true);
                         toast.success(res.data.msg || 'Devise modifiée');
-                    }else{
+                    } else {
                         toast.error(res.data.msg || 'Erreur lors de la modification');
                     }
                 })
                 .catch(() => toast.error('Erreur lors de la modification'));
-        } else if(newRow) {
+        } else if (newRow) {
             axios.post(`/devises/devise`, newRow)
                 .then(res => {
-                    if(res.data && res.data.state){
+                    if (res.data && res.data.state) {
                         fetchDevises();
                         setEditRow(null);
                         setNewRow(null);
@@ -206,7 +206,7 @@ export default function ParamDeviseComponent() {
                         setDisableCancelBouton(true);
                         setDisableDeleteBouton(true);
                         toast.success(res.data.msg || 'Devise ajoutée');
-                    }else{
+                    } else {
                         toast.error(res.data.msg || 'Erreur lors de l\'ajout');
                     }
                 })
@@ -235,12 +235,12 @@ export default function ParamDeviseComponent() {
         setOpenDialogDeleteRow(true);
     }
     const deleteRow = (value) => {
-        if(value === true && selectedRowId.length === 1){
+        if (value === true && selectedRowId.length === 1) {
             const idToDelete = selectedRowId[0];
             axios.delete(`/devises/devise/${idToDelete}`)
                 .then(res => {
                     console.log('Réponse suppression:', res.data);
-                    if(res.data && res.data.state){
+                    if (res.data && res.data.state) {
                         setRows(rows.filter((row) => row.id !== idToDelete));
                         setEditRow(null);
                         setNewRow(null);
@@ -251,10 +251,10 @@ export default function ParamDeviseComponent() {
                         setDisableCancelBouton(true);
                         setDisableDeleteBouton(true);
                         toast.success(res.data.msg || 'Devise supprimée');
-                        setOpenDialogDeleteRow(false); 
-                    }else{
+                        setOpenDialogDeleteRow(false);
+                    } else {
                         toast.error(res.data.msg || 'Erreur lors de la suppression');
-                        setOpenDialogDeleteRow(false); 
+                        setOpenDialogDeleteRow(false);
                     }
                 })
                 .catch(() => {
@@ -268,9 +268,9 @@ export default function ParamDeviseComponent() {
 
     // Edition cellule
     const processRowUpdate = (updatedRow) => {
-        if(editRow){
+        if (editRow) {
             setEditRow(updatedRow);
-        } else if(newRow){
+        } else if (newRow) {
             setNewRow(updatedRow);
         }
         return updatedRow;
@@ -280,127 +280,132 @@ export default function ParamDeviseComponent() {
         setRowModesModel(newRowModesModel);
     };
 
-  return (
-    <Paper sx={{elevation: "3", margin:"5px", padding:"10px", width:"98%", height:"110%"}}>
-            {noFile? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
-            {openDialogDeleteRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer la devise sélectionnée ?"} confirmationState={deleteRow}/> : null}
+    return (
+        <Box>
+            {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
+            {openDialogDeleteRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer la devise sélectionnée ?"} confirmationState={deleteRow} /> : null}
 
             <TabContext value={"1"}>
                 <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                     <TabList aria-label="lab API tabs example">
-                        <Tab 
-                            style={{ 
-                                textTransform: 'none', 
-                                outline: 'none', 
+                        <Tab
+                            style={{
+                                textTransform: 'none',
+                                outline: 'none',
                                 border: 'none',
-                                margin:-5
+                                margin: -5
                             }}
-                            label={InfoFileStyle(fileInfos?.dossier)} value="1" 
+                            label={InfoFileStyle(fileInfos?.dossier)} value="1"
                         />
                     </TabList>
                 </Box>
                 <TabPanel value="1">
-                    <Typography variant='h6' sx={{color: "black"}} align='left'>Paramétrages : Devises</Typography>
-                    <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"} 
-                        direction={"column"} style={{marginLeft:"0px", marginTop:"20px", justifyContent:"right"}}>
-                        <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"} 
-                direction={"row"} justifyContent={"right"}>
-                    <Tooltip title="Ajouter une ligne">
+                    <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages : Devises</Typography>
+                    <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"}
+                        direction={"column"} style={{ marginLeft: "0px", marginTop: "20px", justifyContent: "right" }}>
+                        <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"}
+                            direction={"row"} justifyContent={"right"}>
+                            <Tooltip title="Ajouter une ligne">
                                 <span>
                                     <IconButton
-                                        variant="contained" 
+                                        variant="contained"
                                         onClick={handleOpenDialogAddNewAssocie}
-                                        style={{width:"35px", height:'35px', 
-                                            borderRadius:"2px", borderColor: "transparent", 
+                                        style={{
+                                            width: "35px", height: '35px',
+                                            borderRadius: "2px", borderColor: "transparent",
                                             backgroundColor: initial.theme,
                                             textTransform: 'none', outline: 'none'
                                         }}
                                     >
-                                        <TbPlaylistAdd style={{width:'25px', height:'25px', color:'white'}}/>
+                                        <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
                                     </IconButton>
                                 </span>
-                    </Tooltip>
-                    <Tooltip title="Modifier la ligne sélectionnée">
+                            </Tooltip>
+                            <Tooltip title="Modifier la ligne sélectionnée">
                                 <span>
                                     <IconButton
                                         disabled={disableModifyBouton}
-                                        variant="contained" 
+                                        variant="contained"
                                         onClick={handleEditClick(selectedRowId)}
-                                        style={{width:"35px", height:'35px', 
-                                            borderRadius:"2px", borderColor: "transparent",
+                                        style={{
+                                            width: "35px", height: '35px',
+                                            borderRadius: "2px", borderColor: "transparent",
                                             backgroundColor: initial.theme,
                                             textTransform: 'none', outline: 'none'
                                         }}
                                     >
-                                        <FaRegPenToSquare style={{width:'25px', height:'25px', color:'white'}}/>
+                                        <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
                                     </IconButton>
                                 </span>
                             </Tooltip>
                             <Tooltip title="Sauvegarder les modifications">
                                 <span>
-                                    <IconButton 
+                                    <IconButton
                                         disabled={disableSaveBouton}
-                                        variant="contained" 
+                                        variant="contained"
                                         onClick={handleSaveClick(selectedRowId)}
-                                        style={{width:"35px", height:'35px', 
-                                            borderRadius:"2px", borderColor: "transparent",
+                                        style={{
+                                            width: "35px", height: '35px',
+                                            borderRadius: "2px", borderColor: "transparent",
                                             backgroundColor: initial.theme,
                                             textTransform: 'none', outline: 'none'
                                         }}
                                     >
-                                        <TfiSave style={{width:'50px', height:'50px',color: 'white'}}/>
+                                        <TfiSave style={{ width: '50px', height: '50px', color: 'white' }} />
                                     </IconButton>
                                 </span>
                             </Tooltip>
                             <Tooltip title="Annuler les modifications">
                                 <span>
-                                    <IconButton 
+                                    <IconButton
                                         disabled={disableCancelBouton}
-                                        variant="contained" 
+                                        variant="contained"
                                         onClick={handleCancelClick(selectedRowId)}
-                                        style={{width:"35px", height:'35px', 
-                                            borderRadius:"2px", borderColor: "transparent",
+                                        style={{
+                                            width: "35px", height: '35px',
+                                            borderRadius: "2px", borderColor: "transparent",
                                             backgroundColor: initial.button_delete_color,
                                             textTransform: 'none', outline: 'none'
                                         }}
                                     >
-                                        <VscClose style={{width:'50px', height:'50px', color: 'white'}}/>
+                                        <VscClose style={{ width: '50px', height: '50px', color: 'white' }} />
                                     </IconButton>
                                 </span>
-                    </Tooltip>
+                            </Tooltip>
                             <Tooltip title="Supprimer la ligne sélectionnée">
                                 <span>
-                                    <IconButton 
+                                    <IconButton
                                         disabled={disableDeleteBouton}
                                         onClick={handleOpenDialogConfirmDeleteAssocieRow}
-                                        variant="contained" 
-                                        style={{width:"35px", height:'35px', 
-                                            borderRadius:"2px", borderColor: "transparent",
+                                        variant="contained"
+                                        style={{
+                                            width: "35px", height: '35px',
+                                            borderRadius: "2px", borderColor: "transparent",
                                             backgroundColor: initial.button_delete_color,
                                             textTransform: 'none', outline: 'none'
                                         }}
                                     >
-                                        <IoMdTrash style={{width:'50px', height:'50px',color: 'white'}}/>
+                                        <IoMdTrash style={{ width: '50px', height: '50px', color: 'white' }} />
                                     </IconButton>
                                 </span>
-                    </Tooltip>
-                </Stack>
+                            </Tooltip>
+                        </Stack>
                         <Stack width={"100%"} height={'100%'} minHeight={'600px'}>
                             <DataGrid
-                            rows={rows}
-                            columns={deviseColumns}
-                            autoHeight
-                                                    pageSizeOptions={[5, 10, 20, 50, 100]}
-                                disableMultipleSelection = {DataGridStyle.disableMultipleSelection}
-                                disableColumnSelector = {DataGridStyle.disableColumnSelector}
-                                disableDensitySelector = {DataGridStyle.disableDensitySelector}
+                                rows={rows}
+                                columns={deviseColumns}
+                                autoHeight
+                                pageSizeOptions={[5, 10, 20, 50, 100]}
+                                disableMultipleSelection={DataGridStyle.disableMultipleSelection}
+                                disableColumnSelector={DataGridStyle.disableColumnSelector}
+                                disableDensitySelector={DataGridStyle.disableDensitySelector}
                                 disableRowSelectionOnClick
                                 disableSelectionOnClick={true}
                                 localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
-                                slots={{toolbar : QuickFilter}}
-                                sx={ DataGridStyle.sx}
-                                rowHeight= {DataGridStyle.rowHeight}
-                                columnHeaderHeight= {DataGridStyle.columnHeaderHeight}
+                                slots={{ toolbar: QuickFilter }}
+                                sx={DataGridStyle.sx}
+                                rowHeight={DataGridStyle.rowHeight}
+                                columnHeaderHeight={DataGridStyle.columnHeaderHeight}
                                 editMode='row'
                                 onRowSelectionModelChange={ids => {
                                     saveSelectedRow(ids);
@@ -415,15 +420,15 @@ export default function ParamDeviseComponent() {
                                 }}
                                 experimentalFeatures={{ newEditingApi: true }}
                                 pagination={DataGridStyle.pagination}
-                                checkboxSelection = {DataGridStyle.checkboxSelection}
+                                checkboxSelection={DataGridStyle.checkboxSelection}
                                 columnVisibilityModel={{
                                     id: false,
                                 }}
                             />
-            </Stack>
-        </Stack>
+                        </Stack>
+                    </Stack>
                 </TabPanel>
             </TabContext>
-    </Paper>
-  )
+        </Box>
+    )
 }
