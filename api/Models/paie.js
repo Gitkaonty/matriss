@@ -6,7 +6,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.INTEGER,
             allowNull: false,
         },
-
+        matricule: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
         salaireBase: {
             type: DataTypes.DECIMAL(15, 2),
             allowNull: true

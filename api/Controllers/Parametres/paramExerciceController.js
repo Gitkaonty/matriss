@@ -33,6 +33,17 @@ const liassesads = db.liassesads;
 const liassesdrs = db.liassesdrs;
 const liasseses = db.liasseses;
 
+const etatsCentresFiscales = db.etatsCentresFiscales;
+const etatsCentresFiscalesmatrices = db.etatsCentresFiscalesmatrices;
+
+// const etatsDge = db.etatsDge;
+// const etatsDgeMatrices = db.etatsDgeMatrices;
+
+// Unified Formulaire TVA
+const formulaireTvaAnnexes = db.formulaireTvaAnnexes;
+const formulaireTvaAnnexesMatrices = db.formulaireTvaAnnexesMatrices;
+const dossiers = db.dossiers;
+
 const getListeExercice = async (req, res) => {
   try {
     const fileId = req.params.id;
@@ -104,6 +115,8 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
   const listeEtatComm = await etatscomatrices.findAll({});
   const listeEtatPlp = await etatsplpmatrices.findAll({});
   const listeRubrique = await rubriquesmatrices.findAll({});
+  const listeEtatCentresFiscales = await etatsCentresFiscalesmatrices.findAll({});
+  const listeEtatDge = await etatsDgeMatrices.findAll({});
 
   const createdExerciceInfosData = await exercice.findOne({
     where: { id: createExercice.id }
@@ -183,6 +196,53 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
       producteur_valeur: item.producteur_valeur,
     })
   })
+
+  // // console.log(listeEtatCentresFiscales);
+  // listeEtatCentresFiscales.map(async (item) => {
+
+  //   await etatsCentresFiscales.create({
+  //     id_compte: id_compte,
+  //     id_dossier: id_dossier,
+  //     id_exercice: createExercice.id,
+  //     id_cfisc: item.id_cfisc,
+  //     libelle: item.libelle,
+  //     montant: item.montant,
+  //   })
+  // })
+
+  // console.log('novidvnsoidvdcdsbsod',listeEtatDge);
+  // listeEtatDge.map(async (item) => {
+  //   await etatsDge.create({
+  //     id_compte: id_compte,
+  //     id_dossier: id_dossier,
+  //     id_exercice: createExercice.id,
+  //     id_dge: item.id_dge,
+  //     libelle: item.libelle,
+  //     montant: item.montant,
+  //   })
+  // })
+
+  // --- Unified Formulaire TVA initialization (based on dossier's centrefisc)
+  try {
+    const dossierRow = await dossiers.findByPk(id_dossier);
+    const type = (dossierRow?.centrefisc === 'CFISC') ? 'CFISC' : 'DGE';
+    // Matrices now have a single row per code (no type). Load all rows.
+    const listFormMatrices = await formulaireTvaAnnexesMatrices.findAll({});
+    listFormMatrices.map(async (item) => {
+      await formulaireTvaAnnexes.create({
+        id_compte: id_compte,
+        id_dossier: id_dossier,
+        id_exercice: createExercice.id,
+        id_code: item.id_code,
+        libelle: item.libelle,
+        montant: 0,
+        type,
+      });
+    });
+  } catch (e) {
+    console.log('[Unified TVA] init error:', e?.message || e);
+  }
+
 
   listeRubrique.map(async (item) => {
     const copyrubriques = await rubriques.create({

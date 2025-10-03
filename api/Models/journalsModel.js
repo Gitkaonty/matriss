@@ -117,6 +117,22 @@ module.exports = (sequelize, DataTypes) => {
         num_facture: {
             type: DataTypes.STRING(50),
             allowNull: true,
+        },
+        decltvamois: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            defaultValue: 0
+        },
+        decltvaannee: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            defaultValue: 0
+        }
+        ,
+        decltva: {
+            type: DataTypes.BOOLEAN,
+            allowNull: true,
+            defaultValue: false
         }
     }, { timestamps: true },)
     return journals

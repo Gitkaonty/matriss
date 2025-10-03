@@ -4,6 +4,7 @@ require('dotenv').config();
 const Sequelize = require('sequelize');
 
 const codejournals = db.codejournals;
+const Dossier = db.dossiers;
 
 const getListeCodeJournaux = async (req, res) => {
   try {
@@ -38,7 +39,7 @@ const getListeCodeJournaux = async (req, res) => {
 
 const addCodeJournal = async (req, res) => {
   try {
-    const { idCompte, idDossier, idCode, code, libelle, type, compteassocie } = req.body;
+    const { idCompte, idDossier, idCode, code, libelle, type, compteassocie, nif, stat, adresse } = req.body;
 
     let resData = {
       state: false,
@@ -49,6 +50,32 @@ const addCodeJournal = async (req, res) => {
       where: { id: idCode, id_dossier: idDossier }
     });
 
+    // Rules for BANQUE vs others
+    let effNif = '';
+    let effStat = '';
+    let effAdresse = '';
+    if (String(type).toUpperCase() === 'BANQUE') {
+      // If missing, prefill from dossier
+      let dnif = '', dstat = '', dadresse = '';
+      try {
+        const dossier = await Dossier.findByPk(idDossier);
+        if (dossier) {
+          const o = typeof dossier.toJSON === 'function' ? dossier.toJSON() : dossier;
+          dnif = o?.nif || '';
+          dstat = o?.stat || '';
+          dadresse = o?.adresse || '';
+        }
+      } catch (e) {}
+      effNif = (nif && String(nif).trim() !== '') ? nif : dnif;
+      effStat = (stat && String(stat).trim() !== '') ? stat : dstat;
+      effAdresse = (adresse && String(adresse).trim() !== '') ? adresse : dadresse;
+    } else {
+      // Not BANQUE: force empty values
+      effNif = '';
+      effStat = '';
+      effAdresse = '';
+    }
+
     if (testIfExist.length === 0) {
       const addCode = await codejournals.create({
         id_compte: idCompte,
@@ -56,7 +83,10 @@ const addCodeJournal = async (req, res) => {
         code: code,
         libelle: libelle,
         type: type,
-        compteassocie: compteassocie
+        compteassocie: compteassocie,
+        nif: effNif,
+        stat: effStat,
+        adresse: effAdresse
       });
 
       if (addCode) {
@@ -74,7 +104,10 @@ const addCodeJournal = async (req, res) => {
           code: code,
           libelle: libelle,
           type: type,
-          compteassocie: compteassocie
+          compteassocie: compteassocie,
+          nif: effNif,
+          stat: effStat,
+          adresse: effAdresse
         },
         {
           where: { id: idCode }

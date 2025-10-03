@@ -31,13 +31,15 @@ import QuickFilter from '../../componentsTools/DatagridToolsStyle';
 import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes } from '@mui/x-data-grid';
 import { TbPlaylistAdd } from 'react-icons/tb';
 import { IoMdTrash } from 'react-icons/io';
+import { FormControlLabel } from '@mui/material';
+
 
 export default function AddNewFile({confirmationState}) {
     const closed = () => {
         confirmationState(false);
     }
 
-    const [value, setValue] = useState(0);
+    const [value, setValue] = useState("1"); 
     const [listModel, setListModel] = useState([]);
     const [listAssocie, setListAssocie] = useState([]);
     const [listAssocieFormik, setListAssocieFormik] = useState([]);
@@ -68,8 +70,14 @@ export default function AddNewFile({confirmationState}) {
     const compteId = decoded.UserInfo.compteId || null;
     const userId = decoded.UserInfo.userId || null;
 
+    // État pour le type de centre fiscal (DGE ou centre fiscale)
+    // Synchronisé avec Formik : plus besoin de ce state séparé
+    // const [typeCentre, setTypeCentre] = useState('DGE');
+
     //Form pour l'enregistrement des données
     const InfosNewFileInitialValues = {
+        centrefisc: 'DGE', // Valeur par défaut, synchronisée avec le radio fiscal
+
         action:'new',
         itemId:0,
         idCompte: 0,
@@ -546,10 +554,16 @@ export default function AddNewFile({confirmationState}) {
             initialValues={InfosNewFileInitialValues}
             validationSchema={formInfosNewFileValidationSchema}
             onSubmit = {(values) =>{
-                handlSubmitNewFile(values);
+
+                // S'assurer que la valeur centrefisc est bien DGE ou CFISC (pas 'centre fiscale')
+                const payload = {
+                    ...values,
+                    centrefisc: values.centrefisc === 'CFISC' || values.centrefisc === 'DGE' ? values.centrefisc : (values.centrefisc === 'centre fiscale' ? 'CFISC' : 'DGE')
+                };
+                handlSubmitNewFile(payload);
             }}
         >
-            {({handleChange, handleSubmit, setFieldValue, resetForm}) => {
+            {({handleChange, handleSubmit, setFieldValue, resetForm, values}) => {
                 return (
                 <Form style={{width:'100%'}}>
                     <Stack width={"100%"} height={"85%"} spacing={2} alignItems={"flex-start"} justifyContent={"stretch"}>
@@ -1086,9 +1100,24 @@ export default function AddNewFile({confirmationState}) {
                                 </TabPanel>
 
                                 <TabPanel value="3">
-                                    <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"} 
-                                            alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"20px"} 
-                                    >
+                                    <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"20px"}>
+                                        <Typography style={{fontWeight:'bold', fontSize:"18px", marginLeft:"0px", marginTop:"5px"}}>Impôt sur le revenu (IR)</Typography>
+                                   
+                                    {/* Bloc radio DGE / centre fiscale */}
+                                    <Stack direction="column" spacing={1} sx={{mt: 2, mb: 2}}>
+                                        <Typography variant="subtitle1" sx={{fontWeight: 500, color: '#888'}}>Type de centre fiscal</Typography>
+                                        <Stack direction="row" spacing={4} alignItems="center">
+                                            <FormControlLabel
+    control={<Field type="radio" name="centrefisc" value="DGE" as="input" />}
+    label={<span style={{fontWeight: values.centrefisc === 'DGE' ? 600 : 400}}>DGE</span>}
+/>
+<FormControlLabel
+    control={<Field type="radio" name="centrefisc" value="CFISC" as="input" />}
+    label={<span style={{fontWeight: values.centrefisc === 'CFISC' ? 600 : 400}}>centre fiscale</span>}
+/>
+                                        </Stack>
+                                    </Stack>
+                                 
                                         <Stack spacing={1}>
                                             <label htmlFor="tauxir" style={{fontSize:12, color: '#3FA2F6'}}>Taux IR</label>
                                             <Field
@@ -1098,16 +1127,59 @@ export default function AddNewFile({confirmationState}) {
                                             type='text'
                                             placeholder=""
                                             style={{height:22, borderTop: 'none',
-                                                borderLeft: 'none',borderRight: 'none', 
-                                                outline: 'none', fontSize:14, borderWidth:'0.5px', 
-                                                width: '100px',
-                                            }}
+                                                    borderLeft: 'none',borderRight: 'none', 
+                                                    outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                    width: '100px',
+                                                }}
                                             />
                                             <ErrorMessage name='tauxir' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
                                         </Stack>
-
+                                   
+                                        <Typography style={{fontWeight:'bold', fontSize:"14px", marginLeft:"0px", marginTop:"30px"}}>Paramétrages minimum de perception</Typography>
+                                                                                   
+                                        <Stack width={"100%"} height={"30px"} spacing={10} alignItems={"center"} 
+                                            alignContent={"center"} justifyContent={"stretch"} direction={"row"}
+                                            style={{marginLeft:"0px"}}
+                                        >
+                                            <Stack spacing={1}>
+                                                <label htmlFor="pourcentageca" style={{fontSize:12, color: '#3FA2F6'}}>Pourcentage CA</label>
+                                                <Field
+                                                required
+                                                name='pourcentageca'
+                                                onChange={handleChange}
+                                                type='text'
+                                                placeholder=""
+                                                style={{height:22, borderTop: 'none',
+                                                    borderLeft: 'none',borderRight: 'none', 
+                                                    outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                    width: '100px'
+                                                }}
+                                            />
+                                            <ErrorMessage name='pourcentageca' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                        </Stack>
+                                   
+                                        <Stack spacing={1}>
+                                            <label htmlFor="montantmin" style={{fontSize:12, color: '#3FA2F6'}}>Montant minimum</label>
+                                            <Field
+                                            required
+                                            name='montantmin'
+                                            onChange={handleChange}
+                                            type='number'
+                                            placeholder=""
+                                            style={{height:22, borderTop: 'none',
+                                                borderLeft: 'none',borderRight: 'none', 
+                                                outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                width: '150px', textAlign: 'right',
+                                            }}
+                                            />
+                                            <ErrorMessage name='montantmin' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                        </Stack>
+                                    </Stack>
+                                   
+                                        <Typography style={{fontWeight:'bold', fontSize:"18px", marginLeft:"0px", marginTop:"50px"}}>Taxe sur la valeur ajoutée (TVA)</Typography>
+                                                                               
                                         <Stack spacing={0} direction={'row'}
-                                                style={{alignItems:'center', marginTop: 40}}
+                                            style={{alignItems:'center', marginTop: 20}}
                                         >
                                             <Field
                                             required

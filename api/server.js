@@ -17,7 +17,7 @@ const credentials = require('./Middlewares/credentials');
 //const modelePlanComptableDeleteRoutes = require('./Routes/modelePlanComptableRoutes/modelePlanComptableDeleteRoutes');
 require('dotenv').config();
 
-const PORT = process.env.DB_PORT || 5000;
+const PORT = process.env.PORT || 5100;
 
 //Définition du moteur d'affichage
 const app = express();
@@ -79,13 +79,13 @@ app.use('/home', require('./Routes/Home/homeRoutes'));
 app.use('/administration/ImportJournal', require('./Routes/Administration/importJournalRoute'));
 app.use('/administration/ImportBalance', require('./Routes/Administration/importBalanceRoute'));
 app.use('/administration/ImportModelePc', require('./Routes/Administration/importModelePCRoute'));
-app.use('/sociales/personnel', require('./Routes/personnels/personnelRoute'));
-
+app.use('/administration/personnel', require('./Routes/Administration/personnels/personnelRoute'));
 //export
 app.use('/administration/exportBalance', require('./Routes/Administration/exportBalanceRoute'));
-
 //saisie
 app.use('/administration/traitementSaisie', require('./Routes/Administration/saisieRoute'));
+
+app.use('/parametres/classification', require('./Routes/Parametres/Sociales/classificationRoute'));
 
 //----------------------------------------------------------------------------------------------------------------
 // MENU PARAMETRE
@@ -115,11 +115,10 @@ app.use('/paramMappingCompte', require('./Routes/Parametres/paramMappingCompte')
 //routes pour paramètres compabilité analytique
 app.use('/paramCa', require('./Routes/Parametres/paramCARoute'));
 
-app.use('/devises/devise', require('./Routes/Devises/deviseRoutes'));
+app.use('/parametres/fonction', require('./Routes/Parametres/personnels/fonctionsRoute'));
 
-app.use('/sociales/classification', require('./Routes/Sociales/classificationRoute'));
 
-app.use('/sociales/fonctions', require('./Routes/personnels/fonctionsRoute'));
+app.use('/devises/devise', require('./Routes/Parametres/Devises/deviseRoutes'));
 
 //----------------------------------------------------------------------------------------------------------------
 // MENU DECLARATION
@@ -131,11 +130,15 @@ app.use('/declaration/comm', require('./Routes/Declaration/Dcom/DeclarationCommR
 //Déclaration Ebilan-------------------------------------------
 app.use('/declaration/ebilan', require('./Routes/Declaration/declEbilanRoute'));
 
-app.use('/irsa/irsa', require('./routes/irsa/irsaRoutes'));
+app.use('/irsa/irsa', require('./Routes/Declaration/irsa/irsaRoutes'));
 
-app.use('/paie/paie', require('./Routes/paie/paieRoutes'));
+app.use('/paie/paie', require('./Routes/Declaration/paie/paieRoutes'));
 
-app.use('/historique/irsa', require('./routes/historiqueIrsaRoutes'));
+app.use('/historique/declaration', require('./Routes/Declaration/historiquesDeclarationRoutes'));
+
+// Déclaration TVA CFISC
+app.use('/declaration/tva', require('./Routes/Declaration/tva/tvaDeclarationRoutes'));
+
 
 /*app.all('*', (req,res) => {
     res.status(404);

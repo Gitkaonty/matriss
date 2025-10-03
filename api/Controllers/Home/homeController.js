@@ -88,6 +88,7 @@ const createNewFile = async (req, res) => {
       valeurpart,
       listeAssocies,
       listeFiliales,
+      centrefisc,
     } = req.body;
 
     if (action === 'new') {
@@ -118,6 +119,7 @@ const createNewFile = async (req, res) => {
         valeurpart: valeurpart,
         id_plancomptable: plancomptable,
         rcs: rcs,
+        centrefisc: centrefisc,
       });
 
       //copie la liste des associés
@@ -530,6 +532,33 @@ const informationsFile = async (req, res) => {
     return res.json(resData);
   } catch (error) {
     console.log(error);
+  } finally {
+    // Add finally block to ensure cleanup
+  }
+}
+
+const updateCentrefisc = async (req, res) => {
+  try {
+    const id = req.params.id || req.body?.id_dossier;
+    const { centrefisc } = req.body || {};
+    const allowed = ['DGE', 'CFISC'];
+
+    if (!id) {
+      return res.status(400).json({ state: false, msg: 'id du dossier manquant' });
+    }
+    if (!allowed.includes(centrefisc)) {
+      return res.status(400).json({ state: false, msg: "centrefisc invalide: doit être 'DGE' ou 'CFISC'" });
+    }
+
+    const updateState = await dossier.update({ centrefisc }, { where: { id } });
+
+    if (updateState[0] > 0) {
+      return res.json({ state: true, msg: 'Mise à jour du centre fiscal effectuée avec succès', centrefisc });
+    }
+    return res.status(404).json({ state: false, msg: 'Dossier introuvable' });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ state: false, msg: 'Erreur serveur' });
   }
 }
 
@@ -537,5 +566,6 @@ module.exports = {
   recupListDossier,
   createNewFile,
   deleteCreatedFile,
-  informationsFile
+  informationsFile,
+  updateCentrefisc,
 };

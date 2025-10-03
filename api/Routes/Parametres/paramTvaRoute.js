@@ -15,5 +15,9 @@ router.post('/paramTvaAdd', paramTvaController.paramTvaAdd);
 //supprimer un paramétrage tva
 router.post('/paramTvaDelete', paramTvaController.paramTvaDelete);
 
+// lister les écritures journal par compte comptable (id_numcpt)
+router.get('/journals/byCompte', paramTvaController.listJournalsByCompte);
+
+
 
 module.exports = router;

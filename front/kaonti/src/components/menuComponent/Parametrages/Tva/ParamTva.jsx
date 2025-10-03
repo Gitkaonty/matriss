@@ -1,4 +1,4 @@
-import { React, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Typography, Stack, Paper, IconButton, FormControl, InputLabel, Select, MenuItem, Input, FormHelperText } from '@mui/material';
 import Button from '@mui/material/Button';
@@ -59,21 +59,21 @@ export default function ParamTVAComponent() {
 
     //récupération infos de connexion
     const { auth } = useAuth();
-    const decoded = auth?.accessToken ? jwtDecode(auth.accessToken): undefined;
+    const decoded = auth?.accessToken ? jwtDecode(auth.accessToken) : undefined;
     const compteId = decoded.UserInfo.compteId || null;
     const userId = decoded.UserInfo.userId || null;
     const navigate = useNavigate();
 
     //sauvegarde de la nouvelle ligne ajoutée
     const formikNewParamTva = useFormik({
-        initialValues : {
+        initialValues: {
             idCompte: compteId,
             idDossier: fileId,
             idCode: 0,
-            compte:'',
-            libelle:'',
-            code : '',
-            codedescription:''
+            compte: '',
+            libelle: '',
+            code: '',
+            codedescription: ''
         },
         validationSchema: Yup.object({
             compte: Yup.string().required("Veuillez ajouter un compte de tva"),
@@ -96,8 +96,8 @@ export default function ParamTVAComponent() {
                 const idDossier = sessionStorage.getItem("fileId");
                 setFileId(idDossier);
                 idFile = idDossier;
-            }else{
-                sessionStorage.setItem('fileId',id);
+            } else {
+                sessionStorage.setItem('fileId', id);
                 setFileId(id);
                 idFile = id;
             }
@@ -106,33 +106,35 @@ export default function ParamTVAComponent() {
     }, []);
 
     const GetInfosIdDossier = (id) => {
-        axios.get(`/home/FileInfos/${id}`).then((response) =>{
+        axios.get(`/home/FileInfos/${id}`).then((response) => {
             const resData = response.data;
 
-            if(resData.state){
-            setFileInfos(resData.fileInfos[0]);
-            setNoFile(false);
-            }else{
-            setFileInfos([]);
-            setNoFile(true);
+            if (resData.state) {
+                setFileInfos(resData.fileInfos[0]);
+                setNoFile(false);
+            } else {
+                setFileInfos([]);
+                setNoFile(true);
             }
         })
     }
 
     const sendToHome = (value) => {
-    setNoFile(!value);
-    navigate('/tab/home');
+        setNoFile(!value);
+        navigate('/tab/home');
     }
 
     //récupération données liste code journaux
     //Chargement de la liste des exercices associés à l'id dossier sélectionné
     const GetListeCodeTva = () => {
-        axios.get(`/paramTva/listeCodeTva`).then((response) =>{
+        axios.get(`/paramTva/listeCodeTva`).then((response) => {
             const resData = response.data;
-            if(resData.state){
-                setListeCodeTva(resData.list);
-                setListeCodeTvaUnfiltered(resData.list);
-            }else{
+            if (resData.state) {
+                const all = Array.isArray(resData.list) ? resData.list : [];
+                // Charger la liste complète ici; le filtrage final se fera selon la nature + «≠1*» dans handleChangeCompte/handleEditClick
+                setListeCodeTva(all);
+                setListeCodeTvaUnfiltered(all);
+            } else {
                 setListeCodeTva([]);
                 setListeCodeTvaUnfiltered([]);
                 toast.error(resData.msg);
@@ -142,13 +144,13 @@ export default function ParamTVAComponent() {
 
     //Récupération du plan comptable
     const recupPc = () => {
-        axios.post(`/paramPlanComptable/pc`, {fileId}).then((response) =>{
+        axios.post(`/paramPlanComptable/pc`, { fileId }).then((response) => {
             const resData = response.data;
-            if(resData.state){
+            if (resData.state) {
                 const pcToFilter = resData.liste;
                 const filteredPc = pcToFilter?.filter((row) => row.compte.startsWith('445'));
                 setPc(filteredPc);
-            }else{
+            } else {
                 toast.error(resData.msg);
             }
         })
@@ -157,22 +159,22 @@ export default function ParamTVAComponent() {
     //Récupération du tableau des paramétrages de tva effectués
     const getListeParamTva = () => {
         const id = fileId;
-        axios.get(`/paramTva/listeParamTva/${id}`).then((response) =>{
+        axios.get(`/paramTva/listeParamTva/${id}`).then((response) => {
             const resData = response.data;
-            if(resData.state){
+            if (resData.state) {
                 setParamTva(resData.list);
-            }else{
+            } else {
                 setParamTva([]);
                 toast.error(resData.msg);
             }
         });
     }
 
-    useEffect(() =>{
+    useEffect(() => {
         recupPc();
         GetListeCodeTva();
         getListeParamTva();
-    }, [fileId]);    
+    }, [fileId]);
 
     //filtrer et associer à formik le choix de compte
     const handleChangeCompte = (value) => {
@@ -180,13 +182,17 @@ export default function ParamTVAComponent() {
 
         formikNewParamTva.setFieldValue('compte', infosCompte[0].id);
 
-        if(infosCompte[0]?.compte.startsWith('4456')){
-            const filteredCode = listeCodeTvaUnfiltered?.filter((row) => row.nature === 'DED');
+        if (infosCompte[0]?.compte.startsWith('4456')) {
+            const filteredCode = (listeCodeTvaUnfiltered || [])
+              .filter((row) => row.nature === 'DED')
+              .filter((row) => !String(row.code || '').startsWith('1'));
             setListeCodeTva(filteredCode);
-        }else if(infosCompte[0]?.compte.startsWith('4457')){
-            const filteredCode = listeCodeTvaUnfiltered?.filter((row) => row.nature === 'COLL');
+        } else if (infosCompte[0]?.compte.startsWith('4457')) {
+            const filteredCode = (listeCodeTvaUnfiltered || [])
+              .filter((row) => row.nature === 'COLL')
+              .filter((row) => !String(row.code || '').startsWith('1'));
             setListeCodeTva(filteredCode);
-        }else{
+        } else {
             GetListeCodeTva();
         }
 
@@ -198,20 +204,20 @@ export default function ParamTVAComponent() {
     const handleChangeCodeTva = (value) => {
         const infosCode = listeCodeTva?.filter((row) => row.id === value);
         const infosInit = infosCode[0];
-       
-        formikNewParamTva.setFieldValue('code',value)
+
+        formikNewParamTva.setFieldValue('code', value)
         formikNewParamTva.setFieldValue('codedescription', infosInit.libelle);
     }
 
     //Entete du tableau
     const paramTvaColumnHeader = [
         {
-            field: 'dossierplancomptable.compte', 
-            headerName: 'Compte', 
+            field: 'dossierplancomptable.compte',
+            headerName: 'Compte',
             type: 'singleSelect',
-            valueOptions: pc?.map((code) => code.compte),  
-            sortable : true, 
-            width: 200, 
+            valueOptions: pc?.map((code) => code.compte),
+            sortable: true,
+            width: 200,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
@@ -222,44 +228,45 @@ export default function ParamTVAComponent() {
             },
 
             renderEditCell: (params) => {
-            return (
-                <FormControl fullWidth>
-                <InputLabel><em>Choisir...</em></InputLabel>
-                <Select
-                    style={{backgroundColor: compteValidationColor}}
-                    value={formikNewParamTva.values.compte}
-                    onChange = {(e) => handleChangeCompte(e.target.value)}
-                    label="Type"
-                >
-                    {pc?.map((option) => (
-                    <MenuItem key={option.id} value={option.id}>
-                        {option.compte} - {option.libelle}
-                    </MenuItem>
-                    ))}
-                </Select>
-                <FormHelperText style={{color:'red'}}>
-                    {formikNewParamTva.errors.compte && formikNewParamTva.touched.compte && formikNewParamTva.errors.compte}
-                </FormHelperText>
-                </FormControl>
-            );
+                return (
+                    <FormControl fullWidth>
+                        <InputLabel><em>Choisir...</em></InputLabel>
+                        <Select
+                            style={{ backgroundColor: compteValidationColor }}
+                            value={formikNewParamTva.values.compte}
+                            onChange={(e) => handleChangeCompte(e.target.value)}
+                            label="Type"
+                        >
+                            {pc?.map((option) => (
+                                <MenuItem key={option.id} value={option.id}>
+                                    {option.compte} - {option.libelle}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                        <FormHelperText style={{ color: 'red' }}>
+                            {formikNewParamTva.errors.compte && formikNewParamTva.touched.compte && formikNewParamTva.errors.compte}
+                        </FormHelperText>
+                    </FormControl>
+                );
             },
         },
         {
-            field: 'dossierplancomptable.libelle', 
-            headerName: 'Libellé', 
-            type: 'string', 
-            sortable : true, 
-            width: 400, 
+            field: 'dossierplancomptable.libelle',
+            headerName: 'Libellé',
+            type: 'string',
+            sortable: true,
+            width: 400,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
             editable: editableRow,
             renderEditCell: (params) => {
                 return (
-                    <FormControl fullWidth style={{height:'100%'}}>
+                    <FormControl fullWidth style={{ height: '100%' }}>
                         <Input
-                            style={{height:'100%', alignItems:'center', 
-                                outline: 'none', 
+                            style={{
+                                height: '100%', alignItems: 'center',
+                                outline: 'none',
                                 backgroundColor: 'transparent'
                             }}
                             type="text"
@@ -273,12 +280,12 @@ export default function ParamTVAComponent() {
             },
         },
         {
-            field: 'listecodetva.code', 
-            headerName: 'Code tva', 
+            field: 'listecodetva.code',
+            headerName: 'Code tva',
             type: 'singleSelect',
-            valueOptions: listeCodeTva.map((row) => row.code),  
-            sortable : true, 
-            width: 150, 
+            valueOptions: listeCodeTva.map((row) => row.code),
+            sortable: true,
+            width: 150,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
@@ -289,57 +296,57 @@ export default function ParamTVAComponent() {
             },
 
             renderEditCell: (params) => {
-            return (
-                <FormControl fullWidth>
-                <InputLabel><em>Choisir...</em></InputLabel>
-                <Select
-                    style={{backgroundColor: codeValidationColor}}
-                    value={formikNewParamTva.values.code}
-                    onChange = {(e) => handleChangeCodeTva(e.target.value)}
-                    label="Type"
-                >
-                    {listeCodeTva?.map((option) => (
-                    <MenuItem key={option.id} value={option.id}>
-                        {option.code} - {option.libelle}
-                    </MenuItem>
-                    ))}
-                </Select>
-                <FormHelperText style={{color:'red'}}>
-                    {formikNewParamTva.errors.code && formikNewParamTva.touched.code && formikNewParamTva.errors.code}
-                </FormHelperText>
-                </FormControl>
-            );
+                return (
+                    <FormControl fullWidth>
+                        <InputLabel><em>Choisir...</em></InputLabel>
+                        <Select
+                            style={{ backgroundColor: codeValidationColor }}
+                            value={formikNewParamTva.values.code}
+                            onChange={(e) => handleChangeCodeTva(e.target.value)}
+                            label="Type"
+                        >
+                            {listeCodeTva?.map((option) => (
+                                <MenuItem key={option.id} value={option.id}>
+                                    {option.code} - {option.libelle}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                        <FormHelperText style={{ color: 'red' }}>
+                            {formikNewParamTva.errors.code && formikNewParamTva.touched.code && formikNewParamTva.errors.code}
+                        </FormHelperText>
+                    </FormControl>
+                );
             },
             renderCell: (params) => {
-                if(params.value && typeof params.value === 'string' && params.value.startsWith('2')){
+                if (params.value && typeof params.value === 'string' && params.value.startsWith('2')) {
                     return (
-                        <Stack width={'100%'} style={{display:'flex',alignContent:'center', alignItems:'center', justifyContent:'center'}}>
+                        <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
                             <div style={{
-                                width: 90,             
-                                height: 25,            
-                                backgroundColor: '#FFA62F', 
-                                borderRadius: 15,        
-                                display: 'flex',            
-                                justifyContent: 'center',   
-                                alignItems: 'center',  
-                                color: 'white'     
+                                width: 90,
+                                height: 25,
+                                backgroundColor: '#FFA62F',
+                                borderRadius: 15,
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                color: 'white'
                             }}>
                                 {params.value}
                             </div>
                         </Stack>
                     )
-                }else{
+                } else {
                     return (
-                        <Stack width={'100%'} style={{display:'flex',alignContent:'center', alignItems:'center', justifyContent:'center'}}>
+                        <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
                             <div style={{
-                                width: 90,             
-                                height: 25,            
-                                backgroundColor: '#3D5300', 
-                                borderRadius: 15,        
-                                display: 'flex',            
-                                justifyContent: 'center',   
-                                alignItems: 'center',  
-                                color: 'white'     
+                                width: 90,
+                                height: 25,
+                                backgroundColor: '#3D5300',
+                                borderRadius: 15,
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                color: 'white'
                             }}>
                                 {params.value}
                             </div>
@@ -349,21 +356,22 @@ export default function ParamTVAComponent() {
             }
         },
         {
-            field: 'listecodetva.libelle', 
-            headerName: 'Déscription', 
-            type: 'string', 
-            sortable : true, 
-            width: 750, 
+            field: 'listecodetva.libelle',
+            headerName: 'Déscription',
+            type: 'string',
+            sortable: true,
+            width: 750,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
             editable: editableRow,
             renderEditCell: (params) => {
                 return (
-                    <FormControl fullWidth style={{height:'100%'}}>
+                    <FormControl fullWidth style={{ height: '100%' }}>
                         <Input
-                            style={{height:'100%', alignItems:'center', 
-                                outline: 'none', 
+                            style={{
+                                height: '100%', alignItems: 'center',
+                                outline: 'none',
                                 backgroundColor: 'transparent'
                             }}
                             type="text"
@@ -380,28 +388,28 @@ export default function ParamTVAComponent() {
 
     //gestion ajout + modification + suppression ligne dans le tableau liste code journaux
     const saveSelectedRow = (ids) => {
-        if(ids.length === 1){
+        if (ids.length === 1) {
             setSelectedRowId(ids);
             setDisableModifyBouton(false);
             setDisableSaveBouton(false);
             setDisableCancelBouton(false);
             setDisableDeleteBouton(false);
-        }else{
+        } else {
             setSelectedRowId([]);
             setDisableModifyBouton(true);
             setDisableSaveBouton(true);
             setDisableCancelBouton(true);
             setDisableDeleteBouton(true);
         }
-      }
+    }
 
-      const handleRowEditStop = (params, event) => {
+    const handleRowEditStop = (params, event) => {
         if (params.reason === GridRowEditStopReasons.rowFocusOut) {
-          event.defaultMuiPrevented = true;
+            event.defaultMuiPrevented = true;
         }
-      };
-    
-      const handleEditClick = (id) => () => {
+    };
+
+    const handleEditClick = (id) => () => {
         //réinitialiser les couleurs des champs
         setCodeValidationColor('transparent');
         setCompteValidationColor('transparent');
@@ -414,13 +422,17 @@ export default function ParamTVAComponent() {
         const libelle = compteInit['dossierplancomptable.libelle'];
         const description = compteInit['listecodetva.libelle'];
 
-        if(compte?.startsWith('4456')){
-            const filteredCode = listeCodeTvaUnfiltered?.filter((row) => row.nature === 'DED');
+        if (compte?.startsWith('4456')) {
+            const filteredCode = (listeCodeTvaUnfiltered || [])
+              .filter((row) => row.nature === 'DED')
+              .filter((row) => !String(row.code || '').startsWith('1'));
             setListeCodeTva(filteredCode);
-        }else if(compte?.startsWith('4457')){
-            const filteredCode = listeCodeTvaUnfiltered?.filter((row) => row.nature === 'COLL');
+        } else if (compte?.startsWith('4457')) {
+            const filteredCode = (listeCodeTvaUnfiltered || [])
+              .filter((row) => row.nature === 'COLL')
+              .filter((row) => !String(row.code || '').startsWith('1'));
             setListeCodeTva(filteredCode);
-        }else{
+        } else {
             GetListeCodeTva();
         }
 
@@ -431,126 +443,126 @@ export default function ParamTVAComponent() {
         formikNewParamTva.setFieldValue("libelle", libelle);
         formikNewParamTva.setFieldValue("code", selectedRowInfos[0].type);
         formikNewParamTva.setFieldValue("codedescription", description);
-       
+
         setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
         setDisableSaveBouton(false);
-      };
-    
-      const handleSaveClick = (id) => () => {
+    };
+
+    const handleSaveClick = (id) => () => {
         let saveBoolCompte = false;
         let saveBoolCode = false;
-        
+
         setCompteValidationColor('transparent');
         setCodeValidationColor('transparent');
 
-        if(formikNewParamTva.values.compte ===''){
+        if (formikNewParamTva.values.compte === '') {
             setCompteValidationColor('#F6D6D6');
             saveBoolCompte = false;
-        }else{
+        } else {
             setCompteValidationColor('transparent');
             saveBoolCompte = true;
         }
-        
-        if(formikNewParamTva.values.code ===''){
+
+        if (formikNewParamTva.values.code === '') {
             setCodeValidationColor('#F6D6D6');
             saveBoolCode = false;
-        }else{
+        } else {
             setCodeValidationColor('transparent');
             saveBoolCode = true;
         }
 
-        if(saveBoolCode && saveBoolCompte){
+        if (saveBoolCode && saveBoolCompte) {
             setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
-            axios.post(`/paramTva/paramTvaAdd`, formikNewParamTva.values).then((response) =>{
+            axios.post(`/paramTva/paramTvaAdd`, formikNewParamTva.values).then((response) => {
                 const resData = response.data;
 
-                if(resData.state){
+                if (resData.state) {
                     setDisableSaveBouton(true);
 
                     formikNewParamTva.resetForm();
                     getListeParamTva(fileId);
                     toast.success(resData.msg);
-                }else{
+                } else {
                     toast.error(resData.msg);
                 }
             });
-        }else{
+        } else {
             toast.error('Les champs en surbrillances sont obligatoires');
-        }     
-      };
+        }
+    };
 
-      const handleOpenDialogConfirmDeleteAssocieRow = () => {
+    const handleOpenDialogConfirmDeleteAssocieRow = () => {
         setOpenDialogDeleteRow(true);
-      }
+    }
 
-      const deleteRow = (value) => {
-        if(value === true){
-            if(selectedRowId.length === 1){
+    const deleteRow = (value) => {
+        if (value === true) {
+            if (selectedRowId.length === 1) {
                 const idToDelete = selectedRowId[0];
-                axios.post(`/paramTva/paramTvaDelete`, {fileId, compteId, idToDelete }).then((response) =>{
+                axios.post(`/paramTva/paramTvaDelete`, { fileId, compteId, idToDelete }).then((response) => {
                     const resData = response.data;
-                    if(resData.state){
+                    if (resData.state) {
                         setOpenDialogDeleteRow(false);
                         setParamTva(paramTva.filter((row) => row.id !== selectedRowId[0]));
                         toast.success(resData.msg);
-                    }else{
+                    } else {
                         setOpenDialogDeleteRow(false);
                         toast.error(resData.msg);
                     }
                 });
             }
             setOpenDialogDeleteRow(false);
-        }else{
+        } else {
             setOpenDialogDeleteRow(false);
         }
-      }
-    
-      const handleCancelClick = (id) => () => {
+    }
+
+    const handleCancelClick = (id) => () => {
         setRowModesModel({
-          ...rowModesModel,
-          [id]: { mode: GridRowModes.View, ignoreModifications: true },
+            ...rowModesModel,
+            [id]: { mode: GridRowModes.View, ignoreModifications: true },
         });
-      };
-    
-      const processRowUpdate = (newRow) => {
+    };
+
+    const processRowUpdate = (newRow) => {
         const updatedRow = { ...newRow, isNew: false };
         setParamTva(paramTva.map((row) => (row.id === newRow.id ? updatedRow : row)));
         //setFieldValue('listeAssocies', listAssocie.map((row) => (row.id === newRow.id ? updatedRow : row)));
         return updatedRow;
-      };
-    
-      const handleRowModesModelChange = (newRowModesModel) => {
-        setRowModesModel(newRowModesModel);
-      };
+    };
 
-      const handleCellEditCommit = (params) => {
-        if(selectedRowId.length > 1  || selectedRowId.length === 0){
+    const handleRowModesModelChange = (newRowModesModel) => {
+        setRowModesModel(newRowModesModel);
+    };
+
+    const handleCellEditCommit = (params) => {
+        if (selectedRowId.length > 1 || selectedRowId.length === 0) {
             setEditableRow(false);
             setDisableModifyBouton(true);
             setDisableSaveBouton(true);
             setDisableCancelBouton(true);
             toast.error("sélectionnez une seule ligne pour pouvoir la modifier");
-        }else{
+        } else {
             setDisableModifyBouton(false);
             setDisableSaveBouton(false);
             setDisableCancelBouton(false);
             if (!selectedRowId.includes(params.id)) {
-            setEditableRow(false);
-            toast.error("sélectionnez une ligne pour pouvoir la modifier");
-            }else{
+                setEditableRow(false);
+                toast.error("sélectionnez une ligne pour pouvoir la modifier");
+            } else {
                 setEditableRow(true);
             }
         }
-      };
+    };
 
     //Ajouter une ligne dans le tableau liste associé
     const handleOpenDialogAddNewAssocie = () => {
-        const newId = -1*(getMaxID(paramTva)+1);
+        const newId = -1 * (getMaxID(paramTva) + 1);
 
         formikNewParamTva.setFieldValue("idDossier", fileId);
         const newRow = {
             id: newId,
-            compte:'',
+            compte: '',
             code: '',
             libelle: '',
         };
@@ -558,160 +570,178 @@ export default function ParamTVAComponent() {
     }
 
     //récupérer le numéro id le plus grand dans le tableau
-    const getMaxID= (data) => {
+    const getMaxID = (data) => {
         const Ids = data.map(item => item.id);
         return Math.max(...Ids);
     };
 
-  return (
-    <Paper sx={{elevation: "3", margin:"5px", padding:"10px", width:"98%", height:"110%"}}>
-        {noFile? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
-        {openDialogDeleteRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer le code journal sélectionné ?"} confirmationState={deleteRow}/>: null}
+    // Filtrer l'affichage du tableau: comptes commençant par 445 ET codes ne commençant pas par 1
+    // Conserver les nouvelles lignes (id négatif) visibles pour pouvoir les éditer
+    const paramTvaDisplayRows = React.useMemo(() => {
+        if (!Array.isArray(paramTva)) return [];
+        return paramTva.filter((row) => {
+            const isNew = Number(row?.id) < 0;
+            if (isNew) return true;
+            const compte = String(row?.['dossierplancomptable.compte'] || '');
+            const code = String(row?.['listecodetva.code'] || '');
+            return compte.startsWith('445') && !code.startsWith('1');
+        });
+    }, [paramTva]);
 
-        <TabContext value={"1"}>
-            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            <TabList aria-label="lab API tabs example">
-                <Tab 
-                style={{ 
-                    textTransform: 'none', 
-                    outline: 'none', 
-                    border: 'none',
-                    margin:-5
-                }}
-                label={InfoFileStyle(fileInfos?.dossier)} value="1" 
-                />
-            </TabList>
-            </Box>
-            <TabPanel value="1">
-                <Typography variant='h6' sx={{color: "black"}} align='left'>Paramétrages : TVA</Typography>
-                
-                <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"} 
-                    direction={"column"} style={{marginLeft:"0px", marginTop:"20px", justifyContent:"right"}}>
+    return (
+        <Box>
+            {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
+            {openDialogDeleteRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer le code journal sélectionné ?"} confirmationState={deleteRow} /> : null}
 
-                    <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"} 
-                    direction={"row"} justifyContent={"right"}>
-                        <Tooltip title="Ajouter une ligne">
-                            <IconButton
-                            variant="contained" 
-                            onClick={handleOpenDialogAddNewAssocie}
-                            style={{width:"35px", height:'35px', 
-                                borderRadius:"2px", borderColor: "transparent", 
-                                backgroundColor: initial.theme,
-                                textTransform: 'none', outline: 'none'
+            <TabContext value={"1"}>
+                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                    <TabList aria-label="lab API tabs example">
+                        <Tab
+                            style={{
+                                textTransform: 'none',
+                                outline: 'none',
+                                border: 'none',
+                                margin: -5
                             }}
-                            >
-                                <TbPlaylistAdd style={{width:'25px', height:'25px', color:'white'}}/>
-                            </IconButton>
-                        </Tooltip>
-
-                        <Tooltip title="Modifier la ligne sélectionnée">
-                            <IconButton
-                            disabled={disableModifyBouton}
-                            variant="contained" 
-                            onClick={handleEditClick(selectedRowId)}
-                            style={{width:"35px", height:'35px', 
-                                borderRadius:"2px", borderColor: "transparent",
-                                backgroundColor: initial.theme,
-                                textTransform: 'none', outline: 'none'
-                                }}
-                            >
-                                <FaRegPenToSquare style={{width:'25px', height:'25px', color:'white'}}/>
-                            </IconButton>
-                        </Tooltip>
-
-                        <Tooltip title="Sauvegarder les modifications">
-                            <span>
-                                <IconButton 
-                                disabled={!formikNewParamTva.isValid}
-                                variant="contained" 
-                                onClick={handleSaveClick(selectedRowId)}
-                                style={{width:"35px", height:'35px', 
-                                    borderRadius:"2px", borderColor: "transparent",
-                                    backgroundColor: initial.theme,
-                                    textTransform: 'none', outline: 'none'
-                                }}
-                                >
-                                    <TfiSave style={{width:'50px', height:'50px',color: 'white'}}/>
-                                </IconButton>
-                            </span>
-                        </Tooltip>
-
-                        <Tooltip title="Annuler les modifications">
-                            <span>
-                                <IconButton 
-                                disabled={disableCancelBouton}
-                                variant="contained" 
-                                onClick={handleCancelClick(selectedRowId)}
-                                style={{width:"35px", height:'35px', 
-                                    borderRadius:"2px", borderColor: "transparent",
-                                    backgroundColor: initial.button_delete_color,
-                                    textTransform: 'none', outline: 'none'
-                                }}
-                                >
-                                    <VscClose style={{width:'50px', height:'50px', color: 'white'}}/>
-                                </IconButton>
-                            </span>
-                        </Tooltip>
-
-                        <Tooltip title="Supprimer la ligne sélectionné">
-                            <span>
-                                <IconButton 
-                                disabled={disableDeleteBouton}
-                                onClick={handleOpenDialogConfirmDeleteAssocieRow}
-                                variant="contained" 
-                                style={{width:"35px", height:'35px', 
-                                    borderRadius:"2px", borderColor: "transparent",
-                                    backgroundColor: initial.button_delete_color,
-                                    textTransform: 'none', outline: 'none'
-                                }}
-                                >
-                                    <IoMdTrash style={{width:'50px', height:'50px',color: 'white'}}/>
-                                </IconButton>
-                            </span>
-                        </Tooltip>
-                    </Stack>
-
-                    <Stack width={"100%"} height={'100%'} minHeight={'600px'}>
-                        <DataGrid
-                        disableMultipleSelection = {DataGridStyle.disableMultipleSelection}
-                        disableColumnSelector = {DataGridStyle.disableColumnSelector}
-                        disableDensitySelector = {DataGridStyle.disableDensitySelector}
-                        disableRowSelectionOnClick
-                        disableSelectionOnClick={true}
-                        localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
-                        slots={{toolbar : QuickFilter}}
-                        sx={ DataGridStyle.sx}
-                        rowHeight= {DataGridStyle.rowHeight}
-                        columnHeaderHeight= {DataGridStyle.columnHeaderHeight}
-                        editMode='row'
-                        columns={paramTvaColumnHeader}
-                        rows={paramTva}
-                        onRowClick={(e) => handleCellEditCommit(e.row)}
-                        // onCellClick={(e) => test(e.row)}
-                        onRowSelectionModelChange={ids => {
-                            saveSelectedRow(ids);
-                        }}
-                        rowModesModel={rowModesModel}
-                        onRowModesModelChange={handleRowModesModelChange}
-                        onRowEditStop={handleRowEditStop}
-                        processRowUpdate={processRowUpdate}
-                        initialState={{
-                            pagination: {
-                                paginationModel: { page: 0, pageSize: 100 },
-                            },
-                        }}
-                        experimentalFeatures={{ newEditingApi: true }}
-                        pageSizeOptions={[50, 100]}
-                        pagination={DataGridStyle.pagination}
-                        checkboxSelection = {DataGridStyle.checkboxSelection}
-                        columnVisibilityModel={{
-                            id: false,
-                        }}
+                            label={InfoFileStyle(fileInfos?.dossier)} value="1"
                         />
+                    </TabList>
+                </Box>
+                <TabPanel value="1">
+                    <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages : TVA</Typography>
+
+                    <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"}
+                        direction={"column"} style={{ marginLeft: "0px", marginTop: "20px", justifyContent: "right" }}>
+
+                        <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                            direction={"row"} justifyContent={"right"}>
+                            <Tooltip title="Ajouter une ligne">
+                                <IconButton
+                                    variant="contained"
+                                    onClick={handleOpenDialogAddNewAssocie}
+                                    style={{
+                                        width: "35px", height: '35px',
+                                        borderRadius: "2px", borderColor: "transparent",
+                                        backgroundColor: initial.theme,
+                                        textTransform: 'none', outline: 'none'
+                                    }}
+                                >
+                                    <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
+                                </IconButton>
+                            </Tooltip>
+
+                            <Tooltip title="Modifier la ligne sélectionnée">
+                                <IconButton
+                                    disabled={disableModifyBouton}
+                                    variant="contained"
+                                    onClick={handleEditClick(selectedRowId)}
+                                    style={{
+                                        width: "35px", height: '35px',
+                                        borderRadius: "2px", borderColor: "transparent",
+                                        backgroundColor: initial.theme,
+                                        textTransform: 'none', outline: 'none'
+                                    }}
+                                >
+                                    <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
+                                </IconButton>
+                            </Tooltip>
+
+                            <Tooltip title="Sauvegarder les modifications">
+                                <span>
+                                    <IconButton
+                                        disabled={!formikNewParamTva.isValid}
+                                        variant="contained"
+                                        onClick={handleSaveClick(selectedRowId)}
+                                        style={{
+                                            width: "35px", height: '35px',
+                                            borderRadius: "2px", borderColor: "transparent",
+                                            backgroundColor: initial.theme,
+                                            textTransform: 'none', outline: 'none'
+                                        }}
+                                    >
+                                        <TfiSave style={{ width: '50px', height: '50px', color: 'white' }} />
+                                    </IconButton>
+                                </span>
+                            </Tooltip>
+
+                            <Tooltip title="Annuler les modifications">
+                                <span>
+                                    <IconButton
+                                        disabled={disableCancelBouton}
+                                        variant="contained"
+                                        onClick={handleCancelClick(selectedRowId)}
+                                        style={{
+                                            width: "35px", height: '35px',
+                                            borderRadius: "2px", borderColor: "transparent",
+                                            backgroundColor: initial.button_delete_color,
+                                            textTransform: 'none', outline: 'none'
+                                        }}
+                                    >
+                                        <VscClose style={{ width: '50px', height: '50px', color: 'white' }} />
+                                    </IconButton>
+                                </span>
+                            </Tooltip>
+
+                            <Tooltip title="Supprimer la ligne sélectionné">
+                                <span>
+                                    <IconButton
+                                        disabled={disableDeleteBouton}
+                                        onClick={handleOpenDialogConfirmDeleteAssocieRow}
+                                        variant="contained"
+                                        style={{
+                                            width: "35px", height: '35px',
+                                            borderRadius: "2px", borderColor: "transparent",
+                                            backgroundColor: initial.button_delete_color,
+                                            textTransform: 'none', outline: 'none'
+                                        }}
+                                    >
+                                        <IoMdTrash style={{ width: '50px', height: '50px', color: 'white' }} />
+                                    </IconButton>
+                                </span>
+                            </Tooltip>
+                        </Stack>
+
+                        <Stack width={"100%"} height={'100%'} minHeight={'600px'}>
+                            <DataGrid
+                                disableMultipleSelection={DataGridStyle.disableMultipleSelection}
+                                disableColumnSelector={DataGridStyle.disableColumnSelector}
+                                disableDensitySelector={DataGridStyle.disableDensitySelector}
+                                disableRowSelectionOnClick
+                                disableSelectionOnClick={true}
+                                localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                                slots={{ toolbar: QuickFilter }}
+                                sx={DataGridStyle.sx}
+                                rowHeight={DataGridStyle.rowHeight}
+                                columnHeaderHeight={DataGridStyle.columnHeaderHeight}
+                                editMode='row'
+                                columns={paramTvaColumnHeader}
+                                rows={paramTvaDisplayRows}
+                                onRowClick={(e) => handleCellEditCommit(e.row)}
+                                // onCellClick={(e) => test(e.row)}
+                                onRowSelectionModelChange={ids => {
+                                    saveSelectedRow(ids);
+                                }}
+                                rowModesModel={rowModesModel}
+                                onRowModesModelChange={handleRowModesModelChange}
+                                onRowEditStop={handleRowEditStop}
+                                processRowUpdate={processRowUpdate}
+                                initialState={{
+                                    pagination: {
+                                        paginationModel: { page: 0, pageSize: 100 },
+                                    },
+                                }}
+                                experimentalFeatures={{ newEditingApi: true }}
+                                pageSizeOptions={[50, 100]}
+                                pagination={DataGridStyle.pagination}
+                                checkboxSelection={DataGridStyle.checkboxSelection}
+                                columnVisibilityModel={{
+                                    id: false,
+                                }}
+                            />
+                        </Stack>
                     </Stack>
-                </Stack>
-            </TabPanel>
-        </TabContext>
-    </Paper>
-  )
+                </TabPanel>
+            </TabContext>
+        </Box>
+    )
 }

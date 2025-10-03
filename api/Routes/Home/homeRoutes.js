@@ -15,4 +15,7 @@ router.post('/deleteFile', homeController.deleteCreatedFile );
 //récupérer les informations sur le dossier
 router.get('/FileInfos/:id', homeController.informationsFile );
 
+// mettre à jour le centre fiscal du dossier
+router.put('/FileCentrefisc/:id', homeController.updateCentrefisc);
+
 module.exports = router;

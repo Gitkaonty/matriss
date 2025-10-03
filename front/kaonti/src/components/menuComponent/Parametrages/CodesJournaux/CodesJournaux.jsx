@@ -61,7 +61,9 @@ export default function ParamCodeJournalComponent() {
     const [libelleValidationColor, setLibelleValidationColor] = useState('transparent');
     const [typeValidationColor, setTypeValidationColor] = useState('transparent');
     const [compteAssocieValidationColor, setCompteAssocieValidationColor] = useState('transparent');
-
+    const [nifValidationColor, setNifValidationColor] = useState('transparent');
+    const [statValidationColor, setStatValidationColor] = useState('transparent');
+    const [adresseValidationColor, setAdresseValidationColor] = useState('transparent');
     //récupération infos de connexion
     const { auth } = useAuth();
     const decoded = auth?.accessToken ? jwtDecode(auth.accessToken): undefined;
@@ -78,7 +80,10 @@ export default function ParamCodeJournalComponent() {
             code : '',
             libelle:'',
             type:'',
-            compteassocie:''
+            compteassocie:'',
+            nif:'',
+            stat:'',
+            adresse:''
         },
         validationSchema: Yup.object({
             code: Yup.string().required("Veuillez ajouter un code journal"),
@@ -194,6 +199,10 @@ export default function ParamCodeJournalComponent() {
         if(typeTreso === 'BANQUE'){
             setListeCptAssocie(listBank);
             setCompteAssocieValidationColor('#F6D6D6');
+            // Préremplir avec les infos du dossier pour une création/édition en BANQUE
+            formikNewCodeJournal.setFieldValue('nif', fileInfos?.nif || '');
+            formikNewCodeJournal.setFieldValue('stat', fileInfos?.stat || '');
+            formikNewCodeJournal.setFieldValue('adresse', fileInfos?.adresse || '');
         }else if(typeTreso === 'CAISSE'){
             setListeCptAssocie(listCash);
             setCompteAssocieValidationColor('#F6D6D6');
@@ -201,6 +210,13 @@ export default function ParamCodeJournalComponent() {
             setListeCptAssocie([]);
             setCompteAssocieValidationColor('transparent');
             formikNewCodeJournal.setFieldValue("compteassocie",'');
+        }
+
+        // Pour tout type autre que BANQUE, verrouiller et vider les champs
+        if (typeTreso !== 'BANQUE') {
+            formikNewCodeJournal.setFieldValue('nif', '');
+            formikNewCodeJournal.setFieldValue('stat', '');
+            formikNewCodeJournal.setFieldValue('adresse', '');
         }
     }
 
@@ -524,6 +540,129 @@ export default function ParamCodeJournalComponent() {
                 );
             },
         },
+        {
+            field: 'nif', 
+            headerName: 'NIF', 
+            type: 'string', 
+            sortable : true, 
+            width: 150, 
+            headerAlign: 'left',
+            align: 'left',
+            headerClassName: 'HeaderbackColor',
+            editable: (params) => params.row.type === 'BANQUE' ? editableRow : false,
+            renderCell: (params) => {
+                const isBank = params.row.type === 'BANQUE';
+                const value = isBank ? (params.value || '') : '';
+                return (
+                    <Box sx={{ width: '100%', color: 'inherit', opacity: isBank ? 1 : 0.6 }}>
+                        {value}
+                    </Box>
+                );
+            },
+            renderEditCell: (params) => {
+                return (
+                    <FormControl fullWidth style={{height:'100%'}}>
+                        <Input
+                            style={{height:'100%', alignItems:'center', 
+                                outline: 'none', 
+                                backgroundColor: nifValidationColor
+                            }}
+                            type="text"
+                            value={formikNewCodeJournal.values.nif}
+                            onChange = {(e) => formikNewCodeJournal.setFieldValue('nif', e.target.value)}
+                            label="nif"
+                            disableUnderline={true}
+                        />
+
+                        <FormHelperText style={{color:'red'}}>
+                            {formikNewCodeJournal.errors.nif && formikNewCodeJournal.touched.nif && formikNewCodeJournal.errors.nif}
+                        </FormHelperText>
+                    </FormControl>
+                );
+            },
+        },
+        {
+            field: 'stat', 
+            headerName: 'STAT', 
+            type: 'string', 
+            sortable : true, 
+            width: 150, 
+            headerAlign: 'left',
+            align: 'left',
+            headerClassName: 'HeaderbackColor',
+            editable: (params) => params.row.type === 'BANQUE' ? editableRow : false,
+            renderCell: (params) => {
+                const isBank = params.row.type === 'BANQUE';
+                const value = isBank ? (params.value || '') : '';
+                return (
+                    <Box sx={{ width: '100%', color: 'inherit', opacity: isBank ? 1 : 0.6 }}>
+                        {value}
+                    </Box>
+                );
+            },
+            renderEditCell: (params) => {
+                return (
+                    <FormControl fullWidth style={{height:'100%'}}>
+                        <Input
+                            style={{height:'100%', alignItems:'center', 
+                                outline: 'none', 
+                                backgroundColor: statValidationColor
+                            }}
+                            type="text"
+                            value={formikNewCodeJournal.values.stat}
+                            onChange = {(e) => formikNewCodeJournal.setFieldValue('stat', e.target.value)}
+                            label="stat"
+                            disableUnderline={true}
+                        />
+
+                        <FormHelperText style={{color:'red'}}>
+                            {formikNewCodeJournal.errors.stat && formikNewCodeJournal.touched.stat && formikNewCodeJournal.errors.stat}
+                        </FormHelperText>
+                    </FormControl>
+                );
+            },
+        },
+        {
+            field: 'adresse', 
+            headerName: 'Adresse', 
+            type: 'string', 
+            sortable : true, 
+            width: 400, 
+            headerAlign: 'left',
+            align: 'left',
+            headerClassName: 'HeaderbackColor',
+            editable: (params) => params.row.type === 'BANQUE' ? editableRow : false,
+            renderCell: (params) => {
+                const isBank = params.row.type === 'BANQUE';
+                const value = isBank ? (params.value || '') : '';
+                return (
+                    <Box sx={{ width: '100%', color: 'inherit', opacity: isBank ? 1 : 0.6 }}>
+                        {value}
+                    </Box>
+                );
+            },
+            renderEditCell: (params) => {
+                return (
+                    <FormControl fullWidth style={{height:'100%'}}>
+                        <Input
+                            style={{height:'100%', alignItems:'center', 
+                                outline: 'none', 
+                                backgroundColor: adresseValidationColor
+                            }}
+                            type="text"
+                            value={formikNewCodeJournal.values.adresse}
+                            onChange = {(e) => formikNewCodeJournal.setFieldValue('adresse', e.target.value)}
+                            label="adresse"
+                            disableUnderline={true}
+                        />
+
+                        <FormHelperText style={{color:'red'}}>
+                            {formikNewCodeJournal.errors.adresse && formikNewCodeJournal.touched.adresse && formikNewCodeJournal.errors.adresse}
+                        </FormHelperText>
+                    </FormControl>
+                );
+            },
+        },
     ];
 
     //gestion ajout + modification + suppression ligne dans le tableau liste code journaux
@@ -555,6 +694,9 @@ export default function ParamCodeJournalComponent() {
         setLibelleValidationColor('transparent');
         setTypeValidationColor('transparent');
         setCompteAssocieValidationColor('transparent');
+        setNifValidationColor('transparent');
+        setStatValidationColor('transparent');
+        setAdresseValidationColor('transparent');
 
         //charger dans le formik les données de la ligne
         const selectedRowInfos = listeCodeJournaux?.filter((item) => item.id === id[0]);
@@ -577,6 +719,16 @@ export default function ParamCodeJournalComponent() {
         formikNewCodeJournal.setFieldValue("libelle", selectedRowInfos[0].libelle);
         formikNewCodeJournal.setFieldValue("type", selectedRowInfos[0].type);
         formikNewCodeJournal.setFieldValue("compteassocie", selectedRowInfos[0].compteassocie);
+        // Renseigner nif/stat/adresse en fonction du type
+        if (selectedRowInfos[0].type === 'BANQUE') {
+          formikNewCodeJournal.setFieldValue('nif', selectedRowInfos[0].nif || '');
+          formikNewCodeJournal.setFieldValue('stat', selectedRowInfos[0].stat || '');
+          formikNewCodeJournal.setFieldValue('adresse', selectedRowInfos[0].adresse || '');
+        } else {
+          formikNewCodeJournal.setFieldValue('nif', '');
+          formikNewCodeJournal.setFieldValue('stat', '');
+          formikNewCodeJournal.setFieldValue('adresse', '');
+        }
 
         setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
         setDisableSaveBouton(false);
@@ -588,10 +740,16 @@ export default function ParamCodeJournalComponent() {
         let saveBoolLibelle = false;
         let saveBoolType = false;
         let saveBoolCompteAssocie = false;
+        let saveBoolNif = false;
+        let saveBoolStat = false;
+        let saveBoolAdresse = false;
         
         setLibelleValidationColor('transparent');
         setTypeValidationColor('transparent');
         setCompteAssocieValidationColor('transparent');
+        setNifValidationColor('transparent');
+        setStatValidationColor('transparent');
+        setAdresseValidationColor('transparent');
 
         if(formikNewCodeJournal.values.code ===''){
             setCodeValidationColor('#F6D6D6');
@@ -630,7 +788,40 @@ export default function ParamCodeJournalComponent() {
             saveBoolCompteAssocie = true;
         }
 
-        if(saveBoolCode && saveBoolLibelle && saveBoolType && saveBoolCompteAssocie){
+        if(formikNewCodeJournal.values.type === 'BANQUE'){
+            if(formikNewCodeJournal.values.nif === ''){
+                setNifValidationColor('#F6D6D6');
+                saveBoolNif = false;
+            }else{
+                setNifValidationColor('transparent');
+                saveBoolNif = true;
+            }
+
+            if(formikNewCodeJournal.values.stat === ''){
+                setStatValidationColor('#F6D6D6');
+                saveBoolStat = false;
+            }else{
+                setStatValidationColor('transparent');
+                saveBoolStat = true;
+            }
+
+            if(formikNewCodeJournal.values.adresse === ''){
+                setAdresseValidationColor('#F6D6D6');
+                saveBoolAdresse = false;
+            }else{
+                setAdresseValidationColor('transparent');
+                saveBoolAdresse = true;
+            }
+        }else{
+            setNifValidationColor('transparent');
+            setStatValidationColor('transparent');
+            setAdresseValidationColor('transparent');
+            saveBoolNif = true;
+            saveBoolStat = true;
+            saveBoolAdresse = true;
+        }
+
+        if(saveBoolCode && saveBoolLibelle && saveBoolType && saveBoolCompteAssocie && saveBoolNif && saveBoolStat && saveBoolAdresse){
             setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
             axios.post(`/paramCodeJournaux/codeJournauxAdd`, formikNewCodeJournal.values).then((response) =>{
                 const resData = response.data;
@@ -725,6 +916,9 @@ export default function ParamCodeJournalComponent() {
             libelle: '',
             type: '',
             compteassocie: '',
+            nif: '',
+            stat: '',
+            adresse: '',
         };
         setListeCodeJournaux([...listeCodeJournaux, newRow]);
     }

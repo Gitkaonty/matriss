@@ -41,14 +41,17 @@ export default function CsvAnomaliesDialog({ open, onClose, anomalies = [], pers
     },
     { 
       field: 'personnelId', 
-      headerName: 'Personnel ID', 
+      headerName: 'Matricule / Personnel', 
       width: 120,
       renderCell: (params) => {
-        // Récupérer l'ID depuis les données CSV
-        const personnelId = params.row.data.personnel_id || params.row.data.personnelId || 'N/A';
+        // Récupérer l'ID ou le matricule depuis les données CSV
+        const data = params.row?.data || {};
+        const personnelId = data.personnel_id || data.personnelId;
+        const matricule = data.matricule || data.Matricule || data.matricule_employe;
+        const hasErrorList = Array.isArray(params.row?.errors) ? params.row.errors : [];
         return (
-          <Typography variant="body2" color={params.row.errors.includes('personnel_introuvable') ? 'error' : 'inherit'}>
-            {personnelId}
+          <Typography variant="body2" color={hasErrorList.includes('personnel_introuvable') ? 'error' : 'inherit'}>
+            {matricule || personnelId || 'N/A'}
           </Typography>
         );
       }
@@ -58,11 +61,20 @@ export default function CsvAnomaliesDialog({ open, onClose, anomalies = [], pers
       headerName: 'Nom/Prénom', 
       width: 150,
       renderCell: (params) => {
-        // Récupérer l'ID du personnel depuis les données CSV
-        const personnelId = params.row.data.personnel_id || params.row.data.personnelId;
+        const data = params.row?.data || {};
+        // Récupérer l'ID du personnel ou le matricule depuis les données CSV
+        const personnelId = data.personnel_id || data.personnelId;
+        const matricule = data.matricule || data.Matricule || data.matricule_employe;
         
         // Chercher le personnel dans la liste
-        const personnel = personnels.find(p => String(p.id) === String(personnelId));
+        let personnel = undefined;
+        if (personnelId !== undefined) {
+          personnel = personnels.find(p => String(p.id) === String(personnelId));
+        }
+        if (!personnel && matricule) {
+          const normalize = (m) => String(m ?? '').replace(/\s/g, '').toLowerCase();
+          personnel = personnels.find(p => normalize(p.matricule) === normalize(matricule));
+        }
         
         if (personnel) {
           return `${personnel.nom || ''} ${personnel.prenom || ''}`.trim();
@@ -73,10 +85,10 @@ export default function CsvAnomaliesDialog({ open, onClose, anomalies = [], pers
     },
     { 
       field: 'type_erreur', 
-      headerName: 'Type d\'erreur', 
+      headerName: "Type d'erreur", 
       width: 150,
       renderCell: (params) => {
-        const errorTypes = params.row.errors;
+        const errorTypes = Array.isArray(params.row?.errors) ? params.row.errors : [];
         const severity = errorTypes.includes('personnel_introuvable') ? 'error' : 
                         errorTypes.includes('champ_manquant') ? 'warning' :
                         errorTypes.includes('valeur_negative') ? 'error' : 'info';
@@ -96,11 +108,14 @@ export default function CsvAnomaliesDialog({ open, onClose, anomalies = [], pers
       headerName: 'Description', 
       width: 300,
       renderCell: (params) => {
-        const errors = params.row.errors;
+        const errors = Array.isArray(params.row?.errors) ? params.row.errors : [];
         const descriptions = [];
         
         if (errors.includes('personnel_introuvable')) {
-          descriptions.push(`Personnel ID ${params.row.data.personnel_id || params.row.data.personnelId} introuvable`);
+          const data = params.row?.data || {};
+          const matricule = data.matricule || data.Matricule || data.matricule_employe;
+          const personnelId = data.personnel_id || data.personnelId;
+          descriptions.push(`Personnel ${matricule || personnelId || 'inconnu'} introuvable`);
         }
         if (errors.includes('champ_manquant')) {
           descriptions.push('Champs obligatoires manquants');
@@ -124,13 +139,17 @@ export default function CsvAnomaliesDialog({ open, onClose, anomalies = [], pers
       headerName: 'Champs problématiques', 
       width: 250,
       renderCell: (params) => {
-        const { data, errors } = params.row;
+        const data = params.row?.data || {};
+        const errors = Array.isArray(params.row?.errors) ? params.row.errors : [];
         const problematicFields = [];
         
         // Extraire les champs problématiques selon le type d'erreur
         if (errors.includes('personnel_introuvable') || errors.includes('champ_manquant')) {
           const personnelId = data.personnel_id || data.personnelId;
-          if (personnelId) {
+          const matricule = data.matricule || data.Matricule || data.matricule_employe;
+          if (matricule) {
+            problematicFields.push(`matricule: ${matricule}`);
+          } else if (personnelId) {
             problematicFields.push(`personnel_id: ${personnelId}`);
           } else {
             problematicFields.push('personnel_id: manquant');
@@ -165,10 +184,10 @@ export default function CsvAnomaliesDialog({ open, onClose, anomalies = [], pers
   // Statistiques des anomalies
   const stats = {
     total: anomalies.length,
-    personnel_introuvable: anomalies.filter(a => a.errors.includes('personnel_introuvable')).length,
-    champ_manquant: anomalies.filter(a => a.errors.includes('champ_manquant')).length,
-    valeur_invalide: anomalies.filter(a => a.errors.includes('valeur_invalide')).length,
-    valeur_negative: anomalies.filter(a => a.errors.includes('valeur_negative')).length
+    personnel_introuvable: anomalies.filter(a => Array.isArray(a.errors) && a.errors.includes('personnel_introuvable')).length,
+    champ_manquant: anomalies.filter(a => Array.isArray(a.errors) && a.errors.includes('champ_manquant')).length,
+    valeur_invalide: anomalies.filter(a => Array.isArray(a.errors) && a.errors.includes('valeur_invalide')).length,
+    valeur_negative: anomalies.filter(a => Array.isArray(a.errors) && a.errors.includes('valeur_negative')).length
   };
 
   return (

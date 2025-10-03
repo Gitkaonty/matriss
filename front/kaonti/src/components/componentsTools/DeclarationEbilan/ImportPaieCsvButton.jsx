@@ -12,7 +12,11 @@ import SaveAltIcon from '@mui/icons-material/SaveAlt';
 import LogoutIcon from '@mui/icons-material/Logout';
 import Papa from 'papaparse';
 import { toast } from 'react-hot-toast';
-import axios from '../../../../config/axios';
+import axios from '../../../../config/axios'
+import { FaFileImport } from "react-icons/fa";
+import { MdOutlineFileDownload } from "react-icons/md";
+import { init } from '../../../../init';
+
 
 /**
  * Calcule tous les champs dérivés de la paie à partir des données brutes.
@@ -27,6 +31,7 @@ function parse(v) {
 }
 
 function computePaieFields(row, nbrEnfant = 0) {
+const initial = init[0];
 const salaireBase = parse(row.salaireBase);
 const prime = parse(row.prime);
 const heuresSup = parse(row.heuresSup);
@@ -150,6 +155,12 @@ export default function ImportPaieCsvButton({ personnels, paieColumns, onImport,
   const fileInputRef = useRef();
 
   const handleFileChange = (e) => {
+    // Empêcher l'import si la liste du personnel n'est pas encore chargée
+    if (!Array.isArray(personnels) || personnels.length === 0) {
+      toast.error('Veuillez attendre le chargement du personnel avant d\'importer.');
+      e.target.value = '';
+      return;
+    }
     // console.log('[DEBUG][ImportPaieCsvButton] Début import CSV');
     const file = e.target.files[0];
     if (!file) return;
@@ -161,6 +172,7 @@ export default function ImportPaieCsvButton({ personnels, paieColumns, onImport,
       complete: async (results) => {
         // console.log('[DEBUG][ImportPaieCsvButton] Résultat parsing CSV:', results);
         // console.log("[DEBUG][ImportPaieCsvButton] Résultat du parse CSV:", results.data);
+        
         if (!results.data || !Array.isArray(results.data)) {
           toast.error('Le fichier CSV semble vide ou mal formaté.');
           return;
@@ -171,6 +183,10 @@ export default function ImportPaieCsvButton({ personnels, paieColumns, onImport,
         
         console.log('Données CSV parsées:', results.data);
         // 3. Mapping : injecter les objets personnels ET les champs calculés pour chaque ligne
+        const normalizeMatricule = (m) => String(m ?? '').replace(/\s/g, '').toLowerCase();
+        const personnelsByMat = Array.isArray(personnels)
+          ? new Map(personnels.map(p => [normalizeMatricule(p.matricule), p]))
+          : new Map();
         // Fonction de nettoyage robuste pour tous les champs numériques
         const sanitizeNumber = v => {
           if (v === '' || v === undefined || v === null) return 0;
@@ -187,29 +203,31 @@ export default function ImportPaieCsvButton({ personnels, paieColumns, onImport,
           const row = data[idx];
           const ligneNum = idx + 1;
           
-          // Vérifier si la ligne a un personnel_id
-          const personnelId = row.personnelId || row.personnel_id;
-          if (!personnelId) {
+          // Vérifier la présence du matricule (nouvelle référence)
+          const matricule = row.matricule || row.Matricule || row.matricule_employe;
+          if (!matricule) {
             anomalies.push({
               ligne: ligneNum,
               data: row,
               errors: ['champ_manquant'],
-              description: 'personnel_id manquant'
+              description: 'matricule manquant'
             });
-            console.warn(`Ligne ${ligneNum}: personnel_id manquant, ligne ignorée`);
+            console.warn(`Ligne ${ligneNum}: matricule manquant, ligne ignorée`);
             continue;
           }
-          
-          // Trouver le personnel correspondant
-          const personnel = personnels.find(p => String(p.id) === String(personnelId));
+
+          // Trouver le personnel correspondant par matricule (pour enrichissement optionnel)
+          const personnel = personnelsByMat.get(normalizeMatricule(matricule));
+          // Si aucun personnel ne correspond, lever une anomalie et ignorer la ligne
           if (!personnel) {
-            anomalies.push({
+            const anomalie = {
               ligne: ligneNum,
               data: row,
               errors: ['personnel_introuvable'],
-              description: `Personnel avec ID ${personnelId} introuvable`
-            });
-            console.warn(`Ligne ${ligneNum}: Personnel avec ID ${personnelId} introuvable, ligne ignorée`);
+              description: `Matricule ${matricule} introuvable dans la liste du personnel`
+            };
+            anomalies.push(anomalie);
+            console.warn(`Ligne ${ligneNum}: ${anomalie.description}, ligne ignorée`);
             continue;
           }
           
@@ -265,7 +283,7 @@ export default function ImportPaieCsvButton({ personnels, paieColumns, onImport,
               ligne: ligneNum,
               data: row,
               errors: ['valeur_invalide'],
-              description: `Personnel ID ${personnelId} - Champs invalides: ${descriptions.join(', ')}`
+              description: `Matricule ${matricule} - Champs invalides: ${descriptions.join(', ')}`
             });
             console.warn(`Ligne ${ligneNum}: Valeurs numériques invalides, ligne ignorée`);
             continue;
@@ -279,7 +297,7 @@ export default function ImportPaieCsvButton({ personnels, paieColumns, onImport,
               ligne: ligneNum,
               data: row,
               errors: ['valeur_negative'],
-              description: `Personnel ID ${personnelId} - Champs négatifs: ${descriptions.join(', ')}`
+              description: `Matricule ${matricule} - Champs négatifs: ${descriptions.join(', ')}`
             };
             anomalies.push(anomalie);
             console.log(`[DEBUG] Anomalie détectée:`, anomalie);
@@ -297,16 +315,21 @@ export default function ImportPaieCsvButton({ personnels, paieColumns, onImport,
           } else {
             // 2. Sinon, récupérer depuis l'API personnels
             try {
-              const resPersonnel = await axios.get(`/sociales/personnel/${personnelId}`);
-              if (resPersonnel.data?.state && typeof resPersonnel.data.data?.nombre_enfants_charge === 'number') {
-                nbrEnfant = resPersonnel.data.data.nombre_enfants_charge;
-                console.log(`[DEBUG] Nombre enfants depuis API: ${nbrEnfant}`);
+              if (personnel && personnel.id) {
+                const resPersonnel = await axios.get(`/administration/personnel/${personnel.id}`);
+                if (resPersonnel.data?.state && typeof resPersonnel.data.data?.nombre_enfants_charge === 'number') {
+                  nbrEnfant = resPersonnel.data.data.nombre_enfants_charge;
+                  console.log(`[DEBUG] Nombre enfants depuis API: ${nbrEnfant}`);
+                } else {
+                  console.warn(`[DEBUG] Nombre enfants non trouvé pour personnel ${personnel?.id}`);
+                  nbrEnfant = 0;
+                }
               } else {
-                console.warn(`[DEBUG] Nombre enfants non trouvé pour personnel ${personnelId}`);
+                console.warn(`[DEBUG] Personnel introuvable par matricule (${matricule}) pour récupération enfants`);
                 nbrEnfant = 0;
               }
             } catch (error) {
-              console.error(`[DEBUG] Erreur récupération enfants pour personnel ${personnelId}:`, error);
+              console.error(`[DEBUG] Erreur récupération enfants pour matricule ${matricule}:`, error);
               nbrEnfant = 0;
             }
           }
@@ -315,8 +338,8 @@ export default function ImportPaieCsvButton({ personnels, paieColumns, onImport,
           console.log(`[IMPORT PAIE][${idx}] LIGNE CSV BRUTE :`, row);
 
           // Mapping correctif + nettoyage numérique
-          const rowMapped = { ...row, personnelId };
-          delete rowMapped.personnel_id;
+          const rowMapped = { ...row, matricule };
+          delete rowMapped.personnel_id; // nettoyage si présent par erreur
           numericFields.forEach(field => {
             rowMapped[field] = sanitizeNumber(row[field]);
           });
@@ -368,7 +391,7 @@ export default function ImportPaieCsvButton({ personnels, paieColumns, onImport,
 
           // 5. Fusionner les données originales, les infos du personnel et les champs calculés
           // Les champs calculés écraseront les valeurs potentiellement présentes dans le CSV
-          const finalRow = { ...rowMapped, ...personnel, ...calculs, mois: moisNum, annee: anneeNum };
+          const finalRow = { ...rowMapped, ...(personnel || {}), ...calculs, mois: moisNum, annee: anneeNum };
 
           console.log(`[DEBUG] Ligne finale fusionnée ${idx}:`, finalRow);
 
@@ -384,31 +407,20 @@ export default function ImportPaieCsvButton({ personnels, paieColumns, onImport,
         console.log('[DEBUG][ImportPaieCsvButton] Objet final envoyé à onImport:', dataWithPersonnelAndCalculs);
         console.log('[DEBUG][ImportPaieCsvButton] Anomalies détectées:', anomalies);
         
-        // Transmettre les données valides et les anomalies
+        // Politique stricte: s'il y a des anomalies, on bloque l'import complet
         console.log(`[DEBUG] Transmission - Données valides: ${dataWithPersonnelAndCalculs.length} lignes`);
         console.log(`[DEBUG] Transmission - Anomalies: ${anomalies.length} anomalies`);
         if (anomalies.length > 0) {
           console.log(`[DEBUG] Détail des anomalies:`, anomalies);
+          if (onAnomalies) onAnomalies(anomalies);
+          else console.warn(`[DEBUG] Anomalies détectées mais onAnomalies non défini!`);
+          toast.error(`Échec de l'import ! ${anomalies.length} anomalie(s) détectée(s). Aucune ligne importée.`);
+          return;
         }
-        
+
+        // Aucun anomalie: on importe toutes les lignes valides
         onImport(dataWithPersonnelAndCalculs);
-        if (onAnomalies && anomalies.length > 0) {
-          console.log(`[DEBUG] Appel onAnomalies avec:`, anomalies);
-          onAnomalies(anomalies);
-        } else if (anomalies.length > 0) {
-          console.warn(`[DEBUG] Anomalies détectées mais onAnomalies non défini!`);
-        }
-        
-        if (anomalies.length > 0) {
-          // Message d'erreur quand il y a des anomalies
-          if (dataWithPersonnelAndCalculs.length === 0) {
-            toast.error(`Échec de l'import ! ${anomalies.length} erreur(s) détectée(s), aucune ligne importée. Vérifiez les anomalies.`);
-          } else {
-            toast.warning(`Import partiel ! ${dataWithPersonnelAndCalculs.length} ligne(s) importée(s), ${anomalies.length} erreur(s) ignorée(s). Vérifiez les anomalies.`);
-          }
-        } else {
-          toast.success(`Import réussi ! ${dataWithPersonnelAndCalculs.length} ligne(s) importée(s), aucune anomalie détectée.`);
-        }
+        toast.success(`Import réussi ! ${dataWithPersonnelAndCalculs.length} ligne(s) importée(s), aucune anomalie détectée.`);
       },
       error: (err) => {
         toast.error('Erreur lors du parsing CSV : ' + err.message);
@@ -416,58 +428,36 @@ export default function ImportPaieCsvButton({ personnels, paieColumns, onImport,
     });
     e.target.value = '';
   };
-  const handleDownloadModel = () => {
-    // Logique pour télécharger le modèle CSV
-    console.log('Téléchargement du modèle CSV paie');
-  };
 
   return (
     <>
-
-      {/* Bouton Importer CSV */}
-      <Stack
-      spacing={1}
-      width="200px"
-      height="40px"
-      direction="row"
-      sx={{
-        border: '1px dashed rgba(5,96,116,0.60)',
-        pl: 2,
-        pr: 1.5,
-        ml: 0,
-        backgroundColor: 'rgba(5,96,116,0.05)',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        borderRadius: '6px',
-        cursor: 'pointer',
-        transition: '0.2s',
-        '&:hover': {
-          backgroundColor: 'rgba(5,96,116,0.12)',
-        },
-      }}
-      onClick={() => fileInputRef.current && fileInputRef.current.click()}
-    >
-      <input
-        type="file"
-        accept=".csv"
-        onChange={handleFileChange}
-        style={{ display: 'none' }}
-        ref={fileInputRef}
-      />
-
-      <Typography
-        variant="body2"
-        sx={{
-          color: 'black',
-          fontSize: '0.8rem',
-          fontWeight: 'bold',
-        }}
-      >
-        Importer depuis le fichier
-      </Typography>
-
-      <SaveAltIcon sx={{ width: 30, height: 25, color: 'rgba(5,96,116,0.60)' }} />
-</Stack>
+        <Stack spacing={1} direction="row" alignItems="center" justifyContent="center" sx={{ mt: 2, mb: 2 }}>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => fileInputRef.current && fileInputRef.current.click()}
+            sx={{
+              width: 260,
+              height: 40,
+              border: '1px dashed rgba(5,96,116,0.6)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              textTransform: 'none',
+              backgroundColor: 'initial.theme',
+            }}
+            endIcon={<MdOutlineFileDownload  size={22} />}
+          >
+            Importer depuis le fichier
+          </Button>
+          <input
+            type="file"
+            accept=".csv"
+            onChange={handleFileChange}
+            style={{ display: 'none' }}
+            ref={fileInputRef}
+          />
+        </Stack>
 
 
     </>

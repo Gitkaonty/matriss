@@ -29,6 +29,21 @@ module.exports = (sequelize, DataTypes) => {
             unique: false,
             allowNull: true
         },
+        nif: {
+            type: DataTypes.STRING(25),
+            unique: false,
+            allowNull: true
+        },
+        stat: {
+            type: DataTypes.STRING(25),
+            unique: false,
+            allowNull: true
+        },
+        adresse: {
+            type: DataTypes.STRING(200),
+            unique: false,
+            allowNull: true
+        },
 
     }, {timestamps: true}, )
     return codejournals

@@ -5,6 +5,9 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false
     },
+    matricule: { 
+      type: DataTypes.STRING, 
+      allowNull: true },
     indemniteImposable: {
       type: DataTypes.DECIMAL(15, 2),
       allowNull: true

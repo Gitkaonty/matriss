@@ -33,6 +33,22 @@ module.exports = {
         unique: false,
         allowNull: true
       },
+      nif: {
+        type: Sequelize.STRING(30),
+        unique: false,  
+        allowNull: true
+      },
+      stat: {
+        type: Sequelize.STRING(20),
+        unique: false,
+        allowNull: true
+      },
+      adresse: {
+        type: Sequelize.STRING(200),
+        unique: false,
+        allowNull: true
+    },
+      
     },
     {timestamps: true}
     );

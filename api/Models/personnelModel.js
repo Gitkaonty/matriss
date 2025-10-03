@@ -6,6 +6,10 @@ module.exports = (sequelize, DataTypes) => {
       autoIncrement: true,
       primaryKey: true
     },
+    matricule: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     numero_cnaps: {
       type: DataTypes.STRING,
       allowNull: true

@@ -31,11 +31,13 @@ import ParamCRM from './components/menuComponent/Parametrages/crm/ParamCRM';
 import ParamMappingComponent from './components/menuComponent/Parametrages/mappingcompte/ParamMapping';
 import AnalitiqueComponent from './components/menuComponent/Parametrages/analytiques/AnalitiqueComponent';
 import DeclarationComm from './components/menuComponent/Declaration/Dcom/DeclarationComm';
-import ClassificationSalariesComponent from './components/ClassificationSalariesComponent';
-import PersonnelComponent from './components/PersonnelComponent';
-import FonctionsComponent from './components/FonctionsComponent';
-import DeclarationIRSAComponent from './components/menuComponent/Declaration/Ebilan/DeclarationIRSAComponent';
-import HistoriqueIrsaTable from './components/menuComponent/Declaration/Ebilan/HistoriqueIrsaTable';
+import ClassificationSalariesComponent from './components/menuComponent/Parametrages/classifications/ClassificationSalariesComponent';
+import PersonnelComponent from './components/menuComponent/administration/Personnel/PersonnelComponent';
+import FonctionsComponent from './components/menuComponent/Parametrages/fonctions/FonctionsComponent';
+import DeclarationIRSAComponent from './components/menuComponent/Declaration/IRSA/DeclarationIRSAComponent';
+import HistoriqueDeclaration from './components/menuComponent/Declaration/Historique/HistoriqueDeclaration';
+import DeclarationTVA from './components/menuComponent/Declaration/Tva/ParamTva';
+import ParamChiffreAffaires from './components/menuComponent/Parametrages/chiffreAffaires/ParamChiffreAffaires';
 
 const ROLES = {
   'SuperAdmin': 3355,
@@ -68,6 +70,7 @@ export default function App() {
               <Route path='/tab/exportBalance/:id' element={<ExportBalance />} />
               <Route path='/tab/declarationEbilan/:id' element={<DeclarationEbilan />} />
               <Route path='/tab/declarationDroitComm/:id' element={<DeclarationComm />} />
+              <Route path='/tab/declarationTVA/:id' element={<DeclarationTVA />} />
               <Route path='/tab/revisionAnomalieEbilan' element={<RevisionAnomalieEbilanComponent />} />
               <Route path='/tab/revisionPrecontrolFiscal' element={<RevisionPrecontroleFiscalComponent />} />
               <Route path='/tab/paramCodeJournal/:id' element={<ParamCodeJournalComponent />} />
@@ -83,7 +86,8 @@ export default function App() {
               <Route path='/tab/personnel/:id' element={<PersonnelComponent />} />
               <Route path='/tab/fonctions/:id' element={<FonctionsComponent />} />
               <Route path='/tab/declarationIRSA/:id' element={<DeclarationIRSAComponent />} />
-              <Route path='/tab/historiqueIRSA' element={<HistoriqueIrsaTable />} />
+              <Route path='/tab/historiqueDeclarations' element={<HistoriqueDeclaration defaultType="ALL" />} />
+              <Route path='/tab/paramChiffreAffaires/:id' element={<ParamChiffreAffaires />} />
             </Route>
           </Route>
         </Route>

@@ -33,7 +33,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
     const handleClose = () => confirmationState(false);
 
     useEffect(() => {
-        axios.get(`/sociales/personnel/${id_compte}/${id_dossier}`)
+        axios.get(`/administration/personnel/${id_compte}/${id_dossier}`)
             .then(res => {
                 if (res.data.state) setPersonnels(res.data.list);
                 else setPersonnels([]);
@@ -44,12 +44,14 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
     const formik = useFormik({
         initialValues: row ? {
             ...row,
+            // Utiliser le matricule en priorité
+            matricule: row.matricule || row.personnel?.matricule || '',
             mois: row.mois || mois,
             annee: row.annee || annee,
             nombre_enfants_charge: typeof row.nombre_enfants_charge === 'number' ? row.nombre_enfants_charge : nbrEnfant,
             deductionEnfants: typeof row.deductionEnfants === 'number' ? row.deductionEnfants : nbrEnfant * 2000,
         } : {
-            personnel_id: '',
+            matricule: '',
             salaireBase: '0.00',
             prime: '0.00',
             heuresSupp: '0.00',
@@ -87,7 +89,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
             mois: mois,
             annee: annee,
         },
-            personnel_id: '',
+            // Valeurs par défaut (au cas où)
             salaireBase: '0.00',
             prime: '0.00',
             heuresSupp: '0.00',
@@ -116,6 +118,13 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
             deductionEnfants: nbrEnfant * 2000,
             irsaNet: '0.00',
             salaireNet: '0.00',
+        validationSchema: Yup.object({
+            matricule: Yup.string().required("Veuillez sélectionner un personnel."),
+            salaireBase: Yup.string()
+                .required('Salaire obligatoire')
+                .test('non-zero', 'Veuillez entrer un salaire de base', v => parseFloat(v || '0') > 0),
+                       // heuresSupp: Yup.string()
+        }),
         onSubmit: (values) => {
             handleSubmitForm();
         }
@@ -124,9 +133,10 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
     // Fonction de soumission du formulaire
     const handleSubmitForm = async () => {
         // mode édition : PUT /paie/paie/:id, sinon POST
-        const selectedPersonnel = personnels.find(p => p.id === Number(formik.values.personnel_id));
+        const selectedPersonnel = personnels.find(p => String(p.matricule || '').trim() === String(formik.values.matricule || '').trim());
         const dataToSend = {
-            personnelId: selectedPersonnel && selectedPersonnel.id ? selectedPersonnel.id : Number(formik.values.personnel_id),
+            // On envoie le matricule, le backend résout le personnel
+            matricule: selectedPersonnel?.matricule || formik.values.matricule,
             salaireBase: Number(formik.values.salaireBase),
             prime: Number(formik.values.prime),
             heuresSup: Number(formik.values.heuresSupp),
@@ -190,7 +200,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
 
     const gerNombreEnfant = async (id) => {
         try {
-          const res = await axios.get(`/sociales/personnel/${id}`);
+          const res = await axios.get(`/administration/personnel/${id}`);
           let nbEnfants = 0;
           if (res.data?.state && typeof res.data.data?.nombre_enfants_charge === 'number') {
             nbEnfants = res.data.data.nombre_enfants_charge;
@@ -216,12 +226,12 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
     useEffect(() => {
       if (
         personnels.length > 0 &&
-        formik.values.personnel_id &&
-        !personnels.find(p => p.id === Number(formik.values.personnel_id))
+        formik.values.matricule &&
+        !personnels.find(p => String(p.matricule || '').trim() === String(formik.values.matricule || '').trim())
       ) {
-        formik.setFieldValue('personnel_id', '');
+        formik.setFieldValue('matricule', '');
       }
-    }, [personnels, formik.values.personnel_id]);
+    }, [personnels, formik.values.matricule]);
 
     // Calcul automatique du salaire brut numéraire 
     useEffect(() => {
@@ -378,16 +388,20 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
 
                 {/* Groupe 1 : Informations du personnel */}
                 <Typography sx={{ fontWeight: 'normal', fontSize: '15px', mb: 1.5}}>Informations du personnel</Typography>
-                <Box display="flex" flexWrap="wrap" gap={2} mb={1} alignItems="center">
+                <Box display="flex" flexWrap="wrap" gap={2} mb={1} alignItems="flex-end">
                             <FormControl size="small" sx={{ flexBasis: 410, flexGrow: 0 }}>
                                 {personnels.length === 0 ? (
                                     <Box
-                                    display="flex"
-                                    alignItems="center"
-                                    justifyContent="center"
-                                    sx={{ height: 40, width: 400 }}
+                                        display="flex"
+                                        alignItems="center"
+                                        justifyContent="center"
+                                        sx={{
+                                            height: 38,   // même hauteur que TextField
+                                            width: 400,
+                                            borderBottom: '1px solid rgba(0, 0, 0, 0.42)', // imite la ligne du TextField standard
+                                        }}
                                     >
-                                    <span style={{ marginRight: 8 }}>Chargement des matricules...</span>
+                                        <span style={{ marginRight: 8 }}>Chargement des matricules...</span>
                                     <span
                                         className="MuiCircularProgress-root MuiCircularProgress-colorPrimary"
                                         style={{
@@ -407,56 +421,58 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                                     </Box>
                                      ) : (
                                     <Autocomplete
-                                    options={[...personnels].sort((b, a) => b.id - a.id)}
+                                    options={[...personnels].sort((a, b) => String(a.matricule || '').localeCompare(String(b.matricule || '')))}
                                     getOptionLabel={(option) =>
                                         option && typeof option === 'object'
-                                        ? `${option.id || ''} - ${option.nom || ''} ${option.prenom || ''}`
+                                        ? `${option.matricule || ''} - ${option.nom || ''} ${option.prenom || ''}`
                                         : ''
                                     }
                                     value={
                                         personnels.find(
-                                        (p) => p.id === Number(formik.values.personnel_id)
+                                        (p) => String(p.matricule || '').trim() === String(formik.values.matricule || '').trim()
                                         ) || null
                                     }
                                     onChange={(e, newValue) => {
-                                        const id = newValue ? Number(newValue.id) : '';
-                                        formik.setFieldValue('personnel_id', id);
-                                        
-                                        if (id) {
-                                          // Attend que le personnel_id soit bien mis à jour avant d'appeler gerNombreEnfant
+                                        const matricule = newValue ? String(newValue.matricule || '') : '';
+                                        formik.setFieldValue('matricule', matricule);
+                                        if (newValue && newValue.id) {
                                           setTimeout(() => {
-                                            gerNombreEnfant(id);
+                                            gerNombreEnfant(newValue.id);
                                           }, 0);
                                         }
                                       }}                                      
                                     disabled={personnels.length === 0 || (row && row.id)}
                                     renderInput={(params) => (
                                         <TextField
-                                        {...params}
-                                        size="small"
-                                        label="Matricule"
-                                        variant="outlined"
-                                        error={
-                                            formik.touched.personnel_id &&
-                                            Boolean(formik.errors.personnel_id)
-                                        }
-                                        helperText={
-                                            formik.touched.personnel_id &&
-                                            formik.errors.personnel_id
-                                        }
-                                        InputLabelProps={{
-                                            shrink: true,
-                                            sx: {
-                                            color: '#1976d2',
-                                            fontSize: '13px',
-                                            },
-                                        }}
-                                        InputProps={{
-                                            ...params.InputProps,
-                                            style: { height: 38 },
-                                        }}
+                                            {...params}
+                                            size="small"
+                                            label="Matricule"
+                                            variant="standard"
+                                            sx={{
+                                                '& .MuiInputBase-root': { fontSize: '13px' },
+                                                '& .MuiInputLabel-root': { color: '#1976d2', fontSize: '13px' },
+                                            }}
+                                            error={
+                                                formik.touched.matricule &&
+                                                Boolean(formik.errors.matricule)
+                                            }
+                                            helperText={
+                                                formik.touched.matricule &&
+                                                formik.errors.matricule
+                                            }
+                                            InputLabelProps={{
+                                                shrink: true,
+                                            }}
+                                            InputProps={{
+                                                ...params.InputProps,
+                                                sx: {
+                                                    '& input': {
+                                                        padding: '2px 0',
+                                                    },
+                                                },
+                                            }}
                                         />
-                                        )}
+                                    )}
                                     />
                                 )}
                             </FormControl>
@@ -466,6 +482,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                                 value={formik.values.salaireBase}
                                 onChange={formik.handleChange}
                                 size="small"
+                                variant="standard"
                                 sx={{
                                     marginBottom: '0px',
                                     textAlign: 'right',
@@ -532,6 +549,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                     value={formik.values.prime} 
                     onChange={formik.handleChange} 
                     size="small"
+                    variant="standard"
                     sx={{
                         marginBottom: '0px',
                         textAlign: 'right',
@@ -572,6 +590,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                     value={formik.values.indemnites} 
                     onChange={formik.handleChange} 
                     size="small"
+                    variant="standard"
                     sx={{
                         marginBottom: '0px',
                         textAlign: 'right',
@@ -612,6 +631,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                     value={formik.values.heuresSupp} 
                     onChange={formik.handleChange} 
                     size="small"
+                    variant="standard"
                                 sx={{
                                     marginBottom: '0px',
                                     textAlign: 'right',
@@ -652,6 +672,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                     value={formik.values.remunerationFerieDimanche} 
                     onChange={formik.handleChange} 
                     size="small"
+                    variant="standard"
                     sx={{
                         marginBottom: '0px',
                         textAlign: 'right',
@@ -711,6 +732,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                     value={formik.values.salaireBrutNumeraire} 
                     onChange={() => { }} 
                     size="small" 
+                    variant="standard"
                     disabled
                     sx={{
                         marginBottom: '12px',
@@ -751,6 +773,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                     value={formik.values.remunerationFixe25} 
                     onChange={() => { }} 
                     size="small"
+                    variant="standard"
                     disabled
                     sx={{
                         marginBottom: '10px',
@@ -791,6 +814,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                     value={formik.values.salaireBrut20} 
                     onChange={() => { }} 
                     size="small"
+                    variant="standard"
                     disabled
                     sx={{
                         marginBottom: '10px',
@@ -857,6 +881,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                             value={formik.values.assurance} 
                             onChange={formik.handleChange} 
                             size="small"
+                            variant="standard"
                             sx={{
                                 marginBottom: '0px',
                                 textAlign: 'right',
@@ -897,6 +922,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                     value={formik.values.carburant} 
                     onChange={formik.handleChange} 
                     size="small"
+                    variant="standard"
                     sx={{
                         marginBottom: '0px',
                         textAlign: 'right',
@@ -937,6 +963,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                     value={formik.values.entretienReparation} 
                     onChange={formik.handleChange} 
                     size="small"
+                    variant="standard"
                     sx={{
                         marginBottom: '0px',
                         textAlign: 'right',
@@ -976,6 +1003,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                     value={formik.values.totalDepensesVehicule} 
                     onChange={() => { }} 
                     size="small"
+                    variant="standard"
                     disabled
                     sx={{
                         marginBottom: '0px',
@@ -1017,6 +1045,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                     value={formik.values.totalAvantageNatureVehicule} 
                     onChange={() => { }} 
                     size="small"
+                    variant="standard"
                     disabled
                     sx={{
                         marginBottom: '0px',
@@ -1058,6 +1087,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                     value={formik.values.loyerMensuel} 
                     onChange={formik.handleChange} 
                     size="small"
+                    variant="standard"
                     sx={{
                         marginBottom: '0px',
                         textAlign: 'right',
@@ -1099,6 +1129,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                     value={formik.values.depenseTelephone} 
                     onChange={formik.handleChange} 
                     size="small"
+                    variant="standard"
                     sx={{
                         marginBottom: '0px',
                         textAlign: 'right',
@@ -1141,6 +1172,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                     value={formik.values.avantageNatureLoyer} 
                     onChange={formik.handleChange} 
                     size="small"
+                    variant="standard"
                     disabled
                     sx={{
                         marginBottom: '0px',
@@ -1182,6 +1214,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                     value={formik.values.avantageNatureTelephone} 
                     onChange={() => { }} 
                     size="small"
+                    variant="standard"
                     disabled
                     sx={{
                         marginBottom: '0px',
@@ -1226,6 +1259,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                     value={formik.values.autresAvantagesNature} 
                     onChange={formik.handleChange}
                     size="small"
+                    variant="standard"
                     sx={{
                         marginBottom: '0px',
                         textAlign: 'right',
@@ -1267,6 +1301,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                     onChange={() => { }}
                     disabled 
                     size="small"
+                    variant="standard"
                     sx={{
                         marginBottom: '0px',
                         textAlign: 'right',
@@ -1314,6 +1349,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                     onChange={() => { }} 
                     disabled
                     size="small"
+                    variant="standard"
                     sx={{
                         marginBottom: '0px',
                         textAlign: 'right',
@@ -1370,6 +1406,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                     onChange={() => { }} 
                     disabled
                     size="small"
+                    variant="standard"
                     sx={{
                         marginBottom: '0px',
                         textAlign: 'right',
@@ -1410,6 +1447,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                     onChange={() => { }} 
                     disabled    
                     size="small"
+                    variant="standard"
                     sx={{
                         marginBottom: '0px',
                         textAlign: 'right',
@@ -1450,6 +1488,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                     onChange={() => { }} 
                     disabled
                                 size="small"
+                                variant="standard"
                                 sx={{
                                     marginBottom: '0px',
                                     textAlign: 'right',
@@ -1517,6 +1556,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                         onChange={() => { }} 
                         disabled
                         size="small"
+                        variant="standard"
                         sx={{ marginBottom: '0px', width: 200, backgroundColor: '#F4F9F9' }}
                         InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
                         InputProps={{
@@ -1534,6 +1574,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                         onChange={() => { }} 
                         disabled
                         size="small"
+                        variant="standard"
                         sx={{ marginBottom: '0px', width: 200, backgroundColor: '#F4F9F9' }}
                         InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
                         InputProps={{
@@ -1551,6 +1592,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                         onChange={() => { }} 
                         disabled
                         size="small"
+                        variant="standard"
                         sx={{ marginBottom: '0px', width: 200, backgroundColor: '#F4F9F9' }}
                         InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
                         InputProps={{
@@ -1568,6 +1610,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                         onChange={() => { }} 
                         disabled
                         size="small"
+                        variant="standard"
                         sx={{ marginBottom: '0px', width: 200, backgroundColor: '#F4F9F9' }}
                         InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
                         InputProps={{
@@ -1586,6 +1629,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                         value={formik.values.avanceQuinzaineAutres} 
                         onChange={formik.handleChange} 
                         size="small"
+                        variant="standard"
                         sx={{ marginBottom: '0px', width: 200 }}
                         InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
                         InputProps={{
@@ -1602,6 +1646,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                         value={formik.values.avancesSpeciales} 
                         onChange={formik.handleChange} 
                         size="small"
+                        variant="standard"
                         sx={{ marginBottom: '0px', width: 200 }}
                         InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
                         InputProps={{
@@ -1618,6 +1663,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                         value={formik.values.allocationFamiliale} 
                         onChange={formik.handleChange} 
                         size="small"
+                        variant="standard"
                         sx={{ marginBottom: '0px', width: 200 }}
                         InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
                         InputProps={{
@@ -1635,6 +1681,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                         onChange={() => { }} 
                         disabled
                         size="small"
+                        variant="standard"
                         sx={{ marginBottom: '0px', width: 200, backgroundColor: '#F4F9F9' }}
                         InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
                         InputProps={{
@@ -1670,6 +1717,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                                     onChange={() => { }} 
                                     disabled
                                     size="small"
+                                    variant="standard"
                                     sx={{ marginBottom: '0px', width: 200, backgroundColor: '#F4F9F9' }}
                                     InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
                                     InputProps={{
@@ -1687,6 +1735,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                                     onChange={() => { }} 
                                     disabled
                                     size="small"
+                                    variant="standard"
                                     sx={{ marginBottom: '0px', width: 200, backgroundColor: '#F4F9F9' }}
                                     InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
                                     InputProps={{
@@ -1701,16 +1750,25 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
          
 
         </DialogContent>
-
         <DialogActions sx={{ p: 2, backgroundColor: '#f5f5f5' }}>
-            <Button onClick={handleClose} variant="outlined" sx={{ minWidth: 100 }}>Annuler</Button>
-            <Button 
-                onClick={handleSubmitForm}
-                variant="contained" 
-                color="primary" 
-                sx={{ minWidth: 100 }}
-             >Valider
-            </Button>
+        <Button onClick={handleClose} variant="outlined" sx={{ minWidth: 100 }}>
+            Annuler
+        </Button>
+
+        <Button
+            variant="contained"
+            sx={{ minWidth: 100 }}
+            onClick={() => {
+            const allTouched = Object.keys(formik.values).reduce((acc, key) => {
+                acc[key] = true;
+                return acc;
+            }, {});
+            formik.setTouched(allTouched, true);
+            formik.handleSubmit();
+            }}
+        >
+            Valider
+        </Button>
         </DialogActions>
 
     </BootstrapDialog>

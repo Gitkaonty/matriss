@@ -1,4 +1,7 @@
 import {React, useState, useEffect } from 'react';
+// Ajout de l'état pour le type de centre fiscal
+// (à placer au début du composant ParamCRM)
+
 import { useNavigate, useParams} from 'react-router-dom';
 import { Typography, Stack, Paper, TextField, FormControl, InputLabel, Select, MenuItem, Tooltip, Button, IconButton, FormHelperText, Input } from '@mui/material';
 import Tab from '@mui/material/Tab';
@@ -61,6 +64,8 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
   }));
 
 export default function ParamCRM() {
+  // État pour le type de centre fiscal (DGE ou centre fiscale)
+  const [typeCentre, setTypeCentre] = useState('DGE');
  //Choix TAB value-------------------------------------------------------------------------------------
  const [value, setValue] = useState(0);
 
@@ -1609,6 +1614,27 @@ const handlSubmitModification = (values) => {
     });
 }
 
+const handleChangeCentrefisc = async (newValue) => {
+    try {
+      await axios.put(`/home/FileCentrefisc/${fileId}`, { centrefisc: newValue });
+      setTypeCentre(newValue);
+      toast.success('CFISC mis à jour');
+  
+      // Recharger les infos dossier pour refléter la modif partout
+      await GetInfosIdDossier(fileId);
+  
+      // Optionnel: si tu veux forcer un refresh ailleurs (ex: un contexte global), déclenche-le ici.
+    } catch (e) {
+      toast.error("Mise à jour du centre fiscal échouée");
+    }
+  };
+
+  useEffect(() => {
+    if (fileInfos && fileInfos.centrefisc) {
+      setTypeCentre(fileInfos.centrefisc); // 'DGE' ou 'CFISC'
+    }
+  }, [fileInfos]);
+
   return (
     <Paper sx={{elevation: "3", margin:"5px", padding:"10px", width:"98%", height:"100%"}}>
         {noFile? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
@@ -2235,6 +2261,36 @@ const handlSubmitModification = (values) => {
                                             <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"} 
                                                     alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"20px"} 
                                             >
+                                              {/* Bloc radio DGE / centre fiscale */}
+                                             <Stack direction="column" spacing={1} sx={{ mt: 2, mb: 2 }}>
+                                                    <Typography variant="subtitle1" sx={{ fontWeight: 500, color: '#888' }}>
+                                                        Type de centre fiscal
+                                                    </Typography>
+                                                    <Stack direction="row" spacing={4} alignItems="center">
+                                                        <FormControlLabel
+                                                        control={
+                                                            <input
+                                                            type="radio"
+                                                            value="DGE"
+                                                            checked={typeCentre === 'DGE'}
+                                                            onChange={() => handleChangeCentrefisc('DGE')}
+                                                            />
+                                                        }
+                                                        label={<span style={{ fontWeight: typeCentre === 'DGE' ? 600 : 400 }}>DGE</span>}
+                                                        />
+                                                        <FormControlLabel
+                                                        control={
+                                                            <input
+                                                            type="radio"
+                                                            value="CFISC"
+                                                            checked={typeCentre === 'CFISC'}
+                                                            onChange={() => handleChangeCentrefisc('CFISC')}
+                                                            />
+                                                        }
+                                                        label={<span style={{ fontWeight: typeCentre === 'CFISC' ? 600 : 400 }}>Centre fiscales</span>}
+                                                        />
+                                                    </Stack>
+                                                    </Stack>
                                                 <Typography style={{fontWeight:'bold', fontSize:"18px", marginLeft:"0px", marginTop:"5px"}}>Impôt sur le revenu (IR)</Typography>
 
                                                 <Stack spacing={1}>
@@ -2315,6 +2371,7 @@ const handlSubmitModification = (values) => {
                                                     <label htmlFor="assujettitva" style={{fontSize:15, color: 'black'}}>Assujettie à la TVA</label>
                                                     <ErrorMessage name='assujettitva' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
                                                 </Stack>
+
                                             </Stack>
                                         </TabPanel>
 
@@ -2775,6 +2832,6 @@ const handlSubmitModification = (values) => {
             </TabPanel>
         </TabContext>
         
-    </Paper>
+</Paper>
   )
 }

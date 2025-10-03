@@ -25,12 +25,6 @@ const traitementList = [
         path: "/tab/personnel",
         urldynamic: true
     },
-    {
-        text: 'Fonctions',
-        name: "fonctions",
-        path: "/tab/fonctions",
-        urldynamic: true
-    },
 ];
 
 const importList = [
