@@ -159,11 +159,7 @@ export default function ParamDeviseComponent() {
 
         if (newRow) return;
         const newId = -(Math.max(0, ...rows.map(r => r.id || 0)) + 1);
-<<<<<<< HEAD
-        const newDevise = { id: newId, code: '', libelle: '', id_compte: compteId, id_dossier: fileId };
-=======
         const newDevise = { id: newId, code: '', libelle: '', id_compte: Number(compteId), id_dossier : Number(fileId) };
->>>>>>> jaela/Jaela_tva
         setRows([...rows, newDevise]);
         setNewRow(newDevise);
         setEditRow(null);
@@ -196,12 +192,8 @@ export default function ParamDeviseComponent() {
                     }
                 })
                 .catch(() => toast.error('Erreur lors de la modification'));
-<<<<<<< HEAD
-        } else if (newRow) {
-=======
         } else if(newRow) {
             console.log(newRow);
->>>>>>> jaela/Jaela_tva
             axios.post(`/devises/devise`, newRow)
                 .then(res => {
                     if (res.data && res.data.state) {

@@ -130,15 +130,10 @@ export default function ParamTVAComponent() {
         axios.get(`/paramTva/listeCodeTva`).then((response) => {
             const resData = response.data;
             if (resData.state) {
-<<<<<<< HEAD
-                setListeCodeTva(resData.list);
-                setListeCodeTvaUnfiltered(resData.list);
-=======
                 const all = Array.isArray(resData.list) ? resData.list : [];
                 // Charger la liste complète ici; le filtrage final se fera selon la nature + «≠1*» dans handleChangeCompte/handleEditClick
                 setListeCodeTva(all);
                 setListeCodeTvaUnfiltered(all);
->>>>>>> jaela/Jaela_tva
             } else {
                 setListeCodeTva([]);
                 setListeCodeTvaUnfiltered([]);
@@ -188,12 +183,6 @@ export default function ParamTVAComponent() {
         formikNewParamTva.setFieldValue('compte', infosCompte[0].id);
 
         if (infosCompte[0]?.compte.startsWith('4456')) {
-<<<<<<< HEAD
-            const filteredCode = listeCodeTvaUnfiltered?.filter((row) => row.nature === 'DED');
-            setListeCodeTva(filteredCode);
-        } else if (infosCompte[0]?.compte.startsWith('4457')) {
-            const filteredCode = listeCodeTvaUnfiltered?.filter((row) => row.nature === 'COLL');
-=======
             const filteredCode = (listeCodeTvaUnfiltered || [])
               .filter((row) => row.nature === 'DED')
               .filter((row) => !String(row.code || '').startsWith('1'));
@@ -202,7 +191,6 @@ export default function ParamTVAComponent() {
             const filteredCode = (listeCodeTvaUnfiltered || [])
               .filter((row) => row.nature === 'COLL')
               .filter((row) => !String(row.code || '').startsWith('1'));
->>>>>>> jaela/Jaela_tva
             setListeCodeTva(filteredCode);
         } else {
             GetListeCodeTva();
@@ -435,12 +423,6 @@ export default function ParamTVAComponent() {
         const description = compteInit['listecodetva.libelle'];
 
         if (compte?.startsWith('4456')) {
-<<<<<<< HEAD
-            const filteredCode = listeCodeTvaUnfiltered?.filter((row) => row.nature === 'DED');
-            setListeCodeTva(filteredCode);
-        } else if (compte?.startsWith('4457')) {
-            const filteredCode = listeCodeTvaUnfiltered?.filter((row) => row.nature === 'COLL');
-=======
             const filteredCode = (listeCodeTvaUnfiltered || [])
               .filter((row) => row.nature === 'DED')
               .filter((row) => !String(row.code || '').startsWith('1'));
@@ -449,7 +431,6 @@ export default function ParamTVAComponent() {
             const filteredCode = (listeCodeTvaUnfiltered || [])
               .filter((row) => row.nature === 'COLL')
               .filter((row) => !String(row.code || '').startsWith('1'));
->>>>>>> jaela/Jaela_tva
             setListeCodeTva(filteredCode);
         } else {
             GetListeCodeTva();
@@ -594,13 +575,6 @@ export default function ParamTVAComponent() {
         return Math.max(...Ids);
     };
 
-<<<<<<< HEAD
-    return (
-        <Box>
-            {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
-            {openDialogDeleteRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer le code journal sélectionné ?"} confirmationState={deleteRow} /> : null}
-
-=======
     // Filtrer l'affichage du tableau: comptes commençant par 445 ET codes ne commençant pas par 1
     // Conserver les nouvelles lignes (id négatif) visibles pour pouvoir les éditer
     const paramTvaDisplayRows = React.useMemo(() => {
@@ -619,7 +593,6 @@ export default function ParamTVAComponent() {
             {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
             {openDialogDeleteRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer le code journal sélectionné ?"} confirmationState={deleteRow} /> : null}
 
->>>>>>> jaela/Jaela_tva
             <TabContext value={"1"}>
                 <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                     <TabList aria-label="lab API tabs example">
@@ -742,11 +715,7 @@ export default function ParamTVAComponent() {
                                 columnHeaderHeight={DataGridStyle.columnHeaderHeight}
                                 editMode='row'
                                 columns={paramTvaColumnHeader}
-<<<<<<< HEAD
-                                rows={paramTva}
-=======
                                 rows={paramTvaDisplayRows}
->>>>>>> jaela/Jaela_tva
                                 onRowClick={(e) => handleCellEditCommit(e.row)}
                                 // onCellClick={(e) => test(e.row)}
                                 onRowSelectionModelChange={ids => {

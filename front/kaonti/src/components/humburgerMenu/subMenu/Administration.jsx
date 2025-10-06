@@ -25,15 +25,6 @@ const traitementList = [
         path: "/tab/administration/personnel",
         urldynamic: true
     },
-<<<<<<< HEAD
-    {
-        text: 'Fonctions',
-        name: "fonctions",
-        path: "/tab/administration/fonctions",
-        urldynamic: true
-    },
-=======
->>>>>>> jaela/Jaela_tva
 ];
 
 const importList = [

@@ -77,12 +77,6 @@ export default function ParamCodeJournalComponent() {
             idCompte: compteId,
             idDossier: fileId,
             idCode: 0,
-<<<<<<< HEAD
-            code: '',
-            libelle: '',
-            type: '',
-            compteassocie: ''
-=======
             code : '',
             libelle:'',
             type:'',
@@ -90,7 +84,6 @@ export default function ParamCodeJournalComponent() {
             nif:'',
             stat:'',
             adresse:''
->>>>>>> jaela/Jaela_tva
         },
         validationSchema: Yup.object({
             code: Yup.string().required("Veuillez ajouter un code journal"),
@@ -206,15 +199,11 @@ export default function ParamCodeJournalComponent() {
         if (typeTreso === 'BANQUE') {
             setListeCptAssocie(listBank);
             setCompteAssocieValidationColor('#F6D6D6');
-<<<<<<< HEAD
-        } else if (typeTreso === 'CAISSE') {
-=======
             // Préremplir avec les infos du dossier pour une création/édition en BANQUE
             formikNewCodeJournal.setFieldValue('nif', fileInfos?.nif || '');
             formikNewCodeJournal.setFieldValue('stat', fileInfos?.stat || '');
             formikNewCodeJournal.setFieldValue('adresse', fileInfos?.adresse || '');
         }else if(typeTreso === 'CAISSE'){
->>>>>>> jaela/Jaela_tva
             setListeCptAssocie(listCash);
             setCompteAssocieValidationColor('#F6D6D6');
         } else {
@@ -753,14 +742,10 @@ export default function ParamCodeJournalComponent() {
         let saveBoolLibelle = false;
         let saveBoolType = false;
         let saveBoolCompteAssocie = false;
-<<<<<<< HEAD
-
-=======
         let saveBoolNif = false;
         let saveBoolStat = false;
         let saveBoolAdresse = false;
         
->>>>>>> jaela/Jaela_tva
         setLibelleValidationColor('transparent');
         setTypeValidationColor('transparent');
         setCompteAssocieValidationColor('transparent');
@@ -805,9 +790,6 @@ export default function ParamCodeJournalComponent() {
             saveBoolCompteAssocie = true;
         }
 
-<<<<<<< HEAD
-        if (saveBoolCode && saveBoolLibelle && saveBoolType && saveBoolCompteAssocie) {
-=======
         if(formikNewCodeJournal.values.type === 'BANQUE'){
             if(formikNewCodeJournal.values.nif === ''){
                 setNifValidationColor('#F6D6D6');
@@ -842,7 +824,6 @@ export default function ParamCodeJournalComponent() {
         }
 
         if(saveBoolCode && saveBoolLibelle && saveBoolType && saveBoolCompteAssocie && saveBoolNif && saveBoolStat && saveBoolAdresse){
->>>>>>> jaela/Jaela_tva
             setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
             axios.post(`/paramCodeJournaux/codeJournauxAdd`, formikNewCodeJournal.values).then((response) => {
                 const resData = response.data;
