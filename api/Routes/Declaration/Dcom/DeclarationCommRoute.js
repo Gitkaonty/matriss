@@ -43,4 +43,7 @@ router.post('/verrouillerTableComm', droitCommController.verrouillerTableComm);
 router.post('/importdroitCommA', droitCommController.importdroitCommA);
 router.post('/importdroitCommB', droitCommController.importdroitCommB);
 
+// Génération automatique d'une tableau de droit de communication
+router.post('/generateDCommAuto', droitCommController.generateDCommAuto);
+
 module.exports = router;

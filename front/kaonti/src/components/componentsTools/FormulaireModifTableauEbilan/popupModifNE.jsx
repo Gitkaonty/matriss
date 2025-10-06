@@ -22,50 +22,57 @@ let initial = init[0];
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialogContent-root': {
-      padding: theme.spacing(2),
+        padding: theme.spacing(2),
     },
     '& .MuiDialogActions-root': {
-      padding: theme.spacing(1),
+        padding: theme.spacing(1),
     },
-  }));
+    '& .MuiPaper-root': {
+        minHeight: '10%',
+        maxHeight: '95%',
+    },
+}));
 
-const PopupModifNE = ({compteId, fileId, exerciceId, choix, confirmationState, data}) =>{
+const PopupModifNE = ({ compteId, fileId, exerciceId, choix, confirmationState, data }) => {
     const [listeNote, setListeNote] = useState([]);
     const [formDataFinal, setFormDataFinal] = useState({
         state: false,
-        id:-1,
+        id: -1,
         tableau: '',
         ref_note: '',
         commentaires: '',
     });
 
-    const formData = useFormik({
-    initialValues : {
-        state: true,
-        id:-1,
-        tableau: '',
-        ref_note: '',
-        commentaires: '',
-    },
-    validationSchema: Yup.object({
+    const validationSchema = Yup.object({
         tableau: Yup.string().required("Veuillez choisir un tableau avant de continuer"),
-    }),
-    //validateOnChange: false,
-    //validateOnBlur: true,
-    onSubmit: (values) => {
-        setFormDataFinal(prevFormDataFinal => {
-            const newFormDataFinal = { 
-                ...prevFormDataFinal, 
-                state: true, 
-                id: values.id, 
-                tableau: values.tableau,
-                ref_note: values.ref_note,
-                commentaires: values.commentaires,
-            };
-            confirmationState(newFormDataFinal);
-            return newFormDataFinal;
-        });  
-    }
+        ref_note: Yup.string().required("Veuillez choisir la référence du note"),
+    })
+
+    const formData = useFormik({
+        initialValues: {
+            state: true,
+            id: -1,
+            tableau: '',
+            ref_note: '',
+            commentaires: '',
+        },
+        validationSchema,
+        //validateOnChange: false,
+        //validateOnBlur: true,
+        onSubmit: (values) => {
+            setFormDataFinal(prevFormDataFinal => {
+                const newFormDataFinal = {
+                    ...prevFormDataFinal,
+                    state: true,
+                    id: values.id,
+                    tableau: values.tableau,
+                    ref_note: values.ref_note,
+                    commentaires: values.commentaires,
+                };
+                confirmationState(newFormDataFinal);
+                return newFormDataFinal;
+            });
+        }
     });
 
     const handleCloseDeleteModel = () => {
@@ -77,8 +84,8 @@ const PopupModifNE = ({compteId, fileId, exerciceId, choix, confirmationState, d
     }
 
     // Fonction pour gérer le clic sur le bouton "Modifier"
-   useEffect(() => {
-        if(data){
+    useEffect(() => {
+        if (data) {
             formData.setValues({
                 state: false,
                 id: data.id,
@@ -87,24 +94,24 @@ const PopupModifNE = ({compteId, fileId, exerciceId, choix, confirmationState, d
                 commentaires: data.commentaires,
             });
         }
-   }, [data]);
+    }, [data]);
 
-   useEffect(() => {
-    if(formData.values.tableau === 'BILAN'){
-        recupRubriqueBilan(compteId, fileId, exerciceId, formData.values.tableau);
-    }else{
-        recupRubrique(compteId, fileId, exerciceId, formData.values.tableau, 0);
-    }
-    
-   }, [formData.values.tableau]);
+    useEffect(() => {
+        if (formData.values.tableau === 'BILAN') {
+            recupRubriqueBilan(compteId, fileId, exerciceId, formData.values.tableau);
+        } else {
+            recupRubrique(compteId, fileId, exerciceId, formData.values.tableau, 0);
+        }
+
+    }, [formData.values.tableau]);
 
     //récupération des listes des notes pour le input
     const recupRubrique = (compteId, fileId, exerciceId, tableau, onglet) => {
-        axios.post(`/paramMappingCompte/listeRubrique`, {compteId, fileId, exerciceId, tableau, onglet}).then((response) =>{
+        axios.post(`/paramMappingCompte/listeRubrique`, { compteId, fileId, exerciceId, tableau, onglet }).then((response) => {
             const resData = response.data;
-            if(resData.state){
+            if (resData.state) {
                 setListeNote(resData.liste);
-            }else{
+            } else {
                 toast.error(resData.msg);
             }
         });
@@ -112,21 +119,21 @@ const PopupModifNE = ({compteId, fileId, exerciceId, choix, confirmationState, d
 
     const recupRubriqueBilan = (compteId, fileId, exerciceId, tableau) => {
         let onglet = 1;
-        axios.post(`/paramMappingCompte/listeRubrique`, {compteId, fileId, exerciceId, tableau, onglet}).then((response) =>{
+        axios.post(`/paramMappingCompte/listeRubrique`, { compteId, fileId, exerciceId, tableau, onglet }).then((response) => {
             const resData = response.data;
-            if(resData.state){
+            if (resData.state) {
                 setListeNote(resData.liste);
-            }else{
+            } else {
                 toast.error(resData.msg);
             }
         });
 
         onglet = 2;
-        axios.post(`/paramMappingCompte/listeRubrique`, {compteId, fileId, exerciceId, tableau, onglet}).then((response) =>{
+        axios.post(`/paramMappingCompte/listeRubrique`, { compteId, fileId, exerciceId, tableau, onglet }).then((response) => {
             const resData = response.data;
-            if(resData.state){
-                setListeNote(prevListeNote => [...prevListeNote,...resData.liste]);
-            }else{
+            if (resData.state) {
+                setListeNote(prevListeNote => [...prevListeNote, ...resData.liste]);
+            } else {
                 toast.error(resData.msg);
             }
         });
@@ -139,16 +146,16 @@ const PopupModifNE = ({compteId, fileId, exerciceId, choix, confirmationState, d
                 aria-labelledby="customized-dialog-title"
                 open={true}
                 fullWidth={true}
-                maxWidth="lg"
+                maxWidth="md"
             >
-                <DialogTitle sx={{ ml: 1, p: 2 }} id="customized-dialog-title" style={{fontWeight:'bold', width:'550px', height:'50px',backgroundColor : 'transparent'}}>
-                    <Typography variant={'h6'} style={{fontZise: 12}}>
+                <DialogTitle sx={{ ml: 1, p: 2 }} id="customized-dialog-title" style={{ fontWeight: 'bold', width: '550px', height: '50px', backgroundColor: 'transparent' }}>
+                    <Typography variant={'h6'} style={{ fontZise: 12 }}>
                         {choix} d'une ligne pour le formulaire NE
                     </Typography>
                 </DialogTitle>
-                
+
                 <IconButton
-                    style={{color:'red', textTransform: 'none', outline: 'none'}}
+                    style={{ color: 'red', textTransform: 'none', outline: 'none' }}
                     aria-label="close"
                     onClick={handleCloseDeleteModel}
                     sx={{
@@ -157,100 +164,143 @@ const PopupModifNE = ({compteId, fileId, exerciceId, choix, confirmationState, d
                         top: 8,
                         color: (theme) => theme.palette.grey[500],
                     }}
-                    >
-                <CloseIcon />
+                >
+                    <CloseIcon />
                 </IconButton>
                 <DialogContent>
-            
-                <Stack width={"95%"} height={"450px"} spacing={1} alignItems={'left'} alignContent={"center"} 
-                    direction={"column"} justifyContent={"center"} style={{marginLeft:'20px'}}
-                >
-                    <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '250px' }}>
-                        <InputLabel style={{ color: '#1976d2' }}>Tableau</InputLabel>
-                        <Select
-                            label="Tableau"
-                            name="tableau"
-                            value={formData.values.tableau}
+
+                    <Stack
+                        spacing={2}
+                        alignItems={'left'}
+                        direction={"column"}
+                        style={{ marginLeft: '10px' }}
+                    >
+                        <Stack flexDirection={'row'} justifyContent={'space-between'}>
+                            <FormControl
+                                size="small"
+                                fullWidth
+                                style={{ marginBottom: '10px', width: '49%' }}
+                                error={Boolean(formData.touched.tableau && formData.errors.tableau)}
+                                variant='standard'
+                            >
+                                <InputLabel style={{ color: '#1976d2' }}>Tableau</InputLabel>
+                                <Select
+                                    label="Tableau"
+                                    name="tableau"
+                                    value={formData.values.tableau}
+                                    onChange={formData.handleChange}
+                                    onBlur={formData.handleBlur}
+                                    fullWidth
+                                    sx={{
+                                        fontSize: '13px',
+                                        height: '30px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        '& .MuiSelect-select': {
+                                            padding: '1px',
+                                        }
+                                    }}
+                                >
+                                    <MenuItem key="BILAN" value="BILAN">Bilan</MenuItem>
+                                    <MenuItem key="CRN" value="CRN">Compte de résult par nature</MenuItem>
+                                    <MenuItem key="CRF" value="CRF">Compte de résult par fonction</MenuItem>
+                                    <MenuItem key="TFTD" value="TFTD">Tableau flux de trésorerie Direct</MenuItem>
+                                    <MenuItem key="TFTI" value="TFTI">Tableau flux de trésorerie indirect</MenuItem>
+                                    <MenuItem key="EVCP" value="EVCP">Etat de variation des capitaux propres</MenuItem>
+                                    <MenuItem key="DRF" value="DRF">Détermination du résultat fiscal</MenuItem>
+                                    <MenuItem key="BHIAPC" value="BHIAPC">Etat des bénéf. honoraires, d'intérêts ou d'arrérage</MenuItem>
+                                    <MenuItem key="MP" value="MP">Marché public</MenuItem>
+                                    <MenuItem key="DA" value="DA">Détails amortissements</MenuItem>
+                                    <MenuItem key="DP" value="DP">Détails provisions</MenuItem>
+                                    <MenuItem key="EIAFNC" value="EIAFNC">Evolution des immobilisations</MenuItem>
+                                    <MenuItem key="SAD" value="SAD">Suivi des amortissements différés</MenuItem>
+                                    <MenuItem key="SDR" value="SDR">Suivi des déficits reportables</MenuItem>
+                                    <MenuItem key="SE" value="SE">Suivi des emprunts</MenuItem>
+                                </Select>
+
+                                <FormHelperText>
+                                    {formData.errors.tableau && formData.touched.tableau && formData.errors.tableau}
+                                </FormHelperText>
+                            </FormControl>
+
+                            <FormControl
+                                size="small"
+                                fullWidth
+                                style={{
+                                    marginBottom: '10px',
+                                    width: '49%'
+                                }}
+
+                                error={Boolean(formData.touched.ref_note && formData.errors.ref_note)}
+                                variant='standard'
+                            >
+                                <InputLabel style={{ color: '#1976d2' }}>Note</InputLabel>
+                                <Select
+                                    label="Note"
+                                    name="ref_note"
+                                    value={formData.values.ref_note}
+                                    onChange={formData.handleChange}
+                                    onBlur={formData.handleBlur}
+                                    fullWidth
+                                    sx={{
+                                        fontSize: '13px',
+                                        height: '30px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        '& .MuiSelect-select': {
+                                            padding: '1px',
+                                        }
+                                    }}
+                                >
+                                    {
+                                        listeNote?.map((item) => (
+                                            <MenuItem key={item.id} value={item["note"]}>{item["note"]}</MenuItem>
+                                        ))
+                                    }
+                                </Select>
+                                <FormHelperText >
+                                    {formData.errors.ref_note && formData.touched.ref_note && formData.errors.ref_note}
+                                </FormHelperText>
+                            </FormControl>
+                        </Stack>
+
+                        <Divider />
+
+                        <textarea
+                            name='commentaires'
+                            value={formData.values.commentaires}
                             onChange={formData.handleChange}
-                            fullWidth
-                            style={{ marginBottom: '0px', width:'450px' }}
-                        >
-                            <MenuItem key="BILAN" value="BILAN">Bilan</MenuItem>
-                            <MenuItem key="CRN" value="CRN">Compte de résult par nature</MenuItem>
-                            <MenuItem key="CRF" value="CRF">Compte de résult par fonction</MenuItem>
-                            <MenuItem key="TFTD" value="TFTD">Tableau flux de trésorerie Direct</MenuItem>
-                            <MenuItem key="TFTI" value="TFTI">Tableau flux de trésorerie indirect</MenuItem>
-                            <MenuItem key="EVCP" value="EVCP">Etat de variation des capitaux propres</MenuItem>
-                            <MenuItem key="DRF" value="DRF">Détermination du résultat fiscal</MenuItem>
-                            <MenuItem key="BHIAPC" value="BHIAPC">Etat des bénéf. honoraires, d'intérêts ou d'arrérage</MenuItem>
-                            <MenuItem key="MP" value="MP">Marché public</MenuItem>
-                            <MenuItem key="DA" value="DA">Détails amortissements</MenuItem>
-                            <MenuItem key="DP" value="DP">Détails provisions</MenuItem>
-                            <MenuItem key="EIAFNC" value="EIAFNC">Evolution des immobilisations</MenuItem>
-                            <MenuItem key="SAD" value="SAD">Suivi des amortissements différés</MenuItem>
-                            <MenuItem key="SDR" value="SDR">Suivi des déficits reportables</MenuItem>
-                            <MenuItem key="SE" value="SE">Suivi des emprunts</MenuItem>
-                        </Select>
-
-                        <FormHelperText style={{color:'red', width:'450px'}}>
-                            {formData.errors.tableau && formData.touched.tableau && formData.errors.tableau}
-                        </FormHelperText>
-                    </FormControl>
-
-                    <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '250px' }}>
-                        <InputLabel style={{ color: '#1976d2' }}>Note</InputLabel>
-                        <Select
-                            label="Note"
-                            name="ref_note"
-                            value={formData.values.ref_note}
-                            onChange={formData.handleChange}
-                            fullWidth
-                            style={{ marginBottom: '10px', width:'450px' }}
-                        >
-                            {
-                                listeNote?.map((item) => (
-                                    <MenuItem key={item.id} value={item["note"]}>{item["note"]}</MenuItem>
-                                ))
-                            }
-                        </Select>
-                    </FormControl>
-
-                    <Divider style={{marginTop:'10px', marginBottom:'30px'}}/>
-
-                    <textarea
-                        name='commentaires'
-                        value={formData.values.commentaires}
-                        onChange={formData.handleChange}
-                        rows="15"   // Nombre de lignes visibles
-                        cols="50"   // Largeur du champ
-                        placeholder="Entrez vos commentaires ici..."
-                        style={{
-                            fontFamily: 'Arial, sans-serif',
-                            fontSize: '16px',
-                            lineHeight: '1.5',
-                            padding: '10px', 
-                          }}
-                    />
-                </Stack>
+                            rows="15"   // Nombre de lignes visibles
+                            cols="50"   // Largeur du champ
+                            placeholder="Entrez vos commentaires ici..."
+                            style={{
+                                fontFamily: 'Arial, sans-serif',
+                                fontSize: '16px',
+                                lineHeight: '1.5',
+                                padding: '10px',
+                            }}
+                        />
+                    </Stack>
 
                 </DialogContent>
                 <DialogActions>
                     <Button autoFocus
                         variant='outlined'
-                        style={{backgroundColor:"transparent", 
-                            color:initial.theme, 
-                            width:"100px", 
-                            textTransform: 'none', 
+                        style={{
+                            backgroundColor: "transparent",
+                            color: initial.theme,
+                            width: "100px",
+                            textTransform: 'none',
                             //outline: 'none',
                         }}
                         onClick={handleCloseDeleteModel}
-                        >
-                            Annuler
+                    >
+                        Annuler
                     </Button>
-                    <Button autoFocus 
-                    type="submit"
-                    onClick={formData.handleSubmit}
-                    style={{backgroundColor:initial.theme, color:'white', width:"100px", textTransform: 'none', outline: 'none'}}
+                    <Button autoFocus
+                        type="submit"
+                        onClick={formData.handleSubmit}
+                        style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
                     >
                         Enregistrer
                     </Button>

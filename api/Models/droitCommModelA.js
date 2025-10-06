@@ -31,6 +31,16 @@ module.exports = (sequelize, DataTypes) => {
             onUpdate: 'CASCADE',
             onDelete: 'CASCADE'
         },
+        id_numcpt: {
+            type: DataTypes.BIGINT,
+            allowNull: true,
+            references: {
+                model: 'dossierplancomptables',
+                key: 'id'
+            },
+            onUpdate: 'CASCADE',
+            onDelete: 'CASCADE'
+        },
         nif: {
             type: DataTypes.STRING(20),
             allowNull: true,
@@ -66,27 +76,27 @@ module.exports = (sequelize, DataTypes) => {
         },
         raison_sociale: {
             type: DataTypes.STRING(50),
-            allowNull: false,
+            allowNull: true,
         },
         adresse: {
             type: DataTypes.STRING(30),
-            allowNull: false,
+            allowNull: true,
         },
         ville: {
             type: DataTypes.STRING(30),
-            allowNull: false,
+            allowNull: true,
         },
         ex_province: {
             type: DataTypes.STRING(30),
-            allowNull: false,
+            allowNull: true,
         },
         pays: {
             type: DataTypes.STRING(30),
-            allowNull: false,
+            allowNull: true,
         },
         nature: {
             type: DataTypes.STRING(50),
-            allowNull: false,
+            allowNull: true,
         },
         comptabilisees: {
             type: DataTypes.DOUBLE,
@@ -94,7 +104,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         versees: {
             type: DataTypes.DOUBLE,
-            allowNull: false,
+            allowNull: true,
         },
         type: {
             type: DataTypes.STRING(50),

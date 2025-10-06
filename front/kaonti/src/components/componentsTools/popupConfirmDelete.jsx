@@ -24,11 +24,13 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     },
 }));
 
-const PopupConfirmDelete = ({ msg, confirmationState }) => {
+const PopupConfirmDelete = ({ msg, confirmationState, type, presonalisedMessage }) => {
 
     const confirmation = () => {
         confirmationState(true);
-        toast.success('Ligne supprimés avec succès');
+        type === 'Generer' || type === 'Reinialiser' ? null :
+            presonalisedMessage ? null :
+                toast.success('Ligne supprimés avec succès');
     }
 
     const handleCloseDeleteModel = () => {
@@ -63,9 +65,9 @@ const PopupConfirmDelete = ({ msg, confirmationState }) => {
                     <IoIosWarning style={{ width: '75px', height: '75px', color: '#FF8A8A' }} />
                 </Stack>
 
-                <Stack width={"90%"} height={"100px"} spacing={0} alignItems={'center'} alignContent={"center"}
+                <Stack sx={{ marginTop: 3 }} width={"98%"} height={"100px"} spacing={2} alignItems={'center'} alignContent={"center"}
                     direction={"column"} justifyContent={"center"} style={{ marginLeft: '10px' }}>
-                    <Typography sx={{ ml: 2, flex: 1 }} variant="h7" component="div" >
+                    <Typography sx={{ ml: 2, flex: 1, textAlign: "center" }} variant="h7" component="div" >
                         {msg}
                     </Typography>
 
@@ -83,7 +85,7 @@ const PopupConfirmDelete = ({ msg, confirmationState }) => {
                         color: initial.theme,
                         width: "100px",
                         textTransform: 'none',
-                        //outline: 'none',
+                        outline: 'none',
                     }}
                     type='submit'
                     onClick={handleCloseDeleteModel}
@@ -93,7 +95,7 @@ const PopupConfirmDelete = ({ msg, confirmationState }) => {
                 <Button autoFocus onClick={confirmation}
                     style={{ backgroundColor: '#FF8A8A', color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
                 >
-                    Supprimer
+                    {type === "Generer" ? "Générer" : type === "Reinialiser" ? "Réinialiser" : "Supprimer"}
                 </Button>
             </DialogActions>
         </BootstrapDialog>

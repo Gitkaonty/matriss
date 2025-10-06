@@ -42,13 +42,13 @@ import { BsFillUnlockFill } from "react-icons/bs";
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialogContent-root': {
-      padding: theme.spacing(2),
+        padding: theme.spacing(2),
     },
     '& .MuiDialogActions-root': {
-      padding: theme.spacing(1),
+        padding: theme.spacing(1),
     },
-  }));
-  
+}));
+
 export default function ParamExerciceComponent() {
     const initial = init[0];
     const navigate = useNavigate();
@@ -58,7 +58,7 @@ export default function ParamExerciceComponent() {
     const [fileInfos, setFileInfos] = useState('');
     const [noFile, setNoFile] = useState(false);
     const [listeExercice, setListeExercice] = useState([]);
-    const [openDialogCreateFirstExercice,setEpenDialogCreateFirstExercice] = useState(false);
+    const [openDialogCreateFirstExercice, setEpenDialogCreateFirstExercice] = useState(false);
     const [openActionConfirm, setOpenActionConfirm] = useState(false);
     const [openActionConfirmPrev, setOpenActionConfirmPrev] = useState(false);
     const [openActionConfirmVerrExercice, setOpenActionConfirmVerrExercice] = useState(false);
@@ -69,24 +69,24 @@ export default function ParamExerciceComponent() {
     const [exerciceToUnlock, setExerciceToUnlock] = useState([]);
     const [openActionConfirmDeleteExercice, setOpenActionConfirmDeleteExercice] = useState(false);
     const [msgDeleteExercice, setMsgDeleteExercice] = useState('');
-    const [selectedExerciceRow,setSelectedExerciceRow] = useState([]);
-    const [exerciceToDeleteId,setExerciceToDeleteId] = useState(0);
-    const [exerciceToDeleteRang,setExerciceToDeleteRang] = useState(null);
+    const [selectedExerciceRow, setSelectedExerciceRow] = useState([]);
+    const [exerciceToDeleteId, setExerciceToDeleteId] = useState(0);
+    const [exerciceToDeleteRang, setExerciceToDeleteRang] = useState(null);
 
     //récupération des informations de connexion
     const { auth } = useAuth();
-    const decoded = auth?.accessToken ? jwtDecode(auth.accessToken): undefined;
+    const decoded = auth?.accessToken ? jwtDecode(auth.accessToken) : undefined;
     const compteId = decoded.UserInfo.compteId || null;
     const userId = decoded.UserInfo.userId || null;
 
     //Entete du tableau
     const ExerciceColumnHeader = [
         {
-            field: 'date_debut', 
-            headerName: 'Date début', 
-            type: 'Date', 
-            sortable : true, 
-            width: 150, 
+            field: 'date_debut',
+            headerName: 'Date début',
+            type: 'Date',
+            sortable: true,
+            width: 150,
             headerAlign: 'center',
             align: 'center',
             headerClassName: 'HeaderbackColor',
@@ -95,11 +95,11 @@ export default function ParamExerciceComponent() {
             }
         },
         {
-            field: 'date_fin', 
-            headerName: 'Date fin', 
-            type: 'Date', 
-            sortable : true, 
-            width: 150, 
+            field: 'date_fin',
+            headerName: 'Date fin',
+            type: 'Date',
+            sortable: true,
+            width: 150,
             headerAlign: 'center',
             align: 'center',
             headerClassName: 'HeaderbackColor',
@@ -108,28 +108,28 @@ export default function ParamExerciceComponent() {
             }
         },
         {
-            field: 'libelle_rang', 
-            headerName: 'Position', 
-            type: 'string', 
-            sortable : true, 
-            width: 100, 
+            field: 'libelle_rang',
+            headerName: 'Position',
+            type: 'string',
+            sortable: true,
+            width: 100,
             headerAlign: 'center',
             align: 'center',
             headerClassName: 'HeaderbackColor',
         },
         {
-            field: 'cloture', 
-            headerName: 'Vérrouillé', 
-            type: 'boolean', 
-            sortable : true, 
-            width: 100, 
+            field: 'cloture',
+            headerName: 'Vérrouillé',
+            type: 'boolean',
+            sortable: true,
+            width: 100,
             headerAlign: 'center',
             align: 'center',
             headerClassName: 'HeaderbackColor',
         },
-      ];
+    ];
 
-   //récupérer les informations du dossier sélectionné
+    //récupérer les informations du dossier sélectionné
     useEffect(() => {
         //tester si la page est renvoyer par useNavigate
         const navigationEntries = performance.getEntriesByType('navigation');
@@ -141,8 +141,8 @@ export default function ParamExerciceComponent() {
                 const idDossier = sessionStorage.getItem("fileId");
                 setFileId(idDossier);
                 idFile = idDossier;
-            }else{
-                sessionStorage.setItem('fileId',id);
+            } else {
+                sessionStorage.setItem('fileId', id);
                 setFileId(id);
                 idFile = id;
             }
@@ -151,145 +151,145 @@ export default function ParamExerciceComponent() {
     }, []);
 
     const GetInfosIdDossier = (id) => {
-        axios.get(`/home/FileInfos/${id}`).then((response) =>{
+        axios.get(`/home/FileInfos/${id}`).then((response) => {
             const resData = response.data;
 
-            if(resData.state){
-            setFileInfos(resData.fileInfos[0]);
-            setNoFile(false);
-            }else{
-            setFileInfos([]);
-            setNoFile(true);
+            if (resData.state) {
+                setFileInfos(resData.fileInfos[0]);
+                setNoFile(false);
+            } else {
+                setFileInfos([]);
+                setNoFile(true);
             }
         })
     }
 
     const sendToHome = (value) => {
-    setNoFile(!value);
-    navigate('/tab/home');
+        setNoFile(!value);
+        navigate('/tab/home');
     }
 
     //Chargement de la liste des exercices associés à l'id dossier sélectionné
     const GetListeExercice = (id) => {
-        axios.get(`/paramExercice/listeExercice/${id}`).then((response) =>{
+        axios.get(`/paramExercice/listeExercice/${id}`).then((response) => {
             const resData = response.data;
-            if(resData.state){
+            if (resData.state) {
                 setListeExercice(resData.list);
-            }else{
+            } else {
                 setListeExercice([]);
                 toast.error("une erreur est survenue lors de la récupération de la liste des exercices");
             }
-            
+
         })
     }
 
-    useEffect(() =>{
+    useEffect(() => {
         GetListeExercice(fileId);
     }, [fileId]);
 
     //Création du premier exercice dans le tableau
     const handleCreateNextExercice = () => {
-        if(listeExercice.length === 0){
+        if (listeExercice.length === 0) {
             firstExerciceForm.setFieldValue('id_compte', compteId);
             firstExerciceForm.setFieldValue('id_dossier', fileId);
             handleOpenDialogCreateFirstExercice();
-        }else{
+        } else {
             setOpenActionConfirm(true);
         }
     }
 
     const handleCreateNextExercicePrev = () => {
-        if(listeExercice.length === 0){
+        if (listeExercice.length === 0) {
             firstExerciceForm.setFieldValue('id_compte', compteId);
             firstExerciceForm.setFieldValue('id_dossier', fileId);
             handleOpenDialogCreateFirstExercice();
-        }else{
+        } else {
             setOpenActionConfirmPrev(true);
         }
     }
 
-    const handleOpenDialogCreateFirstExercice = () =>{
+    const handleOpenDialogCreateFirstExercice = () => {
         setEpenDialogCreateFirstExercice(true);
     }
 
-    const handleCloseDialogCreateFirstExercice = () =>{
+    const handleCloseDialogCreateFirstExercice = () => {
         setEpenDialogCreateFirstExercice(false);
     }
 
     //formule pour la création du premier exercice
     const firstExerciceForm = useFormik({
         initialValues: {
-            id_compte:0,
+            id_compte: 0,
             id_dossier: 0,
-            date_debut:'',
-            date_fin:''
+            date_debut: '',
+            date_fin: ''
         },
 
-        validationSchema : Yup.object({
+        validationSchema: Yup.object({
             date_debut: Yup.string()
-            .matches(
-                /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/, // = format du back pour la datapicker yyyy-MM-dd
-                'La date doit être au format jj/mm/aaaa'
-            )
-            .test('is-valid-date', 'La date doit être valide', (value) => {
-            if (!value) return false;
-    
-            const [year, month, day] = value.split('-').map(Number);
-    
-            // Vérifie les mois
-            if (month < 1 || month > 12) return false;
-    
-            // Vérifie les jours en fonction du mois
-            const daysInMonth = new Date(year, month, 0).getDate();
-            return day >= 1 && day <= daysInMonth;
-            }).required('La date est requise'),
+                .matches(
+                    /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/, // = format du back pour la datapicker yyyy-MM-dd
+                    'La date doit être au format jj/mm/aaaa'
+                )
+                .test('is-valid-date', 'La date doit être valide', (value) => {
+                    if (!value) return false;
+
+                    const [year, month, day] = value.split('-').map(Number);
+
+                    // Vérifie les mois
+                    if (month < 1 || month > 12) return false;
+
+                    // Vérifie les jours en fonction du mois
+                    const daysInMonth = new Date(year, month, 0).getDate();
+                    return day >= 1 && day <= daysInMonth;
+                }).required('La date est requise'),
 
             date_fin: Yup.string()
-            .matches(
-                /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/, // = format du back pour la datapicker yyyy-MM-dd
-                'La date doit être au format jj/mm/aaaa'
-            )
-            .test('is-valid-date', 'La date doit être valide', (value) => {
-            if (!value) return false;
-    
-            const [year, month, day] = value.split('-').map(Number);
-    
-            // Vérifie les mois
-            if (month < 1 || month > 12) return false;
-    
-            // Vérifie les jours en fonction du mois
-            const daysInMonth = new Date(year, month, 0).getDate();
-            return day >= 1 && day <= daysInMonth;
-            }).required('La date est requise'),
+                .matches(
+                    /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/, // = format du back pour la datapicker yyyy-MM-dd
+                    'La date doit être au format jj/mm/aaaa'
+                )
+                .test('is-valid-date', 'La date doit être valide', (value) => {
+                    if (!value) return false;
+
+                    const [year, month, day] = value.split('-').map(Number);
+
+                    // Vérifie les mois
+                    if (month < 1 || month > 12) return false;
+
+                    // Vérifie les jours en fonction du mois
+                    const daysInMonth = new Date(year, month, 0).getDate();
+                    return day >= 1 && day <= daysInMonth;
+                }).required('La date est requise'),
         }),
 
         validate: (values) => {
             const errors = {};
             if (values.date_debut && values.date_fin) {
-              const startDate = new Date(values.date_debut);
-              const endDate = new Date(values.date_fin);
-      
-              // Vérifier si startDate est plus grande que endDate
-              if (startDate > endDate) {
-                errors.date_fin = 'La date fin ne doit être antérieure à la date de début';
-              }
+                const startDate = new Date(values.date_debut);
+                const endDate = new Date(values.date_fin);
+
+                // Vérifier si startDate est plus grande que endDate
+                if (startDate > endDate) {
+                    errors.date_fin = 'La date fin ne doit être antérieure à la date de début';
+                }
             }
             return errors;
-          },
+        },
 
         onSubmit: (values) => {
-            
+
         },
     });
 
     const createFirstExercice = () => {
-        axios.post(`/paramExercice/createFirstExercice`, firstExerciceForm.values).then((response) =>{
+        axios.post(`/paramExercice/createFirstExercice`, firstExerciceForm.values).then((response) => {
             const resData = response.data;
-            if(resData.state){
+            if (resData.state) {
                 GetListeExercice(fileId);
                 toast.success("La création du premier exercice a été effectuée avec succès");
-            }else{
-              toast.error(resData.msg);
+            } else {
+                toast.error(resData.msg);
             }
             handleCloseDialogCreateFirstExercice();
         });
@@ -297,14 +297,14 @@ export default function ParamExerciceComponent() {
 
     //création de l'exercice suivant
     const createNextExercice = (value) => {
-        if(value){
-            axios.post(`/paramExercice/createNextExercice`, {compteId, fileId}).then((response) =>{
+        if (value) {
+            axios.post(`/paramExercice/createNextExercice`, { compteId, fileId }).then((response) => {
                 const resData = response.data;
-                if(resData.state){
+                if (resData.state) {
                     GetListeExercice(fileId);
                     toast.success("La création de l'exercice suivant a été effectuée avec succès");
-                }else{
-                  toast.error(resData.msg);
+                } else {
+                    toast.error(resData.msg);
                 }
             });
         }
@@ -313,14 +313,14 @@ export default function ParamExerciceComponent() {
 
     //création de l'exercice précédent
     const createPreviewExercice = (value) => {
-        if(value){
-            axios.post(`/paramExercice/createPreviewExercice`, {compteId, fileId}).then((response) =>{
+        if (value) {
+            axios.post(`/paramExercice/createPreviewExercice`, { compteId, fileId }).then((response) => {
                 const resData = response.data;
-                if(resData.state){
+                if (resData.state) {
                     GetListeExercice(fileId);
                     toast.success("La création de l'exercice précédent a été effectuée avec succès");
-                }else{
-                  toast.error(resData.msg);
+                } else {
+                    toast.error(resData.msg);
                 }
             });
         }
@@ -336,21 +336,21 @@ export default function ParamExerciceComponent() {
         });
 
         setExerciceToLock(oldestExercice);
-        const msgs=`Voulez vous vraiement verrouiller l'exercice du ${format(oldestExercice.date_debut,'dd/MM/yyyy')} au ${format(oldestExercice.date_fin,'dd/MM/yyyy')}?`;
+        const msgs = `Voulez vous vraiement verrouiller l'exercice du ${format(oldestExercice.date_debut, 'dd/MM/yyyy')} au ${format(oldestExercice.date_fin, 'dd/MM/yyyy')}?`;
         setMsgVerrExercice(msgs);
         setOpenActionConfirmVerrExercice(true);
     }
 
     const verrouillerExercice = (value) => {
-        if(value){
+        if (value) {
             const id_exercice = exerciceToLock.id;
-            axios.post(`/paramExercice/verrouillerExercice`, {id_exercice, fileId}).then((response) =>{
+            axios.post(`/paramExercice/verrouillerExercice`, { id_exercice, fileId }).then((response) => {
                 const resData = response.data;
-                if(resData.state){
+                if (resData.state) {
                     GetListeExercice(fileId);
                     toast.success("Exercice verrouillé");
-                }else{
-                  toast.error(resData.msg);
+                } else {
+                    toast.error(resData.msg);
                 }
             });
         }
@@ -366,21 +366,21 @@ export default function ParamExerciceComponent() {
         });
 
         setExerciceToUnlock(newestExercice);
-        const msgs=`Voulez vous vraiement déverrouiller l'exercice du ${format(newestExercice.date_debut,'dd/MM/yyyy')} au ${format(newestExercice.date_fin,'dd/MM/yyyy')}?`;
+        const msgs = `Voulez vous vraiement déverrouiller l'exercice du ${format(newestExercice.date_debut, 'dd/MM/yyyy')} au ${format(newestExercice.date_fin, 'dd/MM/yyyy')}?`;
         setMsgDeverrExercice(msgs);
         setOpenActionConfirmDeverrExercice(true);
     }
 
     const deverrouillerExercice = (value) => {
-        if(value){ 
+        if (value) {
             const id_exercice = exerciceToUnlock.id;
-            axios.post(`/paramExercice/deverrouillerExercice`, {id_exercice, fileId}).then((response) =>{
+            axios.post(`/paramExercice/deverrouillerExercice`, { id_exercice, fileId }).then((response) => {
                 const resData = response.data;
-                if(resData.state){
+                if (resData.state) {
                     GetListeExercice(fileId);
                     toast.success("Exercice déverrouillé");
-                }else{
-                  toast.error(resData.msg);
+                } else {
+                    toast.error(resData.msg);
                 }
             });
         }
@@ -393,22 +393,22 @@ export default function ParamExerciceComponent() {
     }
 
     const handleDeleteExercice = () => {
-        if(selectedExerciceRow.length > 1){
+        if (selectedExerciceRow.length > 1) {
             toast.error("Veuillez sélectionner un seul exercice avant de continuer.");
             return;
         }
 
-        if(selectedExerciceRow.length === 0){
+        if (selectedExerciceRow.length === 0) {
             toast.error("Veuillez sélectionner un exercice avant de continuer.");
             return;
         }
 
         const selectedRow = listeExercice.filter(item => item.id === selectedExerciceRow[0]);
 
-        if(selectedRow){
-            if(selectedRow[0].cloture){
+        if (selectedRow) {
+            if (selectedRow[0].cloture) {
                 toast.error("Vous ne pouvez pas supprimer un exercice clôturé.");
-            }else{
+            } else {
                 let newestExercice = listeExercice.reduce((newest, current) => {
                     return current.date_debut > newest.date_debut ? current : newest;
                 });
@@ -417,20 +417,20 @@ export default function ParamExerciceComponent() {
                     return current.date_debut < oldest.date_debut ? current : oldest;
                 });
 
-                if(newestExercice.date_fin === selectedRow[0].date_fin){
-                    const msgs=`Voulez vous vraiement supprimer l'exercice du ${format(newestExercice.date_debut,'dd/MM/yyyy')} au ${format(newestExercice.date_fin,'dd/MM/yyyy')}?`;
+                if (newestExercice.date_fin === selectedRow[0].date_fin) {
+                    const msgs = `Voulez vous vraiement supprimer l'exercice du ${format(newestExercice.date_debut, 'dd/MM/yyyy')} au ${format(newestExercice.date_fin, 'dd/MM/yyyy')}?`;
                     setMsgDeleteExercice(msgs);
                     setExerciceToDeleteId(selectedRow[0].id);
                     setExerciceToDeleteRang(selectedRow[0].rang);
                     setOpenActionConfirmDeleteExercice(true);
-                }else{
-                    if(oldestExercice.date_fin === selectedRow[0].date_fin){
-                        const msgs=`Voulez vous vraiement supprimer l'exercice du ${format(oldestExercice.date_debut,'dd/MM/yyyy')} au ${format(oldestExercice.date_fin,'dd/MM/yyyy')}?`;
+                } else {
+                    if (oldestExercice.date_fin === selectedRow[0].date_fin) {
+                        const msgs = `Voulez vous vraiement supprimer l'exercice du ${format(oldestExercice.date_debut, 'dd/MM/yyyy')} au ${format(oldestExercice.date_fin, 'dd/MM/yyyy')}?`;
                         setMsgDeleteExercice(msgs);
                         setExerciceToDeleteId(selectedRow[0].id);
                         setExerciceToDeleteRang(selectedRow[0].rang);
                         setOpenActionConfirmDeleteExercice(true);
-                    }else{
+                    } else {
                         toast.error("Un exercice antérieur et/ou suivant existe encore pour cet exercice sélectionné.");
                     }
                 }
@@ -439,288 +439,293 @@ export default function ParamExerciceComponent() {
     }
 
     const deleteExercice = (value) => {
-        if(value){
+        if (value) {
             const id_exerciceToDelete = exerciceToDeleteId;
             const rang = exerciceToDeleteRang;
-            axios.post(`/paramExercice/deleteExercice`, {id_exerciceToDelete, fileId, rang}).then((response) =>{
+            axios.post(`/paramExercice/deleteExercice`, { id_exerciceToDelete, fileId, rang }).then((response) => {
                 const resData = response.data;
-                if(resData.state){
+                if (resData.state) {
                     GetListeExercice(fileId);
                     toast.success("Exercice supprimé");
-                }else{
-                  toast.error(resData.msg);
+                } else {
+                    toast.error(resData.msg);
                 }
             });
         }
         setOpenActionConfirmDeleteExercice(false);
     }
 
-  return (
-    <Paper sx={{elevation: "3", margin:"5px", padding:"10px", width:"98%", height:"110%"}}>
-        {noFile? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
-        
-        {openActionConfirm? <PopupActionConfirm msg={"Voulez-vous vraiment continuer la création de l'exercice suivant ?"} confirmationState={createNextExercice} /> : null}
-        {openActionConfirmPrev? <PopupActionConfirm msg={"Voulez-vous vraiment continuer la création de l'exercice précédent ?"} confirmationState={createPreviewExercice} /> : null}
-        {openActionConfirmVerrExercice? <PopupActionConfirm msg={msgVerrExercice} confirmationState={verrouillerExercice} /> : null}
-        {openActionConfirmDeverrExercice? <PopupActionConfirm msg={msgDeverrExercice} confirmationState={deverrouillerExercice} /> : null}
-        {openActionConfirmDeleteExercice? <PopupActionConfirm msg={msgDeleteExercice} confirmationState={deleteExercice} /> : null}
+    return (
+        <Box>
+            {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
 
-        <form onSubmit={firstExerciceForm.handleSubmit}>
-            <BootstrapDialog
-                onClose={handleCloseDialogCreateFirstExercice}
-                aria-labelledby="customized-dialog-title"
-                open={openDialogCreateFirstExercice}
-            >
-                <DialogTitle sx={{ m: 0, p: 2 }} id="customized-dialog-title" style={{fontWeight:'bold', width:'600px', height:'50px',backgroundColor : 'transparent'}}>
-                
-                </DialogTitle>
-                
-                <IconButton
-                    style={{color:'red', textTransform: 'none', outline: 'none'}}
-                    aria-label="close"
-                    onClick={handleCloseDialogCreateFirstExercice}
-                    sx={{
-                        position: 'absolute',
-                        right: 8,
-                        top: 8,
-                        color: (theme) => theme.palette.grey[500],
-                    }}
+            {openActionConfirm ? <PopupActionConfirm msg={"Voulez-vous vraiment continuer la création de l'exercice suivant ?"} confirmationState={createNextExercice} /> : null}
+            {openActionConfirmPrev ? <PopupActionConfirm msg={"Voulez-vous vraiment continuer la création de l'exercice précédent ?"} confirmationState={createPreviewExercice} /> : null}
+            {openActionConfirmVerrExercice ? <PopupActionConfirm msg={msgVerrExercice} confirmationState={verrouillerExercice} /> : null}
+            {openActionConfirmDeverrExercice ? <PopupActionConfirm msg={msgDeverrExercice} confirmationState={deverrouillerExercice} /> : null}
+            {openActionConfirmDeleteExercice ? <PopupActionConfirm msg={msgDeleteExercice} confirmationState={deleteExercice} /> : null}
+
+            <form onSubmit={firstExerciceForm.handleSubmit}>
+                <BootstrapDialog
+                    onClose={handleCloseDialogCreateFirstExercice}
+                    aria-labelledby="customized-dialog-title"
+                    open={openDialogCreateFirstExercice}
+                >
+                    <DialogTitle sx={{ m: 0, p: 2 }} id="customized-dialog-title" style={{ fontWeight: 'bold', width: '600px', height: '50px', backgroundColor: 'transparent' }}>
+
+                    </DialogTitle>
+
+                    <IconButton
+                        style={{ color: 'red', textTransform: 'none', outline: 'none' }}
+                        aria-label="close"
+                        onClick={handleCloseDialogCreateFirstExercice}
+                        sx={{
+                            position: 'absolute',
+                            right: 8,
+                            top: 8,
+                            color: (theme) => theme.palette.grey[500],
+                        }}
                     >
-                    <CloseIcon />
-                </IconButton>
-                
-                <DialogContent >
-                    <Stack width={"95%"} height={"100%"} spacing={0} alignItems={'center'} alignContent={"center"} 
-                    direction={"column"} justifyContent={"center"} style={{marginLeft:'10px'}}>
-                        <Typography sx={{ ml: 0, flex: 1 }} variant="h6" component="div" >
-                            Création du premier exercice
-                        </Typography>
-                    
+                        <CloseIcon />
+                    </IconButton>
 
-                        <Stack style={{marginTop:40, width:"450px"}} display={'flex'} direction={'row'} alignItems={'end'} alignContent={'center'} spacing={4}>
-                            <FormControl
-                                sx={{ width: "200px" }}
-                                error={firstExerciceForm.errors.date_debut && firstExerciceForm.touched.date_debut}
-                            >
-                                <FormLabel id="datedebut-label" htmlFor="date_debut">
-                                    <Typography level="title-date_debut">
-                                        Date début :
-                                    </Typography>
-                                    
-                                </FormLabel>
-                                <Input
-                                    type='date'
-                                    name="date_debut"
-                                    value={firstExerciceForm.values.date_debut}
-                                    onChange={firstExerciceForm.handleChange}
-                                    onBlur={firstExerciceForm.handleBlur}
-                                    required
-                                    slotProps={{
-                                        button: {
-                                            id: "niveau",
-                                            "aria-labelledby": "niveau-label",
-                                        },
-                                    }}
-                                />
-                                <FormHelperText>
-                                    {firstExerciceForm.errors.date_debut &&
-                                        firstExerciceForm.touched.date_debut &&
-                                        firstExerciceForm.errors.date_debut}
-                                </FormHelperText>
-                            </FormControl>
-
-                            <Typography sx={{ ml: 0, pb:1, flex: 1,}} variant="h7" component="div" >
-                                au
+                    <DialogContent >
+                        <Stack width={"95%"} height={"100%"} spacing={0} alignItems={'center'} alignContent={"center"}
+                            direction={"column"} justifyContent={"center"} style={{ marginLeft: '10px' }}>
+                            <Typography sx={{ ml: 0, flex: 1 }} variant="h6" component="div" >
+                                Création du premier exercice
                             </Typography>
 
-                            <FormControl
-                                sx={{ width: "200px" }}
-                                error={firstExerciceForm.errors.date_fin && firstExerciceForm.touched.date_fin}
-                            >
-                                <FormLabel id="datefint-label" htmlFor="date_fin">
-                                    <Typography level="title-date_fin">
-                                        Date fin :
-                                    </Typography>
-                                    
-                                </FormLabel>
-                                <Input
-                                    type='date'
-                                    name="date_fin"
-                                    value={firstExerciceForm.values.date_fin}
-                                    onChange={firstExerciceForm.handleChange}
-                                    onBlur={firstExerciceForm.handleBlur}
-                                    required
-                                    slotProps={{
-                                        button: {
-                                            id: "niveau",
-                                            "aria-labelledby": "niveau-label",
-                                        },
-                                    }}
-                                />
-                                <FormHelperText>
-                                    {firstExerciceForm.errors.date_fin &&
-                                        firstExerciceForm.touched.date_fin &&
-                                        firstExerciceForm.errors.date_fin}
-                                </FormHelperText>
-                            </FormControl>
-                        </Stack>
-                    </Stack>
-                </DialogContent>
 
-                <DialogActions>
-                    <Button autoFocus
-                        style={{backgroundColor:initial.theme, color:'white', width:"100px", textTransform: 'none', outline: 'none'}}
-                        type='submit'
-                        onClick={handleCloseDialogCreateFirstExercice}
+                            <Stack style={{ marginTop: 40, width: "450px" }} display={'flex'} direction={'row'} alignItems={'end'} alignContent={'center'} spacing={4}>
+                                <FormControl
+                                    sx={{ width: "200px" }}
+                                    error={firstExerciceForm.errors.date_debut && firstExerciceForm.touched.date_debut}
+                                >
+                                    <FormLabel id="datedebut-label" htmlFor="date_debut">
+                                        <Typography level="title-date_debut">
+                                            Date début :
+                                        </Typography>
+
+                                    </FormLabel>
+                                    <Input
+                                        type='date'
+                                        name="date_debut"
+                                        value={firstExerciceForm.values.date_debut}
+                                        onChange={firstExerciceForm.handleChange}
+                                        onBlur={firstExerciceForm.handleBlur}
+                                        required
+                                        slotProps={{
+                                            button: {
+                                                id: "niveau",
+                                                "aria-labelledby": "niveau-label",
+                                            },
+                                        }}
+                                    />
+                                    <FormHelperText>
+                                        {firstExerciceForm.errors.date_debut &&
+                                            firstExerciceForm.touched.date_debut &&
+                                            firstExerciceForm.errors.date_debut}
+                                    </FormHelperText>
+                                </FormControl>
+
+                                <Typography sx={{ ml: 0, pb: 1, flex: 1, }} variant="h7" component="div" >
+                                    au
+                                </Typography>
+
+                                <FormControl
+                                    sx={{ width: "200px" }}
+                                    error={firstExerciceForm.errors.date_fin && firstExerciceForm.touched.date_fin}
+                                >
+                                    <FormLabel id="datefint-label" htmlFor="date_fin">
+                                        <Typography level="title-date_fin">
+                                            Date fin :
+                                        </Typography>
+
+                                    </FormLabel>
+                                    <Input
+                                        type='date'
+                                        name="date_fin"
+                                        value={firstExerciceForm.values.date_fin}
+                                        onChange={firstExerciceForm.handleChange}
+                                        onBlur={firstExerciceForm.handleBlur}
+                                        required
+                                        slotProps={{
+                                            button: {
+                                                id: "niveau",
+                                                "aria-labelledby": "niveau-label",
+                                            },
+                                        }}
+                                    />
+                                    <FormHelperText>
+                                        {firstExerciceForm.errors.date_fin &&
+                                            firstExerciceForm.touched.date_fin &&
+                                            firstExerciceForm.errors.date_fin}
+                                    </FormHelperText>
+                                </FormControl>
+                            </Stack>
+                        </Stack>
+                    </DialogContent>
+
+                    <DialogActions>
+                        <Button autoFocus
+                            style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
+                            type='submit'
+                            onClick={handleCloseDialogCreateFirstExercice}
                         >
                             Annuler
-                    </Button>
-                    <Button autoFocus
-                    disabled={!firstExerciceForm.isValid}
-                    onClick={createFirstExercice}
-                    style={{backgroundColor: initial.theme, color:'white', width:"100px", textTransform: 'none', outline: 'none'}}
-                    >
-                        Créer
-                    </Button>
-                </DialogActions>
-            </BootstrapDialog>
-        </form>
-        
+                        </Button>
+                        <Button autoFocus
+                            disabled={!firstExerciceForm.isValid}
+                            onClick={createFirstExercice}
+                            style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
+                        >
+                            Créer
+                        </Button>
+                    </DialogActions>
+                </BootstrapDialog>
+            </form>
 
-        <TabContext value={"1"}>
-            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            <TabList aria-label="lab API tabs example">
-                <Tab 
-                    style={{ 
-                        textTransform: 'none', 
-                        outline: 'none', 
-                        border: 'none',
-                        margin:-5
-                    }}
-                    label={InfoFileStyle(fileInfos?.dossier)} value="1" 
-                />
-            </TabList>
-            </Box>
-            <TabPanel value="1">
-                <Stack style={{marginTop:0}} width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"} justifyContent={"stretch"}>
-                    <Typography variant='h6' sx={{color: "black"}} align='left'>Paramétrages : Exercices</Typography>
 
-                    <Stack width={"100%"} height={"30px"} spacing={0} alignItems={"center"} alignContent={"center"} 
-                        direction={"row"} style={{marginLeft:"0px", marginTop:"20px", justifyContent:"right"}}>
-                        <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"} 
-                        direction={"row"} justifyContent={"right"}>
+            <TabContext value={"1"}>
+                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                    <TabList aria-label="lab API tabs example">
+                        <Tab
+                            style={{
+                                textTransform: 'none',
+                                outline: 'none',
+                                border: 'none',
+                                margin: -5
+                            }}
+                            label={InfoFileStyle(fileInfos?.dossier)} value="1"
+                        />
+                    </TabList>
+                </Box>
+                <TabPanel value="1">
+                    <Stack style={{ marginTop: 0 }} width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"} justifyContent={"stretch"}>
+                        <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages : Exercices</Typography>
 
-                            <Tooltip title="Ajouter l'exercice précédent">
-                                <IconButton
-                                onClick={handleCreateNextExercicePrev}
-                                variant="contained" 
-                                style={{width:"35px", height:'35px', 
-                                    borderRadius:"2px", borderColor: "transparent", 
-                                    backgroundColor: initial.theme,
-                                    textTransform: 'none', outline: 'none'
-                                }}
-                                >
-                                    <BsChevronLeft style={{width:'25px', height:'25px', color:'white'}}/>
-                                </IconButton>
-                            </Tooltip>
+                        <Stack width={"100%"} height={"30px"} spacing={0} alignItems={"center"} alignContent={"center"}
+                            direction={"row"} style={{ marginLeft: "0px", marginTop: "20px", justifyContent: "right" }}>
+                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                direction={"row"} justifyContent={"right"}>
 
-                            <Tooltip title="Ajouter l'exercice suivant">
-                                <IconButton
-                                onClick={handleCreateNextExercice}
-                                variant="contained" 
-                                style={{width:"35px", height:'35px', 
-                                    borderRadius:"2px", borderColor: "transparent", 
-                                    backgroundColor: initial.theme,
-                                    textTransform: 'none', outline: 'none'
-                                }}
-                                >
-                                    <BsChevronRight style={{width:'25px', height:'25px', color:'white'}}/>
-                                </IconButton>
-                            </Tooltip>
-
-                            <Tooltip title="Vérrouiller un exercice">
-                                <IconButton
-                                onClick={handleVerrouillerExercice}
-                                variant="contained" 
-                                style={{width:"35px", height:'35px', 
-                                    borderRadius:"2px", borderColor: "transparent", 
-                                    backgroundColor: initial.theme,
-                                    textTransform: 'none', outline: 'none'
-                                }}
-                                >
-                                    <HiLockClosed style={{width:'25px', height:'25px', color:'white'}}/>
-                                </IconButton>
-                            </Tooltip>
-
-                            <Tooltip title="Déverrouiller un exercice">
-                                <IconButton
-                                onClick={handleDeverrouillerExercice}
-                                variant="contained" 
-                                style={{width:"35px", height:'35px', 
-                                    borderRadius:"2px", borderColor: "transparent", 
-                                    backgroundColor: initial.theme,
-                                    textTransform: 'none', outline: 'none'
-                                }}
-                                >
-                                    <BsFillUnlockFill style={{width:'25px', height:'25px', color:'white'}}/>
-                                </IconButton>
-                            </Tooltip>
-
-                            <Tooltip title="Supprimer un exercice">
-                                <span>
-                                    <IconButton 
-                                    onClick={handleDeleteExercice}
-                                    variant="contained" 
-                                    style={{width:"35px", height:'35px', 
-                                        borderRadius:"2px", borderColor: "transparent",
-                                        backgroundColor: initial.button_delete_color,
-                                        textTransform: 'none', outline: 'none'
-                                    }}
+                                <Tooltip title="Ajouter l'exercice précédent">
+                                    <IconButton
+                                        onClick={handleCreateNextExercicePrev}
+                                        variant="contained"
+                                        style={{
+                                            width: "35px", height: '35px',
+                                            borderRadius: "2px", borderColor: "transparent",
+                                            backgroundColor: initial.theme,
+                                            textTransform: 'none', outline: 'none'
+                                        }}
                                     >
-                                        <IoMdTrash style={{width:'50px', height:'50px',color: 'white'}}/>
+                                        <BsChevronLeft style={{ width: '25px', height: '25px', color: 'white' }} />
                                     </IconButton>
-                                </span>
-                            </Tooltip>
+                                </Tooltip>
+
+                                <Tooltip title="Ajouter l'exercice suivant">
+                                    <IconButton
+                                        onClick={handleCreateNextExercice}
+                                        variant="contained"
+                                        style={{
+                                            width: "35px", height: '35px',
+                                            borderRadius: "2px", borderColor: "transparent",
+                                            backgroundColor: initial.theme,
+                                            textTransform: 'none', outline: 'none'
+                                        }}
+                                    >
+                                        <BsChevronRight style={{ width: '25px', height: '25px', color: 'white' }} />
+                                    </IconButton>
+                                </Tooltip>
+
+                                <Tooltip title="Vérrouiller un exercice">
+                                    <IconButton
+                                        onClick={handleVerrouillerExercice}
+                                        variant="contained"
+                                        style={{
+                                            width: "35px", height: '35px',
+                                            borderRadius: "2px", borderColor: "transparent",
+                                            backgroundColor: initial.theme,
+                                            textTransform: 'none', outline: 'none'
+                                        }}
+                                    >
+                                        <HiLockClosed style={{ width: '25px', height: '25px', color: 'white' }} />
+                                    </IconButton>
+                                </Tooltip>
+
+                                <Tooltip title="Déverrouiller un exercice">
+                                    <IconButton
+                                        onClick={handleDeverrouillerExercice}
+                                        variant="contained"
+                                        style={{
+                                            width: "35px", height: '35px',
+                                            borderRadius: "2px", borderColor: "transparent",
+                                            backgroundColor: initial.theme,
+                                            textTransform: 'none', outline: 'none'
+                                        }}
+                                    >
+                                        <BsFillUnlockFill style={{ width: '25px', height: '25px', color: 'white' }} />
+                                    </IconButton>
+                                </Tooltip>
+
+                                <Tooltip title="Supprimer un exercice">
+                                    <span>
+                                        <IconButton
+                                            onClick={handleDeleteExercice}
+                                            variant="contained"
+                                            style={{
+                                                width: "35px", height: '35px',
+                                                borderRadius: "2px", borderColor: "transparent",
+                                                backgroundColor: initial.button_delete_color,
+                                                textTransform: 'none', outline: 'none'
+                                            }}
+                                        >
+                                            <IoMdTrash style={{ width: '50px', height: '50px', color: 'white' }} />
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
+                            </Stack>
+                        </Stack>
+
+                        <Stack width={"100%"} height={'100%'} minHeight={'600px'}>
+                            <DataGrid
+                                disableMultipleSelection={DataGridStyle.disableMultipleSelection}
+                                disableColumnSelector={DataGridStyle.disableColumnSelector}
+                                disableDensitySelector={DataGridStyle.disableDensitySelector}
+                                disableRowSelectionOnClick
+                                disableSelectionOnClick={true}
+                                localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                                slots={{ toolbar: QuickFilter }}
+                                sx={DataGridStyle.sx}
+                                rowHeight={DataGridStyle.rowHeight}
+                                columnHeaderHeight={DataGridStyle.columnHeaderHeight}
+                                editMode='row'
+                                columns={ExerciceColumnHeader}
+                                rows={listeExercice}
+                                onRowSelectionModelChange={ids => {
+                                    saveSelectedExercice(ids);
+                                }}
+                                initialState={{
+                                    pagination: {
+                                        paginationModel: { page: 0, pageSize: 100 },
+                                    },
+                                }}
+                                experimentalFeatures={{ newEditingApi: true }}
+                                pageSizeOptions={[50, 100]}
+                                pagination={DataGridStyle.pagination}
+                                checkboxSelection={DataGridStyle.checkboxSelection}
+                                columnVisibilityModel={{
+                                    id: false,
+                                }}
+                            />
                         </Stack>
                     </Stack>
+                </TabPanel>
+            </TabContext>
 
-                    <Stack width={"100%"} height={'100%'} minHeight={'600px'}>
-                            <DataGrid
-                            disableMultipleSelection = {DataGridStyle.disableMultipleSelection}
-                            disableColumnSelector = {DataGridStyle.disableColumnSelector}
-                            disableDensitySelector = {DataGridStyle.disableDensitySelector}
-                            disableRowSelectionOnClick
-                            disableSelectionOnClick={true}
-                            localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
-                            slots={{toolbar : QuickFilter}}
-                            sx={ DataGridStyle.sx}
-                            rowHeight= {DataGridStyle.rowHeight}
-                            columnHeaderHeight= {DataGridStyle.columnHeaderHeight}
-                            editMode='row'
-                            columns={ExerciceColumnHeader}
-                            rows={listeExercice}
-                            onRowSelectionModelChange={ids => {
-                                saveSelectedExercice(ids);
-                            }}
-                            initialState={{
-                                pagination: {
-                                    paginationModel: { page: 0, pageSize: 100 },
-                                },
-                            }}
-                            experimentalFeatures={{ newEditingApi: true }}
-                            pageSizeOptions={[50, 100]}
-                            pagination={DataGridStyle.pagination}
-                            checkboxSelection = {DataGridStyle.checkboxSelection}
-                            columnVisibilityModel={{
-                                id: false,
-                            }}
-                        />
-                    </Stack>
-                </Stack>
-            </TabPanel>
-        </TabContext>
 
-        
-    </Paper>
-  )
+        </Box>
+    )
 }

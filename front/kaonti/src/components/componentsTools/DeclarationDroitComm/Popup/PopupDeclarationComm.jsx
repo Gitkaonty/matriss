@@ -31,6 +31,8 @@ import { useFormik } from 'formik';
 import * as Yup from "yup";
 import FormatedInput from '../../FormatedInput';
 
+import { inputAutoFill } from '../../../inputStyle/inputAutoFill';
+
 let initial = init[0];
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
@@ -41,8 +43,8 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
         padding: theme.spacing(1),
     },
     '& .MuiPaper-root': {
-        minHeight: '80%', // Ajout ici
-        maxHeight: '90vh',  // facultatif
+        minHeight: '80%',
+        maxHeight: '90vh',
     },
 }));
 
@@ -118,13 +120,13 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
 
         nature: Yup.string().required('La nature est obligatoire'),
 
-        comptabilisees: Yup.number()
-            .min(0, 'Doit être un nombre positif')
-            .required('Le champ est obligatoire'),
+        // comptabilisees: Yup.number()
+        //     .min(0, 'Doit être un nombre positif')
+        //     .required('Le champ est obligatoire'),
 
-        versees: Yup.number()
-            .min(0, 'Doit être un nombre positif')
-            .required('Le champ est obligatoire'),
+        // versees: Yup.number()
+        //     .min(0, 'Doit être un nombre positif')
+        //     .required('Le champ est obligatoire'),
     });
 
     // Validation formik pour MV et PSV
@@ -199,13 +201,13 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
 
         mode_payement: Yup.string().required('Le mode de payement est obligatoire'),
 
-        montanth_tva: Yup.number()
-            .min(0, 'Doit être un nombre positif')
-            .required('Le champ est obligatoire'),
+        // montanth_tva: Yup.number()
+        //     .min(0, 'Doit être un nombre positif')
+        //     .required('Le champ est obligatoire'),
 
-        tva: Yup.number()
-            .min(0, 'Doit être un nombre positif')
-            .required('Le champ est obligatoire'),
+        // tva: Yup.number()
+        //     .min(0, 'Doit être un nombre positif')
+        //     .required('Le champ est obligatoire'),
     });
 
     // Validation formik pour PL
@@ -278,13 +280,13 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
 
         nature: Yup.string().required('La nature est obligatoire'),
 
-        montanth_tva: Yup.number()
-            .min(0, 'Doit être un nombre positif')
-            .required('Le champ est obligatoire'),
+        // montanth_tva: Yup.number()
+        //     .min(0, 'Doit être un nombre positif')
+        //     .required('Le champ est obligatoire'),
 
-        tva: Yup.number()
-            .min(0, 'Doit être un nombre positif')
-            .required('Le champ est obligatoire'),
+        // tva: Yup.number()
+        //     .min(0, 'Doit être un nombre positif')
+        //     .required('Le champ est obligatoire'),
     });
 
     const validationSchema =
@@ -422,6 +424,7 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
             id_dossier: type === 'Ajout' ? Number(fileId) : Number(rowToModify.id_dossier),
             id_exercice: type === 'Ajout' ? Number(selectedExerciceId) : Number(rowToModify.id_exercice),
             id_compte: type === 'Ajout' ? Number(compteId) : Number(rowToModify.id_compte),
+            id_numcpt: Number(rowToModify.id_numcpt),
             typeTier: type === 'Ajout' ? 'avecNif' : rowToModify.typeTier,
             nif: type === 'Ajout' ? '' : rowToModify.nif,
             nif_representaires: type === 'Ajout' ? '' : rowToModify.nif_representaires,
@@ -454,6 +457,7 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
             id_dossier: type === 'Ajout' ? Number(fileId) : Number(rowToModify.id_dossier),
             id_exercice: type === 'Ajout' ? Number(selectedExerciceId) : Number(rowToModify.id_exercice),
             id_compte: type === 'Ajout' ? Number(compteId) : Number(rowToModify.id_compte),
+            id_numcpt: Number(rowToModify.id_numcpt),
             typeTier: type === 'Ajout' ? 'avecNif' : rowToModify.typeTier,
             nif: type === 'Ajout' ? '' : rowToModify.nif,
             nif_representaires: type === 'Ajout' ? '' : rowToModify.nif_representaires,
@@ -487,6 +491,7 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
             id_dossier: type === 'Ajout' ? Number(fileId) : Number(rowToModify.id_dossier),
             id_exercice: type === 'Ajout' ? Number(selectedExerciceId) : Number(rowToModify.id_exercice),
             id_compte: type === 'Ajout' ? Number(compteId) : Number(rowToModify.id_compte),
+            id_numcpt: Number(rowToModify.id_numcpt),
             typeTier: type === 'Ajout' ? 'avecNif' : rowToModify.typeTier,
             nif: type === 'Ajout' ? '' : rowToModify.nif,
             nif_representaires: type === 'Ajout' ? '' : rowToModify.nif_representaires,
@@ -586,14 +591,13 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                         <FormControl
                             size="small"
                             variant="standard"
-                            fullWidth style={{ width: '28%' }}
+                            fullWidth
+                            style={{ width: '28%' }}
                         >
                             <InputLabel>Type de tier</InputLabel>
                             <Select
-                                // value={formSaisie.values.valSelectMois}
                                 value={formData.values.typeTier}
                                 onChange={handleTypeTierChange}
-                                // onChange={formSaisie.handleChange}
                                 name="typeTier"
                                 InputLabelProps={{
                                     style: {
@@ -644,6 +648,9 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                         marginTop: '-2px',
                                                     },
                                                 }}
+                                                sx={{
+                                                    ...inputAutoFill
+                                                }}
                                             />
                                         </FormControl>
                                         <FormControl size="small" fullWidth style={{ width: '49%' }}>
@@ -676,6 +683,9 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                         fontSize: '13px',
                                                         marginTop: '-2px',
                                                     },
+                                                }}
+                                                sx={{
+                                                    ...inputAutoFill
                                                 }}
                                             />
                                         </FormControl>
@@ -716,6 +726,9 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                             marginTop: '-2px',
                                                         },
                                                     }}
+                                                    sx={{
+                                                        ...inputAutoFill
+                                                    }}
                                                 />
                                             </FormControl>
                                             <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '32%' }}>
@@ -748,6 +761,9 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                             fontSize: '13px',
                                                             marginTop: '-2px',
                                                         },
+                                                    }}
+                                                    sx={{
+                                                        ...inputAutoFill
                                                     }}
                                                 />
                                             </FormControl>
@@ -788,6 +804,9 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                             marginTop: '-2px',
                                                         },
                                                     }}
+                                                    sx={{
+                                                        ...inputAutoFill
+                                                    }}
                                                 />
                                             </FormControl>
                                         </Stack>
@@ -827,6 +846,9 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                                 marginTop: '-2px',
                                                             },
                                                         }}
+                                                        sx={{
+                                                            ...inputAutoFill
+                                                        }}
                                                     />
                                                 </FormControl>
                                             </Stack>
@@ -865,6 +887,9 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                                 marginTop: '-2px',
                                                             },
                                                         }}
+                                                        sx={{
+                                                            ...inputAutoFill
+                                                        }}
                                                     />
                                                 </FormControl>
                                                 <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '49%' }}>
@@ -897,6 +922,9 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                                 fontSize: '13px',
                                                                 marginTop: '-2px',
                                                             },
+                                                        }}
+                                                        sx={{
+                                                            ...inputAutoFill
                                                         }}
                                                     />
                                                 </FormControl>
@@ -942,6 +970,9 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                         marginTop: '-2px',
                                                     },
                                                 }}
+                                                sx={{
+                                                    ...inputAutoFill
+                                                }}
                                             />
                                         </FormControl>
                                         <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '49%' }}>
@@ -974,6 +1005,9 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                         fontSize: '13px',
                                                         marginTop: '-2px',
                                                     },
+                                                }}
+                                                sx={{
+                                                    ...inputAutoFill
                                                 }}
                                             />
                                         </FormControl>
@@ -1017,6 +1051,9 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                     marginTop: '-2px',
                                                 },
                                             }}
+                                            sx={{
+                                                ...inputAutoFill
+                                            }}
                                         />
                                     </FormControl>
                                     <FormControl size="small" fullWidth style={{ width: '49%' }}>
@@ -1049,6 +1086,9 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                     fontSize: '13px',
                                                     marginTop: '-2px',
                                                 },
+                                            }}
+                                            sx={{
+                                                ...inputAutoFill
                                             }}
                                         />
                                     </FormControl>
@@ -1084,6 +1124,9 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                 fontSize: '13px',
                                                 marginTop: '-2px',
                                             },
+                                        }}
+                                        sx={{
+                                            ...inputAutoFill
                                         }}
                                     />
                                 </FormControl>
@@ -1126,6 +1169,9 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                         marginTop: '-2px',
                                                     },
                                                 }}
+                                                sx={{
+                                                    ...inputAutoFill
+                                                }}
                                             />
                                         </FormControl>
                                     </> : ''
@@ -1161,6 +1207,9 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                             marginTop: '-2px',
                                         },
                                     }}
+                                    sx={{
+                                        ...inputAutoFill
+                                    }}
                                 />
                             </FormControl>
                             <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: nature === 'MV' || nature === 'PSV' ? '32%' : '49%' }}>
@@ -1193,6 +1242,9 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                             fontSize: '13px',
                                             marginTop: '-2px',
                                         },
+                                    }}
+                                    sx={{
+                                        ...inputAutoFill
                                     }}
                                 />
                             </FormControl>
@@ -1229,6 +1281,9 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                             marginTop: '-2px',
                                         },
                                     }}
+                                    sx={{
+                                        ...inputAutoFill
+                                    }}
                                 />
                             </FormControl>
                             <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '49%' }}>
@@ -1261,6 +1316,9 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                             fontSize: '13px',
                                             marginTop: '-2px',
                                         },
+                                    }}
+                                    sx={{
+                                        ...inputAutoFill
                                     }}
                                 />
                             </FormControl>
@@ -1310,6 +1368,9 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                         marginTop: '-2px',
                                     },
                                 }}
+                                sx={{
+                                    ...inputAutoFill
+                                }}
                             />
                         </FormControl>
 
@@ -1321,14 +1382,15 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                     <Stack flexDirection={'row'} justifyContent={'space-between'} alignItems={'center'}>
                                         <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '49%' }}>
                                             <TextField
+                                                disabled
                                                 size="small"
                                                 label="Comptabilisées"
                                                 name="comptabilisees"
                                                 value={formData.values.comptabilisees}
-                                                onChange={formData.handleChange}
-                                                onBlur={formData.handleBlur}
-                                                error={Boolean(formData.touched.comptabilisees && formData.errors.comptabilisees)}
-                                                helperText={formData.touched.comptabilisees && formData.errors.comptabilisees}
+                                                // onChange={formData.handleChange}
+                                                // onBlur={formData.handleBlur}
+                                                // error={Boolean(formData.touched.comptabilisees && formData.errors.comptabilisees)}
+                                                // helperText={formData.touched.comptabilisees && formData.errors.comptabilisees}
                                                 fullWidth
                                                 variant='standard'
                                                 InputProps={{
@@ -1354,19 +1416,23 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                         fontSize: '13px',
                                                         marginTop: '-2px',
                                                     },
+                                                }}
+                                                sx={{
+                                                    ...inputAutoFill
                                                 }}
                                             />
                                         </FormControl>
                                         <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '49%' }}>
                                             <TextField
+                                                disabled
                                                 size="small"
                                                 label="Versees"
                                                 name="versees"
                                                 value={formData.values.versees}
-                                                onChange={formData.handleChange}
-                                                onBlur={formData.handleBlur}
-                                                error={Boolean(formData.touched.versees && formData.errors.versees)}
-                                                helperText={formData.touched.versees && formData.errors.versees}
+                                                // onChange={formData.handleChange}
+                                                // onBlur={formData.handleBlur}
+                                                // error={Boolean(formData.touched.versees && formData.errors.versees)}
+                                                // helperText={formData.touched.versees && formData.errors.versees}
                                                 fullWidth
                                                 variant='standard'
                                                 InputProps={{
@@ -1382,7 +1448,7 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                     sx: {
                                                         '& input': {
                                                             height: '30px',
-                                                            textAlign: 'right', // Alignement du texte dans le champ à droite
+                                                            textAlign: 'right',
                                                         },
                                                     },
                                                 }}
@@ -1392,6 +1458,9 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                         fontSize: '13px',
                                                         marginTop: '-2px',
                                                     },
+                                                }}
+                                                sx={{
+                                                    ...inputAutoFill
                                                 }}
                                             />
                                         </FormControl>
@@ -1432,6 +1501,9 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                             marginTop: '-2px',
                                                         },
                                                     }}
+                                                    sx={{
+                                                        ...inputAutoFill
+                                                    }}
                                                 />
                                             </FormControl>
                                             <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '44%' }}>
@@ -1440,10 +1512,10 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                     label="Montants hors TVA"
                                                     name="montanth_tva"
                                                     value={formData.values.montanth_tva}
-                                                    onChange={formData.handleChange}
-                                                    onBlur={formData.handleBlur}
-                                                    error={Boolean(formData.touched.montanth_tva && formData.errors.montanth_tva)}
-                                                    helperText={formData.touched.montanth_tva && formData.errors.montanth_tva}
+                                                    // onChange={formData.handleChange}
+                                                    // onBlur={formData.handleBlur}
+                                                    // error={Boolean(formData.touched.montanth_tva && formData.errors.montanth_tva)}
+                                                    // helperText={formData.touched.montanth_tva && formData.errors.montanth_tva}
                                                     fullWidth
                                                     variant='standard'
                                                     InputProps={{
@@ -1459,7 +1531,7 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                         sx: {
                                                             '& input': {
                                                                 height: '30px',
-                                                                textAlign: 'right', // Alignement du texte dans le champ à droite
+                                                                textAlign: 'right',
                                                             },
                                                         },
                                                     }}
@@ -1469,6 +1541,9 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                             fontSize: '13px',
                                                             marginTop: '-2px',
                                                         },
+                                                    }}
+                                                    sx={{
+                                                        ...inputAutoFill
                                                     }}
                                                 />
                                             </FormControl>
@@ -1486,10 +1561,10 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                         const roundedValue = Math.round(value * 10) / 10;
                                                         formData.setFieldValue("tva", roundedValue);
                                                     }}
-                                                    onBlur={formData.handleBlur}
-                                                    error={Boolean(formData.touched.tva && formData.errors.tva)}
-                                                    helperText={formData.touched.tva && formData.errors.tva}
-                                                    fullWidth
+                                                    // onBlur={formData.handleBlur}
+                                                    // error={Boolean(formData.touched.tva && formData.errors.tva)}
+                                                    // helperText={formData.touched.tva && formData.errors.tva}
+                                                    // fullWidth
                                                     variant='standard'
                                                     InputProps={{
                                                         style: {
@@ -1518,6 +1593,9 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                             marginTop: '-2px',
                                                         },
                                                     }}
+                                                    sx={{
+                                                        ...inputAutoFill
+                                                    }}
                                                 />
                                             </FormControl>
                                         </Stack>
@@ -1531,10 +1609,10 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                         label="Montants hors TVA"
                                                         name="montanth_tva"
                                                         value={formData.values.montanth_tva}
-                                                        onChange={formData.handleChange}
-                                                        onBlur={formData.handleBlur}
-                                                        error={Boolean(formData.touched.montanth_tva && formData.errors.montanth_tva)}
-                                                        helperText={formData.touched.montanth_tva && formData.errors.montanth_tva}
+                                                        // onChange={formData.handleChange}
+                                                        // onBlur={formData.handleBlur}
+                                                        // error={Boolean(formData.touched.montanth_tva && formData.errors.montanth_tva)}
+                                                        // helperText={formData.touched.montanth_tva && formData.errors.montanth_tva}
                                                         fullWidth
                                                         variant='standard'
                                                         InputProps={{
@@ -1560,6 +1638,9 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                                 fontSize: '13px',
                                                                 marginTop: '-2px',
                                                             },
+                                                        }}
+                                                        sx={{
+                                                            ...inputAutoFill
                                                         }}
                                                     />
                                                 </FormControl>
@@ -1569,10 +1650,10 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                         label="TVA"
                                                         name="tva"
                                                         value={formData.values.tva}
-                                                        onChange={formData.handleChange}
-                                                        onBlur={formData.handleBlur}
-                                                        error={Boolean(formData.touched.tva && formData.errors.tva)}
-                                                        helperText={formData.touched.tva && formData.errors.tva}
+                                                        // onChange={formData.handleChange}
+                                                        // onBlur={formData.handleBlur}
+                                                        // error={Boolean(formData.touched.tva && formData.errors.tva)}
+                                                        // helperText={formData.touched.tva && formData.errors.tva}
                                                         fullWidth
                                                         variant='standard'
                                                         InputProps={{
@@ -1598,6 +1679,9 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                                 fontSize: '13px',
                                                                 marginTop: '-2px',
                                                             },
+                                                        }}
+                                                        sx={{
+                                                            ...inputAutoFill
                                                         }}
                                                     />
                                                 </FormControl>

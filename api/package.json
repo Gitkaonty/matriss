@@ -13,10 +13,12 @@
     "bcrypt": "^5.1.1",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
+    "crypto": "^1.0.1",
     "csv-parser": "^3.2.0",
     "date-fns": "^4.1.0",
     "dotenv": "^16.3.1",
     "ejs": "^3.1.9",
+    "exceljs": "^4.4.0",
     "express": "^4.18.2",
     "express-myconnection": "^1.0.4",
     "fs.promises": "^0.1.2",
@@ -24,14 +26,19 @@
     "morgan": "^1.10.0",
     "multer": "^2.0.1",
     "mysql2": "^3.11.3",
+    "nodemailer": "^7.0.5",
     "nodemon": "^3.0.3",
     "path": "^0.12.7",
+    "pdf-lib": "^1.17.1",
     "pdfkit": "^0.17.1",
     "pdfkit-table": "^0.1.99",
+    "pdfmake": "^0.2.20",
     "pg": "^8.13.1",
     "pg-hstore": "^2.3.4",
+    "puppeteer": "^24.17.0",
     "sequelize": "^6.37.5",
-    "sequelize-cli": "^6.6.2"
+    "sequelize-cli": "^6.6.2",
+    "xmlbuilder2": "^3.1.1"
   },
   "devDependencies": {
     "@types/pg": "^8.10.9"

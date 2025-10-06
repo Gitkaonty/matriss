@@ -11,7 +11,7 @@ import { Stack } from '@mui/material';
 
 let initial = init[0];
 
-export default function StickyHeadTable({tableHeader, tableRow}) {
+export default function StickyHeadTable({ tableHeader, tableRow }) {
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
 
@@ -25,15 +25,15 @@ export default function StickyHeadTable({tableHeader, tableRow}) {
   };
 
   return (
-    
-    <Stack width={'98%'} height={'80%'}>
-      <TableContainer sx={{ height:'100%', width:"98%", minWidth:"300px" }}>
+
+    <Stack width={'100%'} height={'80%'}>
+      <TableContainer sx={{ height: '100%' }}>
         <Table stickyHeader aria-label="sticky table" >
           <TableHead>
             <TableRow>
               {tableHeader.map((column) => (
                 <TableCell
-                  sx={{ fontSize: 16, fontWeight:"bold", backgroundColor: initial.tableHeaderBackgroundColor }}
+                  sx={{ fontSize: 16, fontWeight: "bold", backgroundColor: initial.tableHeaderBackgroundColor }}
                   key={column.id}
                   align={column.align}
                   style={{ minWidth: column.minWidth }}
@@ -48,7 +48,7 @@ export default function StickyHeadTable({tableHeader, tableRow}) {
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((row) => {
                 return (
-                  <TableRow hover role="checkbox" tabIndex={-1} key={row.code}>
+                  <TableRow hover role="checkbox" tabIndex={-1} key={row.id}>
                     {tableHeader.map((column) => {
                       const value = row[column.id];
                       return (
@@ -66,7 +66,7 @@ export default function StickyHeadTable({tableHeader, tableRow}) {
         </Table>
       </TableContainer>
       <TablePagination
-        style={{height:"20%"}}
+        style={{ height: "20%" }}
         rowsPerPageOptions={[10, 25, 100]}
         component="div"
         count={tableRow.length}

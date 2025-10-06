@@ -104,6 +104,7 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
   const listeEtatComm = await etatscomatrices.findAll({});
   const listeEtatPlp = await etatsplpmatrices.findAll({});
   const listeRubrique = await rubriquesmatrices.findAll({});
+  const listeCompteRubrique = await compterubriquematrices.findAll({});
 
   const createdExerciceInfosData = await exercice.findOne({
     where: { id: createExercice.id }
@@ -138,14 +139,14 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
     }
   }
 
-  let listeCompteRubrique = [];
-  if (action === 'FIRST') {
-    listeCompteRubrique = await compterubriquematrices.findAll({});
-  } else {
-    listeCompteRubrique = await compterubriques.findAll({
-      where: { id_compte: id_compte, id_dossier: id_dossier, id_exercice: id_exerciceRef }
-    });
-  }
+  // let listeCompteRubrique = [];
+  // if (action === 'FIRST') {
+  //   listeCompteRubrique = await compterubriquematrices.findAll({});
+  // } else {
+  //   listeCompteRubrique = await compterubriques.findAll({
+  //     where: { id_compte: id_compte, id_dossier: id_dossier, id_exercice: id_exerciceRef }
+  //   });
+  // }
 
   listeEtat.map(async (item) => {
     await etats.create({
@@ -181,6 +182,24 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
       commercant_valeur: item.commercant_valeur,
       producteur_quantite: item.producteur_quantite,
       producteur_valeur: item.producteur_valeur,
+    })
+  })
+
+  listeCompteRubrique.map(async (item) => {
+    await compterubriques.create({
+      id_compte: id_compte,
+      id_dossier: id_dossier,
+      id_exercice: createExercice.id,
+      id_etat: item.id_etat,
+      id_rubrique: item.id_rubrique,
+      compte: item.compte,
+      nature: item.nature,
+      senscalcul: item.senscalcul,
+      condition: item.condition,
+      equation: item.equation,
+      par_default: item.par_default,
+      active: item.active,
+      exercice: item.exercice,
     })
   })
 
@@ -254,13 +273,13 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
     where:
     {
       id_etat: "DP",
-      nature: { [Op.in]: ['RISQUE', 'DEPRECIATION'] },
+      // nature: { [Op.in]: ['RISQUE', 'DEPRECIATION'] },
     }
   });
 
   if (listeRubriqueDP.length > 0) {
     listeRubriqueDP.map((item) => {
-      liassedps.create({
+      const dp = liassedps.create({
         id_compte: id_compte,
         id_dossier: id_dossier,
         id_exercice: createExercice.id,
@@ -322,23 +341,23 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
     });
   }
 
-  listeCompteRubrique.map(async (item) => {
-    const copycompterubriques = await compterubriques.create({
-      id_compte: id_compte,
-      id_dossier: id_dossier,
-      id_exercice: createExercice.id,
-      id_etat: item.id_etat,
-      id_rubrique: item.id_rubrique,
-      compte: item.compte,
-      nature: item.nature,
-      senscalcul: item.senscalcul,
-      condition: item.condition,
-      equation: item.equation,
-      par_default: item.par_default,
-      active: item.active,
-      exercice: item.exercice,
-    });
-  });
+  // listeCompteRubrique.map(async (item) => {
+  //   const copycompterubriques = await compterubriques.create({
+  //     id_compte: id_compte,
+  //     id_dossier: id_dossier,
+  //     id_exercice: createExercice.id,
+  //     id_etat: item.id_etat,
+  //     id_rubrique: item.id_rubrique,
+  //     compte: item.compte,
+  //     nature: item.nature,
+  //     senscalcul: item.senscalcul,
+  //     condition: item.condition,
+  //     equation: item.equation,
+  //     par_default: item.par_default,
+  //     active: item.active,
+  //     exercice: item.exercice,
+  //   });
+  // });
 }
 
 const createFirstExercice = async (req, res) => {

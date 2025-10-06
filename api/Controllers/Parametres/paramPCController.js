@@ -8,6 +8,7 @@ const dossierPlanComptableCopy = db.dossierplancomptable;
 const dossierpcdetailcptchg = db.dossierpcdetailcptchg;
 const dossierpcdetailcpttva = db.dossierpcdetailcpttva;
 const dossiers = db.dossiers;
+const localites = db.localites;
 
 dossierPlanComptable.belongsTo(dossierPlanComptableCopy, { as: 'BaseAux', foreignKey: 'baseaux_id', targetKey: 'id' });
 
@@ -82,7 +83,11 @@ const AddCptToPc = async (req, res) => {
       adresseEtranger,
       pays,
       listeCptChg,
-      listeCptTva
+      listeCptTva,
+      province,
+      region,
+      district,
+      commune
     } = req.body;
 
     const DossierParam = await dossiers.findOne({
@@ -125,7 +130,7 @@ const AddCptToPc = async (req, res) => {
           const findedID = await dossierPlanComptable.findOne({
             where:
             {
-              id: baseCptCollectif
+              id: itemId
             }
           });
 
@@ -185,8 +190,17 @@ const AddCptToPc = async (req, res) => {
           refpieceid: refPieceID,
           adressesansnif: adresseSansNIF,
           motcle: motcle,
-          baseaux_id: baseaux_id
+          baseaux_id: baseaux_id,
+
+          province: province,
+          region: region,
+          district: district,
+          commune: commune
         });
+
+        if (NewCptAdded.id) {
+          await NewCptAdded.update({ baseaux_id: NewCptAdded.id });
+        }
 
         //Enregistrer les compte de charges et TVA associés au compte
         if (listeCptChg.length > 0) {
@@ -242,7 +256,7 @@ const AddCptToPc = async (req, res) => {
           const findedID = await dossierPlanComptable.findOne({
             where:
             {
-              id: baseCptCollectif
+              id: itemId
             }
           });
 
@@ -300,8 +314,17 @@ const AddCptToPc = async (req, res) => {
           statistique: stat,
           adresse: adresse,
           motcle: motcle,
-          baseaux_id: baseaux_id
+          baseaux_id: baseaux_id,
+
+          province: province,
+          region: region,
+          district: district,
+          commune: commune
         });
+
+        if (NewCptAdded.id) {
+          await NewCptAdded.update({ baseaux_id: NewCptAdded.id });
+        }
 
         //Enregistrer les compte de charges et TVA associés au compte
         if (listeCptChg.length > 0) {
@@ -357,7 +380,7 @@ const AddCptToPc = async (req, res) => {
           const findedID = await dossierPlanComptable.findOne({
             where:
             {
-              id: baseCptCollectif
+              id: itemId
             }
           });
 
@@ -415,8 +438,17 @@ const AddCptToPc = async (req, res) => {
           adresseetranger: adresseEtranger,
           pays: pays,
           motcle: motcle,
-          baseaux_id: baseaux_id
+          baseaux_id: baseaux_id,
+
+          province: province,
+          region: region,
+          district: district,
+          commune: commune
         });
+
+        if (NewCptAdded.id) {
+          await NewCptAdded.update({ baseaux_id: NewCptAdded.id });
+        }
 
         //Enregistrer les compte de charges et TVA associés au compte
         if (listeCptChg.length > 0) {
@@ -472,7 +504,7 @@ const AddCptToPc = async (req, res) => {
           const findedID = await dossierPlanComptable.findOne({
             where:
             {
-              id: baseCptCollectif
+              id: itemId
             }
           });
 
@@ -528,8 +560,17 @@ const AddCptToPc = async (req, res) => {
           typetier: typeTier,
           pays: 'Madagascar',
           motcle: motcle,
-          baseaux_id: baseaux_id
+          baseaux_id: baseaux_id,
+
+          province: province,
+          region: region,
+          district: district,
+          commune: commune
         });
+
+        if (NewCptAdded.id) {
+          await NewCptAdded.update({ baseaux_id: NewCptAdded.id });
+        }
 
         //Enregistrer les compte de charges et TVA associés au compte
         if (listeCptChg.length > 0) {
@@ -593,7 +634,7 @@ const AddCptToPc = async (req, res) => {
           const findedID = await dossierPlanComptable.findOne({
             where:
             {
-              id: baseCptCollectif
+              id: itemId
             }
           });
 
@@ -654,7 +695,12 @@ const AddCptToPc = async (req, res) => {
             refpieceid: refPieceID,
             adressesansnif: adresseSansNIF,
             motcle: motcle,
-            baseaux_id: baseaux_id
+            baseaux_id: baseaux_id,
+
+            province: province,
+            region: region,
+            district: district,
+            commune: commune
           },
           {
             where: {
@@ -662,6 +708,10 @@ const AddCptToPc = async (req, res) => {
             }
           }
         );
+
+        if (NewCptAdded.id) {
+          await NewCptAdded.update({ baseaux_id: NewCptAdded.id });
+        }
 
         //Enregistrer les compte de charges et TVA associés au compte
         if (listeCptChg.length > 0) {
@@ -723,7 +773,7 @@ const AddCptToPc = async (req, res) => {
           const findedID = await dossierPlanComptable.findOne({
             where:
             {
-              id: baseCptCollectif
+              id: itemId
             }
           });
 
@@ -782,12 +832,21 @@ const AddCptToPc = async (req, res) => {
             statistique: stat,
             adresse: adresse,
             motcle: motcle,
-            baseaux_id: baseaux_id
+            baseaux_id: baseaux_id,
+
+            province: province,
+            region: region,
+            district: district,
+            commune: commune
           },
           {
             where: { id: itemId }
           }
         );
+
+        if (NewCptAdded.id) {
+          await NewCptAdded.update({ baseaux_id: NewCptAdded.id });
+        }
 
         //Enregistrer les compte de charges et TVA associés au compte
         if (listeCptChg.length > 0) {
@@ -849,7 +908,7 @@ const AddCptToPc = async (req, res) => {
           const findedID = await dossierPlanComptable.findOne({
             where:
             {
-              id: baseCptCollectif
+              id: itemId
             }
           });
 
@@ -908,12 +967,21 @@ const AddCptToPc = async (req, res) => {
             adresseetranger: adresseEtranger,
             pays: pays,
             motcle: motcle,
-            baseaux_id: baseaux_id
+            baseaux_id: baseaux_id,
+
+            province: province,
+            region: region,
+            district: district,
+            commune: commune
           },
           {
             where: { id: itemId }
           }
         );
+
+        if (NewCptAdded.id) {
+          await NewCptAdded.update({ baseaux_id: NewCptAdded.id });
+        }
 
         //Enregistrer les compte de charges et TVA associés au compte
         if (listeCptChg.length > 0) {
@@ -975,7 +1043,7 @@ const AddCptToPc = async (req, res) => {
           const findedID = await dossierPlanComptable.findOne({
             where:
             {
-              id: baseCptCollectif
+              id: itemId
             }
           });
 
@@ -1032,12 +1100,21 @@ const AddCptToPc = async (req, res) => {
             typetier: typeTier,
             pays: 'Madagascar',
             motcle: motcle,
-            baseaux_id: baseaux_id
+            baseaux_id: baseaux_id,
+
+            province: province,
+            region: region,
+            district: district,
+            commune: commune
           },
           {
             where: { id: itemId }
           }
         );
+
+        if (NewCptAdded.id) {
+          await NewCptAdded.update({ baseaux_id: NewCptAdded.id });
+        }
 
         //Enregistrer les compte de charges et TVA associés au compte
         if (listeCptChg.length > 0) {
@@ -1206,21 +1283,16 @@ const recupPcIdLibelle = async (req, res) => {
           }
         }
       ],
-      // raw: true,
       order: [['compte', 'ASC']],
       attributes: ['libelle', 'id']
     });
 
-    // return res.json(listepc)
-
-    // Étape 1: transformer
     const mappedListe = listepc.map(item => ({
       id: item.id,
       libelle: item.libelle,
       compte: item.BaseAux?.compte || null
     }));
 
-    // Étape 2: supprimer les doublons sur libelle + compte
     const uniqueListe = [];
     const seen = new Set();
 
@@ -1252,10 +1324,217 @@ const recupPcIdLibelle = async (req, res) => {
   }
 }
 
+const recupPcClasseSix = async (req, res) => {
+  try {
+    const { id_dossier, id_compte } = req.params;
+
+    const listepc = await dossierPlanComptable.findAll({
+      where: {
+        id_dossier: id_dossier,
+        id_compte: id_compte,
+        libelle: { [Sequelize.Op.ne]: 'Collectif' },
+        compte: { [Sequelize.Op.like]: '6%' }
+      },
+      include: [
+        {
+          model: dossierPlanComptable,
+          as: 'BaseAux',
+          attributes: ['compte'],
+          required: false,
+          where: {
+            id_dossier: id_dossier,
+            id_compte: id_compte
+          }
+        }
+      ],
+      order: [['compte', 'ASC']],
+      attributes: ['libelle', 'id']
+    });
+
+    const mappedListe = listepc.map(item => ({
+      id: item.id,
+      libelle: item.libelle,
+      compte: item.BaseAux?.compte || null
+    }));
+
+    const uniqueListe = [];
+    const seen = new Set();
+
+    for (const item of mappedListe) {
+      const key = `${item.libelle}-${item.compte}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        uniqueListe.push(item);
+      }
+    }
+
+    const resData = {
+      state: true,
+      msg: "Donnée reçues avec succes !",
+      liste: uniqueListe
+    };
+
+    if (listepc) {
+      resData.state = true;
+      resData.msg = "Donnée reçues avec succes !"
+    } else {
+      resData.state = false;
+      resData.msg = "Une erreur est survenue au moment du traitement des données";
+    }
+
+    return res.json(resData);
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+const recupPcCompteIsi = async (req, res) => {
+  try {
+    const { id_dossier, id_compte } = req.params;
+    const { compteisi } = req.query;
+
+    if (!id_compte) {
+      return res.status(400).json({ state: false, message: 'Id_compte non trouvé' });
+    }
+    if (!id_dossier) {
+      return res.status(400).json({ state: false, message: 'Id_dossier non trouvé' });
+    }
+    if (!compteisi) {
+      return res.status(400).json({ state: false, message: 'Compte isi non trouvé' });
+    }
+
+    const listepc = await dossierPlanComptable.findAll({
+      where: {
+        id_dossier: id_dossier,
+        id_compte: id_compte,
+        libelle: { [Sequelize.Op.ne]: 'Collectif' },
+        compte: { [Sequelize.Op.like]: `${compteisi}%` }
+      },
+      include: [
+        {
+          model: dossierPlanComptable,
+          as: 'BaseAux',
+          attributes: ['compte'],
+          required: false,
+          where: {
+            id_dossier: id_dossier,
+            id_compte: id_compte
+          }
+        }
+      ],
+      order: [['compte', 'ASC']],
+      attributes: ['libelle', 'id']
+    });
+
+    const mappedListe = listepc.map(item => ({
+      id: item.id,
+      libelle: item.libelle,
+      compte: item.BaseAux?.compte || null
+    }));
+
+    const uniqueListe = [];
+    const seen = new Set();
+
+    for (const item of mappedListe) {
+      const key = `${item.libelle}-${item.compte}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        uniqueListe.push(item);
+      }
+    }
+
+    const resData = {
+      state: true,
+      msg: "Donnée reçues avec succes !",
+      liste: uniqueListe
+    };
+
+    if (listepc) {
+      resData.state = true;
+      resData.msg = "Donnée reçues avec succes !"
+    } else {
+      resData.state = false;
+      resData.msg = "Une erreur est survenue au moment du traitement des données";
+    }
+
+    return res.json(resData);
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+const getProvinces = async (req, res) => {
+  try {
+    const provinces = await localites.findAll({
+      attributes: [[Sequelize.fn('DISTINCT', Sequelize.col('province')), 'province']],
+      order: [[Sequelize.col('province'), 'ASC']],
+      raw: true
+    });
+    res.json(provinces.map(p => p.province));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getRegions = async (req, res) => {
+  try {
+    const { province } = req.params;
+    const regions = await localites.findAll({
+      attributes: [[Sequelize.fn('DISTINCT', Sequelize.col('region')), 'region']],
+      order: [[Sequelize.col('region'), 'ASC']],
+      where: { province },
+      raw: true
+    });
+    res.json(regions.map(r => r.region));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getDistricts = async (req, res) => {
+  try {
+    const { province, region } = req.params;
+
+    const districts = await localites.findAll({
+      attributes: [[Sequelize.fn('DISTINCT', Sequelize.col('district')), 'district']],
+      where: { province, region },
+      order: [[Sequelize.col('district'), 'ASC']],
+      raw: true
+    });
+
+    res.json(districts.map(d => d.district));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getCommunes = async (req, res) => {
+  try {
+    const { province, region, district } = req.params;
+
+    const communes = await localites.findAll({
+      attributes: [[Sequelize.fn('DISTINCT', Sequelize.col('commune')), 'commune']],
+      where: { province, region, district },
+      order: [[Sequelize.col('commune'), 'ASC']],
+      raw: true
+    });
+
+    res.json(communes.map(c => c.commune));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   recupPc,
   AddCptToPc,
   keepListCptChgTvaAssoc,
   deleteItemPc,
-  recupPcIdLibelle
+  recupPcIdLibelle,
+  recupPcClasseSix,
+  recupPcCompteIsi,
+  getProvinces,
+  getRegions,
+  getDistricts,
+  getCommunes
 };

@@ -1,10 +1,12 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Typography, Stack, Paper, RadioGroup, FormControlLabel, Radio, FormControl, 
-        InputLabel, Select, MenuItem, TextField, Box, Tab, 
-        FormHelperText,
-        Input} from '@mui/material';
+import {
+    Typography, Stack, Paper, RadioGroup, FormControlLabel, Radio, FormControl,
+    InputLabel, Select, MenuItem, TextField, Box, Tab,
+    FormHelperText,
+    Input
+} from '@mui/material';
 import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
 import { init } from '../../../init';
@@ -35,7 +37,7 @@ import { VscClose } from 'react-icons/vsc';
 import { TfiSave } from 'react-icons/tfi';
 import PopupConfirmDelete from './popupConfirmDelete';
 
-export const DatagridBHIAPCdetail = ({compteId, fileId, exerciceId, etatId, rubriqueId, nature, bilanRubriqueData}) => {
+export const DatagridBHIAPCdetail = ({ compteId, fileId, exerciceId, etatId, rubriqueId, nature, bilanRubriqueData }) => {
     let initial = init[0];
     const DataDetail = bilanRubriqueData;
     const [compteRubriqueData, setCompteRubriqueData] = useState([]);
@@ -45,7 +47,7 @@ export const DatagridBHIAPCdetail = ({compteId, fileId, exerciceId, etatId, rubr
     const [sensCalculValidationColor, setSensCalculValidationColor] = useState('transparent');
     const [conditionValidationColor, setConditionValidationColor] = useState('transparent');
     const [equationValidationColor, setEquationValidationColor] = useState('transparent');
-    
+
     const [selectedRowId, setSelectedRowId] = useState([]);
     const [rowModesModel, setRowModesModel] = useState({});
     const [disableModifyBouton, setDisableModifyBouton] = useState(true);
@@ -58,12 +60,12 @@ export const DatagridBHIAPCdetail = ({compteId, fileId, exerciceId, etatId, rubr
     const [disableDefaultFieldModif, setDisableDefaultFieldModif] = useState(false);
 
     useEffect(() => {
-        if(rubriqueId === 0 || !rubriqueId){
+        if (rubriqueId === 0 || !rubriqueId) {
             setDisableAddRowBouton(true);
-        }else{
+        } else {
             setDisableAddRowBouton(false);
         }
-    },[rubriqueId]);
+    }, [rubriqueId]);
 
     useEffect(() => {
         setCompteRubriqueData(DataDetail);
@@ -85,31 +87,31 @@ export const DatagridBHIAPCdetail = ({compteId, fileId, exerciceId, etatId, rubr
         { value: 'SOUSTRACTIF', label: 'Soustractif' },
     ];
 
-     //formulaire pour la sauvegarde
-     const formNewParam = useFormik({
+    //formulaire pour la sauvegarde
+    const formNewParam = useFormik({
         initialValues: {
-            idParam:0,
+            idParam: 0,
             compteId: compteId,
             fileId: fileId,
             exerciceId: exerciceId,
             etatId: etatId,
             rubriqueId: rubriqueId,
             nature: nature,
-            compte:'',
-            senscalcul:'',
-            condition:'',
-            equation:'',
-            par_default:true,
+            compte: '',
+            senscalcul: '',
+            condition: '',
+            equation: '',
+            par_default: true,
             active: true
         },
-        validationSchema : Yup.object({
+        validationSchema: Yup.object({
             nature: Yup.string().required("Ce champ est obligatoire"),
             senscalcul: Yup.string().required("Ce champ est obligatoire"),
             condition: Yup.string().required("Ce champ est obligatoire"),
             equation: Yup.string().required("Ce champ est obligatoire")
         }),
         onSubmit: (values) => {
-           
+
         },
         validateOnChange: false,
         validateOnBlur: true,
@@ -133,26 +135,27 @@ export const DatagridBHIAPCdetail = ({compteId, fileId, exerciceId, etatId, rubr
 
     const columnHeader = [
         {
-            field: 'compte', 
-            headerName: 'Compte', 
-            type: 'string', 
-            sortable : true, 
-            width: 150, 
+            field: 'compte',
+            headerName: 'Compte',
+            type: 'string',
+            sortable: true,
+            flex: 5,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
             editable: editableRow,
             renderEditCell: (params) => {
                 return (
-                    <FormControl fullWidth style={{height:'100%'}}>
+                    <FormControl fullWidth style={{ height: '100%' }}>
                         <Input
-                            style={{height:'100%', alignItems:'center', 
-                                outline: 'none', 
+                            style={{
+                                height: '100%', alignItems: 'center',
+                                outline: 'none',
                                 backgroundColor: compteValidationColor
                             }}
                             type="text"
                             value={formNewParam.values.compte}
-                            onChange = {(e) => handleChangeCompte(e.target.value)}
+                            onChange={(e) => handleChangeCompte(e.target.value)}
                             label="libelle"
                             disableUnderline={true}
                             disabled={disableDefaultFieldModif}
@@ -162,11 +165,11 @@ export const DatagridBHIAPCdetail = ({compteId, fileId, exerciceId, etatId, rubr
             },
         },
         {
-            field: 'senscalcul', 
-            headerName: 'Sens calcul', 
-            type: 'singleSelect', 
-            sortable : true, 
-            width: 150, 
+            field: 'senscalcul',
+            headerName: 'Sens calcul',
+            type: 'singleSelect',
+            sortable: true,
+            flex: 1,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
@@ -177,164 +180,87 @@ export const DatagridBHIAPCdetail = ({compteId, fileId, exerciceId, etatId, rubr
             },
 
             renderEditCell: (params) => {
-            return (
-                <FormControl fullWidth>
-                <InputLabel><em>Choisir...</em></InputLabel>
-                <Select
-                    disabled={disableDefaultFieldModif}
-                    style={{backgroundColor: sensCalculValidationColor}}
-                    value={formNewParam.values.senscalcul}
-                    onChange = {(e) => handleChangeSensCalcul(e.target.value)}
-                    label="sensCalucl"
-                >
-                    {sensCalcul?.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                    </MenuItem>
-                    ))}
-                </Select>
-                <FormHelperText style={{color:'red'}}>
-                    {formNewParam.errors.compte && formNewParam.touched.compte && formNewParam.errors.compte}
-                </FormHelperText>
-                </FormControl>
-            );
+                return (
+                    <FormControl fullWidth>
+                        <InputLabel><em>Choisir...</em></InputLabel>
+                        <Select
+                            disabled={disableDefaultFieldModif}
+                            style={{ backgroundColor: sensCalculValidationColor }}
+                            value={formNewParam.values.senscalcul}
+                            onChange={(e) => handleChangeSensCalcul(e.target.value)}
+                            label="sensCalucl"
+                        >
+                            {sensCalcul?.map((option) => (
+                                <MenuItem key={option.value} value={option.value}>
+                                    {option.label}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                        <FormHelperText style={{ color: 'red' }}>
+                            {formNewParam.errors.compte && formNewParam.touched.compte && formNewParam.errors.compte}
+                        </FormHelperText>
+                    </FormControl>
+                );
             },
         },
-        // {
-        //     field: 'condition', 
-        //     headerName: 'Condtion', 
-        //     type: 'singleSelect', 
-        //     sortable : true, 
-        //     width: 120, 
-        //     headerAlign: 'left',
-        //     align: 'left',
-        //     headerClassName: 'HeaderbackColor',
-        //     editable: editableRow,
-        //     valueFormatter: (params) => {
-        //         const selectedType = condition?.find((option) => option.value === params.value);
-        //         return selectedType ? selectedType.label : params.label;
-        //     },
-        //     renderEditCell: (params) => {
-        //     return (
-        //         <FormControl fullWidth>
-        //         <InputLabel><em>Choisir...</em></InputLabel>
-        //         <Select
-        //             disabled={disableDefaultFieldModif}
-        //             style={{backgroundColor: conditionValidationColor}}
-        //             value={formNewParam.values.condition}
-        //             onChange = {(e) => handleChangeCondition(e.target.value)}
-        //             label="sensCalucl"
-        //         >
-        //             {condition?.map((option) => (
-        //             <MenuItem key={option.value} value={option.value}>
-        //                 {option.label}
-        //             </MenuItem>
-        //             ))}
-        //         </Select>
-        //         <FormHelperText style={{color:'red'}}>
-        //             {formNewParam.errors.condition && formNewParam.touched.condition && formNewParam.errors.condition}
-        //         </FormHelperText>
-        //         </FormControl>
-        //     );
-        //     },
-        // },
-        // {
-        //     field: 'equation', 
-        //     headerName: 'Equation', 
-        //     type: 'text', 
-        //     sortable : true, 
-        //     width: 100, 
-        //     headerAlign: 'left',
-        //     align: 'left',
-        //     headerClassName: 'HeaderbackColor',
-        //     editable: editableRow,
-        //     valueFormatter: (params) => {
-        //         const selectedType = equation?.find((option) => option.value === params.value);
-        //         return selectedType ? selectedType.label : params.label;
-        //     },
-
-        //     renderEditCell: (params) => {
-        //     return (
-        //         <FormControl fullWidth>
-        //         <InputLabel><em>Choisir...</em></InputLabel>
-        //         <Select
-        //             disabled={disableDefaultFieldModif}
-        //             style={{backgroundColor: equationValidationColor}}
-        //             value={formNewParam.values.equation}
-        //             onChange = {(e) => handleChangeEquation(e.target.value)}
-        //             label="equation"
-        //         >
-        //             {equation?.map((option) => (
-        //             <MenuItem key={option.value} value={option.value}>
-        //                 {option.label}
-        //             </MenuItem>
-        //             ))}
-        //         </Select>
-        //         <FormHelperText style={{color:'red'}}>
-        //             {formNewParam.errors.equation && formNewParam.touched.equation && formNewParam.errors.equation}
-        //         </FormHelperText>
-        //         </FormControl>
-        //     );
-        //     },
-        // },
         {
-            field: 'active', 
-            headerName: 'Activé', 
-            type: 'boolean', 
-            sortable : true, 
-            width: 80, 
+            field: 'active',
+            headerName: 'Activé',
+            type: 'boolean',
+            sortable: true,
+            flex: 0.5,
             headerAlign: 'left',
             align: 'center',
             headerClassName: 'HeaderbackColor',
             editable: editableRow,
             renderEditCell: (params) => {
-            return (
-                <input
-                // value={formNewParam.values.active}
-                checked={formNewParam.values.active}
-                type="checkbox"
-                onChange={(e) => handleCheckboxChange(e.target.checked)}
-                />
-            );
+                return (
+                    <input
+                        // value={formNewParam.values.active}
+                        checked={formNewParam.values.active}
+                        type="checkbox"
+                        onChange={(e) => handleCheckboxChange(e.target.checked)}
+                    />
+                );
             },
         },
-        {
-            field: 'par_default', 
-            headerName: 'Par défaut', 
-            type: 'boolean', 
-            sortable : true, 
-            width: 90, 
-            headerAlign: 'left',
-            align: 'center',
-            headerClassName: 'HeaderbackColor',
-            editable: false
-        },
+        // {
+        //     field: 'par_default',
+        //     headerName: 'Par défaut',
+        //     type: 'boolean',
+        //     sortable: true,
+        //     flex: 0.5,
+        //     headerAlign: 'left',
+        //     align: 'center',
+        //     headerClassName: 'HeaderbackColor',
+        //     editable: false
+        // },
     ];
 
     //gestion ajout + modification + suppression ligne dans le tableau liste code journaux
     const saveSelectedRow = (ids) => {
-        if(ids.length === 1){
+        if (ids.length === 1) {
             setSelectedRowId(ids);
             setDisableModifyBouton(false);
             setDisableSaveBouton(false);
             setDisableCancelBouton(false);
             setDisableDeleteBouton(false);
-        }else{
+        } else {
             setSelectedRowId([]);
             setDisableModifyBouton(true);
             setDisableSaveBouton(true);
             setDisableCancelBouton(true);
             setDisableDeleteBouton(true);
         }
-      }
+    }
 
-      const handleRowEditStop = (params, event) => {
+    const handleRowEditStop = (params, event) => {
         if (params.reason === GridRowEditStopReasons.rowFocusOut) {
-          event.defaultMuiPrevented = true;
+            event.defaultMuiPrevented = true;
         }
-      };
-    
-      const handleEditClick = (id) => () => {
+    };
+
+    const handleEditClick = (id) => () => {
         //réinitialiser les couleurs des champs
         setCompteValidationColor('transparent');
         setSensCalculValidationColor('transparent');
@@ -344,178 +270,178 @@ export const DatagridBHIAPCdetail = ({compteId, fileId, exerciceId, etatId, rubr
         const selectedRowInfos = compteRubriqueData?.filter((item) => item.id === id[0]);
 
         //rendre inaccessible les champs si des champs de paramétrages par défaut       
-        if(selectedRowInfos[0]?.par_default){
+        if (selectedRowInfos[0]?.par_default) {
             setDisableDefaultFieldModif(true);
-        }else{
+        } else {
             setDisableDefaultFieldModif(false);
         }
 
-        formNewParam.setFieldValue("idParam", selectedRowInfos[0]?.id? selectedRowInfos[0]?.id : 0);
+        formNewParam.setFieldValue("idParam", selectedRowInfos[0]?.id ? selectedRowInfos[0]?.id : 0);
         formNewParam.setFieldValue("compteId", compteId);
         formNewParam.setFieldValue("fileId", fileId);
         formNewParam.setFieldValue("exerciceId", exerciceId);
         formNewParam.setFieldValue("etatId", etatId);
         formNewParam.setFieldValue("rubriqueId", 1);
-        formNewParam.setFieldValue("compte", selectedRowInfos[0]?.compte? selectedRowInfos[0]?.compte : '');
+        formNewParam.setFieldValue("compte", selectedRowInfos[0]?.compte ? selectedRowInfos[0]?.compte : '');
         formNewParam.setFieldValue("nature", "BRUT");
-        formNewParam.setFieldValue("senscalcul", selectedRowInfos[0]?.senscalcul? selectedRowInfos[0]?.senscalcul:'');
+        formNewParam.setFieldValue("senscalcul", selectedRowInfos[0]?.senscalcul ? selectedRowInfos[0]?.senscalcul : '');
         formNewParam.setFieldValue("condition", "SOLDE");
         formNewParam.setFieldValue("equation", "ADDITIF");
-        formNewParam.setFieldValue("par_default", selectedRowInfos[0]?.par_default? selectedRowInfos[0]?.par_default: false);
-        formNewParam.setFieldValue("active", selectedRowInfos[0]?.active? selectedRowInfos[0]?.active: false);
-       
+        formNewParam.setFieldValue("par_default", selectedRowInfos[0]?.par_default ? selectedRowInfos[0]?.par_default : false);
+        formNewParam.setFieldValue("active", selectedRowInfos[0]?.active ? selectedRowInfos[0]?.active : false);
+
         setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
         setDisableSaveBouton(false);
-      };
-    
-      const handleSaveClick = (id) => () => {
+    };
+
+    const handleSaveClick = (id) => () => {
         let saveBoolCompte = false;
         let saveBoolSensCalcul = false;
         let saveBoolCondition = false;
         let saveBoolEquation = false;
-        
+
         setCompteValidationColor('transparent');
         setSensCalculValidationColor('transparent');
         setConditionValidationColor('transparent');
         setEquationValidationColor('transparent');
 
-        if(formNewParam.values.compte ===''){
+        if (formNewParam.values.compte === '') {
             setCompteValidationColor('#F6D6D6');
             saveBoolCompte = false;
-        }else{
+        } else {
             setCompteValidationColor('transparent');
             saveBoolCompte = true;
         }
 
-        if(formNewParam.values.senscalcul ===''){
+        if (formNewParam.values.senscalcul === '') {
             setSensCalculValidationColor('#F6D6D6');
             saveBoolSensCalcul = false;
-        }else{
+        } else {
             setSensCalculValidationColor('transparent');
             saveBoolSensCalcul = true;
         }
 
-        if(formNewParam.values.condition ===''){
+        if (formNewParam.values.condition === '') {
             setConditionValidationColor('#F6D6D6');
             saveBoolCondition = false;
-        }else{
+        } else {
             setConditionValidationColor('transparent');
             saveBoolCondition = true;
         }
 
-        if(formNewParam.values.equation ===''){
+        if (formNewParam.values.equation === '') {
             setEquationValidationColor('#F6D6D6');
             saveBoolEquation = false;
-        }else{
+        } else {
             setEquationValidationColor('transparent');
-            saveBoolEquation= true;
+            saveBoolEquation = true;
         }
 
-        if(saveBoolCompte && saveBoolSensCalcul){
+        if (saveBoolCompte && saveBoolSensCalcul) {
             setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
 
-            axios.post(`/paramMappingCompte/MappingCompteAdd`, formNewParam.values).then((response) =>{
+            axios.post(`/paramMappingCompte/MappingCompteAdd`, formNewParam.values).then((response) => {
                 const resData = response.data;
 
-                if(resData.state){
+                if (resData.state) {
                     setDisableSaveBouton(true);
                     formNewParam.resetForm();
                     getListeCompteRubriqueAfterUpdating();
                     toast.success(resData.msg);
-                }else{
+                } else {
                     toast.error(resData.msg);
                 }
             });
-        }else{
+        } else {
             toast.error('Les champs en surbrillances sont obligatoires');
-        }     
-      };
+        }
+    };
 
-      const handleOpenDialogConfirmDeleteRow = () => {
+    const handleOpenDialogConfirmDeleteRow = () => {
         setOpenDialogDeleteRow(true);
-      }
+    }
 
-      const deleteRow = (value) => {
-        if(value === true){
-            if(selectedRowId.length === 1){
+    const deleteRow = (value) => {
+        if (value === true) {
+            if (selectedRowId.length === 1) {
                 const idToDelete = selectedRowId[0];
 
                 let DefaultRow = true;
                 const RowInfos = compteRubriqueData.filter((row) => row.id === idToDelete)
 
-                if(RowInfos){
+                if (RowInfos) {
                     DefaultRow = RowInfos[0].par_default;
                 }
 
-                if(DefaultRow){
+                if (DefaultRow) {
                     toast.error("Vous ne pouvez pas supprimer les paramétrages par défault. désactivez-les en cas de nécessité.");
-                }else{
-                    axios.post(`/paramMappingCompte/mappingCompteDelete`, {fileId, compteId, exerciceId, idToDelete }).then((response) =>{
+                } else {
+                    axios.post(`/paramMappingCompte/mappingCompteDelete`, { fileId, compteId, exerciceId, idToDelete }).then((response) => {
                         const resData = response.data;
-                        if(resData.state){
+                        if (resData.state) {
                             setOpenDialogDeleteRow(false);
                             setCompteRubriqueData(compteRubriqueData.filter((row) => row.id !== selectedRowId[0]));
                             toast.success(resData.msg);
-                        }else{
+                        } else {
                             setOpenDialogDeleteRow(false);
                             toast.error(resData.msg);
                         }
                     });
                 }
-                
+
             }
             setOpenDialogDeleteRow(false);
-        }else{
+        } else {
             setOpenDialogDeleteRow(false);
         }
-      }
-    
-      const handleCancelClick = (id) => () => {
+    }
+
+    const handleCancelClick = (id) => () => {
         setRowModesModel({
-          ...rowModesModel,
-          [id]: { mode: GridRowModes.View, ignoreModifications: true },
+            ...rowModesModel,
+            [id]: { mode: GridRowModes.View, ignoreModifications: true },
         });
-      };
-    
-      const processRowUpdate = (newRow) => {
+    };
+
+    const processRowUpdate = (newRow) => {
         const updatedRow = { ...newRow, isNew: false };
         setCompteRubriqueData(compteRubriqueData.map((row) => (row.id === newRow.id ? updatedRow : row)));
         return updatedRow;
-      };
-    
-      const handleRowModesModelChange = (newRowModesModel) => {
-        setRowModesModel(newRowModesModel);
-      };
+    };
 
-      const handleCellEditCommit = (params) => {
-        if(selectedRowId.length > 1  || selectedRowId.length === 0){
+    const handleRowModesModelChange = (newRowModesModel) => {
+        setRowModesModel(newRowModesModel);
+    };
+
+    const handleCellEditCommit = (params) => {
+        if (selectedRowId.length > 1 || selectedRowId.length === 0) {
             setEditableRow(false);
             setDisableModifyBouton(true);
             setDisableSaveBouton(true);
             setDisableCancelBouton(true);
             toast.error("sélectionnez une seule ligne pour pouvoir la modifier");
-        }else{
+        } else {
             setDisableModifyBouton(false);
             setDisableSaveBouton(false);
             setDisableCancelBouton(false);
             if (!selectedRowId.includes(params.id)) {
-            setEditableRow(false);
-            toast.error("sélectionnez une ligne pour pouvoir la modifier");
-            }else{
+                setEditableRow(false);
+                toast.error("sélectionnez une ligne pour pouvoir la modifier");
+            } else {
                 setEditableRow(true);
             }
         }
-        
-      };
+
+    };
 
     //Ajouter une ligne dans le tableau
     const handleOpenDialogAddNewRow = () => {
-        const newId = -1*(getMaxID(compteRubriqueData)+1);
+        const newId = -1 * (getMaxID(compteRubriqueData) + 1);
         formNewParam.setFieldValue("idParam", newId);
         formNewParam.setFieldValue("par_default", false);
         const newRow = {
             id: newId,
-            compte:'',
+            compte: '',
             sensCalcul: '',
             condtion: '',
             equation: '',
@@ -526,7 +452,7 @@ export const DatagridBHIAPCdetail = ({compteId, fileId, exerciceId, etatId, rubr
     }
 
     //récupérer le numéro id le plus grand dans le tableau
-    const getMaxID= (data) => {
+    const getMaxID = (data) => {
         const Ids = data.map(item => item.id);
         return Math.max(...Ids);
     };
@@ -534,11 +460,11 @@ export const DatagridBHIAPCdetail = ({compteId, fileId, exerciceId, etatId, rubr
     const getListeCompteRubriqueAfterUpdating = () => {
         const choixPoste = nature;
         const tableau = etatId;
-        axios.post(`/paramMappingCompte/listeCompteRubrique`, {compteId, fileId, exerciceId, tableau, choixPoste, rubriqueId}).then((response) =>{
+        axios.post(`/paramMappingCompte/listeCompteRubrique`, { compteId, fileId, exerciceId, tableau, choixPoste, rubriqueId }).then((response) => {
             const resData = response.data;
-            if(resData.state){
+            if (resData.state) {
                 setCompteRubriqueData(resData.liste);
-            }else{
+            } else {
                 toast.error(resData.msg);
             }
         });
@@ -551,137 +477,159 @@ export const DatagridBHIAPCdetail = ({compteId, fileId, exerciceId, etatId, rubr
 
     return (
         <Stack direction={'column'} alignContent={'left'} alignItems={"left"} spacing={1} width={"100%"} height={"100%"}>
-            {openDialogDeleteRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer la ligne sélectionnée ?"} confirmationState={deleteRow}/>: null}
+            {openDialogDeleteRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer la ligne sélectionnée ?"} confirmationState={deleteRow} /> : null}
 
             <Stack direction={'row'} alignContent={'center'} alignItems={"center"} spacing={1} width={"100%"} height={"30px"}>
-                <Stack width={"100%"} height={"10px"} spacing={0} alignItems={"center"} alignContent={"center"} 
-                    direction={"row"} style={{ marginTop:"20px"}}>
-                    
-                    <Stack width={"50%"} height={"30px"} spacing={2} alignItems={"left"} alignContent={"left"} 
-                    direction={"row"} justifyContent={"left"}>
-                        <Typography variant='h7' sx={{color: "rgba(5,96,116,0.60)"}} align='left'>Détails des calculs</Typography>
+                <Stack width={"100%"} height={"10px"} spacing={0} alignItems={"center"} alignContent={"center"}
+                    direction={"row"} style={{ marginTop: "20px" }}>
+
+                    <Stack width={"50%"} height={"30px"} spacing={2} alignItems={"left"} alignContent={"left"}
+                        direction={"row"} justifyContent={"left"}>
+                        <Typography variant='h7' sx={{ color: "rgba(5,96,116,0.60)" }} align='left'>Détails des calculs</Typography>
                     </Stack>
                 </Stack>
 
-                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"left"} alignContent={"left"} 
-                direction={"row"} justifyContent={"right"} style={{marginRight:"0px"}}>
+                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"left"} alignContent={"left"}
+                    direction={"row"} justifyContent={"right"} style={{ marginRight: "0px" }}>
                     <Tooltip title="Ajouter une ligne">
                         <IconButton
-                        disabled={disableAddRowBouton}
-                        variant="contained" 
-                        onClick={handleOpenDialogAddNewRow}
-                        style={{width:"35px", height:'35px', 
-                            borderRadius:"2px", borderColor: "transparent", 
-                            backgroundColor: initial.theme,
-                            textTransform: 'none', outline: 'none'
-                        }}
+                            disabled={disableAddRowBouton}
+                            variant="contained"
+                            onClick={handleOpenDialogAddNewRow}
+                            style={{
+                                width: "35px", height: '35px',
+                                borderRadius: "2px", borderColor: "transparent",
+                                backgroundColor: initial.theme,
+                                textTransform: 'none', outline: 'none'
+                            }}
                         >
-                            <TbPlaylistAdd style={{width:'25px', height:'25px', color:'white'}}/>
+                            <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
                         </IconButton>
                     </Tooltip>
 
                     <Tooltip title="Modifier la ligne sélectionnée">
                         <IconButton
-                        disabled={disableModifyBouton}
-                        variant="contained" 
-                        onClick={handleEditClick(selectedRowId)}
-                        style={{width:"35px", height:'35px', 
-                            borderRadius:"2px", borderColor: "transparent",
-                            backgroundColor: initial.theme,
-                            textTransform: 'none', outline: 'none'
+                            disabled={disableModifyBouton}
+                            variant="contained"
+                            onClick={handleEditClick(selectedRowId)}
+                            style={{
+                                width: "35px", height: '35px',
+                                borderRadius: "2px", borderColor: "transparent",
+                                backgroundColor: initial.theme,
+                                textTransform: 'none', outline: 'none'
                             }}
                         >
-                            <FaRegPenToSquare style={{width:'25px', height:'25px', color:'white'}}/>
+                            <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
                         </IconButton>
                     </Tooltip>
 
                     <Tooltip title="Sauvegarder les modifications">
                         <span>
-                            <IconButton 
-                            disabled={!formNewParam.isValid}
-                            variant="contained" 
-                            onClick={handleSaveClick(selectedRowId)}
-                            style={{width:"35px", height:'35px', 
-                                borderRadius:"2px", borderColor: "transparent",
-                                backgroundColor: initial.theme,
-                                textTransform: 'none', outline: 'none'
-                            }}
+                            <IconButton
+                                disabled={!formNewParam.isValid}
+                                variant="contained"
+                                onClick={handleSaveClick(selectedRowId)}
+                                style={{
+                                    width: "35px", height: '35px',
+                                    borderRadius: "2px", borderColor: "transparent",
+                                    backgroundColor: initial.theme,
+                                    textTransform: 'none', outline: 'none'
+                                }}
                             >
-                                <TfiSave style={{width:'50px', height:'50px',color: 'white'}}/>
+                                <TfiSave style={{ width: '50px', height: '50px', color: 'white' }} />
                             </IconButton>
                         </span>
                     </Tooltip>
 
                     <Tooltip title="Annuler les modifications">
                         <span>
-                            <IconButton 
-                            disabled={disableCancelBouton}
-                            variant="contained" 
-                            onClick={handleCancelClick(selectedRowId)}
-                            style={{width:"35px", height:'35px', 
-                                borderRadius:"2px", borderColor: "transparent",
-                                backgroundColor: initial.button_delete_color,
-                                textTransform: 'none', outline: 'none'
-                            }}
+                            <IconButton
+                                disabled={disableCancelBouton}
+                                variant="contained"
+                                onClick={handleCancelClick(selectedRowId)}
+                                style={{
+                                    width: "35px", height: '35px',
+                                    borderRadius: "2px", borderColor: "transparent",
+                                    backgroundColor: initial.button_delete_color,
+                                    textTransform: 'none', outline: 'none'
+                                }}
                             >
-                                <VscClose style={{width:'50px', height:'50px', color: 'white'}}/>
+                                <VscClose style={{ width: '50px', height: '50px', color: 'white' }} />
                             </IconButton>
                         </span>
                     </Tooltip>
 
                     <Tooltip title="Supprimer la ligne sélectionné">
                         <span>
-                            <IconButton 
-                            disabled={disableDeleteBouton}
-                            onClick={handleOpenDialogConfirmDeleteRow}
-                            variant="contained" 
-                            style={{width:"35px", height:'35px', 
-                                borderRadius:"2px", borderColor: "transparent",
-                                backgroundColor: initial.button_delete_color,
-                                textTransform: 'none', outline: 'none'
-                            }}
+                            <IconButton
+                                disabled={disableDeleteBouton}
+                                onClick={handleOpenDialogConfirmDeleteRow}
+                                variant="contained"
+                                style={{
+                                    width: "35px", height: '35px',
+                                    borderRadius: "2px", borderColor: "transparent",
+                                    backgroundColor: initial.button_delete_color,
+                                    textTransform: 'none', outline: 'none'
+                                }}
                             >
-                                <IoMdTrash style={{width:'50px', height:'50px',color: 'white'}}/>
+                                <IoMdTrash style={{ width: '50px', height: '50px', color: 'white' }} />
                             </IconButton>
                         </span>
                     </Tooltip>
                 </Stack>
             </Stack>
-            
-            <DataGrid
-                disableMultipleSelection = {DataGridStyle.disableMultipleSelection}
-                disableColumnSelector = {DataGridStyle.disableColumnSelector}
-                disableDensitySelector = {DataGridStyle.disableDensitySelector}
-                localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
-                disableRowSelectionOnClick
-                disableSelectionOnClick={true}
-                slots={{toolbar : QuickFilter}}
-                sx={ DataGridStyle.sx}
-                rowHeight= {DataGridStyle.rowHeight}
-                columnHeaderHeight= {DataGridStyle.columnHeaderHeight}
-                editMode='row'
-                onRowClick={(e) => handleCellEditCommit(e.row)}
-                onRowSelectionModelChange={ids => {
-                    saveSelectedRow(ids);
+            <Stack
+                width="100%"
+                height="500px"
+                style={{
+                    marginLeft: "0px",
+                    marginTop: "20px",
                 }}
-                rowModesModel={rowModesModel}
-                onRowModesModelChange={handleRowModesModelChange}
-                onRowEditStop={handleRowEditStop}
-                processRowUpdate={processRowUpdate}
-                rows={compteRubriqueData}
-                columns={columnHeader}
-                initialState={{
-                    pagination: {
-                        paginationModel: { page: 0, pageSize: 100 },
-                    },
-                }}
-                pageSizeOptions={[50, 100]}
-                pagination={DataGridStyle.pagination}
-                checkboxSelection = {DataGridStyle.checkboxSelection}
-                columnVisibilityModel={{
-                    id: false,
-                }}
-            />  
+            >
+                <DataGrid
+                    disableMultipleSelection={DataGridStyle.disableMultipleSelection}
+                    disableColumnSelector={DataGridStyle.disableColumnSelector}
+                    disableDensitySelector={DataGridStyle.disableDensitySelector}
+                    localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                    disableRowSelectionOnClick
+                    disableSelectionOnClick={true}
+                    slots={{ toolbar: QuickFilter }}
+                    sx={{
+                        ...DataGridStyle.sx,
+                        '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+                            outline: 'none',
+                            border: 'none',
+                        },
+                        '& .MuiDataGrid-virtualScroller': {
+                            maxHeight: '100%',
+                        },
+                    }}
+                    rowHeight={DataGridStyle.rowHeight}
+                    columnHeaderHeight={DataGridStyle.columnHeaderHeight}
+                    editMode='row'
+                    onRowClick={(e) => handleCellEditCommit(e.row)}
+                    onRowSelectionModelChange={ids => {
+                        saveSelectedRow(ids);
+                    }}
+                    rowModesModel={rowModesModel}
+                    onRowModesModelChange={handleRowModesModelChange}
+                    onRowEditStop={handleRowEditStop}
+                    processRowUpdate={processRowUpdate}
+                    rows={compteRubriqueData}
+                    columns={columnHeader}
+                    initialState={{
+                        pagination: {
+                            paginationModel: { page: 0, pageSize: 100 },
+                        },
+                    }}
+                    pageSizeOptions={[50, 100]}
+                    pagination={DataGridStyle.pagination}
+                    checkboxSelection={DataGridStyle.checkboxSelection}
+                    columnVisibilityModel={{
+                        id: false,
+                    }}
+                />
+            </Stack>
         </Stack>
-        );
-    }
+    );
+}

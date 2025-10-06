@@ -1,5 +1,5 @@
 import React from 'react';
-import { Typography, Stack, Paper } from '@mui/material';
+import { Typography, Stack, Paper, Box } from '@mui/material';
 import Button from '@mui/material/Button';
 import { IoAddSharp } from "react-icons/io5";
 import { GoX } from "react-icons/go";
@@ -52,7 +52,7 @@ const rows = [
 
 export default function RevisionPrecontroleFiscalComponent() {
     return (
-        <Paper sx={{ elevation: "3", margin: "5px", padding: "10px", width: "98%", height: "110%" }}>
+        <Box>
             <Stack width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"} justifyContent={"stretch"}>
                 <Typography variant='h4' sx={{ color: "black" }} align='left'>Révisions : pré-contrôle fiscal</Typography>
 
@@ -83,6 +83,6 @@ export default function RevisionPrecontroleFiscalComponent() {
 
                 <TableParamCodeJournalModel headCells={headCells} rows={rows} />
             </Stack>
-        </Paper>
+        </Box>
     )
 }

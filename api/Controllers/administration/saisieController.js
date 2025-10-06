@@ -11,7 +11,7 @@ const basePath = path.join(__dirname, '..', '..', 'public', 'ScanEcriture');
 
 exports.getAllDevises = async (req, res) => {
     try {
-        const id = req.params.id; // id du compte
+        const id = req.params.id;
         if (!id) {
             return res.status(400).json({ state: false, message: 'Id_compte non trouvé' })
         }
@@ -26,6 +26,7 @@ exports.getAllDevises = async (req, res) => {
 };
 
 const formatDeuxChiffres = (val) => String(val).padStart(2, '0');
+const isValidDate = (d) => d instanceof Date && !isNaN(d.getTime());
 
 const getDateSaisieNow = (id) => {
     const now = new Date();
@@ -87,7 +88,7 @@ exports.addJournal = async (req, res) => {
 
             fs.renameSync(file.path, cheminComplet);
 
-            fichierCheminRelatif = path.join(dossierRelatif, nomFichier).replace(/\\/g, '/'); // chemin relatif avec slashes compatibles URL
+            fichierCheminRelatif = path.join(dossierRelatif, nomFichier).replace(/\\/g, '/');
         }
 
         const newTableRows = await Promise.all(tableRows.map(async (row) => {
@@ -100,6 +101,16 @@ exports.addJournal = async (req, res) => {
                 id_numcptcentralise = cpt?.id || null;
             }
 
+            const dateecriture = new Date(
+                annee,
+                mois - 1,
+                row.jour + 1
+            );
+
+            if (!isValidDate(dateecriture)) {
+                throw new Error(`Date invalide pour la ligne ${JSON.stringify(row)}`);
+            }
+
             return {
                 id_compte,
                 id_dossier,
@@ -107,8 +118,6 @@ exports.addJournal = async (req, res) => {
                 id_numcpt: row.compte,
                 id_journal,
                 id_devise,
-                // mois,
-                // annee,
                 taux,
                 devise,
                 saisiepar: id_compte,
@@ -117,13 +126,12 @@ exports.addJournal = async (req, res) => {
                 num_facture: row.num_facture,
                 credit: row.credit === "" ? 0 : row.credit,
                 montant_devise: row.montant_devise || 0,
-                // datesaisie: getDateSaisieNow(),
-                dateecriture: `${annee}/${formatDeuxChiffres(mois)}/${formatDeuxChiffres(row.jour)}`,
+                dateecriture: dateecriture,
                 id_numcptcentralise,
                 libelle: row.libelle || '',
                 piece: row.piece || '',
                 piecedate: row.piecedate || null,
-                fichier: fichierCheminRelatif // chemin complet du fichier à sauvegarder
+                fichier: fichierCheminRelatif
             };
         }));
 
@@ -136,12 +144,13 @@ exports.addJournal = async (req, res) => {
 
         return res.json({
             message: `${count} ligne(s) ajoutée(s) avec succès`,
-            data: newTableRows
+            data: newTableRows,
+            state: true
         });
 
     } catch (error) {
         console.error(error);
-        return res.status(500).json({ message: "Erreur serveur", error: error.message });
+        return res.status(400).json({ state: false, message: error.message });
     }
 };
 
@@ -202,6 +211,15 @@ exports.modificationJournal = async (req, res) => {
         let ajout = 0;
         let modification = 0;
 
+        let idEcritureCommun = null;
+        for (const row of tableRows) {
+            if (row.id && Number(row.id) > 0) {
+                const journalExistant = await journals.findByPk(row.id);
+                idEcritureCommun = journalExistant.id_ecriture;
+                break;
+            }
+        }
+
         for (const row of tableRows) {
             const dossierPc = await dossierplancomptable.findByPk(row.compte);
             const comptebaseaux = dossierPc?.baseaux_id;
@@ -212,7 +230,16 @@ exports.modificationJournal = async (req, res) => {
                 id_numcptcentralise = cpt?.id || null;
             }
 
-            // Initialisation sans id_ecriture
+            const dateecriture = new Date(
+                annee,
+                mois - 1,
+                row.jour + 1
+            );
+
+            if (!isValidDate(dateecriture)) {
+                throw new Error(`Date invalide pour la ligne ${JSON.stringify(row)}`);
+            }
+
             const journalData = {
                 id_compte,
                 id_dossier,
@@ -221,8 +248,6 @@ exports.modificationJournal = async (req, res) => {
                 id_journal,
                 id_devise,
                 num_facture,
-                // mois,
-                // annee,
                 taux,
                 devise,
                 modifierpar: id_compte,
@@ -230,20 +255,18 @@ exports.modificationJournal = async (req, res) => {
                 credit: row.credit === "" ? 0 : row.credit,
                 num_facture: row.num_facture,
                 montant_devise: row.montant_devise || 0,
-                dateecriture: `${annee}/${formatDeuxChiffres(mois)}/${formatDeuxChiffres(row.jour + 1)}`,
+                dateecriture: dateecriture,
                 id_numcptcentralise,
                 libelle: row.libelle || '',
                 piece: row.piece || '',
                 piecedate: row.piecedate || null,
+                id_ecriture: idEcritureCommun,
                 fichier: null
             };
 
+            const journalExistant = await journals.findByPk(row.id);
             if (row.id && Number(row.id) > 0) {
-                const journalExistant = await journals.findByPk(row.id);
                 if (!journalExistant) continue;
-
-                // Garder l'ancien id_ecriture
-                journalData.id_ecriture = journalExistant.id_ecriture;
 
                 if (file) {
                     if (journalExistant.fichier) {
@@ -267,9 +290,8 @@ exports.modificationJournal = async (req, res) => {
                 await journals.update(journalData, { where: { id: row.id } });
                 modification++;
 
-            } else {
-                // Nouveau => générer un nouvel id_ecriture
-                journalData.id_ecriture = getDateSaisieNow(id_compte);
+            }
+            else {
                 journalData.fichier = fichierCheminRelatif || null;
 
                 await journals.create(journalData);
@@ -288,7 +310,7 @@ exports.modificationJournal = async (req, res) => {
 
     } catch (error) {
         console.error(error);
-        return res.status(500).json({ message: "Erreur serveur", error: error.message });
+        return res.status(400).json({ state: false, message: error.message });
     }
 };
 
@@ -325,7 +347,6 @@ exports.getJournal = async (req, res) => {
             ]
         });
 
-        // Extraction simple du champ `compte`
         const mappedData = journalData.map(journal => {
             const { dossierplancomptable, codejournal, ...rest } = journal.toJSON();
             return {
@@ -369,7 +390,6 @@ exports.addLettrage = async (req, res) => {
             return res.status(400).json({ state: false, message: 'Données manquantes ou invalides' });
         }
 
-        // Récupérer le dernier lettrage existant
         const dernierLettrage = await journals.max('lettrage', {
             where: {
                 id_compte,
@@ -378,10 +398,8 @@ exports.addLettrage = async (req, res) => {
             }
         });
 
-        // Générer le nouveau lettrage (ex: si dernier = "AA", alors nouveau = "AB")
         const nouveauLettrage = nextLettrage(dernierLettrage);
 
-        // Mettre à jour toutes les lignes avec le nouveau lettrage
         await journals.update(
             { lettrage: nouveauLettrage },
             {
@@ -414,7 +432,6 @@ exports.deleteLettrage = async (req, res) => {
             return res.status(400).json({ state: false, message: 'Données manquantes ou invalides' });
         }
 
-        // Mettre à jour toutes les lignes avec l'ancien lettrage
         const nouveauLettrage = await journals.update(
             { lettrage: "" },
             {
@@ -447,12 +464,10 @@ exports.deleteJournal = async (req, res) => {
             return res.status(400).json({ state: false, msg: "Aucun ID fourni" });
         }
 
-        // 1. Récupérer un seul journal pour le fichier
         const journal = await journals.findOne({
             where: { id: ids[0] }
         });
 
-        // 2. Supprimer le fichier s'il existe
         if (journal?.fichier) {
             const filePath = path.resolve(process.cwd(), journal.fichier);
             try {
@@ -466,7 +481,6 @@ exports.deleteJournal = async (req, res) => {
             }
         }
 
-        // 3. Supprimer toutes les lignes liées
         const result = await journals.destroy({
             where: {
                 id: ids

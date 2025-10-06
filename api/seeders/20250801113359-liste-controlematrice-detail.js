@@ -2,9 +2,9 @@
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  async up (queryInterface, Sequelize) {
+  async up(queryInterface, Sequelize) {
     await queryInterface.bulkInsert('controlematricedetails', [
-      {	
+      {
         declaration: 'EBILAN',
         etat_id: 'BILAN',
         control_id: '1',
@@ -18,8 +18,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'BILAN',
         control_id: '1',
@@ -33,8 +33,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'BILAN',
         control_id: '2',
@@ -48,8 +48,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'BILAN',
         control_id: '2',
@@ -63,8 +63,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'CRN',
         control_id: '1',
@@ -78,8 +78,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'CRN',
         control_id: '1',
@@ -93,8 +93,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'CRN',
         control_id: '2',
@@ -108,8 +108,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'CRN',
         control_id: '2',
@@ -123,8 +123,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'CRF',
         control_id: '1',
@@ -138,8 +138,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'CRF',
         control_id: '1',
@@ -153,8 +153,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'CRF',
         control_id: '2',
@@ -168,8 +168,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'CRF',
         control_id: '2',
@@ -183,8 +183,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'TFTD',
         control_id: '1',
@@ -198,8 +198,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'TFTD',
         control_id: '1',
@@ -213,8 +213,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'TFTD',
         control_id: '2',
@@ -228,8 +228,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'TFTD',
         control_id: '2',
@@ -243,8 +243,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'TFTI',
         control_id: '1',
@@ -258,8 +258,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'TFTI',
         control_id: '1',
@@ -273,8 +273,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'TFTI',
         control_id: '2',
@@ -288,8 +288,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'TFTI',
         control_id: '2',
@@ -303,8 +303,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'EVCP',
         control_id: '1',
@@ -318,8 +318,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'EVCP',
         control_id: '1',
@@ -333,8 +333,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'EVCP',
         control_id: '2',
@@ -348,8 +348,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'EVCP',
         control_id: '2',
@@ -363,8 +363,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'EVCP',
         control_id: '3',
@@ -378,8 +378,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'EVCP',
         control_id: '3',
@@ -393,8 +393,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'EVCP',
         control_id: '3',
@@ -408,8 +408,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'EVCP',
         control_id: '4',
@@ -423,8 +423,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'EVCP',
         control_id: '4',
@@ -438,8 +438,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'EVCP',
         control_id: '5',
@@ -453,8 +453,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'EVCP',
         control_id: '5',
@@ -468,8 +468,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'EVCP',
         control_id: '6',
@@ -483,8 +483,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'EVCP',
         control_id: '6',
@@ -498,8 +498,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'DRF',
         control_id: '1',
@@ -513,8 +513,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'DRF',
         control_id: '1',
@@ -528,8 +528,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'DRF',
         control_id: '2',
@@ -543,8 +543,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'DRF',
         control_id: '2',
@@ -558,8 +558,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'DRF',
         control_id: '3',
@@ -573,8 +573,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'DRF',
         control_id: '3',
@@ -588,8 +588,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'BHIAPC',
         control_id: '1',
@@ -603,8 +603,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'BHIAPC',
         control_id: '1',
@@ -618,8 +618,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'MP',
         control_id: '1',
@@ -633,8 +633,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'MP',
         control_id: '1',
@@ -648,8 +648,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'DA',
         control_id: '1',
@@ -663,8 +663,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'DA',
         control_id: '1',
@@ -678,8 +678,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'DA',
         control_id: '2',
@@ -693,8 +693,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'DA',
         control_id: '2',
@@ -708,8 +708,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'DA',
         control_id: '3',
@@ -723,8 +723,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'DA',
         control_id: '3',
@@ -738,8 +738,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'DA',
         control_id: '4',
@@ -753,8 +753,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'DA',
         control_id: '4',
@@ -768,8 +768,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'DA',
         control_id: '5',
@@ -783,8 +783,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'DA',
         control_id: '5',
@@ -798,8 +798,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'DA',
         control_id: '5',
@@ -813,8 +813,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'DA',
         control_id: '5',
@@ -828,8 +828,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'DA',
         control_id: '5',
@@ -843,8 +843,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'DA',
         control_id: '6',
@@ -858,8 +858,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'DA',
         control_id: '6',
@@ -873,8 +873,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'DA',
         control_id: '6',
@@ -888,8 +888,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'DA',
         control_id: '6',
@@ -903,8 +903,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'DA',
         control_id: '6',
@@ -918,8 +918,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'DA',
         control_id: '6',
@@ -933,8 +933,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'DA',
         control_id: '6',
@@ -948,8 +948,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'DA',
         control_id: '6',
@@ -963,8 +963,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'DA',
         control_id: '6',
@@ -978,8 +978,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'EIAFNC',
         control_id: '1',
@@ -993,8 +993,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'EIAFNC',
         control_id: '1',
@@ -1008,8 +1008,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'EIAFNC',
         control_id: '2',
@@ -1023,8 +1023,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'EIAFNC',
         control_id: '2',
@@ -1038,8 +1038,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'EIAFNC',
         control_id: '3',
@@ -1053,8 +1053,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'EIAFNC',
         control_id: '3',
@@ -1068,8 +1068,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'EIAFNC',
         control_id: '4',
@@ -1083,8 +1083,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'EIAFNC',
         control_id: '4',
@@ -1098,8 +1098,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'EIAFNC',
         control_id: '4',
@@ -1113,8 +1113,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'EIAFNC',
         control_id: '4',
@@ -1128,8 +1128,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'EIAFNC',
         control_id: '4',
@@ -1143,8 +1143,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'SAD',
         control_id: '1',
@@ -1158,8 +1158,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'SAD',
         control_id: '1',
@@ -1173,8 +1173,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'SDR',
         control_id: '1',
@@ -1188,8 +1188,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'SDR',
         control_id: '1',
@@ -1203,8 +1203,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'SDR',
         control_id: '2',
@@ -1218,8 +1218,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'SDR',
         control_id: '2',
@@ -1233,8 +1233,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'SDR',
         control_id: '3',
@@ -1248,8 +1248,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'SDR',
         control_id: '3',
@@ -1263,8 +1263,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'SDR',
         control_id: '4',
@@ -1278,8 +1278,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'SDR',
         control_id: '4',
@@ -1293,8 +1293,8 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'SDR',
         control_id: '5',
@@ -1308,8 +1308,8 @@ module.exports = {
         operation: 'ADD',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
-      {	
+      },
+      {
         declaration: 'EBILAN',
         etat_id: 'SDR',
         control_id: '5',
@@ -1323,11 +1323,11 @@ module.exports = {
         operation: 'SOUS',
         createdAt: new Date(),
         updatedAt: new Date()
-      },	
+      },
     ], {});
   },
 
-  async down (queryInterface, Sequelize) {
+  async down(queryInterface, Sequelize) {
     await queryInterface.bulkDelete('controlematricedetails', null, {});
   }
 };

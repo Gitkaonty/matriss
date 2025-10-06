@@ -16,333 +16,333 @@ import { IoMdCreate } from "react-icons/io";
 import { format } from 'date-fns';
 import { ExpandMore, ExpandLess } from '@mui/icons-material';
 
-const VirtualTableModifiableGroupableEbilanDP = ({columns, rows, deleteState, modifyState, state}) => {
-    const initial = init[0];
-    const targetColumnId = 'rubriquesmatrix.libelle';
-  
-    const handleRowModifClick = (row) => {
-      modifyState(row);
-    }
+const VirtualTableModifiableGroupableEbilanDP = ({ columns, rows, deleteState, modifyState, state }) => {
+  console.log('rows : ', rows);
+  const initial = init[0];
+  const targetColumnId = 'rubriquesmatrix.libelle';
 
-    const handleRowDeleteClick = (row) => {
-      deleteState(row);
-    }
+  const handleRowModifClick = (row) => {
+    modifyState(row);
+  }
 
-    const [expanded, setExpanded] = useState({}); // Contient l'état d'expansion de chaque groupe
+  const handleRowDeleteClick = (row) => {
+    deleteState(row);
+  }
 
-    const handleToggleCollapse = (groupName) => {
-      setExpanded((prevExpanded) => ({
-        ...prevExpanded,
-        [groupName]: !prevExpanded[groupName], // Inverse l'état d'expansion
-      }));
-    };
+  const [expanded, setExpanded] = useState({});
 
-    const columnWidths = columns.reduce((acc, column) => {
-      acc[column.id] = column.minWidth;
-      return acc;
-    }, {});
+  const handleToggleCollapse = (groupName) => {
+    setExpanded((prevExpanded) => ({
+      ...prevExpanded,
+      [groupName]: !prevExpanded[groupName],
+    }));
+  };
 
-    const soustotalGroup = (item, columnId) => {
-      return rows.reduce((totals, group) => {
-        // Vérifier si le groupe correspond à celui que nous recherchons (ex: "GOODWILL")
-        if (group.nature_prov === item) {
-          // Parcourir les items du groupe
-          group.items.forEach((item) => {
-            // Vérifier si 'augmentation' existe et est un nombre valide
-            const value = item[columnId];
-            
-            // Si la valeur est définie et un nombre, on l'ajoute au total
-            if (value != null && !isNaN(value)) {
-              totals += value; 
-            }
-          });
-        }
-        return totals;
-      }, 0); 
-    };
-
-    const totalGroup = (columnId) => {
-      return rows.reduce((totals, group) => {
-        
-        // Parcourir les items du groupe
+  const soustotalGroup = (item, columnId) => {
+    return rows.reduce((totals, group) => {
+      if (group.nature_prov === item) {
         group.items.forEach((item) => {
-          // Vérifier si 'augmentation' existe et est un nombre valide
           const value = item[columnId];
-          
-          // Si la valeur est définie et un nombre, on l'ajoute au total
+
           if (value != null && !isNaN(value)) {
-            totals += value; 
+            totals += value;
           }
         });
-       
-        return totals;
-      }, 0); 
-    };
+      }
+      return totals;
+    }, 0);
+  };
 
-    //triage des données par ordre croissant
-    useEffect(() => {
-      rows = rows.sort((a, b) => {
-        if (a.nature_prov < b.nature_prov) {
-          return -1;  // a vient avant b
+  const colWidths = columns.map((c) => (typeof c.minWidth === "number" ? `${c.minWidth}px` : c.minWidth || "auto"));
+
+  const totalGroup = (columnId) => {
+    return rows.reduce((totals, group) => {
+
+      // Parcourir les items du groupe
+      group.items.forEach((item) => {
+        // Vérifier si 'augmentation' existe et est un nombre valide
+        const value = item[columnId];
+
+        // Si la valeur est définie et un nombre, on l'ajoute au total
+        if (value != null && !isNaN(value)) {
+          totals += value;
         }
-        if (a.nature_prov > b.nature_prov) {
-          return 1;   // b vient avant a
-        }
-        return 0;  // a et b sont égaux
       });
-    },[rows]);
 
-    const stickyColumnStyle = {
-      position: 'sticky',
-      left: 200,
-      backgroundColor: '#fff', // Assurez-vous que le fond est blanc ou transparent
-      zIndex: 1, // Assurez-vous que la colonne est au-dessus des autres
-    };
+      return totals;
+    }, 0);
+  };
 
-    return (
-      <TableContainer  
-      // component={Paper}
-      style={{ 
-        display: 'inline-block', 
-        width: 'auto', 
-        overflowX: 'auto',
-       }}
-      >
-        <Table sx={{ width: 320, border: '1px solid #ddd' }} aria-label="simple table">
-          <TableHead 
-            style={{
-              backgroundColor: initial.theme,
-              position: 'sticky',
-              top: 0,
-              zIndex: 1,
-            }}
-          >
+  //triage des données par ordre croissant
+  useEffect(() => {
+    rows = rows.sort((a, b) => {
+      if (a.nature_prov < b.nature_prov) {
+        return -1;  // a vient avant b
+      }
+      if (a.nature_prov > b.nature_prov) {
+        return 1;   // b vient avant a
+      }
+      return 0;  // a et b sont égaux
+    });
+  }, [rows]);
+
+  return (
+    <Box sx={{ width: "100%", p: 0, m: 0 }}>
+      <TableContainer component={Paper} sx={{ width: "100%", overflowX: "auto" }}>
+        {/* Table principale avec colgroup (garantit alignement avec les tables internes) */}
+        <Table aria-label="grouped-table" sx={{ tableLayout: "fixed", width: "100%" }}>
+          {/* colgroup principal */}
+          <colgroup>
+            {colWidths.map((w, i) => (
+              <col key={columns[i].id} style={{ width: w }} />
+            ))}
+            <col key="action-col" style={{ width: "100px" }} />
+          </colgroup>
+
+          <TableHead sx={{ backgroundColor: initial.theme || "#1976d2", position: "sticky", top: 0, zIndex: 2 }}>
             <TableRow>
-                {columns.map((column) => (
-                    <TableCell
-                    key={column.id}
-                    align={column.align}
-                    style={{
-                      fontWeight:'bold', 
-                      top: 5, 
-                      minWidth: column.minWidth, 
-                      paddingTop: '5px', 
-                      paddingBottom: '5px', 
-                      borderRight: '1px solid #ddd', 
-                      borderLeft: '1px solid #ddd',
-                      fontSize:15,
-                      color:'white',
-                    }}
-                    >
-                      {column.label}
-                    </TableCell>
-                ))}
-
+              {columns.map((col) => (
                 <TableCell
-                    key={'00modif'}
-                    align={"center"}
-                    style={{
-                      fontWeight:'bold', 
-                      top: 5, 
-                      width: "100px", 
-                      paddingTop: '5px', 
-                      paddingBottom: '5px', 
-                      borderRight: '1px solid #ddd', 
-                      borderLeft: '1px solid #ddd',
-                      fontSize:15,
-                      color:'white'
-                    }}
+                  key={col.id}
+                  align={col.align || "left"}
+                  sx={{
+                    fontWeight: "bold",
+                    py: "6px",
+                    borderRight: "1px solid #ddd",
+                    borderLeft: "1px solid #ddd",
+                    fontSize: 15,
+                    color: "white",
+                    minWidth: col.minWidth,
+                  }}
                 >
-                  Action
+                  {col.label}
                 </TableCell>
-               
+              ))}
+
+              <TableCell
+                align="center"
+                className="sticky-action"
+                sx={{
+                  fontWeight: 'bold',
+                  paddingTop: '5px',
+                  paddingBottom: '5px',
+                  fontSize: 15,
+                  color: 'white',
+                  backgroundColor: initial.theme,
+                  minWidth: 350
+                }}
+              >
+                Action
+              </TableCell>
+
             </TableRow>
           </TableHead>
+
           <TableBody>
             {rows.map((group) => (
-              <React.Fragment key={group.nature_prov} >
-                {/* Ligne pour afficher le nom du groupe et l'icône de dépliage/repliage */}
-                <TableRow
-                  style={{border:'none', height:'20px', width:'100%'}}
-                >
-                  <TableCell 
-                    colSpan={1} 
-                    style={{ 
-                      fontWeight: 'bold', 
-                      border:'none', 
-                      //backgroundColor:"green",
-                      paddingTop: '5px', 
-                      paddingBottom: '2px', 
-                      minWidth: columnWidths["nature_prov"],
-                    }}
+              <React.Fragment key={group.nature_prov}>
+                {/* Ligne groupe (titre) */}
+                <TableRow>
+                  {/* <TableCell
+                    colSpan={columns.length + 1}
+                    sx={{ fontWeight: "bold", border: "none", py: 1 }}
                   >
-                    <IconButton 
-                    onClick={() => handleToggleCollapse(group.nature_prov)}
-                    style={{ 
-                      width:'20px', height:'20px',
-                      textTransform: 'none', outline: 'none',
-                      backgroundColor:"#67AE6E", 
-                      color:'white',
-                      marginRight:5 
-                    }}
+                    <IconButton
+                      onClick={() => handleToggleCollapse(group.nature_prov)}
+                      sx={{
+                        width: 20,
+                        height: 20,
+                        mr: 1,
+                      }}
+                      style={{
+                        textTransform: 'none',
+                        outline: 'none',
+                        backgroundColor: "#67AE6E",
+                        color: 'white',
+                      }}
                     >
-                      {expanded[group.nature_prov] ? <ExpandLess /> : <ExpandMore />}
+                      {expanded[group.nature_prov] ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
                     </IconButton>
-                    {
-                    group.nature_prov === "RISQUE"
+
+                    {group.nature_prov === "RISQUE"
                       ? "Provisions pour risques et charges"
                       : group.nature_prov === "DEPRECIATION"
                         ? "Provisions pour dépréciation"
-                        : "Autres provisions"
+                        : "Autres provisions"}
+                  </TableCell> */}
+                  {columns.map((column) => {
+                    if (column.id === 'nature_prov') {
+                      const label =
+                        group.nature_prov === "RISQUE"
+                          ? "Provisions pour risques et charges"
+                          : group.nature_prov === "DEPRECIATION"
+                            ? "Provisions pour dépréciation"
+                            : "Autres provisions"
+
+                      return (
+                        <TableCell key={column.id} colSpan={1} sx={{ fontWeight: "bold", py: 1 }}>
+                          <Stack direction="row" alignItems="center" spacing={1}>
+                            <IconButton
+                              onClick={() => handleToggleCollapse(group.nature_prov)}
+                              sx={{
+                                width: 20,
+                                height: 20,
+                                mr: 1,
+                              }}
+                              style={{
+                                textTransform: 'none',
+                                outline: 'none',
+                                backgroundColor: "#67AE6E",
+                                color: 'white',
+                              }}
+                            >
+                              {expanded[group.nature_prov] ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
+                            </IconButton>
+                            <Typography fontWeight="bold" fontSize={14}>{label}</Typography>
+                          </Stack>
+                        </TableCell>
+                      );
                     }
-                  </TableCell>
+
+                    const numericColumns = [
+                      'montant_debut_ex', 'augm_dot_ex', 'dim_repr_ex',
+                      'montant_fin'
+                    ];
+
+                    if (numericColumns.includes(column.id)) {
+                      const value = group[column.id] || 0;
+                      return (
+                        <TableCell key={column.id} sx={{ fontWeight: 'bold', py: 1 }} align={column.align}>
+                          <Typography fontWeight="bold" fontSize={14}>
+                            {value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </Typography>
+                        </TableCell>
+                      );
+                    }
+
+                    return <TableCell key={column.id} />;
+                  })}
                 </TableRow>
 
-                {/* Les lignes du groupe avec Collapse */}
-                <TableRow
-                  style={{border:'none'}}
-                >
-                  <TableCell 
-                    colSpan={20}
-                    style={{
-                      height:'0px', 
-                      padding: '5px', 
-                      paddingBottom: '0px',
-                    }}
-                  >
-                    <Collapse 
-                    in={expanded[group.nature_prov]} 
-                    timeout="auto" unmountOnExit
-                    style={{
-                      marginLeft: "-5px", 
-                      height:'20px', 
-                      width:'100%',
-                     display:'table'
-                    }}
-                    >
-                      {/* Liste des éléments du groupe */}
-                      {group.items.map((item) => (
-                        <TableRow 
-                          key={item.id} 
-                          style={{
-                            border:'none', 
-                            padding:'5px',
-                          }}
-                        >
-                          {columns.map((column) => {
-                            const value = column.sousgroupLabel? item[column.id] : "";
+                {/* Collapse: on met une cellule full-width qui contient une TABLE avec colgroup identique */}
+                <TableRow>
+                  <TableCell colSpan={columns.length + 1} sx={{ p: 0 }}>
+                    <Collapse in={!!expanded[group.nature_prov]} timeout="auto" unmountOnExit>
+                      <Table size="small" sx={{ tableLayout: "fixed", width: "100%" }}>
+                        {/* même colgroup ici => alignement parfait */}
+                        <colgroup>
+                          {colWidths.map((w, i) => (
+                            <col key={`c-${columns[i].id}`} style={{ width: w }} />
+                          ))}
+                          <col key="c-action" style={{ width: "100px" }} />
+                        </colgroup>
 
-                            return (
+                        <TableBody>
+                          {group.items.map((item) => (
+                            <TableRow key={item.id}>
+                              {columns.map((column) => {
+                                const value = column.sousgroupLabel ? item[column.id] : "";
+                                return (
+                                  <TableCell
+                                    key={column.id}
+                                    align={column.align || "left"}
+                                    sx={{
+                                      fontSize: 15,
+                                      py: 0.1,
+                                      borderBottom: column.sousgroupLabel ? "1px solid #ddd" : "transparent",
+                                      // ensure content wraps neatly
+                                      whiteSpace: column.isnumber ? "nowrap" : "normal",
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                    }}
+                                  >
+                                    {column.format && value
+                                      ? typeof value === "number"
+                                        ? column.format(value)
+                                        : format(value, "dd/MM/yyyy")
+                                      : value ?? ""}
+                                  </TableCell>
+                                );
+                              })}
+
+                              {/* Colonne Action (toujours présente pour garder alignement) */}
                               <TableCell
-                              key={column.id} 
-                              align={column.align} 
-                              style={{ 
-                                paddingTop: '5px', 
-                                paddingBottom: '5px',
-                                borderBottom : column.sousgroupLabel? '1px solid #ddd': '1px solid transparent',
-                                // borderRight: '1px solid #ddd', borderLeft: '1px solid #ddd' ,
-                                //backgroundColor: column.id === 'dim_repr_ex' ? 'red' : 'green',
-                                fontSize:15,
-                                minwidth: columnWidths[column.id],
-                                
-                                }}
+                                align="center"
                               >
-                                {column.format && value
-                                  ? typeof value === 'number'
-                                    ? column.format(value)
-                                    : format(value, "dd/MM/yyy")
-                                    : value
-                                }
-                              </TableCell>
-                            )
-                          })
-                        }
-
-                        {
-                          !state
-                            ?<TableCell
-                              key={"boutonModif"} 
-                              align={"center"} 
-                              style={{ 
-                                paddingTop: '5px', 
-                                paddingBottom: '5px',
-                                // borderRight: '1px solid #ddd', borderLeft: '1px solid #ddd' ,
-                                fontSize:15,
-                                width: "50px",
-                                }}
-                            >
-                              <Stack direction={'row'} alignItems={'center'} spacing={1}>
-                                <IconButton
-                                onClick={() => handleRowModifClick(item)}
-                                variant="contained" 
-                                style={{
-                                    width:"25px", height:'25px', 
-                                    borderRadius:"1px", borderColor: "transparent", 
-                                    backgroundColor: "transparent",
-                                    textTransform: 'none', outline: 'none'
-                                }}
-                                >
-                                    <IoMdCreate style={{width:'25px', height:'25px', color:initial.theme, position: 'absolute',}}/>
-                                </IconButton>
-                                
-                                {
-                                  group.nature_prov === 'AUTRE'
-                                  ? <IconButton
-                                    onClick={() => handleRowDeleteClick(item)}
-                                      variant="contained" 
+                                {!state ? (
+                                  <Stack direction={'row'} alignItems={'center'} justifyContent={'space-evenly'}>
+                                    <IconButton
+                                      onClick={() => handleRowModifClick(item)}
+                                      variant="contained"
                                       style={{
-                                        width:"25px", height:'25px', 
-                                          borderRadius:"1px", borderColor: "transparent", 
-                                          backgroundColor: "transparent",
-                                          textTransform: 'none', outline: 'none'
+                                        width: "25px", height: '25px',
+                                        borderRadius: "1px", borderColor: "transparent",
+                                        backgroundColor: "transparent",
+                                        textTransform: 'none', outline: 'none'
                                       }}
-                                      >
-                                          <IoMdTrash style={{width:'25px', height:'25px', color:initial.button_delete_color, position: 'absolute',}}/>
-                                      </IconButton>
-                                  : null
-                                }
-                                
-                              </Stack>
-                              
-                            </TableCell>
-                          : null
-                        }
-                        
-                      </TableRow>
-                    ))}
+                                    >
+                                      <IoMdCreate style={{ width: '25px', height: '25px', color: initial.theme, position: 'absolute', }} />
+                                    </IconButton>
 
-                      <TableRow
-                        key={'subtotal'} 
-                        style={{padingLeft: -5, border:'none'}}
-                      >
-                        {columns.map((column) => {
-                            return (
+                                    {
+                                      group.nature_prov === 'AUTRE'
+                                        ? <IconButton
+                                          onClick={() => handleRowDeleteClick(item)}
+                                          variant="contained"
+                                          style={{
+                                            width: "25px", height: '25px',
+                                            borderRadius: "1px", borderColor: "transparent",
+                                            backgroundColor: "transparent",
+                                            textTransform: 'none', outline: 'none'
+                                          }}
+                                        >
+                                          <IoMdTrash style={{ width: '25px', height: '25px', color: initial.button_delete_color, position: 'absolute', }} />
+                                        </IconButton>
+                                        : null
+                                    }
+
+                                  </Stack>
+                                ) : (
+                                  <span />
+                                )}
+                              </TableCell>
+
+                            </TableRow>
+                          ))}
+
+                          {/* Ligne Sous-total (même nombre de cellules) */}
+                          {/* <TableRow>
+                            {columns.map((column) => (
                               <TableCell
-                              key={column.id} 
-                              align={column.align} 
-                              style={{ 
-                                paddingTop: '2px', 
-                                paddingBottom: '2px',
-                                fontSize:15,
-                                fontWeight:'bold',
-                                minWidth: column.minWidth,
-                                backgroundColor: column.id === "nature_prov" ? 'transparent' : '#f0f0f0'
+                                key={`subtotal-${column.id}`}
+                                align={column.align || "left"}
+                                sx={{
+                                  fontWeight: "bold",
+                                  fontSize: 15,
+                                  py: 0.6,
+                                  backgroundColor: column.id === "nature_prov" ? "transparent" : "#f0f0f0",
                                 }}
                               >
-                                {
-                                  column.id === "nature_prov"
-                                    ? ""
-                                    : column.id === "libelle"
-                                      ? "Sous Total"
-                                      : column.isnumber
-                                        ? soustotalGroup(group.nature_prov, column.id).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                {column.id === "nature_prov"
+                                  ? ""
+                                  : column.id === "libelle"
+                                    ? "Sous Total"
+                                    : column.isnumber
+                                      ? // soustotalGroup doit exister dans ton scope
+                                      typeof soustotalGroup === "function"
+                                        ? soustotalGroup(group.nature_prov, column.id).toLocaleString("fr-FR", {
+                                          minimumFractionDigits: 2,
+                                          maximumFractionDigits: 2,
+                                        })
                                         : ""
-                                }
+                                      : ""}
                               </TableCell>
-                            )
-                          })
-                        }
-                      </TableRow>
+                            ))}
+
+                            <TableCell sx={{ backgroundColor: "#f0f0f0" }} />
+                          </TableRow> */}
+                        </TableBody>
+                      </Table>
                     </Collapse>
                   </TableCell>
                 </TableRow>
@@ -350,42 +350,31 @@ const VirtualTableModifiableGroupableEbilanDP = ({columns, rows, deleteState, mo
             ))}
           </TableBody>
 
-            <TableFooter
-              style={{
-                backgroundColor: '#89A8B2',
-                position: 'sticky',
-                bottom: 0,
-                zIndex: 1,
-              }}
-            >
-              <TableRow>
-                {columns.map((column) => (
-                  <TableCell
-                    key={column.id}
-                    align={column.align}
-                    style={{
-                      fontWeight: 'bold',
-                      paddingTop: '5px',
-                      paddingBottom: '5px',
-                      borderTop: '1px solid #ddd',
-                      minWidth: column.minWidth,
-                      fontSize: 15
-                    }}
-                  >
-                    {
-                      column.id === "nature_prov"
-                        ? "Total"
-                        : column.isnumber
-                            ? totalGroup(column.id).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                            : ""
-                    }
-                  </TableCell>
-                ))}
-              </TableRow>
-            </TableFooter>
+          {/* Footer (optionnel) */}
+          <TableFooter>
+            <TableRow sx={{ backgroundColor: "#89A8B2", position: "sticky", bottom: 0 }}>
+              {columns.map((column) => (
+                <TableCell
+                  key={`footer-${column.id}`}
+                  align={column.align || "left"}
+                  sx={{ fontWeight: "bold", py: 1, minWidth: column.minWidth, fontSize: 15 }}
+                >
+                  {column.id === "nature_prov"
+                    ? "Total"
+                    : column.isnumber
+                      ? typeof totalGroup === "function"
+                        ? totalGroup(column.id).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                        : ""
+                      : ""}
+                </TableCell>
+              ))}
+              <TableCell sx={{ fontWeight: "bold" }} />
+            </TableRow>
+          </TableFooter>
         </Table>
       </TableContainer>
-    );
-  }
+    </Box>
+  );
+}
 
-  export default VirtualTableModifiableGroupableEbilanDP;
+export default VirtualTableModifiableGroupableEbilanDP;

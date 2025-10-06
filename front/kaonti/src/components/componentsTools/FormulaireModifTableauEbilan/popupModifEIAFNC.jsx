@@ -21,53 +21,58 @@ let initial = init[0];
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialogContent-root': {
-      padding: theme.spacing(2),
+        padding: theme.spacing(2),
     },
     '& .MuiDialogActions-root': {
-      padding: theme.spacing(1),
+        padding: theme.spacing(1),
     },
-  }));
+    '& .MuiPaper-root': {
+        minHeight: '10%',
+        maxHeight: '95%',
+    },
+}));
 
-const PopupModifEIAFNC = ({choix, confirmationState, data}) =>{
+const PopupModifEIAFNC = ({ choix, confirmationState, data }) => {
     const [formDataFinal, setFormDataFinal] = useState({
         state: false,
-        id:-1,
+        id: -1,
         rubriques_poste: '',
-        num_compte:'',
-        libelle:'',
+        num_compte: '',
+        libelle: '',
         valeur_acquisition: 0,
         augmentation: 0,
         diminution: 0,
         valeur_brute: 0,
     });
 
+    const validationSchema = Yup.object({
+        rubriques_poste: Yup.string().required("Veuillez choisir la nature de l'immobilisation"),
+        num_compte: Yup.string().required("Veillez entrer le numéro de compte"),
+        libelle: Yup.string().required("Veillez entre un libellé pour l'immobilisation"),
+        valeur_acquisition: Yup.number().positive("Veuillez entrer un montant valide").required("Veuillez entrer un montant valide"),
+    })
+
     const formData = useFormik({
-        initialValues : {
+        initialValues: {
             state: true,
-            id:-1,
+            id: -1,
             rubriques_poste: '',
-            num_compte:'',
-            libelle:'',
+            num_compte: '',
+            libelle: '',
             valeur_acquisition: 0,
             augmentation: 0,
             diminution: 0,
             valeur_brute: 0,
         },
-        validationSchema: Yup.object({
-            rubriques_poste : Yup.string().required("Veuillez choisir la nature de l'immobilisation"),
-            num_compte : Yup.string().required("Ajouter le numéro de compte"),
-            libelle : Yup.string().required("Ajouter un libellé pour l'immobilisation"),
-            valeur_acquisition: Yup.number().positive("Veuillez entrer un montant valide").required("Veuillez entrer un montant valide"),
-            valeur_brute: Yup.number().positive("Veuillez entrer un montant valide").required("Veuillez entrer un montant valide"),
-        }),
+        validationSchema,
         //validateOnChange: false,
         //validateOnBlur: true,
         onSubmit: (values) => {
             setFormDataFinal(prevFormDataFinal => {
-                const newFormDataFinal = { 
-                    ...prevFormDataFinal, 
-                    state: true, 
-                    id: values.id, 
+                const newFormDataFinal = {
+                    ...prevFormDataFinal,
+                    state: true,
+                    id: values.id,
                     rubriques_poste: values.rubriques_poste,
                     num_compte: values.num_compte,
                     libelle: values.libelle,
@@ -78,9 +83,9 @@ const PopupModifEIAFNC = ({choix, confirmationState, data}) =>{
                 };
                 confirmationState(newFormDataFinal);
                 return newFormDataFinal;
-            });  
-            }
-        });
+            });
+        }
+    });
 
     const handleCloseDeleteModel = () => {
         setFormDataFinal(prevFormDataFinal => {
@@ -91,8 +96,8 @@ const PopupModifEIAFNC = ({choix, confirmationState, data}) =>{
     }
 
     // Fonction pour gérer le clic sur le bouton "Modifier"
-   useEffect(() => {
-        if(data){
+    useEffect(() => {
+        if (data) {
             formData.setValues({
                 state: false,
                 id: data.id,
@@ -105,9 +110,9 @@ const PopupModifEIAFNC = ({choix, confirmationState, data}) =>{
                 valeur_brute: data.valeur_brute,
             });
         }
-   }, [data]);
+    }, [data]);
 
-   // Fonction pour calculer la `valeur_brute`
+    // Fonction pour calculer la `valeur_brute`
     const updateValeurBrute = () => {
         const { valeur_acquisition, augmentation, diminution } = formData.values;
         const valeur_brute = valeur_acquisition + augmentation - diminution;
@@ -131,7 +136,7 @@ const PopupModifEIAFNC = ({choix, confirmationState, data}) =>{
 
     // const handleSubmit = (e) => {
     //     e.preventDefault();
-        
+
     //     setFormData(prevFormData => {
     //         const newFormData = { ...prevFormData, state: true };
     //         confirmationState(newFormData); // Passer les nouvelles données immédiatement
@@ -146,16 +151,16 @@ const PopupModifEIAFNC = ({choix, confirmationState, data}) =>{
                 aria-labelledby="customized-dialog-title"
                 open={true}
                 fullWidth={true}
-                maxWidth="lg"
+                maxWidth="md"
             >
-                <DialogTitle sx={{ ml: 1, p: 2 }} id="customized-dialog-title" style={{fontWeight:'bold', width:'550px', height:'50px',backgroundColor : 'transparent'}}>
-                    <Typography variant={'h6'} style={{fontZise: 12}}>
+                <DialogTitle sx={{ ml: 1, p: 2 }} id="customized-dialog-title" style={{ fontWeight: 'bold', width: '550px', height: '50px', backgroundColor: 'transparent' }}>
+                    <Typography variant={'h6'} style={{ fontZise: 12 }}>
                         {choix} d'une ligne pour le formulaire EIAFNC
                     </Typography>
                 </DialogTitle>
-                
+
                 <IconButton
-                    style={{color:'red', textTransform: 'none', outline: 'none'}}
+                    style={{ color: 'red', textTransform: 'none', outline: 'none' }}
                     aria-label="close"
                     onClick={handleCloseDeleteModel}
                     sx={{
@@ -164,258 +169,317 @@ const PopupModifEIAFNC = ({choix, confirmationState, data}) =>{
                         top: 8,
                         color: (theme) => theme.palette.grey[500],
                     }}
-                    >
-                <CloseIcon />
+                >
+                    <CloseIcon />
                 </IconButton>
                 <DialogContent>
-            
-                <Stack width={"95%"} height={"450px"} spacing={1} alignItems={'left'} alignContent={"center"} 
-                    direction={"column"} justifyContent={"center"} style={{marginLeft:'20px'}}
-                >
-                    <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '250px' }}>
-                        <InputLabel style={{ color: '#1976d2' }}>Nature des immobilisations</InputLabel>
-                        <Select
-                            label="Nature des immobilisations"
-                            name="rubriques_poste"
-                            value={formData.values.rubriques_poste}
-                            onChange={formData.handleChange}
-                            fullWidth
-                            style={{ marginBottom: '0px', width:'350px' }}
-                        >
-                            {/* Remplacer ces options par celles dont tu as besoin */}
-                            <MenuItem key="AUTREACTIF" value="AUTREACTIF">Autres actifs financiers non courant</MenuItem>
-                            <MenuItem key="IMMOCORP" value="IMMOCORP">Immobilisation corporelle</MenuItem>
-                            <MenuItem key="IMMOINCORP" value="IMMOINCORP">Immobilisation incorporelle</MenuItem>
-                            <MenuItem key="IMMOENCOUR" value="IMMOENCOUR">Immobilisation en cours</MenuItem>
-                            <MenuItem key="IMMOFIN" value="IMMOFIN">Immobilisation financière</MenuItem>
-                            <MenuItem key="PART" value="PART">Participation</MenuItem>
-                        </Select>
 
-                        <FormHelperText style={{color:'red', width:'350px'}}>
-                            {formData.errors.rubriques_poste && formData.touched.rubriques_poste && formData.errors.rubriques_poste}
-                        </FormHelperText>
-                    </FormControl>
-
-                    <Stack direction={'row'} spacing={1}>
-                        <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '200px' }}>
-                            <TextField
-                                size="small"
-                                label="N° de compte"
-                                name="num_compte"
-                                value={formData.values.num_compte}
-                                onChange={formData.handleChange}
-                                type="string"
-                                fullWidth
-                                style={{ marginBottom: '0px', width:'200px' }}
-                                InputLabelProps={{
-                                    style: {
-                                    color: '#1976d2',  // Couleur primary par défaut (bleu de Material-UI)
-                                    },
-                                }}
-                            />
-
-                            <FormHelperText style={{color:'red', width:'200px'}}>
-                                {formData.errors.num_compte && formData.touched.num_compte && formData.errors.num_compte}
-                            </FormHelperText>
-                        </FormControl>
-                        
-                        <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '600px' }}>
-                            <TextField
+                    <Stack
+                        spacing={2}
+                        alignItems={'left'}
+                        direction={"column"}
+                        style={{ marginLeft: '10px' }}
+                    >
+                        <FormControl
                             size="small"
-                            label="Libellé"
-                            name="libelle"
-                            value={formData.values.libelle}
-                            onChange={formData.handleChange}
-                            type="string"
+                            variant='standard'
                             fullWidth
-                            style={{ marginBottom: '0px', width:'600px' }}
-                            InputLabelProps={{
-                                style: {
-                                color: '#1976d2',  // Couleur primary par défaut (bleu de Material-UI)
-                                },
-                            }}
-                            />
+                            style={{ marginBottom: '10px' }}
+                            error={Boolean(formData.touched.rubriques_poste && formData.errors.rubriques_poste)}
+                        >
+                            <InputLabel style={{ color: '#1976d2', fontSize: '13px' }}>Nature des immobilisations</InputLabel>
+                            <Select
+                                label="Nature des immobilisations"
+                                name="rubriques_poste"
+                                value={formData.values.rubriques_poste}
+                                onChange={formData.handleChange}
+                                onBlur={formData.handleBlur}
+                                fullWidth
+                                sx={{
+                                    fontSize: '13px',
+                                    height: '30px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    '& .MuiSelect-select': {
+                                        padding: '1px',
+                                    }
+                                }}
+                                style={{ marginBottom: '0px', width: '30%' }}
+                            >
+                                {/* Remplacer ces options par celles dont tu as besoin */}
+                                <MenuItem key="AUTREACTIF" value="AUTREACTIF">Autres actifs financiers non courant</MenuItem>
+                                <MenuItem key="IMMOCORP" value="IMMOCORP">Immobilisation corporelle</MenuItem>
+                                <MenuItem key="IMMOINCORP" value="IMMOINCORP">Immobilisation incorporelle</MenuItem>
+                                <MenuItem key="IMMOENCOUR" value="IMMOENCOUR">Immobilisation en cours</MenuItem>
+                                <MenuItem key="IMMOFIN" value="IMMOFIN">Immobilisation financière</MenuItem>
+                                <MenuItem key="PART" value="PART">Participation</MenuItem>
+                            </Select>
 
-                            <FormHelperText style={{color:'red', width:'600px'}}>
-                                {formData.errors.libelle && formData.touched.libelle && formData.errors.libelle}
+                            <FormHelperText style={{ width: '350px' }}>
+                                {formData.errors.rubriques_poste && formData.touched.rubriques_poste && formData.errors.rubriques_poste}
                             </FormHelperText>
                         </FormControl>
+
+                        <Stack flexDirection={'row'} justifyContent={'space-between'}>
+                            <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '24%' }}>
+                                <TextField
+                                    size="small"
+                                    label="N° de compte"
+                                    name="num_compte"
+                                    value={formData.values.num_compte}
+                                    onChange={formData.handleChange}
+                                    onBlur={formData.handleBlur}
+                                    type="string"
+                                    fullWidth
+                                    variant='standard'
+                                    InputProps={{
+                                        style: {
+                                            fontSize: '13px',
+                                            padding: '2px 4px',
+                                            height: '30px',
+                                        },
+                                        sx: {
+                                            '& input': {
+                                                height: '30px',
+                                            },
+                                        },
+                                    }}
+                                    InputLabelProps={{
+                                        style: {
+                                            color: '#1976d2',
+                                            fontSize: '13px',
+                                            marginTop: '-2px',
+                                        },
+                                    }}
+                                    error={Boolean(formData.touched.num_compte && formData.errors.num_compte)}
+                                    helperText={formData.touched.num_compte && formData.errors.num_compte}
+                                />
+                            </FormControl>
+
+                            <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '75%' }}>
+                                <TextField
+                                    size="small"
+                                    label="Libellé"
+                                    name="libelle"
+                                    value={formData.values.libelle}
+                                    onChange={formData.handleChange}
+                                    onBlur={formData.handleBlur}
+                                    type="string"
+                                    fullWidth
+                                    variant='standard'
+                                    InputProps={{
+                                        style: {
+                                            fontSize: '13px',
+                                            padding: '2px 4px',
+                                            height: '30px',
+                                        },
+                                        sx: {
+                                            '& input': {
+                                                height: '30px',
+                                            },
+                                        },
+                                    }}
+                                    InputLabelProps={{
+                                        style: {
+                                            color: '#1976d2',
+                                            fontSize: '13px',
+                                            marginTop: '-2px',
+                                        },
+                                    }}
+                                    error={Boolean(formData.touched.libelle && formData.errors.libelle)}
+                                    helperText={formData.touched.libelle && formData.errors.libelle}
+                                />
+                            </FormControl>
+                        </Stack>
+
+                        <Divider />
+                        <Typography fontWeight="bold">Montants</Typography>
+
+                        <Stack direction={'row'} spacing={1}>
+                            <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '24%' }}>
+                                <TextField
+                                    size="small"
+                                    label="Val. acquisition"
+                                    name="valeur_acquisition"
+                                    value={formData.values.valeur_acquisition}
+                                    onChange={formData.handleChange}
+                                    onBlur={formData.handleBlur}
+                                    fullWidth
+                                    style={{
+                                        textAlign: 'right',
+                                        justifyContent: 'right',
+                                        justifyItems: 'right'
+                                    }}
+                                    InputProps={{
+                                        style: {
+                                            fontSize: '13px',
+                                            padding: '2px 4px',
+                                            height: '30px',
+                                        },
+                                        inputComponent: FormatedInput,
+                                        endAdornment: <InputAdornment position="end">Ar</InputAdornment>,
+                                        sx: {
+                                            '& input': {
+                                                textAlign: 'right',
+                                                height: '30px',
+                                            },
+                                        },
+                                    }}
+                                    InputLabelProps={{
+                                        style: {
+                                            color: '#1976d2',
+                                            fontSize: '13px',
+                                            marginTop: '-2px',
+                                        },
+                                    }}
+                                    variant='standard'
+                                    error={Boolean(formData.touched.valeur_acquisition && formData.errors.valeur_acquisition)}
+                                    helperText={formData.touched.valeur_acquisition && formData.errors.valeur_acquisition}
+                                />
+                            </FormControl>
+
+                            <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '24%' }}>
+                                <TextField
+                                    size="small"
+                                    label="Augmentation"
+                                    name="augmentation"
+                                    value={formData.values.augmentation}
+                                    onChange={formData.handleChange}
+                                    onBlur={formData.handleBlur}
+                                    fullWidth
+                                    style={{
+                                        textAlign: 'right',
+                                        justifyContent: 'right',
+                                        justifyItems: 'right'
+                                    }}
+                                    InputProps={{
+                                        style: {
+                                            fontSize: '13px',
+                                            padding: '2px 4px',
+                                            height: '30px',
+                                        },
+                                        inputComponent: FormatedInput,
+                                        endAdornment: <InputAdornment position="end">Ar</InputAdornment>,
+                                        sx: {
+                                            '& input': {
+                                                textAlign: 'right',
+                                                height: '30px',
+                                            },
+                                        },
+                                    }}
+                                    InputLabelProps={{
+                                        style: {
+                                            color: '#1976d2',
+                                            fontSize: '13px',
+                                            marginTop: '-2px',
+                                        },
+                                    }}
+                                    variant='standard'
+                                />
+                            </FormControl>
+
+
+                            <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '24%' }}>
+                                <TextField
+                                    size="small"
+                                    label="Diminution"
+                                    name="diminution"
+                                    value={formData.values.diminution}
+                                    onChange={formData.handleChange}
+                                    fullWidth
+                                    style={{
+                                        textAlign: 'right',
+                                        justifyContent: 'right',
+                                        justifyItems: 'right'
+                                    }}
+                                    InputProps={{
+                                        style: {
+                                            fontSize: '13px',
+                                            padding: '2px 4px',
+                                            height: '30px',
+                                        },
+                                        inputComponent: FormatedInput,
+                                        endAdornment: <InputAdornment position="end">Ar</InputAdornment>,
+                                        sx: {
+                                            '& input': {
+                                                textAlign: 'right',
+                                                height: '30px',
+                                            },
+                                        },
+                                    }}
+                                    InputLabelProps={{
+                                        style: {
+                                            color: '#1976d2',
+                                            fontSize: '13px',
+                                            marginTop: '-2px',
+                                        },
+                                    }}
+                                    variant='standard'
+                                />
+                            </FormControl>
+
+                            <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '24%' }}>
+                                <TextField
+                                    disabled
+                                    size="small"
+                                    label="Valeur brute"
+                                    name="valeur_brute"
+                                    value={formData.values.valeur_brute}
+                                    onChange={formData.handleChange}
+                                    fullWidth
+                                    style={{
+                                        textAlign: 'right',
+                                        justifyContent: 'right',
+                                        justifyItems: 'right'
+                                    }}
+                                    InputProps={{
+                                        style: {
+                                            fontSize: '13px',
+                                            padding: '2px 4px',
+                                            height: '30px',
+                                        },
+                                        inputComponent: FormatedInput,
+                                        endAdornment: <InputAdornment position="end">Ar</InputAdornment>,
+                                        sx: {
+                                            '& input': {
+                                                textAlign: 'right',
+                                                height: '30px',
+                                            },
+                                        },
+                                    }}
+                                    InputLabelProps={{
+                                        style: {
+                                            color: '#1976d2',
+                                            fontSize: '13px',
+                                            marginTop: '-2px',
+                                        },
+                                    }}
+                                    variant='standard'
+                                />
+                            </FormControl>
+
+                        </Stack>
                     </Stack>
-
-                    <Divider style={{marginTop:'10px', marginBottom:'30px'}}/>
-
-                    <Stack direction={'row'} spacing={1}>
-                        <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '250px' }}>
-                            <TextField
-                                size="small"
-                                label="Val. acquisition"
-                                name="valeur_acquisition"
-                                value={formData.values.valeur_acquisition}
-                                onChange={formData.handleChange}
-                                fullWidth
-                                style={{ 
-                                    marginBottom: '0px', 
-                                    width: '250px', 
-                                    textAlign: 'right', 
-                                    justifyContent:'right', 
-                                    justifyItems:'right',
-                                    backgroundColor: '#F4F9F9'
-                                }}
-                                InputProps={{
-                                    inputComponent: FormatedInput,
-                                    endAdornment: <InputAdornment position="end">Ar</InputAdornment>,
-                                    sx: {
-                                    '& input': {
-                                        textAlign: 'right', // Alignement du texte dans le champ à droite
-                                    },
-                                    },
-                                }}
-                                InputLabelProps={{
-                                style: {
-                                    color: '#1976d2',  // Couleur primary par défaut (bleu de Material-UI)
-                                },
-                                }}
-                            />
-
-                            <FormHelperText style={{color:'red', width:'250px'}}>
-                                {formData.errors.valeur_acquisition && formData.touched.valeur_acquisition && formData.errors.valeur_acquisition}
-                            </FormHelperText>
-                        </FormControl>
-                        
-                        <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '250px' }}>
-                            <TextField
-                                size="small"
-                                label="Augmentation"
-                                name="augmentation"
-                                value={formData.values.augmentation}
-                                onChange={formData.handleChange}
-                                fullWidth
-                                style={{ 
-                                    marginBottom: '0px', 
-                                    width: '250px', 
-                                    textAlign: 'right', 
-                                    justifyContent:'right', 
-                                    justifyItems:'right',
-                                    backgroundColor: '#F4F9F9',
-                                }}
-                                InputProps={{
-                                    inputComponent: FormatedInput,
-                                    endAdornment: <InputAdornment position="end">Ar</InputAdornment>,
-                                    sx: {
-                                    '& input': {
-                                        textAlign: 'right', // Alignement du texte dans le champ à droite
-                                    },
-                                    },
-                                }}
-                                InputLabelProps={{
-                                style: {
-                                    color: '#1976d2',  // Couleur primary par défaut (bleu de Material-UI)
-                                },
-                                }}
-                            />
-
-                            <FormHelperText style={{color:'red', width:'250px'}}>
-                                {formData.errors.augmentation && formData.touched.augmentation && formData.errors.augmentation}
-                            </FormHelperText>
-                        </FormControl>
-                        
-
-                        <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '250px' }}>
-                            <TextField
-                                size="small"
-                                label="Diminution"
-                                name="diminution"
-                                value={formData.values.diminution}
-                                onChange={formData.handleChange}
-                                fullWidth
-                                style={{ 
-                                    marginBottom: '0px', 
-                                    width: '250px', 
-                                    textAlign: 'right', 
-                                    justifyContent:'right', 
-                                    justifyItems:'right',
-                                    backgroundColor: '#F4F9F9'
-                                }}
-                                InputProps={{
-                                    inputComponent: FormatedInput,
-                                    endAdornment: <InputAdornment position="end">Ar</InputAdornment>,
-                                    sx: {
-                                    '& input': {
-                                        textAlign: 'right', // Alignement du texte dans le champ à droite
-                                    },
-                                    },
-                                }}
-                                InputLabelProps={{
-                                style: {
-                                    color: '#1976d2',  // Couleur primary par défaut (bleu de Material-UI)
-                                },
-                                }}
-                            />
-
-                            <FormHelperText style={{color:'red', width:'250px'}}>
-                                {formData.errors.diminution && formData.touched.diminution && formData.errors.diminution}
-                            </FormHelperText>
-                        </FormControl>
-                        
-                        <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '250px' }}>
-                            <TextField
-                                disabled
-                                size="small"
-                                label="Valeur brute"
-                                name="valeur_brute"
-                                value={formData.values.valeur_brute}
-                                onChange={formData.handleChange}
-                                fullWidth
-                                style={{ 
-                                    marginBottom: '0px', 
-                                    width: '250px', 
-                                    textAlign: 'right', 
-                                    justifyContent:'right', 
-                                    justifyItems:'right',
-                                    backgroundColor: '#F4F9F9'
-                                }}
-                                InputProps={{
-                                    inputComponent: FormatedInput,
-                                    endAdornment: <InputAdornment position="end">Ar</InputAdornment>,
-                                    sx: {
-                                    '& input': {
-                                        textAlign: 'right', // Alignement du texte dans le champ à droite
-                                    },
-                                    },
-                                }}
-                                InputLabelProps={{
-                                style: {
-                                    color: '#1976d2',  // Couleur primary par défaut (bleu de Material-UI)
-                                },
-                                }}
-                            />
-
-                            <FormHelperText style={{color:'red', width:'250px'}}>
-                                {formData.errors.valeur_brute && formData.touched.valeur_brute && formData.errors.valeur_brute}
-                            </FormHelperText>
-                        </FormControl>
-                        
-                    </Stack>
-                </Stack>
 
                 </DialogContent>
                 <DialogActions>
                     <Button autoFocus
                         variant='outlined'
-                        style={{backgroundColor:"transparent", 
-                            color:initial.theme, 
-                            width:"100px", 
-                            textTransform: 'none', 
+                        style={{
+                            backgroundColor: "transparent",
+                            color: initial.theme,
+                            width: "100px",
+                            textTransform: 'none',
                             //outline: 'none',
                         }}
                         onClick={handleCloseDeleteModel}
-                        >
-                            Annuler
+                    >
+                        Annuler
                     </Button>
-                    <Button autoFocus 
-                    type="submit"
-                    onClick={formData.handleSubmit}
-                    style={{backgroundColor:initial.theme, color:'white', width:"100px", textTransform: 'none', outline: 'none'}}
+                    <Button autoFocus
+                        type="submit"
+                        onClick={formData.handleSubmit}
+                        style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
                     >
                         Enregistrer
                     </Button>

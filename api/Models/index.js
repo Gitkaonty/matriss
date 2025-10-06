@@ -6,7 +6,14 @@ require('dotenv').config();
 //port for my database is 5433
 //database name is discover
 const DB_ConnexionString = `postgresql://${process.env.NODE_API_USER}:${process.env.NODE_API_PWD}@${process.env.NODE_API_URL}:${process.env.NODE_API_PORT}/${process.env.NODE_API_DBNAME}`;
-const sequelize = new Sequelize(DB_ConnexionString, { dialect: "postgres" })
+const sequelize = new Sequelize(
+    DB_ConnexionString,
+    {
+        dialect: "postgres",
+        logging: false
+    }
+
+)
 //const sequelize = new Sequelize(`postgresql://postgres:admin@localhost:5432/kaonty`, {dialect: "postgres"})
 
 //checking if connection is done
@@ -79,6 +86,14 @@ db.controles = require('./controlesModel')(sequelize, DataTypes);
 db.controlematrices = require('./controlematricesModel')(sequelize, DataTypes);
 db.controlematricedetails = require('./controlematricedetailsModel')(sequelize, DataTypes);
 
+//
+db.resettokens = require('./resetTokenModel')(sequelize, DataTypes);
+//
+
+//
+db.isi = require('./isiModel')(sequelize, DataTypes);
+//
+
 // 
 db.droitcommas = require('./droitCommModelA')(sequelize, DataTypes);
 db.droitcommbs = require('./droitCommModelB')(sequelize, DataTypes);
@@ -93,6 +108,10 @@ db.caSections = require('./caSectionMolel')(sequelize, DataTypes);
 db.caAxes = require('./caAxeModel')(sequelize, DataTypes);
 //
 
+//
+db.localites = require('./localites')(sequelize, DataTypes);
+//
+
 const Devise = require('./deviseModel')(sequelize, DataTypes);
 db.Devise = Devise;
 db.Devise.belongsTo(db.userscomptes, { foreignKey: 'id_compte' });
@@ -102,11 +121,11 @@ db.fonctions = require('./fonctionModel')(sequelize, DataTypes);
 db.personnels = require('./personnelModel')(sequelize, DataTypes);
 db.irsa = require('./irsaModel')(sequelize, DataTypes);
 db.paies = require('./paie')(sequelize, DataTypes);
-db.historiqueirsa = require('./historiqueIrsaModel')(sequelize, DataTypes);
+db.historiquedeclaration = require('./historiqueDeclarationModel')(sequelize, DataTypes);
 
 // Appel explicite de la méthode associate pour HistoriqueIrsa
-if (db.historiqueirsa.associate) {
-    db.historiqueirsa.associate(db);
+if (db.historiquedeclaration.associate) {
+    db.historiquedeclaration.associate(db);
 }
 
 //définition des associations
@@ -127,19 +146,19 @@ db.balances.belongsTo(db.dossierplancomptable, { as: 'infosCompte', foreignKey: 
 db.liassebhiapcs.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique', targetKey: 'id_rubrique' });
 db.liassedas.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique', targetKey: 'id_rubrique' });
 db.liassedps.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique', targetKey: 'id_rubrique' });
-db.liassedrfs.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique' , targetKey: 'id_rubrique'});
-db.liassedrfs.hasMany(db.ajustements, { as: 'ajustsDRF',foreignKey: 'id_rubrique', sourceKey: 'id_rubrique'});
-db.liasseeiafncs.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique' , targetKey: 'id_rubrique'});
-db.liasseevcps.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique' , targetKey: 'id_rubrique'});
-db.liasseevcps.hasMany(db.ajustements, { as: 'ajustsEVCP',foreignKey: 'id_rubrique', sourceKey: 'id_rubrique'});
-db.liassempautres.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique' , targetKey: 'id_rubrique'});
-db.liassemps.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique' , targetKey: 'id_rubrique'});
-db.liassenotes.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique' , targetKey: 'id_rubrique'});
-db.liassesads.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique' , targetKey: 'id_rubrique'});
-db.liassesads.hasMany(db.ajustements, { as: 'ajustsSAD',foreignKey: 'id_rubrique', sourceKey: 'id_rubrique'});
-db.liassesdrs.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique' , targetKey: 'id_rubrique'});
-db.liassesdrs.hasMany(db.ajustements, { as: 'ajustsSDR',foreignKey: 'id_rubrique', sourceKey: 'id_rubrique'});
-db.liasseses.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique' , targetKey: 'id_rubrique'});
+db.liassedrfs.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique', targetKey: 'id_rubrique' });
+db.liassedrfs.hasMany(db.ajustements, { as: 'ajustsDRF', foreignKey: 'id_rubrique', sourceKey: 'id_rubrique' });
+db.liasseeiafncs.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique', targetKey: 'id_rubrique' });
+db.liasseevcps.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique', targetKey: 'id_rubrique' });
+db.liasseevcps.hasMany(db.ajustements, { as: 'ajustsEVCP', foreignKey: 'id_rubrique', sourceKey: 'id_rubrique' });
+db.liassempautres.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique', targetKey: 'id_rubrique' });
+db.liassemps.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique', targetKey: 'id_rubrique' });
+db.liassenotes.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique', targetKey: 'id_rubrique' });
+db.liassesads.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique', targetKey: 'id_rubrique' });
+db.liassesads.hasMany(db.ajustements, { as: 'ajustsSAD', foreignKey: 'id_rubrique', sourceKey: 'id_rubrique' });
+db.liassesdrs.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique', targetKey: 'id_rubrique' });
+db.liassesdrs.hasMany(db.ajustements, { as: 'ajustsSDR', foreignKey: 'id_rubrique', sourceKey: 'id_rubrique' });
+db.liasseses.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique', targetKey: 'id_rubrique' });
 
 //
 db.devises.belongsTo(db.userscomptes, { foreignKey: 'compte_id', targetKey: 'id' });
@@ -147,7 +166,7 @@ db.journals.belongsTo(db.dossierplancomptable, { foreignKey: 'id_numcpt', target
 db.journals.belongsTo(db.codejournals, { foreignKey: 'id_journal', targetKey: 'id' });
 
 // Droit de communication
-// Premier table
+// Première table
 db.userscomptes.hasMany(db.droitcommas, { foreignKey: 'id_compte', sourceKey: 'id' });
 db.droitcommas.belongsTo(db.userscomptes, { foreignKey: 'id_compte', targetKey: 'id' });
 
@@ -156,6 +175,9 @@ db.droitcommas.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id
 
 db.exercices.hasMany(db.droitcommas, { foreignKey: 'id_exercice', sourceKey: 'id' });
 db.droitcommas.belongsTo(db.exercices, { foreignKey: 'id_exercice', targetKey: 'id' });
+
+db.dossierplancomptable.hasMany(db.droitcommas, { foreignKey: 'id_numcpt', sourceKey: 'id' });
+db.droitcommas.belongsTo(db.dossierplancomptable, { foreignKey: 'id_numcpt', targetKey: 'id' });
 
 // Deuxième table
 db.userscomptes.hasMany(db.droitcommbs, { foreignKey: 'id_compte', sourceKey: 'id' });
@@ -166,6 +188,9 @@ db.droitcommbs.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id
 
 db.exercices.hasMany(db.droitcommbs, { foreignKey: 'id_exercice', sourceKey: 'id' });
 db.droitcommbs.belongsTo(db.exercices, { foreignKey: 'id_exercice', targetKey: 'id' });
+
+db.dossierplancomptable.hasMany(db.droitcommbs, { foreignKey: 'id_numcpt', sourceKey: 'id' });
+db.droitcommbs.belongsTo(db.dossierplancomptable, { foreignKey: 'id_numcpt', targetKey: 'id' });
 
 // Etat comm
 db.userscomptes.hasMany(db.etatscomms, { foreignKey: 'id_compte', sourceKey: 'id' });
@@ -205,6 +230,24 @@ db.caSections.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id'
 
 db.caSections.belongsTo(db.caAxes, { foreignKey: 'id_axe', targetKey: 'id' });
 db.caAxes.hasMany(db.caSections, { foreignKey: 'id_axe', sourceKey: 'id' });
+
+// Reset Token
+db.users.hasMany(db.resettokens, { foreignKey: 'user_id', sourceKey: 'id' });
+db.resettokens.belongsTo(db.users, { foreignKey: 'user_id', targetKey: 'id' });
+
+// Déclaration isi
+db.userscomptes.hasMany(db.isi, { foreignKey: 'id_compte', sourceKey: 'id' });
+db.isi.belongsTo(db.userscomptes, { foreignKey: 'id_compte', targetKey: 'id' });
+
+db.dossiers.hasMany(db.isi, { foreignKey: 'id_dossier', sourceKey: 'id' });
+db.isi.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id' });
+
+db.exercices.hasMany(db.isi, { foreignKey: 'id_exercice', sourceKey: 'id' });
+db.isi.belongsTo(db.exercices, { foreignKey: 'id_exercice', targetKey: 'id' });
+
+db.dossierplancomptable.hasMany(db.isi, { foreignKey: 'id_numcpt', sourceKey: 'id' });
+db.isi.belongsTo(db.dossierplancomptable, { foreignKey: 'id_numcpt', targetKey: 'id' });
+
 
 db.classifications.belongsTo(db.dossiers, { foreignKey: 'id_dossier' });
 db.dossiers.hasMany(db.classifications, { foreignKey: 'id_dossier' });

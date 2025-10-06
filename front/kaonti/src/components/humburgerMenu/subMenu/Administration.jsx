@@ -10,25 +10,25 @@ const traitementList = [
     {
         text: 'Saisie',
         name: "saisie",
-        path: "/tab/saisie",
+        path: "/tab/administration/saisie",
         urldynamic: true
     },
     {
         text: 'Consultation',
         name: "consultation",
-        path: "/tab/consultation",
+        path: "/tab/administration/consultation",
         urldynamic: true
     },
     {
         text: 'Personnel',
         name: "personnel",
-        path: "/tab/personnel",
+        path: "/tab/administration/personnel",
         urldynamic: true
     },
     {
         text: 'Fonctions',
         name: "fonctions",
-        path: "/tab/fonctions",
+        path: "/tab/administration/fonctions",
         urldynamic: true
     },
 ];
@@ -37,31 +37,31 @@ const importList = [
     {
         text: 'Annexe déclarations fiscales',
         name: "annexeDeclarationsFiscales",
-        path: "/tab/importAnnexeDeclarationFiscale",
-        urldynamic: true
+        path: "/tab/administration/importAnnexeDeclarationFiscale",
+        urldynamic: false
     },
     {
         text: 'Annexe liasses E-bilan',
         name: "annexeLiassesEbilan",
-        path: "/tab/importAnnexe",
+        path: "/tab/administration/importAnnexeDeclarationEbilan",
         urldynamic: true
     },
     {
         text: 'Balance',
         name: "balance",
-        path: "/tab/importBalance",
+        path: "/tab/administration/importBalance",
         urldynamic: true
     },
     {
         text: 'Journal comptable',
         name: "journalComptable",
-        path: "/tab/importJournal",
+        path: "/tab/administration/importJournal",
         urldynamic: true
     },
     {
         text: 'Modèle plan comptable',
         name: "modelePlanComptable",
-        path: "/tab/importModelePlanComptable",
+        path: "/tab/administration/importModelePlanComptable",
         urldynamic: false
     },
 ];
@@ -70,7 +70,7 @@ const exportList = [
     {
         text: 'Balance',
         name: "balance",
-        path: "/tab/exportBalance",
+        path: "/tab/administration/exportBalance",
         urldynamic: true
     },
     {
@@ -95,9 +95,9 @@ const exportList = [
     },
 ];
 
-export default function Administration({onWindowState, pathToNavigate, humburgerMenuState}){
+export default function Administration({ onWindowState, pathToNavigate, humburgerMenuState, closeDrawer }) {
     let initial = init[0];
-   
+
     const SendStateToParent = () => {
         onWindowState(false);
     }
@@ -107,37 +107,53 @@ export default function Administration({onWindowState, pathToNavigate, humburger
     }
 
     return (
-    <Stack backgroundColor={initial.theme} 
-    width={humburgerMenuState ? '85.5vw': '95vw'} 
-    height={'100vh'} 
-    zIndex={"10"} 
-    position={"absolute"} 
-    visibility={'visible'}
-    sx={{opacity:"0.95"}}
-    marginTop={"-27px"}
-    marginLeft={"-8px"}
-    >
-        <SubMenuHeader caption={"Administration"} openWindow={SendStateToParent}/>
+        <Stack
+            backgroundColor={initial.theme}
+            width={'100%'}
+            height={'100vh'}
+            zIndex={"10"}
+            position={"fixed"}
+            visibility={'visible'}
+            sx={{
+                opacity: "0.95",
+            }}
+            marginTop={"-40px"}
+            marginLeft={"-8px"}
+        >
+            <SubMenuHeader
+                caption={"Administration"}
+                openWindow={SendStateToParent}
+                humburgerMenuState={humburgerMenuState}
+                closeDrawer={closeDrawer}
+            />
 
-        <Stack marginTop={"50px"} width={"100%"} height={"75%"} spacing={2} alignItems={"flex-start"} direction={"row"} marginLeft={"20px"}>
-            <Stack marginTop={"50px"} width={"25%"} height={"30px"} spacing={0.1} alignItems={"flex-start"} direction={"column"}>
-                <Typography variant='h6' marginLeft={"50px"} color={"white"}>Traitement</Typography>
-                <SubMenuList list={traitementList} navigatePath={HandlePath}/>
-            </Stack>
-            
-            <Divider orientation='vertical' color={"white"} style={{height:"100%", opacity:"0.2"}} />
+            <Stack
+                width={"100%"}
+                height={"100%"}
+                spacing={2}
+                alignItems={"flex-start"}
+                direction={"row"}
+                marginLeft={"20px"}
+                marginTop={"-25px"}
+            >
+                <Stack width={"25%"} height={"30px"} spacing={0.1} alignItems={"flex-start"} direction={"column"}>
+                    <Typography variant='h6' marginLeft={"50px"} color={"white"}>Traitement</Typography>
+                    <SubMenuList list={traitementList} navigatePath={HandlePath} />
+                </Stack>
 
-            <Stack marginTop={"50px"} width={"25%"} height={"30px"} spacing={0.1} alignItems={"flex-start"} direction={"column"}>
-                <Typography variant='h6' marginLeft={"50px"} color={"white"}>Import</Typography>
-                <SubMenuList list={importList} navigatePath={HandlePath}/>
-            </Stack>
-            <Divider orientation='vertical' color={"white"} style={{height:"100%", opacity:"0.2"}} />
+                <Divider orientation='vertical' color={"white"} style={{ height: "100%", opacity: "0.2" }} />
 
-            <Stack marginTop={"50px"} width={"25%"} height={"30px"} spacing={0.1} alignItems={"flex-start"} direction={"column"}>
-                <Typography variant='h6' marginLeft={"50px"} color={"white"}>Export</Typography>
-                <SubMenuList list={exportList} navigatePath={HandlePath}/>
+                <Stack width={"25%"} height={"30px"} spacing={0.1} alignItems={"flex-start"} direction={"column"}>
+                    <Typography variant='h6' marginLeft={"50px"} color={"white"}>Import</Typography>
+                    <SubMenuList list={importList} navigatePath={HandlePath} />
+                </Stack>
+                <Divider orientation='vertical' color={"white"} style={{ height: "100%", opacity: "0.2" }} />
+
+                <Stack width={"25%"} height={"30px"} spacing={0.1} alignItems={"flex-start"} direction={"column"}>
+                    <Typography variant='h6' marginLeft={"50px"} color={"white"}>Export</Typography>
+                    <SubMenuList list={exportList} navigatePath={HandlePath} />
+                </Stack>
             </Stack>
         </Stack>
-    </Stack>
     )
 }

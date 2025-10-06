@@ -1430,10 +1430,6 @@ export default function DeclarationIRSAComponent() {
         console.log("Date fin :", resData.list.date_fin);
         console.log("Annee :", annee);
         setListeAnnee(annee);
-        // }else if(resData.state === false){
-        //   console.log("response.data.state : false ", response.data.state);
-        //   setListeAnnee([]);
-        //   toast.error("une erreur est survenue lors de la récupération de la liste des exercices");
       }
     }).catch((error) => {
       toast.error(error)

@@ -2,10 +2,7 @@ import React from 'react';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-    Typography, Stack, Paper, RadioGroup, FormControlLabel, Radio, FormControl,
-    InputLabel, Select, MenuItem, TextField, Box, Tab,
-    FormHelperText,
-    Chip
+    Typography, Stack, FormControl, InputLabel, Select, MenuItem, TextField, Box, Tab, Chip, Autocomplete
 } from '@mui/material';
 import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
@@ -24,8 +21,7 @@ import { TabContext, TabList, TabPanel } from '@mui/lab';
 import { IoMdTrash } from "react-icons/io";
 import { TbPlaylistAdd } from "react-icons/tb";
 import { FaRegPenToSquare } from "react-icons/fa6";
-//import ParamPlanComptable_column from './ParamPlanComptable_column';
-import { useFormik, Field, Formik, Form, ErrorMessage } from 'formik';
+import { Field, Formik, Form, ErrorMessage } from 'formik';
 import * as Yup from "yup";
 import useAuth from '../../../../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
@@ -37,10 +33,10 @@ import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
 import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFile';
 import { TbCircleLetterCFilled, TbCircleLetterGFilled, TbCircleLetterAFilled } from "react-icons/tb";
 import { DetailsInformation } from '../../../componentsTools/DetailsInformation';
-import { FaFolderOpen } from "react-icons/fa";
 import { BsCheckCircleFill } from "react-icons/bs";
 import { PiIdentificationCardFill } from "react-icons/pi";
 import { BsPersonFillSlash } from "react-icons/bs";
+import { useSearchParams } from "react-router-dom";
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialogContent-root': {
@@ -51,17 +47,71 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     },
 }));
 
+const formAddCptInitialValues = {
+    action: 'new',
+    itemId: 0,
+    idCompte: 0,
+    idDossier: 0,
+    compte: '',
+    libelle: '',
+    nature: 'General',
+    baseCptCollectif: '',
+    typeTier: 'sans-nif',
+    nif: '',
+    stat: '',
+    adresse: '',
+    motcle: '',
+    cin: '',
+    dateCin: '',
+    autrePieceID: '',
+    refPieceID: '',
+    adresseSansNIF: '',
+    nifRepresentant: '',
+    adresseEtranger: '',
+    pays: '',
+    listeCptChg: [],
+    listeCptTva: [],
+    province: '',
+    region: '',
+    district: '',
+    commune: ''
+};
+
+//header pour le tableau ajouter compte de charge et/ou compte de TVA dans le popup
+//const columnHeaderAddNewRowModelDetail = ParamPlanComptable_column.columnHeaderAddNewRowModelDetail;
+const columnHeaderAddNewRowModelDetail = [
+    {
+        field: 'compte',
+        headerName: "Compte",
+        type: 'string',
+        sortable: true,
+        width: 200,
+        headerAlign: 'left',
+        headerClassName: 'HeaderbackColor',
+        editable: false,
+    },
+    {
+        field: 'libelle',
+        headerName: "Libellé",
+        type: 'string',
+        sortable: true,
+        width: 850,
+        headerAlign: 'left',
+        headerClassName: 'HeaderbackColor',
+        editable: false
+    },
+]
+
 export default function ParamPlanComptable() {
     let initial = init[0];
     const { auth } = useAuth();
     const navigate = useNavigate();
 
-    const [modelId, setModelId] = useState(null);
+    const [searchParams] = useSearchParams();
+    const compte = searchParams.get("compte");
 
     const [pc, setPc] = useState([]);
     const [selectedRow, setSelectedRow] = useState([]);
-    const [detailModelSelectedRowListChgAssoc, setDetailModelSelectedRowListChgAssoc] = useState([]);
-    const [detailModelSelectedRowListTvaAssoc, setDetailModelSelectedRowListTvaAssoc] = useState([]);
     const [openDialogAddCpt, setOpenDialogAddCpt] = useState(false);
 
     const [listCptChg, setListCptChg] = useState([]);
@@ -89,9 +139,18 @@ export default function ParamPlanComptable() {
     const [fileInfos, setFileInfos] = useState('');
     const [noFile, setNoFile] = useState(false);
     const [listeCptCollectif, setListeCptCollectif] = useState([]);
-    const [cptInfos, setCptInfos] = useState('');
     const [rowCptInfos, setRowCptInfos] = useState([]);
     const [openInfos, setOpenInfos] = useState(false);
+
+    const [provinces, setProvinces] = useState([]);
+    const [regions, setRegions] = useState([]);
+    const [districts, setDistricts] = useState([]);
+    const [communes, setCommunes] = useState([]);
+
+    const [selectedProvince, setSelectedProvince] = useState('');
+    const [selectedRegion, setSelectedRegion] = useState('');
+    const [selectedDistrict, setSelectedDistrict] = useState('');
+    const [selectedCommune, setSelectedCommune] = useState('');
 
     //header pour le tableau détail
     //const columnHeaderDetail = ParamPlanComptable_column.columnHeaderDetail;
@@ -497,31 +556,6 @@ export default function ParamPlanComptable() {
         }
     ]
 
-    //header pour le tableau ajouter compte de charge et/ou compte de TVA dans le popup
-    //const columnHeaderAddNewRowModelDetail = ParamPlanComptable_column.columnHeaderAddNewRowModelDetail;
-    const columnHeaderAddNewRowModelDetail = [
-        {
-            field: 'compte',
-            headerName: "Compte",
-            type: 'string',
-            sortable: true,
-            width: 200,
-            headerAlign: 'left',
-            headerClassName: 'HeaderbackColor',
-            editable: false,
-        },
-        {
-            field: 'libelle',
-            headerName: "Libellé",
-            type: 'string',
-            sortable: true,
-            width: 850,
-            headerAlign: 'left',
-            headerClassName: 'HeaderbackColor',
-            editable: false
-        },
-    ]
-
     //paramètres de connexion------------------------------------
     const decoded = auth?.accessToken
         ? jwtDecode(auth.accessToken)
@@ -529,61 +563,10 @@ export default function ParamPlanComptable() {
     const compteId = decoded.UserInfo.compteId || 0;
     const userId = decoded.UserInfo.userId || 0;
 
-    //Récupération de l'ID du dossier
-    useEffect(() => {
-        //tester si la page est renvoyer par useNavigate
-        const navigationEntries = performance.getEntriesByType('navigation');
-        let idFile = 0;
-
-        if (navigationEntries.length > 0) {
-            const navigationType = navigationEntries[0].type;
-            if (navigationType === 'reload') {
-                const idDossier = sessionStorage.getItem("fileId");
-                setFileId(idDossier);
-                idFile = idDossier;
-            } else {
-                sessionStorage.setItem('fileId', id);
-                setFileId(id);
-                idFile = id;
-            }
-        }
-        GetInfosIdDossier(idFile);
-    }, []);
-
-    const GetInfosIdDossier = (id) => {
-        axios.get(`/home/FileInfos/${id}`).then((response) => {
-            const resData = response.data;
-
-            if (resData.state) {
-                setFileInfos(resData.fileInfos[0]);
-                setNoFile(false);
-            } else {
-                setFileInfos([]);
-                setNoFile(true);
-            }
-        })
-    }
-
     const sendToHome = (value) => {
         setNoFile(!value);
         navigate('/tab/home');
     }
-
-    //Affichage du plan comptable
-    const showPc = () => {
-        axios.post(`/paramPlanComptable/pc`, { fileId }).then((response) => {
-            const resData = response.data;
-            if (resData.state) {
-                setPc(resData.liste);
-            } else {
-                toast.error(resData.msg);
-            }
-        })
-    }
-
-    useEffect(() => {
-        showPc();
-    }, [fileId]);
 
     //Ajouter un compte dans la liste du plan comptable
     const handleCloseDialogAddCpt = () => {
@@ -605,6 +588,7 @@ export default function ParamPlanComptable() {
         setOpenDialogAddCpt(true);
     }
 
+    //Remplissage automatique de formulaire pour la modification
     const handleOpenDialogCptModify = (setFieldValue) => () => {
         recupererListeCptCollectif();
 
@@ -635,6 +619,11 @@ export default function ParamPlanComptable() {
         setFieldValue("listeCptChg", listCptChg);
         setFieldValue("listeCptTva", listCptTva);
 
+        setFieldValue("province", selectedRow.province);
+        setFieldValue("region", selectedRow.region);
+        setFieldValue("district", selectedRow.district);
+        setFieldValue("commune", selectedRow.commune);
+
         //Activer ou non la listbox base compte auxiliaire
         if (selectedRow.nature === 'General' || selectedRow.nature === 'Collectif') {
             setTypeCptGeneral(true);
@@ -648,32 +637,6 @@ export default function ParamPlanComptable() {
     //Choix TAB value pour dialog ajout de nouvelle ligne du tableau détail modèle plan comptable
     const handleChangeTabValueAjoutNewRow = (event, newValue) => {
         setTabValueAjoutNewRow(newValue);
-    };
-
-    const formAddCptInitialValues = {
-        action: 'new',
-        itemId: 0,
-        idCompte: 0,
-        idDossier: 0,
-        compte: '',
-        libelle: '',
-        nature: 'General',
-        baseCptCollectif: '',
-        typeTier: 'sans-nif',
-        nif: '',
-        stat: '',
-        adresse: '',
-        motcle: '',
-        cin: '',
-        dateCin: '',
-        autrePieceID: '',
-        refPieceID: '',
-        adresseSansNIF: '',
-        nifRepresentant: '',
-        adresseEtranger: '',
-        pays: '',
-        listeCptChg: [],
-        listeCptTva: [],
     };
 
     const formAddCptValidationSchema = Yup.object({
@@ -697,7 +660,7 @@ export default function ParamPlanComptable() {
                 is: (value) => value === 'sans-nif',
                 then: () => Yup.string()
                     .matches(
-                        /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/, // = format du back pour la datapicker yyyy-MM-dd
+                        /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/,
                         'La date doit être au format jj/mm/aaaa'
                     )
                     .test('is-valid-date', 'La date doit être valide', (value) => {
@@ -713,21 +676,12 @@ export default function ParamPlanComptable() {
                         return day >= 1 && day <= daysInMonth;
                     }).required('La date est requise'),
                 otherwise: () => Yup.string().notRequired(),
-            })
+            }),
+        province: Yup.string().required("Veuillez sélectionner une province"),
+        region: Yup.string().required("Veuillez sélectionner une région"),
+        district: Yup.string().required("Veuillez sélectionner un district"),
+        commune: Yup.string().required("Veuillez sélectionner une commune"),
     });
-
-    const formAddCpthandleSubmit = (values) => {
-        axios.post(`/paramPlanComptable/AddCpt`, values).then((response) => {
-            const resData = response.data;
-            if (resData.state === true) {
-                showPc(modelId);
-                toast.success(resData.msg);
-            } else {
-                toast.error(resData.msg);
-            }
-            setOpenDialogAddCpt(false);
-        });
-    }
 
     //Action pour disable ou enable base compte collectif dans le formulaire nouveau compte pour le modèle
     const handleChangeListBoxNature = (setFieldValue) => (e) => {
@@ -810,12 +764,6 @@ export default function ParamPlanComptable() {
         setOpenDialogAddNewCptTvaToCpt(true);
     }
 
-    //gestion tableau ajout compte de TVA associé au nouveau compte à créer
-    const recupererListeCptCollectif = () => {
-        const result = pc?.filter(item => item.nature === 'Collectif');
-        setListeCptCollectif(result);
-    }
-
     const handleCloseDialogAddNewCptTvaToCpt = () => {
         setOpenDialogAddNewCptTvaToCpt(false);
     }
@@ -830,7 +778,6 @@ export default function ParamPlanComptable() {
         interm.push({ id: listCptTva.length + 1, idCpt: selectedCptAssocTva.idCpt, compte: selectedCptAssocTva.compte, libelle: selectedCptAssocTva.libelle });
         setListCptTva(interm);
 
-        //const newRow = {id: listCptTva.length+1, idCpt: selectedCptAssocTva.idCpt, compte: selectedCptAssocTva.compte, libelle: selectedCptAssocTva.libelle};
         setFieldValue('listeCptTva', interm);
         handleCloseDialogAddNewCptTvaToCpt();
     }
@@ -871,6 +818,93 @@ export default function ParamPlanComptable() {
         setFormulaireTier(value);
     }
 
+    //Suppression des comptes sélectionnés dans le tableau du plan comptable
+    const handleOpenDialogCptDelete = () => {
+        setOpenDialogDeleteItemsPc(true);
+    }
+
+    const showCptInfos = (state) => {
+        setOpenInfos(state);
+    }
+
+    const handleShowCptInfos = (row) => {
+        const itemId = row.id;
+        axios.get(`/paramPlanComptable/keepListCptChgTvaAssoc/${itemId}`).then((response) => {
+            const resData = response.data;
+            if (resData.state) {
+                setListCptChg(resData.detailChg);
+                setListCptTva(resData.detailTva);
+                setRowCptInfos(row);
+                setOpenInfos(true);
+            } else {
+                toast.error(resData.msg);
+            }
+        })
+    }
+
+    const GetInfosIdDossier = (id) => {
+        axios.get(`/home/FileInfos/${id}`).then((response) => {
+            const resData = response.data;
+
+            if (resData.state) {
+                setFileInfos(resData.fileInfos[0]);
+                setNoFile(false);
+            } else {
+                setFileInfos([]);
+                setNoFile(true);
+            }
+        })
+    }
+
+    //Affichage du plan comptable
+    const showPc = () => {
+        axios.post(`/paramPlanComptable/pc`, { fileId }).then((response) => {
+            const resData = response.data;
+            if (resData.state) {
+                let listePc = resData.liste;
+
+                // Filtrer si compteParam existe
+                if (compte) {
+                    listePc = listePc.filter((row) => row.compte === compte);
+                }
+
+                setPc(listePc);
+            } else {
+                toast.error(resData.msg);
+            }
+        })
+    }
+
+    //Ajouter ou modifier une dossier plan comptable
+    const formAddCpthandleSubmit = (values) => {
+        axios.post(`/paramPlanComptable/AddCpt`, values).then((response) => {
+            const resData = response.data;
+            if (resData.state === true) {
+                showPc();
+                toast.success(resData.msg);
+            } else {
+                toast.error(resData.msg);
+            }
+            setOpenDialogAddCpt(false);
+        });
+    }
+
+    //Gestion tableau ajout compte de TVA associé au nouveau compte à créer
+    const recupererListeCptCollectif = () => {
+        // const result = pc?.filter(item => item.nature === 'Collectif');
+        axios.post(`/paramPlanComptable/pc`, { fileId }).then((response) => {
+            const resData = response.data;
+            if (resData.state) {
+                let listePc = resData.liste;
+
+                const result = listePc?.filter(item => item.nature === 'Collectif')
+                setListeCptCollectif(result);
+            } else {
+                toast.error(resData.msg);
+            }
+        })
+    }
+
     //Récupération de l'ID de la ligne sélectionner dans le tableau détail du modèle sélectionné
     const listPCSelectedRow = (selectedRow) => {
         const itemId = selectedRow[0];
@@ -893,11 +927,6 @@ export default function ParamPlanComptable() {
         }
     }
 
-    //Suppression des comptes sélectionnés dans le tableau du plan comptable
-    const handleOpenDialogCptDelete = () => {
-        setOpenDialogDeleteItemsPc(true);
-    }
-
     const deleteItemsPC = (value) => {
         if (value === true) {
             if (pcAllselectedRow.length >= 1) {
@@ -905,7 +934,7 @@ export default function ParamPlanComptable() {
 
                 axios.post(`/paramPlanComptable/deleteItemPc`, { listId, compteId, fileId }).then((response) => {
                     const resData = response.data;
-                    showPc(modelId);
+                    showPc();
                     setOpenDialogDeleteItemsPc(false);
                     if (resData.state) {
                         toast.success(resData.msg);
@@ -926,36 +955,140 @@ export default function ParamPlanComptable() {
         }
     }
 
-    const handleShowCptInfos = (row) => {
-        const itemId = row.id;
-        //récupérer la liste des comptes de charges et compte de TVA associées à la ligne sélectionnée
-        axios.get(`/paramPlanComptable/keepListCptChgTvaAssoc/${itemId}`).then((response) => {
-            const resData = response.data;
-            if (resData.state) {
-                setListCptChg(resData.detailChg);
-                setListCptTva(resData.detailTva);
-                setRowCptInfos(row);
-                // let rowDetailInfos = '';
-                // rowDetailInfos = `Compte: ${row.compte}` ;
-                // rowDetailInfos = `${rowDetailInfos} Libellé: ${row.libelle} \n`;
+    const getProvinces = async () => {
+        try {
+            const response = await axios.get('/paramPlanComptable/getProvinces');
+            return response.data;
+        } catch (error) {
+            console.error('Erreur fetchProvinces:', error);
+            return [];
+        }
+    }
 
+    const getRegions = async (province) => {
+        if (!province) return [];
+        try {
+            const response = await axios.get(`/paramPlanComptable/getRegions/${province}`);
+            return response.data;
+        } catch (error) {
+            console.error('Erreur fetchRegions:', error);
+            return [];
+        }
+    }
 
-                // setCptInfos(rowDetailInfos);
-                setOpenInfos(true);
+    const getDistricts = async (province, region) => {
+        if (!province || !region) return [];
+        try {
+            const response = await axios.get(`/paramPlanComptable/getDistricts/${province}/${region}`);
+            return response.data;
+        } catch (error) {
+            console.error('Erreur fetchDistricts:', error);
+            return [];
+        }
+    }
+
+    const getCommunes = async (province, region, district) => {
+        if (!province || !region || !district) return [];
+        try {
+            const response = await axios.get(`/paramPlanComptable/getCommunes/${province}/${region}/${district}`);
+            return response.data;
+        } catch (error) {
+            console.error('Erreur fetchCommunes:', error);
+            return [];
+        }
+    }
+
+    //Récupération de l'ID du dossier
+    useEffect(() => {
+        //tester si la page est renvoyer par useNavigate
+        const navigationEntries = performance.getEntriesByType('navigation');
+        let idFile = 0;
+
+        if (navigationEntries.length > 0) {
+            const navigationType = navigationEntries[0].type;
+            if (navigationType === 'reload') {
+                const idDossier = sessionStorage.getItem("fileId");
+                setFileId(idDossier);
+                idFile = idDossier;
             } else {
-                toast.error(resData.msg);
+                sessionStorage.setItem('fileId', id);
+                setFileId(id);
+                idFile = id;
             }
-        })
-    }
+        }
+        GetInfosIdDossier(idFile);
+    }, []);
 
-    const showCptInfos = (state) => {
-        setOpenInfos(state);
-    }
+    useEffect(() => {
+        showPc();
+    }, [fileId, compte]);
+
+    // Charger les provinces
+    useEffect(() => {
+        getProvinces().then(setProvinces);
+    }, []);
+
+    // Charger les régions quand la province change, mais ne pas réinitialiser si on a déjà une région sélectionnée
+    useEffect(() => {
+        if (selectedProvince) {
+            getRegions(selectedProvince).then((data) => setRegions(data));
+
+            // Ne réinitialise que si on est en création (pas de selectedRegion)
+            if (!selectedRegion) setSelectedRegion('');
+            if (!selectedDistrict) setDistricts([]);
+            if (!selectedDistrict) setSelectedDistrict('');
+            if (!selectedCommune) setCommunes([]);
+            if (!selectedCommune) setSelectedCommune('');
+        } else {
+            setRegions([]);
+            setSelectedRegion('');
+            setDistricts([]);
+            setSelectedDistrict('');
+            setCommunes([]);
+            setSelectedCommune('');
+        }
+    }, [selectedProvince]);
+
+    // Charger les districts quand la région change, idem
+    useEffect(() => {
+        if (selectedProvince && selectedRegion) {
+            getDistricts(selectedProvince, selectedRegion).then((data) => setDistricts(data));
+
+            if (!selectedDistrict) setSelectedDistrict('');
+            if (!selectedCommune) setCommunes([]);
+            if (!selectedCommune) setSelectedCommune('');
+        } else {
+            setDistricts([]);
+            setSelectedDistrict('');
+            setCommunes([]);
+            setSelectedCommune('');
+        }
+    }, [selectedProvince, selectedRegion]);
+
+    // Charger les communes quand le district change
+    useEffect(() => {
+        if (selectedProvince && selectedRegion && selectedDistrict) {
+            getCommunes(selectedProvince, selectedRegion, selectedDistrict).then((data) => setCommunes(data));
+        } else {
+            setCommunes([]);
+            setSelectedCommune('');
+        }
+    }, [selectedProvince, selectedRegion, selectedDistrict]);
+
+    // Remplissage automatique pour les localites
+    useEffect(() => {
+        if (selectedRow) {
+            setSelectedProvince(selectedRow.province);
+            setSelectedRegion(selectedRow.region);
+            setSelectedDistrict(selectedRow.district);
+            setSelectedCommune(selectedRow.commune);
+        }
+    }, [selectedRow])
 
     return (
-        <Paper sx={{ elevation: "3", margin: "5px", padding: "10px", width: "100%", height: "110%" }}>
+        <Box>
             {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
-            {openInfos ? <DetailsInformation infos={cptInfos} row={rowCptInfos} confirmOpen={showCptInfos} listCptChg={listCptChg} listCptTva={listCptTva} /> : null}
+            {openInfos ? <DetailsInformation row={rowCptInfos} confirmOpen={showCptInfos} listCptChg={listCptChg} listCptTva={listCptTva} /> : null}
 
             <TabContext value={"1"}>
                 <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -982,15 +1115,9 @@ export default function ParamPlanComptable() {
                             validationSchema={formAddCptValidationSchema}
                             onSubmit={(values) => {
                                 formAddCpthandleSubmit(values);
-                                //();
                             }}
                         >
-                            {({ handleChange, handleSubmit, setFieldValue, resetForm }) => {
-                                // useEffect(() => {
-                                //     if (openDialogAddNewCptAssoc) {
-                                //         resetForm();
-                                //     }
-                                // }, [openDialogAddNewCptAssoc, resetForm]);
+                            {({ handleChange, handleSubmit, setFieldValue, setFieldTouched, resetForm }) => {
 
                                 return (
                                     <Form style={{ width: '100%' }}>
@@ -1055,9 +1182,15 @@ export default function ParamPlanComptable() {
                                             fullWidth={true}
                                             maxWidth={"lg"}
                                         >
-                                            {/* <DialogTitle sx={{ m: 0, p: 2 }} id="customized-dialog-title" style={{fontWeight:'normal', width:'100%', height:'55px', backgroundColor : initial.normal_pupup_header_color}}>
-                                            <Typography variant='h8'>Ajout d'un nouveau compte pour le modèle : {selectedModelName}</Typography>
-                                        </DialogTitle> */}
+                                            <DialogTitle
+                                                id="customized-dialog-title"
+                                                sx={{ ml: 1, p: 2, width: '550px', height: '50px', backgroundColor: 'transparent' }}
+                                            >
+                                                <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', fontSize: 18 }}>
+                                                    Création d'un nouveau compte
+                                                </Typography>
+                                            </DialogTitle>
+
                                             <IconButton
                                                 style={{ color: 'red', textTransform: 'none', outline: 'none' }}
                                                 aria-label="close"
@@ -1072,15 +1205,13 @@ export default function ParamPlanComptable() {
                                                 <CloseIcon />
                                             </IconButton>
 
-                                            <Typography style={{ marginTop: 75, marginLeft: 30 }} variant='h5'>Création d'un nouveau compte</Typography>
-
                                             <DialogContent style={{ width: "100%" }}>
 
-                                                <Stack width={"100%"} height={"650px"} spacing={0} alignItems={'start'} alignContent={"center"}
+                                                <Stack width={"100%"} height={"600px"} spacing={0} alignItems={'start'} alignContent={"center"}
                                                     direction={"column"} justifyContent={"left"} style={{ marginLeft: '0px' }}>
                                                     <Box sx={{ width: '100%', typography: 'body1' }}>
                                                         <TabContext value={tabValueAjoutNewRow} sx={{ width: '100%' }}>
-                                                            <Box sx={{ borderBottom: 1, borderColor: 'transparent' }}>
+                                                            <Box sx={{ borderBottom: 1, borderColor: 'transparent', position: 'sticky' }}>
                                                                 <TabList onChange={handleChangeTabValueAjoutNewRow} aria-label="lab API tabs example" variant='scrollable'>
                                                                     <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="infos générales" value="1" />
                                                                     <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="Compte de charges" value="2" />
@@ -1172,22 +1303,9 @@ export default function ParamPlanComptable() {
                                                                             </Field>
                                                                             <ErrorMessage name='baseCptCollectif' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
                                                                         </Stack>
-
-                                                                        {/* <Stack spacing={1.5}>
-                                                                    <label htmlFor="baseCptCollectif" style={{fontSize:12, color: '#3FA2F6'}}>base compte collectif</label>
-                                                                    <Field
-                                                                    disabled={typeCptGeneral}
-                                                                    name='baseCptCollectif'
-                                                                    onChange={handleChange}
-                                                                    type='text'
-                                                                    placeholder=""
-                                                                    style={{height:22, borderTop: 'none',borderLeft: 'none',borderRight: 'none', outline: 'none', fontSize:14, borderWidth:'0.5px' }}
-                                                                    />
-                                                                    <ErrorMessage name='baseCptCollectif' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                                                </Stack> */}
                                                                     </Stack>
 
-                                                                    <Stack direction={'row'} alignContent={'stard'}
+                                                                    <Stack direction={'row'} alignContent={'start'}
                                                                         alignItems={'start'} spacing={5}
                                                                         style={{ backgroundColor: 'transparent', width: '800px' }}
                                                                     >
@@ -1221,7 +1339,7 @@ export default function ParamPlanComptable() {
                                                                         </Stack>
                                                                     </Stack>
 
-                                                                    <Stack spacing={-0.5} style={{ marginTop: 50 }}>
+                                                                    <Stack spacing={-0.5} style={{ marginTop: 25 }}>
                                                                         <label htmlFor="typeTier" style={{ fontSize: 12, color: '#3FA2F6' }}>Type du tier</label>
                                                                         <Field
                                                                             as={Select}
@@ -1271,7 +1389,16 @@ export default function ParamPlanComptable() {
                                                                                         <label htmlFor="cin" style={{ fontSize: 12, color: '#3FA2F6' }}>cin</label>
                                                                                         <Field
                                                                                             name='cin'
-                                                                                            onChange={handleChange}
+                                                                                            onChange={(e) => {
+                                                                                                let value = e.target.value.replace(/\s+/g, "");
+
+                                                                                                value = value.replace(/[^a-zA-Z0-9]/g, "");
+
+                                                                                                const formatted = value.replace(/(.{3})/g, "$1 ").trim();
+
+                                                                                                e.target.value = formatted;
+                                                                                                handleChange(e);
+                                                                                            }}
                                                                                             type='text'
                                                                                             placeholder=""
                                                                                             style={{ width: 200, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
@@ -1424,6 +1551,178 @@ export default function ParamPlanComptable() {
                                                                         />
                                                                         <ErrorMessage name='motcle' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
                                                                     </Stack>
+
+                                                                    <Stack direction={'row'} width={'100%'} spacing={2} style={{ marginTop: 25 }} >
+                                                                        <Stack spacing={-0.5} flex={0.75} minWidth={0}>
+                                                                            <Autocomplete
+                                                                                options={provinces}
+                                                                                value={selectedProvince || null}
+                                                                                onChange={(event, newValue) => {
+                                                                                    setFieldValue("province", newValue || "");
+                                                                                    setSelectedProvince(newValue || "");
+                                                                                }}
+                                                                                onBlur={() => setFieldTouched("province", true)}
+                                                                                noOptionsText="Aucune province trouvée"
+                                                                                renderInput={(params) => (
+                                                                                    <TextField
+                                                                                        {...params}
+                                                                                        label="Province"
+                                                                                        variant="outlined"
+                                                                                        size="small"
+                                                                                        sx={{
+                                                                                            borderRadius: 0,
+                                                                                            '& .MuiOutlinedInput-notchedOutline': {
+                                                                                                borderTop: 'none',
+                                                                                                borderLeft: 'none',
+                                                                                                borderRight: 'none',
+                                                                                                borderWidth: '0.5px'
+                                                                                            },
+                                                                                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                                                                borderTop: 'none',
+                                                                                                borderLeft: 'none',
+                                                                                                borderRight: 'none',
+                                                                                                borderWidth: '0.5px'
+                                                                                            },
+                                                                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                                                                borderTop: 'none',
+                                                                                                borderLeft: 'none',
+                                                                                                borderRight: 'none',
+                                                                                                borderWidth: '0.5px'
+                                                                                            },
+                                                                                        }}
+                                                                                    />
+                                                                                )}
+                                                                            />
+                                                                            <ErrorMessage name='province' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                        </Stack>
+                                                                        <Stack spacing={-0.5} flex={0.9} minWidth={0}>
+                                                                            <Autocomplete
+                                                                                options={regions}
+                                                                                value={selectedRegion || null}
+                                                                                onChange={(event, newValue) => {
+                                                                                    setFieldValue('region', newValue);
+                                                                                    setSelectedRegion(newValue);
+                                                                                }}
+                                                                                onBlur={() => setFieldTouched("region", true)}
+                                                                                noOptionsText="Aucune région trouvée"
+                                                                                renderInput={(params) => (
+                                                                                    <TextField
+                                                                                        {...params}
+                                                                                        label="Région"
+                                                                                        variant="outlined"
+                                                                                        size="small"
+                                                                                        sx={{
+                                                                                            borderRadius: 0,
+                                                                                            '& .MuiOutlinedInput-notchedOutline': {
+                                                                                                borderTop: 'none',
+                                                                                                borderLeft: 'none',
+                                                                                                borderRight: 'none',
+                                                                                                borderWidth: '0.5px'
+                                                                                            },
+                                                                                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                                                                borderTop: 'none',
+                                                                                                borderLeft: 'none',
+                                                                                                borderRight: 'none',
+                                                                                                borderWidth: '0.5px'
+                                                                                            },
+                                                                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                                                                borderTop: 'none',
+                                                                                                borderLeft: 'none',
+                                                                                                borderRight: 'none',
+                                                                                                borderWidth: '0.5px'
+                                                                                            },
+                                                                                        }}
+                                                                                    />
+                                                                                )}
+                                                                            />
+                                                                            <ErrorMessage name='region' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                        </Stack>
+                                                                        <Stack spacing={-0.5} flex={1} minWidth={0}>
+                                                                            <Autocomplete
+                                                                                options={districts}
+                                                                                value={selectedDistrict || null}
+                                                                                onChange={(event, newValue) => {
+                                                                                    setFieldValue('district', newValue);
+                                                                                    setSelectedDistrict(newValue);
+                                                                                }}
+                                                                                onBlur={() => setFieldTouched("district", true)}
+                                                                                noOptionsText="Aucune district trouvée"
+                                                                                renderInput={(params) => (
+                                                                                    <TextField
+                                                                                        {...params}
+                                                                                        label="District"
+                                                                                        variant="outlined"
+                                                                                        size="small"
+                                                                                        sx={{
+                                                                                            borderRadius: 0,
+                                                                                            '& .MuiOutlinedInput-notchedOutline': {
+                                                                                                borderTop: 'none',
+                                                                                                borderLeft: 'none',
+                                                                                                borderRight: 'none',
+                                                                                                borderWidth: '0.5px'
+                                                                                            },
+                                                                                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                                                                borderTop: 'none',
+                                                                                                borderLeft: 'none',
+                                                                                                borderRight: 'none',
+                                                                                                borderWidth: '0.5px'
+                                                                                            },
+                                                                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                                                                borderTop: 'none',
+                                                                                                borderLeft: 'none',
+                                                                                                borderRight: 'none',
+                                                                                                borderWidth: '0.5px'
+                                                                                            },
+                                                                                        }}
+                                                                                    />
+                                                                                )}
+                                                                            />
+                                                                            <ErrorMessage name='district' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                        </Stack>
+                                                                        <Stack spacing={-0.5} flex={1} minWidth={0}>
+                                                                            <Autocomplete
+                                                                                options={communes}
+                                                                                value={selectedCommune || null}
+                                                                                onChange={(event, newValue) => {
+                                                                                    setFieldValue('commune', newValue);
+                                                                                    setSelectedCommune(newValue);
+                                                                                }}
+                                                                                onBlur={() => setFieldTouched("commune", true)}
+                                                                                noOptionsText="Aucune commmune trouvée"
+                                                                                renderInput={(params) => (
+                                                                                    <TextField
+                                                                                        {...params}
+                                                                                        label="Commune"
+                                                                                        variant="outlined"
+                                                                                        size="small"
+                                                                                        sx={{
+                                                                                            borderRadius: 0,
+                                                                                            '& .MuiOutlinedInput-notchedOutline': {
+                                                                                                borderTop: 'none',
+                                                                                                borderLeft: 'none',
+                                                                                                borderRight: 'none',
+                                                                                                borderWidth: '0.5px'
+                                                                                            },
+                                                                                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                                                                borderTop: 'none',
+                                                                                                borderLeft: 'none',
+                                                                                                borderRight: 'none',
+                                                                                                borderWidth: '0.5px'
+                                                                                            },
+                                                                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                                                                borderTop: 'none',
+                                                                                                borderLeft: 'none',
+                                                                                                borderRight: 'none',
+                                                                                                borderWidth: '0.5px'
+                                                                                            },
+                                                                                        }}
+                                                                                    />
+                                                                                )}
+                                                                            />
+                                                                            <ErrorMessage name='commune' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                        </Stack>
+                                                                    </Stack>
+
                                                                 </Stack>
                                                             </TabPanel>
 
@@ -1479,7 +1778,6 @@ export default function ParamPlanComptable() {
                                                                             rowHeight={DataGridStyle.rowHeight}
                                                                             columnHeaderHeight={DataGridStyle.columnHeaderHeight}
                                                                             onRowSelectionModelChange={ids => {
-
                                                                                 if (ids.length === 1) {
                                                                                     //setDisableButtonAddCompteCharge(false);
                                                                                     setSelectedCptChgOnList(ids);
@@ -1771,6 +2069,6 @@ export default function ParamPlanComptable() {
                     </Stack>
                 </TabPanel>
             </TabContext>
-        </Paper>
+        </Box>
     )
 }

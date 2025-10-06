@@ -28,7 +28,7 @@ const ajustements = db.ajustements;
 const controles = db.controles;
 
 const recupBILAN_ACTIF = async (compteId, fileId, exerciceId) => {
-    try{
+    try {
         const listeBrute = await rubriques.findAll({
             where: {
                 id_compte: compteId,
@@ -39,53 +39,53 @@ const recupBILAN_ACTIF = async (compteId, fileId, exerciceId) => {
             },
             include: [
                 {
-                model: rubriquesmatrices,
-                attributes: [['libelle', 'libelle']],
-                required: false,
-                where: {
-                    id_etat: 'BILAN',
-                },
+                    model: rubriquesmatrices,
+                    attributes: [['libelle', 'libelle']],
+                    required: false,
+                    where: {
+                        id_etat: 'BILAN',
+                    },
                 },
                 {
-                model: balances,
-                as: 'details',
-                attributes: [
-                    ['id_numcompte', 'id_numcompte'],
-                    ['soldedebit', 'soldedebit'],
-                    ['soldecredit', 'soldecredit']
-                ],
-                required: false,
-                where: {
-                    id_compte: compteId,
-                    id_dossier: fileId,
-                    id_exercice: exerciceId,
-                    nature: { [Op.notIn]: ['Collectif'] },
-                    valeur: {[Op.gt]: 0}
-                },
-                include: [
-                    {
-                    model: dossierplancomptables,
-                    as: 'infosCompte', // doit correspondre à l'alias de la relation
-                    attributes: ['compte', 'libelle'],
+                    model: balances,
+                    as: 'details',
+                    attributes: [
+                        ['id_numcompte', 'id_numcompte'],
+                        ['soldedebit', 'soldedebit'],
+                        ['soldecredit', 'soldecredit']
+                    ],
                     required: false,
                     where: {
                         id_compte: compteId,
                         id_dossier: fileId,
+                        id_exercice: exerciceId,
+                        nature: { [Op.notIn]: ['Collectif'] },
+                        valeur: { [Op.gt]: 0 }
                     },
-                    }
-                ]
+                    include: [
+                        {
+                            model: dossierplancomptables,
+                            as: 'infosCompte',
+                            attributes: ['compte', 'libelle'],
+                            required: false,
+                            where: {
+                                id_compte: compteId,
+                                id_dossier: fileId,
+                            },
+                        }
+                    ]
                 },
                 {
-                model: ajustements,
-                as: 'ajusts',
-                attributes: ['id', 'id_compte', 'id_dossier', 'id_exercice', 'id_etat', 'id_rubrique', 'nature', 'motif', 'montant'],
-                required: false,
-                where: {
-                    id_compte: compteId,
-                    id_dossier: fileId,
-                    id_exercice: exerciceId,
-                    id_etat: 'BILAN',
-                },
+                    model: ajustements,
+                    as: 'ajusts',
+                    attributes: ['id', 'id_compte', 'id_dossier', 'id_exercice', 'id_etat', 'id_rubrique', 'nature', 'motif', 'montant'],
+                    required: false,
+                    where: {
+                        id_compte: compteId,
+                        id_dossier: fileId,
+                        id_exercice: exerciceId,
+                        id_etat: 'BILAN',
+                    },
                 },
             ],
             raw: false,
@@ -94,28 +94,28 @@ const recupBILAN_ACTIF = async (compteId, fileId, exerciceId) => {
 
         const liste = listeBrute.map(rubrique => {
             const plain = rubrique.get({ plain: true });
-            
+
             return {
                 ...plain,
                 'rubriquesmatrix.libelle': plain.rubriquesmatrix?.libelle || '',
                 infosCompte: (plain.details || []).map(detail => ({
-                id_numcompte: detail.id_numcompte,  // Prendre l'id_numcompte ici
-                compte: detail.infosCompte?.compte || null,
-                libelle: detail.infosCompte?.libelle || null,
-                soldedebit: detail.soldedebit || 0,
-                soldecredit: detail.soldecredit || 0
+                    id_numcompte: detail.id_numcompte,  // Prendre l'id_numcompte ici
+                    compte: detail.infosCompte?.compte || null,
+                    libelle: detail.infosCompte?.libelle || null,
+                    soldedebit: detail.soldedebit || 0,
+                    soldecredit: detail.soldecredit || 0
                 }))
             };
         });
 
-        return liste ;
-    }catch (error){
+        return liste;
+    } catch (error) {
         console.log(error);
     }
 }
 
 const recupBILAN_PASSIF = async (compteId, fileId, exerciceId) => {
-    try{
+    try {
         const listeBrute = await rubriques.findAll({
             where: {
                 id_compte: compteId,
@@ -126,82 +126,82 @@ const recupBILAN_PASSIF = async (compteId, fileId, exerciceId) => {
             },
             include: [
                 {
-                model: rubriquesmatrices,
-                attributes: [['libelle', 'libelle']],
-                required: false,
-                where: {
-                    id_etat: 'BILAN',
-                },
+                    model: rubriquesmatrices,
+                    attributes: [['libelle', 'libelle']],
+                    required: false,
+                    where: {
+                        id_etat: 'BILAN',
+                    },
                 },
                 {
-                model: balances,
-                as: 'details',
-                attributes: [
-                    ['id_numcompte', 'id_numcompte'],
-                    ['soldedebit', 'soldedebit'],
-                    ['soldecredit', 'soldecredit']
-                ],
-                required: false,
-                where: {
-                    id_compte: compteId,
-                    id_dossier: fileId,
-                    id_exercice: exerciceId,
-                    nature : {[Op.notIn]: ['Collectif']}
-                },
-                include: [
-                    {
-                    model: dossierplancomptables,
-                    as: 'infosCompte', // doit correspondre à l'alias de la relation
-                    attributes: ['compte', 'libelle'],
+                    model: balances,
+                    as: 'details',
+                    attributes: [
+                        ['id_numcompte', 'id_numcompte'],
+                        ['soldedebit', 'soldedebit'],
+                        ['soldecredit', 'soldecredit']
+                    ],
                     required: false,
                     where: {
                         id_compte: compteId,
                         id_dossier: fileId,
+                        id_exercice: exerciceId,
+                        nature: { [Op.notIn]: ['Collectif'] }
                     },
-                    }
-                ]
+                    include: [
+                        {
+                            model: dossierplancomptables,
+                            as: 'infosCompte', // doit correspondre à l'alias de la relation
+                            attributes: ['compte', 'libelle'],
+                            required: false,
+                            where: {
+                                id_compte: compteId,
+                                id_dossier: fileId,
+                            },
+                        }
+                    ]
                 },
                 {
-                model: ajustements,
-                as: 'ajusts',
-                attributes: ['id', 'id_compte', 'id_dossier', 'id_exercice', 'id_etat', 'id_rubrique', 'nature', 'motif', 'montant'],
-                required: false,
-                where: {
-                    id_compte: compteId,
-                    id_dossier: fileId,
-                    id_exercice: exerciceId,
-                    id_etat: 'BILAN',
-                },
+                    model: ajustements,
+                    as: 'ajusts',
+                    attributes: ['id', 'id_compte', 'id_dossier', 'id_exercice', 'id_etat', 'id_rubrique', 'nature', 'motif', 'montant'],
+                    required: false,
+                    where: {
+                        id_compte: compteId,
+                        id_dossier: fileId,
+                        id_exercice: exerciceId,
+                        id_etat: 'BILAN',
+                    },
                 },
             ],
             raw: false,
             order: [['ordre', 'ASC']],
         });
-        
+
         const liste = listeBrute.map(rubrique => {
             const plain = rubrique.get({ plain: true });
-            
+
             return {
                 ...plain,
                 'rubriquesmatrix.libelle': plain.rubriquesmatrix?.libelle || '',
                 infosCompte: (plain.details || []).map(detail => ({
-                id_numcompte: detail.id_numcompte,  // Prendre l'id_numcompte ici
-                compte: detail.infosCompte?.compte || null,
-                libelle: detail.infosCompte?.libelle || null,
-                soldedebit: detail.soldedebit || 0,
-                soldecredit: detail.soldecredit || 0
+                    id_numcompte: detail.id_numcompte,  // Prendre l'id_numcompte ici
+                    compte: detail.infosCompte?.compte || null,
+                    libelle: detail.infosCompte?.libelle || null,
+                    soldedebit: detail.soldedebit || 0,
+                    soldecredit: detail.soldecredit || 0
                 }))
             };
         });
-        
-        return liste ;
-    }catch (error){
+
+        return liste;
+    } catch (error) {
         console.log(error);
     }
 }
 
 const recupCRN = async (compteId, fileId, exerciceId) => {
-    try{
+    try {
         const listeBrute = await rubriques.findAll({
             where: {
                 id_compte: compteId,
@@ -212,52 +212,52 @@ const recupCRN = async (compteId, fileId, exerciceId) => {
             },
             include: [
                 {
-                model: rubriquesmatrices,
-                attributes: [['libelle', 'libelle']],
-                required: false,
-                where: {
-                    id_etat: 'CRN',
-                },
+                    model: rubriquesmatrices,
+                    attributes: [['libelle', 'libelle']],
+                    required: false,
+                    where: {
+                        id_etat: 'CRN',
+                    },
                 },
                 {
-                model: balances,
-                as: 'detailsCRN',
-                attributes: [
-                    ['id_numcompte', 'id_numcompte'],
-                    ['soldedebit', 'soldedebit'],
-                    ['soldecredit', 'soldecredit']
-                ],
-                required: false,
-                where: {
-                    id_compte: compteId,
-                    id_dossier: fileId,
-                    id_exercice: exerciceId,
-                    nature : {[Op.notIn]: ['Collectif']}
-                },
-                include: [
-                    {
-                    model: dossierplancomptables,
-                    as: 'infosCompte', // doit correspondre à l'alias de la relation
-                    attributes: ['compte', 'libelle'],
+                    model: balances,
+                    as: 'detailsCRN',
+                    attributes: [
+                        ['id_numcompte', 'id_numcompte'],
+                        ['soldedebit', 'soldedebit'],
+                        ['soldecredit', 'soldecredit']
+                    ],
                     required: false,
                     where: {
                         id_compte: compteId,
                         id_dossier: fileId,
+                        id_exercice: exerciceId,
+                        nature: { [Op.notIn]: ['Collectif'] }
                     },
-                    }
-                ]
+                    include: [
+                        {
+                            model: dossierplancomptables,
+                            as: 'infosCompte', // doit correspondre à l'alias de la relation
+                            attributes: ['compte', 'libelle'],
+                            required: false,
+                            where: {
+                                id_compte: compteId,
+                                id_dossier: fileId,
+                            },
+                        }
+                    ]
                 },
                 {
-                model: ajustements,
-                as: 'ajusts',
-                attributes: ['id', 'id_compte', 'id_dossier', 'id_exercice', 'id_etat', 'id_rubrique', 'nature', 'motif', 'montant'],
-                required: false,
-                where: {
-                    id_compte: compteId,
-                    id_dossier: fileId,
-                    id_exercice: exerciceId,
-                    id_etat: 'CRN',
-                },
+                    model: ajustements,
+                    as: 'ajusts',
+                    attributes: ['id', 'id_compte', 'id_dossier', 'id_exercice', 'id_etat', 'id_rubrique', 'nature', 'motif', 'montant'],
+                    required: false,
+                    where: {
+                        id_compte: compteId,
+                        id_dossier: fileId,
+                        id_exercice: exerciceId,
+                        id_etat: 'CRN',
+                    },
                 },
             ],
             raw: false,
@@ -266,28 +266,28 @@ const recupCRN = async (compteId, fileId, exerciceId) => {
 
         const liste = listeBrute.map(rubrique => {
             const plain = rubrique.get({ plain: true });
-            
+
             return {
                 ...plain,
                 'rubriquesmatrix.libelle': plain.rubriquesmatrix?.libelle || '',
                 infosCompte: (plain.detailsCRN || []).map(detail => ({
-                id_numcompte: detail.id_numcompte,  // Prendre l'id_numcompte ici
-                compte: detail.infosCompte?.compte || null,
-                libelle: detail.infosCompte?.libelle || null,
-                soldedebit: detail.soldedebit || 0,
-                soldecredit: detail.soldecredit || 0
+                    id_numcompte: detail.id_numcompte,  // Prendre l'id_numcompte ici
+                    compte: detail.infosCompte?.compte || null,
+                    libelle: detail.infosCompte?.libelle || null,
+                    soldedebit: detail.soldedebit || 0,
+                    soldecredit: detail.soldecredit || 0
                 }))
             };
         });
 
-        return liste ;
-    }catch (error){
+        return liste;
+    } catch (error) {
         console.log(error);
     }
 }
 
 const recupCRF = async (compteId, fileId, exerciceId) => {
-    try{
+    try {
         const listeBrute = await rubriques.findAll({
             where: {
                 id_compte: compteId,
@@ -298,52 +298,52 @@ const recupCRF = async (compteId, fileId, exerciceId) => {
             },
             include: [
                 {
-                model: rubriquesmatrices,
-                attributes: [['libelle', 'libelle']],
-                required: false,
-                where: {
-                    id_etat: 'CRF',
-                },
+                    model: rubriquesmatrices,
+                    attributes: [['libelle', 'libelle']],
+                    required: false,
+                    where: {
+                        id_etat: 'CRF',
+                    },
                 },
                 {
-                model: balances,
-                as: 'detailsCRF',
-                attributes: [
-                    ['id_numcompte', 'id_numcompte'],
-                    ['soldedebit', 'soldedebit'],
-                    ['soldecredit', 'soldecredit']
-                ],
-                required: false,
-                where: {
-                    id_compte: compteId,
-                    id_dossier: fileId,
-                    id_exercice: exerciceId,
-                    nature : {[Op.notIn]: ['Collectif']}
-                },
-                include: [
-                    {
-                    model: dossierplancomptables,
-                    as: 'infosCompte', // doit correspondre à l'alias de la relation
-                    attributes: ['compte', 'libelle'],
+                    model: balances,
+                    as: 'detailsCRF',
+                    attributes: [
+                        ['id_numcompte', 'id_numcompte'],
+                        ['soldedebit', 'soldedebit'],
+                        ['soldecredit', 'soldecredit']
+                    ],
                     required: false,
                     where: {
                         id_compte: compteId,
                         id_dossier: fileId,
+                        id_exercice: exerciceId,
+                        nature: { [Op.notIn]: ['Collectif'] }
                     },
-                    }
-                ]
+                    include: [
+                        {
+                            model: dossierplancomptables,
+                            as: 'infosCompte', // doit correspondre à l'alias de la relation
+                            attributes: ['compte', 'libelle'],
+                            required: false,
+                            where: {
+                                id_compte: compteId,
+                                id_dossier: fileId,
+                            },
+                        }
+                    ]
                 },
                 {
-                model: ajustements,
-                as: 'ajusts',
-                attributes: ['id', 'id_compte', 'id_dossier', 'id_exercice', 'id_etat', 'id_rubrique', 'nature', 'motif', 'montant'],
-                required: false,
-                where: {
-                    id_compte: compteId,
-                    id_dossier: fileId,
-                    id_exercice: exerciceId,
-                    id_etat: 'CRF',
-                },
+                    model: ajustements,
+                    as: 'ajusts',
+                    attributes: ['id', 'id_compte', 'id_dossier', 'id_exercice', 'id_etat', 'id_rubrique', 'nature', 'motif', 'montant'],
+                    required: false,
+                    where: {
+                        id_compte: compteId,
+                        id_dossier: fileId,
+                        id_exercice: exerciceId,
+                        id_etat: 'CRF',
+                    },
                 },
             ],
             raw: false,
@@ -352,28 +352,28 @@ const recupCRF = async (compteId, fileId, exerciceId) => {
 
         const liste = listeBrute.map(rubrique => {
             const plain = rubrique.get({ plain: true });
-            
+
             return {
                 ...plain,
                 'rubriquesmatrix.libelle': plain.rubriquesmatrix?.libelle || '',
                 infosCompte: (plain.detailsCRF || []).map(detail => ({
-                id_numcompte: detail.id_numcompte,  // Prendre l'id_numcompte ici
-                compte: detail.infosCompte?.compte || null,
-                libelle: detail.infosCompte?.libelle || null,
-                soldedebit: detail.soldedebit || 0,
-                soldecredit: detail.soldecredit || 0
+                    id_numcompte: detail.id_numcompte,  // Prendre l'id_numcompte ici
+                    compte: detail.infosCompte?.compte || null,
+                    libelle: detail.infosCompte?.libelle || null,
+                    soldedebit: detail.soldedebit || 0,
+                    soldecredit: detail.soldecredit || 0
                 }))
             };
         });
 
-        return liste ;
-    }catch (error){
+        return liste;
+    } catch (error) {
         console.log(error);
     }
 }
 
 const recupTFTI = async (compteId, fileId, exerciceId) => {
-    try{
+    try {
         const listeBrute = await rubriques.findAll({
             where: {
                 id_compte: compteId,
@@ -384,52 +384,52 @@ const recupTFTI = async (compteId, fileId, exerciceId) => {
             },
             include: [
                 {
-                model: rubriquesmatrices,
-                attributes: [['libelle', 'libelle']],
-                required: false,
-                where: {
-                    id_etat: 'TFTI',
-                },
+                    model: rubriquesmatrices,
+                    attributes: [['libelle', 'libelle']],
+                    required: false,
+                    where: {
+                        id_etat: 'TFTI',
+                    },
                 },
                 {
-                model: balances,
-                as: 'detailsTFTI',
-                attributes: [
-                    ['id_numcompte', 'id_numcompte'],
-                    ['soldedebit', 'soldedebit'],
-                    ['soldecredit', 'soldecredit']
-                ],
-                required: false,
-                where: {
-                    id_compte: compteId,
-                    id_dossier: fileId,
-                    id_exercice: exerciceId,
-                    nature : {[Op.notIn]: ['Collectif']}
-                },
-                include: [
-                    {
-                    model: dossierplancomptables,
-                    as: 'infosCompte', // doit correspondre à l'alias de la relation
-                    attributes: ['compte', 'libelle'],
+                    model: balances,
+                    as: 'detailsTFTI',
+                    attributes: [
+                        ['id_numcompte', 'id_numcompte'],
+                        ['soldedebit', 'soldedebit'],
+                        ['soldecredit', 'soldecredit']
+                    ],
                     required: false,
                     where: {
                         id_compte: compteId,
                         id_dossier: fileId,
+                        id_exercice: exerciceId,
+                        nature: { [Op.notIn]: ['Collectif'] }
                     },
-                    }
-                ]
+                    include: [
+                        {
+                            model: dossierplancomptables,
+                            as: 'infosCompte', // doit correspondre à l'alias de la relation
+                            attributes: ['compte', 'libelle'],
+                            required: false,
+                            where: {
+                                id_compte: compteId,
+                                id_dossier: fileId,
+                            },
+                        }
+                    ]
                 },
                 {
-                model: ajustements,
-                as: 'ajusts',
-                attributes: ['id', 'id_compte', 'id_dossier', 'id_exercice', 'id_etat', 'id_rubrique', 'nature', 'motif', 'montant'],
-                required: false,
-                where: {
-                    id_compte: compteId,
-                    id_dossier: fileId,
-                    id_exercice: exerciceId,
-                    id_etat: 'TFTI',
-                },
+                    model: ajustements,
+                    as: 'ajusts',
+                    attributes: ['id', 'id_compte', 'id_dossier', 'id_exercice', 'id_etat', 'id_rubrique', 'nature', 'motif', 'montant'],
+                    required: false,
+                    where: {
+                        id_compte: compteId,
+                        id_dossier: fileId,
+                        id_exercice: exerciceId,
+                        id_etat: 'TFTI',
+                    },
                 },
             ],
             raw: false,
@@ -438,28 +438,28 @@ const recupTFTI = async (compteId, fileId, exerciceId) => {
 
         const liste = listeBrute.map(rubrique => {
             const plain = rubrique.get({ plain: true });
-            
+
             return {
                 ...plain,
                 'rubriquesmatrix.libelle': plain.rubriquesmatrix?.libelle || '',
                 infosCompte: (plain.detailsTFTI || []).map(detail => ({
-                id_numcompte: detail.id_numcompte,  // Prendre l'id_numcompte ici
-                compte: detail.infosCompte?.compte || null,
-                libelle: detail.infosCompte?.libelle || null,
-                soldedebit: detail.soldedebit || 0,
-                soldecredit: detail.soldecredit || 0
+                    id_numcompte: detail.id_numcompte,  // Prendre l'id_numcompte ici
+                    compte: detail.infosCompte?.compte || null,
+                    libelle: detail.infosCompte?.libelle || null,
+                    soldedebit: detail.soldedebit || 0,
+                    soldecredit: detail.soldecredit || 0
                 }))
             };
         });
 
-        return liste ;
-    }catch (error){
+        return liste;
+    } catch (error) {
         console.log(error);
     }
 }
 
 const recupTFTD = async (compteId, fileId, exerciceId) => {
-    try{
+    try {
         const listeBrute = await rubriques.findAll({
             where: {
                 id_compte: compteId,
@@ -470,60 +470,60 @@ const recupTFTD = async (compteId, fileId, exerciceId) => {
             },
             include: [
                 {
-                model: rubriquesmatrices,
-                attributes: [['libelle', 'libelle']],
-                required: false,
-                where: {
-                    id_etat: 'TFTD',
-                },
+                    model: rubriquesmatrices,
+                    attributes: [['libelle', 'libelle']],
+                    required: false,
+                    where: {
+                        id_etat: 'TFTD',
+                    },
                 },
                 {
-                model: balances,
-                as: 'detailsTFTD',
-                attributes: [
-                    ['id_numcompte', 'id_numcompte'],
-                    ['soldedebittreso', 'soldedebittreso'],
-                    ['soldecredittreso', 'soldecredittreso']
-                ],
-                required: false,
-                where: {
-                    [Op.and]: [
-                        { id_compte: compteId },
-                        { id_dossier: fileId },
-                        { id_exercice: exerciceId },
-                        { nature: { [Op.notIn]: ['Collectif'] } },
-                        {
-                        [Op.or]: [
-                            { soldedebittreso: { [Op.gt]: 0 } },
-                            { soldecredittreso: { [Op.gt]: 0 } }
+                    model: balances,
+                    as: 'detailsTFTD',
+                    attributes: [
+                        ['id_numcompte', 'id_numcompte'],
+                        ['soldedebittreso', 'soldedebittreso'],
+                        ['soldecredittreso', 'soldecredittreso']
+                    ],
+                    required: false,
+                    where: {
+                        [Op.and]: [
+                            { id_compte: compteId },
+                            { id_dossier: fileId },
+                            { id_exercice: exerciceId },
+                            { nature: { [Op.notIn]: ['Collectif'] } },
+                            {
+                                [Op.or]: [
+                                    { soldedebittreso: { [Op.gt]: 0 } },
+                                    { soldecredittreso: { [Op.gt]: 0 } }
+                                ]
+                            }
                         ]
+                    },
+                    include: [
+                        {
+                            model: dossierplancomptables,
+                            as: 'infosCompte', // doit correspondre à l'alias de la relation
+                            attributes: ['compte', 'libelle'],
+                            required: false,
+                            where: {
+                                id_compte: compteId,
+                                id_dossier: fileId,
+                            },
                         }
                     ]
                 },
-                include: [
-                    {
-                    model: dossierplancomptables,
-                    as: 'infosCompte', // doit correspondre à l'alias de la relation
-                    attributes: ['compte', 'libelle'],
+                {
+                    model: ajustements,
+                    as: 'ajusts',
+                    attributes: ['id', 'id_compte', 'id_dossier', 'id_exercice', 'id_etat', 'id_rubrique', 'nature', 'motif', 'montant'],
                     required: false,
                     where: {
                         id_compte: compteId,
                         id_dossier: fileId,
+                        id_exercice: exerciceId,
+                        id_etat: 'TFTD',
                     },
-                    }
-                ]
-                },
-                {
-                model: ajustements,
-                as: 'ajusts',
-                attributes: ['id', 'id_compte', 'id_dossier', 'id_exercice', 'id_etat', 'id_rubrique', 'nature', 'motif', 'montant'],
-                required: false,
-                where: {
-                    id_compte: compteId,
-                    id_dossier: fileId,
-                    id_exercice: exerciceId,
-                    id_etat: 'TFTD',
-                },
                 },
             ],
             raw: false,
@@ -532,28 +532,28 @@ const recupTFTD = async (compteId, fileId, exerciceId) => {
 
         const liste = listeBrute.map(rubrique => {
             const plain = rubrique.get({ plain: true });
-            
+
             return {
                 ...plain,
                 'rubriquesmatrix.libelle': plain.rubriquesmatrix?.libelle || '',
                 infosCompte: (plain.detailsTFTD || []).map(detail => ({
-                id_numcompte: detail.id_numcompte,  // Prendre l'id_numcompte ici
-                compte: detail.infosCompte?.compte || null,
-                libelle: detail.infosCompte?.libelle || null,
-                soldedebit: detail.soldedebittreso || 0,
-                soldecredit: detail.soldecredittreso || 0
+                    id_numcompte: detail.id_numcompte,  // Prendre l'id_numcompte ici
+                    compte: detail.infosCompte?.compte || null,
+                    libelle: detail.infosCompte?.libelle || null,
+                    soldedebit: detail.soldedebittreso || 0,
+                    soldecredit: detail.soldecredittreso || 0
                 }))
             };
         });
 
-        return liste ;
-    }catch (error){
+        return liste;
+    } catch (error) {
         console.log(error);
     }
 }
 
 const recupEVCP = async (compteId, fileId, exerciceId) => {
-    try{
+    try {
         const listeBrute = await liasseevcps.findAll({
             where: {
                 id_compte: compteId,
@@ -595,14 +595,14 @@ const recupEVCP = async (compteId, fileId, exerciceId) => {
             };
         });
 
-        return liste ;
-    }catch (error){
+        return liste;
+    } catch (error) {
         console.log(error);
     }
 }
 
 const recupDRF = async (compteId, fileId, exerciceId) => {
-    try{
+    try {
         const listeBrute = await liassedrfs.findAll({
             where: {
                 id_compte: compteId,
@@ -644,14 +644,14 @@ const recupDRF = async (compteId, fileId, exerciceId) => {
             };
         });
 
-        return liste ;
-    }catch (error){
+        return liste;
+    } catch (error) {
         console.log(error);
     }
 }
 
 const recupBHIAPC = async (compteId, fileId, exerciceId) => {
-    try{
+    try {
         const liste = await liassebhiapcs.findAll({
             where: {
                 id_compte: compteId,
@@ -659,17 +659,17 @@ const recupBHIAPC = async (compteId, fileId, exerciceId) => {
                 id_exercice: exerciceId,
             },
             raw: true,
-            order: [['raison_sociale', 'ASC']],
+            order: [['id', 'ASC']],
         });
 
-        return liste ;
-    }catch (error){
+        return liste;
+    } catch (error) {
         console.log(error);
     }
 }
 
 const recupMP = async (compteId, fileId, exerciceId) => {
-    try{
+    try {
         const liste = await liassemps.findAll({
             where: {
                 id_compte: compteId,
@@ -677,17 +677,18 @@ const recupMP = async (compteId, fileId, exerciceId) => {
                 id_exercice: exerciceId,
             },
             raw: true,
-            order: [['marche', 'ASC'],['ref_marche', 'ASC']],
+            // order: [['marche', 'ASC'], ['ref_marche', 'ASC']],
+            order: [['id', 'ASC']],
         });
 
-        return liste ;
-    }catch (error){
+        return liste;
+    } catch (error) {
         console.log(error);
     }
 }
 
 const recupDA = async (compteId, fileId, exerciceId) => {
-    try{
+    try {
         const liste = await liassedas.findAll({
             where: {
                 id_compte: compteId,
@@ -695,17 +696,17 @@ const recupDA = async (compteId, fileId, exerciceId) => {
                 id_exercice: exerciceId,
             },
             raw: true,
-            order: [['rubriques_poste', 'ASC'],['libelle', 'ASC']],
+            order: [['rubriques_poste', 'ASC'], ['libelle', 'ASC']],
         });
 
-        return liste ;
-    }catch (error){
+        return liste;
+    } catch (error) {
         console.log(error);
     }
 }
 
 const recupDP = async (compteId, fileId, exerciceId) => {
-    try{
+    try {
         const liste = await liassedps.findAll({
             where: {
                 id_compte: compteId,
@@ -713,17 +714,17 @@ const recupDP = async (compteId, fileId, exerciceId) => {
                 id_exercice: exerciceId,
             },
             raw: true,
-            order: [['ordre', 'ASC']],
+            order: [['nature_prov', 'ASC']],
         });
 
-        return liste ;
-    }catch (error){
+        return liste;
+    } catch (error) {
         console.log(error);
     }
 }
 
 const recupEIAFNC = async (compteId, fileId, exerciceId) => {
-    try{
+    try {
         const liste = await liasseeiafncs.findAll({
             where: {
                 id_compte: compteId,
@@ -731,17 +732,17 @@ const recupEIAFNC = async (compteId, fileId, exerciceId) => {
                 id_exercice: exerciceId,
             },
             raw: true,
-            order: [['rubriques_poste', 'ASC'],['num_compte', 'ASC']],
+            order: [['rubriques_poste', 'ASC'], ['num_compte', 'ASC']],
         });
 
-        return liste ;
-    }catch (error){
+        return liste;
+    } catch (error) {
         console.log(error);
     }
 }
 
 const recupSAD = async (compteId, fileId, exerciceId) => {
-    try{
+    try {
         const liste = await liassesads.findAll({
             where: {
                 id_compte: compteId,
@@ -767,14 +768,14 @@ const recupSAD = async (compteId, fileId, exerciceId) => {
             order: [['ordre', 'ASC']],
         });
 
-        return liste ;
-    }catch (error){
+        return liste;
+    } catch (error) {
         console.log(error);
     }
 }
 
 const recupSDR = async (compteId, fileId, exerciceId) => {
-    try{
+    try {
         const liste = await liassesdrs.findAll({
             where: {
                 id_compte: compteId,
@@ -800,14 +801,14 @@ const recupSDR = async (compteId, fileId, exerciceId) => {
             order: [['ordre', 'ASC']],
         });
 
-        return liste ;
-    }catch (error){
+        return liste;
+    } catch (error) {
         console.log(error);
     }
 }
 
 const recupSE = async (compteId, fileId, exerciceId) => {
-    try{
+    try {
         const liste = await liasseses.findAll({
             where: {
                 id_compte: compteId,
@@ -818,14 +819,14 @@ const recupSE = async (compteId, fileId, exerciceId) => {
             order: [['id', 'ASC']],
         });
 
-        return liste ;
-    }catch (error){
+        return liste;
+    } catch (error) {
         console.log(error);
     }
 }
 
 const recupNE = async (compteId, fileId, exerciceId) => {
-    try{
+    try {
         const liste = await liassenes.findAll({
             where: {
                 id_compte: compteId,
@@ -836,14 +837,14 @@ const recupNE = async (compteId, fileId, exerciceId) => {
             order: [['id', 'ASC']],
         });
 
-        return liste ;
-    }catch (error){
+        return liste;
+    } catch (error) {
         console.log(error);
     }
 }
 
 const recupETAT = async (compteId, fileId, exerciceId) => {
-    try{
+    try {
         const liste = await etats.findAll({
             where: {
                 id_compte: compteId,
@@ -854,14 +855,14 @@ const recupETAT = async (compteId, fileId, exerciceId) => {
             order: [['ordre', 'ASC']],
         });
 
-        return liste ;
-    }catch (error){
+        return liste;
+    } catch (error) {
         console.log(error);
     }
 }
 
 const recupETATDETAIL = async (compteId, fileId, exerciceId, tableau) => {
-    try{
+    try {
         const liste = await controles.findAll({
             where: {
                 id_compte: compteId,
@@ -873,8 +874,8 @@ const recupETATDETAIL = async (compteId, fileId, exerciceId, tableau) => {
             order: [['id', 'ASC']],
         });
 
-        return liste ;
-    }catch (error){
+        return liste;
+    } catch (error) {
         console.log(error);
     }
 }

@@ -1,4 +1,4 @@
-import {React, useState, useEffect } from 'react';
+import { React, useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Typography, Stack, Paper, Box, Tab, Badge, Button, Divider, TextField, FormHelperText } from '@mui/material';
 import RadioGroup from '@mui/material/RadioGroup';
@@ -37,9 +37,9 @@ import PopupInformation from '../../../componentsTools/popupInformation';
 import VirtualTableModifiableImportJnl from '../../../componentsTools/DeclarationEbilan/virtualTableModifiableImportJnl';
 
 export default function ImportModelePlanComptable() {
-   
-     //Valeur du listbox choix Type exercice-----------------------------------------------------
-     const [valSelectType, setValSelectType] = useState('');
+
+    //Valeur du listbox choix Type exercice-----------------------------------------------------
+    const [valSelectType, setValSelectType] = useState('');
 
     let initial = init[0];
     const [fileInfos, setFileInfos] = useState('');
@@ -54,7 +54,7 @@ export default function ImportModelePlanComptable() {
     const [msgAnomalie, setMsgAnomalie] = useState([]);
     const [traitementModelePcWaiting, setTraitementModelePcWaiting] = useState(false);
     const [traitementModelePcMsg, setTraitementModelePcMsg] = useState('');
-    const [openDialogConfirmImport,setOpenDialogConfirmImport] = useState(false);
+    const [openDialogConfirmImport, setOpenDialogConfirmImport] = useState(false);
     const [anomaliePersiste, setAnomaliePersiste] = useState(false);
     const [nameExist, setNameExist] = useState(false);
 
@@ -338,17 +338,17 @@ export default function ImportModelePlanComptable() {
 
     //récupération infos de connexion
     const { auth } = useAuth();
-    const decoded = auth?.accessToken ? jwtDecode(auth.accessToken): undefined;
+    const decoded = auth?.accessToken ? jwtDecode(auth.accessToken) : undefined;
     const compteId = decoded.UserInfo.compteId || null;
     const userId = decoded.UserInfo.userId || null;
     const navigate = useNavigate();
 
     //Formulaire pour l'import du journal
     const formikImport = useFormik({
-        initialValues : {
+        initialValues: {
             idCompte: compteId,
-            nomModele:'',
-            modelePcData:[],
+            nomModele: '',
+            modelePcData: [],
         },
         validationSchema: Yup.object({
             nomModele: Yup.string().required("Veuillez ajouter un nom pour le modèle."),
@@ -358,8 +358,8 @@ export default function ImportModelePlanComptable() {
         },
     });
 
-     //download modele d'import
-     const handleDownloadModel = () => {
+    //download modele d'import
+    const handleDownloadModel = () => {
         const fileUrl = '../../../../../public/modeleImport/modeleImportModelePc.csv';
         const link = document.createElement('a');
         link.href = fileUrl;
@@ -369,8 +369,8 @@ export default function ImportModelePlanComptable() {
 
     //validation des entêtes si c'est bon ou pas
     const validateHeaders = (headers) => {
-        const expectedHeaders = ["compte","libelle","nature","baseaux","typetier","nif","statistique","adresse","cin","datecin","autrepieceidentite","refpieceidentite","adressesansnif","nifrepresentant","adresserepresentant","pays"];
-       
+        const expectedHeaders = ["compte", "libelle", "nature", "baseaux", "typetier", "nif", "statistique", "adresse", "cin", "datecin", "autrepieceidentite", "refpieceidentite", "adressesansnif", "nifrepresentant", "adresserepresentant", "pays"];
+
         // Comparer les en-têtes du CSV aux en-têtes attendus
         const missingHeaders = expectedHeaders.filter(header => !headers.includes(header));
         if (missingHeaders.length > 0) {
@@ -388,9 +388,9 @@ export default function ImportModelePlanComptable() {
 
         //valider si certaines lignes ne contiennent pas de compte
         const missingCompte = data.filter(item => item.compte && item.compte.trim() === '');
-        if(missingCompte.length > 0){
+        if (missingCompte.length > 0) {
             msg.push(`Certaines lignes du tableau ne contiennent pas de n° de compte.`);
-                            
+
             nbrAnom = nbrAnom + 1;
             setNbrAnomalie(nbrAnom);
             setCouleurBoutonAnomalie(couleurAnom);
@@ -398,7 +398,7 @@ export default function ImportModelePlanComptable() {
 
         //valider si certaines lignes n'ont pas de nature
         const missingNature = data.filter(item => item.nature && item.nature.trim() === '');
-        if(missingNature.length > 0){
+        if (missingNature.length > 0) {
             msg.push(`Certaines lignes du tableau ne sont pas associées à une nature.`);
             nbrAnom = nbrAnom + 1;
             setNbrAnomalie(nbrAnom);
@@ -406,9 +406,9 @@ export default function ImportModelePlanComptable() {
         }
 
         //valider si les natures sont érronées
-        const expectedNatureValue = ["General","Aux","Collectif"];
+        const expectedNatureValue = ["General", "Aux", "Collectif"];
         const fakeNatureValueData = data.filter(item => !expectedNatureValue.includes(item.nature));
-        if(fakeNatureValueData.length > 0){
+        if (fakeNatureValueData.length > 0) {
             msg.push(`Certaines natures des lignes du tableau sont érronées. Veuillez bien valider cette colonne en respectant leurs valeurs appropriées : General, Aux, Collectif.`);
             nbrAnom = nbrAnom + 1;
             setNbrAnomalie(nbrAnom);
@@ -417,7 +417,7 @@ export default function ImportModelePlanComptable() {
 
         //valider si certaines lignes n'ont pas de base auxiliaire.
         const missingBaseAux = data.filter(item => item.baseaux && item.baseaux.trim() === '');
-        if(missingBaseAux.length > 0){
+        if (missingBaseAux.length > 0) {
             msg.push(`Tout les champs de la colonne baseaux sont obligatoires. Veuillez remplir ces champs, par leur compte associé dans la colonne compte si sa nature est de type autre que Aux. Dans le cas contraire, veuillez bien ajouter le compte associé à partir de la liste des comptes dans la colonne compte.`);
             nbrAnom = nbrAnom + 1;
             setNbrAnomalie(nbrAnom);
@@ -426,11 +426,11 @@ export default function ImportModelePlanComptable() {
 
         //valider si les comptes dans baseaux existent bien dans la colonne compte
         const colonneBaseAux = [...new Set(data.map(item => item.baseaux))];
-                const colonneCompte = [...new Set(data.map(item => item.compte))];
+        const colonneCompte = [...new Set(data.map(item => item.compte))];
 
         const matchingElements = colonneBaseAux.filter(item => !colonneCompte.includes(item));
 
-        if(matchingElements.length > 0){
+        if (matchingElements.length > 0) {
             msg.push(`Les comptes associés à la colonne baseaux suivants n'existent pas dans la colonne compte : ${matchingElements.join(', ')}`);
             nbrAnom = nbrAnom + 1;
             setNbrAnomalie(nbrAnom);
@@ -444,16 +444,16 @@ export default function ImportModelePlanComptable() {
         const listeUniqueCompteCollectif = [...new Set(listeCompteCollectif.map(item => item.compte))];
 
         const matchingCtrlCollectif = colonneBaseAuxCptAux.filter(item => !listeUniqueCompteCollectif.includes(item));
-        if(matchingCtrlCollectif.length > 0){
+        if (matchingCtrlCollectif.length > 0) {
             msg.push(`Les comptes bases auxiliaires suivants ne sont pas définis comme des comptes collectifs : ${matchingCtrlCollectif.join(', ')}`);
             nbrAnom = nbrAnom + 1;
             setNbrAnomalie(nbrAnom);
             setCouleurBoutonAnomalie(couleurAnom);
-        }        
+        }
 
         //valider si certaines lignes n'ont pas de typetier.
         const missingTypeTier = data.filter(item => item.typetier && item.typetier.trim() === '');
-        if(missingTypeTier.length > 0){
+        if (missingTypeTier.length > 0) {
             msg.push(`Tout les champs de la colonne typetier doivent être remplis.`);
             nbrAnom = nbrAnom + 1;
             setNbrAnomalie(nbrAnom);
@@ -461,11 +461,11 @@ export default function ImportModelePlanComptable() {
         }
 
         //valider si les typetier sont érronées
-        const expectedTypeTierValue = ["general","sans-nif","avec-nif","etranger"];
+        const expectedTypeTierValue = ["general", "sans-nif", "avec-nif", "etranger"];
         const DataTypeTierValue = [...new Set(data.map(item => item.typetier))];
 
         const fakeTypeTierValueData = DataTypeTierValue.filter(item => !expectedTypeTierValue.includes(item));
-        if(fakeTypeTierValueData.length > 0){
+        if (fakeTypeTierValueData.length > 0) {
             msg.push(`Certains type de tier du tableau sont érronées. Veuillez remplir cette colonne par les mots clés suivants : general, sans-nif, avec-nif, etranger.`);
             nbrAnom = nbrAnom + 1;
             setNbrAnomalie(nbrAnom);
@@ -475,7 +475,7 @@ export default function ImportModelePlanComptable() {
         //valider si les comptes de typetier = avec-nif possède bien des nif dans la colonne nif
         const listeTiersAvecNif = data.filter(item => item.typetier === 'avec-nif');
         const missingNif = listeTiersAvecNif.filter(item => item.typetier && item.typetier.trim() === '');
-        if(missingNif.length > 0){
+        if (missingNif.length > 0) {
             msg.push(`Certains tiers de type avec-nif n'ont pas de numéro nif renseigné dans la colonne nif.`);
             nbrAnom = nbrAnom + 1;
             setNbrAnomalie(nbrAnom);
@@ -492,12 +492,12 @@ export default function ImportModelePlanComptable() {
 
         if (file) {
             // Utilise PapaParse pour parser le fichier CSV
-            
+
             Papa.parse(file, {
                 complete: (result) => {
                     const headers = result.meta.fields;
 
-                    if(validateHeaders(headers)){
+                    if (validateHeaders(headers)) {
                         setTraitementModelePcMsg('Traitement des données du modèle de plan comptable en cours...');
                         setTraitementModelePcWaiting(true);
 
@@ -508,8 +508,8 @@ export default function ImportModelePlanComptable() {
                         setMsgAnomalie('');
                         setCouleurBoutonAnomalie('white');
                         setNbrAnomalie(0);
-                       
-                        const DataWithId = result.data.map((row, index) => ({...row, id: index}));
+
+                        const DataWithId = result.data.map((row, index) => ({ ...row, id: index }));
 
                         validationData(DataWithId);
                         setModelePc(DataWithId);
@@ -545,7 +545,7 @@ export default function ImportModelePlanComptable() {
     //tester si le nom du modèle existe déjà
     const testIfNewNameModeleExist = async () => {
         const modeleName = formikImport.values.nomModele;
-        const response = await axios.post(`/administration/ImportModelePc/testNewNameModelePc`, {compteId, modeleName});
+        const response = await axios.post(`/administration/ImportModelePc/testNewNameModelePc`, { compteId, modeleName });
         const resData = response.data;
         return resData.state;
     }
@@ -557,27 +557,27 @@ export default function ImportModelePlanComptable() {
 
     //import du plan comptable
     const handleImportModelePc = async () => {
-        if(nbrAnomalie > 0){
+        if (nbrAnomalie > 0) {
             setAnomaliePersiste(true);
-        }else{
+        } else {
             const testName = await testIfNewNameModeleExist();
 
-            if(testName){
+            if (testName) {
                 setNameExist(true);
-            }else{
+            } else {
                 setTraitementModelePcMsg('Import du modèle de plan comptable en cours...');
                 setTraitementModelePcWaiting(true);
 
-                axios.post(`/administration/ImportModelePc/ImportModelePc`, formikImport.values).then((response) =>{
+                axios.post(`/administration/ImportModelePc/ImportModelePc`, formikImport.values).then((response) => {
                     const resData = response.data;
-                    if(resData.state){
+                    if (resData.state) {
                         setTraitementModelePcMsg('');
                         setTraitementModelePcWaiting(false);
                         toast.success(resData.msg);
                         setModelePc([]);
                         setNbrAnomalie(0);
                         setMsgAnomalie([]);
-                    }else{
+                    } else {
                         setTraitementModelePcMsg('');
                         setTraitementModelePcWaiting(false);
                         toast.error(resData.msg);
@@ -587,115 +587,115 @@ export default function ImportModelePlanComptable() {
         }
     }
 
-  return (
-    <Paper sx={{elevation: "3", margin:"5px", padding:"10px", width:"99%", height:"99%"}}>
-         {openDetailsAnomalie? <PopupViewDetailsImportModelePc msg={msgAnomalie} confirmationState={handleCloseAnomalieDetails} /> : null}
-         {openDialogConfirmImport? <PopupActionConfirm msg={"Voulez-vous vraiment importer le modèle de plan comptable en cours?"} confirmationState={handleImportModelePc} /> : null}
-         {anomaliePersiste? <PopupInformation msg={"Veuillez corriger toutes les anomalies pour pouvoir importer le modèle."} confirmationState={handleCloseInformation} /> : null}
-         {nameExist? <PopupInformation msg={"Le nom du modèle existe déjà. Veuillez spécifier un autre."} confirmationState={handleCloseInformationNameExist} /> : null}
+    return (
+        <Box>
+            {openDetailsAnomalie ? <PopupViewDetailsImportModelePc msg={msgAnomalie} confirmationState={handleCloseAnomalieDetails} /> : null}
+            {openDialogConfirmImport ? <PopupActionConfirm msg={"Voulez-vous vraiment importer le modèle de plan comptable en cours?"} confirmationState={handleImportModelePc} /> : null}
+            {anomaliePersiste ? <PopupInformation msg={"Veuillez corriger toutes les anomalies pour pouvoir importer le modèle."} confirmationState={handleCloseInformation} /> : null}
+            {nameExist ? <PopupInformation msg={"Le nom du modèle existe déjà. Veuillez spécifier un autre."} confirmationState={handleCloseInformationNameExist} /> : null}
 
-        <form onSubmit={formikImport.handleSubmit}>
-            <Stack width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
-                
-                <Typography style={{marginBottom:"30px"}} variant='h6' sx={{color: "black"}} align='left'>Administration - Import modèle plan comptable</Typography>
+            <form onSubmit={formikImport.handleSubmit}>
+                <Stack width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
 
-                <Stack width={"100%"} height={"50px"} spacing={2} alignItems={"center"} alignContent={"center"} direction={"row"} style={{marginLeft:"0px", marginTop:"20px"}}>
-                    <FormControl variant="standard" sx={{ m: 0, minWidth: 250 }}>
-                        <TextField 
-                            style={{width:"400px"}} 
-                            id="nomModele" 
-                            label="Nom du modèle" 
-                            variant="standard"
-                            onBlur={(e) => formikImport.setFieldValue('nomModele', e.target.value)} 
-                        />
+                    <Typography style={{ marginBottom: "30px" }} variant='h6' sx={{ color: "black" }} align='left'>Administration - Import modèle plan comptable</Typography>
 
-                        <FormHelperText style={{color:'red'}}>
-                            {formikImport.errors.nomModele && formikImport.touched.nomModele && formikImport.errors.nomModele}
-                        </FormHelperText>
-                    </FormControl>
-                    
-                    <Stack spacing={1} width={"380px"} height={"50px"} direction={"row"} 
-                            style={{border: '2px dashed rgba(5,96,116,0.60)', marginLeft:"30px", paddingLeft:"20px"}}
+                    <Stack width={"100%"} height={"50px"} spacing={2} alignItems={"center"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "20px" }}>
+                        <FormControl variant="standard" sx={{ m: 0, minWidth: 250 }}>
+                            <TextField
+                                style={{ width: "400px" }}
+                                id="nomModele"
+                                label="Nom du modèle"
+                                variant="standard"
+                                onBlur={(e) => formikImport.setFieldValue('nomModele', e.target.value)}
+                            />
+
+                            <FormHelperText style={{ color: 'red' }}>
+                                {formikImport.errors.nomModele && formikImport.touched.nomModele && formikImport.errors.nomModele}
+                            </FormHelperText>
+                        </FormControl>
+
+                        <Stack spacing={1} width={"380px"} height={"50px"} direction={"row"}
+                            style={{ border: '2px dashed rgba(5,96,116,0.60)', marginLeft: "30px", paddingLeft: "20px" }}
                             alignContent={"center"} justifyContent={"left"} alignItems={"center"}
+                        >
+                            <Typography variant='h7' sx={{ color: "black" }} align='left'>Télécharger ici le modèle d'import</Typography>
+
+                            <List style={{ marginLeft: "10px" }}>
+                                <ListItem style={{ width: "100px", justifyContent: "center" }}>
+                                    <ListItemButton onClick={handleDownloadModel}>
+                                        <ListItemIcon > <LogoutIcon style={{ width: "40px", height: "30px", color: 'rgba(5,96,116,0.60)', transform: "rotate(270deg)" }} /> </ListItemIcon>
+                                    </ListItemButton>
+                                </ListItem>
+                            </List>
+                        </Stack>
+
+                        <Stack spacing={1} width={"340px"} height={"50px"} direction={"row"}
+                            style={{ border: '2px dashed rgba(5,96,116,0.60)', marginLeft: "30px", paddingLeft: "20px" }}
+                            alignContent={"center"} justifyContent={"left"} alignItems={"center"}
+                            backgroundColor={'rgba(5,96,116,0.05)'}
+                        >
+                            <input
+                                type="file"
+                                accept={".csv"}
+                                // webkitdirectory="true"
+                                onChange={handleFileSelect}
+                                style={{ display: 'none' }}
+                                id="fileInput"
+                            />
+
+                            <Typography variant='h7' sx={{ color: "black", fontWeight: "bold" }} align='left'>Importer depuis le fichier</Typography>
+
+                            <List style={{ marginLeft: "10px" }}>
+                                <ListItem style={{ width: "100px", justifyContent: "center" }}>
+                                    <ListItemButton onClick={() => document.getElementById('fileInput').click()}>
+                                        <ListItemIcon > <SaveAltIcon style={{ width: "50px", height: "33px", color: 'rgba(5,96,116,0.60)' }} /> </ListItemIcon>
+                                    </ListItemButton>
+                                </ListItem>
+                            </List>
+                        </Stack>
+
+                        <Badge badgeContent={nbrAnomalie} color="warning">
+                            <Button
+                                onClick={handleOpenAnomalieDetails}
+                                variant="contained"
+                                style={{
+                                    height: "50px",
+                                    textTransform: 'none',
+                                    outline: 'none',
+                                    backgroundColor: initial.theme,
+                                    color: couleurBoutonAnomalie
+                                }}
                             >
-                        <Typography variant='h7' sx={{color: "black"}} align='left'>Télécharger ici le modèle d'import</Typography>
-                    
-                        <List style={{marginLeft:"10px"}}>
-                            <ListItem style={{width:"100px", justifyContent:"center"}}>
-                                <ListItemButton onClick={handleDownloadModel}>
-                                    <ListItemIcon > <LogoutIcon style={{width:"40px", height:"30px", color:'rgba(5,96,116,0.60)', transform:"rotate(270deg)"}}/> </ListItemIcon>
-                                </ListItemButton>
-                            </ListItem>
-                        </List>
-                    </Stack>
+                                Anomalies
+                            </Button>
+                        </Badge>
 
-                    <Stack spacing={1} width={"340px"} height={"50px"} direction={"row"} 
-                    style={{border: '2px dashed rgba(5,96,116,0.60)', marginLeft:"30px", paddingLeft:"20px"}}
-                    alignContent={"center"} justifyContent={"left"} alignItems={"center"}
-                    backgroundColor={'rgba(5,96,116,0.05)'}
-                    >
-                        <input
-                            type="file"
-                            accept={".csv"}
-                            // webkitdirectory="true"
-                            onChange={handleFileSelect}
-                            style={{ display: 'none' }}
-                            id="fileInput"
-                        />
-
-                        <Typography variant='h7' sx={{color: "black",fontWeight:"bold"}} align='left'>Importer depuis le fichier</Typography>
-                    
-                        <List style={{marginLeft:"10px"}}>
-                            <ListItem style={{width:"100px", justifyContent:"center"}}>
-                                <ListItemButton onClick={() => document.getElementById('fileInput').click()}>
-                                    <ListItemIcon > <SaveAltIcon style={{width:"50px", height:"33px", color:'rgba(5,96,116,0.60)'}}/> </ListItemIcon>
-                                </ListItemButton>
-                            </ListItem>
-                        </List>
-                    </Stack>
-
-                    <Badge badgeContent={nbrAnomalie} color="warning">
                         <Button
-                        onClick={handleOpenAnomalieDetails}
-                            variant="contained" 
+                            type='submit'
+                            variant="contained"
                             style={{
-                                height:"50px", 
-                                textTransform: 'none', 
+                                height: "50px",
+                                textTransform: 'none',
                                 outline: 'none',
-                                backgroundColor: initial.theme,
-                                color: couleurBoutonAnomalie
+                                backgroundColor: initial.theme
                             }}
                         >
-                            Anomalies
+                            Importer
                         </Button>
-                    </Badge>
-                    
-                    <Button
-                        type='submit'
-                        variant="contained" 
-                        style={{
-                            height:"50px", 
-                            textTransform: 'none', 
-                            outline: 'none',
-                            backgroundColor: initial.theme
-                        }}
-                    >
-                        Importer
-                    </Button>
-                </Stack>
-
-                {traitementModelePcWaiting
-                    ? <Stack spacing={2} direction={'row'} width={"100%"} alignItems={'center'} justifyContent={'center'}>
-                        <CircularProgress />
-                        <Typography variant='h6' style={{color:'#2973B2'}}>{traitementModelePcMsg}</Typography>
-                        {/* <CircularProgressWithValueLabel value={50} msg={"Traitement du journal en cours..."} /> */}
                     </Stack>
-                    : null
-                }
 
-                <Stack width={"100%"} height={'70vh'}>
-                    <VirtualTableModifiableImportJnl columns={columns} rows={modelePc} state={true}/>
-                    {/* <DataGrid
+                    {traitementModelePcWaiting
+                        ? <Stack spacing={2} direction={'row'} width={"100%"} alignItems={'center'} justifyContent={'center'}>
+                            <CircularProgress />
+                            <Typography variant='h6' style={{ color: '#2973B2' }}>{traitementModelePcMsg}</Typography>
+                            {/* <CircularProgressWithValueLabel value={50} msg={"Traitement du journal en cours..."} /> */}
+                        </Stack>
+                        : null
+                    }
+
+                    <Stack width={"100%"} height={'70vh'}>
+                        <VirtualTableModifiableImportJnl columns={columns} rows={modelePc} state={true} />
+                        {/* <DataGrid
                         disableMultipleSelection = {DataGridStyle.disableMultipleSelection}
                         disableColumnSelector = {DataGridStyle.disableColumnSelector}
                         disableDensitySelector = {DataGridStyle.disableDensitySelector}
@@ -723,11 +723,11 @@ export default function ImportModelePlanComptable() {
                         // hideFooter={true}
                         
                     />  */}
-                    
-                </Stack>  
-            </Stack>
-        </form>
-        
-    </Paper>
-  )
+
+                    </Stack>
+                </Stack>
+            </form>
+
+        </Box>
+    )
 }
