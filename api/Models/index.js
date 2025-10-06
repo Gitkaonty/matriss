@@ -103,6 +103,7 @@ db.etatscomatrices = require('./etatsCommMatriceModel')(sequelize, DataTypes);
 db.etatsplp = require('./etatsPlpModel')(sequelize, DataTypes);
 db.etatsplpmatrices = require('./etatsPlpMatriceModel')(sequelize, DataTypes);
 db.resetToken = require('./resetTokenModel')(sequelize, DataTypes);
+db.isi = require('./isiModel')(sequelize, DataTypes);
 //
 
 //
