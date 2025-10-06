@@ -118,23 +118,11 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING(50),
             allowNull: true,
         },
-<<<<<<< HEAD
-        declisimois: {
-=======
         decltvamois: {
->>>>>>> jaela/Jaela_tva
             type: DataTypes.INTEGER,
             allowNull: true,
             defaultValue: 0
         },
-<<<<<<< HEAD
-        declisiannee: {
-            type: DataTypes.INTEGER,
-            allowNull: true,
-            defaultValue: 0
-        },
-        declisi: {
-=======
         decltvaannee: {
             type: DataTypes.INTEGER,
             allowNull: true,
@@ -142,7 +130,6 @@ module.exports = (sequelize, DataTypes) => {
         }
         ,
         decltva: {
->>>>>>> jaela/Jaela_tva
             type: DataTypes.BOOLEAN,
             allowNull: true,
             defaultValue: false
