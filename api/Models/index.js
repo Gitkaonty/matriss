@@ -235,8 +235,8 @@ db.caSections.belongsTo(db.caAxes, { foreignKey: 'id_axe', targetKey: 'id' });
 db.caAxes.hasMany(db.caSections, { foreignKey: 'id_axe', sourceKey: 'id' });
 
 // Reset Token
-db.users.hasMany(db.resettokens, { foreignKey: 'user_id', sourceKey: 'id' });
-db.resettokens.belongsTo(db.users, { foreignKey: 'user_id', targetKey: 'id' });
+db.users.hasMany(db.resetToken, { foreignKey: 'user_id', sourceKey: 'id' });
+db.resetToken.belongsTo(db.users, { foreignKey: 'user_id', targetKey: 'id' });
 
 // Déclaration isi
 db.userscomptes.hasMany(db.isi, { foreignKey: 'id_compte', sourceKey: 'id' });
