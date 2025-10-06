@@ -35,11 +35,7 @@
     "pdfmake": "^0.2.20",
     "pg": "^8.13.1",
     "pg-hstore": "^2.3.4",
-<<<<<<< HEAD
-    "puppeteer": "^24.17.0",
-=======
     "puppeteer": "^24.18.0",
->>>>>>> jaela/Jaela_tva
     "sequelize": "^6.37.5",
     "sequelize-cli": "^6.6.2",
     "xmlbuilder2": "^3.1.1"
