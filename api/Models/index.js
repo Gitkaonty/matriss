@@ -86,18 +86,6 @@ db.devises = require('./deviseModel')(sequelize, DataTypes);
 db.controles = require('./controlesModel')(sequelize, DataTypes);
 db.controlematrices = require('./controlematricesModel')(sequelize, DataTypes);
 db.controlematricedetails = require('./controlematricedetailsModel')(sequelize, DataTypes);
-<<<<<<< HEAD
-
-//
-db.resettokens = require('./resetTokenModel')(sequelize, DataTypes);
-//
-
-//
-db.isi = require('./isiModel')(sequelize, DataTypes);
-//
-
-// 
-=======
 db.etatsCentresFiscales = require('./etatsCentresFiscales')(sequelize, DataTypes);
 db.etatsCentresFiscalesmatrices = require('./etatscentresfiscalesmatrices')(sequelize, DataTypes);
 db.etatsDge = require('./etatsDge')(sequelize, DataTypes);
@@ -108,7 +96,6 @@ db.formulaireTvaAnnexesMatrices = require('./formulaireTvaAnnexesMatrices')(sequ
 db.etatsTvaAnnexes = require('./etatsTvaAnnexes')(sequelize, DataTypes);
 db.anomaliesFormulaireTva = require('./anomaliesFormulaireTvaModel')(sequelize, DataTypes);
 //
->>>>>>> jaela/Jaela_tva
 db.droitcommas = require('./droitCommModelA')(sequelize, DataTypes);
 db.droitcommbs = require('./droitCommModelB')(sequelize, DataTypes);
 db.etatscomms = require('./etatsCommModel')(sequelize, DataTypes);
@@ -135,13 +122,9 @@ db.fonctions = require('./fonctionModel')(sequelize, DataTypes);
 db.personnels = require('./personnelModel')(sequelize, DataTypes);
 db.irsa = require('./irsaModel')(sequelize, DataTypes);
 db.paies = require('./paie')(sequelize, DataTypes);
-<<<<<<< HEAD
-db.historiquedeclaration = require('./historiqueDeclarationModel')(sequelize, DataTypes);
-=======
 db.historiqueirsa = require('./historiqueIrsaModel')(sequelize, DataTypes);
 db.tva_annexes = require('./etatsTvaAnnexes')(sequelize, DataTypes);
 
->>>>>>> jaela/Jaela_tva
 
 // Appel explicite de la méthode associate pour HistoriqueIrsa
 if (db.historiquedeclaration.associate) {
