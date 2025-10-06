@@ -415,6 +415,19 @@ const soldeRubriqueDRF = async (compte_id, dossier_id, exercice_id) => {
 
         await db.sequelize.query(`
             UPDATE liassedrfs SET
+            montant_brut = 0
+            
+            WHERE liassedrfs.id_compte = :compte_id AND liassedrfs.id_dossier = :dossier_id AND liassedrfs.id_exercice = :exercice_id
+            AND liassedrfs.id_etat = 'DRF' AND liassedrfs.nature IN('BRUT')
+            `, 
+            {
+                replacements: { compte_id, dossier_id, exercice_id },
+                type: db.Sequelize.QueryTypes.UPDATE
+            }
+        );
+
+        await db.sequelize.query(`
+            UPDATE liassedrfs SET
             montant_brut = montant_brut + (SELECT COALESCE(SUM(montant),0) FROM ajustements WHERE ajustements.id_rubrique = liassedrfs.id_rubrique
             AND ajustements.id_compte = :compte_id AND ajustements.id_dossier = :dossier_id AND ajustements.id_exercice = :exercice_id
             AND ajustements.id_etat = 'DRF' AND ajustements.nature = 'BRUT')
