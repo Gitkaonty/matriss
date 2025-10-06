@@ -28,3 +28,23 @@ package-lock.json
 .idea/
 .DS_Store
 Thumbs.db
+
+# Node modules
+node_modules/
+api/node_modules/
+front/kaonti/node_modules/
+
+# Build / dist
+dist/
+api/dist/
+front/kaonti/dist/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Lock files (optionnel : si tu veux les versionner, laisse-les)
+# package-lock.json
+# yarn.lock
