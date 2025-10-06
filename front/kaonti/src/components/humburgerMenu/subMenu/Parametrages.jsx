@@ -56,9 +56,9 @@ const comptaList = [
         urldynamic: true
     },
     {
-        text: 'CHIFFRE D\'AFFAIRES',
+        text: 'Chiffre D\'affaires',
         name: "chiffreAffaires",
-        path: "/tab/paramChiffreAffaires",
+        path: "/tab/parametrages/chiffreDaffaires",
         urldynamic: true
     },
 ];
