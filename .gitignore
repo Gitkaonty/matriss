@@ -15,6 +15,9 @@ bundle.js
 **/bundle.js
 
 # === Lock files ===
+front/kaonti/package-lock.json
+package-lock.json
+api/package-lock.json
 package-lock.json
 **/package-lock.json
 
