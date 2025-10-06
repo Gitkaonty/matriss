@@ -71,6 +71,7 @@ db.liasseses = require('./liasseseModel')(sequelize, DataTypes);
 db.liassetftds = require('./liassetftdModel')(sequelize, DataTypes);
 db.liassetftis = require('./liassetftiModel')(sequelize, DataTypes);
 db.etats = require('./etatsModel')(sequelize, DataTypes);
+db.etatsdeclarations = require('./etatsDeclarationsModel')(sequelize, DataTypes);
 db.pays = require('./paysModel')(sequelize, DataTypes);
 db.etatsmatrices = require('./etatsMatriceModel')(sequelize, DataTypes);
 db.rubriques = require('./rubriquesModel')(sequelize, DataTypes);
@@ -85,6 +86,7 @@ db.devises = require('./deviseModel')(sequelize, DataTypes);
 db.controles = require('./controlesModel')(sequelize, DataTypes);
 db.controlematrices = require('./controlematricesModel')(sequelize, DataTypes);
 db.controlematricedetails = require('./controlematricedetailsModel')(sequelize, DataTypes);
+<<<<<<< HEAD
 
 //
 db.resettokens = require('./resetTokenModel')(sequelize, DataTypes);
@@ -95,6 +97,18 @@ db.isi = require('./isiModel')(sequelize, DataTypes);
 //
 
 // 
+=======
+db.etatsCentresFiscales = require('./etatsCentresFiscales')(sequelize, DataTypes);
+db.etatsCentresFiscalesmatrices = require('./etatscentresfiscalesmatrices')(sequelize, DataTypes);
+db.etatsDge = require('./etatsDge')(sequelize, DataTypes);
+db.etatsDgeMatrices = require('./etatsDgeMatrices')(sequelize, DataTypes);
+// Unified TVA form tables
+db.formulaireTvaAnnexes = require('./formulaireTvaAnnexes')(sequelize, DataTypes);
+db.formulaireTvaAnnexesMatrices = require('./formulaireTvaAnnexesMatrices')(sequelize, DataTypes);
+db.etatsTvaAnnexes = require('./etatsTvaAnnexes')(sequelize, DataTypes);
+db.anomaliesFormulaireTva = require('./anomaliesFormulaireTvaModel')(sequelize, DataTypes);
+//
+>>>>>>> jaela/Jaela_tva
 db.droitcommas = require('./droitCommModelA')(sequelize, DataTypes);
 db.droitcommbs = require('./droitCommModelB')(sequelize, DataTypes);
 db.etatscomms = require('./etatsCommModel')(sequelize, DataTypes);
@@ -121,7 +135,13 @@ db.fonctions = require('./fonctionModel')(sequelize, DataTypes);
 db.personnels = require('./personnelModel')(sequelize, DataTypes);
 db.irsa = require('./irsaModel')(sequelize, DataTypes);
 db.paies = require('./paie')(sequelize, DataTypes);
+<<<<<<< HEAD
 db.historiquedeclaration = require('./historiqueDeclarationModel')(sequelize, DataTypes);
+=======
+db.historiqueirsa = require('./historiqueIrsaModel')(sequelize, DataTypes);
+db.tva_annexes = require('./etatsTvaAnnexes')(sequelize, DataTypes);
+
+>>>>>>> jaela/Jaela_tva
 
 // Appel explicite de la méthode associate pour HistoriqueIrsa
 if (db.historiquedeclaration.associate) {
@@ -264,6 +284,71 @@ db.irsa.belongsTo(db.personnels, { foreignKey: 'personnelId', as: 'personnel' })
 db.personnels.hasMany(db.paies, { foreignKey: 'personnelId' });
 db.paies.belongsTo(db.personnels, { foreignKey: 'personnelId', as: 'personnel' });
 
+//etatsCentresFiscales
+db.etatsCentresFiscales.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id' });
+db.dossiers.hasMany(db.etatsCentresFiscales, { foreignKey: 'id_dossier', sourceKey: 'id' });
+
+db.etatsCentresFiscales.belongsTo(db.exercices, { foreignKey: 'id_exercice', targetKey: 'id' });
+db.exercices.hasMany(db.etatsCentresFiscales, { foreignKey: 'id_exercice', sourceKey: 'id' });
+
+db.etatsCentresFiscales.belongsTo(db.userscomptes, { foreignKey: 'id_compte', targetKey: 'id' });
+db.userscomptes.hasMany(db.etatsCentresFiscales, { foreignKey: 'id_compte', sourceKey: 'id' });
+
+//etatsDge
+db.etatsDge.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id' });
+db.dossiers.hasMany(db.etatsDge, { foreignKey: 'id_dossier', sourceKey: 'id' });
+
+db.etatsDge.belongsTo(db.exercices, { foreignKey: 'id_exercice', targetKey: 'id' });
+db.exercices.hasMany(db.etatsDge, { foreignKey: 'id_exercice', sourceKey: 'id' });
+
+db.etatsDge.belongsTo(db.userscomptes, { foreignKey: 'id_compte', targetKey: 'id' });
+db.userscomptes.hasMany(db.etatsDge, { foreignKey: 'id_compte', sourceKey: 'id' });
+
+// TVA Annexes (legacy)
+db.etatsTvaAnnexes.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id' });
+db.dossiers.hasMany(db.etatsTvaAnnexes, { foreignKey: 'id_dossier', sourceKey: 'id' });
+
+db.etatsTvaAnnexes.belongsTo(db.exercices, { foreignKey: 'id_exercice', targetKey: 'id' });
+db.exercices.hasMany(db.etatsTvaAnnexes, { foreignKey: 'id_exercice', sourceKey: 'id' });
+
+db.etatsTvaAnnexes.belongsTo(db.userscomptes, { foreignKey: 'id_compte', targetKey: 'id' });
+db.userscomptes.hasMany(db.etatsTvaAnnexes, { foreignKey: 'id_compte', sourceKey: 'id' });
+
+db.etatsTvaAnnexes.belongsTo(db.journals, { foreignKey: 'id_ecriture', targetKey: 'id' });
+db.journals.hasMany(db.etatsTvaAnnexes, { foreignKey: 'id_ecriture', sourceKey: 'id' });
+
+db.etatsTvaAnnexes.belongsTo(db.dossierplancomptable, { foreignKey: 'id_numcpt', targetKey: 'id' });
+db.dossierplancomptable.hasMany(db.etatsTvaAnnexes, { foreignKey: 'id_numcpt', sourceKey: 'id' });
+
+// Unified TVA Form tables associations
+db.formulaireTvaAnnexes.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id' });
+db.dossiers.hasMany(db.formulaireTvaAnnexes, { foreignKey: 'id_dossier', sourceKey: 'id' });
+
+db.formulaireTvaAnnexes.belongsTo(db.exercices, { foreignKey: 'id_exercice', targetKey: 'id' });
+db.exercices.hasMany(db.formulaireTvaAnnexes, { foreignKey: 'id_exercice', sourceKey: 'id' });
+
+db.formulaireTvaAnnexes.belongsTo(db.userscomptes, { foreignKey: 'id_compte', targetKey: 'id' });
+db.userscomptes.hasMany(db.formulaireTvaAnnexes, { foreignKey: 'id_compte', sourceKey: 'id' });
+
+// Anomalies Formulaire TVA associations
+db.anomaliesFormulaireTva.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id' });
+db.dossiers.hasMany(db.anomaliesFormulaireTva, { foreignKey: 'id_dossier', sourceKey: 'id' });
+
+db.anomaliesFormulaireTva.belongsTo(db.exercices, { foreignKey: 'id_exercice', targetKey: 'id' });
+db.exercices.hasMany(db.anomaliesFormulaireTva, { foreignKey: 'id_exercice', sourceKey: 'id' });
+
+db.anomaliesFormulaireTva.belongsTo(db.userscomptes, { foreignKey: 'id_compte', targetKey: 'id' });
+db.userscomptes.hasMany(db.anomaliesFormulaireTva, { foreignKey: 'id_compte', sourceKey: 'id' });
+
+// Etats de déclarations (verrouillage par période)
+db.etatsdeclarations.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id' });
+db.dossiers.hasMany(db.etatsdeclarations, { foreignKey: 'id_dossier', sourceKey: 'id' });
+
+db.etatsdeclarations.belongsTo(db.exercices, { foreignKey: 'id_exercice', targetKey: 'id' });
+db.exercices.hasMany(db.etatsdeclarations, { foreignKey: 'id_exercice', sourceKey: 'id' });
+
+db.etatsdeclarations.belongsTo(db.userscomptes, { foreignKey: 'id_compte', targetKey: 'id' });
+db.userscomptes.hasMany(db.etatsdeclarations, { foreignKey: 'id_compte', sourceKey: 'id' });
 
 //exporting the module
 module.exports = db;

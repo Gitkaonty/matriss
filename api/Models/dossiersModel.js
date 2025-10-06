@@ -34,6 +34,11 @@ module.exports = (sequelize, DataTypes) => {
             unique: false,
             allowNull: true
         },
+        centrefisc: {
+            type: DataTypes.ENUM('DGE', 'CFISC'),
+            allowNull: true,
+            comment: "Type de centre fiscal: 'DGE' ou 'CFISC'"
+        },
         cac: {
             type: DataTypes.STRING(150),
             unique: false,

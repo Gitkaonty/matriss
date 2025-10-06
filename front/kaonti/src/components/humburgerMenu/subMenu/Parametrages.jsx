@@ -55,6 +55,12 @@ const comptaList = [
         path: "/tab/parametrages/paramTVA",
         urldynamic: true
     },
+    {
+        text: 'CHIFFRE D\'AFFAIRES',
+        name: "chiffreAffaires",
+        path: "/tab/paramChiffreAffaires",
+        urldynamic: true
+    },
 ];
 
 const liassesList = [
@@ -83,6 +89,12 @@ const socialesList = [
         text: 'Classification',
         name: "classification",
         path: "/tab/parametrages/paramClassification",
+        urldynamic: true
+    },
+    {
+        text: 'Fonctions',
+        name: "fonctions",
+        path: "/tab/fonctions",
         urldynamic: true
     },
 ];

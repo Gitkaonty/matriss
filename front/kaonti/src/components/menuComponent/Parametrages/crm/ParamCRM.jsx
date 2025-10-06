@@ -1,6 +1,15 @@
+<<<<<<< HEAD
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Typography, Stack, TextField, Autocomplete, FormControl, InputLabel, Select, MenuItem, Tooltip, Button, IconButton, FormHelperText, Input } from '@mui/material';
+=======
+import {React, useState, useEffect } from 'react';
+// Ajout de l'état pour le type de centre fiscal
+// (à placer au début du composant ParamCRM)
+
+import { useNavigate, useParams} from 'react-router-dom';
+import { Typography, Stack, Paper, TextField, FormControl, InputLabel, Select, MenuItem, Tooltip, Button, IconButton, FormHelperText, Input } from '@mui/material';
+>>>>>>> jaela/Jaela_tva
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
 import TabContext from '@mui/lab/TabContext';
@@ -38,8 +47,15 @@ import { TbPlaylistAdd } from 'react-icons/tb';
 import { IoMdTrash } from 'react-icons/io';
 
 export default function ParamCRM() {
+<<<<<<< HEAD
     //Choix TAB value-------------------------------------------------------------------------------------
     const [valueEbilan, setValueEbilan] = useState(0);
+=======
+  // État pour le type de centre fiscal (DGE ou centre fiscale)
+  const [typeCentre, setTypeCentre] = useState('DGE');
+ //Choix TAB value-------------------------------------------------------------------------------------
+ const [value, setValue] = useState(0);
+>>>>>>> jaela/Jaela_tva
 
     const navigate = useNavigate();
     //récupération information du dossier sélectionné
@@ -1483,12 +1499,39 @@ export default function ParamCRM() {
         }
     }
 
+<<<<<<< HEAD
     const handleCancelClickDomBank = (id) => () => {
         setRowModesModelDomBank({
             ...rowModesModelDomBank,
             [id]: { mode: GridRowModes.View, ignoreModifications: true },
         });
     };
+=======
+const handleChangeCentrefisc = async (newValue) => {
+    try {
+      await axios.put(`/home/FileCentrefisc/${fileId}`, { centrefisc: newValue });
+      setTypeCentre(newValue);
+      toast.success('CFISC mis à jour');
+  
+      // Recharger les infos dossier pour refléter la modif partout
+      await GetInfosIdDossier(fileId);
+  
+      // Optionnel: si tu veux forcer un refresh ailleurs (ex: un contexte global), déclenche-le ici.
+    } catch (e) {
+      toast.error("Mise à jour du centre fiscal échouée");
+    }
+  };
+
+  useEffect(() => {
+    if (fileInfos && fileInfos.centrefisc) {
+      setTypeCentre(fileInfos.centrefisc); // 'DGE' ou 'CFISC'
+    }
+  }, [fileInfos]);
+
+  return (
+    <Paper sx={{elevation: "3", margin:"5px", padding:"10px", width:"98%", height:"100%"}}>
+        {noFile? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
+>>>>>>> jaela/Jaela_tva
 
     const processRowUpdateDomBank = (setFieldValue) => (newRow) => {
         const updatedRow = { ...newRow, isNew: false };
@@ -2840,6 +2883,1083 @@ export default function ParamCRM() {
                 </TabPanel>
             </TabContext>
 
+<<<<<<< HEAD
         </Box>
     )
+=======
+                                                    <AccordionDetails>
+                                                        <Stack width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"} 
+                                                        alignContent={"flex-start"} justifyContent={"stretch"} direction={"column"}
+                                                        marginLeft={"50px"}
+                                                        >
+                                                            <Stack spacing={1}>
+                                                                <label htmlFor="nomdossier" style={{fontSize:12, color: '#3FA2F6'}}>Nom du dossier</label>
+                                                                <Field
+                                                                required
+                                                                //value={values.nomdossier}
+                                                                name='nomdossier'
+                                                                onChange={handleChange}
+                                                                type='text'
+                                                                placeholder=""
+                                                                style={{height:22, borderTop: 'none',
+                                                                    borderLeft: 'none',borderRight: 'none', 
+                                                                    outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                                    width: '400px'
+                                                                }}
+                                                                />
+                                                                <ErrorMessage name='nomdossier' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                            </Stack>
+                
+                                                            <Stack spacing={1}>
+                                                                <label htmlFor="raisonsociale" style={{fontSize:12, color: '#3FA2F6'}}>Raison sociale</label>
+                                                                <Field
+                                                                required
+                                                                name='raisonsociale'
+                                                                onChange={handleChange}
+                                                                type='text'
+                                                                placeholder=""
+                                                                style={{height:22, borderTop: 'none',
+                                                                    borderLeft: 'none',borderRight: 'none', 
+                                                                    outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                                    width: '600px'
+                                                                }}
+                                                                />
+                                                                <ErrorMessage name='raisonsociale' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                            </Stack>
+                                                            
+                                                            <Stack spacing={1}>
+                                                                <label htmlFor="denomination" style={{fontSize:12, color: '#3FA2F6'}}>Dénomination</label>
+                                                                <Field
+                                                                required
+                                                                name='denomination'
+                                                                onChange={handleChange}
+                                                                type='text'
+                                                                placeholder=""
+                                                                style={{height:22, borderTop: 'none',
+                                                                    borderLeft: 'none',borderRight: 'none', 
+                                                                    outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                                    width: '600px'
+                                                                }}
+                                                                />
+                                                                <ErrorMessage name='denomination' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                            </Stack>
+                                                            
+                                                            <Stack width={"100%"} height={"30px"} spacing={20} alignItems={"center"} 
+                                                                alignContent={"center"} justifyContent={"stretch"} direction={"row"}
+                                                                >
+                                                                <Stack spacing={1}>
+                                                                    <label htmlFor="nif" style={{fontSize:12, color: '#3FA2F6'}}>Numéro NIF</label>
+                                                                    <Field
+                                                                    required
+                                                                    name='nif'
+                                                                    onChange={handleChange}
+                                                                    type='text'
+                                                                    placeholder=""
+                                                                    style={{height:22, borderTop: 'none',
+                                                                        borderLeft: 'none',borderRight: 'none', 
+                                                                        outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                                        width: '200px'
+                                                                    }}
+                                                                    />
+                                                                    <ErrorMessage name='nif' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                                </Stack>
+
+                                                                <Stack spacing={1}>
+                                                                    <label htmlFor="stat" style={{fontSize:12, color: '#3FA2F6'}}>Numéro Statistique</label>
+                                                                    <Field
+                                                                    required
+                                                                    name='stat'
+                                                                    onChange={handleChange}
+                                                                    type='text'
+                                                                    placeholder=""
+                                                                    style={{height:22, borderTop: 'none',
+                                                                        borderLeft: 'none',borderRight: 'none', 
+                                                                        outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                                        width: '200px'
+                                                                    }}
+                                                                    />
+                                                                    <ErrorMessage name='stat' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                                </Stack>
+                                                                
+                                                                <Stack spacing={1}>
+                                                                    <label htmlFor="rcs" style={{fontSize:12, color: '#3FA2F6'}}>Numéro Rcs</label>
+                                                                    <Field
+                                                                    required
+                                                                    name='rcs'
+                                                                    onChange={handleChange}
+                                                                    type='text'
+                                                                    placeholder=""
+                                                                    style={{height:22, borderTop: 'none',
+                                                                        borderLeft: 'none',borderRight: 'none', 
+                                                                        outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                                        width: '200px'
+                                                                    }}
+                                                                    />
+                                                                    <ErrorMessage name='rcs' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                                </Stack>
+
+                                                            </Stack>
+                                                            
+                                                            <Stack spacing={1}>
+                                                                <label htmlFor="responsable" style={{fontSize:12, color: '#3FA2F6'}}>Responsable</label>
+                                                                <Field
+                                                                required
+                                                                name='responsable'
+                                                                onChange={handleChange}
+                                                                type='text'
+                                                                placeholder=""
+                                                                style={{height:22, borderTop: 'none',
+                                                                    borderLeft: 'none',borderRight: 'none', 
+                                                                    outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                                    width: '400px'
+                                                                }}
+                                                                />
+                                                                <ErrorMessage name='responsable' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                            </Stack>
+                                                            
+                                                            <Stack spacing={1}>
+                                                                <label htmlFor="expertcomptable" style={{fontSize:12, color: '#3FA2F6'}}>Expert comptable</label>
+                                                                <Field
+                                                                required
+                                                                name='expertcomptable'
+                                                                onChange={handleChange}
+                                                                type='text'
+                                                                placeholder=""
+                                                                style={{height:22, borderTop: 'none',
+                                                                    borderLeft: 'none',borderRight: 'none', 
+                                                                    outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                                    width: '400px'
+                                                                }}
+                                                                />
+                                                                <ErrorMessage name='expertcomptable' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                            </Stack>
+                                                            
+                                                            <Stack spacing={1}>
+                                                                <label htmlFor="cac" style={{fontSize:12, color: '#3FA2F6'}}>Commissaire aux comptes</label>
+                                                                <Field
+                                                                required
+                                                                name='cac'
+                                                                onChange={handleChange}
+                                                                type='text'
+                                                                placeholder=""
+                                                                style={{height:22, borderTop: 'none',
+                                                                    borderLeft: 'none',borderRight: 'none', 
+                                                                    outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                                    width: '400px'
+                                                                }}
+                                                                />
+                                                                <ErrorMessage name='cac' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                            </Stack>
+
+                                                        </Stack>
+                                                        
+                                                    </AccordionDetails>
+                                                </Accordion>
+
+                                                <Accordion elevation={0} style={{width:"100%", borderBlockColor:"transparent"}}>
+                                                    <AccordionSummary
+                                                    expandIcon={<MdExpandCircleDown style={{width:"25px", height:"25px", color: '#44D5F0'}}/>}
+                                                    aria-controls="panel1-content"
+                                                    id="panel1-header"
+                                                    style={{flexDirection:"row-reverse"}}
+                                                    >
+                                                        <Typography style={{fontWeight:'normal', fontSize:"20px", marginLeft:"10px"}}>Juridique</Typography>
+                                                    </AccordionSummary>
+
+                                                    <AccordionDetails>
+                                                        <Stack width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"} 
+                                                        alignContent={"flex-start"} justifyContent={"stretch"} direction={"column"}
+                                                        style={{marginLeft:"50px"}} 
+                                                        >
+                                                            <Stack spacing={1}>
+                                                                <label htmlFor="forme" style={{fontSize:12, color: '#3FA2F6'}}>Forme</label>
+                                                                <Field
+                                                                as={Select}
+                                                                required
+                                                                //value={values.forme}
+                                                                name='forme'
+                                                                type='text'
+                                                                placeholder=""
+                                                                onChange={handleOnChangeFormeSelect(setFieldValue)}
+                                                                sx={{
+                                                                    borderRadius:0,
+                                                                    width:500,
+                                                                    height:40,
+                                                                    '& .MuiOutlinedInput-notchedOutline': {
+                                                                        borderTop: 'none', // Supprime le cadre
+                                                                        borderLeft: 'none',
+                                                                        borderRight: 'none',
+                                                                        borderWidth:'0.5px'
+                                                                    },
+                                                                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                                        borderTop: 'none', // Supprime le cadre
+                                                                        borderLeft: 'none',
+                                                                        borderRight: 'none',
+                                                                        borderWidth:'0.5px'
+                                                                    },
+                                                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                                        borderTop: 'none', // Supprime le cadre
+                                                                        borderLeft: 'none',
+                                                                        borderRight: 'none',
+                                                                        borderWidth:'0.5px'
+                                                                    },
+                                                                }}
+                                                                >
+                                                                    {listeFormeJuridique.sort((a,b) => a.libelle.localeCompare(b.libelle)).map((item) => (
+                                                                        <MenuItem key={item.id} value={item.id}>{item.libelle}</MenuItem>
+                                                                    ))};
+                                                                </Field>
+                                                                <ErrorMessage name='forme' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                            </Stack>
+
+                                                            <Stack spacing={1}>
+                                                                <label htmlFor="activite" style={{fontSize:12, color: '#3FA2F6'}}>Activité</label>
+                                                                <Field
+                                                                as={Select}
+                                                                required
+                                                                //value={values.activite}
+                                                                name='activite'
+                                                                type='text'
+                                                                placeholder=""
+                                                                onChange={handleOnChangeActiviteSelect(setFieldValue)}
+                                                                sx={{
+                                                                    borderRadius:0,
+                                                                    width:250,
+                                                                    height:40,
+                                                                    '& .MuiOutlinedInput-notchedOutline': {
+                                                                        borderTop: 'none', // Supprime le cadre
+                                                                        borderLeft: 'none',
+                                                                        borderRight: 'none',
+                                                                        borderWidth:'0.5px'
+                                                                    },
+                                                                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                                        borderTop: 'none', // Supprime le cadre
+                                                                        borderLeft: 'none',
+                                                                        borderRight: 'none',
+                                                                        borderWidth:'0.5px'
+                                                                    },
+                                                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                                        borderTop: 'none', // Supprime le cadre
+                                                                        borderLeft: 'none',
+                                                                        borderRight: 'none',
+                                                                        borderWidth:'0.5px'
+                                                                    },
+                                                                }}
+                                                                >
+                                                                    {listeActivite.sort((a,b) => a.libelle.localeCompare(b.libelle)).map((item) => (
+                                                                        <MenuItem key={item.id} value={item.id}>
+                                                                            <Stack direction={'row'} spacing={2}
+                                                                                style={{alignContent:'center', alignItems:'center'}}
+                                                                            >
+                                                                                <Stack direction={'row'}>
+                                                                                    {item.icon}
+                                                                                </Stack>
+
+                                                                                <Stack direction={'row'}>
+                                                                                    {item.libelle}
+                                                                                </Stack>
+                                                                            </Stack>
+                                                                            
+                                                                        </MenuItem>
+                                                                    ))};
+                                                                </Field>
+                                                                <ErrorMessage name='activite' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                            </Stack>
+
+                                                            <Stack spacing={1}>
+                                                                <label htmlFor="detailsactivite" style={{fontSize:12, color: '#3FA2F6'}}>Détails activités</label>
+                                                                <Field
+                                                                required
+                                                                name='detailsactivite'
+                                                                onChange={handleChange}
+                                                                type='text'
+                                                                placeholder=""
+                                                                style={{height:22, borderTop: 'none',
+                                                                    borderLeft: 'none',borderRight: 'none', 
+                                                                    outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                                    width: '400px'
+                                                                }}
+                                                                />
+                                                                <ErrorMessage name='detailsactivite' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                            </Stack>
+                                                        </Stack>
+                                                    </AccordionDetails>
+                                                </Accordion>
+
+                                                <Accordion elevation={0} style={{width:"100%", borderBlockColor:"transparent"}}>
+                                                    <AccordionSummary
+                                                    expandIcon={<MdExpandCircleDown style={{width:"25px", height:"25px", color: '#44D5F0'}}/>}
+                                                    aria-controls="panel1-content"
+                                                    id="panel1-header"
+                                                    style={{flexDirection:"row-reverse"}}
+                                                    >
+                                                        <Typography style={{fontWeight:'normal', fontSize:"20px", marginLeft:"10px"}}>Contact</Typography>
+                                                    </AccordionSummary>
+
+                                                    <AccordionDetails>
+                                                        <Stack width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"} 
+                                                        alignContent={"flex-start"} justifyContent={"stretch"} direction={"column"}
+                                                        style={{marginLeft:"50px"}}
+                                                        >
+                                                            <Stack spacing={1}>
+                                                                <label htmlFor="adresse" style={{fontSize:12, color: '#3FA2F6'}}>Adresse</label>
+                                                                <Field
+                                                                required
+                                                                name='adresse'
+                                                                onChange={handleChange}
+                                                                type='text'
+                                                                placeholder=""
+                                                                style={{height:22, borderTop: 'none',
+                                                                    borderLeft: 'none',borderRight: 'none', 
+                                                                    outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                                    width: '600px'
+                                                                }}
+                                                                />
+                                                                <ErrorMessage name='adresse' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                            </Stack>
+
+                                                            <Stack spacing={1}>
+                                                                <label htmlFor="email" style={{fontSize:12, color: '#3FA2F6'}}>Email</label>
+                                                                <Field
+                                                                required
+                                                                name='email'
+                                                                onChange={handleChange}
+                                                                type='text'
+                                                                placeholder=""
+                                                                style={{height:22, borderTop: 'none',
+                                                                    borderLeft: 'none',borderRight: 'none', 
+                                                                    outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                                    width: '400px'
+                                                                }}
+                                                                />
+                                                                <ErrorMessage name='email' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                            </Stack>
+
+                                                            <Stack spacing={1}>
+                                                                <label htmlFor="telephone" style={{fontSize:12, color: '#3FA2F6'}}>Téléphone</label>
+                                                                <Field
+                                                                required
+                                                                name='telephone'
+                                                                onChange={handleChange}
+                                                                type='text'
+                                                                placeholder=""
+                                                                style={{height:22, borderTop: 'none',
+                                                                    borderLeft: 'none',borderRight: 'none', 
+                                                                    outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                                    width: '200px'
+                                                                }}
+                                                                />
+                                                                <ErrorMessage name='telephone' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                            </Stack>
+                                                        </Stack>
+                                                        
+                                                    </AccordionDetails>
+                                                </Accordion>
+                                            </Stack>
+                                        </TabPanel>
+
+                                        <TabPanel value="2">
+                                            <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"} 
+                                                    alignContent={"flex-start"} justifyContent={"stretch"}
+                                            >
+                                                <Stack spacing={1}>
+                                                    <label htmlFor="plancomptable" style={{fontSize:12, color: '#3FA2F6'}}>Plan comptable</label>
+                                                    <Field
+                                                    disabled
+                                                    as={Select}
+                                                    required
+                                                    //value = {values.plancomptable}
+                                                    name='plancomptable'
+                                                    type='text'
+                                                    placeholder=""
+                                                    onChange={handleOnChangePlanComptableSelect(setFieldValue)}
+                                                    sx={{
+                                                        borderRadius:0,
+                                                        width:300,
+                                                        height:40,
+                                                        '& .MuiOutlinedInput-notchedOutline': {
+                                                            borderTop: 'none', // Supprime le cadre
+                                                            borderLeft: 'none',
+                                                            borderRight: 'none',
+                                                            borderWidth:'0.5px'
+                                                        },
+                                                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                            borderTop: 'none', // Supprime le cadre
+                                                            borderLeft: 'none',
+                                                            borderRight: 'none',
+                                                            borderWidth:'0.5px'
+                                                        },
+                                                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                            borderTop: 'none', // Supprime le cadre
+                                                            borderLeft: 'none',
+                                                            borderRight: 'none',
+                                                            borderWidth:'0.5px'
+                                                        },
+                                                    }}
+                                                    >
+                                                        <MenuItem key={0} value={0}><em>Aucun</em></MenuItem>
+                                                        {listModel?.map((item) => (
+                                                            <MenuItem key={item.id} value={item.id}>{item.nom}</MenuItem>
+                                                        ))};
+                                                    </Field>
+                                                    <ErrorMessage name='plancomptable' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                </Stack>
+
+                                                <Typography style={{fontWeight:'bold', fontSize:"18px", marginLeft:"0px", marginTop:"50px"}}>Paramétrages de longueur des comptes</Typography>
+                                                
+                                                <Stack width={"100%"} height={"30px"} spacing={10} alignItems={"center"} 
+                                                    alignContent={"center"} justifyContent={"stretch"} direction={"row"}
+                                                    style={{marginLeft:"0px"}}
+                                                >
+                                                    <Stack spacing={1}>
+                                                        <label htmlFor="longueurcptstd" style={{fontSize:12, color: '#3FA2F6'}}>Compte standard</label>
+                                                        <Field
+                                                        required
+                                                        name='longueurcptstd'
+                                                        onChange={handleChange}
+                                                        type='text'
+                                                        placeholder=""
+                                                        style={{height:22, borderTop: 'none',
+                                                            borderLeft: 'none',borderRight: 'none', 
+                                                            outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                            width: '200px'
+                                                        }}
+                                                        />
+                                                        <ErrorMessage name='longueurcptstd' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                    </Stack>
+
+                                                    <Stack spacing={1}>
+                                                        <label htmlFor="longueurcptaux" style={{fontSize:12, color: '#3FA2F6'}}>Compte auxiliaire</label>
+                                                        <Field
+                                                        required
+                                                        name='longueurcptaux'
+                                                        onChange={handleChange}
+                                                        type='text'
+                                                        placeholder=""
+                                                        style={{height:22, borderTop: 'none',
+                                                            borderLeft: 'none',borderRight: 'none', 
+                                                            outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                            width: '200px',
+                                                        }}
+                                                        />
+                                                        <ErrorMessage name='longueurcptaux' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                    </Stack>
+                                                    
+                                                    <Stack spacing={0} direction={'row'}
+                                                        style={{alignItems:'center'}}
+                                                    >
+                                                        <Field
+                                                        required
+                                                        name='autocompletion'
+                                                        type='checkbox'
+                                                        placeholder=""
+                                                        style={{height:20, borderTop: 'none',
+                                                            borderLeft: 'none',borderRight: 'none', 
+                                                            outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                            width: 20, marginRight: 10
+                                                        }}
+                                                        />
+                                                        <label htmlFor="autocompletion" style={{fontSize:15, color: 'black'}}>Auto-complétion</label>
+                                                        <ErrorMessage name='autocompletion' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                    </Stack>
+                                                </Stack>
+                                                
+                                                <Stack spacing={0} direction={'row'}
+                                                        style={{alignItems:'center', marginTop: 40}}
+                                                >
+                                                    <Field
+                                                    required
+                                                    name='avecanalytique'
+                                                    type='checkbox'
+                                                    placeholder=""
+                                                    style={{height:20, borderTop: 'none',
+                                                        borderLeft: 'none',borderRight: 'none', 
+                                                        outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                        width: 20, marginRight: 10, 
+                                                    }}
+                                                    />
+                                                    <label htmlFor="avecanalytique" style={{fontSize:15, color: 'black'}}>Avec analytique</label>
+                                                    <ErrorMessage name='avecanalytique' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                </Stack>
+                                            </Stack>
+                                        </TabPanel>
+
+                                        <TabPanel value="3">
+                                            <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"} 
+                                                    alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"20px"} 
+                                            >
+                                              {/* Bloc radio DGE / centre fiscale */}
+                                             <Stack direction="column" spacing={1} sx={{ mt: 2, mb: 2 }}>
+                                                    <Typography variant="subtitle1" sx={{ fontWeight: 500, color: '#888' }}>
+                                                        Type de centre fiscal
+                                                    </Typography>
+                                                    <Stack direction="row" spacing={4} alignItems="center">
+                                                        <FormControlLabel
+                                                        control={
+                                                            <input
+                                                            type="radio"
+                                                            value="DGE"
+                                                            checked={typeCentre === 'DGE'}
+                                                            onChange={() => handleChangeCentrefisc('DGE')}
+                                                            />
+                                                        }
+                                                        label={<span style={{ fontWeight: typeCentre === 'DGE' ? 600 : 400 }}>DGE</span>}
+                                                        />
+                                                        <FormControlLabel
+                                                        control={
+                                                            <input
+                                                            type="radio"
+                                                            value="CFISC"
+                                                            checked={typeCentre === 'CFISC'}
+                                                            onChange={() => handleChangeCentrefisc('CFISC')}
+                                                            />
+                                                        }
+                                                        label={<span style={{ fontWeight: typeCentre === 'CFISC' ? 600 : 400 }}>Centre fiscales</span>}
+                                                        />
+                                                    </Stack>
+                                                    </Stack>
+                                                <Typography style={{fontWeight:'bold', fontSize:"18px", marginLeft:"0px", marginTop:"5px"}}>Impôt sur le revenu (IR)</Typography>
+
+                                                <Stack spacing={1}>
+                                                    <label htmlFor="tauxir" style={{fontSize:12, color: '#3FA2F6'}}>Taux IR</label>
+                                                    <Field
+                                                    required
+                                                    name='tauxir'
+                                                    onChange={handleChange}
+                                                    type='text'
+                                                    placeholder=""
+                                                    style={{height:22, borderTop: 'none',
+                                                        borderLeft: 'none',borderRight: 'none', 
+                                                        outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                        width: '100px',
+                                                    }}
+                                                    />
+                                                    <ErrorMessage name='tauxir' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                </Stack>
+
+                                                <Typography style={{fontWeight:'bold', fontSize:"14px", marginLeft:"0px", marginTop:"30px"}}>Paramétrages minimum de perception</Typography>
+                                                
+                                                <Stack width={"100%"} height={"30px"} spacing={10} alignItems={"center"} 
+                                                    alignContent={"center"} justifyContent={"stretch"} direction={"row"}
+                                                    style={{marginLeft:"0px"}}
+                                                >
+                                                    <Stack spacing={1}>
+                                                        <label htmlFor="pourcentageca" style={{fontSize:12, color: '#3FA2F6'}}>Pourcentage CA</label>
+                                                        <Field
+                                                        required
+                                                        name='pourcentageca'
+                                                        onChange={handleChange}
+                                                        type='text'
+                                                        placeholder=""
+                                                        style={{height:22, borderTop: 'none',
+                                                            borderLeft: 'none',borderRight: 'none', 
+                                                            outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                            width: '100px'
+                                                        }}
+                                                        />
+                                                        <ErrorMessage name='pourcentageca' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                    </Stack>
+
+                                                    <Stack spacing={1}>
+                                                        <label htmlFor="montantmin" style={{fontSize:12, color: '#3FA2F6'}}>Montant minimum</label>
+                                                        <Field
+                                                        required
+                                                        name='montantmin'
+                                                        onChange={handleChange}
+                                                        type='number'
+                                                        placeholder=""
+                                                        style={{height:22, borderTop: 'none',
+                                                            borderLeft: 'none',borderRight: 'none', 
+                                                            outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                            width: '150px', textAlign: 'right',
+                                                        }}
+
+                                                        />
+                                                        <ErrorMessage name='montantmin' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                    </Stack>
+                                                </Stack>
+
+                                                <Typography style={{fontWeight:'bold', fontSize:"18px", marginLeft:"0px", marginTop:"50px"}}>Taxe sur la valeur ajoutée (TVA)</Typography>
+                                            
+                                                <Stack spacing={0} direction={'row'}
+                                                        style={{alignItems:'center', marginTop: 20}}
+                                                >
+                                                    <Field
+                                                    required
+                                                    name='assujettitva'
+                                                    type='checkbox'
+                                                    placeholder=""
+                                                    style={{height:20, borderTop: 'none',
+                                                        borderLeft: 'none',borderRight: 'none', 
+                                                        outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                        width: 20, marginRight: 10, 
+                                                    }}
+                                                    />
+                                                    <label htmlFor="assujettitva" style={{fontSize:15, color: 'black'}}>Assujettie à la TVA</label>
+                                                    <ErrorMessage name='assujettitva' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                </Stack>
+
+                                            </Stack>
+                                        </TabPanel>
+
+                                        <TabPanel value="4">
+                                            <Stack width={"100%"} height={"100%"} spacing={6} alignItems={"flex-start"} 
+                                                    alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"20px"}
+                                            >
+                                                <Stack width={"100%"} height={"30px"} spacing={10} alignItems={"center"} 
+                                                        alignContent={"center"} justifyContent={"stretch"} direction={"row"}
+                                                >
+                                                    <Stack spacing={1}>
+                                                        <label htmlFor="montantcapital" style={{fontSize:12, color: '#3FA2F6'}}>Capitale</label>
+                                                        <Field
+                                                        required
+                                                        name='montantcapital'
+                                                        onChange={handleChange}
+                                                        type='text'
+                                                        placeholder=""
+                                                        style={{height:22, borderTop: 'none',
+                                                            borderLeft: 'none',borderRight: 'none', 
+                                                            outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                            width: '200px',
+                                                        }}
+                                                        />
+                                                        <ErrorMessage name='montantcapital' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                    </Stack>
+
+                                                    <Stack spacing={1}>
+                                                        <label htmlFor="nbrpart" style={{fontSize:12, color: '#3FA2F6'}}>Nombre parts</label>
+                                                        <Field
+                                                        required
+                                                        name='nbrpart'
+                                                        onChange={handleChange}
+                                                        type='text'
+                                                        placeholder=""
+                                                        style={{height:22, borderTop: 'none',
+                                                            borderLeft: 'none',borderRight: 'none', 
+                                                            outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                            width: '100px',
+                                                        }}
+                                                        />
+                                                        <ErrorMessage name='nbrpart' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                    </Stack>
+
+                                                    <Stack spacing={1}>
+                                                        <label htmlFor="valeurpart" style={{fontSize:12, color: '#3FA2F6'}}>Valeur d'une part</label>
+                                                        <Field
+                                                        disabled
+                                                        name='valeurpart'
+                                                        onChange={handleChange}
+                                                        type='text'
+                                                        placeholder=""
+                                                        style={{height:22, borderTop: 'none',
+                                                            borderLeft: 'none',borderRight: 'none', 
+                                                            outline: 'none', fontSize:14, borderWidth:'0.5px', 
+                                                            width: '150px',
+                                                        }}
+                                                        />
+                                                        <ErrorMessage name='valeurpart' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
+                                                    </Stack>
+                                                
+                                                </Stack>
+
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"} 
+                                                    direction={"row"} justifyContent={"right"}
+                                                >
+                                                    <Tooltip title="Ajouter une ligne">
+                                                        <IconButton
+                                                        variant="contained" 
+                                                        onClick={handleOpenDialogAddNewAssocie}
+                                                        style={{width:"35px", height:'35px', 
+                                                            borderRadius:"2px", borderColor: "transparent", 
+                                                            backgroundColor: initial.theme,
+                                                            textTransform: 'none', outline: 'none'
+                                                        }}
+                                                        >
+                                                            <TbPlaylistAdd style={{width:'25px', height:'25px', color:'white'}}/>
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Modifier la ligne sélectionnée">
+                                                        <IconButton
+                                                        disabled={disableModifyBouton}
+                                                        variant="contained" 
+                                                        onClick={handleEditClick(selectedRowId)}
+                                                        style={{width:"35px", height:'35px', 
+                                                            borderRadius:"2px", borderColor: "transparent",
+                                                            backgroundColor: initial.theme,
+                                                            textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            <FaRegPenToSquare style={{width:'25px', height:'25px', color:'white'}}/>
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Sauvegarder les modifications">
+                                                        <span>
+                                                            <IconButton 
+                                                            disabled={disableSaveBouton}
+                                                            variant="contained" 
+                                                            onClick={handleSaveClick(selectedRowId)}
+                                                            style={{width:"35px", height:'35px', 
+                                                                borderRadius:"2px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                            >
+                                                                <TfiSave style={{width:'50px', height:'50px',color: 'white'}}/>
+                                                            </IconButton>
+                                                        </span>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Annuler les modifications">
+                                                        <span>
+                                                            <IconButton 
+                                                            disabled={disableCancelBouton}
+                                                            variant="contained" 
+                                                            onClick={handleCancelClick(selectedRowId)}
+                                                            style={{width:"35px", height:'35px', 
+                                                                borderRadius:"2px", borderColor: "transparent",
+                                                                backgroundColor: initial.button_delete_color,
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                            >
+                                                                <VscClose style={{width:'50px', height:'50px', color: 'white'}}/>
+                                                            </IconButton>
+                                                        </span>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Supprimer la ligne sélectionné">
+                                                        <span>
+                                                            <IconButton 
+                                                            disabled={disableDeleteBouton}
+                                                            onClick={handleOpenDialogConfirmDeleteAssocieRow}
+                                                            variant="contained" 
+                                                            style={{width:"35px", height:'35px', 
+                                                                borderRadius:"2px", borderColor: "transparent",
+                                                                backgroundColor: initial.button_delete_color,
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                            >
+                                                                <IoMdTrash style={{width:'50px', height:'50px',color: 'white'}}/>
+                                                            </IconButton>
+                                                        </span>
+                                                    </Tooltip>
+                                                </Stack>
+                                                                            
+                                                <Stack width={"100%"} height={'50vh'}>
+                                                        <DataGrid
+                                                        disableMultipleSelection = {DataGridStyle.disableMultipleSelection}
+                                                        disableColumnSelector = {DataGridStyle.disableColumnSelector}
+                                                        disableDensitySelector = {DataGridStyle.disableDensitySelector}
+                                                        disableRowSelectionOnClick
+                                                        disableSelectionOnClick={true}
+                                                        localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                                                        slots={{toolbar : QuickFilter}}
+                                                        sx={ DataGridStyle.sx}
+                                                        rowHeight= {DataGridStyle.rowHeight}
+                                                        columnHeaderHeight= {DataGridStyle.columnHeaderHeight}
+                                                        rows={listAssocie}
+                                                        onRowClick={(e) => handleCellEditCommit(e.row)}
+                                                        onRowSelectionModelChange={ids => {
+                                                            saveSelectedRow(ids);
+                                                        }}
+                                                        editMode='row'
+                                                        rowModesModel={rowModesModel}
+                                                        onRowModesModelChange={handleRowModesModelChange}
+                                                        onRowEditStop={handleRowEditStop}
+                                                        processRowUpdate={processRowUpdate(setFieldValue)}
+
+                                                        columns={AssocieColumnHeader}
+                                                        initialState={{
+                                                            pagination: {
+                                                                paginationModel: { page: 0, pageSize: 100 },
+                                                            },
+                                                        }}
+                                                        experimentalFeatures={{ newEditingApi: true }}
+                                                        pageSizeOptions={[50, 100]}
+                                                        pagination={DataGridStyle.pagination}
+                                                        checkboxSelection = {DataGridStyle.checkboxSelection}
+                                                        columnVisibilityModel={{
+                                                            id: false,
+                                                        }}
+                                                    />
+                                                </Stack>
+                                                
+                                            </Stack>
+                                        </TabPanel>
+
+                                        <TabPanel value="5">
+                                            <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"} 
+                                                    alignContent={"flex-start"} justifyContent={"stretch"} 
+                                            >
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"} 
+                                                    direction={"row"} justifyContent={"right"}
+                                                >
+                                                    <Tooltip title="Ajouter une ligne">
+                                                        <IconButton
+                                                        variant="contained" 
+                                                        onClick={handleOpenDialogAddNewFiliale}
+                                                        style={{width:"35px", height:'35px', 
+                                                            borderRadius:"2px", borderColor: "transparent", 
+                                                            backgroundColor: initial.theme,
+                                                            textTransform: 'none', outline: 'none'
+                                                        }}
+                                                        >
+                                                            <TbPlaylistAdd style={{width:'25px', height:'25px', color:'white'}}/>
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Modifier la ligne sélectionnée">
+                                                        <IconButton
+                                                        disabled={disableModifyBoutonFiliale}
+                                                        variant="contained" 
+                                                        onClick={handleEditClickFiliale(selectedRowIdFiliale)}
+                                                        style={{width:"35px", height:'35px', 
+                                                            borderRadius:"2px", borderColor: "transparent",
+                                                            backgroundColor: initial.theme,
+                                                            textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            <FaRegPenToSquare style={{width:'25px', height:'25px', color:'white'}}/>
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Sauvegarder les modifications">
+                                                        <span>
+                                                            <IconButton 
+                                                            disabled={disableSaveBoutonFiliale}
+                                                            variant="contained" 
+                                                            onClick={handleSaveClickFiliale(selectedRowIdFiliale)}
+                                                            style={{width:"35px", height:'35px', 
+                                                                borderRadius:"2px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                            >
+                                                                <TfiSave style={{width:'50px', height:'50px',color: 'white'}}/>
+                                                            </IconButton>
+                                                        </span>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Annuler les modifications">
+                                                        <span>
+                                                            <IconButton 
+                                                            disabled={disableCancelBoutonFiliale}
+                                                            variant="contained" 
+                                                            onClick={handleCancelClickFiliale(selectedRowIdFiliale)}
+                                                            style={{width:"35px", height:'35px', 
+                                                                borderRadius:"2px", borderColor: "transparent",
+                                                                backgroundColor: initial.button_delete_color,
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                            >
+                                                                <VscClose style={{width:'50px', height:'50px', color: 'white'}}/>
+                                                            </IconButton>
+                                                        </span>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Supprimer la ligne sélectionné">
+                                                        <span>
+                                                            <IconButton 
+                                                            disabled={disableDeleteBoutonFiliale}
+                                                            onClick={handleOpenDialogConfirmDeleteAssocieRowFiliale}
+                                                            variant="contained" 
+                                                            style={{width:"35px", height:'35px', 
+                                                                borderRadius:"2px", borderColor: "transparent",
+                                                                backgroundColor: initial.button_delete_color,
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                            >
+                                                                <IoMdTrash style={{width:'50px', height:'50px',color: 'white'}}/>
+                                                            </IconButton>
+                                                        </span>
+                                                    </Tooltip>
+                                                </Stack>
+                                                                            
+                                                <Stack width={"100%"} height={'60vh'}>
+                                                    <DataGrid
+                                                    disableMultipleSelection = {DataGridStyle.disableMultipleSelection}
+                                                    disableColumnSelector = {DataGridStyle.disableColumnSelector}
+                                                    disableDensitySelector = {DataGridStyle.disableDensitySelector}
+                                                    disableRowSelectionOnClick
+                                                    disableSelectionOnClick={true}
+                                                    localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                                                    slots={{toolbar : QuickFilter}}
+                                                    sx={ DataGridStyle.sx}
+                                                    rowHeight= {DataGridStyle.rowHeight}
+                                                    columnHeaderHeight= {DataGridStyle.columnHeaderHeight}
+                                                    rows={listFiliales}
+                                                    onRowClick={(e) => handleCellEditCommitFiliale(e.row)}
+                                                    onRowSelectionModelChange={ids => {
+                                                        saveSelectedRowFiliale(ids);
+                                                    }}
+                                                    editMode='row'
+                                                    rowModesModel={rowModesModelFiliale}
+                                                    onRowModesModelChange={handleRowModesModelChangeFiliale}
+                                                    onRowEditStop={handleRowEditStopFiliale}
+                                                    processRowUpdate={processRowUpdateFiliale(setFieldValue)}
+
+                                                    columns={FilialeColumnHeader}
+                                                    initialState={{
+                                                        pagination: {
+                                                            paginationModel: { page: 0, pageSize: 100 },
+                                                        },
+                                                    }}
+                                                    experimentalFeatures={{ newEditingApi: true }}
+                                                    pageSizeOptions={[50, 100]}
+                                                    pagination={DataGridStyle.pagination}
+                                                    checkboxSelection = {DataGridStyle.checkboxSelection}
+                                                    columnVisibilityModel={{
+                                                        id: false,
+                                                    }}
+                                                    />
+                                                </Stack>
+                                                
+                                            </Stack>
+                                        </TabPanel>
+
+                                        <TabPanel value="6">
+                                            <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"} 
+                                                    alignContent={"flex-start"} justifyContent={"stretch"} 
+                                            >
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"} 
+                                                    direction={"row"} justifyContent={"right"}
+                                                >
+                                                    <Tooltip title="Ajouter une ligne">
+                                                        <IconButton
+                                                        variant="contained" 
+                                                        onClick={handleOpenDialogAddNewDomBank}
+                                                        style={{width:"35px", height:'35px', 
+                                                            borderRadius:"2px", borderColor: "transparent", 
+                                                            backgroundColor: initial.theme,
+                                                            textTransform: 'none', outline: 'none'
+                                                        }}
+                                                        >
+                                                            <TbPlaylistAdd style={{width:'25px', height:'25px', color:'white'}}/>
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Modifier la ligne sélectionnée">
+                                                        <IconButton
+                                                        disabled={disableModifyBoutonDomBank}
+                                                        variant="contained" 
+                                                        onClick={handleEditClickDomBank(selectedRowIdDomBank)}
+                                                        style={{width:"35px", height:'35px', 
+                                                            borderRadius:"2px", borderColor: "transparent",
+                                                            backgroundColor: initial.theme,
+                                                            textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            <FaRegPenToSquare style={{width:'25px', height:'25px', color:'white'}}/>
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Sauvegarder les modifications">
+                                                        <span>
+                                                            <IconButton 
+                                                            disabled={disableSaveBoutonDomBank}
+                                                            variant="contained" 
+                                                            onClick={handleSaveClickDomBank(selectedRowIdDomBank)}
+                                                            style={{width:"35px", height:'35px', 
+                                                                borderRadius:"2px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                            >
+                                                                <TfiSave style={{width:'50px', height:'50px',color: 'white'}}/>
+                                                            </IconButton>
+                                                        </span>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Annuler les modifications">
+                                                        <span>
+                                                            <IconButton 
+                                                            disabled={disableCancelBoutonDomBank}
+                                                            variant="contained" 
+                                                            onClick={handleCancelClickDomBank(selectedRowIdDomBank)}
+                                                            style={{width:"35px", height:'35px', 
+                                                                borderRadius:"2px", borderColor: "transparent",
+                                                                backgroundColor: initial.button_delete_color,
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                            >
+                                                                <VscClose style={{width:'50px', height:'50px', color: 'white'}}/>
+                                                            </IconButton>
+                                                        </span>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Supprimer la ligne sélectionné">
+                                                        <span>
+                                                            <IconButton 
+                                                            disabled={disableDeleteBoutonDomBank}
+                                                            onClick={handleOpenDialogConfirmDeleteAssocieRowDomBank}
+                                                            variant="contained" 
+                                                            style={{width:"35px", height:'35px', 
+                                                                borderRadius:"2px", borderColor: "transparent",
+                                                                backgroundColor: initial.button_delete_color,
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                            >
+                                                                <IoMdTrash style={{width:'50px', height:'50px',color: 'white'}}/>
+                                                            </IconButton>
+                                                        </span>
+                                                    </Tooltip>
+                                                </Stack>
+                                                                            
+                                                <Stack width={"100%"} height={'60vh'}>
+                                                    <DataGrid
+                                                    disableMultipleSelection = {DataGridStyle.disableMultipleSelection}
+                                                    disableColumnSelector = {DataGridStyle.disableColumnSelector}
+                                                    disableDensitySelector = {DataGridStyle.disableDensitySelector}
+                                                    disableRowSelectionOnClick
+                                                    disableSelectionOnClick={true}
+                                                    localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                                                    slots={{toolbar : QuickFilter}}
+                                                    sx={ DataGridStyle.sx}
+                                                    rowHeight= {DataGridStyle.rowHeight}
+                                                    columnHeaderHeight= {DataGridStyle.columnHeaderHeight}
+                                                    rows={listDomBank}
+                                                    onRowClick={(e) => handleCellEditCommitDomBank(e.row)}
+                                                    onRowSelectionModelChange={ids => {
+                                                        saveSelectedRowDomBank(ids);
+                                                    }}
+                                                    editMode='row'
+                                                    selectionModel={selectedRowIdDomBank}
+                                                    rowModesModel={rowModesModelDomBank}
+                                                    onRowModesModelChange={handleRowModesModelChangeDomBank}
+                                                    onRowEditStop={handleRowEditStopDomBank}
+                                                    processRowUpdate={processRowUpdateDomBank(setFieldValue)}
+
+                                                    columns={DomBankColumnHeader}
+                                                    initialState={{
+                                                        pagination: {
+                                                            paginationModel: { page: 0, pageSize: 100 },
+                                                        },
+                                                    }}
+                                                    experimentalFeatures={{ newEditingApi: true }}
+                                                    pageSizeOptions={[50, 100]}
+                                                    pagination={DataGridStyle.pagination}
+                                                    checkboxSelection = {DataGridStyle.checkboxSelection}
+                                                    columnVisibilityModel={{
+                                                        id: false,
+                                                    }}
+                                                    />
+                                                </Stack>
+                                                
+                                            </Stack>
+                                        </TabPanel>
+                                    </TabContext>
+                                </Box>
+                            </Stack>
+
+                        </Form>
+                        );
+                    }}
+                </Formik>
+            </TabPanel>
+        </TabContext>
+        
+</Paper>
+  )
+>>>>>>> jaela/Jaela_tva
 }

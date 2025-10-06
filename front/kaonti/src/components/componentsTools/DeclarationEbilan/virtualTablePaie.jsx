@@ -5,17 +5,20 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 
-import { Box, IconButton, Stack, TableFooter, Typography, Menu, MenuItem, Popper, Select, Button, TextField, InputLabel, FormControl, Modal } from '@mui/material';
+import { Box, IconButton, Stack, TableFooter, Typography, Menu, MenuItem, Popper, Select, Button, TextField, InputLabel, FormControl } from '@mui/material';
 import { IoMdTrash } from "react-icons/io";
 import { IoMdCreate } from "react-icons/io";
 import { format } from 'date-fns';
 import React from 'react';
 import { init } from '../../../../init';
+import PopupConfirmDelete from '../popupConfirmDelete';
 
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import FilterListIcon from '@mui/icons-material/FilterList';
+import { IoIosCheckmarkCircle } from "react-icons/io";
+import { IoIosCloseCircle } from "react-icons/io";
 
 // Composant VirtualTablePaie : tableau custom paie avec tri, filtre, édition via modal
 const VirtualTablePaie = ({ columns, rows, deleteState, modifyState, state, editRowId, editRowData, onEditChange, onEditSave, onEditCancel, personnels, selectedRowId, onRowSelectionModelChange, onSort, onFilter, filters = [] }) => {
@@ -25,7 +28,7 @@ const VirtualTablePaie = ({ columns, rows, deleteState, modifyState, state, edit
   const [newFilter, setNewFilter] = React.useState({ column: null, operator: 'contains', value: '' });
   const iconRefs = React.useRef({});
   const initial = init[0];
-  // Confirmation suppression ligne
+  // Confirmation suppression ligne via PopupConfirmDelete
   const [openConfirmDelete, setOpenConfirmDelete] = React.useState(false);
   const [rowToDelete, setRowToDelete] = React.useState(null);
 
@@ -34,13 +37,10 @@ const VirtualTablePaie = ({ columns, rows, deleteState, modifyState, state, edit
     setOpenConfirmDelete(true);
   };
 
-  const confirmDelete = () => {
-    if (deleteState && rowToDelete) deleteState(rowToDelete);
-    setOpenConfirmDelete(false);
-    setRowToDelete(null);
-  };
-
-  const cancelDelete = () => {
+  const handleConfirmDeletePaie = (val) => {
+    if (val === true) {
+      if (deleteState && rowToDelete) deleteState(rowToDelete);
+    }
     setOpenConfirmDelete(false);
     setRowToDelete(null);
   };
@@ -99,24 +99,14 @@ const VirtualTablePaie = ({ columns, rows, deleteState, modifyState, state, edit
 
   return (
     <>
-    <Modal
-        open={openConfirmDelete}
-        onClose={cancelDelete}
-        aria-labelledby="modal-confirm-delete-title"
-        aria-describedby="modal-confirm-delete-description"
-      >
-        <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', bgcolor: 'background.paper', border: '2px solid #1976d2', boxShadow: 24, p: 4, borderRadius: 2 }}>
-          <Typography id="modal-confirm-delete-title" variant="h6" component="h2" sx={{ mb: 2 }}>
-            Voulez-vous vraiment supprimer cette ligne ?
-          </Typography>
-          <Stack direction="row" spacing={2} justifyContent="flex-end">
-            <Button onClick={cancelDelete} variant="outlined" color="secondary">Annuler</Button>
-            <Button onClick={confirmDelete} variant="contained" color="error">Supprimer</Button>
-          </Stack>
-        </Box>
-      </Modal>
+    {openConfirmDelete && (
+      <PopupConfirmDelete
+        msg={"Voulez-vous vraiment supprimer cette ligne de paie ?"}
+        confirmationState={handleConfirmDeletePaie}
+      />
+    )}
     <TableContainer style={{ display: 'inline-block', width: 'auto', overflowX: 'auto' }}>
-        <Table sx={{ minWidth: 650, border: '1px solid #ddd' }} aria-label="irsa table">
+        <Table sx={{ minWidth: 650, border: '1px solid #ddd' }} aria-label="paie table">
         <TableHead style={{ backgroundColor: initial.theme, position: 'sticky', top: 0, zIndex: 1 }}>
           <TableRow>
             <TableCell key="boutonModif" align="center" style={{ fontWeight: 'bold', top: 5, minWidth: '50px', paddingTop: '3px', paddingBottom: '3px', borderRight: '1px solid #ddd', borderLeft: '1px solid #ddd', fontSize: 14, color: 'white', position: 'relative' }}>
@@ -336,6 +326,7 @@ const VirtualTablePaie = ({ columns, rows, deleteState, modifyState, state, edit
                             size="small"
                             variant="contained"
                             color="primary"
+                            startIcon={<IoIosCheckmarkCircle size={20} />}
                           >
                             OK
                           </Button>
@@ -344,6 +335,7 @@ const VirtualTablePaie = ({ columns, rows, deleteState, modifyState, state, edit
                             size="small"
                             variant="outlined"
                             color="secondary"
+                            startIcon={<IoIosCloseCircle size={20} />}
                           >
                             Fermer
                           </Button>                    
@@ -387,7 +379,7 @@ const VirtualTablePaie = ({ columns, rows, deleteState, modifyState, state, edit
         <IconButton
           onClick={(e) => {
             e.stopPropagation();
-            deleteState && deleteState(row);
+            handleRowDeleteClick(row);
           }}
           variant="contained"
           style={{ width: '25px', height: '25px', borderRadius: '1px', borderColor: 'transparent', backgroundColor: 'transparent', textTransform: 'none', outline: 'none' }}

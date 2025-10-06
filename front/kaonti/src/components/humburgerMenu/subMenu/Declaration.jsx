@@ -64,8 +64,8 @@ const declFiscalesList = [
     {
         text: 'TVA - taxes sur la valeur ajoutée',
         name: "tva",
-        path: "#",
-        urldynamic: false
+        path: "/tab/declarationTVA",
+        urldynamic: true
     },
 ];
 

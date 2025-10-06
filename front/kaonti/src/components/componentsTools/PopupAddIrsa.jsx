@@ -22,11 +22,11 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     },
 }));
 
-
 const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null, onAddIrsa, onEditIrsa, id_compte, id_dossier, id_exercice }) => {
     console.log(mois, annee);
     const [nbrEnfant, setNbrEnfant] = useState(0);
     const [personnels, setPersonnels] = useState([]);
+    
     const menuProps = {
         PaperProps: {
             style: {
@@ -34,12 +34,14 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
             },
         },
     };
+
     const handleClose = () => {
         confirmationState(false);
     }
     const formDataFormik = useFormik({
         initialValues: row ? {
             personnel_id: row.personnel_id || row.personnelId || '',
+            matricule: row.matricule || row.personnel?.matricule || row.personnel_matricule || '',
             salaireBase: row.salaireBase ?? '0.00',
             heuresSupp: row.heuresSupp ?? '0.00',
             primeGratification: row.primeGratification ?? '0.00',
@@ -62,6 +64,7 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
             annee: row.annee ?? annee,
         } : {
             personnel_id: '',
+            matricule: '',
             salaireBase: '0.00',
             heuresSupp: '0.00',
             primeGratification: '0.00',
@@ -89,23 +92,30 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
         enableReinitialize: true,
         validationSchema: Yup.object({
             personnel_id: Yup.string().required("Veuillez sélectionner un personnel."),
-            salaireBase: Yup.number()
-                .min(0, "Le salaire de base doit être positif.")
-                .required("Veuillez entrer un salaire de base."),
-            heuresSupp: Yup.number()
-                .min(0, "Les heures supplémentaires doivent être positives."),
-            primeGratification: Yup.number()
-                .min(0, "La prime/gratification doit être positive."),
-            autres: Yup.number()
-                .min(0, "Le montant autres doit être positif."),
-            indemniteImposable: Yup.number()
-                .min(0, "L'indemnité imposable doit être positive."),
-            indemniteNonImposable: Yup.number()
-                .min(0, "L'indemnité non imposable doit être positive."),
-            avantageImposable: Yup.number()
-                .min(0, "L'avantage imposable doit être positif."),
-            avantageExonere: Yup.number()
-                .min(0, "L'avantage exonéré doit être positif."),
+            salaireBase: Yup.string()
+                .required('Salaire obligatoire')
+                .test('non-zero', 'Veuillez entrer un salaire de base', v => parseFloat(v || '0') > 0),
+            // heuresSupp: Yup.string()
+            //     .required('Heures supplémentaires obligatoires')
+            //     .test('non-zero', 'Veuillez entrer des heures supplémentaires', v => parseFloat(v || '0') > 0),
+            // primeGratification: Yup.string()
+            //     .required('Prime/gratification obligatoire')
+            //     .test('non-zero', 'Veuillez entrer une prime/gratification', v => parseFloat(v || '0') > 0),
+            // autres: Yup.string()
+            //     .required('Autres obligatoire')
+            //     .test('non-zero', 'Veuillez entrer des autres', v => parseFloat(v || '0') > 0),
+            // indemniteImposable: Yup.string()
+            //     .required('Indemnité imposable obligatoire')
+            //     .test('non-zero', 'Veuillez entrer une indemnite imposable', v => parseFloat(v || '0') > 0),
+            // indemniteNonImposable: Yup.string()
+            //     .required('Indemnité non imposable obligatoire')
+            //     .test('non-zero', 'Veuillez entrer une indemnite non imposable', v => parseFloat(v || '0') > 0),
+            // avantageImposable: Yup.string()
+            //     .required('Avantage imposable obligatoire')
+            //     .test('non-zero', 'Veuillez entrer un avantage imposable', v => parseFloat(v || '0') > 0),
+            // avantageExonere: Yup.string()
+            //     .required('Avantage exonéré obligatoire')
+            //     .test('non-zero', 'Veuillez entrer un avantage exonéré', v => parseFloat(v || '0') > 0),
             mois: Yup.number()
                 .min(1, "Le mois doit être entre 1 et 12.")
                 .max(12, "Le mois doit être entre 1 et 12.")
@@ -121,7 +131,7 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
     });
 
     const gerNombreEnfant = (id) => {
-        axios.get(`/sociales/personnel/${id}`).then(res => {
+        axios.get(`/administration/personnel/${id}`).then(res => {
             if (res.data.state) {
                 const nbEnfants = res.data.data.nombre_enfants_charge || 0;
                 setNbrEnfant(nbEnfants); // optionnel pour affichage externe
@@ -134,7 +144,9 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
     const handleSubmitForm = async () => {
         const selectedPersonnel = personnels.find(p => p.id === Number(formDataFormik.values.personnel_id));
         const dataToSend = {
+            // Envoyer à la fois l'id et le matricule pour compatibilité backend
             personnelId: selectedPersonnel?.id,
+            matricule: formDataFormik.values.matricule || selectedPersonnel?.matricule || null,
             indemniteImposable: Number(formDataFormik.values.indemniteImposable),
             indemniteNonImposable: Number(formDataFormik.values.indemniteNonImposable),
             avantageImposable: Number(formDataFormik.values.avantageImposable),
@@ -195,23 +207,15 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
         handleClose();
     }
 
-    //             const nbEnfants = res.data.data.nombre_enfants_charge || 0;
-    //             // formDataFormik.values.nombre_enfants_charge = nbEnfants;
-    //             setNbrEnfant(nbEnfants);
-    //             formDataFormik.values.reductionChargeFamille = nbEnfants * 2000;
-    //             console.log('Nombre enfants:', nbEnfants);
-    //         }
-    //     });
-    // }
-
     useEffect(() => {
-        axios.get(`sociales/personnel/${id_compte}/${id_dossier}`)
+        axios.get(`/administration/personnel/${id_compte}/${id_dossier}`)
             .then(res => {
                 if (res.data.state) setPersonnels(res.data.list);
                 else setPersonnels([]);
             })
             .catch(() => setPersonnels([]));
     }, []);
+    
     useEffect(() => {
         if (
             personnels.length > 0 &&
@@ -285,7 +289,6 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
         formDataFormik.values.avantageImposable,
     ]);
 
-
     return (
         <BootstrapDialog
             open={true}
@@ -305,14 +308,18 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                         <Typography variant="subtitle1" sx={{ mb: 0, fontWeight: 400 }}>
                             Informations du personnel
                         </Typography>
-                        <Box display="flex" flexWrap="wrap" gap={2} mb={1} alignItems="center">
+                        <Box display="flex" flexWrap="wrap" gap={2} mb={1} alignItems="flex-end">
                             <FormControl size="small" sx={{ flexBasis: 410, flexGrow: 0 }}>
                                 {personnels.length === 0 ? (
                                     <Box
                                         display="flex"
                                         alignItems="center"
                                         justifyContent="center"
-                                        sx={{ height: 40, width: 400 }}
+                                        sx={{
+                                            height: 38,   // même hauteur que TextField
+                                            width: 400,
+                                            borderBottom: '1px solid rgba(0, 0, 0, 0.42)', // 👉 imite la ligne du TextField standard
+                                          }}
                                     >
                                         <span style={{ marginRight: 8 }}>Chargement des matricules...</span>
                                         <span
@@ -320,6 +327,7 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                             style={{
                                                 width: 20,
                                                 height: 20,
+                                                variant: 'standard',
                                                 display: 'inline-block',
                                                 verticalAlign: 'middle',
                                                 border: '2px solid #1976d2',
@@ -334,10 +342,10 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                     </Box>
                                 ) : (
                                     <Autocomplete
-                                        options={[...personnels].sort((b, a) => b.id - a.id)}
+                                        options={[...personnels].sort((a, b) => String(a.matricule || '').localeCompare(String(b.matricule || '')))}
                                         getOptionLabel={(option) =>
                                             option && typeof option === 'object'
-                                                ? `${option.id || ''} - ${option.nom || ''} ${option.prenom || ''}`
+                                                ? `${option.matricule || ''} - ${option.nom || ''} ${option.prenom || ''}`
                                                 : ''
                                         }
                                         value={
@@ -346,10 +354,8 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                             ) || null
                                         }
                                         onChange={(e, newValue) => {
-                                            formDataFormik.setFieldValue(
-                                                'personnel_id',
-                                                newValue ? Number(newValue.id) : ''
-                                            );
+                                            formDataFormik.setFieldValue('personnel_id', newValue ? Number(newValue.id) : '');
+                                            formDataFormik.setFieldValue('matricule', newValue ? (newValue.matricule || '') : '');
                                         }}
                                         disabled={personnels.length === 0}
                                         renderInput={(params) => (
@@ -357,7 +363,11 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                                 {...params}
                                                 size="small"
                                                 label="Matricule"
-                                                variant="outlined"
+                                                variant="standard"
+                                                sx={{
+                                                    '& .MuiInputBase-root': { fontSize: '13px' },
+                                                    '& .MuiInputLabel-root': { color: '#1976d2', fontSize: '13px' },
+                                                }}
                                                 error={
                                                     formDataFormik.touched.personnel_id &&
                                                     Boolean(formDataFormik.errors.personnel_id)
@@ -368,14 +378,14 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                                 }
                                                 InputLabelProps={{
                                                     shrink: true,
-                                                    sx: {
-                                                        color: '#1976d2',
-                                                        fontSize: '13px',
-                                                    },
                                                 }}
                                                 InputProps={{
                                                     ...params.InputProps,
-                                                    style: { height: 38 },
+                                                    sx: {
+                                                        '& input': {
+                                                            padding: '2px 0',
+                                                        },
+                                                    },
                                                 }}
                                             />
                                         )}
@@ -392,41 +402,35 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                 onChange={formDataFormik.handleChange}
                                 error={formDataFormik.touched.salaireBase && Boolean(formDataFormik.errors.salaireBase)}
                                 helperText={formDataFormik.touched.salaireBase && formDataFormik.errors.salaireBase}
+                                variant="standard"
                                 size="small"
+                                required
                                 sx={{
                                     width: 200,
-                                    // marginRight: '200px',
-                                    marginBottom: '0px',
-                                    textAlign: 'right',
-                                    backgroundColor: 'transparent',
-                                    color: formDataFormik.values.salaireBase === '0.00' ? 'rgba(107, 103, 103, 0.38)' : 'inherit',
-                                    '& .MuiInputLabel-root': { color: '#1976d2' },
+                                    mb: 0,
+                                    '& .MuiInputBase-root': { fontSize: '13px' },
+                                    '& .MuiInputLabel-root': { color: '#1976d2', fontSize: '13px' },
                                 }}
                                 InputProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        padding: '2px 4px',
-                                        height: '30px',
-                                    },
                                     inputComponent: FormatedInput,
-                                    endAdornment: <InputAdornment position="end" >
-                                        <span style={{ fontSize: '13px' }}>Ar</span>
-                                    </InputAdornment>,
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <span style={{ fontSize: '13px' }}>Ar</span>
+                                        </InputAdornment>
+                                    ),
                                     sx: {
                                         '& input': {
-                                            height: '30px',
-                                            textAlign: 'right', // Alignement du texte dans le champ à droite
+                                            textAlign: 'right',
+                                            padding: '2px 0',
                                         },
                                     },
                                 }}
                                 InputLabelProps={{
-                                    style: {
-                                        color: '#1976d2',
-                                        fontSize: '13px',
-                                        marginTop: '-2px',
-                                    },
+                                    shrink: true,
                                 }}
                             />
+
+
                         </Box>
 
                         {/* Groupe 2 */}
@@ -448,35 +452,26 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                 onChange={formDataFormik.handleChange}
                                 error={formDataFormik.touched.indemniteImposable && Boolean(formDataFormik.errors.indemniteImposable)}
                                 helperText={formDataFormik.touched.indemniteImposable && formDataFormik.errors.indemniteImposable}
+                                variant="standard"
                                 size="small"
                                 sx={{
-                                    marginBottom: '0px',
-                                    textAlign: 'right',
-                                    justifyContent: 'right',
-                                    justifyItems: 'right',
-                                    backgroundColor: 'transparent',
-                                    width: 200
+                                    width: 200,
+                                    mb: 0,
+                                    '& .MuiInputBase-root': { fontSize: '13px' },
+                                    '& .MuiInputLabel-root': { color: '#1976d2', fontSize: '13px' },
                                 }}
                                 InputLabelProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        marginTop: '-3px',
-                                        color: '#1976d2',
-                                    },
+                                    shrink: true,
                                 }}
                                 InputProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        padding: '2px 4px',
-                                        height: '30px'
-                                    },
                                     inputComponent: FormatedInput,
                                     endAdornment: <InputAdornment position="end">
                                         <span style={{ fontSize: '13px' }}>Ar</span>
                                     </InputAdornment>,
                                     sx: {
                                         '& input': {
-                                            textAlign: 'right', // Alignement du texte dans le champ à droite
+                                            textAlign: 'right',
+                                            padding: '2px 0',
                                         },
                                     },
                                 }}
@@ -489,35 +484,26 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                 onChange={formDataFormik.handleChange}
                                 error={formDataFormik.touched.indemniteNonImposable && Boolean(formDataFormik.errors.indemniteNonImposable)}
                                 helperText={formDataFormik.touched.indemniteNonImposable && formDataFormik.errors.indemniteNonImposable}
+                                variant="standard"
                                 size="small"
                                 sx={{
-                                    marginBottom: '0px',
-                                    textAlign: 'right',
-                                    justifyContent: 'right',
-                                    justifyItems: 'right',
-                                    backgroundColor: 'transparent',
-                                    width: 200
+                                    width: 200,
+                                    mb: 0,
+                                    '& .MuiInputBase-root': { fontSize: '13px' },
+                                    '& .MuiInputLabel-root': { color: '#1976d2', fontSize: '13px' },
                                 }}
                                 InputLabelProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        marginTop: '-3px',
-                                        color: '#1976d2',
-                                    },
+                                    shrink: true,
                                 }}
                                 InputProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        padding: '3px 4px',
-                                        height: '30px'
-                                    },
                                     inputComponent: FormatedInput,
                                     endAdornment: <InputAdornment position="end">
                                         <span style={{ fontSize: '13px' }}>Ar</span>
                                     </InputAdornment>,
                                     sx: {
                                         '& input': {
-                                            textAlign: 'right', // Alignement du texte dans le champ à droite
+                                            textAlign: 'right',
+                                            padding: '2px 0',
                                         },
                                     },
                                 }}
@@ -530,35 +516,26 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                 onChange={formDataFormik.handleChange}
                                 error={formDataFormik.touched.avantageImposable && Boolean(formDataFormik.errors.avantageImposable)}
                                 helperText={formDataFormik.touched.avantageImposable && formDataFormik.errors.avantageImposable}
+                                variant="standard"
                                 size="small"
                                 sx={{
-                                    marginBottom: '0px',
-                                    textAlign: 'right',
-                                    justifyContent: 'right',
-                                    justifyItems: 'right',
-                                    backgroundColor: 'transparent',
-                                    width: 200
+                                    width: 200,
+                                    mb: 0,
+                                    '& .MuiInputBase-root': { fontSize: '13px' },
+                                    '& .MuiInputLabel-root': { color: '#1976d2', fontSize: '13px' },
                                 }}
                                 InputLabelProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        marginTop: '-3px',
-                                        color: '#1976d2',
-                                    },
+                                    shrink: true,
                                 }}
                                 InputProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        padding: '2px 4px',
-                                        height: '30px'
-                                    },
                                     inputComponent: FormatedInput,
                                     endAdornment: <InputAdornment position="end">
                                         <span style={{ fontSize: '13px' }}>Ar</span>
                                     </InputAdornment>,
                                     sx: {
                                         '& input': {
-                                            textAlign: 'right', // Alignement du texte dans le champ à droite
+                                            textAlign: 'right',
+                                            padding: '2px 0',
                                         },
                                     },
                                 }}
@@ -570,35 +547,26 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                 onChange={formDataFormik.handleChange}
                                 error={formDataFormik.touched.avantageExonere && Boolean(formDataFormik.errors.avantageExonere)}
                                 helperText={formDataFormik.touched.avantageExonere && formDataFormik.errors.avantageExonere}
+                                variant="standard"
                                 size="small"
                                 sx={{
-                                    marginBottom: '0px',
-                                    textAlign: 'right',
-                                    justifyContent: 'right',
-                                    justifyItems: 'right',
-                                    backgroundColor: 'transparent',
-                                    width: 200
+                                    width: 200,
+                                    mb: 0,
+                                    '& .MuiInputBase-root': { fontSize: '13px' },
+                                    '& .MuiInputLabel-root': { color: '#1976d2', fontSize: '13px' },
                                 }}
                                 InputLabelProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        marginTop: '-3px',
-                                        color: '#1976d2',
-                                    },
+                                    shrink: true,
                                 }}
                                 InputProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        padding: '2px 4px',
-                                        height: '30px'
-                                    },
                                     inputComponent: FormatedInput,
                                     endAdornment: <InputAdornment position="end">
                                         <span style={{ fontSize: '13px' }}>Ar</span>
                                     </InputAdornment>,
                                     sx: {
                                         '& input': {
-                                            textAlign: 'right', // Alignement du texte dans le champ à droite
+                                            textAlign: 'right',
+                                            padding: '2px 0',
                                         },
                                     },
                                 }}
@@ -622,40 +590,30 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                 name="heuresSupp"
                                 value={formDataFormik.values.heuresSupp}
                                 onChange={formDataFormik.handleChange}
-                                fullWidth
+                                variant="standard"
                                 size="small"
                                 error={formDataFormik.touched.heuresSupp && Boolean(formDataFormik.errors.heuresSupp)}
                                 helperText={formDataFormik.touched.heuresSupp && formDataFormik.errors.heuresSupp}
                                 sx={{
                                     width: 200,
-                                    marginBottom: '0px',
-                                    textAlign: 'right',
-                                    justifyContent: 'right',
-                                    justifyItems: 'right',
-                                    backgroundColor: 'transparent'
+                                    mb: 0,
+                                    '& .MuiInputBase-root': { fontSize: '13px' },
+                                    '& .MuiInputLabel-root': { color: '#1976d2', fontSize: '13px' },
                                 }}
                                 InputProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        padding: '2px 4px',
-                                        height: '30px'
-                                    },
                                     inputComponent: FormatedInput,
                                     endAdornment: <InputAdornment position="end">
                                         <span style={{ fontSize: '13px' }}>Ar</span>
                                     </InputAdornment>,
                                     sx: {
                                         '& input': {
-                                            textAlign: 'right', // Alignement du texte dans le champ à droite
+                                            textAlign: 'right',
+                                            padding: '2px 0',
                                         },
                                     },
                                 }}
                                 InputLabelProps={{
-                                    style: {
-                                        color: '#1976d2',
-                                        fontSize: '13px',
-                                        marginTop: '-3px',
-                                    },
+                                    shrink: true,
                                 }}
                             />
                             <TextField
@@ -665,36 +623,27 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                 onChange={formDataFormik.handleChange}
                                 error={formDataFormik.touched.autres && Boolean(formDataFormik.errors.autres)}
                                 helperText={formDataFormik.touched.autres && formDataFormik.errors.autres}
+                                variant="standard"
                                 size="small"
                                 sx={{
                                     width: 200,
-                                    marginBottom: '0px',
-                                    textAlign: 'right',
-                                    justifyContent: 'right',
-                                    justifyItems: 'right',
-                                    backgroundColor: 'transparent'
+                                    mb: 0,
+                                    '& .MuiInputBase-root': { fontSize: '13px' },
+                                    '& .MuiInputLabel-root': { color: '#1976d2', fontSize: '13px' },
+                                }}
+                                InputLabelProps={{
+                                    shrink: true,
                                 }}
                                 InputProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        padding: '2px 4px',
-                                        height: '30px'
-                                    },
                                     inputComponent: FormatedInput,
                                     endAdornment: <InputAdornment position="end">
                                         <span style={{ fontSize: '13px' }}>Ar</span>
                                     </InputAdornment>,
                                     sx: {
                                         '& input': {
-                                            textAlign: 'right', // Alignement du texte dans le champ à droite
+                                            textAlign: 'right',
+                                            padding: '2px 0',
                                         },
-                                    },
-                                }}
-                                InputLabelProps={{
-                                    style: {
-                                        color: '#1976d2',
-                                        fontSize: '13px',
-                                        marginTop: '-3px',
                                     },
                                 }}
                             />
@@ -706,35 +655,26 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                 onChange={formDataFormik.handleChange}
                                 error={formDataFormik.touched.primeGratification && Boolean(formDataFormik.errors.primeGratification)}
                                 helperText={formDataFormik.touched.primeGratification && formDataFormik.errors.primeGratification}
+                                variant="standard"
                                 size="small"
                                 sx={{
                                     width: 200,
-                                    marginBottom: '0px',
-                                    textAlign: 'right',
-                                    justifyContent: 'right',
-                                    justifyItems: 'right',
-                                    backgroundColor: 'transparent'
+                                    mb: 0,
+                                    '& .MuiInputBase-root': { fontSize: '13px' },
+                                    '& .MuiInputLabel-root': { color: '#1976d2', fontSize: '13px' },
                                 }}
                                 InputLabelProps={{
-                                    style: {
-                                        color: '#1976d2',
-                                        fontSize: '13px',
-                                        marginTop: '-3px',
-                                    },
+                                    shrink: true,
                                 }}
                                 InputProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        padding: '2px 4px',
-                                        height: '30px'
-                                    },
                                     inputComponent: FormatedInput,
                                     endAdornment: <InputAdornment position="end">
                                         <span style={{ fontSize: '13px' }}>Ar</span>
                                     </InputAdornment>,
                                     sx: {
                                         '& input': {
-                                            textAlign: 'right', // Alignement du texte dans le champ à droite
+                                            textAlign: 'right',
+                                            padding: '2px 0',
                                         },
                                     },
                                 }}
@@ -758,17 +698,15 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                 disabled
                                 error={formDataFormik.touched.salaireBrut && Boolean(formDataFormik.errors.salaireBrut)}
                                 helperText={formDataFormik.touched.salaireBrut && formDataFormik.errors.salaireBrut}
+                                variant="standard"
                                 size="small"
                                 sx={{
                                     textAlign: 'right',
                                     backgroundColor: '#F4F9F9',
+                                    '& .MuiInputBase-root': { fontSize: '13px' },
+                                    '& .MuiInputLabel-root': { color: '#1976d2', fontSize: '13px' },
                                 }}
                                 InputProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        padding: '2px 4px',
-                                        height: '30px',
-                                    },
                                     inputComponent: FormatedInput,
                                     endAdornment: (
                                         <InputAdornment position="end">
@@ -777,11 +715,7 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                     ),
                                 }}
                                 InputLabelProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        marginTop: '-3px',
-                                        color: '#1976d2',
-                                    },
+                                    shrink: true,
                                 }}
                             />
 
@@ -807,21 +741,17 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                 disabled
                                 error={formDataFormik.touched.cnapsRetenu && Boolean(formDataFormik.errors.cnapsRetenu)}
                                 helperText={formDataFormik.touched.cnapsRetenu && formDataFormik.errors.cnapsRetenu}
+                                variant="standard"
                                 size="small"
                                 sx={{
-                                    marginBottom: '0px',
+                                    mb: 0,
                                     textAlign: 'right',
-                                    justifyContent: 'right',
-                                    justifyItems: 'right',
                                     width: 200,
                                     backgroundColor: '#E6F9E6',
+                                    '& .MuiInputBase-root': { fontSize: '13px' },
+                                    '& .MuiInputLabel-root': { color: '#1976d2', fontSize: '13px' },
                                 }}
                                 InputProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        padding: '2px 4px',
-                                        height: '30px'
-                                    },
                                     readOnly: true,
                                     inputComponent: FormatedInput,
                                     endAdornment: <InputAdornment position="end">
@@ -829,13 +759,10 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                     </InputAdornment>,
                                 }}
                                 InputLabelProps={{
-                                    style: {
-                                        color: '#1976d2',
-                                        fontSize: '13px',
-                                        marginTop: '-3px',
-                                    },
+                                    shrink: true,
                                 }}
                             />
+
                             <TextField
                                 label="Ostie"
                                 name="ostie"
@@ -844,21 +771,17 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                 disabled
                                 error={formDataFormik.touched.ostie && Boolean(formDataFormik.errors.ostie)}
                                 helperText={formDataFormik.touched.ostie && formDataFormik.errors.ostie}
+                                variant="standard"
                                 size="small"
                                 sx={{
-                                    marginBottom: '0px',
+                                    mb: 0,
                                     textAlign: 'right',
-                                    justifyContent: 'right',
-                                    justifyItems: 'right',
                                     width: 200,
                                     backgroundColor: '#E6F9E6',
+                                    '& .MuiInputBase-root': { fontSize: '13px' },
+                                    '& .MuiInputLabel-root': { color: '#1976d2', fontSize: '13px' },
                                 }}
                                 InputProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        padding: '2px 4px',
-                                        height: '30px'
-                                    },
                                     readOnly: true,
                                     inputComponent: FormatedInput,
                                     endAdornment: <InputAdornment position="end">
@@ -866,11 +789,7 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                     </InputAdornment>,
                                 }}
                                 InputLabelProps={{
-                                    style: {
-                                        color: '#1976d2',
-                                        fontSize: '13px',
-                                        marginTop: '-3px',
-                                    },
+                                    shrink: true,
                                 }}
                             />
                         </Box>
@@ -892,28 +811,20 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                 disabled
                                 error={formDataFormik.touched.salaireNet && Boolean(formDataFormik.errors.salaireNet)}
                                 helperText={formDataFormik.touched.salaireNet && formDataFormik.errors.salaireNet}
+                                variant="standard"
                                 size="small"
                                 sx={{
-                                    marginBottom: '0px',
+                                    mb: 0,
                                     width: 200,
                                     textAlign: 'right',
-                                    justifyContent: 'right',
-                                    justifyItems: 'right',
                                     backgroundColor: '#F4F9F9',
+                                    '& .MuiInputBase-root': { fontSize: '13px' },
+                                    '& .MuiInputLabel-root': { color: '#1976d2', fontSize: '13px' },
                                 }}
                                 InputLabelProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        marginTop: '-3px',
-                                        color: '#1976d2',
-                                    },
+                                    shrink: true,
                                 }}
                                 InputProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        padding: '2px 4px',
-                                        height: '30px'
-                                    },
                                     readOnly: true,
                                     inputComponent: FormatedInput,
                                     endAdornment: <InputAdornment position="end">
@@ -921,11 +832,13 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                     </InputAdornment>,
                                     sx: {
                                         '& input': {
-                                            textAlign: 'right', // Alignement du texte dans le champ à droite
+                                            textAlign: 'right',
+                                            padding: '2px 0',
                                         },
                                     },
                                 }}
                             />
+
                         </Box>
                         <Divider sx={{ my: 0 }} />
                         <Typography variant="subtitle1" sx={{ mb: 0, fontWeight: 400 }}>
@@ -944,39 +857,31 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                 onChange={formDataFormik.handleChange}
                                 error={formDataFormik.touched.autreDeduction && Boolean(formDataFormik.errors.autreDeduction)}
                                 helperText={formDataFormik.touched.autreDeduction && formDataFormik.errors.autreDeduction}
+                                variant="standard"
                                 size="small"
                                 sx={{
-                                    marginBottom: '0px',
-                                    textAlign: 'right',
-                                    justifyContent: 'right',
-                                    justifyItems: 'right',
-                                    backgroundColor: 'transparent',
-                                    width: 200
+                                    width: 200,
+                                    mb: 0,
+                                    '& .MuiInputBase-root': { fontSize: '13px' },
+                                    '& .MuiInputLabel-root': { color: '#1976d2', fontSize: '13px' },
                                 }}
                                 InputLabelProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        marginTop: '-3px',
-                                        color: '#1976d2',
-                                    },
+                                    shrink: true,
                                 }}
                                 InputProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        padding: '2px 4px',
-                                        height: '30px'
-                                    },
                                     inputComponent: FormatedInput,
                                     endAdornment: <InputAdornment position="end">
                                         <span style={{ fontSize: '13px' }}>Ar</span>
                                     </InputAdornment>,
                                     sx: {
                                         '& input': {
-                                            textAlign: 'right', // Alignement du texte dans le champ à droite
+                                            textAlign: 'right',
+                                            padding: '2px 0',
                                         },
                                     },
                                 }}
                             />
+
                             <TextField
                                 label="Montant imposable"
                                 name="montantImposable"
@@ -984,39 +889,31 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                 onChange={formDataFormik.handleChange}
                                 error={formDataFormik.touched.montantImposable && Boolean(formDataFormik.errors.montantImposable)}
                                 helperText={formDataFormik.touched.montantImposable && formDataFormik.errors.montantImposable}
+                                variant="standard"
                                 size="small"
                                 sx={{
-                                    marginBottom: '0px',
-                                    textAlign: 'right',
-                                    justifyContent: 'right',
-                                    justifyItems: 'right',
-                                    backgroundColor: 'transparent',
-                                    width: 200
+                                    width: 200,
+                                    mb: 0,
+                                    '& .MuiInputBase-root': { fontSize: '13px' },
+                                    '& .MuiInputLabel-root': { color: '#1976d2', fontSize: '13px' },
                                 }}
                                 InputLabelProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        marginTop: '-3px',
-                                        color: '#1976d2',
-                                    },
+                                    shrink: true,
                                 }}
                                 InputProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        padding: '2px 4px',
-                                        height: '30px'
-                                    },
                                     inputComponent: FormatedInput,
                                     endAdornment: <InputAdornment position="end">
                                         <span style={{ fontSize: '13px' }}>Ar</span>
                                     </InputAdornment>,
                                     sx: {
                                         '& input': {
-                                            textAlign: 'right', // Alignement du texte dans le champ à droite
+                                            textAlign: 'right',
+                                            padding: '2px 0',
                                         },
                                     },
                                 }}
                             />
+
                             <TextField
                                 label="Impôt correspondant"
                                 name="impotCorrespondant"
@@ -1024,39 +921,31 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                 onChange={formDataFormik.handleChange}
                                 error={formDataFormik.touched.impotCorrespondant && Boolean(formDataFormik.errors.impotCorrespondant)}
                                 helperText={formDataFormik.touched.impotCorrespondant && formDataFormik.errors.impotCorrespondant}
+                                variant="standard"
                                 size="small"
                                 sx={{
-                                    marginBottom: '0px',
-                                    textAlign: 'right',
-                                    justifyContent: 'right',
-                                    justifyItems: 'right',
-                                    backgroundColor: 'transparent',
-                                    width: 200
+                                    width: 200,
+                                    mb: 0,
+                                    '& .MuiInputBase-root': { fontSize: '13px' },
+                                    '& .MuiInputLabel-root': { color: '#1976d2', fontSize: '13px' },
                                 }}
                                 InputLabelProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        marginTop: '-3px',
-                                        color: '#1976d2',
-                                    },
+                                    shrink: true,
                                 }}
                                 InputProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        padding: '2px 4px',
-                                        height: '30px'
-                                    },
                                     inputComponent: FormatedInput,
                                     endAdornment: <InputAdornment position="end">
                                         <span style={{ fontSize: '13px' }}>Ar</span>
                                     </InputAdornment>,
                                     sx: {
                                         '& input': {
-                                            textAlign: 'right', // Alignement du texte dans le champ à droite
+                                            textAlign: 'right',
+                                            padding: '2px 0',
                                         },
                                     },
                                 }}
                             />
+
                             <TextField
                                 label="Charge famille"
                                 name="reductionChargeFamille"
@@ -1066,25 +955,19 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                 size="small"
                                 error={formDataFormik.touched.reductionChargeFamille && Boolean(formDataFormik.errors.reductionChargeFamille)}
                                 helperText={formDataFormik.touched.reductionChargeFamille && formDataFormik.errors.reductionChargeFamille}
+                                variant="standard"
                                 sx={{
-                                    marginBottom: '0px',
+                                    mb: 0,
                                     textAlign: 'right',
                                     backgroundColor: '#E6F9E6',
                                     width: 200,
+                                    '& .MuiInputBase-root': { fontSize: '13px' },
+                                    '& .MuiInputLabel-root': { color: '#1976d2', fontSize: '13px' },
                                 }}
                                 InputLabelProps={{
-                                    style: {
-                                        color: '#1976d2',
-                                        fontSize: '13px',
-                                        marginTop: '-3px',
-                                    },
+                                    shrink: true,
                                 }}
                                 InputProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        padding: '2px 4px',
-                                        height: '30px'
-                                    },
                                     readOnly: true,
                                     inputComponent: FormatedInput,
                                     endAdornment: <InputAdornment position="end">
@@ -1093,10 +976,12 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                     sx: {
                                         '& input': {
                                             textAlign: 'right',
+                                            padding: '2px 0',
                                         },
                                     },
                                 }}
                             />
+
                         </Box>
                         <Divider sx={{ my: 0 }} />
                         <Typography variant="subtitle1" sx={{ mb: 0, fontWeight: 400 }}>
@@ -1117,27 +1002,19 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                 size="small"
                                 error={formDataFormik.touched.impotDu && Boolean(formDataFormik.errors.impotDu)}
                                 helperText={formDataFormik.touched.impotDu && formDataFormik.errors.impotDu}
+                                variant="standard"
                                 sx={{
-                                    marginBottom: '0px',
+                                    mb: 0,
                                     textAlign: 'right',
-                                    justifyContent: 'right',
-                                    justifyItems: 'right',
                                     backgroundColor: '#F4F9F9',
                                     width: 200,
+                                    '& .MuiInputBase-root': { fontSize: '13px' },
+                                    '& .MuiInputLabel-root': { color: '#1976d2', fontSize: '13px' },
                                 }}
                                 InputLabelProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        marginTop: '-3px',
-                                        color: '#1976d2',
-                                    },
+                                    shrink: true,
                                 }}
                                 InputProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        padding: '2px 4px',
-                                        height: '30px'
-                                    },
                                     inputComponent: FormatedInput,
                                     endAdornment: <InputAdornment position="end">
                                         <span style={{ fontSize: '13px' }}>Ar</span>
@@ -1145,30 +1022,35 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                     sx: {
                                         '& input': {
                                             textAlign: 'right',
+                                            padding: '2px 0',
                                         },
                                     },
                                 }}
                             />
+
                         </Box>
                     </Box>
                 </Box>
             </DialogContent>
             <DialogActions sx={{ p: 2, backgroundColor: '#f5f5f5' }}>
-                <Button
-                    onClick={handleClose}
-                    variant="outlined"
-                    sx={{ minWidth: 100 }}
-                >
-                    Annuler
-                </Button>
-                <Button
-                    onClick={handleSubmitForm}
-                    variant="contained"
-                    color="primary"
-                    sx={{ minWidth: 100 }}
-                >
-                    Valider
-                </Button>
+            <Button onClick={handleClose} variant="outlined" sx={{ minWidth: 100 }}>
+                Annuler
+            </Button>
+
+            <Button
+                variant="contained"
+                sx={{ minWidth: 100 }}
+                onClick={() => {
+                    const allTouched = Object.keys(formDataFormik.values).reduce((acc, key) => {
+                      acc[key] = true;
+                      return acc;
+                    }, {});
+                    formDataFormik.setTouched(allTouched, true);
+                    formDataFormik.handleSubmit();
+                  }}
+            >
+                Valider
+            </Button>
             </DialogActions>
         </BootstrapDialog>
     )
