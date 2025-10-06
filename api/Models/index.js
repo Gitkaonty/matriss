@@ -122,13 +122,13 @@ db.fonctions = require('./fonctionModel')(sequelize, DataTypes);
 db.personnels = require('./personnelModel')(sequelize, DataTypes);
 db.irsa = require('./irsaModel')(sequelize, DataTypes);
 db.paies = require('./paie')(sequelize, DataTypes);
-db.historiqueirsa = require('./historiqueIrsaModel')(sequelize, DataTypes);
+db.historiqueDeclaration = require('./historiqueDeclarationModel')(sequelize, DataTypes);
 db.tva_annexes = require('./etatsTvaAnnexes')(sequelize, DataTypes);
 
 
 // Appel explicite de la méthode associate pour HistoriqueIrsa
-if (db.historiquedeclaration.associate) {
-    db.historiquedeclaration.associate(db);
+if (db.historiqueDeclaration.associate) {
+    db.historiqueDeclaration.associate(db);
 }
 
 //définition des associations

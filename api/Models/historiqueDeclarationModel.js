@@ -1,5 +1,5 @@
 module.exports = (sequelize, DataTypes) => {
-  const HistoriqueDeclaration = sequelize.define('HistoriqueDeclaration', {
+  const historiqueDeclaration = sequelize.define('historiqueDeclaration', {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
@@ -42,9 +42,9 @@ module.exports = (sequelize, DataTypes) => {
   });
 
   // Associations
-  HistoriqueDeclaration.associate = function (models) {
-    HistoriqueDeclaration.belongsTo(models.dossiers, { foreignKey: 'idDossier', as: 'dossier' });
-    HistoriqueDeclaration.belongsTo(models.userscomptes, { foreignKey: 'idCompte', as: 'compte' });
+  historiqueDeclaration.associate = function (models) {
+    historiqueDeclaration.belongsTo(models.dossiers, { foreignKey: 'idDossier', as: 'dossier' });
+    historiqueDeclaration.belongsTo(models.userscomptes, { foreignKey: 'idCompte', as: 'compte' });
   };
-  return HistoriqueDeclaration;
+  return historiqueDeclaration;
 };
