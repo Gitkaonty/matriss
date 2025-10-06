@@ -115,12 +115,8 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
   const listeEtatComm = await etatscomatrices.findAll({});
   const listeEtatPlp = await etatsplpmatrices.findAll({});
   const listeRubrique = await rubriquesmatrices.findAll({});
-<<<<<<< HEAD
-  const listeCompteRubrique = await compterubriquematrices.findAll({});
-=======
   const listeEtatCentresFiscales = await etatsCentresFiscalesmatrices.findAll({});
   const listeEtatDge = await etatsDgeMatrices.findAll({});
->>>>>>> jaela/Jaela_tva
 
   const createdExerciceInfosData = await exercice.findOne({
     where: { id: createExercice.id }
@@ -201,25 +197,6 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
     })
   })
 
-<<<<<<< HEAD
-  listeCompteRubrique.map(async (item) => {
-    await compterubriques.create({
-      id_compte: id_compte,
-      id_dossier: id_dossier,
-      id_exercice: createExercice.id,
-      id_etat: item.id_etat,
-      id_rubrique: item.id_rubrique,
-      compte: item.compte,
-      nature: item.nature,
-      senscalcul: item.senscalcul,
-      condition: item.condition,
-      equation: item.equation,
-      par_default: item.par_default,
-      active: item.active,
-      exercice: item.exercice,
-    })
-  })
-=======
   // // console.log(listeEtatCentresFiscales);
   // listeEtatCentresFiscales.map(async (item) => {
 
@@ -266,7 +243,6 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
     console.log('[Unified TVA] init error:', e?.message || e);
   }
 
->>>>>>> jaela/Jaela_tva
 
   listeRubrique.map(async (item) => {
     const copyrubriques = await rubriques.create({
