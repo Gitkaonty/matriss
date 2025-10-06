@@ -1,6 +1,6 @@
 // Contrôleur unifié pour l'historique des déclarations (IRSA/TVA)
 const db = require('../../Models');
-const HistoriqueIrsa = db.historiqueirsa; // table existante: historique_irsa
+const HistoriqueIrsa = db.historiqueDeclaration; // table existante: historique_irsa
 
 // POST /historique/declaration
 exports.createHistorique = async (req, res) => {
