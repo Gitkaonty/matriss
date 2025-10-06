@@ -172,13 +172,8 @@ export default function FonctionsComponent() {
 
     // Sauvegarde
     const handleSaveClick = (ids) => () => {
-<<<<<<< HEAD:front/kaonti/src/components/FonctionsComponent.jsx
-        if (editRow) {
-            axios.put(`/sociales/fonctions/${editRow.id}`, editRow)
-=======
         if(editRow){
             axios.put(`/parametres/fonction/${editRow.id}`, editRow)
->>>>>>> jaela/Jaela_tva:front/kaonti/src/components/menuComponent/Parametrages/fonctions/FonctionsComponent.jsx
                 .then(res => {
                     if (res.data && res.data.state) {
                         fetchFonctions();
@@ -196,13 +191,8 @@ export default function FonctionsComponent() {
                     }
                 })
                 .catch(() => toast.error('Erreur lors de la modification'));
-<<<<<<< HEAD:front/kaonti/src/components/FonctionsComponent.jsx
-        } else if (newRow) {
-            axios.post(`/sociales/fonctions`, newRow)
-=======
         } else if(newRow) {
             axios.post(`/parametres/fonction`, newRow)
->>>>>>> jaela/Jaela_tva:front/kaonti/src/components/menuComponent/Parametrages/fonctions/FonctionsComponent.jsx
                 .then(res => {
                     if (res.data && res.data.state) {
                         fetchFonctions();
