@@ -159,9 +159,20 @@ const createNotExistingCompte = async (req, res) => {
   }
 }
 
+function parseDate(str) {
+  if (!str) return null;
+  if (str.includes("/")) {
+    const [day, month, year] = str.split("/");
+    return new Date(`${year}-${month}-${day}`);
+  } else {
+    return new Date(`${str.substring(0, 4)}-${str.substring(4, 6)}-${str.substring(6, 8)}`);
+  }
+}
+
 const importJournal = async (req, res) => {
   try {
     const { compteId, userId, fileId, selectedPeriodeId, fileTypeCSV, valSelectCptDispatch, journalData } = req.body;
+    // return res.json({ state: true, msg: 'OK' });
 
     let resData = {
       state: false,
@@ -176,141 +187,81 @@ const importJournal = async (req, res) => {
       journals.destroy({
         where:
         {
-          id_compte: compteId,
-          id_dossier: fileId,
-          id_exercice: selectedPeriodeId,
+          id_compte: Number(compteId),
+          id_dossier: Number(fileId),
+          id_exercice: Number(selectedPeriodeId),
         }
       });
     }
 
     if (journalData.length > 0) {
-      for (let item of journalData) {
-        let codeJournalId = 0;
-        const idCodeJournal = await codejournals.findOne({
-          where:
-          {
-            id_compte: compteId,
-            id_dossier: fileId,
-            code: item.JournalCode
-          },
-        });
+      let importSuccess = 1;
 
-        codeJournalId = idCodeJournal.id;
+      // Grouper une seule fois
+      const grouped = journalData.reduce((acc, item) => {
+        if (!acc[item.EcritureNum]) acc[item.EcritureNum] = [];
+        acc[item.EcritureNum].push(item);
+        return acc;
+      }, {});
 
-        let compteNumId = 0;
-        let IdCompAuxNum = 0;
-        const idCompte = await dossierPlanComptable.findOne({
-          where:
-          {
-            id_compte: compteId,
-            id_dossier: fileId,
-            compte: item.CompteNum
-          },
-        });
+      // Pour chaque groupe
+      for (let ecritureNum in grouped) {
+        const lines = grouped[ecritureNum];
+        const newIdEcriture = Date.now(); // ou uuid si besoin
 
-        if (idCompte) {
-          compteNumId = idCompte.id;
-          IdCompAuxNum = idCompte.baseaux_id;
-        }
+        // Traiter chaque ligne du groupe
+        for (let item of lines) {
+          try {
+            // Récupération des IDs
+            const idCodeJournal = await codejournals.findOne({
+              where: { id_compte: compteId, id_dossier: fileId, code: item.JournalCode },
+            });
+            const codeJournalId = idCodeJournal?.id || 0;
 
-        // if(item.CompAuxNum !== ""){
-        //   const idCompteAux =await dossierPlanComptable.findOne({
-        //     where: 
-        //     {
-        //       id_compte: compteId,
-        //       id_dossier: fileId,
-        //       compte : item.CompAuxNum
-        //     },
-        //   });
-        //   IdCompAuxNum = idCompteAux.id;
-        // }else{
-        //   IdCompAuxNum = compteNumId;
-        // }
+            const idCompte = await dossierPlanComptable.findOne({
+              where: { id_compte: compteId, id_dossier: fileId, compte: item.CompteNum },
+            });
+            const compteNumId = idCompte?.id || 0;
+            const IdCompAuxNum = idCompte?.baseaux_id || compteNumId;
 
-        //date écriture
-        let dateEcrit = null;
-        if (item.EcritureDate !== '' && item.EcritureDate !== null) {
-          if (item.EcritureDate.includes("/")) {
-            const [day, month, year] = item.EcritureDate.split("/");
-            dateEcrit = new Date(`${year}-${month}-${day}`);
-          } else {
-            let year = item.EcritureDate.substring(0, 4);
-            let month = item.EcritureDate.substring(4, 6);
-            let day = item.EcritureDate.substring(6, 8);
+            // Dates
+            const dateEcrit = parseDate(item.EcritureDate);
+            const datePiece = parseDate(item.PieceDate);
+            const datelettrage = parseDate(item.DateLet);
 
-            dateEcrit = new Date(`${year}-${month}-${day}`);
+            // Montants
+            const debit = item.Debit ? parseFloat(item.Debit.replace(',', '.')) : 0;
+            const credit = item.Credit ? parseFloat(item.Credit.replace(',', '.')) : 0;
+
+            // Création journal
+            await journals.create({
+              id_compte: compteId,
+              id_dossier: fileId,
+              id_exercice: selectedPeriodeId,
+              id_ecriture: newIdEcriture,
+              dateecriture: dateEcrit,
+              id_journal: codeJournalId,
+              id_numcpt: compteNumId,
+              id_numcptcentralise: IdCompAuxNum,
+              piece: item.PieceRef,
+              piecedate: datePiece,
+              libelle: item.EcritureLib,
+              debit,
+              credit,
+              devise: item.Idevise || 'MGA',
+              lettrage: item.EcritureLet || null,
+              lettragedate: datelettrage || null,
+              saisiepar: userId,
+              modifierpar: userId || 0,
+            });
+
+            importSuccess = importSuccess * 1;
+          } catch (error) {
+            importSuccess = importSuccess * 0;
+            resData.msg = error;
           }
         }
-
-        //date pièce
-        let datePiece = null;
-        if (item.PieceDate !== '' && item.PieceDate !== null) {
-          if (item.PieceDate.includes("/")) {
-            const [day1, month1, year1] = item.PieceDate.split("/");
-            datePiece = new Date(`${year1}-${month1}-${day1}`);
-          } else {
-            let year1 = item.PieceDate.substring(0, 4);
-            let month1 = item.PieceDate.substring(4, 6);
-            let day1 = item.PieceDate.substring(6, 8);
-
-            datePiece = new Date(`${year1}-${month1}-${day1}`);
-          }
-        }
-
-        //date lettrage
-        let datelettrage = null;
-        if (item.DateLet !== '' && item.DateLet !== null) {
-          if (item.DateLet.includes("/")) {
-            const [day2, month2, year2] = item.DateLet.split("/");
-            datelettrage = new Date(`${year2}-${month2}-${day2}`);
-          } else {
-            let year2 = item.DateLet.substring(0, 4);
-            let month2 = item.DateLet.substring(4, 6);
-            let day2 = item.DateLet.substring(6, 8);
-
-            datelettrage = new Date(`${year2}-${month2}-${day2}`);
-          }
-        }
-
-        //transformation de débit en double précision si c'est null ou vide
-        let debit = 0;
-        if (item.Debit !== null && item.Debit !== "") {
-          debit = item.Debit.replace(',', '.')
-        }
-
-        let credit = 0;
-        if (item.Credit !== null && item.Credit !== "") {
-          credit = item.Credit.replace(',', '.')
-        }
-
-        //import du journal dans la table journal
-        try {
-          await journals.create({
-            id_compte: compteId,
-            id_dossier: fileId,
-            id_exercice: selectedPeriodeId,
-            id_ecriture: item.EcritureNum,
-            dateecriture: dateEcrit,
-            id_journal: codeJournalId,
-            id_numcpt: compteNumId,
-            id_numcptcentralise: IdCompAuxNum,
-            piece: item.PieceRef,
-            piecedate: datePiece,
-            libelle: item.EcritureLib,
-            debit: debit,
-            credit: credit,
-            devise: item.Idevise,
-            lettrage: item.EcritureLet,
-            lettragedate: datelettrage,
-            saisiepar: userId,
-          });
-
-          importSuccess = importSuccess * 1;
-        } catch (error) {
-          importSuccess = importSuccess * 0;
-          resData.msg = error;
-        }
-      };
+      }
     } else {
       resData.msg = `${journalData.length} lignes ont été importées avec succès`;
       resData.nbrligne = journalData.length;
@@ -330,7 +281,8 @@ const importJournal = async (req, res) => {
 
     return res.json(resData);
   } catch (error) {
-    console.log(error);
+    importSuccess = importSuccess * 0;
+    resData.msg = error.message || JSON.stringify(error);
   }
 }
 

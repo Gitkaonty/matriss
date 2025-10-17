@@ -463,7 +463,7 @@ export default function HomePage() {
           />
         </Stack>
 
-        <Stack style={{ marginBottom: "5px" }} />
+        <Stack style={{ marginBottom: "55px" }} />
 
         <List >
           {MenuSide.map(item => (

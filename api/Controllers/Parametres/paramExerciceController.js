@@ -36,8 +36,8 @@ const liasseses = db.liasseses;
 const etatsCentresFiscales = db.etatsCentresFiscales;
 const etatsCentresFiscalesmatrices = db.etatsCentresFiscalesmatrices;
 
-// const etatsDge = db.etatsDge;
-// const etatsDgeMatrices = db.etatsDgeMatrices;
+const etatsDge = db.etatsDge;
+const etatsDgeMatrices = db.etatsDgeMatrices;
 
 // Unified Formulaire TVA
 const formulaireTvaAnnexes = db.formulaireTvaAnnexes;
@@ -115,6 +115,7 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
   const listeEtatComm = await etatscomatrices.findAll({});
   const listeEtatPlp = await etatsplpmatrices.findAll({});
   const listeRubrique = await rubriquesmatrices.findAll({});
+  const listeCompteRubrique = await compterubriquematrices.findAll({});
   const listeEtatCentresFiscales = await etatsCentresFiscalesmatrices.findAll({});
   //const listeEtatDge = await etatsDgeMatrices.findAll({});
 
@@ -194,6 +195,24 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
       commercant_valeur: item.commercant_valeur,
       producteur_quantite: item.producteur_quantite,
       producteur_valeur: item.producteur_valeur,
+    })
+  })
+
+  listeCompteRubrique.map(async (item) => {
+    await compterubriques.create({
+      id_compte: id_compte,
+      id_dossier: id_dossier,
+      id_exercice: createExercice.id,
+      id_etat: item.id_etat,
+      id_rubrique: item.id_rubrique,
+      compte: item.compte,
+      nature: item.nature,
+      senscalcul: item.senscalcul,
+      condition: item.condition,
+      equation: item.equation,
+      par_default: item.par_default,
+      active: item.active,
+      exercice: item.exercice,
     })
   })
 

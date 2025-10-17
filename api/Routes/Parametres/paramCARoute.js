@@ -16,10 +16,10 @@ router.post('/addAxe', paramCAController.addAxe);
 router.post('/addSection', paramCAController.addSection);
 
 // Ajouter ou modifier une axe
-router.post('/addOrUpdateAxes/:id_compte/:id_dossier', paramCAController.addOrUpdateAxes);
+router.post('/addOrUpdateAxes', paramCAController.addOrUpdateAxes);
 
 // Ajouter ou modifier une section
-router.post('/addOrUpdateSections/:id_compte/:id_dossier', paramCAController.addOrUpdateSections);
+router.post('/addOrUpdateSections', paramCAController.addOrUpdateSections);
 
 // Supprimer les axes selectionnées
 router.post('/deleteAxes', paramCAController.deleteAxes);

@@ -4,7 +4,8 @@ import {
     InputLabel, Select, MenuItem,
     FormHelperText,
     Input,
-    IconButton
+    IconButton,
+    Checkbox
 } from '@mui/material';
 import Tooltip from '@mui/material/Tooltip';
 import toast from 'react-hot-toast';
@@ -23,6 +24,7 @@ import PopupConfirmDelete from '../../popupConfirmDelete';
 import { init } from '../../../../../init';
 
 const DatagridTableDpComMappingDetail = ({ compteId, fileId, exerciceId, etatId, rubriqueId, nature, dComRubriqueData }) => {
+    console.log('rubriqueId : ', rubriqueId);
     let initial = init[0];
     const DataDetail = dComRubriqueData;
     const [compteRubriqueData, setCompteRubriqueData] = useState([]);
@@ -31,8 +33,11 @@ const DatagridTableDpComMappingDetail = ({ compteId, fileId, exerciceId, etatId,
     const [compteValidationColor, setCompteValidationColor] = useState('transparent');
     const [sensCalculValidationColor, setSensCalculValidationColor] = useState('transparent');
 
+    const [selectedRow, setSelectedRow] = useState([]);
+
     const [selectedRowId, setSelectedRowId] = useState([]);
     const [rowModesModel, setRowModesModel] = useState({});
+    const [disableSaveBouton, setDisableSaveBouton] = useState(true);
     const [disableModifyBouton, setDisableModifyBouton] = useState(true);
     const [disableCancelBouton, setDisableCancelBouton] = useState(true);
     const [disableDeleteBouton, setDisableDeleteBouton] = useState(true);
@@ -71,6 +76,7 @@ const DatagridTableDpComMappingDetail = ({ compteId, fileId, exerciceId, etatId,
             compte: '',
             senscalcul: '',
             condition: '',
+            active: true,
         },
         validationSchema: Yup.object({
             nature: Yup.string().required("Ce champ est obligatoire"),
@@ -173,7 +179,7 @@ const DatagridTableDpComMappingDetail = ({ compteId, fileId, exerciceId, etatId,
             editable: editableRow,
             renderEditCell: (params) => {
                 return (
-                    <input
+                    <Checkbox
                         // value={formNewParam.values.active}
                         checked={formNewParam.values.active}
                         type="checkbox"
@@ -189,11 +195,13 @@ const DatagridTableDpComMappingDetail = ({ compteId, fileId, exerciceId, etatId,
         if (ids.length === 1) {
             setSelectedRowId(ids);
             setDisableModifyBouton(false);
+            setDisableSaveBouton(true);
             setDisableCancelBouton(false);
             setDisableDeleteBouton(false);
         } else {
             setSelectedRowId([]);
             setDisableModifyBouton(true);
+            setDisableSaveBouton(false);
             setDisableCancelBouton(true);
             setDisableDeleteBouton(true);
         }
@@ -224,6 +232,7 @@ const DatagridTableDpComMappingDetail = ({ compteId, fileId, exerciceId, etatId,
         formNewParam.setFieldValue("senscalcul", selectedRowInfos[0]?.senscalcul ? selectedRowInfos[0]?.senscalcul : '');
 
         setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
+        setDisableSaveBouton(false);
     };
 
     const handleSaveClick = (id) => () => {
@@ -252,10 +261,14 @@ const DatagridTableDpComMappingDetail = ({ compteId, fileId, exerciceId, etatId,
         if (saveBoolCompte && saveBoolSensCalcul) {
             setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
 
-            axios.post(`/paramMappingCompte/MappingCompteAdd`, formNewParam.values).then((response) => {
+            const dataToSend = { ...formNewParam.values, compteId: compteId, exerciceId: exerciceId, fileId: fileId, rubriqueId: rubriqueId };
+
+            axios.post(`/paramMappingCompte/MappingCompteAdd`, dataToSend).then((response) => {
                 const resData = response.data;
 
                 if (resData.state) {
+                    setDisableAddRowBouton(false);
+                    setDisableSaveBouton(true);
                     formNewParam.resetForm();
                     getListeCompteRubriqueAfterUpdating();
                     toast.success(resData.msg);
@@ -270,12 +283,19 @@ const DatagridTableDpComMappingDetail = ({ compteId, fileId, exerciceId, etatId,
 
     const handleOpenDialogConfirmDeleteRow = () => {
         setOpenDialogDeleteRow(true);
+        setDisableAddRowBouton(false);
     }
 
     const deleteRow = (value) => {
         if (value === true) {
             if (selectedRowId.length === 1) {
                 const idToDelete = selectedRowId[0];
+
+                if (idToDelete < 0) {
+                    setOpenDialogDeleteRow(false);
+                    setCompteRubriqueData(compteRubriqueData.filter((row) => row.id !== idToDelete));
+                    return;
+                }
 
                 let DefaultRow = true;
                 const RowInfos = compteRubriqueData.filter((row) => row.id === idToDelete)
@@ -290,6 +310,7 @@ const DatagridTableDpComMappingDetail = ({ compteId, fileId, exerciceId, etatId,
                     axios.post(`/paramMappingCompte/mappingCompteDelete`, { fileId, compteId, exerciceId, idToDelete }).then((response) => {
                         const resData = response.data;
                         if (resData.state) {
+                            setDisableAddRowBouton(false);
                             setOpenDialogDeleteRow(false);
                             setCompteRubriqueData(compteRubriqueData.filter((row) => row.id !== selectedRowId[0]));
                             toast.success(resData.msg);
@@ -312,6 +333,13 @@ const DatagridTableDpComMappingDetail = ({ compteId, fileId, exerciceId, etatId,
             ...rowModesModel,
             [id]: { mode: GridRowModes.View, ignoreModifications: true },
         });
+        setDisableAddRowBouton(false);
+        setDisableSaveBouton(true);
+        setDisableDeleteBouton(true);
+        setDisableModifyBouton(true);
+        setDisableCancelBouton(true);
+        setSelectedRow([]);
+        setSelectedRowId([]);
     };
 
     const processRowUpdate = (newRow) => {
@@ -328,24 +356,29 @@ const DatagridTableDpComMappingDetail = ({ compteId, fileId, exerciceId, etatId,
         if (selectedRowId.length > 1 || selectedRowId.length === 0) {
             setEditableRow(false);
             setDisableModifyBouton(true);
+            setDisableSaveBouton(true);
             setDisableCancelBouton(true);
-            toast.error("Sélectionner une seule ligne pour pouvoir la modifier");
+            toast.error("Sélectionnez une seule ligne pour pouvoir la modifier");
         } else {
             setDisableModifyBouton(false);
+            setDisableSaveBouton(false);
             setDisableCancelBouton(false);
             if (!selectedRowId.includes(params.id)) {
                 setEditableRow(false);
-                toast.error("Sélectionner une ligne pour pouvoir la modifier");
+                toast.error("Sélectionnez une ligne pour pouvoir la modifier");
             } else {
                 setEditableRow(true);
             }
         }
-
     };
 
     //Ajouter une ligne dans le tableau
     const handleOpenDialogAddNewRow = () => {
-        const newId = -1 * (getMaxID(compteRubriqueData) + 1);
+        setDisableModifyBouton(false);
+        setDisableCancelBouton(false);
+        setDisableDeleteBouton(false);
+
+        const newId = -Date.now();
         formNewParam.setFieldValue("idParam", newId);
         formNewParam.setFieldValue("par_default", false);
         const newRow = {
@@ -356,6 +389,9 @@ const DatagridTableDpComMappingDetail = ({ compteId, fileId, exerciceId, etatId,
             active: true,
         };
         setCompteRubriqueData([...compteRubriqueData, newRow]);
+        setSelectedRowId([newRow.id]);
+        setSelectedRow([newRow.id]);
+        setDisableAddRowBouton(true);
     }
 
     //récupérer le numéro id le plus grand dans le tableau
@@ -380,6 +416,19 @@ const DatagridTableDpComMappingDetail = ({ compteId, fileId, exerciceId, etatId,
     //enregistrer le choix activer ou non d'une nouvelle ligne ou de la modification en cours
     const handleCheckboxChange = (value) => {
         formNewParam.setFieldValue("active", value);
+    }
+
+    const deselectRow = (ids) => {
+        const deselected = selectedRowId.filter(id => !ids.includes(id));
+
+        const updatedRowModes = { ...rowModesModel };
+        deselected.forEach((id) => {
+            updatedRowModes[id] = { mode: GridRowModes.View, ignoreModifications: true };
+        });
+        setRowModesModel(updatedRowModes);
+
+        setDisableAddRowBouton(false);
+        setSelectedRowId(ids);
     }
 
     return (
@@ -433,7 +482,7 @@ const DatagridTableDpComMappingDetail = ({ compteId, fileId, exerciceId, etatId,
                     <Tooltip title="Sauvegarder les modifications">
                         <span>
                             <IconButton
-                                disabled={!formNewParam.isValid}
+                                disabled={disableSaveBouton}
                                 variant="contained"
                                 onClick={handleSaveClick(selectedRowId)}
                                 style={{
@@ -516,7 +565,9 @@ const DatagridTableDpComMappingDetail = ({ compteId, fileId, exerciceId, etatId,
                     editMode='row'
                     onRowClick={(e) => handleCellEditCommit(e.row)}
                     onRowSelectionModelChange={ids => {
+                        setSelectedRow(ids);
                         saveSelectedRow(ids);
+                        deselectRow(ids);
                     }}
                     rowModesModel={rowModesModel}
                     onRowModesModelChange={handleRowModesModelChange}
@@ -534,6 +585,39 @@ const DatagridTableDpComMappingDetail = ({ compteId, fileId, exerciceId, etatId,
                     checkboxSelection={DataGridStyle.checkboxSelection}
                     columnVisibilityModel={{
                         id: false,
+                    }}
+                    rowSelectionModel={selectedRow}
+                    onRowEditStart={(params, event) => {
+                        if (!selectedRow.length || selectedRow[0] !== params.id) {
+                            event.defaultMuiPrevented = true;
+                        }
+                        if (selectedRow.includes(params.id)) {
+                            setDisableAddRowBouton(true);
+                            event.stopPropagation();
+
+                            const rowId = params.id;
+                            const rowData = params.row;
+
+                            setCompteValidationColor('transparent');
+                            setSensCalculValidationColor('transparent');
+
+                            if (rowData.par_default) {
+                                setDisableDefaultFieldModif(true);
+                            } else {
+                                setDisableDefaultFieldModif(false);
+                            }
+
+                            formNewParam.setFieldValue("idParam", rowId);
+                            formNewParam.setFieldValue("compte", rowData.compte ?? '');
+                            formNewParam.setFieldValue("senscalcul", rowData.senscalcul ?? '');
+                            formNewParam.setFieldValue("active", rowData.active ?? false);
+
+                            setRowModesModel((oldModel) => ({
+                                ...oldModel,
+                                [rowId]: { mode: GridRowModes.Edit },
+                            }));
+                            setDisableSaveBouton(false);
+                        }
                     }}
                 />
             </Stack>

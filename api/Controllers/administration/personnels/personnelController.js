@@ -48,16 +48,99 @@ exports.getOne = async (req, res) => {
 // Ajout d'un personnel
 exports.create = async (req, res) => {
   try {
-    console.log('--- Appel à POST /sociales/personnel ---');
-    console.log('Données reçues pour création personnel:', req.body);
-    const { nom, prenom, matricule, id_fonction, id_classe, date_entree, date_sortie, actif, numero_cnaps, cin_ou_carte_resident, nombre_enfants_charge, id_dossier, id_compte } = req.body;
-    if (!nom || !prenom || !id_fonction || !id_classe || !date_entree) {
-      console.error('Champs obligatoires manquants:', { nom, prenom, id_fonction, id_classe, date_entree });
-      return res.json({ state: false, msg: 'Champs obligatoires manquants', fields: { nom, prenom, id_fonction, id_classe, date_entree, nombre_enfants_charge } });
+    const {
+      nom,
+      prenom,
+      matricule,
+      id_fonction,
+      id_classe,
+      date_entree,
+      date_sortie,
+      actif,
+      numero_cnaps,
+      cin_ou_carte_resident,
+      nombre_enfants_charge,
+      fileId,
+      compteId,
+      idParam
+    } = req.body;
+
+    let resData = {
+      state: false,
+      msg: 'Une erreur est survenue au moment du traitement.',
     }
-    const personnel = await Personnel.create({ nom, prenom, matricule, id_fonction, id_classe, date_entree, date_sortie, actif, numero_cnaps, cin_ou_carte_resident, nombre_enfants_charge, id_dossier, id_compte });
-    console.log('Personnel créé avec succès:', personnel);
-    return res.json({ state: true, msg: 'Personnel ajouté', data: personnel });
+
+    if (!nom || !prenom || !id_fonction || !id_classe || !date_entree || !date_sortie) {
+      return res.json({ state: false, msg: 'Champs obligatoires manquants' });
+    }
+
+    const id_compte = parseInt(compteId);
+    const id_dossier = parseInt(fileId);
+    const id = parseInt(idParam);
+
+    if (isNaN(id) || isNaN(id_compte) || isNaN(id_dossier)) {
+      return res.status(400).json({
+        state: false,
+        message: "id_compte ou id_dossier invalide"
+      });
+    }
+
+    const testIfExist = await Personnel.findAll({
+      where: {
+        id,
+        id_compte,
+        id_dossier,
+      }
+    })
+
+    if (testIfExist.length === 0) {
+      const personnelAdded = await Personnel.create({
+        id_compte,
+        id_dossier,
+        nom,
+        prenom,
+        matricule,
+        id_fonction,
+        id_classe,
+        date_entree,
+        date_sortie,
+        actif,
+        numero_cnaps,
+        cin_ou_carte_resident,
+        nombre_enfants_charge,
+      })
+      if (personnelAdded) {
+        resData.state = true;
+        resData.msg = "Nouvelle ligne sauvegardée avec succès.";
+      } else {
+        resData.state = false;
+        resData.msg = "Une erreur est survenue au moment du traitement des données";
+      }
+    } else {
+      const presonnelUpdated = await Personnel.update({
+        nom,
+        prenom,
+        matricule,
+        id_fonction,
+        id_classe,
+        date_entree,
+        date_sortie,
+        actif,
+        numero_cnaps,
+        cin_ou_carte_resident,
+        nombre_enfants_charge,
+      }, {
+        where: { id }
+      });
+      if (presonnelUpdated) {
+        resData.state = true;
+        resData.msg = "Modification effectuée avec succès.";
+      } else {
+        resData.state = false;
+        resData.msg = "Une erreur est survenue au moment du traitement des données";
+      }
+    }
+    return res.json(resData);
   } catch (error) {
     console.error('Erreur lors de la création du personnel:', error);
     return res.json({ state: false, msg: "Erreur lors de l'ajout", error: error.message, stack: error.stack });

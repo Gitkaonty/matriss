@@ -29,7 +29,7 @@ import useAuth from '../../../../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
 import axios from '../../../../../config/axios';
 import toast from 'react-hot-toast';
-import { useFormik } from 'formik';
+import {     } from 'formik';
 import * as Yup from "yup";
 
 export default function ParamChiffreAffairesComponent() {
@@ -43,12 +43,16 @@ export default function ParamChiffreAffairesComponent() {
     const [listeCodeTva, setListeCodeTva] = useState([]);
     const [listeCodeTvaUnfiltered, setListeCodeTvaUnfiltered] = useState([]);
 
+    const [selectedRow, setSelectedRow] = useState([]);
+
     const [selectedRowId, setSelectedRowId] = useState([]);
     const [rowModesModel, setRowModesModel] = useState({});
     const [disableModifyBouton, setDisableModifyBouton] = useState(true);
     const [disableCancelBouton, setDisableCancelBouton] = useState(true);
     const [disableSaveBouton, setDisableSaveBouton] = useState(true);
     const [disableDeleteBouton, setDisableDeleteBouton] = useState(true);
+    const [disableAddRowBouton, setDisableAddRowBouton] = useState(false);
+
     const [editableRow, setEditableRow] = useState(true);
     const [openDialogDeleteRow, setOpenDialogDeleteRow] = useState(false);
     const [listeCptAssocie, setListeCptAssocie] = useState([]);
@@ -214,7 +218,7 @@ export default function ParamChiffreAffairesComponent() {
             type: 'singleSelect',
             valueOptions: pc?.map((code) => code.compte),
             sortable: true,
-            width: 200,
+            flex: 1,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
@@ -258,7 +262,7 @@ export default function ParamChiffreAffairesComponent() {
             headerName: 'Libellé',
             type: 'string',
             sortable: true,
-            width: 400,
+            flex: 2.5,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
@@ -288,7 +292,7 @@ export default function ParamChiffreAffairesComponent() {
             type: 'singleSelect',
             valueOptions: listeCodeTva.map((row) => row.code),
             sortable: true,
-            width: 150,
+            flex: 0.5,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
@@ -369,7 +373,7 @@ export default function ParamChiffreAffairesComponent() {
             headerName: 'Déscription',
             type: 'string',
             sortable: true,
-            width: 750,
+            flex: 2.5,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
@@ -400,13 +404,13 @@ export default function ParamChiffreAffairesComponent() {
         if (ids.length === 1) {
             setSelectedRowId(ids);
             setDisableModifyBouton(false);
-            setDisableSaveBouton(false);
+            setDisableSaveBouton(true);
             setDisableCancelBouton(false);
             setDisableDeleteBouton(false);
         } else {
             setSelectedRowId([]);
             setDisableModifyBouton(true);
-            setDisableSaveBouton(true);
+            setDisableSaveBouton(false);
             setDisableCancelBouton(true);
             setDisableDeleteBouton(true);
         }
@@ -483,7 +487,9 @@ export default function ParamChiffreAffairesComponent() {
                 const resData = response.data;
 
                 if (resData.state) {
+                    setDisableAddRowBouton(false);
                     setDisableSaveBouton(true);
+                    setDisableCancelBouton(true);
 
                     formikNewParamTva.resetForm();
                     getListeParamTva(fileId);
@@ -505,9 +511,15 @@ export default function ParamChiffreAffairesComponent() {
         if (value === true) {
             if (selectedRowId.length === 1) {
                 const idToDelete = selectedRowId[0];
+                if (idToDelete < 0) {
+                    setOpenDialogDeleteRow(false);
+                    setParamTva(paramTva.filter((row) => row.id !== idToDelete));
+                    return;
+                }
                 axios.post(`/paramTva/paramTvaDelete`, { fileId, compteId, idToDelete }).then((response) => {
                     const resData = response.data;
                     if (resData.state) {
+                        setDisableAddRowBouton(false);
                         setOpenDialogDeleteRow(false);
                         setParamTva(paramTva.filter((row) => row.id !== selectedRowId[0]));
                         toast.success(resData.msg);
@@ -528,6 +540,13 @@ export default function ParamChiffreAffairesComponent() {
             ...rowModesModel,
             [id]: { mode: GridRowModes.View, ignoreModifications: true },
         });
+        setDisableAddRowBouton(false);
+        setDisableSaveBouton(true);
+        setDisableDeleteBouton(true);
+        setDisableModifyBouton(true);
+        setDisableCancelBouton(true);
+        setSelectedRow([]);
+        setSelectedRowId([]);
     };
 
     const processRowUpdate = (newRow) => {
@@ -539,6 +558,7 @@ export default function ParamChiffreAffairesComponent() {
 
     const handleRowModesModelChange = (newRowModesModel) => {
         setRowModesModel(newRowModesModel);
+        setDisableAddRowBouton(false);
     };
 
     const handleCellEditCommit = (params) => {
@@ -547,14 +567,14 @@ export default function ParamChiffreAffairesComponent() {
             setDisableModifyBouton(true);
             setDisableSaveBouton(true);
             setDisableCancelBouton(true);
-            toast.error("sélectionnez une seule ligne pour pouvoir la modifier");
+            toast.error("Sélectionnez une seule ligne pour pouvoir la modifier");
         } else {
             setDisableModifyBouton(false);
             setDisableSaveBouton(false);
             setDisableCancelBouton(false);
             if (!selectedRowId.includes(params.id)) {
                 setEditableRow(false);
-                toast.error("sélectionnez une ligne pour pouvoir la modifier");
+                toast.error("Sélectionnez une ligne pour pouvoir la modifier");
             } else {
                 setEditableRow(true);
             }
@@ -563,7 +583,11 @@ export default function ParamChiffreAffairesComponent() {
 
     //Ajouter une ligne dans le tableau liste associé
     const handleOpenDialogAddNewAssocie = () => {
-        const newId = -1 * (getMaxID(paramTva) + 1);
+        setDisableModifyBouton(false);
+        setDisableCancelBouton(false);
+        setDisableDeleteBouton(false);
+
+        const newId = -Date.now();
 
         formikNewParamTva.setFieldValue("idDossier", fileId);
         const newRow = {
@@ -573,6 +597,9 @@ export default function ParamChiffreAffairesComponent() {
             libelle: '',
         };
         setParamTva([...paramTva, newRow]);
+        setSelectedRowId([newRow.id]);
+        setSelectedRow([newRow.id]);
+        setDisableAddRowBouton(true);
     }
 
     //récupérer le numéro id le plus grand dans le tableau
@@ -593,6 +620,19 @@ export default function ParamChiffreAffairesComponent() {
             return compte.startsWith('7') && code.startsWith('1');
         });
     }, [paramTva]);
+
+    const deselectRow = (ids) => {
+        const deselected = selectedRowId.filter(id => !ids.includes(id));
+
+        const updatedRowModes = { ...rowModesModel };
+        deselected.forEach((id) => {
+            updatedRowModes[id] = { mode: GridRowModes.View, ignoreModifications: true };
+        });
+        setRowModesModel(updatedRowModes);
+
+        setDisableAddRowBouton(false);
+        setSelectedRowId(ids);
+    }
 
     return (
         <Box>
@@ -623,6 +663,7 @@ export default function ParamChiffreAffairesComponent() {
                             direction={"row"} justifyContent={"right"}>
                             <Tooltip title="Ajouter une ligne">
                                 <IconButton
+                                    disabled={disableAddRowBouton}
                                     variant="contained"
                                     onClick={handleOpenDialogAddNewAssocie}
                                     style={{
@@ -655,7 +696,7 @@ export default function ParamChiffreAffairesComponent() {
                             <Tooltip title="Sauvegarder les modifications">
                                 <span>
                                     <IconButton
-                                        disabled={!formikNewParamTva.isValid}
+                                        disabled={disableSaveBouton}
                                         variant="contained"
                                         onClick={handleSaveClick(selectedRowId)}
                                         style={{
@@ -725,7 +766,9 @@ export default function ParamChiffreAffairesComponent() {
                                 onRowClick={(e) => handleCellEditCommit(e.row)}
                                 // onCellClick={(e) => test(e.row)}
                                 onRowSelectionModelChange={ids => {
+                                    setSelectedRow(ids);
                                     saveSelectedRow(ids);
+                                    deselectRow(ids);
                                 }}
                                 rowModesModel={rowModesModel}
                                 onRowModesModelChange={handleRowModesModelChange}
@@ -742,6 +785,49 @@ export default function ParamChiffreAffairesComponent() {
                                 checkboxSelection={DataGridStyle.checkboxSelection}
                                 columnVisibilityModel={{
                                     id: false,
+                                }}
+                                rowSelectionModel={selectedRow}
+                                onRowEditStart={(params, event) => {
+                                    if (!selectedRow.length || selectedRow[0] !== params.id) {
+                                        event.defaultMuiPrevented = true;
+                                    }
+                                    if (selectedRow.includes(params.id)) {
+                                        setDisableAddRowBouton(true);
+                                        event.stopPropagation();
+
+                                        const rowId = params.id;
+                                        const rowData = params.row;
+
+                                        const compteInit = rowData;
+                                        const compte = compteInit['dossierplancomptable.compte'];
+                                        const libelle = compteInit['dossierplancomptable.libelle'];
+                                        const description = compteInit['listecodetva.libelle'];
+
+                                        if (compte?.startsWith('7')) {
+                                            const filteredCode = listeCodeTvaUnfiltered?.filter((row) => row.nature === 'DED');
+                                            setListeCodeTva(filteredCode);
+                                        } else if (compte?.startsWith('4457')) {
+                                            const filteredCode = listeCodeTvaUnfiltered?.filter((row) => row.nature === 'COLL');
+                                            setListeCodeTva(filteredCode);
+                                        } else {
+                                            GetListeCodeTva();
+                                        }
+
+                                        formikNewParamTva.setFieldValue("idCode", id);
+                                        formikNewParamTva.setFieldValue("idDossier", fileId);
+                                        formikNewParamTva.setFieldValue("idCompte", compteId);
+                                        formikNewParamTva.setFieldValue("compte", rowData.id_cptcompta);
+                                        formikNewParamTva.setFieldValue("libelle", libelle);
+                                        formikNewParamTva.setFieldValue("code", rowData.type);
+                                        formikNewParamTva.setFieldValue("codedescription", description);
+
+                                        setRowModesModel((oldModel) => ({
+                                            ...oldModel,
+                                            [rowId]: { mode: GridRowModes.Edit },
+                                        }));
+
+                                        setDisableSaveBouton(false);
+                                    }
                                 }}
                             />
                         </Stack>

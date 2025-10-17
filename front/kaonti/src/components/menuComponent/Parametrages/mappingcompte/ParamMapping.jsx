@@ -28,9 +28,14 @@ import DatagridTableDpMappingDetail from '../../../componentsTools/MappingCompte
 import DatagridTableDpComMappingDetail from '../../../componentsTools/MappingCompte/Dcom/DatagridDcomMappingDetail';
 
 export default function ParamMappingComponent() {
+    let tabEbilanParamMapping = "", tabParamMapping = "";
+    if (typeof window !== undefined) {
+        tabEbilanParamMapping = localStorage.getItem('valueEbilanParamMapping');
+        tabParamMapping = localStorage.getItem('valueParamMapping');
+    }
     let initial = init[0];
-    const [valueEbilan, setValueEbilan] = useState("1");
-    const [value, setValue] = useState("1");
+    const [valueEbilanParamMapping, setValueEbilanParamMapping] = useState(tabEbilanParamMapping || "1");
+    const [valueParamMapping, setValueParamMapping] = useState(tabParamMapping || "1");
 
     const [fileInfos, setFileInfos] = useState('');
     const [fileId, setFileId] = useState(0);
@@ -91,7 +96,7 @@ export default function ParamMappingComponent() {
     const [showUpdatePopupBhiapc, setShowUpdatePopupBhiapc] = useState(false);
 
     const [dComData, setDComData] = useState([]);
-    const [dComSelectedRubriqueId, setDComSelectedRubriqueId] = useState([]);
+    const [dComSelectedRubriqueId, setDComSelectedRubriqueId] = useState(0);
     const [dComRubriqueData, setDComRubriqueData] = useState([]);
 
     const phrase1_1 = "Voulez-vous vraiment restaurer les paramétrages de calcul par les paramétrages par défaut pour le formulaire du ";
@@ -232,7 +237,8 @@ export default function ParamMappingComponent() {
 
     //Choix TAB value-------------------------------------------------------------------------------------
     const handleChangeTabEbilan = (event, newValue) => {
-        setValueEbilan(newValue);
+        setValueEbilanParamMapping(newValue);
+        localStorage.setItem('valueEbilanParamMapping', newValue);
 
         // if (newValue === "1") {
         //     setBilanRubriqueData([]);
@@ -254,7 +260,8 @@ export default function ParamMappingComponent() {
     };
 
     const handleChangeTab = (event, newValue) => {
-        setValue(newValue);
+        setValueParamMapping(newValue);
+        localStorage.setItem('valueParamMapping', newValue);
     }
 
     //Choix exercice
@@ -803,8 +810,6 @@ export default function ParamMappingComponent() {
         getListeRubriqueDCom();
     }, [compteId, fileId, selectedExerciceId])
 
-    console.log('dComSelectedRubriqueId : ', dComSelectedRubriqueId);
-
     return (
         <Box>
             {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
@@ -917,7 +922,7 @@ export default function ParamMappingComponent() {
                         </Stack>
 
                         <Box sx={{ width: '100%', height: '100%', typography: 'body1' }}>
-                            <TabContext value={value} style={{ height: '100%' }}>
+                            <TabContext value={valueParamMapping} style={{ height: '100%' }}>
                                 <Box >
                                     <TabList onChange={handleChangeTab} aria-label="lab API tabs example" variant='scrollable'>
                                         <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Ebilan" value="1" />
@@ -926,7 +931,7 @@ export default function ParamMappingComponent() {
                                 </Box>
 
                                 <TabPanel value="1" style={{ height: '100%', }}>
-                                    <TabContext value={valueEbilan} style={{ height: '100%' }}>
+                                    <TabContext value={valueEbilanParamMapping} style={{ height: '100%' }}>
                                         <Box >
                                             <TabList onChange={handleChangeTabEbilan} aria-label="lab API tabs example" variant='scrollable'>
                                                 <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Bilan" value="1" />

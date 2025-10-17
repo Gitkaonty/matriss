@@ -9,6 +9,11 @@ const fs = require('fs');
 const path = require('path');
 const basePath = path.join(__dirname, '..', '..', 'public', 'ScanEcriture');
 
+// Fonction pour plurieliser un mot
+function pluralize(count, word) {
+    return count > 1 ? word + 's' : word;
+}
+
 exports.getAllDevises = async (req, res) => {
     try {
         const id = req.params.id;
@@ -143,7 +148,7 @@ exports.addJournal = async (req, res) => {
         }
 
         return res.json({
-            message: `${count} ligne(s) ajoutée(s) avec succès`,
+            message: `${count} ${pluralize(count, 'ligne')} ${pluralize(count, 'ajoutée')} avec succès`,
             data: newTableRows,
             state: true
         });
@@ -304,7 +309,7 @@ exports.modificationJournal = async (req, res) => {
         }
 
         return res.json({
-            message: `${modification} ligne(s) modifiée(s), ${ajout} ajoutée(s), ${deletedIds.length} supprimée(s)`,
+            message: `${modification} ${pluralize(modification, 'ligne')} ${pluralize(modification, 'modifiée')}, ${ajout} ${pluralize(ajout, 'ajoutée')}, ${deletedIds.length} ${pluralize(deletedIds.length, 'supprimée')}`,
             state: true
         });
 

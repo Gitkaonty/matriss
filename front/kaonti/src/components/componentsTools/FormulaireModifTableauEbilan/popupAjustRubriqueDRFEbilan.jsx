@@ -32,20 +32,22 @@ let initial = init[0];
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialogContent-root': {
-      padding: theme.spacing(2),
+        padding: theme.spacing(2),
     },
     '& .MuiDialogActions-root': {
-      padding: theme.spacing(1),
+        padding: theme.spacing(1),
     },
-  }));
+}));
 
-const PopupAjustRubriqueDRFEbilan = ({actionState, row, column, value }) =>{
+const PopupAjustRubriqueDRFEbilan = ({ actionState, row, column, value }) => {
     const [selectedRowId, setSelectedRowId] = useState([]);
     const [rowModesModel, setRowModesModel] = useState({});
     const [disableModifyBouton, setDisableModifyBouton] = useState(true);
     const [disableCancelBouton, setDisableCancelBouton] = useState(true);
     const [disableSaveBouton, setDisableSaveBouton] = useState(true);
     const [disableDeleteBouton, setDisableDeleteBouton] = useState(true);
+    const [disableAddRowBouton, setDisableAddRowBouton] = useState(false);
+
     const [editableRow, setEditableRow] = useState(true);
     const [openDialogDeleteRow, setOpenDialogDeleteRow] = useState(false);
     const nature = 'BRUT';
@@ -54,7 +56,9 @@ const PopupAjustRubriqueDRFEbilan = ({actionState, row, column, value }) =>{
     const [totalAjustement, setTotalAjustement] = useState(0);
     const [stateUpdateTable, setStateUpdateTable] = useState({ tableName: '', state: false });
 
-    const data = {...row};
+    const [selectedRow, setSelectedRow] = useState([]);
+
+    const data = { ...row };
     const rubriqueCaption = data['rubriquesmatrix.libelle'];
     const idCompte = data.id_compte;
     const idDossier = data.id_dossier;
@@ -63,7 +67,7 @@ const PopupAjustRubriqueDRFEbilan = ({actionState, row, column, value }) =>{
     const idEtat = data.id_etat;
 
     const [formDataFinal, setFormDataFinal] = useState({
-        id:0,
+        id: 0,
         state: false,
         id_compte: idCompte,
         id_dossier: idDossier,
@@ -80,12 +84,12 @@ const PopupAjustRubriqueDRFEbilan = ({actionState, row, column, value }) =>{
     }, [listAjust]);
 
     const totalColumn = (rows, columnId) => {
-      
+
         const total = rows.reduce((acc, item) => {
-          const Value = parseFloat(item[columnId]) || 0; // Convertir en nombre
-          return acc + Value;
+            const Value = parseFloat(item[columnId]) || 0; // Convertir en nombre
+            return acc + Value;
         }, 0);
-  
+
         return total;
     };
 
@@ -93,13 +97,13 @@ const PopupAjustRubriqueDRFEbilan = ({actionState, row, column, value }) =>{
         setListAjust(row.ajustsDRF);
     }, [row]);
 
-    const columnHeader  = [
+    const columnHeader = [
         {
-            field: 'motif', 
-            headerName: 'Motif', 
-            type: 'text', 
-            sortable : true, 
-            width: 590, 
+            field: 'motif',
+            headerName: 'Motif',
+            type: 'text',
+            sortable: true,
+            flex: 1,
             headerAlign: 'left',
             headerClassName: 'HeaderbackColor',
             disableClickEventBubbling: true,
@@ -109,10 +113,11 @@ const PopupAjustRubriqueDRFEbilan = ({actionState, row, column, value }) =>{
             },
             renderEditCell: (params) => {
                 return (
-                    <FormControl fullWidth style={{height:'120%'}}>
+                    <FormControl fullWidth style={{ height: '120%' }}>
                         <Input
-                            style={{height:'100%', alignItems:'center', 
-                                outline: 'none', 
+                            style={{
+                                height: '100%', alignItems: 'center',
+                                outline: 'none',
                                 backgroundColor: 'transparent'
                             }}
                             type="text"
@@ -128,88 +133,78 @@ const PopupAjustRubriqueDRFEbilan = ({actionState, row, column, value }) =>{
             },
         },
         {
-            field: 'montant', 
-            headerName: 'Montant', 
-            type: 'text', 
-            sortable : true, 
-            width: 200, 
+            field: 'montant',
+            headerName: 'Montant',
+            type: 'text',
+            sortable: true,
+            flex: 0.40,
             headerAlign: 'right',
             headerClassName: 'HeaderbackColor',
             disableClickEventBubbling: true,
             editable: editableRow,
-            renderCell: (params) => {
-                return <div> <TextField
-                size="small"
-                name="montantcharge"
-                value={params.value}
-                fullWidth
-                variant="standard"
-                style={{
-                    width: '100%',
-                    textAlign: 'right',
-                }}
-                InputProps={{
-                    inputComponent: FormatedInput,
-                    disableUnderline: true,
-                    endAdornment: (
-                        <InputAdornment position="end" sx={{ fontSize: 12 }}>
-                            <span style={{ fontSize: 14 }}>Ar</span>
-                        </InputAdornment>
-                    ),
-                    sx: {
-                        height: '30px',
-                        padding: 0,
-                        '& .MuiInputBase-input': {
-                            textAlign: 'right',
-                            fontSize: 14,
-                            padding: '4px 0 4px', // haut / bas
-                            display: 'flex',
-                            alignItems: 'center',
+            renderCell: (params) => (
+                <TextField
+                    size="small"
+                    name="montantcharge"
+                    value={params.value}
+                    fullWidth
+                    variant="standard"
+                    InputProps={{
+                        inputComponent: FormatedInput,
+                        disableUnderline: true,
+                        endAdornment: (
+                            <InputAdornment position="end" sx={{ fontSize: 12 }}>
+                                <span style={{ fontSize: 15, paddingBottom: '6px' }}>Ar</span>
+                            </InputAdornment>
+                        ),
+                        sx: {
+                            height: '30px',
+                            padding: 0,
+                            '& .MuiInputBase-input': {
+                                textAlign: 'right',
+                                fontSize: 14,
+                            },
                         },
-                    },
-                }}
-            /></div>;
-            },
+                    }}
+                />
+            ),
             renderEditCell: (params) => {
                 return (
-                    <FormControl fullWidth style={{height:'120%'}}>
-                        <TextField
-                            size="small"
-                            name="montant"
-                            value={formDataFinal.montant}
-                            onChange={handleChange}
-                            fullWidth
-                            variant="standard"
-                            style={{
-                                width: '100%',
-                                textAlign: 'right',
-                            }}
-                            InputProps={{
-                                inputComponent: FormatedInput,
-                                disableUnderline: true,
-                                endAdornment: (
-                                    <InputAdornment position="end" sx={{ fontSize: 12 }}>
-                                        <span style={{ fontSize: 14 }}>Ar</span>
-                                    </InputAdornment>
-                                ),
-                                sx: {
-                                    height: '30px',
-                                    padding: 0,
-                                    '& .MuiInputBase-input': {
-                                        textAlign: 'right',
-                                        fontSize: 14,
-                                        padding: '4px 0 4px', // haut / bas
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                    },
+                    <TextField
+                        size="small"
+                        name="montant"
+                        value={formDataFinal.montant}
+                        onChange={handleChange}
+                        fullWidth
+                        variant="standard"
+                        style={{
+                            width: '100%',
+                            textAlign: 'right',
+                        }}
+                        InputProps={{
+                            inputComponent: FormatedInput,
+                            disableUnderline: true,
+                            endAdornment: (
+                                <InputAdornment position="end" sx={{ fontSize: 12 }}>
+                                    <span style={{ fontSize: 15, paddingBottom: '6px' }}>Ar</span>
+                                </InputAdornment>
+                            ),
+                            sx: {
+                                height: '30px',
+                                padding: 0,
+                                '& .MuiInputBase-input': {
+                                    textAlign: 'right',
+                                    fontSize: 14,
+                                    display: 'flex',
+                                    alignItems: 'right',
                                 },
-                            }}
-                        />
-                    </FormControl>
+                            },
+                        }}
+                    />
                 );
             },
         },
-    ];
+    ]
 
     //update formData par les informations reçues
     // useEffect(() => {
@@ -229,14 +224,14 @@ const PopupAjustRubriqueDRFEbilan = ({actionState, row, column, value }) =>{
             params: {
                 compteId, dossierId, exerciceId, etatId, rubriqueId, nature
             }
-        }).then((response) =>{
+        }).then((response) => {
             const resData = response.data;
-    
-            if(resData.state){
+
+            if (resData.state) {
                 setListAjust([]);
                 const filteredData = resData.liste.filter(item => item.nature === nature);
                 setListAjust(filteredData);
-            }else{
+            } else {
                 setListAjust([]);
             }
         });
@@ -247,21 +242,21 @@ const PopupAjustRubriqueDRFEbilan = ({actionState, row, column, value }) =>{
     }
 
     const saveSelectedRow = (ids) => {
-        if(ids.length === 1){
+        if (ids.length === 1) {
             setSelectedRowId(ids);
             setDisableModifyBouton(false);
             setDisableSaveBouton(false);
             setDisableCancelBouton(false);
             setDisableDeleteBouton(false);
-        }else{
+        } else {
             setSelectedRowId([]);
             setDisableModifyBouton(true);
             setDisableSaveBouton(true);
             setDisableCancelBouton(true);
             setDisableDeleteBouton(true);
         }
-      }
-    
+    }
+
     const handleRowEditStop = (params, event) => {
         if (params.reason === GridRowEditStopReasons.rowFocusOut) {
             event.defaultMuiPrevented = true;
@@ -297,54 +292,62 @@ const PopupAjustRubriqueDRFEbilan = ({actionState, row, column, value }) =>{
 
         //setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
         const newFormDataFinal = { ...formDataFinal, state: true };
-        axios.post(`/declaration/ebilan/addModifyAjust`, newFormDataFinal).then((response) =>{
+        axios.post(`/declaration/ebilan/addModifyAjust`, newFormDataFinal).then((response) => {
             const resData = response.data;
-            if(resData.state){
+            if (resData.state) {
+                setDisableAddRowBouton(false);
                 setDisableSaveBouton(true);
                 setStateUpdateTable((prev) => ({
                     ...prev,
-                    tableName: idEtat, 
+                    tableName: idEtat,
                     state: true
-                    })
+                })
                 );
                 getInfosAjust(idCompte, idDossier, idExercice, idEtat, idRubrique, nature);
                 toast.success(resData.msg);
-            }else{
+            } else {
                 toast.error(resData.msg);
             }
         });
     };
 
     const handleOpenDialogConfirmDelete = () => {
-    setOpenDialogDeleteRow(true);
+        setOpenDialogDeleteRow(true);
+        setDisableAddRowBouton(false);
     }
 
     const deleteRow = (value) => {
-    if(value === true){
-        if(selectedRowId.length === 1){
-            const idToDelete = selectedRowId[0];
-            axios.post(`/declaration/ebilan/deleteAjust`, {idCompte, idDossier, idExercice, idEtat, idRubrique, nature, idToDelete }).then((response) =>{
-                const resData = response.data;
-                
-                if(resData.state){
-                    setStateUpdateTable((prev) => ({
-                        ...prev,
-                        tableName: idEtat, 
-                        state: true
-                        })
-                    );
-                    
-                    getInfosAjust(idCompte, idDossier, idExercice, idEtat, idRubrique, nature);
-                    toast.success(resData.msg);
+        if (value === true) {
+            if (selectedRowId.length === 1) {
+                const idToDelete = selectedRowId[0];
+                if (idToDelete < 0) {
                     setOpenDialogDeleteRow(false);
-                }else{
-                    setOpenDialogDeleteRow(false);
-                    toast.error(resData.msg);
+                    setListAjust(listAjust.filter(row => row.id !== idToDelete));
+                    return;
                 }
-            });
-        }
-        setOpenDialogDeleteRow(false);
-        }else{
+                axios.post(`/declaration/ebilan/deleteAjust`, { idCompte, idDossier, idExercice, idEtat, idRubrique, nature, idToDelete }).then((response) => {
+                    const resData = response.data;
+
+                    if (resData.state) {
+                        setDisableAddRowBouton(false);
+                        setStateUpdateTable((prev) => ({
+                            ...prev,
+                            tableName: idEtat,
+                            state: true
+                        })
+                        );
+
+                        getInfosAjust(idCompte, idDossier, idExercice, idEtat, idRubrique, nature);
+                        toast.success(resData.msg);
+                        setOpenDialogDeleteRow(false);
+                    } else {
+                        setOpenDialogDeleteRow(false);
+                        toast.error(resData.msg);
+                    }
+                });
+            }
+            setOpenDialogDeleteRow(false);
+        } else {
             setOpenDialogDeleteRow(false);
         }
     }
@@ -354,6 +357,13 @@ const PopupAjustRubriqueDRFEbilan = ({actionState, row, column, value }) =>{
             ...rowModesModel,
             [id]: { mode: GridRowModes.View, ignoreModifications: true },
         });
+        setDisableAddRowBouton(false);
+        setDisableSaveBouton(true);
+        setDisableDeleteBouton(true);
+        setDisableModifyBouton(true);
+        setDisableCancelBouton(true);
+        setSelectedRow([]);
+        setSelectedRowId([]);
     };
 
     const processRowUpdate = () => (newRow) => {
@@ -367,31 +377,35 @@ const PopupAjustRubriqueDRFEbilan = ({actionState, row, column, value }) =>{
     };
 
     const handleCellEditCommit = (params) => {
-        if(selectedRowId.length > 1  || selectedRowId.length === 0){
+        if (selectedRowId.length > 1 || selectedRowId.length === 0) {
             setEditableRow(false);
             setDisableModifyBouton(true);
             setDisableSaveBouton(true);
             setDisableCancelBouton(true);
             //toast.error("sélectionnez une seule ligne pour pouvoir la modifier");
-        }else{
+        } else {
             setDisableModifyBouton(false);
             setDisableSaveBouton(false);
             setDisableCancelBouton(false);
             if (!selectedRowId.includes(params.id)) {
-            setEditableRow(false);
-            //toast.error("sélectionnez une ligne pour pouvoir la modifier");
-            }else{
+                setEditableRow(false);
+                //toast.error("sélectionnez une ligne pour pouvoir la modifier");
+            } else {
                 setEditableRow(true);
             }
         }
     };
-    
+
     //Ajouter une ligne dans le tableau
     const handleOpenDialogAddNew = () => {
-        const newId = -1*(getMaxID(listAjust)+1);
+        setDisableModifyBouton(false);
+        setDisableCancelBouton(false);
+        setDisableDeleteBouton(false);
+
+        const newId = -Date.now();
         let arrayId = [];
-        arrayId = [...arrayId,newId];
-        
+        arrayId = [...arrayId, newId];
+
         setFormDataFinal((prev) => ({
             ...prev,
             id: newId,
@@ -405,17 +419,20 @@ const PopupAjustRubriqueDRFEbilan = ({actionState, row, column, value }) =>{
             id_rubrique: idRubrique,
             id_etat: idEtat,
             nature: nature,
-            motif:'',
-            montant:0
+            motif: '',
+            montant: 0
         };
         setListAjust([...listAjust, newRow]);
+        setSelectedRowId([newRow.id]);
+        setSelectedRow([newRow.id]);
+        setDisableAddRowBouton(true);
     }
 
-    const getMaxID= (data) => {
-        if(data.length > 0){
+    const getMaxID = (data) => {
+        if (data.length > 0) {
             const Ids = data.map(item => item.id);
             return Math.max(...Ids);
-        }else{
+        } else {
             return 0;
         }
     };
@@ -428,9 +445,22 @@ const PopupAjustRubriqueDRFEbilan = ({actionState, row, column, value }) =>{
         }));
     };
 
+    const deselectRow = (ids) => {
+        const deselected = selectedRowId.filter(id => !ids.includes(id));
+
+        const updatedRowModes = { ...rowModesModel };
+        deselected.forEach((id) => {
+            updatedRowModes[id] = { mode: GridRowModes.View, ignoreModifications: true };
+        });
+        setRowModesModel(updatedRowModes);
+
+        setDisableAddRowBouton(false);
+        setSelectedRowId(ids);
+    }
+
     return (
         <div>
-            {openDialogDeleteRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer la ligne sélectionnée ?"} confirmationState={deleteRow}/>: null}
+            {openDialogDeleteRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer la ligne sélectionnée ?"} confirmationState={deleteRow} /> : null}
             <BootstrapDialog
                 onClose={handleClose}
                 aria-labelledby="customized-dialog-title"
@@ -438,14 +468,14 @@ const PopupAjustRubriqueDRFEbilan = ({actionState, row, column, value }) =>{
                 fullWidth={true}
                 maxWidth='md'
             >
-                <DialogTitle sx={{ ml: 1, p: 2 }} id="customized-dialog-title" style={{fontWeight:'normal', width:'850px', height:'50px',backgroundColor : 'transparent'}}>
-                    <Typography variant={'h8'} style={{fontZise: 10}}>
+                <DialogTitle sx={{ ml: 1, p: 2 }} id="customized-dialog-title" style={{ fontWeight: 'normal', width: '850px', height: '50px', backgroundColor: 'transparent' }}>
+                    <Typography variant={'h8'} style={{ fontZise: 10 }}>
                         Ajustement - {rubriqueCaption}
                     </Typography>
                 </DialogTitle>
-                
+
                 <IconButton
-                    style={{color:'red', textTransform: 'none', outline: 'none'}}
+                    style={{ color: 'red', textTransform: 'none', outline: 'none' }}
                     aria-label="close"
                     onClick={handleClose}
                     sx={{
@@ -454,184 +484,234 @@ const PopupAjustRubriqueDRFEbilan = ({actionState, row, column, value }) =>{
                         top: 8,
                         color: (theme) => theme.palette.grey[500],
                     }}
-                    >
-                <CloseIcon />
+                >
+                    <CloseIcon />
                 </IconButton>
                 <DialogContent>
-            
-                <Stack width={"97%"} height={"500px"} spacing={2} alignItems={'left'} alignContent={"center"} 
-                    direction={"column"} justifyContent={"center"} style={{marginLeft:'10px',marginRight:'10px'}}
-                >
-                    <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"} 
-                        direction={"row"} justifyContent={"right"}
+
+                    <Stack width={"97%"} height={"500px"} spacing={2} alignItems={'left'} alignContent={"center"}
+                        direction={"column"} justifyContent={"center"} style={{ marginLeft: '10px', marginRight: '10px' }}
                     >
-                        <Tooltip title="Ajouter une ligne">
-                            <IconButton
-                            onClick={handleOpenDialogAddNew}
-                            variant="contained"
-                            style={{width:"35px", height:'35px', 
-                                borderRadius:"2px", borderColor: "transparent", 
-                                backgroundColor: initial.theme,
-                                textTransform: 'none', outline: 'none'
-                            }}
-                            >
-                                <TbPlaylistAdd style={{width:'25px', height:'25px', color:'white'}}/>
-                            </IconButton>
-                        </Tooltip>
-
-                        <Tooltip title="Modifier la ligne sélectionnée">
-                            <IconButton
-                            disabled={disableModifyBouton}
-                            onClick={handleEditClick(selectedRowId)}
-                            variant="contained" 
-                            style={{width:"35px", height:'35px', 
-                                borderRadius:"2px", borderColor: "transparent",
-                                backgroundColor: initial.theme,
-                                textTransform: 'none', outline: 'none'
-                                }}
-                            >
-                                <FaRegPenToSquare style={{width:'25px', height:'25px', color:'white'}}/>
-                            </IconButton>
-                        </Tooltip>
-
-                        <Tooltip title="Sauvegarder les modifications">
-                            <span>
-                                <IconButton 
-                                onClick={handleSaveClick(selectedRowId)}
-                                disabled={disableSaveBouton}
-                                variant="contained" 
-                                style={{width:"35px", height:'35px', 
-                                    borderRadius:"2px", borderColor: "transparent",
-                                    backgroundColor: initial.theme,
-                                    textTransform: 'none', outline: 'none'
-                                }}
+                        <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                            direction={"row"} justifyContent={"right"}
+                        >
+                            <Tooltip title="Ajouter une ligne">
+                                <IconButton
+                                    disabled={disableAddRowBouton}
+                                    onClick={handleOpenDialogAddNew}
+                                    variant="contained"
+                                    style={{
+                                        width: "35px", height: '35px',
+                                        borderRadius: "2px", borderColor: "transparent",
+                                        backgroundColor: initial.theme,
+                                        textTransform: 'none', outline: 'none'
+                                    }}
                                 >
-                                    <TfiSave style={{width:'50px', height:'50px',color: 'white'}}/>
+                                    <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
                                 </IconButton>
-                            </span>
-                        </Tooltip>
+                            </Tooltip>
 
-                        <Tooltip title="Annuler les modifications">
-                            <span>
-                                <IconButton 
-                                disabled={disableCancelBouton}
-                                onClick={handleCancelClick(selectedRowId)}
-                                variant="contained" 
-                                style={{width:"35px", height:'35px', 
-                                    borderRadius:"2px", borderColor: "transparent",
-                                    backgroundColor: initial.button_delete_color,
-                                    textTransform: 'none', outline: 'none'
-                                }}
+                            <Tooltip title="Modifier la ligne sélectionnée">
+                                <IconButton
+                                    disabled={disableModifyBouton}
+                                    onClick={handleEditClick(selectedRowId)}
+                                    variant="contained"
+                                    style={{
+                                        width: "35px", height: '35px',
+                                        borderRadius: "2px", borderColor: "transparent",
+                                        backgroundColor: initial.theme,
+                                        textTransform: 'none', outline: 'none'
+                                    }}
                                 >
-                                    <VscClose style={{width:'50px', height:'50px', color: 'white'}}/>
+                                    <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
                                 </IconButton>
-                            </span>
-                        </Tooltip>
+                            </Tooltip>
 
-                        <Tooltip title="Supprimer la ligne sélectionné">
-                            <span>
-                                <IconButton 
-                                disabled={disableDeleteBouton}
-                                onClick={handleOpenDialogConfirmDelete}
-                                variant="contained" 
-                                style={{width:"35px", height:'35px', 
-                                    borderRadius:"2px", borderColor: "transparent",
-                                    backgroundColor: initial.button_delete_color,
-                                    textTransform: 'none', outline: 'none'
-                                }}
-                                >
-                                    <IoMdTrash style={{width:'50px', height:'50px',color: 'white'}}/>
-                                </IconButton>
-                            </span>
-                        </Tooltip>
-                    </Stack>
-                                                
-                    <Stack width={"100%"} height={'60vh'}>
-                        <DataGrid
-                        disableMultipleSelection = {DataGridStyle.disableMultipleSelection}
-                        disableColumnSelector = {DataGridStyle.disableColumnSelector}
-                        disableDensitySelector = {DataGridStyle.disableDensitySelector}
-                        disableRowSelectionOnClick
-                        disableSelectionOnClick={true}
-                        localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
-                        slots={{toolbar : QuickFilter}}
-                        sx={ DataGridStyle.sx}
-                        rowHeight= {DataGridStyle.rowHeight}
-                        columnHeaderHeight= {DataGridStyle.columnHeaderHeight}
-                        rows={listAjust}
-                        onRowClick={(e) => handleCellEditCommit(e.row)}
-                        onRowSelectionModelChange={ids => {
-                            saveSelectedRow(ids);
-                        }}
-                        editMode='row'
-                        selectionModel={selectedRowId}
-                        rowModesModel={rowModesModel}
-                        onRowModesModelChange={(newModel) => handleRowModesModelChange(newModel)}
-                        onRowEditStop={handleRowEditStop}
-                        processRowUpdate={processRowUpdate}
+                            <Tooltip title="Sauvegarder les modifications">
+                                <span>
+                                    <IconButton
+                                        onClick={handleSaveClick(selectedRowId)}
+                                        disabled={disableSaveBouton}
+                                        variant="contained"
+                                        style={{
+                                            width: "35px", height: '35px',
+                                            borderRadius: "2px", borderColor: "transparent",
+                                            backgroundColor: initial.theme,
+                                            textTransform: 'none', outline: 'none'
+                                        }}
+                                    >
+                                        <TfiSave style={{ width: '50px', height: '50px', color: 'white' }} />
+                                    </IconButton>
+                                </span>
+                            </Tooltip>
 
-                        columns={columnHeader}
-                        initialState={{
-                            pagination: {
-                                paginationModel: { page: 0, pageSize: 100 },
-                            },
-                        }}
-                        experimentalFeatures={{ newEditingApi: true }}
-                        pageSizeOptions={[50, 100]}
-                        pagination={DataGridStyle.pagination}
-                        checkboxSelection = {DataGridStyle.checkboxSelection}
-                        columnVisibilityModel={{
-                            id: false,
-                        }}
-                        />
-                    </Stack>
+                            <Tooltip title="Annuler les modifications">
+                                <span>
+                                    <IconButton
+                                        disabled={disableCancelBouton}
+                                        onClick={handleCancelClick(selectedRowId)}
+                                        variant="contained"
+                                        style={{
+                                            width: "35px", height: '35px',
+                                            borderRadius: "2px", borderColor: "transparent",
+                                            backgroundColor: initial.button_delete_color,
+                                            textTransform: 'none', outline: 'none'
+                                        }}
+                                    >
+                                        <VscClose style={{ width: '50px', height: '50px', color: 'white' }} />
+                                    </IconButton>
+                                </span>
+                            </Tooltip>
 
-                    <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"} 
-                        direction={"row"} justifyContent={"right"}
-                        style={{marginTop: 10}}
-                    >
-                        <Box display="flex" alignItems="center" mb={0}>
-                            <Typography 
-                                variant="body2" 
-                                style={{ marginRight: 1, width: '140px', color: '#1976d2' }}
-                            >
-                                total des ajustements:
-                            </Typography>
-                            <TextField
-                                size="small"
-                                name="montantcharge"
-                                value={totalAjustement}
-                                fullWidth
-                                variant="standard"
-                                style={{
-                                    width: '150px',
-                                    textAlign: 'right',
-                                }}
-                                InputProps={{
-                                    inputComponent: FormatedInput,
-                                    disableUnderline: true,
-                                    endAdornment: (
-                                        <InputAdornment position="end" sx={{ fontSize: 12 }}>
-                                            <span style={{ fontSize: 14 , color:'#1976d2'}}>Ar</span>
-                                        </InputAdornment>
-                                    ),
-                                    sx: {
-                                        height: '30px',
-                                        padding: 0,
-                                        '& .MuiInputBase-input': {
-                                            textAlign: 'right',
-                                            fontSize: 14,
-                                            padding: '4px 0 4px', // haut / bas
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            color:'#1976d2'
-                                        },
+                            <Tooltip title="Supprimer la ligne sélectionné">
+                                <span>
+                                    <IconButton
+                                        disabled={disableDeleteBouton}
+                                        onClick={handleOpenDialogConfirmDelete}
+                                        variant="contained"
+                                        style={{
+                                            width: "35px", height: '35px',
+                                            borderRadius: "2px", borderColor: "transparent",
+                                            backgroundColor: initial.button_delete_color,
+                                            textTransform: 'none', outline: 'none'
+                                        }}
+                                    >
+                                        <IoMdTrash style={{ width: '50px', height: '50px', color: 'white' }} />
+                                    </IconButton>
+                                </span>
+                            </Tooltip>
+                        </Stack>
+
+                        <Stack
+                            width={"100%"}
+                            height={"420px"}
+                        >
+                            <DataGrid
+                                disableMultipleSelection={DataGridStyle.disableMultipleSelection}
+                                disableColumnSelector={DataGridStyle.disableColumnSelector}
+                                disableDensitySelector={DataGridStyle.disableDensitySelector}
+                                disableRowSelectionOnClick
+                                disableSelectionOnClick={true}
+                                localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                                slots={{ toolbar: QuickFilter }}
+                                sx={{
+                                    ...DataGridStyle.sx,
+                                    '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+                                        outline: 'none',
+                                        border: 'none',
                                     },
                                 }}
+                                rowHeight={DataGridStyle.rowHeight}
+                                columnHeaderHeight={DataGridStyle.columnHeaderHeight}
+                                rows={listAjust}
+                                onRowClick={(e) => handleCellEditCommit(e.row)}
+                                onRowSelectionModelChange={ids => {
+                                    setSelectedRow(ids);
+                                    saveSelectedRow(ids);
+                                    deselectRow(ids);
+                                }}
+                                editMode='row'
+                                selectionModel={selectedRowId}
+                                rowModesModel={rowModesModel}
+                                onRowModesModelChange={(newModel) => handleRowModesModelChange(newModel)}
+                                onRowEditStop={handleRowEditStop}
+                                processRowUpdate={processRowUpdate}
+
+                                columns={columnHeader}
+                                initialState={{
+                                    pagination: {
+                                        paginationModel: { page: 0, pageSize: 100 },
+                                    },
+                                }}
+                                experimentalFeatures={{ newEditingApi: true }}
+                                pageSizeOptions={[50, 100]}
+                                pagination={DataGridStyle.pagination}
+                                checkboxSelection={DataGridStyle.checkboxSelection}
+                                columnVisibilityModel={{
+                                    id: false,
+                                }}
+                                rowSelectionModel={selectedRow}
+                                onRowEditStart={(params, event) => {
+                                    if (!selectedRow.length || selectedRow[0] !== params.id) {
+                                        event.defaultMuiPrevented = true;
+                                    }
+                                    if (selectedRow.includes(params.id)) {
+                                        setDisableAddRowBouton(true);
+                                        event.stopPropagation();
+
+                                        const rowId = params.id;
+                                        const rowData = params.row;
+
+                                        setFormDataFinal((prev) => ({
+                                            ...prev,
+                                            id: rowId,
+                                            id_compte: rowData.id_compte,
+                                            id_dossier: rowData.id_dossier,
+                                            id_exercice: rowData.id_exercice,
+                                            id_rubrique: rowData.id_rubrique,
+                                            id_etat: rowData.id_etat,
+                                            nature: rowData.nature,
+                                            motif: rowData.motif,
+                                            montant: rowData.montant,
+                                        }));
+
+                                        setRowModesModel((oldModel) => ({
+                                            ...oldModel,
+                                            [rowId]: { mode: GridRowModes.Edit },
+                                        }));
+
+                                        setDisableSaveBouton(false);
+                                    }
+                                }}
                             />
-                        </Box>
+                        </Stack>
+
+                        <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                            direction={"row"} justifyContent={"right"}
+                            style={{ marginTop: 10 }}
+                        >
+                            <Box display="flex" alignItems="center" mb={0}>
+                                <Typography
+                                    variant="body2"
+                                    style={{ marginRight: 1, width: '150px', color: '#1976d2' }}
+                                >
+                                    Total des ajustements:
+                                </Typography>
+                                <TextField
+                                    size="small"
+                                    name="montantcharge"
+                                    value={totalAjustement}
+                                    fullWidth
+                                    variant="standard"
+                                    style={{
+                                        width: '150px',
+                                        textAlign: 'right',
+                                    }}
+                                    InputProps={{
+                                        inputComponent: FormatedInput,
+                                        disableUnderline: true,
+                                        endAdornment: (
+                                            <InputAdornment position="end" sx={{ fontSize: 12 }}>
+                                                <span style={{ fontSize: 14, color: '#1976d2' }}>Ar</span>
+                                            </InputAdornment>
+                                        ),
+                                        sx: {
+                                            height: '30px',
+                                            padding: 0,
+                                            '& .MuiInputBase-input': {
+                                                textAlign: 'right',
+                                                fontSize: 14,
+                                                padding: '4px 0 4px', // haut / bas
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                color: '#1976d2'
+                                            },
+                                        },
+                                    }}
+                                />
+                            </Box>
+                        </Stack>
                     </Stack>
-                </Stack>
 
                 </DialogContent>
                 <DialogActions>
@@ -647,16 +727,16 @@ const PopupAjustRubriqueDRFEbilan = ({actionState, row, column, value }) =>{
                         >
                             Annuler
                     </Button> */}
-                    <Button autoFocus 
-                    onClick={handleClose}
-                    style={{backgroundColor:initial.theme, color:'white', width:"100px", textTransform: 'none', outline: 'none'}}
+                    <Button autoFocus
+                        onClick={handleClose}
+                        style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
                     >
                         Fermer
                     </Button>
                 </DialogActions>
             </BootstrapDialog>
         </div>
-            
+
     )
 }
 

@@ -202,7 +202,7 @@ export default function DeclarationComm() {
 
     const deleteOneRowSvt = (row) => {
         setIdToDelete(Number(row.id));
-        setIdNumcptToDelete(Number(row.id_numcpt));
+        setIdNumcptToDelete(Number(row?.id_numcpt));
         setTypeDelete(row.type);
         setOpenDialogDeleteOneComm(true);
         setNature('SVT');
@@ -210,7 +210,7 @@ export default function DeclarationComm() {
 
     const deleteOneRowAdr = (row) => {
         setIdToDelete(Number(row.id));
-        setIdNumcptToDelete(Number(row.id_numcpt));
+        setIdNumcptToDelete(Number(row?.id_numcpt));
         setTypeDelete(row.type);
         setOpenDialogDeleteOneComm(true);
         setNature('ADR');
@@ -218,7 +218,7 @@ export default function DeclarationComm() {
 
     const deleteOneRowAc = (row) => {
         setIdToDelete(Number(row.id));
-        setIdNumcptToDelete(Number(row.id_numcpt));
+        setIdNumcptToDelete(Number(row?.id_numcpt));
         setTypeDelete(row.type);
         setOpenDialogDeleteOneComm(true);
         setNature('AC');
@@ -226,7 +226,7 @@ export default function DeclarationComm() {
 
     const deleteOneRowAi = (row) => {
         setIdToDelete(Number(row.id));
-        setIdNumcptToDelete(Number(row.id_numcpt));
+        setIdNumcptToDelete(Number(row?.id_numcpt));
         setTypeDelete(row.type);
         setOpenDialogDeleteOneComm(true);
         setNature('AI');
@@ -234,7 +234,7 @@ export default function DeclarationComm() {
 
     const deleteOneRowDeb = (row) => {
         setIdToDelete(Number(row.id));
-        setIdNumcptToDelete(Number(row.id_numcpt));
+        setIdNumcptToDelete(Number(row?.id_numcpt));
         setTypeDelete(row.type);
         setOpenDialogDeleteOneComm(true);
         setNature('DEB');
@@ -242,7 +242,7 @@ export default function DeclarationComm() {
 
     const deleteOneRowMv = (row) => {
         setIdToDelete(Number(row.id));
-        setIdNumcptToDelete(Number(row.id_numcpt));
+        setIdNumcptToDelete(Number(row?.id_numcpt));
         setTypeDelete(row.type);
         setOpenDialogDeleteOneComm(true);
         setNature('MV');
@@ -250,7 +250,7 @@ export default function DeclarationComm() {
 
     const deleteOneRowPsv = (row) => {
         setIdToDelete(Number(row.id));
-        setIdNumcptToDelete(Number(row.id_numcpt));
+        setIdNumcptToDelete(Number(row?.id_numcpt));
         setTypeDelete(row.type);
         setOpenDialogDeleteOneComm(true);
         setNature('PSV');
@@ -258,7 +258,7 @@ export default function DeclarationComm() {
 
     const deleteOneRowPl = (row) => {
         setIdToDelete(Number(row.id));
-        setIdNumcptToDelete(Number(row.id_numcpt));
+        setIdNumcptToDelete(Number(row?.id_numcpt));
         setTypeDelete(row.type);
         setOpenDialogDeleteOneComm(true);
         setNature('PL');

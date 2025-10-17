@@ -25,14 +25,72 @@ exports.getDeviseById = async (req, res) => {
 // Ajout d'une devise
 exports.createDevise = async (req, res) => {
   try {
-    const { code, libelle, id_compte, id_dossier } = req.body;
-    const devise = await Devise.create({ code, libelle, id_compte, id_dossier });
-    return res.json({ state: true, msg: 'Devise ajoutée', data: devise });
+    const { code, libelle, fileId, compteId, idDevise } = req.body;
+
+    let resData = {
+      state: false,
+      msg: 'Une erreur est survenue au moment du traitement.',
+    }
+
+    if (!fileId || !compteId || !code || !libelle || !idDevise) {
+      return res.json({ state: false, msg: 'Champs obligatoires manquants' });
+    }
+
+    const id_compte = parseInt(compteId);
+    const id_dossier = parseInt(fileId);
+    const id = parseInt(idDevise);
+
+    if (isNaN(id) || isNaN(id_compte) || isNaN(id_dossier)) {
+      return res.status(400).json({
+        state: false,
+        message: "id_compte ou id_dossier invalide"
+      });
+    }
+
+    const testIfExist = await Devise.findAll({
+      where: {
+        id,
+        id_compte,
+        id_dossier,
+      }
+    })
+
+    if (testIfExist.length === 0) {
+      const deviseAdded = await Devise.create({
+        id_compte,
+        id_dossier,
+        code,
+        libelle
+      })
+      if (deviseAdded) {
+        resData.state = true;
+        resData.msg = "Nouvelle ligne sauvegardée avec succès.";
+      } else {
+        resData.state = false;
+        resData.msg = "Une erreur est survenue au moment du traitement des données";
+      }
+    } else {
+      const deviseUpdated = await Devise.update({
+        code,
+        libelle
+      }, {
+        where: { id }
+      });
+      if (deviseUpdated) {
+        resData.state = true;
+        resData.msg = "Modification effectuée avec succès.";
+      } else {
+        resData.state = false;
+        resData.msg = "Une erreur est survenue au moment du traitement des données";
+      }
+    }
+    return res.json(resData);
+
   } catch (error) {
     if (error.name === 'SequelizeUniqueConstraintError') {
       return res.json({ state: false, msg: 'Ce code existe déjà.' });
     }
-    return res.json({ state: false, msg: 'Erreur lors de l\'ajout' });
+    return res.status(500).json({ state: false, msg: error.message });
   }
 };
 

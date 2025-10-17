@@ -77,9 +77,9 @@ exports.addSection = async (req, res) => {
 exports.getSectionsByAxeIds = async (req, res) => {
     try {
         const { id_compte, id_dossier } = req.params;
-        const { selectedRowAxeIds } = req.body;
+        const { selectedRowAxeId } = req.body;
 
-        if (!id_compte || !id_dossier || !selectedRowAxeIds || !Array.isArray(selectedRowAxeIds)) {
+        if (!id_compte || !id_dossier || !selectedRowAxeId || !Array.isArray(selectedRowAxeId)) {
             return res.status(400).json({
                 state: false,
                 message: "Paramètres manquants ou invalides"
@@ -90,7 +90,7 @@ exports.getSectionsByAxeIds = async (req, res) => {
             where: {
                 id_compte,
                 id_dossier,
-                id_axe: selectedRowAxeIds
+                id_axe: selectedRowAxeId
             },
             order: [['id', 'ASC']]
         });
@@ -112,59 +112,69 @@ exports.getSectionsByAxeIds = async (req, res) => {
 
 exports.addOrUpdateAxes = async (req, res) => {
     try {
-        const { data } = req.body;
-        const idCompte = parseInt(req.params.id_compte);
-        const idDossier = parseInt(req.params.id_dossier);
+        const { id, code, compteId, fileId, libelle } = req.body;
 
-        if (!data || !Array.isArray(data)) {
+        let resData = {
+            state: false,
+            msg: 'Une erreur est survenue au moment du traitement.',
+        }
+
+        if (!code || !compteId || !fileId || !libelle) {
             return res.status(400).json({
                 state: false,
                 message: "Données manquantes ou invalides"
             });
         }
 
-        if (isNaN(idCompte) || isNaN(idDossier)) {
+        const id_compte = parseInt(compteId);
+        const id_dossier = parseInt(fileId);
+
+        if (isNaN(id_compte) || isNaN(id_dossier)) {
             return res.status(400).json({
                 state: false,
                 message: "id_compte ou id_dossier invalide"
             });
         }
 
-        const inserted = [];
-        const updated = [];
-
-        for (const row of data) {
-            const { id, code, libelle } = row;
-
-            if (!code?.trim() || !libelle?.trim()) {
-                continue;
+        const testIfExist = await caAxes.findAll({
+            where: {
+                id,
+                id_compte,
+                id_dossier
             }
+        })
 
-            if (id < 0) {
-                const newAxe = await caAxes.create({
-                    code,
-                    libelle,
-                    id_compte: idCompte,
-                    id_dossier: idDossier,
-                });
-                inserted.push(newAxe);
+        if (testIfExist.length === 0) {
+            const axeAdded = await caAxes.create({
+                id_compte,
+                id_dossier,
+                code,
+                libelle
+            })
+
+            if (axeAdded) {
+                resData.state = true;
+                resData.msg = "Nouvelle ligne sauvegardée avec succès.";
             } else {
-                const [updatedCount] = await caAxes.update(
-                    { code, libelle },
-                    { where: { id: parseInt(id) } }
-                );
-                if (updatedCount > 0) {
-                    updated.push(id);
-                }
+                resData.state = false;
+                resData.msg = "Une erreur est survenue au moment du traitement des données";
+            }
+        } else {
+            const axeUpdated = await caAxes.update({
+                code,
+                libelle
+            }, {
+                where: { id }
+            });
+            if (axeUpdated) {
+                resData.state = true;
+                resData.msg = "Modification effectuée avec succès.";
+            } else {
+                resData.state = false;
+                resData.msg = "Une erreur est survenue au moment du traitement des données";
             }
         }
-
-        return res.status(200).json({
-            state: true,
-            message: `Axes traités avec succès : ${inserted.length} ajouté(s), ${updated.length} modifié(s).`,
-            inserted,
-            updated
-        });
+        return res.json(resData);
 
     } catch (error) {
         return res.status(500).json({
@@ -177,73 +187,81 @@ exports.addOrUpdateAxes = async (req, res) => {
 
 exports.addOrUpdateSections = async (req, res) => {
     try {
-        const { data } = req.body;
-        const idCompte = parseInt(req.params.id_compte);
-        const idDossier = parseInt(req.params.id_dossier);
+        const { id, compte, compteId, fileId, axeId, intitule, pourcentage, section, fermer, par_defaut } = req.body;
 
-        if (!data || !Array.isArray(data)) {
+        let resData = {
+            state: false,
+            msg: 'Une erreur est survenue au moment du traitement.',
+        }
+
+        if (!compte || !compteId || !fileId || !intitule || !pourcentage || !section) {
             return res.status(400).json({
                 state: false,
                 message: "Données manquantes ou invalides"
             });
         }
 
-        if (isNaN(idCompte) || isNaN(idDossier)) {
+        const id_compte = parseInt(compteId);
+        const id_dossier = parseInt(fileId);
+        const id_axe = parseInt(axeId);
+        const pourcentageFormated = parseFloat(pourcentage).toFixed(2);
+
+        if (isNaN(id_compte) || isNaN(id_dossier)) {
             return res.status(400).json({
                 state: false,
                 message: "id_compte ou id_dossier invalide"
             });
         }
 
-        const inserted = [];
-        const updated = [];
-
-        for (const row of data) {
-            const { id, section, intitule, compte, pourcentage, par_defaut, fermer, id_axe } = row;
-
-            if (!section?.trim() || !intitule?.trim() || !compte?.trim()) {
-                continue;
+        const testIfExist = await caSections.findAll({
+            where: {
+                id,
+                id_compte,
+                id_dossier,
+                id_axe
             }
+        })
 
-            if (id < 0) {
-                const newAxe = await caSections.create({
-                    section,
-                    intitule,
-                    compte,
-                    compte,
-                    pourcentage,
-                    par_defaut,
-                    fermer,
-                    id_axe,
-                    id_compte: idCompte,
-                    id_dossier: idDossier,
-                });
-                inserted.push(newAxe);
+        if (testIfExist.length === 0) {
+            const sectionAdded = await caSections.create({
+                id_compte,
+                id_dossier,
+                id_axe,
+                compte,
+                intitule,
+                pourcentage: pourcentageFormated,
+                section,
+                fermer,
+                par_defaut
+            })
+
+            if (sectionAdded) {
+                resData.state = true;
+                resData.msg = "Nouvelle ligne sauvegardée avec succès.";
             } else {
-                const [updatedCount] = await caSections.update(
-                    {
-                        section,
-                        intitule,
-                        compte,
-                        compte,
-                        pourcentage,
-                        par_defaut,
-                        fermer,
-                    },
-                    { where: { id: parseInt(id) } }
-                );
-                if (updatedCount > 0) {
-                    updated.push(id);
-                }
+                resData.state = false;
+                resData.msg = "Une erreur est survenue au moment du traitement des données";
+            }
+        } else {
+            const sectionUpdated = await caSections.update({
+                compte,
+                intitule,
+                pourcentage: pourcentageFormated,
+                section,
+                fermer,
+                par_defaut
+            }, {
+                where: { id }
+            });
+            if (sectionUpdated) {
+                resData.state = true;
+                resData.msg = "Modification effectuée avec succès.";
+            } else {
+                resData.state = false;
+                resData.msg = "Une erreur est survenue au moment du traitement des données";
             }
         }
-
-        return res.status(200).json({
-            state: true,
-            message: `Axes traités avec succès : ${inserted.length} ajouté(s), ${updated.length} modifié(s).`,
-            inserted,
-            updated
-        });
+        return res.json(resData);
 
     } catch (error) {
         return res.status(500).json({
@@ -256,23 +274,32 @@ exports.addOrUpdateSections = async (req, res) => {
 
 exports.deleteAxes = async (req, res) => {
     try {
-        const { selectedRowAxeIds } = req.body;
+        const { idToDelete } = req.body;
 
-        if (!selectedRowAxeIds || !Array.isArray(selectedRowAxeIds)) {
+        let resData = {
+            state: false,
+            msg: 'Une erreur est survenue au moment du traitement.',
+        }
+
+        if (!idToDelete) {
             return res.status(400).json({
                 state: false,
-                message: "Aucune ligne sélectionnée à supprimer"
+                message: "Données manquantes ou invalides"
             });
         }
 
         const result = await caAxes.destroy({
-            where: { id: selectedRowAxeIds }
+            where: { id: idToDelete }
         });
 
-        return res.status(200).json({
-            state: true,
-            message: `${result} ${pluralize(result, 'axe')} ${pluralize(result, 'supprimé')} avec succès`
-        });
+        if (result) {
+            resData.state = true;
+            resData.msg = 'Axe supprimé avec succès';
+        } else {
+            resData.state = false;
+            resData.msg = "Une erreur est survenue au moment du traitement des données.";
+        }
+        return res.json(resData);
 
     } catch (error) {
         return res.status(500).json({
@@ -285,9 +312,14 @@ exports.deleteAxes = async (req, res) => {
 
 exports.deleteSections = async (req, res) => {
     try {
-        const { selectedRowSectionIds } = req.body;
+        const { idToDelete } = req.body;
 
-        if (!selectedRowSectionIds || !Array.isArray(selectedRowSectionIds)) {
+        let resData = {
+            state: false,
+            msg: 'Une erreur est survenue au moment du traitement.',
+        }
+
+        if (!idToDelete) {
             return res.status(400).json({
                 state: false,
                 message: "Aucune ligne sélectionnée à supprimer"
@@ -295,13 +327,18 @@ exports.deleteSections = async (req, res) => {
         }
 
         const result = await caSections.destroy({
-            where: { id: selectedRowSectionIds }
+            where: { id: idToDelete }
         });
 
-        return res.status(200).json({
-            state: true,
-            message: `${result} ${pluralize(result, 'section')} ${pluralize(result, 'supprimé')} avec succès`
-        });
+        if (result) {
+            resData.state = true;
+            resData.msg = 'Section supprimé avec succès';
+        } else {
+            resData.state = false;
+            resData.msg = "Une erreur est survenue au moment du traitement des données.";
+        }
+
+        return res.json(resData);
 
     } catch (error) {
         return res.status(500).json({

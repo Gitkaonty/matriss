@@ -60,9 +60,9 @@ export default function App() {
             <Route path='/tab' element={<MainPage />} >
 
               <Route path='/tab/home' element={<Home />} />
- 
+
               <Route path='/tab/dashboard/:id' element={<DashboardComponent />} />
- 
+
               <Route path='/tab/administration/saisie/:id' element={<SaisieComponent />} />
               <Route path='/tab/administration/consultation/:id' element={<ConsultationComponent />} />
               <Route path='/tab/administration/importBalance/:id' element={<ImportBalance />} />
@@ -72,11 +72,10 @@ export default function App() {
               <Route path='/tab/administration/importAnnexeDeclarationFiscale' element={<ImportAnnexeDeclarationFiscaleComponent />} />
               <Route path='/tab/administration/exportBalance/:id' element={<ExportBalance />} />
               <Route path='/tab/administration/personnel/:id' element={<PersonnelComponent />} />
-              <Route path='/tab/administration/fonctions/:id' element={<FonctionsComponent />} />
- 
+
               <Route path='/tab/revision/revisionAnomalieEbilan' element={<RevisionAnomalieEbilanComponent />} />
               <Route path='/tab/revision/revisionPrecontrolFiscal' element={<RevisionPrecontroleFiscalComponent />} />
- 
+
               <Route path='/tab/parametrages/paramCodeJournal/:id' element={<ParamCodeJournalComponent />} />
               <Route path='/tab/parametrages/paramPlanComptable/:id' element={<ParamPlanComptableComponent />} />
               <Route path='/tab/parametrages/paramPlanComptableModele' element={<ParamPCModele />} />
@@ -87,14 +86,14 @@ export default function App() {
               <Route path='/tab/parametrages/paramCrm/:id' element={<ParamCRM />} />
               <Route path='/tab/parametrages/paramMapping/:id' element={<ParamMappingComponent />} />
               <Route path='/tab/parametrages/paramClassification/:id' element={<ClassificationSalariesComponent />} />
- 
+              <Route path='/tab/parametrages/fonctions/:id' element={<FonctionsComponent />} />
+              <Route path='/tab/parametrages/chiffreDaffaires/:id' element={<ParamChiffreAffaires />} />
+
               <Route path='/tab/declaration/declarationIRSA/:id' element={<DeclarationIRSAComponent />} />
               <Route path='/tab/declaration/declarationISI/:id' element={<DeclarationIsi />} />
               <Route path='/tab/declaration/declarationEbilan/:id' element={<DeclarationEbilan />} />
               <Route path='/tab/declaration/declarationDroitComm/:id' element={<DeclarationComm />} />
-
               <Route path='/tab/declaration/declarationTVA/:id' element={<DeclarationTVA />} />
-              <Route path='/tab/parametrages/chiffreDaffaires/:id' element={<ParamChiffreAffaires />} />
             </Route>
           </Route>
         </Route>

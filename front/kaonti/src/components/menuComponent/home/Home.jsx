@@ -355,7 +355,7 @@ export default function Home() {
             </Stack>
           </Stack>
 
-          <Stack width={"100%"} height={"400px"} spacing={1} alignItems={"flex-start"} direction={"row"}>
+          <Stack width={"100%"} height={"700px"} spacing={1} alignItems={"flex-start"} direction={"row"}>
             <DataGrid
               disableMultipleSelection={DataGridStyle.disableMultipleSelection}
               disableColumnSelector={DataGridStyle.disableColumnSelector}

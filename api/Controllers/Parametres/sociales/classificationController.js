@@ -25,10 +25,66 @@ exports.getClassificationById = async (req, res) => {
 // Ajout d'une classification
 exports.createClassification = async (req, res) => {
   try {
-    console.log(req.body);
-    const { classe, remarque, id_dossier, id_compte } = req.body;
-    const classification = await classifications.create({ classe, remarque, id_dossier, id_compte });
-    return res.json({ state: true, msg: 'Classification ajoutée', data: classification });
+    const { classe, remarque, fileId, compteId, idClassification } = req.body;
+
+    let resData = {
+      state: false,
+      msg: 'Une erreur est survenue au moment du traitement.',
+    }
+
+    if (!fileId || !compteId || !classe || !remarque || !idClassification) {
+      return res.json({ state: false, msg: 'Champs obligatoires manquants' });
+    }
+
+    const id_compte = parseInt(compteId);
+    const id_dossier = parseInt(fileId);
+    const id = parseInt(idClassification);
+
+    if (isNaN(id) || isNaN(id_compte) || isNaN(id_dossier)) {
+      return res.status(400).json({
+        state: false,
+        message: "id_compte ou id_dossier invalide"
+      });
+    }
+
+    const testIfExist = await classifications.findAll({
+      where: {
+        id,
+        id_compte,
+        id_dossier,
+      }
+    })
+
+    if (testIfExist.length === 0) {
+      const classificationAdded = await classifications.create({
+        id_compte,
+        id_dossier,
+        classe,
+        remarque
+      })
+      if (classificationAdded) {
+        resData.state = true;
+        resData.msg = "Nouvelle ligne sauvegardée avec succès.";
+      } else {
+        resData.state = false;
+        resData.msg = "Une erreur est survenue au moment du traitement des données";
+      }
+    } else {
+      const classificationUpdated = await classifications.update({
+        classe,
+        remarque
+      }, {
+        where: { id }
+      });
+      if (classificationUpdated) {
+        resData.state = true;
+        resData.msg = "Modification effectuée avec succès.";
+      } else {
+        resData.state = false;
+        resData.msg = "Une erreur est survenue au moment du traitement des données";
+      }
+    }
+    return res.json(resData);
   } catch (error) {
     console.error(error); // Pour voir l’erreur réelle dans la console
     if (error.name === 'SequelizeUniqueConstraintError') {

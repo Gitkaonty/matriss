@@ -19,7 +19,6 @@ import PopupAjustRubriqueDRFEbilan from '../FormulaireModifTableauEbilan/popupAj
 import { FaRegPenToSquare } from "react-icons/fa6";
 
 const VirtualTableDRFEbilan = ({ refreshTable, columns, rows, noCollapsible, state }) => {
-  console.log('Ebilan : ', rows);
   const initial = init[0];
   const targetColumnId = 'rubriquesmatrix.libelle';
   const [openRows, setOpenRows] = React.useState({});

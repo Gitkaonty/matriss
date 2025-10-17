@@ -21,8 +21,8 @@ const FormatedInput = forwardRef(function FormatedInput(props, ref) {
             decimalSeparator=","
             allowNegative={true}
             valueIsNumericString
-            decimalScale={2} // <-- Limite à 2 décimales
-            fixedDecimalScale={true} // <-- Affiche toujours 2 décimales (ex : 5 devient 5,00)
+            decimalScale={2}
+            fixedDecimalScale={true}
             style={{ textAlign: 'right' }}
         />
     );

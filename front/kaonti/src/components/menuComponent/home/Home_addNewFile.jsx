@@ -1,5 +1,5 @@
 import { React, useState, useEffect, useRef } from 'react';
-import { Typography, Stack, Paper, Select, MenuItem, Tooltip, Button, IconButton } from '@mui/material';
+import { Typography, Stack, Paper, Select, MenuItem, Tooltip, Button, IconButton, FormControl, Input } from '@mui/material';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
 import TabContext from '@mui/lab/TabContext';
@@ -31,15 +31,14 @@ import QuickFilter from '../../componentsTools/DatagridToolsStyle';
 import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes } from '@mui/x-data-grid';
 import { TbPlaylistAdd } from 'react-icons/tb';
 import { IoMdTrash } from 'react-icons/io';
-import { FormControlLabel } from '@mui/material';
-
+import MontantCapitalField from './Field/MontantCapitalField';
 
 export default function AddNewFile({ confirmationState }) {
     const closed = () => {
         confirmationState(false);
     }
 
-    const [value, setValue] = useState("1"); 
+    const [value, setValue] = useState("1");
     const [listModel, setListModel] = useState([]);
     const [listAssocie, setListAssocie] = useState([]);
     const [listAssocieFormik, setListAssocieFormik] = useState([]);
@@ -52,6 +51,8 @@ export default function AddNewFile({ confirmationState }) {
     const [disableCancelBouton, setDisableCancelBouton] = useState(true);
     const [disableSaveBouton, setDisableSaveBouton] = useState(true);
     const [disableDeleteBouton, setDisableDeleteBouton] = useState(true);
+    const [disableAddRowBouton, setDisableAddRowBouton] = useState(false);
+
     const [editableRow, setEditableRow] = useState(true);
     const [openDialogDeleteAssocieRow, setOpenDialogDeleteAssocieRow] = useState(false);
 
@@ -61,8 +62,13 @@ export default function AddNewFile({ confirmationState }) {
     const [disableCancelBoutonFiliale, setDisableCancelBoutonFiliale] = useState(true);
     const [disableSaveBoutonFiliale, setDisableSaveBoutonFiliale] = useState(true);
     const [disableDeleteBoutonFiliale, setDisableDeleteBoutonFiliale] = useState(true);
+    const [disableAddRowBoutonFiliale, setDisableAddRowBoutonFiliale] = useState(false);
+
     const [editableRowFiliale, setEditableRowFiliale] = useState(true);
     const [openDialogDeleteFilialeRow, setOpenDialogDeleteFilialeRow] = useState(false);
+
+    const [selectedRowAssocie, setSelectedRowAssocie] = useState([]);
+    const [selectedRowFiliales, setSelectedRowFiliales] = useState([]);
 
     //récupération infos compte
     const { auth } = useAuth();
@@ -78,8 +84,8 @@ export default function AddNewFile({ confirmationState }) {
     const InfosNewFileInitialValues = {
         centrefisc: 'DGE', // Valeur par défaut, synchronisée avec le radio fiscal
 
-        action:'new',
-        itemId:0,
+        action: 'new',
+        itemId: 0,
         idCompte: 0,
         nomdossier: '',
         raisonsociale: '',
@@ -103,7 +109,7 @@ export default function AddNewFile({ confirmationState }) {
         avecanalytique: false,
         tauxir: '',
         assujettitva: false,
-        montantcapital: 0,
+        montantcapital: null,
         nbrpart: 0,
         valeurpart: 0,
         listeAssocies: [],
@@ -134,7 +140,7 @@ export default function AddNewFile({ confirmationState }) {
             type: 'singleSelect',
             valueOptions: TypesOptions.map((type) => type.value),
             sortable: true,
-            width: 250,
+            flex: 1,
             headerAlign: 'left',
             headerClassName: 'HeaderbackColor',
             editable: editableRow,
@@ -148,7 +154,7 @@ export default function AddNewFile({ confirmationState }) {
             headerName: 'Nom',
             type: 'text',
             sortable: true,
-            width: 400,
+            flex: 1,
             headerAlign: 'left',
             headerClassName: 'HeaderbackColor',
             disableClickEventBubbling: true,
@@ -162,7 +168,7 @@ export default function AddNewFile({ confirmationState }) {
             headerName: 'Adresse',
             type: 'text',
             sortable: true,
-            width: 450,
+            flex: 1,
             headerAlign: 'left',
             headerClassName: 'HeaderbackColor',
             editable: editableRow,
@@ -172,29 +178,99 @@ export default function AddNewFile({ confirmationState }) {
             headerName: 'Date entrée',
             type: 'date',
             sortable: true,
-            width: 150,
-            headerAlign: 'center',
-            align: 'center',
+            flex: 1,
+            headerAlign: 'left',
+            align: 'left',
             headerClassName: 'HeaderbackColor',
             editable: editableRow,
+            valueGetter: (params) => {
+                if (!params.value) return null;
+                return new Date(params.value);
+            },
+            renderCell: (params) => {
+                if (!params.value) return '';
+                const date = new Date(params.value);
+                return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+            },
+            renderEditCell: (params) => {
+                const { id, field, value, api } = params;
+
+                const handleChange = (e) => {
+                    api.setEditCellValue({ id, field, value: e.target.value });
+                };
+
+                return (
+                    <FormControl fullWidth style={{ height: '100%' }}>
+                        <Input
+                            type="date"
+                            name="dateentree"
+                            value={
+                                value instanceof Date
+                                    ? value.toISOString().substring(0, 10)
+                                    : value
+                                        ? value.substring(0, 10)
+                                        : ''
+                            }
+                            onChange={handleChange}
+                            disableUnderline
+                            style={{ height: '100%', outline: 'none' }}
+                        />
+                    </FormControl>
+                );
+            },
         },
         {
             field: 'datesortie',
             headerName: 'Date sortie',
             type: 'date',
-            align: 'center',
+            align: 'left',
             sortable: true,
-            width: 150,
-            headerAlign: 'center',
+            flex: 1,
+            headerAlign: 'left',
             headerClassName: 'HeaderbackColor',
             editable: editableRow,
+            valueGetter: (params) => {
+                if (!params.value) return null;
+                return new Date(params.value);
+            },
+            renderCell: (params) => {
+                if (!params.value) return '';
+                const date = new Date(params.value);
+                return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+            },
+            renderEditCell: (params) => {
+                const { id, field, value, api } = params;
+
+                const handleChange = (e) => {
+                    api.setEditCellValue({ id, field, value: e.target.value });
+                };
+
+                return (
+                    <FormControl fullWidth style={{ height: '100%' }}>
+                        <Input
+                            type="date"
+                            name="datesortie"
+                            value={
+                                value instanceof Date
+                                    ? value.toISOString().substring(0, 10)
+                                    : value
+                                        ? value.substring(0, 10)
+                                        : ''
+                            }
+                            onChange={handleChange}
+                            disableUnderline
+                            style={{ height: '100%', outline: 'none' }}
+                        />
+                    </FormControl>
+                );
+            },
         },
         {
             field: 'nbrpart',
             headerName: 'Nombre parts',
             type: 'number',
             sortable: true,
-            width: 150,
+            flex: 1,
             headerAlign: 'right',
             headerClassName: 'HeaderbackColor',
             editable: editableRow,
@@ -204,7 +280,7 @@ export default function AddNewFile({ confirmationState }) {
             headerName: 'En activité',
             type: 'boolean',
             sortable: true,
-            width: 150,
+            flex: 1,
             headerAlign: 'center',
             headerClassName: 'HeaderbackColor',
             editable: editableRow,
@@ -242,16 +318,19 @@ export default function AddNewFile({ confirmationState }) {
         setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
         setDisableSaveBouton(true);
         toast.success("Informations sauvegardées");
+        setDisableAddRowBouton(false);
     };
 
     const handleOpenDialogConfirmDeleteAssocieRow = () => {
         setOpenDialogDeleteAssocieRow(true);
+        setDisableAddRowBouton(false);
     }
 
     const deleteAssocieRow = (value) => {
         if (value === true) {
             setListAssocie(listAssocie.filter((row) => row.id !== selectedRowId[0]));
             setOpenDialogDeleteAssocieRow(false);
+            setDisableAddRowBouton(false);
             toast.success('Ligne supprimée avec succès');
         } else {
             setOpenDialogDeleteAssocieRow(false);
@@ -263,6 +342,7 @@ export default function AddNewFile({ confirmationState }) {
             ...rowModesModel,
             [id]: { mode: GridRowModes.View, ignoreModifications: true },
         });
+        setDisableAddRowBouton(false);
     };
 
     const processRowUpdate = (setFieldValue) => (newRow) => {
@@ -282,14 +362,14 @@ export default function AddNewFile({ confirmationState }) {
             setDisableModifyBouton(true);
             setDisableSaveBouton(true);
             setDisableCancelBouton(true);
-            toast.error("sélectionnez une seule ligne pour pouvoir la modifier");
+            toast.error("Sélectionnez une seule ligne pour pouvoir la modifier");
         } else {
             setDisableModifyBouton(false);
             setDisableSaveBouton(false);
             setDisableCancelBouton(false);
             if (!selectedRowId.includes(params.id)) {
                 setEditableRow(false);
-                toast.error("sélectionnez une ligne pour pouvoir la modifier");
+                toast.error("Sélectionnez une ligne pour pouvoir la modifier");
             } else {
                 setEditableRow(true);
             }
@@ -299,8 +379,14 @@ export default function AddNewFile({ confirmationState }) {
 
     //Ajouter une ligne dans le tableau liste associé
     const handleOpenDialogAddNewAssocie = () => {
+        setDisableModifyBouton(false);
+        setDisableCancelBouton(false);
+        setDisableDeleteBouton(false);
+
+        const newId = -Date.now();
+
         const newRow = {
-            id: listAssocie.length + 1,
+            id: newId,
             type: '',
             nom: '',
             adresse: '',
@@ -309,9 +395,15 @@ export default function AddNewFile({ confirmationState }) {
             nbrpart: 0,
             enactivite: false,
         };
-        setListAssocie([...listAssocie, newRow]);
-    }
 
+        const updatedList = [...listAssocie, newRow];
+        setListAssocie(updatedList);
+
+        setSelectedRowAssocie([newRow.id]);
+        setSelectedRowId([newRow.id]);
+
+        setDisableAddRowBouton(true);
+    };
 
     //GESTION DU TABLEAU FILIALE-------------------------------------------------------------------------------
 
@@ -322,7 +414,7 @@ export default function AddNewFile({ confirmationState }) {
             headerName: 'Nom',
             type: 'text',
             sortable: true,
-            width: 400,
+            flex: 1,
             headerAlign: 'left',
             headerClassName: 'HeaderbackColor',
             disableClickEventBubbling: true,
@@ -336,29 +428,99 @@ export default function AddNewFile({ confirmationState }) {
             headerName: 'Date entrée',
             type: 'date',
             sortable: true,
-            width: 150,
-            headerAlign: 'center',
-            align: 'center',
+            flex: 1,
+            headerAlign: 'left',
+            align: 'left',
             headerClassName: 'HeaderbackColor',
             editable: editableRowFiliale,
+            valueGetter: (params) => {
+                if (!params.value) return null;
+                return new Date(params.value);
+            },
+            renderCell: (params) => {
+                if (!params.value) return '';
+                const date = new Date(params.value);
+                return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+            },
+            renderEditCell: (params) => {
+                const { id, field, value, api } = params;
+
+                const handleChange = (e) => {
+                    api.setEditCellValue({ id, field, value: e.target.value });
+                };
+
+                return (
+                    <FormControl fullWidth style={{ height: '100%' }}>
+                        <Input
+                            type="date"
+                            name="dateentree"
+                            value={
+                                value instanceof Date
+                                    ? value.toISOString().substring(0, 10)
+                                    : value
+                                        ? value.substring(0, 10)
+                                        : ''
+                            }
+                            onChange={handleChange}
+                            disableUnderline
+                            style={{ height: '100%', outline: 'none' }}
+                        />
+                    </FormControl>
+                );
+            }
         },
         {
             field: 'datesortie',
             headerName: 'Date sortie',
             type: 'date',
-            align: 'center',
+            align: 'left',
             sortable: true,
-            width: 150,
-            headerAlign: 'center',
+            flex: 1,
+            headerAlign: 'left',
             headerClassName: 'HeaderbackColor',
             editable: editableRowFiliale,
+            valueGetter: (params) => {
+                if (!params.value) return null;
+                return new Date(params.value);
+            },
+            renderCell: (params) => {
+                if (!params.value) return '';
+                const date = new Date(params.value);
+                return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+            },
+            renderEditCell: (params) => {
+                const { id, field, value, api } = params;
+
+                const handleChange = (e) => {
+                    api.setEditCellValue({ id, field, value: e.target.value });
+                };
+
+                return (
+                    <FormControl fullWidth style={{ height: '100%' }}>
+                        <Input
+                            type="date"
+                            name="datesortie"
+                            value={
+                                value instanceof Date
+                                    ? value.toISOString().substring(0, 10)
+                                    : value
+                                        ? value.substring(0, 10)
+                                        : ''
+                            }
+                            onChange={handleChange}
+                            disableUnderline
+                            style={{ height: '100%', outline: 'none' }}
+                        />
+                    </FormControl>
+                );
+            }
         },
         {
             field: 'nbrpart',
             headerName: 'Nombre parts',
             type: 'number',
             sortable: true,
-            width: 150,
+            flex: 1,
             headerAlign: 'right',
             headerClassName: 'HeaderbackColor',
             editable: editableRowFiliale,
@@ -368,7 +530,7 @@ export default function AddNewFile({ confirmationState }) {
             headerName: 'En activité',
             type: 'boolean',
             sortable: true,
-            width: 150,
+            flex: 1,
             headerAlign: 'center',
             headerClassName: 'HeaderbackColor',
             editable: editableRowFiliale,
@@ -405,17 +567,20 @@ export default function AddNewFile({ confirmationState }) {
     const handleSaveClickFiliale = (setFieldValue) => () => {
         setRowModesModelFiliale({ ...rowModesModelFiliale, [selectedRowIdFiliale]: { mode: GridRowModes.View } });
         setDisableSaveBoutonFiliale(true);
+        setDisableAddRowBoutonFiliale(false);
         toast.success("Informations sauvegardées");
     };
 
     const handleOpenDialogConfirmDeleteAssocieRowFiliale = () => {
         setOpenDialogDeleteFilialeRow(true);
+        setDisableAddRowBoutonFiliale(false);
     }
 
     const deleteFilialeRow = (value) => {
         if (value === true) {
             setListFiliales(listFiliales.filter((row) => row.id !== selectedRowIdFiliale[0]));
             setOpenDialogDeleteFilialeRow(false);
+            setDisableAddRowBoutonFiliale(false);
             toast.success('Ligne supprimée avec succès');
         } else {
             setOpenDialogDeleteFilialeRow(false);
@@ -427,6 +592,7 @@ export default function AddNewFile({ confirmationState }) {
             ...rowModesModelFiliale,
             [id]: { mode: GridRowModes.View, ignoreModifications: true },
         });
+        setDisableAddRowBoutonFiliale(false);
     };
 
     const processRowUpdateFiliale = (setFieldValue) => (newRow) => {
@@ -463,6 +629,9 @@ export default function AddNewFile({ confirmationState }) {
 
     //Ajouter une ligne dans le tableau liste associé
     const handleOpenDialogAddNewFiliale = () => {
+        setDisableModifyBoutonFiliale(false);
+        setDisableCancelBoutonFiliale(false);
+        setDisableDeleteBoutonFiliale(false);
         const newRow = {
             id: listFiliales.length + 1,
             nom: '',
@@ -472,6 +641,9 @@ export default function AddNewFile({ confirmationState }) {
             enactivite: false,
         };
         setListFiliales([...listFiliales, newRow]);
+        setSelectedRowFiliales([newRow.id]);
+        setSelectedRowIdFiliale([newRow.id]);
+        setDisableAddRowBoutonFiliale(true);
     }
 
     //Choix TAB value-------------------------------------------------------------------------------------
@@ -532,6 +704,13 @@ export default function AddNewFile({ confirmationState }) {
 
     //submit les informations du nouveau dossier
     const handlSubmitNewFile = (values) => {
+        const montantcapitalRaw = values.montantcapital || "0";
+        const montantcapitalNumber = parseFloat(
+            montantcapitalRaw.replace(/\s/g, "").replace(",", ".") || montantcapitalRaw
+        ).toFixed(2);
+        // return console.log(values);
+        const montantCapitalFormatted = Number(montantcapitalNumber);
+        values.montantcapital = montantCapitalFormatted;
         axios.post(`/home/newFile`, values).then((response) => {
             const resData = response.data;
             if (resData.state) {
@@ -541,6 +720,32 @@ export default function AddNewFile({ confirmationState }) {
             }
             closed();
         })
+    }
+
+    const deselectRowAssocie = (ids) => {
+        const deselected = selectedRowId.filter(id => !ids.includes(id));
+
+        const updatedRowModes = { ...rowModesModel };
+        deselected.forEach((id) => {
+            updatedRowModes[id] = { mode: GridRowModes.View, ignoreModifications: true };
+        });
+        setRowModesModel(updatedRowModes);
+
+        setDisableAddRowBouton(false);
+        setSelectedRowId(ids);
+    }
+
+    const deselectRowFiliale = (ids) => {
+        const deselected = selectedRowIdFiliale.filter(id => !ids.includes(id));
+
+        const updatedRowModes = { ...rowModesModelFiliale };
+        deselected.forEach((id) => {
+            updatedRowModes[id] = { mode: GridRowModes.View, ignoreModifications: true };
+        });
+        setRowModesModelFiliale(updatedRowModes);
+
+        setDisableAddRowBoutonFiliale(false);
+        setSelectedRowIdFiliale(ids);
     }
 
     return (
@@ -562,7 +767,15 @@ export default function AddNewFile({ confirmationState }) {
                     handlSubmitNewFile(values);
                 }}
             >
-                {({ handleChange, handleSubmit, setFieldValue, resetForm }) => {
+                {({ handleChange, handleSubmit, setFieldValue, resetForm, values }) => {
+                    const calculateValeurPart = (capital, nbrPart) => {
+                        const numCapital = parseFloat(capital?.toString().replace(/\s/g, '').replace(',', '.')) || 0;
+                        const numParts = parseFloat(nbrPart) || 0;
+                        if (numParts === 0) return 0;
+                        const valPart = numCapital / numParts;
+                        const valPartFormatted = Number((valPart).toFixed(2));
+                        return valPartFormatted;
+                    };
                     return (
                         <Form style={{ width: '100%' }}>
                             <Stack width={"100%"} height={"85%"} spacing={2} alignItems={"flex-start"} justifyContent={"stretch"}>
@@ -1172,19 +1385,7 @@ export default function AddNewFile({ confirmationState }) {
                                                 >
                                                     <Stack spacing={1}>
                                                         <label htmlFor="montantcapital" style={{ fontSize: 12, color: '#3FA2F6' }}>Capitale</label>
-                                                        <Field
-                                                            required
-                                                            name='montantcapital'
-                                                            onChange={handleChange}
-                                                            type='text'
-                                                            placeholder=""
-                                                            style={{
-                                                                height: 22, borderTop: 'none',
-                                                                borderLeft: 'none', borderRight: 'none',
-                                                                outline: 'none', fontSize: 14, borderWidth: '0.5px',
-                                                                width: '200px',
-                                                            }}
-                                                        />
+                                                        <MontantCapitalField setFieldValue={setFieldValue} calculateValeurPart={calculateValeurPart} values={values} />
                                                         <ErrorMessage name='montantcapital' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
                                                     </Stack>
 
@@ -1193,14 +1394,26 @@ export default function AddNewFile({ confirmationState }) {
                                                         <Field
                                                             required
                                                             name='nbrpart'
-                                                            onChange={handleChange}
+                                                            onChange={(e) => {
+                                                                // handleChange(e);
+                                                                const nbrPartValue = e.target.value;
+                                                                const nbrPartFormatted = Number(nbrPartValue);
+                                                                setFieldValue('nbrpart', nbrPartFormatted);
+                                                                const newValeurPart = calculateValeurPart(values.montantcapital, nbrPartFormatted);
+                                                                setFieldValue('valeurpart', newValeurPart);
+                                                            }}
                                                             type='text'
                                                             placeholder=""
                                                             style={{
-                                                                height: 22, borderTop: 'none',
-                                                                borderLeft: 'none', borderRight: 'none',
-                                                                outline: 'none', fontSize: 14, borderWidth: '0.5px',
+                                                                height: 22,
+                                                                borderTop: 'none',
+                                                                borderLeft: 'none',
+                                                                borderRight: 'none',
+                                                                outline: 'none',
+                                                                fontSize: 14,
+                                                                borderWidth: '0.5px',
                                                                 width: '100px',
+                                                                textAlign: "right",
                                                             }}
                                                         />
                                                         <ErrorMessage name='nbrpart' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
@@ -1208,19 +1421,36 @@ export default function AddNewFile({ confirmationState }) {
 
                                                     <Stack spacing={1}>
                                                         <label htmlFor="valeurpart" style={{ fontSize: 12, color: '#3FA2F6' }}>Valeur d'une part</label>
-                                                        <Field
-                                                            disabled
-                                                            name='valeurpart'
-                                                            onChange={handleChange}
-                                                            type='text'
-                                                            placeholder=""
-                                                            style={{
-                                                                height: 22, borderTop: 'none',
-                                                                borderLeft: 'none', borderRight: 'none',
-                                                                outline: 'none', fontSize: 14, borderWidth: '0.5px',
-                                                                width: '150px',
+                                                        <Field name="valeurpart">
+                                                            {({ field }) => {
+                                                                const numericValue = parseFloat(field.value?.toString().replace(/\s/g, '').replace(',', '.')) || 0;
+                                                                const formattedValue = numericValue.toLocaleString("fr-FR", {
+                                                                    minimumFractionDigits: 2,
+                                                                    maximumFractionDigits: 2,
+                                                                });
+
+                                                                return (
+                                                                    <input
+                                                                        {...field}
+                                                                        type="text"
+                                                                        disabled
+                                                                        value={formattedValue}
+                                                                        style={{
+                                                                            height: 22,
+                                                                            borderTop: 'none',
+                                                                            borderLeft: 'none',
+                                                                            borderRight: 'none',
+                                                                            outline: 'none',
+                                                                            fontSize: 14,
+                                                                            borderWidth: '0.5px',
+                                                                            width: '120px',
+                                                                            textAlign: 'right',
+                                                                            color: 'black'
+                                                                        }}
+                                                                    />
+                                                                );
                                                             }}
-                                                        />
+                                                        </Field>
                                                         <ErrorMessage name='valeurpart' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
                                                     </Stack>
 
@@ -1233,6 +1463,7 @@ export default function AddNewFile({ confirmationState }) {
                                                         <IconButton
                                                             variant="contained"
                                                             onClick={handleOpenDialogAddNewAssocie}
+                                                            disabled={disableAddRowBouton}
                                                             style={{
                                                                 width: "35px", height: '35px',
                                                                 borderRadius: "2px", borderColor: "transparent",
@@ -1315,7 +1546,10 @@ export default function AddNewFile({ confirmationState }) {
                                                     </Tooltip>
                                                 </Stack>
 
-                                                <Stack width={"100%"} minHeight={'550px'}>
+                                                <Stack
+                                                    width={"100%"}
+                                                    height={"500px"}
+                                                >
                                                     <DataGrid
                                                         disableMultipleSelection={DataGridStyle.disableMultipleSelection}
                                                         disableColumnSelector={DataGridStyle.disableColumnSelector}
@@ -1330,7 +1564,9 @@ export default function AddNewFile({ confirmationState }) {
                                                         rows={listAssocie}
                                                         onRowClick={(e) => handleCellEditCommit(e.row)}
                                                         onRowSelectionModelChange={ids => {
+                                                            setSelectedRowAssocie(ids)
                                                             saveSelectedRow(ids);
+                                                            deselectRowAssocie(ids);
                                                         }}
                                                         editMode='row'
                                                         rowModesModel={rowModesModel}
@@ -1351,9 +1587,9 @@ export default function AddNewFile({ confirmationState }) {
                                                         columnVisibilityModel={{
                                                             id: false,
                                                         }}
+                                                        rowSelectionModel={selectedRowAssocie}
                                                     />
                                                 </Stack>
-
                                             </Stack>
                                         </TabPanel>
 
@@ -1366,6 +1602,7 @@ export default function AddNewFile({ confirmationState }) {
                                                 >
                                                     <Tooltip title="Ajouter une ligne">
                                                         <IconButton
+                                                            disabled={disableAddRowBoutonFiliale}
                                                             variant="contained"
                                                             onClick={handleOpenDialogAddNewFiliale}
                                                             style={{
@@ -1450,7 +1687,10 @@ export default function AddNewFile({ confirmationState }) {
                                                     </Tooltip>
                                                 </Stack>
 
-                                                <Stack width={"100%"} height={'calc(100% - 30px)'} minHeight={'600px'}>
+                                                <Stack
+                                                    width={"100%"}
+                                                    height={"500px"}
+                                                >
                                                     <DataGrid
                                                         disableMultipleSelection={DataGridStyle.disableMultipleSelection}
                                                         disableColumnSelector={DataGridStyle.disableColumnSelector}
@@ -1465,7 +1705,9 @@ export default function AddNewFile({ confirmationState }) {
                                                         rows={listFiliales}
                                                         onRowClick={(e) => handleCellEditCommitFiliale(e.row)}
                                                         onRowSelectionModelChange={ids => {
+                                                            setSelectedRowFiliales(ids);
                                                             saveSelectedRowFiliale(ids);
+                                                            deselectRowFiliale(ids);
                                                         }}
                                                         editMode='row'
                                                         rowModesModel={rowModesModelFiliale}
@@ -1486,6 +1728,7 @@ export default function AddNewFile({ confirmationState }) {
                                                         columnVisibilityModel={{
                                                             id: false,
                                                         }}
+                                                        rowSelectionModel={selectedRowFiliales}
                                                     />
                                                 </Stack>
 

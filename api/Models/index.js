@@ -115,6 +115,11 @@ db.caAxes = require('./caAxeModel')(sequelize, DataTypes);
 db.localites = require('./localites')(sequelize, DataTypes);
 //
 
+//
+db.abonnements = require('./abonnementModel')(sequelize, DataTypes);
+db.paiements = require('./paiementModel')(sequelize, DataTypes);
+//
+
 const Devise = require('./deviseModel')(sequelize, DataTypes);
 db.Devise = Devise;
 db.Devise.belongsTo(db.userscomptes, { foreignKey: 'id_compte' });
@@ -253,6 +258,13 @@ db.isi.belongsTo(db.exercices, { foreignKey: 'id_exercice', targetKey: 'id' });
 db.dossierplancomptable.hasMany(db.isi, { foreignKey: 'id_numcpt', sourceKey: 'id' });
 db.isi.belongsTo(db.dossierplancomptable, { foreignKey: 'id_numcpt', targetKey: 'id' });
 
+// Abonnement
+db.userscomptes.hasMany(db.abonnements, { foreignKey: 'compte_id', sourceKey: 'id' });
+db.abonnements.belongsTo(db.userscomptes, { foreignKey: 'compte_id', targetKey: 'id' });
+
+// Paiement
+db.userscomptes.hasMany(db.paiements, { foreignKey: 'compte_id', sourceKey: 'id' });
+db.paiements.belongsTo(db.userscomptes, { foreignKey: 'compte_id', targetKey: 'id' });
 
 db.classifications.belongsTo(db.dossiers, { foreignKey: 'id_dossier' });
 db.dossiers.hasMany(db.classifications, { foreignKey: 'id_dossier' });

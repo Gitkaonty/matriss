@@ -1,9 +1,9 @@
-import {React, useState, useEffect } from 'react';
+import { React, useState, useEffect } from 'react';
 // Ajout de l'état pour le type de centre fiscal
 // (à placer au début du composant ParamCRM)
 
-import { useNavigate, useParams} from 'react-router-dom';
-import { Typography, Stack, Paper, TextField, FormControl, InputLabel, Select, MenuItem, Tooltip, Button, IconButton, FormHelperText, Input } from '@mui/material';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Typography, Stack, Paper, TextField, FormControl, InputLabel, Select, MenuItem, Tooltip, Button, IconButton, FormHelperText, Input, Autocomplete } from '@mui/material';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
 import TabContext from '@mui/lab/TabContext';
@@ -39,6 +39,7 @@ import QuickFilter from '../../../componentsTools/DatagridToolsStyle';
 import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes } from '@mui/x-data-grid';
 import { TbPlaylistAdd } from 'react-icons/tb';
 import { IoMdTrash } from 'react-icons/io';
+import MontantCapitalField from '../../home/Field/MontantCapitalField';
 
 export default function ParamCRM() {
     // État pour le type de centre fiscal (DGE ou centre fiscale)
@@ -65,6 +66,8 @@ export default function ParamCRM() {
     const [disableCancelBouton, setDisableCancelBouton] = useState(true);
     const [disableSaveBouton, setDisableSaveBouton] = useState(true);
     const [disableDeleteBouton, setDisableDeleteBouton] = useState(true);
+    const [disableAddRowBouton, setDisableAddRowBouton] = useState(false);
+
     const [editableRow, setEditableRow] = useState(true);
     const [openDialogDeleteAssocieRow, setOpenDialogDeleteAssocieRow] = useState(false);
 
@@ -74,6 +77,9 @@ export default function ParamCRM() {
     const [disableCancelBoutonFiliale, setDisableCancelBoutonFiliale] = useState(true);
     const [disableSaveBoutonFiliale, setDisableSaveBoutonFiliale] = useState(true);
     const [disableDeleteBoutonFiliale, setDisableDeleteBoutonFiliale] = useState(true);
+    const [disableAddRowBoutonFiliale, setDisableAddRowBoutonFiliale] = useState(false);
+
+
     const [editableRowFiliale, setEditableRowFiliale] = useState(true);
     const [openDialogDeleteFilialeRow, setOpenDialogDeleteFilialeRow] = useState(false);
 
@@ -85,6 +91,10 @@ export default function ParamCRM() {
     const [disableDeleteBoutonDomBank, setDisableDeleteBoutonDomBank] = useState(true);
     const [editableRowDomBank, setEditableRowDomBank] = useState(true);
     const [openDialogDeleteDomBankRow, setOpenDialogDeleteDomBankRow] = useState(false);
+
+    const [selectedRowAssocie, setSelectedRowAssocie] = useState([]);
+    const [selectedRowFiliales, setSelectedRowFiliales] = useState([]);
+    const [selectedRowDomBancaires, setSelectedRowDomBancaires] = useState([]);
 
     const [crm, setCrm] = useState([]);
 
@@ -279,7 +289,7 @@ export default function ParamCRM() {
         pourcentageca: 0,
         montantmin: 0,
         assujettitva: false,
-        montantcapital: 0,
+        montantcapital: null,
         nbrpart: 0,
         valeurpart: 0,
         listeAssocies: [],
@@ -335,7 +345,7 @@ export default function ParamCRM() {
             type: 'singleSelect',
             valueOptions: TypesOptions.map((type) => type.value),
             sortable: true,
-            width: 200,
+            flex: 1,
             headerAlign: 'left',
             headerClassName: 'HeaderbackColor',
             editable: editableRow,
@@ -372,7 +382,7 @@ export default function ParamCRM() {
             headerName: 'Nom',
             type: 'text',
             sortable: true,
-            width: 350,
+            flex: 1,
             headerAlign: 'left',
             headerClassName: 'HeaderbackColor',
             disableClickEventBubbling: true,
@@ -408,7 +418,7 @@ export default function ParamCRM() {
             headerName: 'Adresse',
             type: 'text',
             sortable: true,
-            width: 450,
+            flex: 1,
             headerAlign: 'left',
             headerClassName: 'HeaderbackColor',
             editable: editableRow,
@@ -440,34 +450,44 @@ export default function ParamCRM() {
             headerName: 'Date entrée',
             type: 'date',
             sortable: true,
-            width: 150,
-            headerAlign: 'center',
-            align: 'center',
+            flex: 1,
+            headerAlign: 'left',
+            align: 'left',
             headerClassName: 'HeaderbackColor',
             editable: editableRow,
             valueGetter: (params) => {
-                // Vérifiez si la valeur est une chaîne et convertissez-la en un objet Date
-                return params.row.dateentree ? new Date(params.row.dateentree) : null;
+                if (!params.value) return null;
+                return new Date(params.value);
+            },
+            renderCell: (params) => {
+                if (!params.value) return '';
+                const date = new Date(params.value);
+                return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
             },
             renderEditCell: (params) => {
-                return (
-                    <FormControl fullWidth style={{ height: '120%' }}>
-                        <Input
-                            style={{
-                                height: '100%', alignItems: 'center',
-                                outline: 'none',
-                                backgroundColor: dateentreeValidationColor
-                            }}
-                            type="date"
-                            value={useFormikAssocie.values.dateentree || ''}
-                            onChange={(e) => useFormikAssocie.setFieldValue('dateentree', e.target.value)}
-                            label="dateentree"
-                            disableUnderline={true}
-                        />
+                const { id, field, value, api } = params;
 
-                        <FormHelperText style={{ color: 'red' }}>
-                            {useFormikAssocie.errors.dateentree && useFormikAssocie.touched.dateentree && useFormikAssocie.errors.dateentree}
-                        </FormHelperText>
+                const handleChange = (e) => {
+                    api.setEditCellValue({ id, field, value: e.target.value });
+                    useFormikAssocie.setFieldValue(field, e.target.value);
+                };
+
+                return (
+                    <FormControl fullWidth style={{ height: '100%' }}>
+                        <Input
+                            type="date"
+                            name="dateentree"
+                            value={
+                                value instanceof Date
+                                    ? value.toISOString().substring(0, 10)
+                                    : value
+                                        ? value.substring(0, 10)
+                                        : ''
+                            }
+                            onChange={handleChange}
+                            disableUnderline
+                            style={{ height: '100%', outline: 'none' }}
+                        />
                     </FormControl>
                 );
             },
@@ -476,35 +496,45 @@ export default function ParamCRM() {
             field: 'datesortie',
             headerName: 'Date sortie',
             type: 'date',
-            align: 'center',
+            align: 'left',
             sortable: true,
-            width: 150,
-            headerAlign: 'center',
+            flex: 1,
+            headerAlign: 'left',
             headerClassName: 'HeaderbackColor',
             editable: editableRow,
             valueGetter: (params) => {
-                // Vérifiez si la valeur est une chaîne et convertissez-la en un objet Date
-                return params.row.datesortie ? new Date(params.row.datesortie) : null;
+                if (!params.value) return null;
+                return new Date(params.value);
+            },
+            renderCell: (params) => {
+                if (!params.value) return '';
+                const date = new Date(params.value);
+                return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
             },
             renderEditCell: (params) => {
-                return (
-                    <FormControl fullWidth style={{ height: '120%' }}>
-                        <Input
-                            style={{
-                                height: '100%', alignItems: 'center',
-                                outline: 'none',
-                                //backgroundColor: libelleValidationColor
-                            }}
-                            type="date"
-                            value={useFormikAssocie.values.datesortie || ''}
-                            onChange={(e) => useFormikAssocie.setFieldValue('datesortie', e.target.value)}
-                            label="datesortie"
-                            disableUnderline={true}
-                        />
+                const { id, field, value, api } = params;
 
-                        <FormHelperText style={{ color: 'red' }}>
-                            {useFormikAssocie.errors.datesortie && useFormikAssocie.touched.datesortie && useFormikAssocie.errors.datesortie}
-                        </FormHelperText>
+                const handleChange = (e) => {
+                    api.setEditCellValue({ id, field, value: e.target.value });
+                    useFormikAssocie.setFieldValue(field, e.target.value);
+                };
+
+                return (
+                    <FormControl fullWidth style={{ height: '100%' }}>
+                        <Input
+                            type="date"
+                            name="datesortie"
+                            value={
+                                value instanceof Date
+                                    ? value.toISOString().substring(0, 10)
+                                    : value
+                                        ? value.substring(0, 10)
+                                        : ''
+                            }
+                            onChange={handleChange}
+                            disableUnderline
+                            style={{ height: '100%', outline: 'none' }}
+                        />
                     </FormControl>
                 );
             },
@@ -514,7 +544,7 @@ export default function ParamCRM() {
             headerName: 'Nombre parts',
             type: 'number',
             sortable: true,
-            width: 150,
+            flex: 1,
             headerAlign: 'right',
             headerClassName: 'HeaderbackColor',
             editable: editableRow,
@@ -546,7 +576,7 @@ export default function ParamCRM() {
             headerName: 'En activité',
             type: 'boolean',
             sortable: true,
-            width: 150,
+            flex: 1,
             headerAlign: 'center',
             headerClassName: 'HeaderbackColor',
             editable: editableRow,
@@ -582,7 +612,6 @@ export default function ParamCRM() {
             // },
         },
     ];
-
     const saveSelectedRow = (ids) => {
         if (ids.length === 1) {
             setSelectedRowId(ids);
@@ -685,6 +714,7 @@ export default function ParamCRM() {
                 const resData = response.data;
                 if (resData.state) {
                     setDisableSaveBouton(true);
+                    setDisableAddRowBouton(false);
 
                     useFormikAssocie.resetForm();
                     getInfosAssocie(fileId);
@@ -701,16 +731,24 @@ export default function ParamCRM() {
 
     const handleOpenDialogConfirmDeleteAssocieRow = () => {
         setOpenDialogDeleteAssocieRow(true);
+        setDisableAddRowBouton(false);
     }
 
     const deleteAssocieRow = (value) => {
         if (value === true) {
             if (selectedRowId.length === 1) {
                 const idToDelete = selectedRowId[0];
+                if (idToDelete < 0) {
+                    setOpenDialogDeleteAssocieRow(false);
+                    setDisableAddRowBouton(false);
+                    setListAssocie(listAssocie.filter((row) => row.id !== idToDelete));
+                    return;
+                }
                 axios.post(`/paramCrm/associeDelete`, { fileId, compteId, idToDelete }).then((response) => {
                     const resData = response.data;
                     if (resData.state) {
                         setOpenDialogDeleteAssocieRow(false);
+                        setDisableAddRowBouton(false);
                         setListAssocie(listAssocie.filter((row) => row.id !== selectedRowId[0]));
                         toast.success(resData.msg);
                     } else {
@@ -730,6 +768,7 @@ export default function ParamCRM() {
             ...rowModesModel,
             [id]: { mode: GridRowModes.View, ignoreModifications: true },
         });
+        setDisableAddRowBouton(false);
     };
 
     const processRowUpdate = (setFieldValue) => (newRow) => {
@@ -749,14 +788,14 @@ export default function ParamCRM() {
             setDisableModifyBouton(true);
             setDisableSaveBouton(true);
             setDisableCancelBouton(true);
-            toast.error("sélectionnez une seule ligne pour pouvoir la modifier");
+            toast.error("Sélectionnez une seule ligne pour pouvoir la modifier");
         } else {
             setDisableModifyBouton(false);
             setDisableSaveBouton(false);
             setDisableCancelBouton(false);
             if (!selectedRowId.includes(params.id)) {
                 setEditableRow(false);
-                toast.error("sélectionnez une ligne pour pouvoir la modifier");
+                toast.error("Sélectionnez une ligne pour pouvoir la modifier");
             } else {
                 setEditableRow(true);
             }
@@ -771,7 +810,10 @@ export default function ParamCRM() {
 
     //Ajouter une ligne dans le tableau liste associé
     const handleOpenDialogAddNewAssocie = () => {
-        const newId = -1 * (getMaxID(listAssocie) + 1);
+        setDisableModifyBouton(false);
+        setDisableCancelBouton(false);
+        setDisableDeleteBouton(false);
+        const newId = -Date.now();
 
         useFormikAssocie.setFieldValue("idAssocie", newId);
 
@@ -786,6 +828,12 @@ export default function ParamCRM() {
             enactivite: false,
         };
         setListAssocie([...listAssocie, newRow]);
+        const updatedList = [...listAssocie, newRow];
+        setListAssocie(updatedList);
+
+        setSelectedRowAssocie([newRow.id]);
+        setSelectedRowId([newRow.id]);
+        setDisableAddRowBouton(true);
     }
 
 
@@ -798,7 +846,7 @@ export default function ParamCRM() {
             headerName: 'Nom',
             type: 'text',
             sortable: true,
-            width: 350,
+            flex: 1,
             headerAlign: 'left',
             headerClassName: 'HeaderbackColor',
             disableClickEventBubbling: true,
@@ -834,34 +882,44 @@ export default function ParamCRM() {
             headerName: 'Date entrée',
             type: 'date',
             sortable: true,
-            width: 150,
-            headerAlign: 'center',
-            align: 'center',
+            flex: 1,
+            headerAlign: 'left',
+            align: 'left',
             headerClassName: 'HeaderbackColor',
             editable: editableRowFiliale,
             valueGetter: (params) => {
-                // Vérifiez si la valeur est une chaîne et convertissez-la en un objet Date
-                return params.row.dateentree ? new Date(params.row.dateentree) : null;
+                if (!params.value) return null;
+                return new Date(params.value);
+            },
+            renderCell: (params) => {
+                if (!params.value) return '';
+                const date = new Date(params.value);
+                return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
             },
             renderEditCell: (params) => {
-                return (
-                    <FormControl fullWidth style={{ height: '120%' }}>
-                        <Input
-                            style={{
-                                height: '100%', alignItems: 'center',
-                                outline: 'none',
-                                backgroundColor: dateentreeFilialeValidationColor
-                            }}
-                            type="date"
-                            value={useFormikFiliale.values.dateentree || ''}
-                            onChange={(e) => useFormikFiliale.setFieldValue('dateentree', e.target.value)}
-                            label="dateentree"
-                            disableUnderline={true}
-                        />
+                const { id, field, value, api } = params;
 
-                        <FormHelperText style={{ color: 'red' }}>
-                            {useFormikFiliale.errors.dateentree && useFormikFiliale.touched.dateentree && useFormikFiliale.errors.dateentree}
-                        </FormHelperText>
+                const handleChange = (e) => {
+                    api.setEditCellValue({ id, field, value: e.target.value });
+                    useFormikFiliale.setFieldValue(field, e.target.value);
+                };
+
+                return (
+                    <FormControl fullWidth style={{ height: '100%' }}>
+                        <Input
+                            type="date"
+                            name="dateentree"
+                            value={
+                                value instanceof Date
+                                    ? value.toISOString().substring(0, 10)
+                                    : value
+                                        ? value.substring(0, 10)
+                                        : ''
+                            }
+                            onChange={handleChange}
+                            disableUnderline
+                            style={{ height: '100%', outline: 'none' }}
+                        />
                     </FormControl>
                 );
             },
@@ -870,35 +928,45 @@ export default function ParamCRM() {
             field: 'datesortie',
             headerName: 'Date sortie',
             type: 'date',
-            align: 'center',
+            align: 'left',
             sortable: true,
-            width: 150,
-            headerAlign: 'center',
+            flex: 1,
+            headerAlign: 'left',
             headerClassName: 'HeaderbackColor',
             editable: editableRowFiliale,
             valueGetter: (params) => {
-                // Vérifiez si la valeur est une chaîne et convertissez-la en un objet Date
-                return params.row.datesortie ? new Date(params.row.datesortie) : null;
+                if (!params.value) return null;
+                return new Date(params.value);
+            },
+            renderCell: (params) => {
+                if (!params.value) return '';
+                const date = new Date(params.value);
+                return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
             },
             renderEditCell: (params) => {
-                return (
-                    <FormControl fullWidth style={{ height: '120%' }}>
-                        <Input
-                            style={{
-                                height: '100%', alignItems: 'center',
-                                outline: 'none',
-                                //backgroundColor: libelleValidationColor
-                            }}
-                            type="date"
-                            value={useFormikFiliale.values.datesortie || ''}
-                            onChange={(e) => useFormikFiliale.setFieldValue('datesortie', e.target.value)}
-                            label="datesortie"
-                            disableUnderline={true}
-                        />
+                const { id, field, value, api } = params;
 
-                        <FormHelperText style={{ color: 'red' }}>
-                            {useFormikFiliale.errors.datesortie && useFormikFiliale.touched.datesortie && useFormikFiliale.errors.datesortie}
-                        </FormHelperText>
+                const handleChange = (e) => {
+                    api.setEditCellValue({ id, field, value: e.target.value });
+                    useFormikFiliale.setFieldValue(field, e.target.value);
+                };
+
+                return (
+                    <FormControl fullWidth style={{ height: '100%' }}>
+                        <Input
+                            type="date"
+                            name="datesortie"
+                            value={
+                                value instanceof Date
+                                    ? value.toISOString().substring(0, 10)
+                                    : value
+                                        ? value.substring(0, 10)
+                                        : ''
+                            }
+                            onChange={handleChange}
+                            disableUnderline
+                            style={{ height: '100%', outline: 'none' }}
+                        />
                     </FormControl>
                 );
             },
@@ -908,7 +976,7 @@ export default function ParamCRM() {
             headerName: 'Nombre parts',
             type: 'number',
             sortable: true,
-            width: 150,
+            flex: 1,
             headerAlign: 'right',
             headerClassName: 'HeaderbackColor',
             editable: editableRowFiliale,
@@ -940,7 +1008,7 @@ export default function ParamCRM() {
             headerName: 'En activité',
             type: 'boolean',
             sortable: true,
-            width: 150,
+            flex: 1,
             headerAlign: 'center',
             headerClassName: 'HeaderbackColor',
             editable: editableRowFiliale,
@@ -1057,6 +1125,7 @@ export default function ParamCRM() {
                 const resData = response.data;
                 if (resData.state) {
                     setDisableSaveBoutonFiliale(true);
+                    setDisableAddRowBoutonFiliale(false);
 
                     useFormikFiliale.resetForm();
                     getInfosFiliale(fileId);
@@ -1073,16 +1142,24 @@ export default function ParamCRM() {
 
     const handleOpenDialogConfirmDeleteAssocieRowFiliale = () => {
         setOpenDialogDeleteFilialeRow(true);
+        setDisableAddRowBoutonFiliale(false);
     }
 
     const deleteFilialeRow = (value) => {
         if (value === true) {
             if (selectedRowIdFiliale.length === 1) {
                 const idToDelete = selectedRowIdFiliale[0];
+                if (idToDelete < 0) {
+                    setOpenDialogDeleteFilialeRow(false);
+                    setListFiliales(listFiliales.filter((row) => row.id !== idToDelete));
+                    setDisableAddRowBoutonFiliale(false);
+                    return
+                }
                 axios.post(`/paramCrm/filialeDelete`, { fileId, compteId, idToDelete }).then((response) => {
                     const resData = response.data;
                     if (resData.state) {
                         setOpenDialogDeleteFilialeRow(false);
+                        setDisableAddRowBoutonFiliale(false);
                         setListFiliales(listFiliales.filter((row) => row.id !== selectedRowIdFiliale[0]));
                         toast.success(resData.msg);
                     } else {
@@ -1102,6 +1179,7 @@ export default function ParamCRM() {
             ...rowModesModelFiliale,
             [id]: { mode: GridRowModes.View, ignoreModifications: true },
         });
+        setDisableAddRowBoutonFiliale(false);
     };
 
     const processRowUpdateFiliale = (setFieldValue) => (newRow) => {
@@ -1138,7 +1216,10 @@ export default function ParamCRM() {
 
     //Ajouter une ligne dans le tableau liste associé
     const handleOpenDialogAddNewFiliale = () => {
-        const newId = -1 * (getMaxID(listFiliales) + 1);
+        setDisableModifyBoutonFiliale(false);
+        setDisableCancelBoutonFiliale(false);
+        setDisableDeleteBoutonFiliale(false);
+        const newId = -Date.now();
 
         useFormikFiliale.setFieldValue("idFiliale", newId);
 
@@ -1151,6 +1232,9 @@ export default function ParamCRM() {
             enactivite: false,
         };
         setListFiliales([...listFiliales, newRow]);
+        setSelectedRowFiliales([newRow.id]);
+        setSelectedRowIdFiliale([newRow.id]);
+        setDisableAddRowBoutonFiliale(true);
     }
 
 
@@ -1189,7 +1273,11 @@ export default function ParamCRM() {
                             }}
                             type="text"
                             value={useFormikDomBank.values.banque}
-                            onChange={(e) => useFormikDomBank.setFieldValue('banque', e.target.value)}
+                            onChange={(e) => {
+                                const v = e.target.value;
+                                useFormikDomBank.setFieldValue('banque', v);
+                                params.api.setEditCellValue({ id: params.id, field: params.field, value: v });
+                            }}
                             label="banque"
                             disableUnderline={true}
                         />
@@ -1225,7 +1313,11 @@ export default function ParamCRM() {
                             }}
                             type="text"
                             value={useFormikDomBank.values.numcompte}
-                            onChange={(e) => useFormikDomBank.setFieldValue('numcompte', e.target.value)}
+                            onChange={(e) => {
+                                const v = e.target.value;
+                                useFormikDomBank.setFieldValue('numcompte', v);
+                                params.api.setEditCellValue({ id: params.id, field: params.field, value: v });
+                            }}
                             label="numcompte"
                             disableUnderline={true}
                         />
@@ -1261,7 +1353,11 @@ export default function ParamCRM() {
                             }}
                             type="text"
                             value={useFormikDomBank.values.devise}
-                            onChange={(e) => useFormikDomBank.setFieldValue('devise', e.target.value)}
+                            onChange={(e) => {
+                                const v = e.target.value;
+                                useFormikDomBank.setFieldValue('devise', v);
+                                params.api.setEditCellValue({ id: params.id, field: params.field, value: v });
+                            }}
                             label="devise"
                             disableUnderline={true}
                         />
@@ -1301,6 +1397,7 @@ export default function ParamCRM() {
                                 field: params.field,
                                 value: newValue ? newValue.nompays : "",
                             });
+                            useFormikDomBank.setFieldValue('pays', newValue ? newValue.nompays : "");
                         }}
                         noOptionsText="Aucun pays trouvé"
                         renderInput={(paramsInput) => (
@@ -1342,7 +1439,11 @@ export default function ParamCRM() {
                         // value={formNewParam.values.active}
                         checked={useFormikDomBank.values.enactivite}
                         type="checkbox"
-                        onChange={(e) => handleCheckboxChangeDomBank(e.target.checked)}
+                        onChange={(e) => {
+                            const checked = e.target.checked;
+                            handleCheckboxChangeDomBank(checked);
+                            params.api.setEditCellValue({ id: params.id, field: params.field, value: checked });
+                        }}
                     />
                 );
             },
@@ -1409,6 +1510,7 @@ export default function ParamCRM() {
         let saveBoolNumCompte = false;
         let saveBoolDevise = false;
         let saveBoolPays = false;
+        console.log(useFormikDomBank.values);
 
         if (useFormikDomBank.values.banque === '') {
             setBankDomBankValidationColor('#F6D6D6');
@@ -1470,6 +1572,11 @@ export default function ParamCRM() {
         if (value === true) {
             if (selectedRowIdDomBank.length === 1) {
                 const idToDelete = selectedRowIdDomBank[0];
+                if (idToDelete < 0) {
+                    setOpenDialogDeleteDomBankRow(false);
+                    setListDomBank(listDomBank.filter((row) => row.id !== idToDelete));
+                    return;
+                }
                 axios.post(`/paramCrm/DomBankDelete`, { fileId, compteId, idToDelete }).then((response) => {
                     const resData = response.data;
                     if (resData.state) {
@@ -1529,6 +1636,9 @@ export default function ParamCRM() {
 
     //Ajouter une ligne dans le tableau liste domiciliation bancaires
     const handleOpenDialogAddNewDomBank = () => {
+        setDisableModifyBoutonDomBank(false);
+        setDisableCancelBoutonDomBank(false);
+        setDisableDeleteBoutonDomBank(false);
         const newId = -1 * (getMaxID(listDomBank) + 1);
         let arrayId = [];
         arrayId = [...arrayId, newId];
@@ -1543,6 +1653,8 @@ export default function ParamCRM() {
             pays: '',
         };
         setListDomBank([...listDomBank, newRow]);
+        setSelectedRowDomBancaires([newRow.id]);
+        setSelectedRowIdDomBank([newRow.id]);
         // setSelectedRowIdDomBank(arrayId);
         // setRowModesModelDomBank({ ...rowModesModelDomBank, [arrayId]: { mode: GridRowModes.Edit } });
         // setDisableSaveBoutonDomBank(false);
@@ -1606,7 +1718,13 @@ export default function ParamCRM() {
 
     //submit les informations du nouveau dossier
     const handlSubmitModification = (values) => {
-        console.log("Modifié : ", values);
+        const montantcapitalRaw = values.montantcapital || "0";
+        const montantcapitalNumber = parseFloat(
+            montantcapitalRaw.replace(/\s/g, "").replace(",", ".") || montantcapitalRaw
+        ).toFixed(2);
+        // return console.log(values);
+        const montantCapitalFormatted = Number(montantcapitalNumber);
+        values.montantcapital = montantCapitalFormatted;
         axios.post(`/paramCrm/modifying`, values).then((response) => {
             const resData = response.data;
             if (resData.state) {
@@ -1616,6 +1734,32 @@ export default function ParamCRM() {
             }
             //closed();
         });
+    }
+
+    const deselectRow = (ids) => {
+        const deselected = selectedRowId.filter(id => !ids.includes(id));
+
+        const updatedRowModes = { ...rowModesModel };
+        deselected.forEach((id) => {
+            updatedRowModes[id] = { mode: GridRowModes.View, ignoreModifications: true };
+        });
+        setRowModesModel(updatedRowModes);
+
+        setDisableAddRowBouton(false);
+        setSelectedRowId(ids);
+    }
+
+    const deselectRowFiliale = (ids) => {
+        const deselected = selectedRowIdFiliale.filter(id => !ids.includes(id));
+
+        const updatedRowModes = { ...rowModesModel };
+        deselected.forEach((id) => {
+            updatedRowModes[id] = { mode: GridRowModes.View, ignoreModifications: true };
+        });
+        setRowModesModelFiliale(updatedRowModes);
+
+        setDisableAddRowBoutonFiliale(false);
+        setSelectedRowIdFiliale(ids);
     }
 
     return (
@@ -1653,6 +1797,16 @@ export default function ParamCRM() {
                         }}
                     >
                         {({ handleChange, handleSubmit, setFieldValue, resetForm, values }) => {
+
+                            const calculateValeurPart = (capital, nbrPart) => {
+                                const numCapital = parseFloat(capital?.toString().replace(/\s/g, '').replace(',', '.')) || 0;
+                                const numParts = parseFloat(nbrPart) || 0;
+                                if (numParts === 0) return 0;
+                                const valPart = numCapital / numParts;
+                                const valPartFormatted = Number((valPart).toFixed(2));
+                                return valPartFormatted;
+                            };
+
                             useEffect(() => {
                                 const id = fileId;
                                 axios.get(`/paramCrm/infoscrm/${id}`).then((response) => {
@@ -1688,7 +1842,11 @@ export default function ParamCRM() {
                                         setFieldValue('pourcentageca', crmData.pourcentageca);
                                         setFieldValue('montantmin', crmData.montantmin);
                                         setFieldValue('assujettitva', crmData.assujettitva);
-                                        setFieldValue('montantcapital', crmData.capital);
+                                        const formattedCapital = Number(crmData.capital).toLocaleString('fr-FR', {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                        });
+                                        setFieldValue('montantcapital', formattedCapital);
                                         setFieldValue('nbrpart', crmData.nbrpart);
                                         setFieldValue('valeurpart', crmData.valeurpart);
                                         setFieldValue('compteisi', Number(crmData.compteisi));
@@ -2379,7 +2537,7 @@ export default function ParamCRM() {
                                                         >
                                                             <Stack spacing={1}>
                                                                 <label htmlFor="montantcapital" style={{ fontSize: 12, color: '#3FA2F6' }}>Capitale</label>
-                                                                <Field
+                                                                {/* <Field
                                                                     required
                                                                     name='montantcapital'
                                                                     onChange={handleChange}
@@ -2391,7 +2549,8 @@ export default function ParamCRM() {
                                                                         outline: 'none', fontSize: 14, borderWidth: '0.5px',
                                                                         width: '200px',
                                                                     }}
-                                                                />
+                                                                /> */}
+                                                                <MontantCapitalField setFieldValue={setFieldValue} calculateValeurPart={calculateValeurPart} values={values} />
                                                                 <ErrorMessage name='montantcapital' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
                                                             </Stack>
 
@@ -2400,14 +2559,26 @@ export default function ParamCRM() {
                                                                 <Field
                                                                     required
                                                                     name='nbrpart'
-                                                                    onChange={handleChange}
+                                                                    onChange={(e) => {
+                                                                        // handleChange(e);
+                                                                        const nbrPartValue = e.target.value;
+                                                                        const nbrPartFormatted = Number(nbrPartValue);
+                                                                        setFieldValue('nbrpart', nbrPartFormatted);
+                                                                        const newValeurPart = calculateValeurPart(values.montantcapital, nbrPartFormatted);
+                                                                        setFieldValue('valeurpart', newValeurPart);
+                                                                    }}
                                                                     type='text'
                                                                     placeholder=""
                                                                     style={{
-                                                                        height: 22, borderTop: 'none',
-                                                                        borderLeft: 'none', borderRight: 'none',
-                                                                        outline: 'none', fontSize: 14, borderWidth: '0.5px',
+                                                                        height: 22,
+                                                                        borderTop: 'none',
+                                                                        borderLeft: 'none',
+                                                                        borderRight: 'none',
+                                                                        outline: 'none',
+                                                                        fontSize: 14,
+                                                                        borderWidth: '0.5px',
                                                                         width: '100px',
+                                                                        textAlign: "right",
                                                                     }}
                                                                 />
                                                                 <ErrorMessage name='nbrpart' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
@@ -2415,19 +2586,36 @@ export default function ParamCRM() {
 
                                                             <Stack spacing={1}>
                                                                 <label htmlFor="valeurpart" style={{ fontSize: 12, color: '#3FA2F6' }}>Valeur d'une part</label>
-                                                                <Field
-                                                                    disabled
-                                                                    name='valeurpart'
-                                                                    onChange={handleChange}
-                                                                    type='text'
-                                                                    placeholder=""
-                                                                    style={{
-                                                                        height: 22, borderTop: 'none',
-                                                                        borderLeft: 'none', borderRight: 'none',
-                                                                        outline: 'none', fontSize: 14, borderWidth: '0.5px',
-                                                                        width: '150px',
+                                                                <Field name="valeurpart">
+                                                                    {({ field }) => {
+                                                                        const numericValue = parseFloat(field.value?.toString().replace(/\s/g, '').replace(',', '.')) || 0;
+                                                                        const formattedValue = numericValue.toLocaleString("fr-FR", {
+                                                                            minimumFractionDigits: 2,
+                                                                            maximumFractionDigits: 2,
+                                                                        });
+
+                                                                        return (
+                                                                            <input
+                                                                                {...field}
+                                                                                type="text"
+                                                                                disabled
+                                                                                value={formattedValue}
+                                                                                style={{
+                                                                                    height: 22,
+                                                                                    borderTop: 'none',
+                                                                                    borderLeft: 'none',
+                                                                                    borderRight: 'none',
+                                                                                    outline: 'none',
+                                                                                    fontSize: 14,
+                                                                                    borderWidth: '0.5px',
+                                                                                    width: '120px',
+                                                                                    textAlign: 'right',
+                                                                                    color: 'black'
+                                                                                }}
+                                                                            />
+                                                                        );
                                                                     }}
-                                                                />
+                                                                </Field>
                                                                 <ErrorMessage name='valeurpart' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
                                                             </Stack>
 
@@ -2438,6 +2626,7 @@ export default function ParamCRM() {
                                                         >
                                                             <Tooltip title="Ajouter une ligne">
                                                                 <IconButton
+                                                                    disabled={disableAddRowBouton}
                                                                     variant="contained"
                                                                     onClick={handleOpenDialogAddNewAssocie}
                                                                     style={{
@@ -2537,7 +2726,9 @@ export default function ParamCRM() {
                                                                 rows={listAssocie}
                                                                 onRowClick={(e) => handleCellEditCommit(e.row)}
                                                                 onRowSelectionModelChange={ids => {
+                                                                    setSelectedRowAssocie(ids)
                                                                     saveSelectedRow(ids);
+                                                                    deselectRow(ids);
                                                                 }}
                                                                 editMode='row'
                                                                 rowModesModel={rowModesModel}
@@ -2558,6 +2749,36 @@ export default function ParamCRM() {
                                                                 columnVisibilityModel={{
                                                                     id: false,
                                                                 }}
+                                                                rowSelectionModel={selectedRowAssocie}
+                                                                onRowEditStart={(params, event) => {
+                                                                    if (!selectedRowAssocie.length || selectedRowAssocie[0] !== params.id) {
+                                                                        event.defaultMuiPrevented = true;
+                                                                    }
+                                                                    if (selectedRowAssocie.includes(params.id)) {
+                                                                        setDisableAddRowBouton(true);
+                                                                        event.stopPropagation();
+
+                                                                        const rowId = params.id;
+                                                                        const rowData = params.row;
+
+
+                                                                        useFormikFiliale.setFieldValue("idCompte", compteId);
+                                                                        useFormikFiliale.setFieldValue("idDossier", fileId);
+                                                                        useFormikFiliale.setFieldValue("idFiliale", rowData.id);
+                                                                        useFormikFiliale.setFieldValue("nom", rowData.nom);
+                                                                        useFormikFiliale.setFieldValue("dateentree", rowData.dateentree);
+                                                                        useFormikFiliale.setFieldValue("datesortie", rowData.datesortie);
+                                                                        useFormikFiliale.setFieldValue("nombreparts", rowData.nbrpart);
+                                                                        useFormikFiliale.setFieldValue("enactivite", rowData.enactivite);
+
+                                                                        setRowModesModel((oldModel) => ({
+                                                                            ...oldModel,
+                                                                            [rowId]: { mode: GridRowModes.Edit },
+                                                                        }));
+
+                                                                        setDisableSaveBouton(false);
+                                                                    }
+                                                                }}
                                                             />
                                                         </Stack>
 
@@ -2573,6 +2794,7 @@ export default function ParamCRM() {
                                                         >
                                                             <Tooltip title="Ajouter une ligne">
                                                                 <IconButton
+                                                                    disabled={disableAddRowBoutonFiliale}
                                                                     variant="contained"
                                                                     onClick={handleOpenDialogAddNewFiliale}
                                                                     style={{
@@ -2672,7 +2894,9 @@ export default function ParamCRM() {
                                                                 rows={listFiliales}
                                                                 onRowClick={(e) => handleCellEditCommitFiliale(e.row)}
                                                                 onRowSelectionModelChange={ids => {
+                                                                    setSelectedRowFiliales(ids);
                                                                     saveSelectedRowFiliale(ids);
+                                                                    deselectRowFiliale(ids);
                                                                 }}
                                                                 editMode='row'
                                                                 rowModesModel={rowModesModelFiliale}
@@ -2692,6 +2916,36 @@ export default function ParamCRM() {
                                                                 checkboxSelection={DataGridStyle.checkboxSelection}
                                                                 columnVisibilityModel={{
                                                                     id: false,
+                                                                }}
+                                                                rowSelectionModel={selectedRowFiliales}
+                                                                onRowEditStart={(params, event) => {
+                                                                    if (!selectedRowFiliales.length || selectedRowFiliales[0] !== params.id) {
+                                                                        event.defaultMuiPrevented = true;
+                                                                    }
+                                                                    if (selectedRowFiliales.includes(params.id)) {
+                                                                        setDisableAddRowBoutonFiliale(true);
+                                                                        event.stopPropagation();
+
+                                                                        const rowId = params.id;
+                                                                        const rowData = params.row;
+
+
+                                                                        useFormikFiliale.setFieldValue("idCompte", compteId);
+                                                                        useFormikFiliale.setFieldValue("idDossier", fileId);
+                                                                        useFormikFiliale.setFieldValue("idFiliale", rowData.id);
+                                                                        useFormikFiliale.setFieldValue("nom", rowData.nom);
+                                                                        useFormikFiliale.setFieldValue("dateentree", rowData.dateentree);
+                                                                        useFormikFiliale.setFieldValue("datesortie", rowData.datesortie);
+                                                                        useFormikFiliale.setFieldValue("nombreparts", rowData.nbrpart);
+                                                                        useFormikFiliale.setFieldValue("enactivite", rowData.enactivite);
+
+                                                                        setRowModesModelFiliale((oldModel) => ({
+                                                                            ...oldModel,
+                                                                            [rowId]: { mode: GridRowModes.Edit },
+                                                                        }));
+
+                                                                        setDisableSaveBoutonFiliale(false);
+                                                                    }
                                                                 }}
                                                             />
                                                         </Stack>
@@ -2807,6 +3061,7 @@ export default function ParamCRM() {
                                                                 rows={listDomBank}
                                                                 onRowClick={(e) => handleCellEditCommitDomBank(e.row)}
                                                                 onRowSelectionModelChange={ids => {
+                                                                    setSelectedRowDomBancaires(ids);
                                                                     saveSelectedRowDomBank(ids);
                                                                 }}
                                                                 editMode='row'
@@ -2829,6 +3084,7 @@ export default function ParamCRM() {
                                                                 columnVisibilityModel={{
                                                                     id: false,
                                                                 }}
+                                                                rowSelectionModel={selectedRowDomBancaires}
                                                             />
                                                         </Stack>
 
