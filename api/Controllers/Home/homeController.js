@@ -89,6 +89,11 @@ const createNewFile = async (req, res) => {
       listeAssocies,
       listeFiliales,
       centrefisc,
+      listeDomBank,
+      province,
+      region,
+      district,
+      commune
     } = req.body;
 
     if (action === 'new') {
@@ -120,7 +125,11 @@ const createNewFile = async (req, res) => {
         id_plancomptable: plancomptable,
         rcs: rcs,
         centrefisc: centrefisc,
-      });
+        province: province,
+        region: region,
+        district: district,
+        commune: commune,
+          });
 
       //copie la liste des associés
       if (newFile.id) {
@@ -153,6 +162,23 @@ const createNewFile = async (req, res) => {
               dateentree: item.dateentree,
               datesortie: item.datesortie,
               nbrpart: item.nbrpart,
+              enactivite: item.enactivite
+            });
+          }
+        }
+      }
+
+      //copie la liste des domiciliations bancaires
+      if (newFile.id) {
+        if (listeDomBank.length > 0) {
+          for (const item of listeDomBank) {
+            await dombancaires.create({
+              id_dossier: newFile.id,
+              id_compte: idCompte,
+              banque: item.banque,
+              numcompte: item.numcompte,
+              devise: item.devise,
+              pays: item.pays,
               enactivite: item.enactivite
             });
           }

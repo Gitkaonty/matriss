@@ -651,6 +651,7 @@ export default function SaisieComponent() {
                                 }}>
                                 <Button
                                     onClick={() => handleOpenSaisiePopup('ajout')}
+                                    disabled={!listeExercice || listeExercice.length === 0}
                                     variant="contained"
                                     style={{
                                         textTransform: 'none',
@@ -662,7 +663,7 @@ export default function SaisieComponent() {
                                     }}
                                     startIcon={<IoMdAdd size={20} />}
                                 >
-                                    Nouvelle sasie
+                                    Nouvelle saisie
                                 </Button>
                                 <Button
                                     onClick={() => handleOpenSaisiePopup('modification')}

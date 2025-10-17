@@ -46,6 +46,7 @@ export default function FonctionsComponent() {
     const [disableCancelBouton, setDisableCancelBouton] = useState(true);
     const [disableSaveBouton, setDisableSaveBouton] = useState(true);
     const [disableDeleteBouton, setDisableDeleteBouton] = useState(true);
+    const [disableAddBouton, setDisableAddBouton] = useState(false);
     const [openDialogDeleteRow, setOpenDialogDeleteRow] = useState(false);
     const [editRow, setEditRow] = useState(null);
     const [newRow, setNewRow] = useState(null);
@@ -150,6 +151,7 @@ export default function FonctionsComponent() {
             setNewRow(null);
             setRowModesModel({ ...rowModesModel, [ids[0]]: { mode: GridRowModes.Edit } });
             setDisableSaveBouton(false);
+            setDisableAddBouton(true);
         }
     };
 
@@ -168,6 +170,7 @@ export default function FonctionsComponent() {
         setDisableModifyBouton(true);
         setDisableCancelBouton(false);
         setDisableDeleteBouton(true);
+        setDisableAddBouton(true);
     }
 
     // Sauvegarde
@@ -185,6 +188,7 @@ export default function FonctionsComponent() {
                         setDisableModifyBouton(true);
                         setDisableCancelBouton(true);
                         setDisableDeleteBouton(true);
+                        setDisableAddBouton(false);
                         toast.success(res.data.msg || 'Fonction modifiée');
                     } else {
                         toast.error(res.data.msg || 'Erreur lors de la modification');
@@ -204,6 +208,7 @@ export default function FonctionsComponent() {
                         setDisableModifyBouton(true);
                         setDisableCancelBouton(true);
                         setDisableDeleteBouton(true);
+                        setDisableAddBouton(false);
                         toast.success(res.data.msg || 'Fonction ajoutée');
                     } else {
                         toast.error(res.data.msg || 'Erreur lors de l\'ajout');
@@ -223,6 +228,7 @@ export default function FonctionsComponent() {
         setDisableModifyBouton(true);
         setDisableCancelBouton(true);
         setDisableDeleteBouton(true);
+        setDisableAddBouton(false);
 
         if (newRow) {
             setRows(rows.filter(r => r.id !== newRow.id));
@@ -249,6 +255,7 @@ export default function FonctionsComponent() {
                         setDisableModifyBouton(true);
                         setDisableCancelBouton(true);
                         setDisableDeleteBouton(true);
+                        setDisableAddBouton(false);
                         toast.success(res.data.msg || 'Fonction supprimée');
                         setOpenDialogDeleteRow(false);
                     } else {
@@ -302,11 +309,12 @@ export default function FonctionsComponent() {
                     <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages : Fonctions</Typography>
                     <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"}
                         direction={"column"} style={{ marginLeft: "0px", marginTop: "20px", justifyContent: "right" }}>
-                        <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"}
+                        <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
                             direction={"row"} justifyContent={"right"}>
                             <Tooltip title="Ajouter une ligne">
                                 <span>
                                     <IconButton
+                                        disabled={disableAddBouton}
                                         variant="contained"
                                         onClick={handleOpenDialogAddNewAssocie}
                                         style={{

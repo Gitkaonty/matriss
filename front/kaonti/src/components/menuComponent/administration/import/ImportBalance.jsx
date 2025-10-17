@@ -798,7 +798,10 @@ export default function ImportBalance() {
 
                                     <List style={{ marginLeft: "10px" }}>
                                         <ListItem style={{ width: "100px", justifyContent: "center" }}>
-                                            <ListItemButton onClick={() => document.getElementById('fileInput').click()}>
+                                            <ListItemButton 
+                                                disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0}
+                                                onClick={() => document.getElementById('fileInput').click()}
+                                            >
                                                 <ListItemIcon > <SaveAltIcon style={{ width: "40px", height: "30px", color: 'rgba(5,96,116,0.60)' }} /> </ListItemIcon>
                                             </ListItemButton>
                                         </ListItem>
@@ -807,6 +810,7 @@ export default function ImportBalance() {
 
                                 <Badge badgeContent={nbrAnomalie} color="warning">
                                     <Button
+                                        disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0}
                                         onClick={handleOpenAnomalieDetails}
                                         variant="contained"
                                         style={{
@@ -822,7 +826,7 @@ export default function ImportBalance() {
                                 </Badge>
 
                                 <Button
-                                    disabled={balanceDesequilibre}
+                                    disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0 || balanceDesequilibre}
                                     type='submit'
                                     variant="contained"
                                     style={{

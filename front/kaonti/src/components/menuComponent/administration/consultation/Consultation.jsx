@@ -803,6 +803,7 @@ export default function ConsultationComponent() {
                                         }}
                                     >
                                         <Autocomplete
+                                            disabled={!selectedExerciceId || selectedExerciceId === 0}
                                             value={listePlanComptable.find(item => item.id === Number(valSelectedCompte)) || null}
                                             onChange={(event, newValue) => {
                                                 setValSelectedCompte(newValue?.id || 'tout');
@@ -817,7 +818,7 @@ export default function ConsultationComponent() {
                                     </Stack>
                                     <Stack direction={'row'} spacing={1}>
                                         <Button
-                                            disabled={valSelectedCompte === 'tout'}
+                                            disabled={!selectedExerciceId || selectedExerciceId === 0 || valSelectedCompte === 'tout'}
                                             sx={{
                                                 minWidth: 0,
                                                 padding: 1,
@@ -845,6 +846,7 @@ export default function ConsultationComponent() {
                                         </Button>
                                         <Button
                                             disabled={
+                                                !selectedExerciceId || selectedExerciceId === 0 || 
                                                 listePlanComptable.findIndex(item => item.id === valSelectedCompte) >= listePlanComptable.length - 1
                                             }
                                             sx={{

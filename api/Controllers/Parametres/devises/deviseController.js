@@ -26,11 +26,21 @@ exports.getDeviseById = async (req, res) => {
 exports.createDevise = async (req, res) => {
   try {
     const { code, libelle, id_compte, id_dossier } = req.body;
+    
+    // Vérifier si le code existe déjà dans ce dossier
+    const existingDevise = await Devise.findOne({
+      where: { code, id_dossier, id_compte }
+    });
+    
+    if (existingDevise) {
+      return res.json({ state: false, msg: 'Ce code existe déjà dans ce dossier.' });
+    }
+    
     const devise = await Devise.create({ code, libelle, id_compte, id_dossier });
     return res.json({ state: true, msg: 'Devise ajoutée', data: devise });
   } catch (error) {
     if (error.name === 'SequelizeUniqueConstraintError') {
-      return res.json({ state: false, msg: 'Ce code existe déjà.' });
+      return res.json({ state: false, msg: 'Ce code existe déjà dans ce dossier.' });
     }
     return res.json({ state: false, msg: 'Erreur lors de l\'ajout' });
   }

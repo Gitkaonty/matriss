@@ -315,13 +315,17 @@ exports.verrouillerDeclaration = async (req, res) => {
     };
     if (nbranomalie != null) payload.nbranomalie = Number(nbranomalie) || 0;
 
-    const exist = await EtatsDeclarations.findOne({ where });
-    if (exist) {
-      await exist.update(payload);
-      return res.json({ state: true, msg: 'Mise à jour effectuée', item: exist });
-    }
-    const created = await EtatsDeclarations.create({ ...where, ...payload });
-    return res.json({ state: true, msg: 'Créé avec succès', item: created });
+    // Utiliser upsert pour éviter les problèmes de concurrence
+    const [item, created] = await EtatsDeclarations.upsert(
+      { ...where, ...payload },
+      { 
+        conflictFields: ['id_compte', 'id_dossier', 'id_exercice', 'code', 'mois', 'annee'],
+        returning: true
+      }
+    );
+    
+    const message = created ? 'Créé avec succès' : 'Mise à jour effectuée';
+    return res.json({ state: true, msg: message, item });
   } catch (error) {
     console.error('[TVA][verrouillerDeclaration] error:', error);
     return res.json({ state: false, msg: 'Erreur serveur' });
@@ -1068,29 +1072,61 @@ exports.exportTvaToPDF = async (req, res) => {
       const { generateTvaContent } = require('../../../Middlewares/tva/DeclTvaGeneratePdf');
       const { buildTable, annexes } = await generateTvaContent(id_compte, id_dossier, id_exercice, mois, annee);
       
-      const infoBlock = (dossier, compte, exercice, mois, annee) => {
-          return {
-              text: `Dossier : ${dossier?.dossier || ''}\nCompte : ${compte?.nom || ''}\nMois et année : ${moisNoms[mois - 1] || mois} ${annee}\nExercice du : ${formatDate(exercice?.date_debut)} au ${formatDate(exercice?.date_fin)}`,
-              style: 'subTitle',
-              margin: [0, 0, 0, 10]
-          };
-      };
-
       const docDefinition = {
           pageSize: 'A3',
           pageOrientation: 'landscape',
-          pageMargins: [20, 20, 20, 20],
+          pageMargins: [10, 60, 10, 60],
+          defaultStyle: {
+          font: 'Helvetica',
+          fontSize: 7
+        },
           content: [
-              { text: 'Annexes TVA', style: 'title' },
-              infoBlock(dossier, compte, exercice, mois, annee),
-              ...buildTable(annexes)
+            {
+              text: 'DÉCLARATION TVA',
+              style: 'title',
+              alignment: 'center',
+              margin: [0, 0, 0, 20]
+            },
+            // Sous-titre
+            {
+              text: `Dossier : ${dossier?.dossier || ''}\nCompte : ${compte?.nom || ''}\nMois et année : ${moisNoms[mois - 1]} ${annee}\nExercice du : ${formatDate(exercice?.date_debut)} au ${formatDate(exercice?.date_fin)}`,
+              style: 'subTitle',
+              lineHeight: 1.2,
+              margin: [0, 0, 0, 10]
+            },
+            {
+              ...buildTable(annexes, {
+                headerStyle: 'tableHeader',
+                font: 'Helvetica'
+              })[0],
+              layout: {
+                ...(
+                  buildTable(annexes, {
+                    headerStyle: 'tableHeader',
+                    font: 'Helvetica'
+                  })[0].layout || {}
+                ),
+                hLineWidth: () => 0, // pas de ligne horizontale
+                vLineWidth: () => 0, // pas de ligne verticale
+                paddingTop: () => 4,
+                paddingBottom: () => 4
+              }
+            }
           ],
           styles: {
-              title: { fontSize: 18, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-              subTitle: { fontSize: 9 },
-              tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
-          },
-          defaultStyle: { font: 'Helvetica', fontSize: 6 }
+            title: { fontSize: 20, bold: true, alignment: 'center', font: 'Helvetica', margin: [0, 0, 0, 10] },
+            subTitle: { fontSize: 12, bold: true, font: 'Helvetica' },
+            tableHeader: {
+              bold: true,
+              fontSize: 7,
+              color: 'white',
+              fillColor: '#1A5276',
+              alignment: 'center',
+              font: 'Helvetica',
+              margin: [0, 2, 0, 2],
+              lineHeight: 1.2
+            },
+          }
       }
       const pdfDoc = printer.createPdfKitDocument(docDefinition);
       res.setHeader('Content-Type', 'application/pdf');

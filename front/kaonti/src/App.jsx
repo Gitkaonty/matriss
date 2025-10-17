@@ -72,7 +72,6 @@ export default function App() {
               <Route path='/tab/administration/importAnnexeDeclarationFiscale' element={<ImportAnnexeDeclarationFiscaleComponent />} />
               <Route path='/tab/administration/exportBalance/:id' element={<ExportBalance />} />
               <Route path='/tab/administration/personnel/:id' element={<PersonnelComponent />} />
-              <Route path='/tab/administration/fonctions/:id' element={<FonctionsComponent />} />
  
               <Route path='/tab/revision/revisionAnomalieEbilan' element={<RevisionAnomalieEbilanComponent />} />
               <Route path='/tab/revision/revisionPrecontrolFiscal' element={<RevisionPrecontroleFiscalComponent />} />
@@ -87,7 +86,8 @@ export default function App() {
               <Route path='/tab/parametrages/paramCrm/:id' element={<ParamCRM />} />
               <Route path='/tab/parametrages/paramMapping/:id' element={<ParamMappingComponent />} />
               <Route path='/tab/parametrages/paramClassification/:id' element={<ClassificationSalariesComponent />} />
- 
+              <Route path='/tab/parametrages/paramFonctions/:id' element={<FonctionsComponent />} />
+
               <Route path='/tab/declaration/declarationIRSA/:id' element={<DeclarationIRSAComponent />} />
               <Route path='/tab/declaration/declarationISI/:id' element={<DeclarationIsi />} />
               <Route path='/tab/declaration/declarationEbilan/:id' element={<DeclarationEbilan />} />

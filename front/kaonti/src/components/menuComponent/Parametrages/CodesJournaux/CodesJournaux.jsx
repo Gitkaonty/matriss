@@ -193,32 +193,34 @@ export default function ParamCodeJournalComponent() {
     const recupListeCptBanqueCaisse = (typeTreso) => {
         const listBank = pc?.filter((row) => row.compte.startsWith('512'));
         const listCash = pc?.filter((row) => row.compte.startsWith('53'));
-
+      
         formikNewCodeJournal.setFieldValue("type", typeTreso);
-
+      
         if (typeTreso === 'BANQUE') {
-            setListeCptAssocie(listBank);
-            setCompteAssocieValidationColor('#F6D6D6');
-            // Préremplir avec les infos du dossier pour une création/édition en BANQUE
-            formikNewCodeJournal.setFieldValue('nif', fileInfos?.nif || '');
-            formikNewCodeJournal.setFieldValue('stat', fileInfos?.stat || '');
-            formikNewCodeJournal.setFieldValue('adresse', fileInfos?.adresse || '');
-        }else if(typeTreso === 'CAISSE'){
-            setListeCptAssocie(listCash);
-            setCompteAssocieValidationColor('#F6D6D6');
+          setListeCptAssocie(listBank);
+          setCompteAssocieValidationColor('#F6D6D6');
+          // Champs manuels (vides)
+          formikNewCodeJournal.setFieldValue('nif', '');
+          formikNewCodeJournal.setFieldValue('stat', '');
+          formikNewCodeJournal.setFieldValue('adresse', '');
+        } else if (typeTreso === 'CAISSE') {
+          setListeCptAssocie(listCash);
+          setCompteAssocieValidationColor('#F6D6D6');
+          // Ces champs doivent rester vides
+          formikNewCodeJournal.setFieldValue('nif', '');
+          formikNewCodeJournal.setFieldValue('stat', '');
+          formikNewCodeJournal.setFieldValue('adresse', '');
         } else {
-            setListeCptAssocie([]);
-            setCompteAssocieValidationColor('transparent');
-            formikNewCodeJournal.setFieldValue("compteassocie", '');
+          // Pour les autres types
+          setListeCptAssocie([]);
+          setCompteAssocieValidationColor('transparent');
+          formikNewCodeJournal.setFieldValue("compteassocie", '');
+          formikNewCodeJournal.setFieldValue('nif', '');
+          formikNewCodeJournal.setFieldValue('stat', '');
+          formikNewCodeJournal.setFieldValue('adresse', '');
         }
-
-        // Pour tout type autre que BANQUE, verrouiller et vider les champs
-        if (typeTreso !== 'BANQUE') {
-            formikNewCodeJournal.setFieldValue('nif', '');
-            formikNewCodeJournal.setFieldValue('stat', '');
-            formikNewCodeJournal.setFieldValue('adresse', '');
-        }
-    }
+      };
+      
 
     const CodeJournauxColumnHeader = [
         {
@@ -514,69 +516,72 @@ export default function ParamCodeJournalComponent() {
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
-            editable: editableRow,
+            editable: true,
             valueFormatter: (params) => {
-                const selectedType = listeCptAssocie.find((option) => option.value === params.value);
-                return selectedType ? selectedType.compte + " " + selectedType.libelle : params.value;
+              const selectedType = listeCptAssocie.find((option) => option.compte === params.value);
+              return selectedType ? `${selectedType.compte} ${selectedType.libelle}` : params.value;
             },
+            renderCell: (params) => (
+              <span style={{ color: (params.row.type !== 'CAISSE' && params.row.type !== 'BANQUE') ? '#999' : '#000' }}>
+                {params.value}
+              </span>
+            ),
             renderEditCell: (params) => {
-                return (
-                    <FormControl fullWidth>
-                        <InputLabel><em>Choisir...</em></InputLabel>
-                        <Select
-                            style={{ backgroundColor: compteAssocieValidationColor }}
-                            value={formikNewCodeJournal.values.compteassocie}
-                            onChange={(e) => formikNewCodeJournal.setFieldValue('compteassocie', e.target.value)}
-                            label="Type"
-                        >
-                            {listeCptAssocie?.map((option) => (
-                                <MenuItem key={option.compte} value={option.compte}>
-                                    {option.compte} {option.libelle}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                        <FormHelperText style={{ color: 'red' }}>
-                            {formikNewCodeJournal.errors.compteassocie && formikNewCodeJournal.touched.compteassocie && formikNewCodeJournal.errors.compteassocie}
-                        </FormHelperText>
-                    </FormControl>
-                );
+              const isEditable = formikNewCodeJournal.values.type === 'BANQUE' || formikNewCodeJournal.values.type === 'CAISSE';
+              return (
+                <FormControl fullWidth>
+                  <InputLabel><em>Choisir...</em></InputLabel>
+                  <Select
+                    style={{ backgroundColor: isEditable ? '#fff' : '#f0f0f0' }}
+                    value={formikNewCodeJournal.values.compteassocie}
+                    onChange={(e) => formikNewCodeJournal.setFieldValue('compteassocie', e.target.value)}
+                    disabled={!isEditable} // désactive si non éditable
+                  >
+                    {listeCptAssocie?.map((option) => (
+                      <MenuItem key={option.compte} value={option.compte}>
+                        {option.compte} {option.libelle}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  <FormHelperText style={{ color: 'red' }}>
+                    {formikNewCodeJournal.errors.compteassocie &&
+                     formikNewCodeJournal.touched.compteassocie &&
+                     formikNewCodeJournal.errors.compteassocie}
+                  </FormHelperText>
+                </FormControl>
+              );
             },
-        },
+          },
+        
         {
-            field: 'nif', 
-            headerName: 'NIF', 
-            type: 'string', 
-            sortable : true, 
-            width: 150, 
+            field: 'nif',
+            headerName: 'NIF',
+            type: 'string',
+            sortable: true,
+            width: 200,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
-            editable: (params) => params.row.type === 'BANQUE' ? editableRow : false,
-            renderCell: (params) => {
-                const isBank = params.row.type === 'BANQUE';
-                const value = isBank ? (params.value || '') : '';
-                return (
-                    <Box sx={{ width: '100%', color: 'inherit', opacity: isBank ? 1 : 0.6 }}>
-                        {value}
-                    </Box>
-                );
-            },
+            editable: true,
             renderEditCell: (params) => {
+                const isEditable = formikNewCodeJournal.values.type === 'BANQUE';
                 return (
-                    <FormControl fullWidth style={{height:'100%'}}>
+                    <FormControl fullWidth style={{ height: '100%' }}>
                         <Input
-                            style={{height:'100%', alignItems:'center', 
-                                outline: 'none', 
-                                backgroundColor: nifValidationColor
+                            style={{
+                                height: '100%', alignItems: 'center',
+                                outline: 'none',
+                                backgroundColor: isEditable ? nifValidationColor : '#f0f0f0',
                             }}
                             type="text"
                             value={formikNewCodeJournal.values.nif}
-                            onChange = {(e) => formikNewCodeJournal.setFieldValue('nif', e.target.value)}
+                            onChange={(e) => formikNewCodeJournal.setFieldValue('nif', e.target.value)}
                             label="nif"
                             disableUnderline={true}
+                            disabled={!isEditable}
                         />
 
-                        <FormHelperText style={{color:'red'}}>
+                        <FormHelperText style={{ color: 'red' }}>
                             {formikNewCodeJournal.errors.nif && formikNewCodeJournal.touched.nif && formikNewCodeJournal.errors.nif}
                         </FormHelperText>
                     </FormControl>
@@ -584,81 +589,67 @@ export default function ParamCodeJournalComponent() {
             },
         },
         {
-            field: 'stat', 
-            headerName: 'STAT', 
-            type: 'string', 
-            sortable : true, 
-            width: 150, 
+            field: 'stat',
+            headerName: 'Stat',
+            type: 'string',
+            sortable: true,
+            width: 400,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
-            editable: (params) => params.row.type === 'BANQUE' ? editableRow : false,
-            renderCell: (params) => {
-                const isBank = params.row.type === 'BANQUE';
-                const value = isBank ? (params.value || '') : '';
-                return (
-                    <Box sx={{ width: '100%', color: 'inherit', opacity: isBank ? 1 : 0.6 }}>
-                        {value}
-                    </Box>
-                );
-            },
+            editable: true,
             renderEditCell: (params) => {
+                const isEditable = formikNewCodeJournal.values.type === 'BANQUE';
                 return (
-                    <FormControl fullWidth style={{height:'100%'}}>
+                    <FormControl fullWidth style={{ height: '100%' }}>
                         <Input
-                            style={{height:'100%', alignItems:'center', 
-                                outline: 'none', 
-                                backgroundColor: statValidationColor
+                            style={{
+                                height: '100%', alignItems: 'center',
+                                outline: 'none',
+                                backgroundColor: isEditable ? '#fff' : '#f0f0f0', // gris si non éditable
                             }}
                             type="text"
                             value={formikNewCodeJournal.values.stat}
-                            onChange = {(e) => formikNewCodeJournal.setFieldValue('stat', e.target.value)}
+                            onChange={(e) => formikNewCodeJournal.setFieldValue('stat', e.target.value)}
                             label="stat"
                             disableUnderline={true}
                         />
 
-                        <FormHelperText style={{color:'red'}}>
-                            {formikNewCodeJournal.errors.stat && formikNewCodeJournal.touched.stat && formikNewCodeJournal.errors.stat}
+                        <FormHelperText style={{ color: 'red' }}>
+                            {formikNewCodeJournal.errors.libelle && formikNewCodeJournal.touched.libelle && formikNewCodeJournal.errors.libelle}
                         </FormHelperText>
                     </FormControl>
                 );
             },
         },
         {
-            field: 'adresse', 
-            headerName: 'Adresse', 
-            type: 'string', 
-            sortable : true, 
-            width: 400, 
+            field: 'adresse',
+            headerName: 'Adresse',
+            type: 'string',
+            sortable: true,
+            width: 400,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
-            editable: (params) => params.row.type === 'BANQUE' ? editableRow : false,
-            renderCell: (params) => {
-                const isBank = params.row.type === 'BANQUE';
-                const value = isBank ? (params.value || '') : '';
-                return (
-                    <Box sx={{ width: '100%', color: 'inherit', opacity: isBank ? 1 : 0.6 }}>
-                        {value}
-                    </Box>
-                );
-            },
+            editable: true,
             renderEditCell: (params) => {
+                const isEditable = formikNewCodeJournal.values.type === 'BANQUE';
                 return (
-                    <FormControl fullWidth style={{height:'100%'}}>
+                    <FormControl fullWidth style={{ height: '100%' }}>
                         <Input
-                            style={{height:'100%', alignItems:'center', 
-                                outline: 'none', 
-                                backgroundColor: adresseValidationColor
+                            style={{
+                                height: '100%', alignItems: 'center',
+                                outline: 'none',
+                                backgroundColor: isEditable ? '#fff' : '#f0f0f0', // gris si non éditable
                             }}
                             type="text"
                             value={formikNewCodeJournal.values.adresse}
-                            onChange = {(e) => formikNewCodeJournal.setFieldValue('adresse', e.target.value)}
+                            onChange={(e) => formikNewCodeJournal.setFieldValue('adresse', e.target.value)}
                             label="adresse"
                             disableUnderline={true}
                         />
 
-                        <FormHelperText style={{color:'red'}}>
+                        <FormHelperText style={{ color: 'red' }}>
                             {formikNewCodeJournal.errors.adresse && formikNewCodeJournal.touched.adresse && formikNewCodeJournal.errors.adresse}
                         </FormHelperText>
                     </FormControl>
@@ -790,31 +781,46 @@ export default function ParamCodeJournalComponent() {
             saveBoolCompteAssocie = true;
         }
 
-        if(formikNewCodeJournal.values.type === 'BANQUE'){
-            if(formikNewCodeJournal.values.nif === ''){
+        if (formikNewCodeJournal.values.type === 'BANQUE') {
+            // Tous ces champs obligatoires
+            if (formikNewCodeJournal.values.nif === '') {
                 setNifValidationColor('#F6D6D6');
                 saveBoolNif = false;
-            }else{
+            } else {
                 setNifValidationColor('transparent');
                 saveBoolNif = true;
             }
-
-            if(formikNewCodeJournal.values.stat === ''){
+        
+            if (formikNewCodeJournal.values.stat === '') {
                 setStatValidationColor('#F6D6D6');
                 saveBoolStat = false;
-            }else{
+            } else {
                 setStatValidationColor('transparent');
                 saveBoolStat = true;
             }
-
-            if(formikNewCodeJournal.values.adresse === ''){
+        
+            if (formikNewCodeJournal.values.adresse === '') {
                 setAdresseValidationColor('#F6D6D6');
                 saveBoolAdresse = false;
-            }else{
+            } else {
                 setAdresseValidationColor('transparent');
                 saveBoolAdresse = true;
             }
-        }else{
+        
+        } else if (formikNewCodeJournal.values.type === 'CAISSE') {
+            // Juste compte associé obligatoire, les autres ignorés
+            setNifValidationColor('transparent');
+            setStatValidationColor('transparent');
+            setAdresseValidationColor('transparent');
+            saveBoolNif = true;
+            saveBoolStat = true;
+            saveBoolAdresse = true;
+        } else {
+            // Pour tous les autres types : tout est vide
+            formikNewCodeJournal.setFieldValue('nif', '');
+            formikNewCodeJournal.setFieldValue('stat', '');
+            formikNewCodeJournal.setFieldValue('adresse', '');
+            formikNewCodeJournal.setFieldValue('compteassocie', '');
             setNifValidationColor('transparent');
             setStatValidationColor('transparent');
             setAdresseValidationColor('transparent');
@@ -822,7 +828,7 @@ export default function ParamCodeJournalComponent() {
             saveBoolStat = true;
             saveBoolAdresse = true;
         }
-
+        
         if(saveBoolCode && saveBoolLibelle && saveBoolType && saveBoolCompteAssocie && saveBoolNif && saveBoolStat && saveBoolAdresse){
             setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
             axios.post(`/paramCodeJournaux/codeJournauxAdd`, formikNewCodeJournal.values).then((response) => {

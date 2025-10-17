@@ -101,10 +101,10 @@ export default function PersonnelComponent() {
 
 
     const personnelsColumns = [
-        { field: 'id', headerName: 'ID', width: 80, editable: false },
+        { field: 'id', headerName: 'ID', width: 100, editable: false },
         { field: 'matricule', headerName: 'Matricule', width: 80, editable: true },
-        { field: 'nom', headerName: 'Nom', width: 150, editable: (params) => isEditable(params.row) },
-        { field: 'prenom', headerName: 'Prénom', width: 150, editable: true },
+        { field: 'nom', headerName: 'Nom', width: 200, editable: (params) => isEditable(params.row) },
+        { field: 'prenom', headerName: 'Prénom', width: 200, editable: true },
         {
             field: 'id_fonction',
             headerName: 'Fonction',

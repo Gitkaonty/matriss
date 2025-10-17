@@ -9,8 +9,7 @@ module.exports = {
       },
       code: {
         type: Sequelize.STRING,
-        allowNull: false,
-        unique: true
+        allowNull: false
       },
       libelle: {
         type: Sequelize.STRING,

@@ -41,15 +41,15 @@ const generateTvaXml = async (id_compte, id_dossier, id_exercice, mois, annee, n
     annexes.forEach((row) => {
         xml += `\n<ligne>`;
         const champs = [
-            { code: 'COLLECTE_DEDUCTIBLE', valeur: row.collecte_deductible || row.type_tva || '' },
+            { code: 'FOURNISSEUR_CLIENT', valeur: row.collecte_deductible || row.type_tva || '' },
             { code: 'LOCAL_ETRANGER', valeur: row.local_etranger || row.origine || '' },
             { code: 'NIF', valeur: row.nif || '' },
-            { code: 'RAISON_SOCIALE', valeur: row.raison_sociale || '' },
+            { code: 'RAISON_SOCIALE_CONTRIB', valeur: row.raison_sociale || '' },
             { code: 'STAT', valeur: row.stat || '' },
             { code: 'ADRESSE', valeur: row.adresse || '' },
             { code: 'MONTANT_HT', valeur: row.montant_ht || 0 },
             { code: 'MONTANT_TVA', valeur: row.montant_tva || 0 },
-            { code: 'REFERENCE_FACTURE', valeur: row.reference_facture || '' },
+            { code: 'FACTURE', valeur: row.reference_facture || '' },
             { code: 'DATE_FACTURE', valeur: formatDate(row.date_facture) },
             { code: 'NATURE', valeur: row.nature || '' },
             { code: 'LIBELLE_OPERATION', valeur: row.libelle_operation || '' },
@@ -59,7 +59,6 @@ const generateTvaXml = async (id_compte, id_dossier, id_exercice, mois, annee, n
             { code: 'OBSERVATION', valeur: row.observation || '' },
             { code: 'N_DAU', valeur: row.n_dau || '' },
             { code: 'LIGNE_FORMULAIRE', valeur: row.ligne_formulaire || '' },
-            { code: 'CODE_TVA', valeur: row.code_tva || row.code || '' },
         ];
         champs.forEach((c) => {
             xml += `\n${createChamp(c.code, c.valeur)}`;

@@ -46,6 +46,7 @@ export default function ParamDeviseComponent() {
     const [disableCancelBouton, setDisableCancelBouton] = useState(true);
     const [disableSaveBouton, setDisableSaveBouton] = useState(true);
     const [disableDeleteBouton, setDisableDeleteBouton] = useState(true);
+    const [disableAddBouton, setDisableAddBouton] = useState(false);
     const [openDialogDeleteRow, setOpenDialogDeleteRow] = useState(false);
     const [editRow, setEditRow] = useState(null);
     const [newRow, setNewRow] = useState(null);
@@ -151,6 +152,7 @@ export default function ParamDeviseComponent() {
             setNewRow(null);
             setRowModesModel({ ...rowModesModel, [ids[0]]: { mode: GridRowModes.Edit } });
             setDisableSaveBouton(false);
+            setDisableAddBouton(true); // Désactiver le bouton ajouter pendant la modification
         }
     };
 
@@ -169,6 +171,7 @@ export default function ParamDeviseComponent() {
         setDisableModifyBouton(true);
         setDisableCancelBouton(false);
         setDisableDeleteBouton(true);
+        setDisableAddBouton(true); // Désactiver le bouton ajouter
     }
 
     // Sauvegarde
@@ -186,6 +189,7 @@ export default function ParamDeviseComponent() {
                         setDisableModifyBouton(true);
                         setDisableCancelBouton(true);
                         setDisableDeleteBouton(true);
+                        setDisableAddBouton(false); // Réactiver le bouton ajouter
                         toast.success(res.data.msg || 'Devise modifiée');
                     } else {
                         toast.error(res.data.msg || 'Erreur lors de la modification');
@@ -206,6 +210,7 @@ export default function ParamDeviseComponent() {
                         setDisableModifyBouton(true);
                         setDisableCancelBouton(true);
                         setDisableDeleteBouton(true);
+                        setDisableAddBouton(false); // Réactiver le bouton ajouter
                         toast.success(res.data.msg || 'Devise ajoutée');
                     } else {
                         toast.error(res.data.msg || 'Erreur lors de l\'ajout');
@@ -225,6 +230,7 @@ export default function ParamDeviseComponent() {
         setDisableModifyBouton(true);
         setDisableCancelBouton(true);
         setDisableDeleteBouton(true);
+        setDisableAddBouton(false); // Réactiver le bouton ajouter
 
         if (newRow) {
             setRows(rows.filter(r => r.id !== newRow.id));
@@ -251,6 +257,7 @@ export default function ParamDeviseComponent() {
                         setDisableModifyBouton(true);
                         setDisableCancelBouton(true);
                         setDisableDeleteBouton(true);
+                        setDisableAddBouton(false); // Réactiver le bouton ajouter
                         toast.success(res.data.msg || 'Devise supprimée');
                         setOpenDialogDeleteRow(false);
                     } else {
@@ -304,11 +311,12 @@ export default function ParamDeviseComponent() {
                     <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages : Devises</Typography>
                     <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"}
                         direction={"column"} style={{ marginLeft: "0px", marginTop: "20px", justifyContent: "right" }}>
-                        <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"}
+                        <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
                             direction={"row"} justifyContent={"right"}>
                             <Tooltip title="Ajouter une ligne">
                                 <span>
                                     <IconButton
+                                        disabled={disableAddBouton}
                                         variant="contained"
                                         onClick={handleOpenDialogAddNewAssocie}
                                         style={{

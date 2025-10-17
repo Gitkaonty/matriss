@@ -36,6 +36,7 @@ import { DetailsInformation } from '../../../componentsTools/DetailsInformation'
 import { BsCheckCircleFill } from "react-icons/bs";
 import { PiIdentificationCardFill } from "react-icons/pi";
 import { BsPersonFillSlash } from "react-icons/bs";
+import { FaGlobeAmericas } from "react-icons/fa";
 import { useSearchParams } from "react-router-dom";
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
@@ -132,6 +133,7 @@ export default function ParamPlanComptable() {
     const [openDialogDeleteCptTvaFromAddNewCpt, setOpenDialogDeleteCptTvaFromAddNewCpt] = useState(false);
     const [formulaireTier, setFormulaireTier] = useState('sans-nif');
     const [typeCptGeneral, setTypeCptGeneral] = useState(true);
+    const [disableLocalites, setDisableLocalites] = useState(false);
     const [pcAllselectedRow, setPcAllselectedRow] = useState([]);
     const [openDialogDeleteItemsPc, setOpenDialogDeleteItemsPc] = useState(false);
     const { id } = useParams();
@@ -420,18 +422,17 @@ export default function ParamPlanComptable() {
                 } else if (params.row.typetier === 'etranger') {
                     return (
                         <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-                            <div style={{
-                                width: 90,
-                                height: 25,
-                                backgroundColor: '#FBA518',
-                                borderRadius: 15,
-                                display: 'flex',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                            }}>
-                                {/* {params.row.typetier} */}
-                                Etranger
-                            </div>
+                            <Chip
+                                icon={<FaGlobeAmericas style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
+                                label="Etranger"
+                                style={{
+                                    width: "100%",
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    backgroundColor: '#FBA518',
+                                    color: 'white'
+                                }}
+                            />
                         </Stack>
                     )
                 }
@@ -546,6 +547,42 @@ export default function ParamPlanComptable() {
             headerClassName: 'HeaderbackColor'
         },
         {
+            field: 'province',
+            headerName: <strong>Province</strong>,
+            type: 'string',
+            sortable: true,
+            width: 150,
+            headerAlign: 'left',
+            headerClassName: 'HeaderbackColor'
+        },
+        {
+            field: 'region',
+            headerName: <strong>Région</strong>,
+            type: 'string',
+            sortable: true,
+            width: 150,
+            headerAlign: 'left',
+            headerClassName: 'HeaderbackColor'
+        },
+        {
+            field: 'district',
+            headerName: <strong>District</strong>,
+            type: 'string',
+            sortable: true,
+            width: 150,
+            headerAlign: 'left',
+            headerClassName: 'HeaderbackColor'
+        },
+        {
+            field: 'commune',
+            headerName: <strong>Commune</strong>,
+            type: 'string',
+            sortable: true,
+            width: 180,
+            headerAlign: 'left',
+            headerClassName: 'HeaderbackColor'
+        },
+        {
             field: 'motcle',
             headerName: <strong>Mot clé</strong>,
             type: 'string',
@@ -578,6 +615,14 @@ export default function ParamPlanComptable() {
         setListCptChg([]);
         setListCptTva([]);
 
+        // Option A: reset local selections and dependent lists on open
+        setSelectedProvince('');
+        setSelectedRegion('');
+        setSelectedDistrict('');
+        setSelectedCommune('');
+        setRegions([]);
+        setDistricts([]);
+        setCommunes([]);
         setFieldValue("action", "new");
         setFieldValue("idCompte", Number(compteId));
         setFieldValue("idDossier", fileId);
@@ -586,6 +631,14 @@ export default function ParamPlanComptable() {
         recupererListeCptCollectif();
         setTypeCptGeneral(true);
         setOpenDialogAddCpt(true);
+    
+        setFieldValue('typeTier', 'general');
+        setFormulaireTier('general');
+        setDisableLocalites(true);
+        
+        // Garder le champ 'Type du tier' actif
+        setFieldValue('typeTier', 'general');
+        setFormulaireTier('general');
     }
 
     //Remplissage automatique de formulaire pour la modification
@@ -599,13 +652,32 @@ export default function ParamPlanComptable() {
         setFieldValue("compte", selectedRow.compte);
         setFieldValue("libelle", selectedRow.libelle);
         setFieldValue("nature", selectedRow.nature);
-        setFieldValue("baseCptCollectif", selectedRow.baseaux);
-        setFieldValue("typeTier", selectedRow.typetier);
+        // En modification: si General/Collectif, la base = le compte lui-même (id);
+        // sinon (Aux), on garde la base existante (baseaux_id)
+        if (selectedRow.nature === 'General' || selectedRow.nature === 'Collectif') {
+            setFieldValue("baseCptCollectif", selectedRow.id);
+        } else {
+            // Use the base account ID so it matches the Select's MenuItem values (which use item.id)
+            setFieldValue("baseCptCollectif", selectedRow.baseaux_id);
+        }
+        const isGen = selectedRow.nature === 'General' || selectedRow.nature === 'Collectif';
+        const isEtr = selectedRow.typetier === 'etranger';
 
-        setFormulaireTier(selectedRow.typetier);
+        if (isGen) {
+            // En modification: General/Collectif => type du tier forcé à 'general' et localités grisées
+            setFieldValue("typeTier", 'general');
+            setFormulaireTier('general');
+            setDisableLocalites(true);
+        } else {
+            // Sinon, on garde le type du tier de la ligne et on grise les localités si 'etranger'
+            setFieldValue("typeTier", selectedRow.typetier);
+            setFormulaireTier(selectedRow.typetier);
+            setDisableLocalites(isEtr);
+        }
 
         setFieldValue("nif", selectedRow.nif);
-        setFieldValue("stat", selectedRow.stat);
+        // Backend returns column 'statistique' while the form field is named 'stat'
+        setFieldValue("stat", selectedRow.statistique);
         setFieldValue("adresse", selectedRow.adresse);
         setFieldValue("motcle", selectedRow.motcle);
         setFieldValue("cin", selectedRow.cin);
@@ -639,8 +711,36 @@ export default function ParamPlanComptable() {
         setTabValueAjoutNewRow(newValue);
     };
 
+    // Normalise: supprime espaces/points/tirets, trim, majuscules
+    const normalizeCompte = (v) =>
+    (v || '')
+        .toString()
+        .toUpperCase()
+        .replace(/[\s\.\-]/g, '')
+        .trim();
+
     const formAddCptValidationSchema = Yup.object({
-        compte: Yup.string().required("Veuillez tapez un numéro de compte"),
+        compte: Yup.string()
+        .required("Veuillez tapez un numéro de compte")
+        .test('unique-compte', 'Ce compte existe déjà', function (value) {
+        const list = Array.isArray(pc) ? pc : [];
+        const v = normalizeCompte(value);
+
+        const action = this.parent?.action;   // 'new' | 'modify'
+        const itemId = Number(this.parent?.itemId);
+
+        if (!v) return false;
+
+        // En modification: autoriser si la valeur n’a pas changé
+        if (action === 'modify') {
+            const current = list.find(r => Number(r.id) === itemId)?.compte;
+            if (normalizeCompte(current) === v) return true;
+        }
+
+        // En création (ou compte modifié): bloquer si existe déjà
+        const exists = list.some(r => Number(r.id) !== itemId && normalizeCompte(r.compte) === v);
+        return !exists;
+        }),
         libelle: Yup.string().required("Veuillez insérer un libellé pour le numéro de compte"),
         nature: Yup.string().required("Veuillez séléctionner dans la liste la nature du compte"),
         baseCptCollectif: Yup.string()
@@ -677,10 +777,36 @@ export default function ParamPlanComptable() {
                     }).required('La date est requise'),
                 otherwise: () => Yup.string().notRequired(),
             }),
-        province: Yup.string().required("Veuillez sélectionner une province"),
-        region: Yup.string().required("Veuillez sélectionner une région"),
-        district: Yup.string().required("Veuillez sélectionner un district"),
-        commune: Yup.string().required("Veuillez sélectionner une commune"),
+        nifRepresentant: Yup.string()
+            .when('typeTier', {
+                is: (value) => value === 'etranger',
+                then: () => Yup.string().required("Veuillez ajouter le numéro NIF du tier").min(10, 'Veuillez bien formater le numéro NIF'),
+                otherwise: () => Yup.string().notRequired(),
+            }),
+        province: Yup.string()
+            .when(['nature', 'typeTier'], {
+                is: (nature, typeTier) => nature === 'General' || nature === 'Collectif' || typeTier === 'etranger',
+                then: () => Yup.string().notRequired(),
+                otherwise: () => Yup.string().required("Veuillez sélectionner une province"),
+            }),
+        region: Yup.string()
+            .when(['nature', 'typeTier'], {
+                is: (nature, typeTier) => nature === 'General' || nature === 'Collectif' || typeTier === 'etranger',
+                then: () => Yup.string().notRequired(),
+                otherwise: () => Yup.string().required("Veuillez sélectionner une région"),
+            }),
+        district: Yup.string()
+            .when(['nature', 'typeTier'], {
+                is: (nature, typeTier) => nature === 'General' || nature === 'Collectif' || typeTier === 'etranger',
+                then: () => Yup.string().notRequired(),
+                otherwise: () => Yup.string().required("Veuillez sélectionner un district"),
+            }),
+        commune: Yup.string()
+            .when(['nature', 'typeTier'], {
+                is: (nature, typeTier) => nature === 'General' || nature === 'Collectif' || typeTier === 'etranger',
+                then: () => Yup.string().notRequired(),
+                otherwise: () => Yup.string().required("Veuillez sélectionner une commune"),
+            }),
     });
 
     //Action pour disable ou enable base compte collectif dans le formulaire nouveau compte pour le modèle
@@ -689,8 +815,30 @@ export default function ParamPlanComptable() {
         setFieldValue('nature', value)
         if (value === 'General' || value === 'Collectif') {
             setTypeCptGeneral(true);
+            // En MODIFICATION, forcer la base à l'ID du compte
+            if (selectedRow && selectedRow.id) {
+                setFieldValue('baseCptCollectif', selectedRow.id);
+            }
+            // Si Nature = General OU Collectif, mettre Type du Tier = general et griser les localités
+            setFieldValue('typeTier', 'general');
+            setFormulaireTier('general');
+            setDisableLocalites(true);
+            // Réinitialiser les localités
+            setFieldValue('province', '');
+            setFieldValue('region', '');
+            setFieldValue('district', '');
+            setFieldValue('commune', '');
+            setSelectedProvince('');
+            setSelectedRegion('');
+            setSelectedDistrict('');
+            setSelectedCommune('');
         } else {
             setTypeCptGeneral(false);
+            setDisableLocalites(false);
+            // En MODIFICATION, si retour à Aux, reprendre la base existante
+            if (selectedRow && selectedRow.baseaux_id) {
+                setFieldValue('baseCptCollectif', selectedRow.baseaux_id);
+            }
         }
     }
 
@@ -816,6 +964,22 @@ export default function ParamPlanComptable() {
         const value = e.target.value;
         setFieldValue('typeTier', value);
         setFormulaireTier(value);
+        
+        // Si Type du Tier = "etranger", griser les localités
+        if (value === 'etranger') {
+            setDisableLocalites(true);
+            // Réinitialiser les localités
+            setFieldValue('province', '');
+            setFieldValue('region', '');
+            setFieldValue('district', '');
+            setFieldValue('commune', '');
+            setSelectedProvince('');
+            setSelectedRegion('');
+            setSelectedDistrict('');
+            setSelectedCommune('');
+        } else {
+            setDisableLocalites(false);
+        }
     }
 
     //Suppression des comptes sélectionnés dans le tableau du plan comptable
@@ -877,9 +1041,19 @@ export default function ParamPlanComptable() {
 
     //Ajouter ou modifier une dossier plan comptable
     const formAddCpthandleSubmit = (values) => {
+        console.log(values);
+        values.compte = normalizeCompte(values.compte);
         axios.post(`/paramPlanComptable/AddCpt`, values).then((response) => {
             const resData = response.data;
             if (resData.state === true) {
+                // Option A: reset local selections and dependent lists after success
+                setSelectedProvince('');
+                setSelectedRegion('');
+                setSelectedDistrict('');
+                setSelectedCommune('');
+                setRegions([]);
+                setDistricts([]);
+                setCommunes([]);
                 showPc();
                 toast.success(resData.msg);
             } else {
@@ -896,7 +1070,7 @@ export default function ParamPlanComptable() {
             const resData = response.data;
             if (resData.state) {
                 let listePc = resData.liste;
-
+                // Inclure Collectif et General pour que la base soit récupérée/affichée pour toutes les natures
                 const result = listePc?.filter(item => item.nature === 'Collectif')
                 setListeCptCollectif(result);
             } else {
@@ -1084,7 +1258,6 @@ export default function ParamPlanComptable() {
             setSelectedCommune(selectedRow.commune);
         }
     }, [selectedRow])
-
     return (
         <Box>
             {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
@@ -1112,12 +1285,34 @@ export default function ParamPlanComptable() {
                         {/* <form onSubmit={formAddCptModelDetail.handleSubmit}> */}
                         <Formik
                             initialValues={formAddCptInitialValues}
+                            enableReinitialize
+                            validateOnBlur={false}
                             validationSchema={formAddCptValidationSchema}
                             onSubmit={(values) => {
                                 formAddCpthandleSubmit(values);
                             }}
                         >
-                            {({ handleChange, handleSubmit, setFieldValue, setFieldTouched, resetForm }) => {
+                            {({ values, handleChange, handleSubmit, setFieldValue, setFieldTouched, resetForm }) => {
+                                // Synchroniser typeTier + localités selon nature/typeTier
+                                useEffect(() => {
+                                    const isGen = values.nature === 'General' || values.nature === 'Collectif';
+                                    const isEtr = values.typeTier === 'etranger';
+
+                                    if (isGen && values.typeTier !== 'general') {
+                                        setFieldValue('typeTier', 'general', false);
+                                        setFormulaireTier('general');
+                                    }
+
+                                    const disable = isGen || isEtr;
+                                    setDisableLocalites(disable);
+
+                                    if (disable) {
+                                        setFieldTouched('province', false, false);
+                                        setFieldTouched('region', false, false);
+                                        setFieldTouched('district', false, false);
+                                        setFieldTouched('commune', false, false);
+                                    }
+                                }, [values.nature, values.typeTier]);
 
                                 return (
                                     <Form style={{ width: '100%' }}>
@@ -1271,6 +1466,18 @@ export default function ParamPlanComptable() {
                                                                                 as={Select}
                                                                                 labelId="baseCptCollectif-label"
                                                                                 name="baseCptCollectif"
+                                                                                renderValue={(selected) => {
+                                                                                    const opt = listeCptCollectif?.find((i) => i.id === selected);
+                                                                                    if (opt) return `${opt.compte} ${opt.libelle}`;
+                                                                                    // Fallback: afficher la valeur actuelle même si la liste n'est pas encore chargée
+                                                                                    if (selectedRow && (selected === selectedRow.id || selected === selectedRow.baseaux_id)) {
+                                                                                        const label = selectedRow.baseaux
+                                                                                            ? `${selectedRow.baseaux} ${selectedRow.libelle || ''}`.trim()
+                                                                                            : `${selectedRow.compte || ''} ${selectedRow.libelle || ''}`.trim();
+                                                                                        return label || ' ';
+                                                                                    }
+                                                                                    return ' ';
+                                                                                }}
                                                                                 onChange={handleChangeListBoxBaseCompteAux(setFieldValue)}
                                                                                 sx={{
                                                                                     borderRadius: 0,
@@ -1345,6 +1552,8 @@ export default function ParamPlanComptable() {
                                                                             as={Select}
                                                                             labelId="typeTier-label"
                                                                             name="typeTier"
+                                                                            disabled={disableLocalites}
+                                                                            onBlur={(e) => { /* avoid Formik executeBlur with undefined event */ }}
                                                                             onChange={handleOnChangeListBoxTypeTier(setFieldValue)}
                                                                             sx={{
                                                                                 borderRadius: 0,
@@ -1555,13 +1764,14 @@ export default function ParamPlanComptable() {
                                                                     <Stack direction={'row'} width={'100%'} spacing={2} style={{ marginTop: 25 }} >
                                                                         <Stack spacing={-0.5} flex={0.75} minWidth={0}>
                                                                             <Autocomplete
+                                                                                disabled={disableLocalites}
                                                                                 options={provinces}
                                                                                 value={selectedProvince || null}
                                                                                 onChange={(event, newValue) => {
                                                                                     setFieldValue("province", newValue || "");
                                                                                     setSelectedProvince(newValue || "");
                                                                                 }}
-                                                                                onBlur={() => setFieldTouched("province", true)}
+                                                                                onBlur={(e) => { if (!disableLocalites) setFieldTouched("province", true, false); }}
                                                                                 noOptionsText="Aucune province trouvée"
                                                                                 renderInput={(params) => (
                                                                                     <TextField
@@ -1597,13 +1807,14 @@ export default function ParamPlanComptable() {
                                                                         </Stack>
                                                                         <Stack spacing={-0.5} flex={0.9} minWidth={0}>
                                                                             <Autocomplete
+                                                                                disabled={disableLocalites}
                                                                                 options={regions}
                                                                                 value={selectedRegion || null}
                                                                                 onChange={(event, newValue) => {
                                                                                     setFieldValue('region', newValue);
                                                                                     setSelectedRegion(newValue);
                                                                                 }}
-                                                                                onBlur={() => setFieldTouched("region", true)}
+                                                                                onBlur={(e) => { if (!disableLocalites) setFieldTouched("region", true, false); }}
                                                                                 noOptionsText="Aucune région trouvée"
                                                                                 renderInput={(params) => (
                                                                                     <TextField
@@ -1639,13 +1850,14 @@ export default function ParamPlanComptable() {
                                                                         </Stack>
                                                                         <Stack spacing={-0.5} flex={1} minWidth={0}>
                                                                             <Autocomplete
+                                                                                disabled={disableLocalites}
                                                                                 options={districts}
                                                                                 value={selectedDistrict || null}
                                                                                 onChange={(event, newValue) => {
                                                                                     setFieldValue('district', newValue);
                                                                                     setSelectedDistrict(newValue);
                                                                                 }}
-                                                                                onBlur={() => setFieldTouched("district", true)}
+                                                                                onBlur={(e) => { if (!disableLocalites) setFieldTouched("district", true, false); }}
                                                                                 noOptionsText="Aucune district trouvée"
                                                                                 renderInput={(params) => (
                                                                                     <TextField
@@ -1681,13 +1893,14 @@ export default function ParamPlanComptable() {
                                                                         </Stack>
                                                                         <Stack spacing={-0.5} flex={1} minWidth={0}>
                                                                             <Autocomplete
+                                                                                disabled={disableLocalites}
                                                                                 options={communes}
                                                                                 value={selectedCommune || null}
                                                                                 onChange={(event, newValue) => {
                                                                                     setFieldValue('commune', newValue);
                                                                                     setSelectedCommune(newValue);
                                                                                 }}
-                                                                                onBlur={() => setFieldTouched("commune", true)}
+                                                                                onBlur={(e) => { if (!disableLocalites) setFieldTouched("commune", true, false); }}
                                                                                 noOptionsText="Aucune commmune trouvée"
                                                                                 renderInput={(params) => (
                                                                                     <TextField
@@ -1895,7 +2108,7 @@ export default function ParamPlanComptable() {
                                                         textTransform: 'none',
                                                         // outline: 'none'
                                                     }}
-                                                    type='submit'
+                                                     type='submit'
                                                     onClick={handleCloseDialogAddCpt}
                                                 >
                                                     Annuler

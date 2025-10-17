@@ -28,18 +28,18 @@ const traitementList = [
 ];
 
 const importList = [
-    {
-        text: 'Annexe déclarations fiscales',
-        name: "annexeDeclarationsFiscales",
-        path: "/tab/administration/importAnnexeDeclarationFiscale",
-        urldynamic: false
-    },
-    {
-        text: 'Annexe liasses E-bilan',
-        name: "annexeLiassesEbilan",
-        path: "/tab/administration/importAnnexeDeclarationEbilan",
-        urldynamic: true
-    },
+    // {
+    //     text: 'Annexe déclarations fiscales',
+    //     name: "annexeDeclarationsFiscales",
+    //     path: "/tab/administration/importAnnexeDeclarationFiscale",
+    //     urldynamic: false
+    // },
+    // {
+    //     text: 'Annexe liasses E-bilan',
+    //     name: "annexeLiassesEbilan",
+    //     path: "/tab/administration/importAnnexeDeclarationEbilan",
+    //     urldynamic: true
+    // },
     {
         text: 'Balance',
         name: "balance",
@@ -67,11 +67,11 @@ const exportList = [
         path: "/tab/administration/exportBalance",
         urldynamic: true
     },
-    {
-        text: 'DCom - droit de communication',
-        name: "droitCommunication",
-        path: "#"
-    },
+    // {
+    //     text: 'DCom - droit de communication',
+    //     name: "droitCommunication",
+    //     path: "#"
+    // },
     {
         text: 'Grand livre',
         name: "grandLivre",
@@ -82,11 +82,11 @@ const exportList = [
         name: "journalComptable",
         path: "#"
     },
-    {
-        text: 'Liasse E-bilan',
-        name: "liasseEbilan",
-        path: "#"
-    },
+    // {
+    //     text: 'Liasse E-bilan',
+    //     name: "liasseEbilan",
+    //     path: "#"
+    // },
 ];
 
 export default function Administration({ onWindowState, pathToNavigate, humburgerMenuState, closeDrawer }) {

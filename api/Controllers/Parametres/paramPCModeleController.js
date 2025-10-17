@@ -259,7 +259,6 @@ const detailModel = async (req, res) => {
       };
       res.json(resData);
     }
-
   } catch (error) {
     console.log(error);
   }
@@ -289,6 +288,10 @@ const AddCptTodetailModel = async (req, res) => {
       nifRepresentant,
       adresseEtranger,
       pays,
+      province,
+      region,
+      district,
+      commune,
       listeCptChg,
       listeCptTva
     } = req.body;
@@ -360,6 +363,10 @@ const AddCptTodetailModel = async (req, res) => {
           refpieceid: refPieceID,
           adressesansnif: adresseSansNIF,
           motcle: motcle,
+          province: province,
+          region: region,
+          district: district,
+          commune: commune,
           baseaux_id: baseaux_id
         });
 
@@ -453,6 +460,10 @@ const AddCptTodetailModel = async (req, res) => {
           statistique: stat,
           adresse: adresse,
           motcle: motcle,
+          province: province,
+          region: region,
+          district: district,
+          commune: commune,
           baseaux_id: baseaux_id
         });
 
@@ -546,6 +557,10 @@ const AddCptTodetailModel = async (req, res) => {
           adresseetranger: adresseEtranger,
           pays: pays,
           motcle: motcle,
+          province: province,
+          region: region,
+          district: district,
+          commune: commune,
           baseaux_id: baseaux_id
         });
 
@@ -637,6 +652,10 @@ const AddCptTodetailModel = async (req, res) => {
           typetier: typeTier,
           pays: 'Madagascar',
           motcle: motcle,
+          province: province,
+          region: region,
+          district: district,
+          commune: commune,
           baseaux_id: baseaux_id
         });
 
@@ -741,12 +760,17 @@ const AddCptTodetailModel = async (req, res) => {
             refpieceid: refPieceID,
             adressesansnif: adresseSansNIF,
             motcle: motcle,
+            province: province,
+            region: region,
+            district: district,
+            commune: commune,
             baseaux_id: baseaux_id
           },
           {
             where: {
               id: itemId,
-            }
+            },
+            returning: true
           }
         );
 
@@ -847,6 +871,10 @@ const AddCptTodetailModel = async (req, res) => {
             statistique: stat,
             adresse: adresse,
             motcle: motcle,
+            province: province,
+            region: region,
+            district: district,
+            commune: commune,
             baseaux_id: baseaux_id
           },
           {
@@ -951,6 +979,10 @@ const AddCptTodetailModel = async (req, res) => {
             adresseetranger: adresseEtranger,
             pays: pays,
             motcle: motcle,
+            province: province,
+            region: region,
+            district: district,
+            commune: commune,
             baseaux_id: baseaux_id
           },
           {
@@ -1053,13 +1085,16 @@ const AddCptTodetailModel = async (req, res) => {
             typetier: typeTier,
             pays: 'Madagascar',
             motcle: motcle,
+            province: province,
+            region: region,
+            district: district,
+            commune: commune,
             baseaux_id: baseaux_id
           },
           {
             where: { id: itemId }
           }
         );
-
         //Enregistrer les compte de charges et TVA associés au compte
         if (listeCptChg.length > 0) {
           listeCptChg.map(async (item) => {

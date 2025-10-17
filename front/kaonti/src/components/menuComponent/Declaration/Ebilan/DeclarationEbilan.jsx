@@ -3181,7 +3181,7 @@ export default function DeclarationEbilan() {
                                 </FormControl>
                             </Stack>
                             {
-                                !["1", "2", "3"].includes(value) && (
+                                !["1", "2", "3"].includes(value) && listeExercice && listeExercice.length > 0 && selectedExerciceId && selectedExerciceId !== 0 && (
                                     <ExportEbilanButtonAll
                                         exportAllToPdf={() => exportAllFile("PDF")}
                                         exportAllToExcel={() => exportAllFile("EXCEL")}
@@ -3196,25 +3196,25 @@ export default function DeclarationEbilan() {
                             <TabContext value={value}>
                                 <Box sx={{ borderBottom: 1, borderColor: 'transparent' }}>
                                     <TabList onChange={handleChangeTAB} aria-label="lab API tabs example" variant='scrollable'>
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="infos société" value="1" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="actionnaires" value="2" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="dom. bancaire" value="3" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="bilan" value="4" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="crn" value="5" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="crf" value="6" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="tftd" value="7" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="tfti" value="8" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="evcp" value="9" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="drf" value="10" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="bhiapc" value="11" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="mp" value="12" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="da" value="13" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="dp" value="14" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="eiafnc" value="15" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="sad" value="16" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="sdr" value="17" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="se" value="18" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="note" value="19" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="infos société" value="1" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="actionnaires" value="2" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="dom. bancaire" value="3" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="bilan" value="4" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="crn" value="5" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="crf" value="6" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="tftd" value="7" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="tfti" value="8" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="evcp" value="9" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="drf" value="10" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="bhiapc" value="11" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="mp" value="12" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="da" value="13" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="dp" value="14" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="eiafnc" value="15" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="sad" value="16" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="sdr" value="17" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="se" value="18" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="note" value="19" />
                                     </TabList>
                                 </Box>
 

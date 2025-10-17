@@ -88,6 +88,22 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING(50),
             allowNull: true
         },
+        province: {
+            type: DataTypes.STRING(50),
+            allowNull: true
+        },
+        region: {
+            type: DataTypes.STRING(50),
+            allowNull: true
+        },
+        district: {
+            type: DataTypes.STRING(50),
+            allowNull: true
+        },
+        commune: {
+            type: DataTypes.STRING(50),
+            allowNull: true
+        },
         baseaux_id: {
             type: DataTypes.BIGINT,
             allowNull: false,

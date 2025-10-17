@@ -564,8 +564,8 @@ export default function DeclarationIsi() {
                                     borderColor: 'transparent',
                                 }}>
                                     <TabList onChange={handleChangeTAB} aria-label="lab API tabs example" variant='scrollable'>
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Annexe déclarations" value="1" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Détails" value="2" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Annexe déclarations" value="1" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Détails" value="2" />
                                     </TabList>
                                 </Box>
 

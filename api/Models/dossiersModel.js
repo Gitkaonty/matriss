@@ -89,6 +89,26 @@ module.exports = (sequelize, DataTypes) => {
             unique: false,
             allowNull: true
         },
+        province: {
+            type: DataTypes.STRING(100),
+            unique: false,
+            allowNull: true
+        },
+        region: {
+            type: DataTypes.STRING(100),
+            unique: false,
+            allowNull: true
+        },
+        district: {
+            type: DataTypes.STRING(100),
+            unique: false,
+            allowNull: true
+        },
+        commune: {
+            type: DataTypes.STRING(100),
+            unique: false,
+            allowNull: true
+        },
         id_plancomptable: {
             type: DataTypes.BIGINT,
             unique: false,

@@ -4,6 +4,8 @@ import { format } from 'date-fns';
 import { BsCheckCircleFill } from "react-icons/bs";
 import { PiIdentificationCardFill } from "react-icons/pi";
 import { BsPersonFillSlash } from "react-icons/bs";
+import { FaGlobeAmericas } from "react-icons/fa";
+
 
 //Tableau list Modèle Header
 const columnHeaderModel = [
@@ -37,7 +39,7 @@ const columnHeaderModel = [
   ]
 
 //Header pour le tableau détail du modèle
-const columnHeaderDetail = [
+const columnHeaderDetail = (handleShowCptInfos) => [
     {
         field: 'id', 
         headerName: 'ID', 
@@ -55,6 +57,16 @@ const columnHeaderDetail = [
         width: 175, 
         headerAlign: 'left',
         headerClassName: 'HeaderbackColor',
+        renderCell: (params) => {
+            return (
+                <span
+                    style={{ cursor: 'pointer', width: '100%' }}
+                    onClick={() => handleShowCptInfos(params.row)}
+                >
+                    {params.row.compte}
+                </span>
+            );
+        }
     },
     {
         field: 'libelle', 
@@ -131,7 +143,7 @@ const columnHeaderDetail = [
         }
     },
     {
-        field: 'BaseAux.comptecentr', 
+        field: 'baseaux', 
         headerName: <strong>Centr. / base Aux</strong>, 
         type: 'string', 
         sortable : true, 
@@ -292,18 +304,16 @@ const columnHeaderDetail = [
             }else if(params.row.typetier === 'etranger'){
                 return (
                     <Stack width={'100%'} style={{display:'flex',alignContent:'center', alignItems:'center', justifyContent:'center'}}>
-                        <div style={{
-                            width: 90,             
-                            height: 25,            
-                            backgroundColor: '#FBA518', 
-                            borderRadius: 15,        
-                            display: 'flex',            
-                            justifyContent: 'center',   
-                            alignItems: 'center',       
-                        }}>
-                            {/* {params.row.typetier} */}
-                            Etranger
-                        </div>
+                       <Chip
+                        icon={<FaGlobeAmericas style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
+                        label="Etranger"
+                        style={{
+                        width: "100%",
+                        display: 'flex',
+                        backgroundColor: '#FBA518',
+                        color: 'white'
+                        }}
+                    />
                     </Stack>
                 )
             }
@@ -418,6 +428,42 @@ const columnHeaderDetail = [
         headerClassName: 'HeaderbackColor'
     },
     {
+        field: 'province', 
+        headerName: <strong>Province</strong>, 
+        type: 'string', 
+        sortable : true, 
+        width: 150, 
+        headerAlign: 'left',
+        headerClassName: 'HeaderbackColor'
+    },
+    {
+        field: 'region', 
+        headerName: <strong>Région</strong>, 
+        type: 'string', 
+        sortable : true, 
+        width: 150, 
+        headerAlign: 'left',
+        headerClassName: 'HeaderbackColor'
+    },
+    {
+        field: 'district', 
+        headerName: <strong>District</strong>, 
+        type: 'string', 
+        sortable : true, 
+        width: 150, 
+        headerAlign: 'left',
+        headerClassName: 'HeaderbackColor'
+    },
+    {
+        field: 'commune', 
+        headerName: <strong>Commune</strong>, 
+        type: 'string', 
+        sortable : true, 
+        width: 180, 
+        headerAlign: 'left',
+        headerClassName: 'HeaderbackColor'
+    },
+    {
         field: 'motcle', 
         headerName: <strong>Mot clé</strong>, 
         type: 'string', 
@@ -425,7 +471,8 @@ const columnHeaderDetail = [
         width: 150, 
         headerAlign: 'left',
         headerClassName: 'HeaderbackColor'
-    }
+    },
+
   ]
 
   //données pour le tableau compte de charge détail pour ajout infos nouveau détail du modèle sélectionné
