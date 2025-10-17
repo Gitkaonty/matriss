@@ -1,12 +1,7 @@
 import { React, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Typography, Stack, Paper, IconButton, FormControl, InputLabel, Select, MenuItem, Input, FormHelperText, Chip } from '@mui/material';
-import Button from '@mui/material/Button';
-import { IoAddSharp } from "react-icons/io5";
-import { GoX } from "react-icons/go";
-import { HiPencilSquare } from "react-icons/hi2";
 import Tooltip from '@mui/material/Tooltip';
-import TableParamCodeJournalModel from '../../../../model/TableParamCodeJournalModel';
 import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
 import { useParams } from 'react-router-dom';
 import Box from '@mui/material/Box';
@@ -47,12 +42,16 @@ export default function ParamCodeJournalComponent() {
     const [noFile, setNoFile] = useState(false);
     const [listeCodeJournaux, setListeCodeJournaux] = useState([]);
 
+    const [selectedRow, setSelectedRow] = useState([]);
+
     const [selectedRowId, setSelectedRowId] = useState([]);
     const [rowModesModel, setRowModesModel] = useState({});
     const [disableModifyBouton, setDisableModifyBouton] = useState(true);
     const [disableCancelBouton, setDisableCancelBouton] = useState(true);
     const [disableSaveBouton, setDisableSaveBouton] = useState(true);
     const [disableDeleteBouton, setDisableDeleteBouton] = useState(true);
+    const [disableAddRowBouton, setDisableAddRowBouton] = useState(false);
+
     const [editableRow, setEditableRow] = useState(true);
     const [openDialogDeleteRow, setOpenDialogDeleteRow] = useState(false);
     const [listeCptAssocie, setListeCptAssocie] = useState([]);
@@ -77,13 +76,13 @@ export default function ParamCodeJournalComponent() {
             idCompte: compteId,
             idDossier: fileId,
             idCode: 0,
-            code : '',
-            libelle:'',
-            type:'',
-            compteassocie:'',
-            nif:'',
-            stat:'',
-            adresse:''
+            code: '',
+            libelle: '',
+            type: '',
+            compteassocie: '',
+            nif: '',
+            stat: '',
+            adresse: ''
         },
         validationSchema: Yup.object({
             code: Yup.string().required("Veuillez ajouter un code journal"),
@@ -203,7 +202,7 @@ export default function ParamCodeJournalComponent() {
             formikNewCodeJournal.setFieldValue('nif', fileInfos?.nif || '');
             formikNewCodeJournal.setFieldValue('stat', fileInfos?.stat || '');
             formikNewCodeJournal.setFieldValue('adresse', fileInfos?.adresse || '');
-        }else if(typeTreso === 'CAISSE'){
+        } else if (typeTreso === 'CAISSE') {
             setListeCptAssocie(listCash);
             setCompteAssocieValidationColor('#F6D6D6');
         } else {
@@ -226,7 +225,7 @@ export default function ParamCodeJournalComponent() {
             headerName: 'Code',
             type: 'string',
             sortable: true,
-            width: 100,
+            flex: 1,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
@@ -260,7 +259,7 @@ export default function ParamCodeJournalComponent() {
             headerName: 'Libellé',
             type: 'string',
             sortable: true,
-            width: 400,
+            flex: 3,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
@@ -294,7 +293,7 @@ export default function ParamCodeJournalComponent() {
             type: 'singleSelect',
             valueOptions: type.map((code) => code.value),
             sortable: true,
-            width: 150,
+            flex: 1.5,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
@@ -510,7 +509,7 @@ export default function ParamCodeJournalComponent() {
             type: 'singleSelect',
             valueOptions: listeCptAssocie.map((cpt) => cpt.compte),
             sortable: true,
-            width: 400,
+            flex: 3,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
@@ -543,11 +542,11 @@ export default function ParamCodeJournalComponent() {
             },
         },
         {
-            field: 'nif', 
-            headerName: 'NIF', 
-            type: 'string', 
-            sortable : true, 
-            width: 150, 
+            field: 'nif',
+            headerName: 'NIF',
+            type: 'string',
+            sortable: true,
+            flex: 3,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
@@ -563,20 +562,21 @@ export default function ParamCodeJournalComponent() {
             },
             renderEditCell: (params) => {
                 return (
-                    <FormControl fullWidth style={{height:'100%'}}>
+                    <FormControl fullWidth style={{ height: '100%' }}>
                         <Input
-                            style={{height:'100%', alignItems:'center', 
-                                outline: 'none', 
+                            style={{
+                                height: '100%', alignItems: 'center',
+                                outline: 'none',
                                 backgroundColor: nifValidationColor
                             }}
                             type="text"
                             value={formikNewCodeJournal.values.nif}
-                            onChange = {(e) => formikNewCodeJournal.setFieldValue('nif', e.target.value)}
+                            onChange={(e) => formikNewCodeJournal.setFieldValue('nif', e.target.value)}
                             label="nif"
                             disableUnderline={true}
                         />
 
-                        <FormHelperText style={{color:'red'}}>
+                        <FormHelperText style={{ color: 'red' }}>
                             {formikNewCodeJournal.errors.nif && formikNewCodeJournal.touched.nif && formikNewCodeJournal.errors.nif}
                         </FormHelperText>
                     </FormControl>
@@ -584,11 +584,11 @@ export default function ParamCodeJournalComponent() {
             },
         },
         {
-            field: 'stat', 
-            headerName: 'STAT', 
-            type: 'string', 
-            sortable : true, 
-            width: 150, 
+            field: 'stat',
+            headerName: 'STAT',
+            type: 'string',
+            sortable: true,
+            flex: 3,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
@@ -604,20 +604,21 @@ export default function ParamCodeJournalComponent() {
             },
             renderEditCell: (params) => {
                 return (
-                    <FormControl fullWidth style={{height:'100%'}}>
+                    <FormControl fullWidth style={{ height: '100%' }}>
                         <Input
-                            style={{height:'100%', alignItems:'center', 
-                                outline: 'none', 
+                            style={{
+                                height: '100%', alignItems: 'center',
+                                outline: 'none',
                                 backgroundColor: statValidationColor
                             }}
                             type="text"
                             value={formikNewCodeJournal.values.stat}
-                            onChange = {(e) => formikNewCodeJournal.setFieldValue('stat', e.target.value)}
+                            onChange={(e) => formikNewCodeJournal.setFieldValue('stat', e.target.value)}
                             label="stat"
                             disableUnderline={true}
                         />
 
-                        <FormHelperText style={{color:'red'}}>
+                        <FormHelperText style={{ color: 'red' }}>
                             {formikNewCodeJournal.errors.stat && formikNewCodeJournal.touched.stat && formikNewCodeJournal.errors.stat}
                         </FormHelperText>
                     </FormControl>
@@ -625,11 +626,11 @@ export default function ParamCodeJournalComponent() {
             },
         },
         {
-            field: 'adresse', 
-            headerName: 'Adresse', 
-            type: 'string', 
-            sortable : true, 
-            width: 400, 
+            field: 'adresse',
+            headerName: 'Adresse',
+            type: 'string',
+            sortable: true,
+            flex: 3,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
@@ -645,20 +646,21 @@ export default function ParamCodeJournalComponent() {
             },
             renderEditCell: (params) => {
                 return (
-                    <FormControl fullWidth style={{height:'100%'}}>
+                    <FormControl fullWidth style={{ height: '100%' }}>
                         <Input
-                            style={{height:'100%', alignItems:'center', 
-                                outline: 'none', 
+                            style={{
+                                height: '100%', alignItems: 'center',
+                                outline: 'none',
                                 backgroundColor: adresseValidationColor
                             }}
                             type="text"
                             value={formikNewCodeJournal.values.adresse}
-                            onChange = {(e) => formikNewCodeJournal.setFieldValue('adresse', e.target.value)}
+                            onChange={(e) => formikNewCodeJournal.setFieldValue('adresse', e.target.value)}
                             label="adresse"
                             disableUnderline={true}
                         />
 
-                        <FormHelperText style={{color:'red'}}>
+                        <FormHelperText style={{ color: 'red' }}>
                             {formikNewCodeJournal.errors.adresse && formikNewCodeJournal.touched.adresse && formikNewCodeJournal.errors.adresse}
                         </FormHelperText>
                     </FormControl>
@@ -672,13 +674,13 @@ export default function ParamCodeJournalComponent() {
         if (ids.length === 1) {
             setSelectedRowId(ids);
             setDisableModifyBouton(false);
-            setDisableSaveBouton(false);
+            setDisableSaveBouton(true);
             setDisableCancelBouton(false);
             setDisableDeleteBouton(false);
         } else {
             setSelectedRowId([]);
             setDisableModifyBouton(true);
-            setDisableSaveBouton(true);
+            setDisableSaveBouton(false);
             setDisableCancelBouton(true);
             setDisableDeleteBouton(true);
         }
@@ -723,13 +725,13 @@ export default function ParamCodeJournalComponent() {
         formikNewCodeJournal.setFieldValue("compteassocie", selectedRowInfos[0].compteassocie);
         // Renseigner nif/stat/adresse en fonction du type
         if (selectedRowInfos[0].type === 'BANQUE') {
-          formikNewCodeJournal.setFieldValue('nif', selectedRowInfos[0].nif || '');
-          formikNewCodeJournal.setFieldValue('stat', selectedRowInfos[0].stat || '');
-          formikNewCodeJournal.setFieldValue('adresse', selectedRowInfos[0].adresse || '');
+            formikNewCodeJournal.setFieldValue('nif', selectedRowInfos[0].nif || '');
+            formikNewCodeJournal.setFieldValue('stat', selectedRowInfos[0].stat || '');
+            formikNewCodeJournal.setFieldValue('adresse', selectedRowInfos[0].adresse || '');
         } else {
-          formikNewCodeJournal.setFieldValue('nif', '');
-          formikNewCodeJournal.setFieldValue('stat', '');
-          formikNewCodeJournal.setFieldValue('adresse', '');
+            formikNewCodeJournal.setFieldValue('nif', '');
+            formikNewCodeJournal.setFieldValue('stat', '');
+            formikNewCodeJournal.setFieldValue('adresse', '');
         }
 
         setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
@@ -745,7 +747,7 @@ export default function ParamCodeJournalComponent() {
         let saveBoolNif = false;
         let saveBoolStat = false;
         let saveBoolAdresse = false;
-        
+
         setLibelleValidationColor('transparent');
         setTypeValidationColor('transparent');
         setCompteAssocieValidationColor('transparent');
@@ -790,31 +792,31 @@ export default function ParamCodeJournalComponent() {
             saveBoolCompteAssocie = true;
         }
 
-        if(formikNewCodeJournal.values.type === 'BANQUE'){
-            if(formikNewCodeJournal.values.nif === ''){
+        if (formikNewCodeJournal.values.type === 'BANQUE') {
+            if (formikNewCodeJournal.values.nif === '') {
                 setNifValidationColor('#F6D6D6');
                 saveBoolNif = false;
-            }else{
+            } else {
                 setNifValidationColor('transparent');
                 saveBoolNif = true;
             }
 
-            if(formikNewCodeJournal.values.stat === ''){
+            if (formikNewCodeJournal.values.stat === '') {
                 setStatValidationColor('#F6D6D6');
                 saveBoolStat = false;
-            }else{
+            } else {
                 setStatValidationColor('transparent');
                 saveBoolStat = true;
             }
 
-            if(formikNewCodeJournal.values.adresse === ''){
+            if (formikNewCodeJournal.values.adresse === '') {
                 setAdresseValidationColor('#F6D6D6');
                 saveBoolAdresse = false;
-            }else{
+            } else {
                 setAdresseValidationColor('transparent');
                 saveBoolAdresse = true;
             }
-        }else{
+        } else {
             setNifValidationColor('transparent');
             setStatValidationColor('transparent');
             setAdresseValidationColor('transparent');
@@ -823,11 +825,12 @@ export default function ParamCodeJournalComponent() {
             saveBoolAdresse = true;
         }
 
-        if(saveBoolCode && saveBoolLibelle && saveBoolType && saveBoolCompteAssocie && saveBoolNif && saveBoolStat && saveBoolAdresse){
+        if (saveBoolCode && saveBoolLibelle && saveBoolType && saveBoolCompteAssocie && saveBoolNif && saveBoolStat && saveBoolAdresse) {
             setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
             axios.post(`/paramCodeJournaux/codeJournauxAdd`, formikNewCodeJournal.values).then((response) => {
                 const resData = response.data;
                 if (resData.state) {
+                    setDisableAddRowBouton(false);
                     setDisableSaveBouton(true);
 
                     formikNewCodeJournal.resetForm();
@@ -844,15 +847,22 @@ export default function ParamCodeJournalComponent() {
 
     const handleOpenDialogConfirmDeleteAssocieRow = () => {
         setOpenDialogDeleteRow(true);
+        setDisableAddRowBouton(false);
     }
 
     const deleteRow = (value) => {
         if (value === true) {
             if (selectedRowId.length === 1) {
                 const idToDelete = selectedRowId[0];
+                if (idToDelete < 0) {
+                    setOpenDialogDeleteRow(false);
+                    setListeCodeJournaux(listeCodeJournaux.filter((row) => row.id !== idToDelete));
+                    return;
+                }
                 axios.post(`/paramCodeJournaux/codeJournauxDelete`, { fileId, compteId, idToDelete }).then((response) => {
                     const resData = response.data;
                     if (resData.state) {
+                        setDisableAddRowBouton(false);
                         setOpenDialogDeleteRow(false);
                         setListeCodeJournaux(listeCodeJournaux.filter((row) => row.id !== selectedRowId[0]));
                         toast.success(resData.msg);
@@ -873,6 +883,12 @@ export default function ParamCodeJournalComponent() {
             ...rowModesModel,
             [id]: { mode: GridRowModes.View, ignoreModifications: true },
         });
+        setDisableAddRowBouton(false);
+        setDisableSaveBouton(true);
+        setDisableDeleteBouton(true);
+        setDisableModifyBouton(true);
+        setSelectedRow([]);
+        setSelectedRowId([]);
     };
 
     const processRowUpdate = (newRow) => {
@@ -892,14 +908,14 @@ export default function ParamCodeJournalComponent() {
             setDisableModifyBouton(true);
             setDisableSaveBouton(true);
             setDisableCancelBouton(true);
-            toast.error("sélectionnez une seule ligne pour pouvoir la modifier");
+            toast.error("Sélectionnez une seule ligne pour pouvoir la modifier");
         } else {
             setDisableModifyBouton(false);
             setDisableSaveBouton(false);
             setDisableCancelBouton(false);
             if (!selectedRowId.includes(params.id)) {
                 setEditableRow(false);
-                toast.error("sélectionnez une ligne pour pouvoir la modifier");
+                toast.error("Sélectionnez une ligne pour pouvoir la modifier");
             } else {
                 setEditableRow(true);
             }
@@ -909,7 +925,11 @@ export default function ParamCodeJournalComponent() {
 
     //Ajouter une ligne dans le tableau liste associé
     const handleOpenDialogAddNewAssocie = () => {
-        const newId = -1 * (getMaxID(listeCodeJournaux) + 1);
+        setDisableModifyBouton(false);
+        setDisableCancelBouton(false);
+        setDisableDeleteBouton(false);
+
+        const newId = -Date.now();
 
         formikNewCodeJournal.setFieldValue("idDossier", fileId);
         const newRow = {
@@ -923,6 +943,9 @@ export default function ParamCodeJournalComponent() {
             adresse: '',
         };
         setListeCodeJournaux([...listeCodeJournaux, newRow]);
+        setSelectedRowId([newRow.id]);
+        setSelectedRow([newRow.id]);
+        setDisableAddRowBouton(true);
     }
 
     //récupérer le numéro id le plus grand dans le tableau
@@ -930,6 +953,19 @@ export default function ParamCodeJournalComponent() {
         const Ids = data.map(item => item.id);
         return Math.max(...Ids);
     };
+
+    const deselectRow = (ids) => {
+        const deselected = selectedRowId.filter(id => !ids.includes(id));
+
+        const updatedRowModes = { ...rowModesModel };
+        deselected.forEach((id) => {
+            updatedRowModes[id] = { mode: GridRowModes.View, ignoreModifications: true };
+        });
+        setRowModesModel(updatedRowModes);
+
+        setDisableAddRowBouton(false);
+        setSelectedRowId(ids);
+    }
 
     return (
         <Box>
@@ -960,6 +996,7 @@ export default function ParamCodeJournalComponent() {
                             direction={"row"} justifyContent={"right"}>
                             <Tooltip title="Ajouter une ligne">
                                 <IconButton
+                                    disabled={disableAddRowBouton}
                                     variant="contained"
                                     onClick={handleOpenDialogAddNewAssocie}
                                     style={{
@@ -1062,7 +1099,9 @@ export default function ParamCodeJournalComponent() {
                                 onRowClick={(e) => handleCellEditCommit(e.row)}
                                 // onCellClick={(e) => test(e.row)}
                                 onRowSelectionModelChange={ids => {
+                                    setSelectedRow(ids);
                                     saveSelectedRow(ids);
+                                    deselectRow(ids);
                                 }}
                                 rowModesModel={rowModesModel}
                                 onRowModesModelChange={handleRowModesModelChange}
@@ -1079,6 +1118,51 @@ export default function ParamCodeJournalComponent() {
                                 checkboxSelection={DataGridStyle.checkboxSelection}
                                 columnVisibilityModel={{
                                     id: false,
+                                }}
+                                rowSelectionModel={selectedRow}
+                                onRowEditStart={(params, event) => {
+                                    if (!selectedRow.length || selectedRow[0] !== params.id) {
+                                        event.defaultMuiPrevented = true;
+                                    }
+                                    if (selectedRow.includes(params.id)) {
+                                        setDisableAddRowBouton(true);
+                                        event.stopPropagation();
+
+                                        const rowId = params.id;
+                                        const rowData = params.row;
+
+                                        setLibelleValidationColor('transparent');
+                                        setTypeValidationColor('transparent');
+                                        setCompteAssocieValidationColor('transparent');
+                                        setNifValidationColor('transparent');
+                                        setStatValidationColor('transparent');
+                                        setAdresseValidationColor('transparent');
+
+                                        formikNewCodeJournal.setFieldValue("idCode", rowId);
+                                        formikNewCodeJournal.setFieldValue("idDossier", fileId);
+                                        formikNewCodeJournal.setFieldValue("idCompte", compteId);
+                                        formikNewCodeJournal.setFieldValue("code", rowData.code);
+                                        formikNewCodeJournal.setFieldValue("libelle", rowData.libelle);
+                                        formikNewCodeJournal.setFieldValue("type", rowData.type);
+                                        formikNewCodeJournal.setFieldValue("compteassocie", rowData.compteassocie);
+                                        // Renseigner nif/stat/adresse en fonction du type
+                                        if (rowData.type === 'BANQUE') {
+                                            formikNewCodeJournal.setFieldValue('nif', rowData.nif || '');
+                                            formikNewCodeJournal.setFieldValue('stat', rowData.stat || '');
+                                            formikNewCodeJournal.setFieldValue('adresse', rowData.adresse || '');
+                                        } else {
+                                            formikNewCodeJournal.setFieldValue('nif', '');
+                                            formikNewCodeJournal.setFieldValue('stat', '');
+                                            formikNewCodeJournal.setFieldValue('adresse', '');
+                                        }
+
+                                        setRowModesModel((oldModel) => ({
+                                            ...oldModel,
+                                            [rowId]: { mode: GridRowModes.Edit },
+                                        }));
+
+                                        setDisableSaveBouton(false);
+                                    }
                                 }}
                             />
                         </Stack>

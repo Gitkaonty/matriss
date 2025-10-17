@@ -1,12 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Typography, Stack, Paper, IconButton, FormControl, InputLabel, Select, MenuItem, Input, FormHelperText } from '@mui/material';
-import Button from '@mui/material/Button';
-import { IoAddSharp } from "react-icons/io5";
-import { GoX } from "react-icons/go";
-import { HiPencilSquare } from "react-icons/hi2";
 import Tooltip from '@mui/material/Tooltip';
-import TableParamCodeJournalModel from '../../../../model/TableParamCodeJournalModel';
 import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
 import { useParams } from 'react-router-dom';
 import Box from '@mui/material/Box';
@@ -43,12 +38,16 @@ export default function ParamTVAComponent() {
     const [listeCodeTva, setListeCodeTva] = useState([]);
     const [listeCodeTvaUnfiltered, setListeCodeTvaUnfiltered] = useState([]);
 
+    const [selectedRow, setSelectedRow] = useState([]);
+
     const [selectedRowId, setSelectedRowId] = useState([]);
     const [rowModesModel, setRowModesModel] = useState({});
     const [disableModifyBouton, setDisableModifyBouton] = useState(true);
     const [disableCancelBouton, setDisableCancelBouton] = useState(true);
     const [disableSaveBouton, setDisableSaveBouton] = useState(true);
     const [disableDeleteBouton, setDisableDeleteBouton] = useState(true);
+    const [disableAddRowBouton, setDisableAddRowBouton] = useState(false);
+
     const [editableRow, setEditableRow] = useState(true);
     const [openDialogDeleteRow, setOpenDialogDeleteRow] = useState(false);
     const [listeCptAssocie, setListeCptAssocie] = useState([]);
@@ -184,13 +183,13 @@ export default function ParamTVAComponent() {
 
         if (infosCompte[0]?.compte.startsWith('4456')) {
             const filteredCode = (listeCodeTvaUnfiltered || [])
-              .filter((row) => row.nature === 'DED')
-              .filter((row) => !String(row.code || '').startsWith('1'));
+                .filter((row) => row.nature === 'DED')
+                .filter((row) => !String(row.code || '').startsWith('1'));
             setListeCodeTva(filteredCode);
         } else if (infosCompte[0]?.compte.startsWith('4457')) {
             const filteredCode = (listeCodeTvaUnfiltered || [])
-              .filter((row) => row.nature === 'COLL')
-              .filter((row) => !String(row.code || '').startsWith('1'));
+                .filter((row) => row.nature === 'COLL')
+                .filter((row) => !String(row.code || '').startsWith('1'));
             setListeCodeTva(filteredCode);
         } else {
             GetListeCodeTva();
@@ -217,7 +216,7 @@ export default function ParamTVAComponent() {
             type: 'singleSelect',
             valueOptions: pc?.map((code) => code.compte),
             sortable: true,
-            width: 200,
+            flex: 2.5,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
@@ -255,7 +254,7 @@ export default function ParamTVAComponent() {
             headerName: 'Libellé',
             type: 'string',
             sortable: true,
-            width: 400,
+            flex: 2,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
@@ -285,7 +284,7 @@ export default function ParamTVAComponent() {
             type: 'singleSelect',
             valueOptions: listeCodeTva.map((row) => row.code),
             sortable: true,
-            width: 150,
+            flex: 0.5,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
@@ -360,7 +359,7 @@ export default function ParamTVAComponent() {
             headerName: 'Déscription',
             type: 'string',
             sortable: true,
-            width: 750,
+            flex: 3,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
@@ -391,13 +390,13 @@ export default function ParamTVAComponent() {
         if (ids.length === 1) {
             setSelectedRowId(ids);
             setDisableModifyBouton(false);
-            setDisableSaveBouton(false);
+            setDisableSaveBouton(true);
             setDisableCancelBouton(false);
             setDisableDeleteBouton(false);
         } else {
             setSelectedRowId([]);
             setDisableModifyBouton(true);
-            setDisableSaveBouton(true);
+            setDisableSaveBouton(false);
             setDisableCancelBouton(true);
             setDisableDeleteBouton(true);
         }
@@ -424,13 +423,13 @@ export default function ParamTVAComponent() {
 
         if (compte?.startsWith('4456')) {
             const filteredCode = (listeCodeTvaUnfiltered || [])
-              .filter((row) => row.nature === 'DED')
-              .filter((row) => !String(row.code || '').startsWith('1'));
+                .filter((row) => row.nature === 'DED')
+                .filter((row) => !String(row.code || '').startsWith('1'));
             setListeCodeTva(filteredCode);
         } else if (compte?.startsWith('4457')) {
             const filteredCode = (listeCodeTvaUnfiltered || [])
-              .filter((row) => row.nature === 'COLL')
-              .filter((row) => !String(row.code || '').startsWith('1'));
+                .filter((row) => row.nature === 'COLL')
+                .filter((row) => !String(row.code || '').startsWith('1'));
             setListeCodeTva(filteredCode);
         } else {
             GetListeCodeTva();
@@ -477,6 +476,7 @@ export default function ParamTVAComponent() {
                 const resData = response.data;
 
                 if (resData.state) {
+                    setDisableAddRowBouton(false);
                     setDisableSaveBouton(true);
 
                     formikNewParamTva.resetForm();
@@ -493,18 +493,24 @@ export default function ParamTVAComponent() {
 
     const handleOpenDialogConfirmDeleteAssocieRow = () => {
         setOpenDialogDeleteRow(true);
+        setDisableAddRowBouton(false);
     }
 
     const deleteRow = (value) => {
         if (value === true) {
             if (selectedRowId.length === 1) {
                 const idToDelete = selectedRowId[0];
+                if (idToDelete < 0) {
+                    setOpenDialogDeleteRow(false);
+                    setParamTva(paramTva.filter((row) => row.id !== idToDelete));
+                    return;
+                }
                 axios.post(`/paramTva/paramTvaDelete`, { fileId, compteId, idToDelete }).then((response) => {
                     const resData = response.data;
                     if (resData.state) {
+                        setDisableAddRowBouton(false);
                         setOpenDialogDeleteRow(false);
                         setParamTva(paramTva.filter((row) => row.id !== selectedRowId[0]));
-                        toast.success(resData.msg);
                     } else {
                         setOpenDialogDeleteRow(false);
                         toast.error(resData.msg);
@@ -522,6 +528,13 @@ export default function ParamTVAComponent() {
             ...rowModesModel,
             [id]: { mode: GridRowModes.View, ignoreModifications: true },
         });
+        setDisableAddRowBouton(false);
+        setDisableSaveBouton(true);
+        setDisableDeleteBouton(true);
+        setDisableModifyBouton(true);
+        setDisableCancelBouton(true);
+        setSelectedRow([]);
+        setSelectedRowId([]);
     };
 
     const processRowUpdate = (newRow) => {
@@ -541,14 +554,14 @@ export default function ParamTVAComponent() {
             setDisableModifyBouton(true);
             setDisableSaveBouton(true);
             setDisableCancelBouton(true);
-            toast.error("sélectionnez une seule ligne pour pouvoir la modifier");
+            toast.error("Sélectionnez une seule ligne pour pouvoir la modifier");
         } else {
             setDisableModifyBouton(false);
             setDisableSaveBouton(false);
             setDisableCancelBouton(false);
             if (!selectedRowId.includes(params.id)) {
                 setEditableRow(false);
-                toast.error("sélectionnez une ligne pour pouvoir la modifier");
+                toast.error("Sélectionnez une ligne pour pouvoir la modifier");
             } else {
                 setEditableRow(true);
             }
@@ -557,7 +570,11 @@ export default function ParamTVAComponent() {
 
     //Ajouter une ligne dans le tableau liste associé
     const handleOpenDialogAddNewAssocie = () => {
-        const newId = -1 * (getMaxID(paramTva) + 1);
+        setDisableModifyBouton(false);
+        setDisableCancelBouton(false);
+        setDisableDeleteBouton(false);
+
+        const newId = -Date.now();
 
         formikNewParamTva.setFieldValue("idDossier", fileId);
         const newRow = {
@@ -567,6 +584,9 @@ export default function ParamTVAComponent() {
             libelle: '',
         };
         setParamTva([...paramTva, newRow]);
+        setSelectedRowId([newRow.id]);
+        setSelectedRow([newRow.id]);
+        setDisableAddRowBouton(true);
     }
 
     //récupérer le numéro id le plus grand dans le tableau
@@ -587,6 +607,19 @@ export default function ParamTVAComponent() {
             return compte.startsWith('445') && !code.startsWith('1');
         });
     }, [paramTva]);
+
+    const deselectRow = (ids) => {
+        const deselected = selectedRowId.filter(id => !ids.includes(id));
+
+        const updatedRowModes = { ...rowModesModel };
+        deselected.forEach((id) => {
+            updatedRowModes[id] = { mode: GridRowModes.View, ignoreModifications: true };
+        });
+        setRowModesModel(updatedRowModes);
+
+        setDisableAddRowBouton(false);
+        setSelectedRowId(ids);
+    }
 
     return (
         <Box>
@@ -617,6 +650,7 @@ export default function ParamTVAComponent() {
                             direction={"row"} justifyContent={"right"}>
                             <Tooltip title="Ajouter une ligne">
                                 <IconButton
+                                    disabled={disableAddRowBouton}
                                     variant="contained"
                                     onClick={handleOpenDialogAddNewAssocie}
                                     style={{
@@ -719,7 +753,9 @@ export default function ParamTVAComponent() {
                                 onRowClick={(e) => handleCellEditCommit(e.row)}
                                 // onCellClick={(e) => test(e.row)}
                                 onRowSelectionModelChange={ids => {
+                                    setSelectedRow(ids);
                                     saveSelectedRow(ids);
+                                    deselectRow(ids);
                                 }}
                                 rowModesModel={rowModesModel}
                                 onRowModesModelChange={handleRowModesModelChange}
@@ -736,6 +772,56 @@ export default function ParamTVAComponent() {
                                 checkboxSelection={DataGridStyle.checkboxSelection}
                                 columnVisibilityModel={{
                                     id: false,
+                                }}
+                                rowSelectionModel={selectedRow}
+                                onRowEditStart={(params, event) => {
+                                    if (!selectedRow.length || selectedRow[0] !== params.id) {
+                                        event.defaultMuiPrevented = true;
+                                    }
+                                    if (selectedRow.includes(params.id)) {
+                                        setDisableAddRowBouton(true);
+                                        event.stopPropagation();
+
+                                        const rowId = params.id;
+                                        const rowData = params.row;
+
+                                        const compteInit = rowData;
+                                        const compte = compteInit['dossierplancomptable.compte'];
+                                        const libelle = compteInit['dossierplancomptable.libelle'];
+                                        const description = compteInit['listecodetva.libelle'];
+
+                                        if (compte?.startsWith('4456')) {
+                                            const filteredCode = (listeCodeTvaUnfiltered || [])
+                                                .filter((row) => row.nature === 'DED')
+                                                .filter((row) => !String(row.code || '').startsWith('1'));
+                                            setListeCodeTva(filteredCode);
+                                        } else if (compte?.startsWith('4457')) {
+                                            const filteredCode = (listeCodeTvaUnfiltered || [])
+                                                .filter((row) => row.nature === 'COLL')
+                                                .filter((row) => !String(row.code || '').startsWith('1'));
+                                            setListeCodeTva(filteredCode);
+                                        } else {
+                                            GetListeCodeTva();
+                                        }
+
+                                        setCodeValidationColor('transparent');
+                                        setCompteValidationColor('transparent');
+
+                                        formikNewParamTva.setFieldValue("idCode", rowId);
+                                        formikNewParamTva.setFieldValue("idDossier", fileId);
+                                        formikNewParamTva.setFieldValue("idCompte", compteId);
+                                        formikNewParamTva.setFieldValue("compte", rowData.id_cptcompta);
+                                        formikNewParamTva.setFieldValue("libelle", libelle);
+                                        formikNewParamTva.setFieldValue("code", rowData.type);
+                                        formikNewParamTva.setFieldValue("codedescription", description);
+
+                                        setRowModesModel((oldModel) => ({
+                                            ...oldModel,
+                                            [rowId]: { mode: GridRowModes.Edit },
+                                        }));
+
+                                        setDisableSaveBouton(false);
+                                    }
                                 }}
                             />
                         </Stack>

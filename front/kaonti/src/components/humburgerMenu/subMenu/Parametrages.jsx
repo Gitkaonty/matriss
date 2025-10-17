@@ -94,7 +94,7 @@ const socialesList = [
     {
         text: 'Fonctions',
         name: "fonctions",
-        path: "/tab/fonctions",
+        path: "/tab/parametrages/fonctions",
         urldynamic: true
     },
 ];

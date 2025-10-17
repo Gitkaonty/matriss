@@ -1,38 +1,25 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
 import {
     Typography, Stack, Paper, RadioGroup, FormControlLabel, Radio, FormControl,
     InputLabel, Select, MenuItem, TextField, Box, Tab,
     FormHelperText,
-    Input
+    Input,
+    Checkbox
 } from '@mui/material';
-import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
 import { init } from '../../../init';
 import axios from '../../../config/axios';
 import toast from 'react-hot-toast';
 import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes } from '@mui/x-data-grid';
-import { styled } from '@mui/material/styles';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
 import IconButton from '@mui/material/IconButton';
-import CloseIcon from '@mui/icons-material/Close';
-import { TabContext, TabList, TabPanel } from '@mui/lab';
-import { useFormik, Field, Formik, Form, ErrorMessage } from 'formik';
+import { useFormik } from 'formik';
 import * as Yup from "yup";
-import useAuth from '../../hooks/useAuth';
-import { jwtDecode } from 'jwt-decode';
 import QuickFilter from './DatagridToolsStyle';
 import { DataGridStyle } from './DatagridToolsStyle';
-import { format } from 'date-fns';
-import { InfoFileStyle } from './InfosFileStyle';
 import { IoMdTrash } from "react-icons/io";
 import { TbPlaylistAdd } from "react-icons/tb";
 import { FaRegPenToSquare } from "react-icons/fa6";
-import { RxReset } from "react-icons/rx";
 import { VscClose } from 'react-icons/vsc';
 import { TfiSave } from 'react-icons/tfi';
 import PopupConfirmDelete from './popupConfirmDelete';
@@ -47,6 +34,8 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
     const [sensCalculValidationColor, setSensCalculValidationColor] = useState('transparent');
     const [conditionValidationColor, setConditionValidationColor] = useState('transparent');
     const [equationValidationColor, setEquationValidationColor] = useState('transparent');
+
+    const [selectedRow, setSelectedRow] = useState([]);
 
     const [selectedRowId, setSelectedRowId] = useState([]);
     const [rowModesModel, setRowModesModel] = useState({});
@@ -102,10 +91,9 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
             condition: '',
             equation: '',
             par_default: true,
-            active: true
+            active: true,
         },
         validationSchema: Yup.object({
-            nature: Yup.string().required("Ce champ est obligatoire"),
             senscalcul: Yup.string().required("Ce champ est obligatoire"),
             condition: Yup.string().required("Ce champ est obligatoire"),
             equation: Yup.string().required("Ce champ est obligatoire")
@@ -292,7 +280,7 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
             editable: editableRow,
             renderEditCell: (params) => {
                 return (
-                    <input
+                    <Checkbox
                         // value={formNewParam.values.active}
                         checked={formNewParam.values.active}
                         type="checkbox"
@@ -319,13 +307,13 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
         if (ids.length === 1) {
             setSelectedRowId(ids);
             setDisableModifyBouton(false);
-            setDisableSaveBouton(false);
+            setDisableSaveBouton(true);
             setDisableCancelBouton(false);
             setDisableDeleteBouton(false);
         } else {
             setSelectedRowId([]);
             setDisableModifyBouton(true);
-            setDisableSaveBouton(true);
+            setDisableSaveBouton(false);
             setDisableCancelBouton(true);
             setDisableDeleteBouton(true);
         }
@@ -354,11 +342,6 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
         }
 
         formNewParam.setFieldValue("idParam", selectedRowInfos[0]?.id ? selectedRowInfos[0]?.id : 0);
-        formNewParam.setFieldValue("compteId", compteId);
-        formNewParam.setFieldValue("fileId", fileId);
-        formNewParam.setFieldValue("exerciceId", exerciceId);
-        formNewParam.setFieldValue("etatId", etatId);
-        formNewParam.setFieldValue("rubriqueId", rubriqueId);
         formNewParam.setFieldValue("compte", selectedRowInfos[0]?.compte ? selectedRowInfos[0]?.compte : '');
         formNewParam.setFieldValue("nature", selectedRowInfos[0]?.nature ? selectedRowInfos[0].nature : nature);
         formNewParam.setFieldValue("senscalcul", selectedRowInfos[0]?.senscalcul ? selectedRowInfos[0]?.senscalcul : '');
@@ -371,7 +354,7 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
         setDisableSaveBouton(false);
     };
 
-    const handleSaveClick = (id) => () => {
+    const handleSaveClick = (id) => async () => {
         let saveBoolCompte = false;
         let saveBoolSensCalcul = false;
         let saveBoolCondition = false;
@@ -415,12 +398,20 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
         }
 
         if (saveBoolCompte && saveBoolSensCalcul && saveBoolCondition && saveBoolEquation) {
-            setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
+            setRowModesModel({
+                ...rowModesModel,
+                [id]: { mode: GridRowModes.View, ignoreModifications: true },
+            });
 
-            axios.post(`/paramMappingCompte/MappingCompteAdd`, formNewParam.values).then((response) => {
+            const dataToSend = { ...formNewParam.values, compteId: compteId, exerciceId: exerciceId, fileId: fileId, rubriqueId: rubriqueId };
+
+            console.log('dataToSend : ', dataToSend);
+
+            axios.post(`/paramMappingCompte/MappingCompteAdd`, dataToSend).then((response) => {
                 const resData = response.data;
 
                 if (resData.state) {
+                    setDisableAddRowBouton(false);
                     setDisableSaveBouton(true);
                     formNewParam.resetForm();
                     getListeCompteRubriqueAfterUpdating();
@@ -436,12 +427,18 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
 
     const handleOpenDialogConfirmDeleteRow = () => {
         setOpenDialogDeleteRow(true);
+        setDisableAddRowBouton(false);
     }
 
     const deleteRow = (value) => {
         if (value === true) {
             if (selectedRowId.length === 1) {
                 const idToDelete = selectedRowId[0];
+                if (idToDelete < 0) {
+                    setOpenDialogDeleteRow(false);
+                    setCompteRubriqueData(compteRubriqueData.filter((row) => row.id !== idToDelete));
+                    return;
+                }
 
                 let DefaultRow = true;
                 const RowInfos = compteRubriqueData.filter((row) => row.id === idToDelete)
@@ -457,6 +454,7 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
                         const resData = response.data;
                         if (resData.state) {
                             setOpenDialogDeleteRow(false);
+                            setDisableAddRowBouton(false);
                             setCompteRubriqueData(compteRubriqueData.filter((row) => row.id !== selectedRowId[0]));
                             toast.success(resData.msg);
                         } else {
@@ -478,6 +476,12 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
             ...rowModesModel,
             [id]: { mode: GridRowModes.View, ignoreModifications: true },
         });
+        setDisableAddRowBouton(false);
+        setDisableSaveBouton(true);
+        setDisableDeleteBouton(true);
+        setDisableModifyBouton(true);
+        setSelectedRow([]);
+        setSelectedRowId([]);
     };
 
     const processRowUpdate = (newRow) => {
@@ -496,14 +500,14 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
             setDisableModifyBouton(true);
             setDisableSaveBouton(true);
             setDisableCancelBouton(true);
-            toast.error("sélectionnez une seule ligne pour pouvoir la modifier");
+            toast.error("Sélectionnez une seule ligne pour pouvoir la modifier");
         } else {
             setDisableModifyBouton(false);
             setDisableSaveBouton(false);
             setDisableCancelBouton(false);
             if (!selectedRowId.includes(params.id)) {
                 setEditableRow(false);
-                toast.error("sélectionnez une ligne pour pouvoir la modifier");
+                toast.error("Sélectionnez une ligne pour pouvoir la modifier");
             } else {
                 setEditableRow(true);
             }
@@ -513,7 +517,11 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
 
     //Ajouter une ligne dans le tableau
     const handleOpenDialogAddNewRow = () => {
-        const newId = -1 * (getMaxID(compteRubriqueData) + 1);
+        setDisableModifyBouton(false);
+        setDisableCancelBouton(false);
+        setDisableDeleteBouton(false);
+
+        const newId = -Date.now();
         formNewParam.setFieldValue("idParam", newId);
         formNewParam.setFieldValue("par_default", false);
         const newRow = {
@@ -526,6 +534,10 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
             active: true,
         };
         setCompteRubriqueData([...compteRubriqueData, newRow]);
+        setSelectedRowId([newRow.id]);
+        setSelectedRow([newRow.id]);
+
+        setDisableAddRowBouton(true);
     }
 
     //récupérer le numéro id le plus grand dans le tableau
@@ -550,6 +562,19 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
     //enregistrer le choix activer ou non d'une nouvelle ligne ou de la modification en cours
     const handleCheckboxChange = (value) => {
         formNewParam.setFieldValue("active", value);
+    }
+
+    const deselectRow = (ids) => {
+        const deselected = selectedRowId.filter(id => !ids.includes(id));
+
+        const updatedRowModes = { ...rowModesModel };
+        deselected.forEach((id) => {
+            updatedRowModes[id] = { mode: GridRowModes.View, ignoreModifications: true };
+        });
+        setRowModesModel(updatedRowModes);
+
+        setDisableAddRowBouton(false);
+        setSelectedRowId(ids);
     }
 
     return (
@@ -686,7 +711,9 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
                     editMode='row'
                     onRowClick={(e) => handleCellEditCommit(e.row)}
                     onRowSelectionModelChange={ids => {
+                        setSelectedRow(ids);
                         saveSelectedRow(ids);
+                        deselectRow(ids);
                     }}
                     rowModesModel={rowModesModel}
                     onRowModesModelChange={handleRowModesModelChange}
@@ -704,6 +731,45 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
                     checkboxSelection={DataGridStyle.checkboxSelection}
                     columnVisibilityModel={{
                         id: false,
+                    }}
+                    rowSelectionModel={selectedRow}
+                    onRowEditStart={(params, event) => {
+                        if (!selectedRow.length || selectedRow[0] !== params.id) {
+                            event.defaultMuiPrevented = true;
+                        }
+                        if (selectedRow.includes(params.id)) {
+                            setDisableAddRowBouton(true);
+                            event.stopPropagation();
+
+                            const rowId = params.id;
+                            const rowData = params.row;
+
+                            setCompteValidationColor('transparent');
+                            setSensCalculValidationColor('transparent');
+                            setConditionValidationColor('transparent');
+                            setEquationValidationColor('transparent');
+
+                            if (rowData.par_default) {
+                                setDisableDefaultFieldModif(true);
+                            } else {
+                                setDisableDefaultFieldModif(false);
+                            }
+
+                            formNewParam.setFieldValue("idParam", rowId);
+                            formNewParam.setFieldValue("compte", rowData.compte ?? '');
+                            formNewParam.setFieldValue("senscalcul", rowData.senscalcul ?? '');
+                            formNewParam.setFieldValue("condition", rowData.condition ?? '');
+                            formNewParam.setFieldValue("equation", rowData.equation ?? '');
+                            formNewParam.setFieldValue("active", rowData.active ?? false);
+                            formNewParam.setFieldValue("par_default", rowData.par_default ?? false);
+
+                            setRowModesModel((oldModel) => ({
+                                ...oldModel,
+                                [rowId]: { mode: GridRowModes.Edit },
+                            }));
+
+                            setDisableSaveBouton(false);
+                        }
                     }}
                 />
             </Stack>

@@ -904,22 +904,26 @@ export default function ImportJournal() {
             if (Array.isArray(UpdatedCodeJournal) && Array.isArray(UpdatedPlanComptable)) {
                 setTraitementJournalMsg('Importation du journal en cours...');
                 setTraitementJournalWaiting(true);
-
-                axios.post(`/administration/importJournal/importJournal`, { compteId, userId, fileId, selectedPeriodeId, fileTypeCSV, valSelectCptDispatch, journalData }).then((response) => {
-                    const resData = response.data;
-                    if (resData.state) {
-                        setTraitementJournalMsg('');
-                        setTraitementJournalWaiting(false);
-                        toast.success(resData.msg);
-                        setJournalData([]);
-                        setNbrAnomalie(0);
-                        setMsgAnomalie([]);
-                    } else {
-                        setTraitementJournalMsg('');
-                        setTraitementJournalWaiting(false);
-                        toast.error(resData.msg);
-                    }
-                });
+                axios.post(`/administration/importJournal/importJournal`, { compteId, userId, fileId, selectedPeriodeId, fileTypeCSV, valSelectCptDispatch, journalData })
+                    .then((response) => {
+                        const resData = response.data;
+                        if (resData.state) {
+                            setTraitementJournalMsg('');
+                            setTraitementJournalWaiting(false);
+                            toast.success(resData.msg);
+                            setJournalData([]);
+                            setNbrAnomalie(0);
+                            setMsgAnomalie([]);
+                        } else {
+                            setTraitementJournalMsg('');
+                            setTraitementJournalWaiting(false);
+                            console.log(resData.msg);
+                        }
+                    })
+                    .catch((err) => {
+                        console.error(err);
+                        toast.error(err?.response?.data?.message || err?.message || "Erreur inconnue");
+                    });
             }
 
             handleCloseDialogConfirmImport();

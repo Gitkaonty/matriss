@@ -4,7 +4,8 @@ import {
     InputLabel, Select, MenuItem,
     FormHelperText,
     Input,
-    IconButton
+    IconButton,
+    Checkbox
 } from '@mui/material';
 import Tooltip from '@mui/material/Tooltip';
 import toast from 'react-hot-toast';
@@ -31,6 +32,8 @@ const DatagridTableDpMappingDetail = ({ compteId, fileId, exerciceId, etatId, ru
     const [compteValidationColor, setCompteValidationColor] = useState('transparent');
     const [sensCalculValidationColor, setSensCalculValidationColor] = useState('transparent');
     const [conditionValidationColor, setConditionValidationColor] = useState('transparent');
+
+    const [selectedRow, setSelectedRow] = useState([]);
 
     const [selectedRowId, setSelectedRowId] = useState([]);
     const [rowModesModel, setRowModesModel] = useState({});
@@ -78,6 +81,7 @@ const DatagridTableDpMappingDetail = ({ compteId, fileId, exerciceId, etatId, ru
             compte: '',
             senscalcul: '',
             condition: '',
+            active: true
         },
         validationSchema: Yup.object({
             nature: Yup.string().required("Ce champ est obligatoire"),
@@ -223,7 +227,7 @@ const DatagridTableDpMappingDetail = ({ compteId, fileId, exerciceId, etatId, ru
             editable: editableRow,
             renderEditCell: (params) => {
                 return (
-                    <input
+                    <Checkbox
                         // value={formNewParam.values.active}
                         checked={formNewParam.values.active}
                         type="checkbox"
@@ -314,10 +318,13 @@ const DatagridTableDpMappingDetail = ({ compteId, fileId, exerciceId, etatId, ru
         if (saveBoolCompte && saveBoolSensCalcul && saveBoolCondition) {
             setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
 
-            axios.post(`/paramMappingCompte/MappingCompteAdd`, formNewParam.values).then((response) => {
+            const dataToSend = { ...formNewParam.values, compteId: compteId, exerciceId: exerciceId, fileId: fileId, rubriqueId: rubriqueId };
+
+            axios.post(`/paramMappingCompte/MappingCompteAdd`, dataToSend).then((response) => {
                 const resData = response.data;
 
                 if (resData.state) {
+                    setDisableAddRowBouton(false);
                     formNewParam.resetForm();
                     getListeCompteRubriqueAfterUpdating();
                     toast.success(resData.msg);
@@ -332,12 +339,19 @@ const DatagridTableDpMappingDetail = ({ compteId, fileId, exerciceId, etatId, ru
 
     const handleOpenDialogConfirmDeleteRow = () => {
         setOpenDialogDeleteRow(true);
+        setDisableAddRowBouton(false);
     }
 
     const deleteRow = (value) => {
         if (value === true) {
             if (selectedRowId.length === 1) {
                 const idToDelete = selectedRowId[0];
+
+                if (idToDelete < 0) {
+                    setOpenDialogDeleteRow(false);
+                    setCompteRubriqueData(compteRubriqueData.filter((row) => row.id !== idToDelete));
+                    return;
+                }
 
                 let DefaultRow = true;
                 const RowInfos = compteRubriqueData.filter((row) => row.id === idToDelete)
@@ -352,6 +366,7 @@ const DatagridTableDpMappingDetail = ({ compteId, fileId, exerciceId, etatId, ru
                     axios.post(`/paramMappingCompte/mappingCompteDelete`, { fileId, compteId, exerciceId, idToDelete }).then((response) => {
                         const resData = response.data;
                         if (resData.state) {
+                            setDisableAddRowBouton(false);
                             setOpenDialogDeleteRow(false);
                             setCompteRubriqueData(compteRubriqueData.filter((row) => row.id !== selectedRowId[0]));
                             toast.success(resData.msg);
@@ -374,6 +389,12 @@ const DatagridTableDpMappingDetail = ({ compteId, fileId, exerciceId, etatId, ru
             ...rowModesModel,
             [id]: { mode: GridRowModes.View, ignoreModifications: true },
         });
+        setDisableAddRowBouton(false);
+        setDisableSaveBouton(true);
+        setDisableDeleteBouton(true);
+        setDisableModifyBouton(true);
+        setSelectedRow([]);
+        setSelectedRowId([]);
     };
 
     const processRowUpdate = (newRow) => {
@@ -407,7 +428,11 @@ const DatagridTableDpMappingDetail = ({ compteId, fileId, exerciceId, etatId, ru
 
     //Ajouter une ligne dans le tableau
     const handleOpenDialogAddNewRow = () => {
-        const newId = -1 * (getMaxID(compteRubriqueData) + 1);
+        setDisableModifyBouton(false);
+        setDisableCancelBouton(false);
+        setDisableDeleteBouton(false);
+
+        const newId = -Date.now();
         formNewParam.setFieldValue("idParam", newId);
         formNewParam.setFieldValue("par_default", false);
         const newRow = {
@@ -418,6 +443,9 @@ const DatagridTableDpMappingDetail = ({ compteId, fileId, exerciceId, etatId, ru
             active: true,
         };
         setCompteRubriqueData([...compteRubriqueData, newRow]);
+        setSelectedRowId([newRow.id]);
+        setSelectedRow([newRow.id]);
+        setDisableAddRowBouton(true);
     }
 
     //récupérer le numéro id le plus grand dans le tableau
@@ -442,6 +470,19 @@ const DatagridTableDpMappingDetail = ({ compteId, fileId, exerciceId, etatId, ru
     //enregistrer le choix activer ou non d'une nouvelle ligne ou de la modification en cours
     const handleCheckboxChange = (value) => {
         formNewParam.setFieldValue("active", value);
+    }
+
+    const deselectRow = (ids) => {
+        const deselected = selectedRowId.filter(id => !ids.includes(id));
+
+        const updatedRowModes = { ...rowModesModel };
+        deselected.forEach((id) => {
+            updatedRowModes[id] = { mode: GridRowModes.View, ignoreModifications: true };
+        });
+        setRowModesModel(updatedRowModes);
+
+        setDisableAddRowBouton(false);
+        setSelectedRowId(ids);
     }
 
     return (
@@ -578,7 +619,9 @@ const DatagridTableDpMappingDetail = ({ compteId, fileId, exerciceId, etatId, ru
                     editMode='row'
                     onRowClick={(e) => handleCellEditCommit(e.row)}
                     onRowSelectionModelChange={ids => {
+                        setSelectedRow(ids);
                         saveSelectedRow(ids);
+                        deselectRow(ids);
                     }}
                     rowModesModel={rowModesModel}
                     onRowModesModelChange={handleRowModesModelChange}
@@ -596,6 +639,40 @@ const DatagridTableDpMappingDetail = ({ compteId, fileId, exerciceId, etatId, ru
                     checkboxSelection={DataGridStyle.checkboxSelection}
                     columnVisibilityModel={{
                         id: false,
+                    }}
+                    rowSelectionModel={selectedRow}
+                    onRowEditStart={(params, event) => {
+                        if (!selectedRow.length || selectedRow[0] !== params.id) {
+                            event.defaultMuiPrevented = true;
+                        }
+                        if (selectedRow.includes(params.id)) {
+                            setDisableAddRowBouton(true);
+                            event.stopPropagation();
+
+                            const rowId = params.id;
+                            const rowData = params.row;
+
+                            setCompteValidationColor('transparent');
+                            setSensCalculValidationColor('transparent');
+                            setConditionValidationColor('transparent');
+
+                            if (rowData.par_default) {
+                                setDisableDefaultFieldModif(true);
+                            } else {
+                                setDisableDefaultFieldModif(false);
+                            }
+
+                            formNewParam.setFieldValue("idParam", rowId);
+                            formNewParam.setFieldValue("compte", rowData.compte ?? '');
+                            formNewParam.setFieldValue("senscalcul", rowData.senscalcul ?? '');
+                            formNewParam.setFieldValue("condition", rowData.condition ?? '');
+                            formNewParam.setFieldValue("active", rowData.active ?? false);
+
+                            setRowModesModel((oldModel) => ({
+                                ...oldModel,
+                                [rowId]: { mode: GridRowModes.Edit },
+                            }));
+                        }
                     }}
                 />
             </Stack>

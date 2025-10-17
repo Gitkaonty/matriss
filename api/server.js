@@ -73,6 +73,9 @@ app.use('/logout', require('./Routes/logoutRoute'));
 //routes pour home
 app.use('/home', require('./Routes/Home/homeRoutes'));
 
+//routes pour dashboard
+app.use('/dashboard', require('./Routes/Dashboard/dashboardRoutes'));
+
 //----------------------------------------------------------------------------------------------------------------
 // MENU ADMINISTRATION
 //----------------------------------------------------------------------------------------------------------------

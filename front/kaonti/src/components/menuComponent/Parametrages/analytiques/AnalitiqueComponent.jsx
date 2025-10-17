@@ -21,7 +21,7 @@ export default function DeclarationCommComponent() {
     const [fileId, setFileId] = useState(0);
     const { id } = useParams();
     const [noFile, setNoFile] = useState(false);
-    const [selectedRowAxeIds, setSelectedRowAxeIds] = useState([]);
+    const [selectedRowAxeId, setSelectedRowAxeId] = useState([]);
 
     const [isCaActive, setIsCaActive] = useState(false);
 
@@ -108,26 +108,22 @@ export default function DeclarationCommComponent() {
                             {`La comptabilité analytique de ce dossier est ${isCaActive ? 'activée' : 'désactivée'}`}
                         </Typography>
                         <Box sx={{ width: '100%' }}>
-                            {/* Séparateur horizontal du haut */}
                             <Box sx={{ width: '100%', height: '15px', backgroundColor: '#F4F9F9' }} />
-
-                            {/* Conteneur principal en ligne */}
                             <Stack direction="row" sx={{ width: '100%', minHeight: 450 }}>
                                 <DatagridAnalitiqueAxe
                                     id_compte={compteId}
                                     id_dossier={fileId}
-                                    selectedRowAxeIds={selectedRowAxeIds}
-                                    setSelectedRowAxeIds={setSelectedRowAxeIds}
+                                    selectedRowAxeId={selectedRowAxeId}
+                                    setSelectedRowAxeId={setSelectedRowAxeId}
                                     isCaActive={isCaActive}
                                 />
                                 <DatagridAnalitiqueSection
                                     id_compte={compteId}
                                     id_dossier={fileId}
-                                    selectedRowAxeIds={selectedRowAxeIds}
+                                    selectedRowAxeId={selectedRowAxeId}
                                     isCaActive={isCaActive}
                                 />
                             </Stack>
-
                             <Box sx={{ width: '100%', height: '15px', backgroundColor: '#F4F9F9' }} />
                         </Box>
 

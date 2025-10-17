@@ -1,12 +1,7 @@
-import React from 'react';
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Typography, Stack } from '@mui/material';
-import { LineChart } from '@mui/x-charts/LineChart';
 import StickyHeadTable from "../../../model/TableModel01";
-import RadioGroup from '@mui/material/RadioGroup';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Radio from '@mui/material/Radio';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
@@ -20,7 +15,12 @@ import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
 import { InfoFileStyle } from '../../componentsTools/InfosFileStyle';
-
+import DashboardCard from '../../componentsTools/Dashboard/DashboardCard';
+import { format } from 'date-fns';
+import LineChartComponent from '../../componentsTools/Dashboard/LineChartComponent';
+import useAuth from '../../../hooks/useAuth';
+import { jwtDecode } from 'jwt-decode';
+import toast from 'react-hot-toast';
 
 const columns = [
   {
@@ -70,6 +70,9 @@ const columns = [
   },
 ];
 
+const gridHeight = '70vh';
+const gridSpacing = 1;
+
 const rows = [
   { id: 1, date: '01/01/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "PREL SANS LIBELLE", debit: 1500.41, credit: 0.00 },
   { id: 2, date: '14/01/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "VIRT VERS AUTRES", debit: 780000.55, credit: 0.00 },
@@ -79,12 +82,73 @@ const rows = [
 
 export default function DashboardComponent() {
   let initial = init[0];
-  const [valSelect, setValSelect] = React.useState('');
   const [fileInfos, setFileInfos] = useState('');
   const [noFile, setNoFile] = useState(false);
   const navigate = useNavigate();
   const { id } = useParams();
   const [fileId, setFileId] = useState(0);
+  const [listeExercice, setListeExercice] = useState([]);
+  const [listeSituation, setListeSituation] = useState([]);
+
+  //récupération des informations de connexion
+  const { auth } = useAuth();
+  const decoded = auth?.accessToken ? jwtDecode(auth.accessToken) : undefined;
+  const compteId = decoded.UserInfo.compteId || null;
+  const userId = decoded.UserInfo.userId || null;
+
+  const [selectedExerciceId, setSelectedExerciceId] = useState(0);
+  const [selectedPeriodeId, setSelectedPeriodeId] = useState(0);
+  const [selectedPeriodeChoiceId, setSelectedPeriodeChoiceId] = useState(0);
+
+  const [chiffresAffairesNGraph, setChiffresAffairesNGraph] = useState([]);
+  const [chiffresAffairesN1Graph, setChiffresAffairesN1Graph] = useState([]);
+
+  const [margeBruteNGraph, setMargeBruteNGraph] = useState([]);
+  const [margeBruteN1Graph, setMargeBruteN1Graph] = useState([]);
+
+  const [tresorerieBanqueNGraph, setTresorerieBanqueNGraph] = useState([]);
+  const [tresorerieBanqueN1Graph, setTresorerieBanqueN1Graph] = useState([]);
+
+  const [tresorerieCaisseNGraph, setTresorerieCaisseNGraph] = useState([]);
+  const [tresorerieCaisseN1Graph, setTresorerieCaisseN1Graph] = useState([]);
+
+  const [resultatN, setResultatN] = useState(0);
+  const [resultatN1, setResultatN1] = useState(0);
+
+  const [resultatChiffreAffaireN, setResultatChiffreAffaireN] = useState(0);
+  const [resultatChiffreAffaireN1, setResultatChiffreAffaireN1] = useState(0);
+  const [variationChiffreAffaireN, setVariationChiffreAffaireN] = useState(0);
+  const [variationChiffreAffaireN1, setVariationChiffreAffaireN1] = useState(0);
+  const [evolutionChiffreAffaireN, setEvolutionChiffreAffaireN] = useState('');
+  const [evolutionChiffreAffaireN1, setEvolutionChiffreAffaireN1] = useState('');
+
+  const [resultatDepenseAchatN, setResultatDepenseAchatN] = useState(0);
+  const [resultatDepenseAchatN1, setResultatDepenseAchatN1] = useState(0);
+  const [variationDepenseAchatN, setVariationDepenseAchatN] = useState(0);
+  const [variationDepenseAchatN1, setVariationDepenseAchatN1] = useState(0);
+  const [evolutionDepenseAchatN, setEvolutionDepenseAchatN] = useState('');
+  const [evolutionDepenseAchatN1, setEvolutionDepenseAchatN1] = useState('');
+
+  const [resultatDepenseSalarialeN, setResultatDepenseSalarialeN] = useState(0);
+  const [resultatDepenseSalarialeN1, setResultatDepenseSalarialeN1] = useState(0);
+  const [variationDepenseSalarialeN, setVariationDepenseSalarialeN] = useState(0);
+  const [variationDepenseSalarialeN1, setVariationDepenseSalarialeN1] = useState(0);
+  const [evolutionDepenseSalarialeN, setEvolutionDepenseSalarialeN] = useState('');
+  const [evolutionDepenseSalarialeN1, setEvolutionDepenseSalarialeN1] = useState('');
+
+  const [resultatTresorerieBanqueN, setResultatTresorerieBanqueN] = useState(0);
+  const [resultatTresorerieBanqueN1, setResultatTresorerieBanqueN1] = useState(0);
+  const [variationTresorerieBanqueN, setVariationTresorerieBanqueN] = useState(0);
+  const [variationTresorerieBanqueN1, setVariationDTresorerieBanqueN1] = useState(0);
+  const [evolutionTresorerieBanqueN, setEvolutionTresorerieBanqueN] = useState('');
+  const [evolutionTresorerieBanqueN1, setEvolutionTresorerieBanqueN1] = useState('');
+
+  const [resultatTresorerieCaisseN, setResultatTresorerieCaisseN] = useState(0);
+  const [resultatTresorerieCaisseN1, setResultatTresorerieCaisseN1] = useState(0);
+  const [variationTresorerieCaisseN, setVariationTresorerieCaisseN] = useState(0);
+  const [variationTresorerieCaisseN1, setVariationDTresorerieCaisseN1] = useState(0);
+  const [evolutionTresorerieCaisseN, setEvolutionTresorerieCaisseN] = useState('');
+  const [evolutionTresorerieCaisseN1, setEvolutionTresorerieCaisseN1] = useState('');
 
   const GetListeDossier = (id) => {
     axios.get(`/home/FileInfos/${id}`).then((response) => {
@@ -100,18 +164,137 @@ export default function DashboardComponent() {
     })
   }
 
-  //Valeur du listbox choix exercice ou situation-----------------------------------------------------
-
-  const handleChange = (event) => {
-    setValSelect(event.target.value);
-  };
-
   const sendToHome = (value) => {
     setNoFile(!value);
     navigate('/tab/home');
   }
 
-  //récupérer les informations du dossier sélectionné
+  //Choix exercice
+  const handleChangeExercice = (exercice_id) => {
+    setSelectedExerciceId(exercice_id);
+    setSelectedPeriodeChoiceId("0");
+    setListeSituation(listeExercice?.filter((item) => item.id === exercice_id));
+    setSelectedPeriodeId(exercice_id);
+  }
+
+  //Récupérer la liste des exercices
+  const GetListeExercice = (id) => {
+    axios.get(`/paramExercice/listeExercice/${id}`).then((response) => {
+      const resData = response.data;
+      if (resData.state) {
+        setListeExercice(resData.list);
+
+        const exerciceNId = resData.list?.filter((item) => item.libelle_rang === "N");
+        setListeSituation(exerciceNId);
+
+        setSelectedExerciceId(exerciceNId[0].id);
+        setSelectedPeriodeChoiceId(0);
+        setSelectedPeriodeId(exerciceNId[0].id);
+
+      } else {
+        setListeExercice([]);
+        toast.error("une erreur est survenue lors de la récupération de la liste des exercices");
+      }
+    })
+  }
+
+  //Récupérer la liste des exercices
+  const GetListeSituation = (id) => {
+    axios.get(`/paramExercice/listeSituation/${id}`).then((response) => {
+      const resData = response.data;
+      if (resData.state) {
+        const list = resData.list;
+        setListeSituation(resData.list);
+        if (list.length > 0) {
+          setSelectedPeriodeId(list[0].id);
+        }
+      } else {
+        setListeSituation([]);
+        toast.error("une erreur est survenue lors de la récupération de la liste des exercices");
+      }
+    })
+  }
+
+  //Choix période
+  const handleChangePeriode = (choix) => {
+    setSelectedPeriodeChoiceId(choix);
+    if (choix === 0) {
+      setListeSituation(listeExercice?.filter((item) => item.id === selectedExerciceId));
+      setSelectedPeriodeId(selectedExerciceId);
+    } else if (choix === 1) {
+      GetListeSituation(selectedExerciceId);
+    }
+  }
+
+  // Récupération de toutes les informations
+  const getAllInfo = () => {
+    axios.get(`/dashboard/getAllInfo/${Number(compteId)}/${Number(fileId)}/${Number(selectedExerciceId)}`)
+      .then((response) => {
+        console.log(response?.data);
+        if (response?.data?.state) {
+          setChiffresAffairesNGraph(response?.data?.chiffreAffaireN);
+          setChiffresAffairesN1Graph(response?.data?.chiffreAffaireN1);
+
+          setMargeBruteNGraph(response?.data?.margeBruteTotalN);
+          setMargeBruteN1Graph(response?.data?.margeBruteTotalN1);
+
+          setTresorerieBanqueNGraph(response?.data?.tresorerieBanqueN);
+          setTresorerieBanqueN1Graph(response?.data?.tresorerieBanqueN1);
+
+          setTresorerieCaisseNGraph(response?.data?.tresorerieCaisseN);
+          setTresorerieCaisseN1Graph(response?.data?.tresorerieCaisseN1);
+
+          setResultatN(response?.data?.resultatN);
+          setResultatN1(response?.data?.resultatN1);
+
+          setResultatChiffreAffaireN(response?.data?.resultatChiffreAffaireN);
+          setResultatChiffreAffaireN1(response?.data?.resultatChiffreAffaireN1);
+          setVariationChiffreAffaireN(response?.data?.variationChiffreAffaireN);
+          setVariationChiffreAffaireN1(response?.data?.variationChiffreAffaireN1);
+          setEvolutionChiffreAffaireN(response?.data?.evolutionChiffreAffaireN);
+          setEvolutionChiffreAffaireN1(response?.data?.evolutionChiffreAffaireN1);
+
+          setResultatDepenseSalarialeN(response?.data?.resultatDepenseSalarialeN);
+          setResultatDepenseSalarialeN1(response?.data?.resultatDepenseSalarialeN1);
+          setVariationDepenseSalarialeN(response?.data?.variationDepenseSalarialeN);
+          setVariationDepenseSalarialeN1(response?.data?.variationDepenseSalarialeN1);
+          setEvolutionDepenseSalarialeN(response?.data?.evolutionDepenseSalarialeN);
+          setEvolutionDepenseSalarialeN1(response?.data?.evolutionDepenseSalarialeN1);
+
+          setResultatDepenseAchatN(response?.data?.resultatDepenseAchatN);
+          setResultatDepenseAchatN1(response?.data?.resultatDepenseAchatN1);
+          setVariationDepenseAchatN(response?.data?.variationDepenseAchatN);
+          setVariationDepenseAchatN1(response?.data?.variationDepenseAchatN1);
+          setEvolutionDepenseAchatN(response?.data?.evolutionDepenseAchatN);
+          setEvolutionDepenseAchatN1(response?.data?.evolutionDepenseAchatN1);
+
+          setResultatTresorerieBanqueN(response?.data?.resultatTresorerieBanqueN);
+          setResultatTresorerieBanqueN1(response?.data?.resultatTresorerieBanqueN1);
+          setVariationTresorerieBanqueN(response?.data?.variationTresorerieBanqueN);
+          setVariationDTresorerieBanqueN1(response?.data?.variationTresorerieBanqueN1);
+          setEvolutionTresorerieBanqueN(response?.data?.evolutionTresorerieBanqueN);
+          setEvolutionTresorerieBanqueN1(response?.data?.evolutionTresorerieBanqueN1);
+
+          setResultatTresorerieCaisseN(response?.data?.resultatTresorerieCaisseN);
+          setResultatTresorerieCaisseN1(response?.data?.resultatTresorerieCaisseN1);
+          setVariationTresorerieCaisseN(response?.data?.variationTresorerieCaisseN);
+          setVariationDTresorerieCaisseN1(response?.data?.variationTresorerieCaisseN1);
+          setEvolutionTresorerieCaisseN(response?.data?.evolutionTresorerieCaisseN);
+          setEvolutionTresorerieCaisseN1(response?.data?.evolutionTresorerieCaisseN1);
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+        toast.error(err?.response?.data?.message || err?.message || "Erreur inconnue");
+      });
+
+  }
+
+  const xAxis = [
+    "Jan", "Fév", "Mar", "Avr", "Mai", "Juin",
+    "Juil", "Août", "Sep", "Oct", "Nov", "Déc"
+  ];
+
   useEffect(() => {
     //tester si la page est renvoyer par useNavigate
     const navigationEntries = performance.getEntriesByType('navigation');
@@ -131,7 +314,14 @@ export default function DashboardComponent() {
     }
 
     GetListeDossier(idFile);
+    GetListeExercice(idFile);
   }, []);
+
+  useEffect(() => {
+    if (compteId && fileId && selectedExerciceId) {
+      getAllInfo();
+    }
+  }, [compteId, fileId, selectedExerciceId]);
 
   return (
     <Box>
@@ -158,80 +348,235 @@ export default function DashboardComponent() {
             <Stack width={"100%"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"column"} style={{ marginLeft: "0px", marginTop: "20px" }}>
               <Stack
                 direction={"row"}
-                alignItems={"center"}
-                spacing={2}
               >
-                <Stack>
-                  <RadioGroup
-                    row
-                    aria-labelledby="choixExercice"
-                    name="choixExercice"
-                    style={{ marginTop: "20px" }}
+                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
+                  <InputLabel id="demo-simple-select-standard-label">Exercice:</InputLabel>
+                  <Select
+                    labelId="demo-simple-select-standard-label"
+                    id="demo-simple-select-standard"
+                    value={selectedExerciceId}
+                    label={"valSelect"}
+                    onChange={(e) => handleChangeExercice(e.target.value)}
+                    sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                    MenuProps={{
+                      disableScrollLock: true
+                    }}
                   >
-                    <FormControlLabel value="exercice" control={<Radio />} label="Exercice" />
-                    <FormControlLabel value="situation" control={<Radio />} label="Situation" />
+                    {listeExercice.map((option) => (
+                      <MenuItem
+                        key={option.id}
+                        value={option.id}
+                      >{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
+                    ))
+                    }
+                  </Select>
+                </FormControl>
 
-                  </RadioGroup>
-                </Stack>
+                <FormControl variant="standard" sx={{ m: 1, minWidth: 150 }}>
+                  <InputLabel id="demo-simple-select-standard-label">Période</InputLabel>
+                  <Select
+                    disabled
+                    labelId="demo-simple-select-standard-label"
+                    id="demo-simple-select-standard"
+                    value={selectedPeriodeChoiceId}
+                    label={"valSelect"}
+                    onChange={(e) => handleChangePeriode(e.target.value)}
+                    sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                    MenuProps={{
+                      disableScrollLock: true
+                    }}
+                  >
+                    <MenuItem value={0}>Toutes</MenuItem>
+                    <MenuItem value={1}>Situations</MenuItem>
+                  </Select>
+                </FormControl>
 
-                <Stack>
-                  <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                    <InputLabel id="demo-simple-select-standard-label">Du</InputLabel>
-                    <Select
-                      labelId="demo-simple-select-standard-label"
-                      id="demo-simple-select-standard"
-                      value={valSelect}
-                      label={"valSelect"}
-                      onChange={handleChange}
-                      sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                    >
-                      <MenuItem value="">
-                        <em>None</em>
-                      </MenuItem>
-                      <MenuItem value={1}>N   : 01/01/2023 - 31/12/2023</MenuItem>
-                      <MenuItem value={2}>N-1 : 01/01/2022 - 31/12/2022</MenuItem>
-                      <MenuItem value={3}>N-2 : 01/01/2021 - 31/12/2021</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Stack>
+                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
+                  <InputLabel id="demo-simple-select-standard-label">Du</InputLabel>
+                  <Select
+                    labelId="demo-simple-select-standard-label"
+                    id="demo-simple-select-standard"
+                    value={selectedPeriodeId}
+                    label={"valSelect"}
+                    onChange={(e) => handleChangeDateIntervalle(e.target.value)}
+                    sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                    MenuProps={{
+                      disableScrollLock: true
+                    }}
+                  >
+                    {listeSituation?.map((option) => (
+                      <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
+                    ))
+                    }
+                  </Select>
+                </FormControl>
               </Stack>
             </Stack>
 
             <Stack
-              width="100%"
-              height="400px"
-              spacing={5}
-              direction={{ xs: "column", sm: "row" }}
-              justifyContent="space-between"
+              alignItems={'center'}
+              direction={'row'}
+              width={'100%'}
+              spacing={gridSpacing}
             >
-              <Stack width={{ xs: "100%", sm: "33.33%" }} alignItems="center" direction="column">
-                <Typography variant="h5" sx={{ color: "black" }} align="left">
-                  Chiffre d'affaires
-                </Typography>
-                <LineChart
-                  xAxis={[{ data: [1, 2, 3, 5, 8, 10] }]}
-                  series={[{ data: [2, 5.5, 2, 8.5, 1.5, 5] }]}
-                />
+              <Stack
+                style={{
+                  backgroundColor: '#f4f6f7ff',
+                }}
+                boxShadow={3}
+                borderRadius={2}
+                width={'65%'}
+                height={gridHeight}
+              >
+                <Stack
+                  width="100%"
+                  height="100%"
+                  spacing={1}
+                  direction={'column'}
+                >
+                  <Stack
+                    width="100%"
+                    height="100%"
+                    spacing={1}
+                    direction={'row'}
+                    justifyContent="space-between"
+                  >
+                    <LineChartComponent
+                      xAxis={xAxis}
+                      dataN={chiffresAffairesNGraph}
+                      dataN1={chiffresAffairesN1Graph}
+                      label={'Chiffre d\'affaires'}
+                    />
+
+                    <LineChartComponent
+                      xAxis={xAxis}
+                      dataN={margeBruteNGraph}
+                      dataN1={margeBruteN1Graph}
+                      label={'Marges brutes'}
+                    />
+
+                  </Stack>
+                  <Stack
+                    width="100%"
+                    height="100%"
+                    spacing={0.5}
+                    direction={'row'}
+                    justifyContent="space-between"
+                  >
+                    <LineChartComponent
+                      xAxis={xAxis}
+                      dataN={tresorerieBanqueNGraph}
+                      dataN1={tresorerieBanqueN1Graph}
+                      label={'Trésoreries (Banques)'}
+                    />
+
+                    <LineChartComponent
+                      xAxis={xAxis}
+                      dataN={tresorerieCaisseNGraph}
+                      dataN1={tresorerieCaisseN1Graph}
+                      label={'Trésoreries (Caisses)'}
+                    />
+                  </Stack>
+                </Stack>
               </Stack>
 
-              <Stack width={{ xs: "100%", sm: "33.33%" }} alignItems="center" direction="column">
-                <Typography variant="h5" sx={{ color: "black" }} align="left">
-                  Trésoreries
-                </Typography>
-                <LineChart
-                  xAxis={[{ data: [1, 2, 3, 5, 8, 10] }]}
-                  series={[{ data: [2, 5.5, 2, 8.5, 1.5, 5] }]}
-                />
-              </Stack>
-
-              <Stack width={{ xs: "100%", sm: "33.33%" }} alignItems="center" direction="column">
-                <Typography variant="h5" sx={{ color: "black" }} align="center">
-                  Marges brutes
-                </Typography>
-                <LineChart
-                  xAxis={[{ data: [1, 2, 3, 5, 8, 10] }]}
-                  series={[{ data: [2, 5.5, 2, 8.5, 1.5, 5] }]}
-                />
+              <Stack
+                alignItems={'center'}
+                direction={'column'}
+                justifyContent={'space-between'}
+                width={'35%'}
+                height={gridHeight}
+                spacing={gridSpacing}
+              >
+                <Stack
+                  alignItems={'center'}
+                  direction={'row'}
+                  width={'100%'}
+                  height={'33.3%'}
+                  spacing={gridSpacing}
+                >
+                  <DashboardCard
+                    text={'Résultat'}
+                    type={'total'}
+                    montant={'$5000'}
+                    backgroundColor={'#80f2c7'}
+                    resultatN={resultatN}
+                    resultatN1={resultatN1}
+                  />
+                  <DashboardCard
+                    text={'Chiffre d\'affaires'}
+                    type={'comparaison'}
+                    pourcentage={'10'}
+                    variation={'augmentation'}
+                    backgroundColor={'#80f2c7'}
+                    resultatN={resultatChiffreAffaireN}
+                    resultatN1={resultatChiffreAffaireN1}
+                    variationN={variationChiffreAffaireN}
+                    variationN1={variationChiffreAffaireN1}
+                    evolutionN={evolutionChiffreAffaireN}
+                    evolutionN1={evolutionChiffreAffaireN1}
+                  />
+                </Stack>
+                <Stack
+                  alignItems={'center'}
+                  direction={'row'}
+                  width={'100%'}
+                  height={'33.3%'}
+                  spacing={gridSpacing}
+                >
+                  <DashboardCard
+                    text={'Dépenses (Achats)'}
+                    type={'comparaison'}
+                    backgroundColor={'#e8775a'}
+                    resultatN={resultatDepenseAchatN}
+                    resultatN1={resultatDepenseAchatN1}
+                    variationN={variationDepenseAchatN}
+                    variationN1={variationDepenseAchatN1}
+                    evolutionN={evolutionDepenseAchatN}
+                    evolutionN1={evolutionDepenseAchatN1}
+                  />
+                  <DashboardCard
+                    text={'Dépenses salariales'}
+                    type={'comparaison'}
+                    backgroundColor={'#e8775a'}
+                    resultatN={resultatDepenseSalarialeN}
+                    resultatN1={resultatDepenseSalarialeN1}
+                    variationN={variationDepenseSalarialeN}
+                    variationN1={variationDepenseSalarialeN1}
+                    evolutionN={evolutionDepenseSalarialeN}
+                    evolutionN1={evolutionDepenseSalarialeN1}
+                  />
+                </Stack>
+                <Stack
+                  alignItems={'center'}
+                  direction={'row'}
+                  width={'100%'}
+                  height={'33.3%'}
+                  spacing={gridSpacing}
+                >
+                  <DashboardCard
+                    text={'Trésoreries (Banques)'}
+                    type={'comparaison'}
+                    backgroundColor={'#5a98e8'}
+                    resultatN={resultatTresorerieBanqueN}
+                    resultatN1={resultatTresorerieBanqueN1}
+                    variationN={variationTresorerieBanqueN}
+                    variationN1={variationTresorerieBanqueN1}
+                    evolutionN={evolutionTresorerieBanqueN}
+                    evolutionN1={evolutionTresorerieBanqueN1}
+                  />
+                  <DashboardCard
+                    text={'Trésoreries (Caisse)'}
+                    type={'comparaison'}
+                    backgroundColor={'#5a98e8'}
+                    resultatN={resultatTresorerieCaisseN}
+                    resultatN1={resultatTresorerieCaisseN1}
+                    variationN={variationTresorerieCaisseN}
+                    variationN1={variationTresorerieCaisseN1}
+                    evolutionN={evolutionTresorerieCaisseN}
+                    evolutionN1={evolutionTresorerieCaisseN1}
+                  />
+                </Stack>
               </Stack>
             </Stack>
 

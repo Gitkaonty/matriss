@@ -1,24 +1,25 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
-    Box, Typography, Paper, Link, Button, Stack,
+    Box, Typography, Paper, Button, Stack, CircularProgress
 } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { URL } from '../../../../config/axios';
 import { init } from '../../../../init';
 
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import DeleteIcon from '@mui/icons-material/Delete';
+
+import PopupConfirmDelete from '../popupConfirmDelete';
+import toast from 'react-hot-toast';
+
 const DropPDFUploader = ({ file, setFile, mode }) => {
     const [dragActive, setDragActive] = useState(false);
     const [remoteFileSize, setRemoteFileSize] = useState(null);
-    let initial = init[0];
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleDrop = useCallback((e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setDragActive(false);
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            setFile(e.dataTransfer.files[0]);
-        }
-    }, [setFile]);
+    const [openDialogDeleteFile, setOpenDialogDeleteFile] = useState(false);
+
+    let initial = init[0];
 
     const handleDrag = useCallback((e) => {
         e.preventDefault();
@@ -31,21 +32,14 @@ const DropPDFUploader = ({ file, setFile, mode }) => {
     }, []);
 
     const handleFileChange = (e) => {
+        setIsLoading(true);
         if (e.target.files && e.target.files[0]) {
-            setFile(e.target.files[0]);
+            setTimeout(() => {
+                setFile(e.target.files[0]);
+                setIsLoading(false);
+            }, 1500);
         }
     };
-
-    useEffect(() => {
-        if (mode === 'modification' && typeof file === 'string') {
-            fetch(`${URL}/${file}`, { method: 'HEAD' })
-                .then(res => {
-                    const size = res.headers.get("Content-Length");
-                    if (size) setRemoteFileSize((size / 1024).toFixed(2));
-                })
-                .catch(() => setRemoteFileSize(null));
-        }
-    }, [file, mode]);
 
     const fileName = typeof file === 'string'
         ? file.split('/').pop()
@@ -55,95 +49,155 @@ const DropPDFUploader = ({ file, setFile, mode }) => {
         ? remoteFileSize
         : file ? (file.size / 1024).toFixed(2) : null;
 
+    const handleOpenDialogDeleteFile = () => {
+        setOpenDialogDeleteFile(true);
+    }
+
+    const handleDeleteFile = (value) => {
+        if (value) {
+            setFile(null);
+            setOpenDialogDeleteFile(false);
+            toast.success('Fichier supprimé avec succès');
+        } else {
+            setOpenDialogDeleteFile(false);
+        }
+    }
+
+    useEffect(() => {
+        if (mode === 'modification' && typeof file === 'string') {
+            setIsLoading(true);
+            fetch(`${URL}/${file}`, { method: 'HEAD' })
+                .then(res => {
+                    const size = res.headers.get("Content-Length");
+                    if (size) setRemoteFileSize((size / 1024).toFixed(2));
+                })
+                .finally(() => setIsLoading(false))
+                .catch(() => setRemoteFileSize(null));
+        }
+    }, [file, mode]);
+
     return (
-        <Box sx={{ maxWidth: 600, mt: 4 }}>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} alignItems="start">
-                <Paper
-                    elevation={dragActive ? 6 : 2}
-                    onDrop={handleDrop}
-                    onDragOver={handleDrag}
-                    onDragEnter={handleDrag}
-                    onDragLeave={handleDrag}
-                    onClick={() => document.getElementById('fileInput').click()}
-                    sx={{
-                        flex: 1.5,
-                        border: '2px dashed',
-                        borderColor: dragActive ? 'primary.main' : 'grey.400',
-                        borderRadius: 2,
-                        p: 3,
-                        height: 150,
-                        textAlign: 'center',
-                        bgcolor: dragActive ? 'primary.light' : 'grey.100',
-                        cursor: 'pointer',
-                        transition: '0.2s',
-                    }}
-                >
-                    <UploadFileIcon sx={{ fontSize: 48, color: 'primary.main' }} />
-                    <Typography variant="body1" mt={2}>
-                        {fileName || 'Glissez un fichier ici ou cliquez pour importer'}
-                    </Typography>
-                    <input
-                        id="fileInput"
-                        type="file"
-                        onChange={handleFileChange}
-                        hidden
+        <>
+            {
+                openDialogDeleteFile
+                    ?
+                    <PopupConfirmDelete
+                        confirmationState={handleDeleteFile}
+                        msg={'Voulez vous vraiment supprimer ce fichier ? '}
+                        presonalisedMessage={true}
                     />
-                </Paper>
-
-                <Stack spacing={1} justifyContent="space-between" sx={{ flex: 1}}>
-                    {(fileName || fileSize) && (
-                        <Box>
-                            {fileName && (
-                                <Typography variant="body2">
-                                    <strong>Nom :</strong> {fileName}
+                    :
+                    null
+            }
+            <Box sx={{ maxWidth: 600, mt: 4 }}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} alignItems="start">
+                    <Paper
+                        elevation={dragActive ? 6 : 2}
+                        // onDrop={handleDrop}
+                        onDragOver={handleDrag}
+                        onDragEnter={handleDrag}
+                        onDragLeave={handleDrag}
+                        onClick={() => document.getElementById('fileInput').click()}
+                        sx={{
+                            flex: 1.5,
+                            border: '2px dashed',
+                            borderColor: dragActive ? 'primary.main' : 'grey.400',
+                            borderRadius: 2,
+                            p: 3,
+                            height: 150,
+                            textAlign: 'center',
+                            bgcolor: dragActive ? 'primary.light' : 'grey.100',
+                            cursor: 'pointer',
+                            transition: '0.2s',
+                            position: 'relative',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
+                    >
+                        {isLoading ? (
+                            <CircularProgress color="primary" />
+                        ) : (
+                            <>
+                                <UploadFileIcon sx={{ fontSize: 48, color: 'primary.main' }} />
+                                <Typography variant="body1" mt={2}>
+                                    {fileName || 'Cliquez pour importer'}
                                 </Typography>
-                            )}
-                            {fileSize && (
-                                <Typography variant="body2">
-                                    <strong>Taille :</strong> {fileSize} KB
-                                </Typography>
-                            )}
-                            {mode === 'modification' && typeof file === 'string' && (
-                                <Button
-                                    autoFocus
-                                    variant="contained"
-                                    style={{
-                                        marginTop: 4,
-                                        textTransform: 'none',
-                                        outline: 'none',
-                                        backgroundColor: initial.theme,
-                                        color: "white",
-                                    }}
-                                    href={`${URL}/${file}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                // startIcon={<UploadFileIcon />}
-                                >
-                                    Voir le fichier
-                                </Button>
-                            )}
-                        </Box>
-                    )}
+                            </>
+                        )}
+                        <input
+                            id="fileInput"
+                            type="file"
+                            onChange={handleFileChange}
+                            hidden
+                        />
+                    </Paper>
 
-                    {file && (
-                        <Button
-                            autoFocus
-                            variant="contained"
-                            style={{
-                                textTransform: 'none',
-                                outline: 'none',
-                                backgroundColor: initial.button_delete_color,
-                                color: "white",
-                            }}
-                            onClick={() => setFile(null)}
-                            sx={{ mt: 1, textTransform: 'none', alignSelf: 'start' }}
-                        >
-                            Supprimer le fichier
-                        </Button>
-                    )}
+                    <Stack spacing={1} justifyContent="space-between" sx={{ flex: 1 }}>
+                        {(fileName || fileSize) && (
+                            <Box>
+                                {fileName && (
+                                    <Typography variant="body2">
+                                        <strong>Nom :</strong> {fileName}
+                                    </Typography>
+                                )}
+                                {fileSize && (
+                                    <Typography variant="body2">
+                                        <strong>Taille :</strong> {fileSize} KB
+                                    </Typography>
+                                )}
+                                {mode === 'modification' && typeof file === 'string' && (
+                                    <Button
+                                        sx={{
+                                            mt: 1,
+                                            textTransform: 'none',
+                                            backgroundColor: initial.theme,
+                                            color: 'white',
+                                            '&:hover': {
+                                                backgroundColor: initial.theme,
+                                                color: 'white',
+                                            },
+                                            width: 50,
+                                            minWidth: 0,
+                                            padding: 1,
+                                        }}
+                                        style={{ textTransform: 'none', outline: 'none' }}
+                                        href={`${URL}/${file}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
+                                        <VisibilityIcon />
+                                    </Button>
+                                )}
+                            </Box>
+                        )}
+
+                        {file && (
+                            <Button
+                                sx={{
+                                    mt: 1,
+                                    textTransform: 'none',
+                                    backgroundColor: initial.button_delete_color,
+                                    color: 'white',
+                                    '&:hover': {
+                                        backgroundColor: initial.button_delete_color,
+                                    },
+                                    width: 50,
+                                    minWidth: 0,
+                                    padding: 1,
+                                }}
+                                style={{ textTransform: 'none', outline: 'none' }}
+                                onClick={handleOpenDialogDeleteFile}
+                            >
+                                <DeleteIcon />
+                            </Button>
+                        )}
+
+                    </Stack>
                 </Stack>
-            </Stack>
-        </Box>
+            </Box>
+        </>
     );
 };
 

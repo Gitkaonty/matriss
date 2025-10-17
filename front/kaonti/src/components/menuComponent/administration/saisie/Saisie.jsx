@@ -71,6 +71,8 @@ export default function SaisieComponent() {
 
     const [listeCodeJournaux, setListeCodeJournaux] = useState([]);
     const [listePlanComptable, setListePlanComptable] = useState([]);
+    const [listeDevise, setListeDevise] = useState([]);
+    const [listeAnnee, setListeAnnee] = useState([]);
 
     //récupération des informations de connexion
     const { auth } = useAuth();
@@ -144,8 +146,8 @@ export default function SaisieComponent() {
     }
 
     //Récupération données liste code journaux
-    const GetListeCodeJournaux = (id) => {
-        axios.get(`/paramCodeJournaux/listeCodeJournaux/${id}`).then((response) => {
+    const GetListeCodeJournaux = () => {
+        axios.get(`/paramCodeJournaux/listeCodeJournaux/${fileId}`).then((response) => {
             const resData = response.data;
             if (resData.state) {
                 setListeCodeJournaux(resData.list);
@@ -480,6 +482,40 @@ export default function SaisieComponent() {
         setOpenDialogDeleteSaisie(true);
     }
 
+    //Récupération données liste des devises
+    const getListeDevises = () => {
+        axios.get(`/devises/devise/compte/${compteId}/${fileId}`).then((response) => {
+            const resData = response.data;
+            setListeDevise(response.data);
+        })
+    }
+
+    //Recupérer l'année min et max de l'éxercice
+    const getAnneesEntreDeuxDates = (dateDebut, dateFin) => {
+        const debut = new Date(dateDebut).getFullYear();
+        const fin = new Date(dateFin).getFullYear();
+        const annees = [];
+
+        for (let annee = debut; annee <= fin; annee++) {
+            annees.push(annee);
+        }
+
+        return annees;
+    };
+
+    //Récupération la liste des exercices BY ID EXERCICE
+    const getDateDebutFinExercice = () => {
+        axios.get(`/paramExercice/listeExerciceById/${selectedExerciceId}`).then((response) => {
+            const resData = response.data;
+            if (resData.state) {
+                const annee = getAnneesEntreDeuxDates(resData.list.date_debut, resData.list.date_fin)
+                setListeAnnee(annee)
+            } else {
+                setListeAnnee([])
+            }
+        })
+    }
+
     //récupérer les informations du dossier sélectionné
     useEffect(() => {
         //tester si la page est renvoyer par useNavigate
@@ -508,10 +544,20 @@ export default function SaisieComponent() {
         getListeSaisie();
     }, [selectedPeriodeId, selectedExerciceId, refresh])
 
+    // Liste des années
+    useEffect(() => {
+        if (selectedExerciceId) {
+            getDateDebutFinExercice();
+        }
+    }, [selectedExerciceId])
+
     // Liste code journaux
     useEffect(() => {
-        GetListeCodeJournaux(fileId);
-        getPc();
+        if (fileId && compteId) {
+            GetListeCodeJournaux();
+            getPc();
+            getListeDevises();
+        }
     }, [fileId, compteId]);
 
     useEffect(() => {
@@ -551,6 +597,11 @@ export default function SaisieComponent() {
                     setRefresh={() => setRefresh(!refresh)}
                     setRowSelectionModel={() => setRowSelectionModel([])}
                     type={typeActionSaisie}
+                    listeCodeJournaux={listeCodeJournaux}
+                    listePlanComptable={listePlanComptable}
+                    listeAnnee={listeAnnee}
+                    listeDevise={listeDevise}
+                    setSelectedRowsSaisie={() => setSelectedRows([])}
                 /> : null}
 
             {openDialogDeleteSaisie ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer ces lignes sélectionnés ?"} confirmationState={handleDeleteSelectedSaisies} /> : null}
@@ -857,7 +908,7 @@ export default function SaisieComponent() {
 
                         <Stack
                             width="100%"
-                            height="550px"
+                            height="700px"
                             style={{
                                 marginLeft: "0px",
                                 marginTop: "20px",
@@ -930,7 +981,7 @@ export default function SaisieComponent() {
                                         borderBottom: '1px solid red',
                                     },
                                     '& .MuiDataGrid-virtualScroller': {
-                                        maxHeight: '550px',
+                                        maxHeight: '700px',
                                     },
                                 }}
                                 rowHeight={DataGridStyle.rowHeight}
@@ -968,7 +1019,7 @@ export default function SaisieComponent() {
                                 rowSelectionModel={rowSelectionModel}
                                 onRowSelectionModelChange={(ids) => {
                                     const data = filteredList ?? listSaisie;
-                                    const selectedID = ids[ids.length - 1]; 
+                                    const selectedID = ids[ids.length - 1];
 
                                     if (!selectedID) {
                                         setSelectedRows([]);

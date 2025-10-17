@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<EDI>
+<informations>
+<type>TVA</type>
+<ncc>4000215478</ncc>
+<codeTaxe>TVA</codeTaxe>
+<mois>1</mois>
+<exercice>2023</exercice>
+</informations>
+<tableaux>
+<tableau>
+<donnees>
+</donnees>
+</tableau>
+</tableaux>
+</EDI>

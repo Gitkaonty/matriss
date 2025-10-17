@@ -1,4 +1,4 @@
-import { React, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Typography, Stack, TextField, FormControl, Tooltip, Box, Input } from '@mui/material';
 import Button from '@mui/material/Button';
 import { styled } from '@mui/material/styles';
@@ -9,14 +9,9 @@ import DialogActions from '@mui/material/DialogActions';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
 import { init } from '../../../../init';
-import { CiWarning } from "react-icons/ci";
-import { IoIosWarning } from "react-icons/io";
 import toast from 'react-hot-toast';
 import axios from '../../../../config/axios';
 import InputAdornment from '@mui/material/InputAdornment';
-import { NumericFormat } from 'react-number-format';
-import { useFormik } from 'formik';
-import * as Yup from "yup";
 import FormatedInput from '../FormatedInput';
 import { DataGridStyle } from '../DatagridToolsStyle';
 import { TfiSave } from "react-icons/tfi";
@@ -46,6 +41,8 @@ const PopupAjustRubriqueEbilan = ({ actionState, row, column, value }) => {
     const [disableCancelBouton, setDisableCancelBouton] = useState(true);
     const [disableSaveBouton, setDisableSaveBouton] = useState(true);
     const [disableDeleteBouton, setDisableDeleteBouton] = useState(true);
+    const [disableAddRowBouton, setDisableAddRowBouton] = useState(false);
+
     const [editableRow, setEditableRow] = useState(true);
     const [openDialogDeleteRow, setOpenDialogDeleteRow] = useState(false);
     const nature = column === 'montantamort' ? 'AMORT' : 'BRUT';
@@ -53,6 +50,8 @@ const PopupAjustRubriqueEbilan = ({ actionState, row, column, value }) => {
     const [totalNet, setTotalNet] = useState(0);
     const [totalAjustement, setTotalAjustement] = useState(0);
     const [stateUpdateTable, setStateUpdateTable] = useState({ tableName: '', state: false });
+
+    const [selectedRow, setSelectedRow] = useState([]);
 
     const data = { ...row };
     const rubriqueCaption = data['rubriquesmatrix.libelle'];
@@ -82,7 +81,7 @@ const PopupAjustRubriqueEbilan = ({ actionState, row, column, value }) => {
     const totalColumn = (rows, columnId) => {
 
         const total = rows.reduce((acc, item) => {
-            const Value = parseFloat(item[columnId]) || 0; // Convertir en nombre
+            const Value = parseFloat(item[columnId]) || 0;
             return acc + Value;
         }, 0);
 
@@ -99,7 +98,7 @@ const PopupAjustRubriqueEbilan = ({ actionState, row, column, value }) => {
             headerName: 'Motif',
             type: 'text',
             sortable: true,
-            width: 590,
+            flex: 1,
             headerAlign: 'left',
             headerClassName: 'HeaderbackColor',
             disableClickEventBubbling: true,
@@ -133,28 +132,24 @@ const PopupAjustRubriqueEbilan = ({ actionState, row, column, value }) => {
             headerName: 'Montant',
             type: 'text',
             sortable: true,
-            width: 200,
+            flex: 0.40,
             headerAlign: 'right',
             headerClassName: 'HeaderbackColor',
             disableClickEventBubbling: true,
             editable: editableRow,
-            renderCell: (params) => {
-                return <div> <TextField
+            renderCell: (params) => (
+                <TextField
                     size="small"
                     name="montantcharge"
                     value={params.value}
                     fullWidth
                     variant="standard"
-                    style={{
-                        width: '100%',
-                        textAlign: 'right',
-                    }}
                     InputProps={{
                         inputComponent: FormatedInput,
                         disableUnderline: true,
                         endAdornment: (
                             <InputAdornment position="end" sx={{ fontSize: 12 }}>
-                                <span style={{ fontSize: 14 }}>Ar</span>
+                                <span style={{ fontSize: 15, paddingBottom: '6px' }}>Ar</span>
                             </InputAdornment>
                         ),
                         sx: {
@@ -163,67 +158,48 @@ const PopupAjustRubriqueEbilan = ({ actionState, row, column, value }) => {
                             '& .MuiInputBase-input': {
                                 textAlign: 'right',
                                 fontSize: 14,
-                                padding: '4px 0 4px', // haut / bas
-                                display: 'flex',
-                                alignItems: 'center',
                             },
                         },
                     }}
-                /></div>;
-            },
+                />
+            ),
             renderEditCell: (params) => {
                 return (
-                    <FormControl fullWidth style={{ height: '120%' }}>
-                        <TextField
-                            size="small"
-                            name="montant"
-                            value={formDataFinal.montant}
-                            onChange={handleChange}
-                            fullWidth
-                            variant="standard"
-                            style={{
-                                width: '100%',
-                                textAlign: 'right',
-                            }}
-                            InputProps={{
-                                inputComponent: FormatedInput,
-                                disableUnderline: true,
-                                endAdornment: (
-                                    <InputAdornment position="end" sx={{ fontSize: 12 }}>
-                                        <span style={{ fontSize: 14 }}>Ar</span>
-                                    </InputAdornment>
-                                ),
-                                sx: {
-                                    height: '30px',
-                                    padding: 0,
-                                    '& .MuiInputBase-input': {
-                                        textAlign: 'right',
-                                        fontSize: 14,
-                                        padding: '4px 0 4px', // haut / bas
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                    },
+                    <TextField
+                        size="small"
+                        name="montant"
+                        value={formDataFinal.montant}
+                        onChange={handleChange}
+                        fullWidth
+                        variant="standard"
+                        style={{
+                            width: '100%',
+                            textAlign: 'right',
+                        }}
+                        InputProps={{
+                            inputComponent: FormatedInput,
+                            disableUnderline: true,
+                            endAdornment: (
+                                <InputAdornment position="end" sx={{ fontSize: 12 }}>
+                                    <span style={{ fontSize: 15, paddingBottom: '6px' }}>Ar</span>
+                                </InputAdornment>
+                            ),
+                            sx: {
+                                height: '30px',
+                                padding: 0,
+                                '& .MuiInputBase-input': {
+                                    textAlign: 'right',
+                                    fontSize: 14,
+                                    display: 'flex',
+                                    alignItems: 'right',
                                 },
-                            }}
-                        />
-                    </FormControl>
+                            },
+                        }}
+                    />
                 );
             },
         },
     ];
-
-    //update formData par les informations reçues
-    // useEffect(() => {
-    //     setFormDataFinal((prev) => ({
-    //         ...prev,
-    //         compteId: row.id_compte,
-    //         fileId: row.id_dossier,
-    //         exerciceId: row.id_exercice,
-    //         rubriqueId: row.id_rubrique,
-    //         etatId: row.id_etat,
-    //         nature: nature,
-    //     }));
-    // },[row]);
 
     const getInfosAjust = (compteId, dossierId, exerciceId, etatId, rubriqueId, nature) => {
         axios.get(`declaration/ebilan/listeAjust`, {
@@ -251,13 +227,13 @@ const PopupAjustRubriqueEbilan = ({ actionState, row, column, value }) => {
         if (ids.length === 1) {
             setSelectedRowId(ids);
             setDisableModifyBouton(false);
-            setDisableSaveBouton(false);
+            setDisableSaveBouton(true);
             setDisableCancelBouton(false);
             setDisableDeleteBouton(false);
         } else {
             setSelectedRowId([]);
             setDisableModifyBouton(true);
-            setDisableSaveBouton(true);
+            setDisableSaveBouton(false);
             setDisableCancelBouton(true);
             setDisableDeleteBouton(true);
         }
@@ -302,6 +278,7 @@ const PopupAjustRubriqueEbilan = ({ actionState, row, column, value }) => {
             const resData = response.data;
             if (resData.state) {
                 setDisableSaveBouton(true);
+                setDisableAddRowBouton(false);
                 setStateUpdateTable((prev) => ({
                     ...prev,
                     tableName: idEtat,
@@ -318,16 +295,23 @@ const PopupAjustRubriqueEbilan = ({ actionState, row, column, value }) => {
 
     const handleOpenDialogConfirmDelete = () => {
         setOpenDialogDeleteRow(true);
+        setDisableAddRowBouton(false);
     }
 
     const deleteRow = (value) => {
         if (value === true) {
             if (selectedRowId.length === 1) {
                 const idToDelete = selectedRowId[0];
+                if (idToDelete < 0) {
+                    setOpenDialogDeleteRow(false);
+                    setListAjust(listAjust.filter((row) => row.id !== idToDelete));
+                    return
+                }
                 axios.post(`/declaration/ebilan/deleteAjust`, { idCompte, idDossier, idExercice, idEtat, idRubrique, nature, idToDelete }).then((response) => {
                     const resData = response.data;
 
                     if (resData.state) {
+                        setDisableAddRowBouton(false);
                         setStateUpdateTable((prev) => ({
                             ...prev,
                             tableName: idEtat,
@@ -355,6 +339,13 @@ const PopupAjustRubriqueEbilan = ({ actionState, row, column, value }) => {
             ...rowModesModel,
             [id]: { mode: GridRowModes.View, ignoreModifications: true },
         });
+        setDisableAddRowBouton(false);
+        setDisableSaveBouton(true);
+        setDisableDeleteBouton(true);
+        setDisableModifyBouton(true);
+        setDisableCancelBouton(true);
+        setSelectedRow([]);
+        setSelectedRowId([]);
     };
 
     const processRowUpdate = () => (newRow) => {
@@ -389,7 +380,12 @@ const PopupAjustRubriqueEbilan = ({ actionState, row, column, value }) => {
 
     //Ajouter une ligne dans le tableau
     const handleOpenDialogAddNew = () => {
-        const newId = -1 * (getMaxID(listAjust) + 1);
+        setDisableModifyBouton(false);
+        setDisableCancelBouton(false);
+        setDisableDeleteBouton(false);
+
+        // const newId = -1 * (getMaxID(listAjust) + 1) - 1;
+        const newId = -Date.now();
         let arrayId = [];
         arrayId = [...arrayId, newId];
 
@@ -410,16 +406,10 @@ const PopupAjustRubriqueEbilan = ({ actionState, row, column, value }) => {
             montant: 0
         };
         setListAjust([...listAjust, newRow]);
+        setSelectedRowId([newRow.id]);
+        setSelectedRow([newRow.id]);
+        setDisableAddRowBouton(true);
     }
-
-    const getMaxID = (data) => {
-        if (data.length > 0) {
-            const Ids = data.map(item => item.id);
-            return Math.max(...Ids);
-        } else {
-            return 0;
-        }
-    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -428,6 +418,19 @@ const PopupAjustRubriqueEbilan = ({ actionState, row, column, value }) => {
             [name]: value,
         }));
     };
+
+    const deselectRow = (ids) => {
+        const deselected = selectedRowId.filter(id => !ids.includes(id));
+
+        const updatedRowModes = { ...rowModesModel };
+        deselected.forEach((id) => {
+            updatedRowModes[id] = { mode: GridRowModes.View, ignoreModifications: true };
+        });
+        setRowModesModel(updatedRowModes);
+
+        setDisableAddRowBouton(false);
+        setSelectedRowId(ids);
+    }
 
     return (
         <div>
@@ -468,6 +471,7 @@ const PopupAjustRubriqueEbilan = ({ actionState, row, column, value }) => {
                         >
                             <Tooltip title="Ajouter une ligne">
                                 <IconButton
+                                    disabled={disableAddRowBouton}
                                     onClick={handleOpenDialogAddNew}
                                     variant="contained"
                                     style={{
@@ -552,7 +556,10 @@ const PopupAjustRubriqueEbilan = ({ actionState, row, column, value }) => {
                             </Tooltip>
                         </Stack>
 
-                        <Stack width={"100%"} height={'60vh'}>
+                        <Stack
+                            width={"100%"}
+                            height={"420px"}
+                        >
                             <DataGrid
                                 disableMultipleSelection={DataGridStyle.disableMultipleSelection}
                                 disableColumnSelector={DataGridStyle.disableColumnSelector}
@@ -561,13 +568,21 @@ const PopupAjustRubriqueEbilan = ({ actionState, row, column, value }) => {
                                 disableSelectionOnClick={true}
                                 localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
                                 slots={{ toolbar: QuickFilter }}
-                                sx={DataGridStyle.sx}
+                                sx={{
+                                    ...DataGridStyle.sx,
+                                    '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+                                        outline: 'none',
+                                        border: 'none',
+                                    },
+                                }}
                                 rowHeight={DataGridStyle.rowHeight}
                                 columnHeaderHeight={DataGridStyle.columnHeaderHeight}
                                 rows={listAjust}
                                 onRowClick={(e) => handleCellEditCommit(e.row)}
                                 onRowSelectionModelChange={ids => {
+                                    setSelectedRow(ids);
                                     saveSelectedRow(ids);
+                                    deselectRow(ids);
                                 }}
                                 editMode='row'
                                 selectionModel={selectedRowId}
@@ -589,6 +604,39 @@ const PopupAjustRubriqueEbilan = ({ actionState, row, column, value }) => {
                                 columnVisibilityModel={{
                                     id: false,
                                 }}
+                                rowSelectionModel={selectedRow}
+                                onRowEditStart={(params, event) => {
+                                    if (!selectedRow.length || selectedRow[0] !== params.id) {
+                                        event.defaultMuiPrevented = true;
+                                    }
+                                    if (selectedRow.includes(params.id)) {
+                                        setDisableAddRowBouton(true);
+                                        event.stopPropagation();
+
+                                        const rowId = params.id;
+                                        const rowData = params.row;
+
+                                        setFormDataFinal((prev) => ({
+                                            ...prev,
+                                            id: rowId,
+                                            id_compte: rowData.id_compte,
+                                            id_dossier: rowData.id_dossier,
+                                            id_exercice: rowData.id_exercice,
+                                            id_rubrique: rowData.id_rubrique,
+                                            id_etat: rowData.id_etat,
+                                            nature: rowData.nature,
+                                            motif: rowData.motif,
+                                            montant: rowData.montant,
+                                        }));
+
+                                        setRowModesModel((oldModel) => ({
+                                            ...oldModel,
+                                            [rowId]: { mode: GridRowModes.Edit },
+                                        }));
+
+                                        setDisableSaveBouton(false);
+                                    }
+                                }}
                             />
                         </Stack>
 
@@ -599,9 +647,9 @@ const PopupAjustRubriqueEbilan = ({ actionState, row, column, value }) => {
                             <Box display="flex" alignItems="center" mb={0}>
                                 <Typography
                                     variant="body2"
-                                    style={{ marginRight: 1, width: '140px', color: '#1976d2' }}
+                                    style={{ marginRight: 1, width: '150px', color: '#1976d2' }}
                                 >
-                                    total des ajustements:
+                                    Total des ajustements:
                                 </Typography>
                                 <TextField
                                     size="small"

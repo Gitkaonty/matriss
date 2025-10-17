@@ -14,7 +14,7 @@ const userscomptes = db.userscomptes;
 const dossierplancomptableModel = db.dossierplancomptable;
 const codejournals = db.codejournals;
 const isis = db.isi;
-const historiqueIsi = db.historiquedeclaration;
+const historiqueIsi = db.historiqueDeclaration;
 
 const declISIGeneratePDF = require('../../../Middlewares/ISI/declISIGeneratePDF');
 const declISIGenerateExcel = require('../../../Middlewares/ISI/declISIGenerateExcel');

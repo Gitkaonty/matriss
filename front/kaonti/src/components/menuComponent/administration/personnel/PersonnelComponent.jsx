@@ -1,6 +1,6 @@
 import { React, useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Typography, Stack, Paper, IconButton } from '@mui/material';
+import { Typography, Stack, Paper, IconButton, FormControl, Input, Checkbox, Select, MenuItem } from '@mui/material';
 import Button from '@mui/material/Button';
 import { TbPlaylistAdd } from "react-icons/tb";
 import { FaRegPenToSquare } from "react-icons/fa6";
@@ -18,12 +18,13 @@ import PopupConfirmDelete from '../../../componentsTools/popupConfirmDelete';
 import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFile';
 import { init } from '../../../../../init';
 import { DataGridStyle } from '../../../componentsTools/DatagridToolsStyle';
-import { DataGrid, frFR, GridRowModes } from '@mui/x-data-grid';
+import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes } from '@mui/x-data-grid';
 import QuickFilter from '../../../componentsTools/DatagridToolsStyle';
 import useAuth from '../../../../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
 import axios from '../../../../../config/axios';
-import toast from 'react-hot-toast';
+import toast from 'react-hot-toast'; import { useFormik } from 'formik';
+import * as Yup from "yup";
 
 export default function PersonnelComponent() {
     const initial = init[0];
@@ -39,15 +40,19 @@ export default function PersonnelComponent() {
     const compteId = decoded?.UserInfo?.compteId || null;
     const userId = decoded?.UserInfo?.userId || null;
     const navigate = useNavigate();
+    const [editableRow, setEditableRow] = useState(true);
+
     const [rowModesModel, setRowModesModel] = useState({});
     const [selectedRowId, setSelectedRowId] = useState([]);
     const [disableModifyBouton, setDisableModifyBouton] = useState(true);
     const [disableCancelBouton, setDisableCancelBouton] = useState(true);
     const [disableSaveBouton, setDisableSaveBouton] = useState(true);
     const [disableDeleteBouton, setDisableDeleteBouton] = useState(true);
+    const [disableAddRowBouton, setDisableAddRowBouton] = useState(false);
+
     const [openDialogDeleteRow, setOpenDialogDeleteRow] = useState(false);
-    const [editRow, setEditRow] = useState(null);
-    const [newRow, setNewRow] = useState(null);
+
+    const [selectedRow, setSelectedRow] = useState([]);
 
     // récupération infos de dossier sélectionné
     useEffect(() => {
@@ -92,108 +97,377 @@ export default function PersonnelComponent() {
         return classifications.some(c => c.id === row.id_classe);
     };
 
-      // Helper: format CIN as 12 digits grouped by 3 (e.g., 101 234 567 890)
-  const formatCin = (value) => {
-    const digits = String(value ?? '').replace(/\D/g, '');
-    // Group digits every 3 with spaces
-    return digits.replace(/(\d{3})(?=\d)/g, '$1 ').trim();
-  };
+    // Helper: format CIN as 12 digits grouped by 3 (e.g., 101 234 567 890)
+    const formatCin = (value) => {
+        const digits = String(value ?? '').replace(/\D/g, '');
+        // Group digits every 3 with spaces
+        return digits.replace(/(\d{3})(?=\d)/g, '$1 ').trim();
+    };
 
+    const formNewParam = useFormik({
+        initialValues: {
+            idParam: 0,
+            compteId: compteId,
+            fileId: fileId,
+            matricule: '',
+            nom: '',
+            prenom: '',
+            id_fonction: '',
+            id_classe: '',
+            numero_cnaps: '',
+            cin_ou_carte_resident: '',
+            nombre_enfants_charge: '',
+            date_entree: '',
+            date_sortie: '',
+            actif: true
+        },
+        // validationSchema: Yup.object({
+        //     nature: Yup.string().required("Ce champ est obligatoire"),
+        //     senscalcul: Yup.string().required("Ce champ est obligatoire"),
+        //     condition: Yup.string().required("Ce champ est obligatoire"),
+        //     equation: Yup.string().required("Ce champ est obligatoire")
+        // }),
+        onSubmit: (values) => {
+
+        },
+        validateOnChange: false,
+        validateOnBlur: true,
+    });
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        formNewParam.setFieldValue(name, value);
+    };
+
+    const handleCheckboxChange = (value) => {
+        formNewParam.setFieldValue("actif", value);
+    }
 
     const personnelsColumns = [
-        { field: 'id', headerName: 'ID', width: 80, editable: false },
-        { field: 'matricule', headerName: 'Matricule', width: 80, editable: true },
-        { field: 'nom', headerName: 'Nom', width: 150, editable: (params) => isEditable(params.row) },
-        { field: 'prenom', headerName: 'Prénom', width: 150, editable: true },
+        {
+            field: 'id',
+            headerName: 'ID',
+            flex: 3,
+            editable: false
+        },
+        {
+            field: 'matricule',
+            headerName: 'Matricule',
+            flex: 3,
+            editable: editableRow,
+            renderEditCell: (params) => {
+                return (
+                    <FormControl fullWidth style={{ height: '100%' }}>
+                        <Input
+                            style={{
+                                height: '100%', alignItems: 'center',
+                                outline: 'none',
+                            }}
+                            name='matricule'
+                            type="text"
+                            value={formNewParam.values.matricule}
+                            onChange={handleChange}
+                            label="matricule"
+                            disableUnderline={true}
+                        // disabled={disableDefaultFieldModif}
+                        />
+                    </FormControl>
+                );
+            },
+        },
+        {
+            field: 'nom',
+            headerName: 'Nom',
+            flex: 3,
+            // editable:
+            //     (params) => isEditable(params.row)
+            editable: editableRow,
+            renderEditCell: (params) => {
+                return (
+                    <FormControl fullWidth style={{ height: '100%' }}>
+                        <Input
+                            style={{
+                                height: '100%', alignItems: 'center',
+                                outline: 'none',
+                            }}
+                            name='nom'
+                            type="text"
+                            value={formNewParam.values.nom}
+                            onChange={handleChange}
+                            label="nom"
+                            disableUnderline={true}
+                        // disabled={disableDefaultFieldModif}
+                        />
+                    </FormControl>
+                );
+            },
+        },
+        {
+            field: 'prenom',
+            headerName: 'Prénom',
+            flex: 3,
+            editable: editableRow,
+            renderEditCell: (params) => {
+                return (
+                    <FormControl fullWidth style={{ height: '100%' }}>
+                        <Input
+                            style={{
+                                height: '100%', alignItems: 'center',
+                                outline: 'none',
+                            }}
+                            name='prenom'
+                            type="text"
+                            value={formNewParam.values.prenom}
+                            onChange={handleChange}
+                            label="prenom"
+                            disableUnderline={true}
+                        // disabled={disableDefaultFieldModif}
+                        />
+                    </FormControl>
+                );
+            },
+        },
         {
             field: 'id_fonction',
             headerName: 'Fonction',
-            width: 180,
-            editable: true,
-            type: 'singleSelect',
-            valueOptions: fonctions.map(f => ({ value: f.id, label: f.nom })),
-            renderCell: (params) => {
-                const found = fonctions.find(f => f.id === params.value);
-                return found ? found.nom : '';
-            }
+            flex: 3,
+            editable: editableRow,
+            renderEditCell: (params) => {
+                const handleSelectChange = (e) => {
+                    const value = e.target.value;
+
+                    formNewParam.setFieldValue('id_fonction', value);
+
+                    params.api.setEditCellValue({ id: params.id, field: params.field, value });
+                };
+
+                return (
+                    <FormControl fullWidth style={{ height: '100%' }}>
+                        <Select
+                            variant="standard"
+                            disableUnderline
+                            name="id_fonction"
+                            value={formNewParam.values.id_fonction || ''}
+                            onChange={handleSelectChange}
+                            style={{ height: '100%' }}
+                        >
+                            {fonctions.map((f) => (
+                                <MenuItem key={f.id} value={f.id}>
+                                    {f.nom}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                );
+            },
         },
         {
             field: 'id_classe',
             headerName: 'Classification',
-            width: 180,
-            editable: (params) => isEditable(params.row),
-            type: 'singleSelect',
-            valueOptions: classifications.map(c => ({ value: c.id, label: c.classe })),
+            flex: 3,
+            editable: editableRow,
             renderCell: (params) => {
                 const found = classifications.find(c => c.id === params.value);
                 return found ? found.classe : '';
-            }
+            },
+            renderEditCell: (params) => {
+                const handleSelectChange = (e) => {
+                    const value = e.target.value;
+                    formNewParam.setFieldValue('id_classe', value);
+                    params.api.setEditCellValue({ id: params.id, field: params.field, value });
+                };
+
+                return (
+                    <FormControl fullWidth sx={{ height: '100%' }}>
+                        <Select
+                            variant="standard"
+                            disableUnderline
+                            name="id_classe"
+                            value={formNewParam.values.id_classe || ''}
+                            onChange={handleSelectChange}
+                            sx={{
+                                height: '100%',
+                                '& .MuiSelect-select': {
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    height: '100%',
+                                },
+                            }}
+                        >
+                            {classifications.map((c) => (
+                                <MenuItem key={c.id} value={c.id}>
+                                    {c.classe}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                );
+            },
         },
         {
             field: 'numero_cnaps',
             headerName: 'Numéro CNaPS',
-            width: 150,
-            editable: true
+            flex: 3,
+            editable: editableRow,
+            renderEditCell: (params) => {
+                return (
+                    <FormControl fullWidth style={{ height: '100%' }}>
+                        <Input
+                            style={{
+                                height: '100%', alignItems: 'center',
+                                outline: 'none',
+                            }}
+                            name='numero_cnaps'
+                            type="text"
+                            value={formNewParam.values.numero_cnaps}
+                            onChange={handleChange}
+                            label="numero_cnaps"
+                            disableUnderline={true}
+                        // disabled={disableDefaultFieldModif}
+                        />
+                    </FormControl>
+                );
+            },
         },
         {
             field: 'cin_ou_carte_resident',
             headerName: 'CIN ou Carte de résident',
-            width: 180,
-            editable: true,
-            valueFormatter: (params) => formatCin(params.value)
+            flex: 3,
+            valueFormatter: (params) => formatCin(params.value),
+            editable: editableRow,
+            renderEditCell: (params) => {
+                return (
+                    <FormControl fullWidth style={{ height: '100%' }}>
+                        <Input
+                            style={{
+                                height: '100%', alignItems: 'center',
+                                outline: 'none',
+                            }}
+                            name='cin_ou_carte_resident'
+                            type="text"
+                            value={formNewParam.values.cin_ou_carte_resident}
+                            onChange={handleChange}
+                            label="cin_ou_carte_resident"
+                            disableUnderline={true}
+                        // disabled={disableDefaultFieldModif}
+                        />
+                    </FormControl>
+                );
+            },
         },
         {
             field: 'nombre_enfants_charge',
             headerName: 'Nb enfants',
-            width: 100,
-            editable: true
+            flex: 1.5,
+            editable: editableRow,
+            renderEditCell: (params) => {
+                return (
+                    <FormControl fullWidth style={{ height: '100%' }}>
+                        <Input
+                            style={{
+                                height: '100%', alignItems: 'center',
+                                outline: 'none',
+                            }}
+                            name='nombre_enfants_charge'
+                            type="number"
+                            value={formNewParam.values.nombre_enfants_charge}
+                            onChange={handleChange}
+                            label="nombre_enfants_charge"
+                            disableUnderline={true}
+                        // disabled={disableDefaultFieldModif}
+                        />
+                    </FormControl>
+                );
+            },
         },
         {
             field: 'date_entree',
             headerName: 'Date entrée',
-            width: 150,
-            editable: true,
+            flex: 3,
             renderCell: (params) => {
                 if (!params.value) return '';
                 const date = new Date(params.value);
                 return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
             },
-            renderEditCell: (params) => (
-                <input
-                    type="date"
-                    value={params.value ? params.value.slice(0, 10) : ''}
-                    onChange={(e) => {
-                        const value = e.target.value;
-                        params.api.setEditCellValue({ id: params.id, field: 'date_entree', value }, e);
-                    }}
-                    style={{ width: '100%', padding: '5px', fontSize: '14px', borderRadius: '4px', border: '1px solid #ccc' }}
-                />
-            )
+            editable: editableRow,
+            renderEditCell: (params) => {
+                const { id, field, value, api } = params;
+
+                const handleChange = (e) => {
+                    api.setEditCellValue({ id, field, value: e.target.value });
+                    formNewParam.setFieldValue(field, e.target.value);
+                };
+
+                return (
+                    <FormControl fullWidth style={{ height: '100%' }}>
+                        <Input
+                            type="date"
+                            name="date_entree"
+                            value={value ? value.substring(0, 10) : ''}
+                            onChange={handleChange}
+                            disableUnderline
+                            style={{ height: '100%', outline: 'none' }}
+                        />
+                    </FormControl>
+                );
+            },
         },
         {
             field: 'date_sortie',
             headerName: 'Date sortie',
-            width: 150,
-            editable: true,
+            flex: 3,
             renderCell: (params) => {
                 if (!params.value) return '';
                 const date = new Date(params.value);
                 return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
             },
-            renderEditCell: (params) => (
-                <input
-                    type="date"
-                    value={params.value ? params.value.slice(0, 10) : ''}
-                    onChange={(e) => {
-                        const value = e.target.value;
-                        params.api.setEditCellValue({ id: params.id, field: 'date_sortie', value }, e);
-                    }}
-                    style={{ width: '100%', padding: '5px', fontSize: '14px', borderRadius: '4px', border: '1px solid #ccc' }}
-                />
-            )
+            editable: editableRow,
+            renderEditCell: (params) => {
+                const { id, field, value, api } = params;
+
+                const handleChange = (e) => {
+                    api.setEditCellValue({ id, field, value: e.target.value });
+                    formNewParam.setFieldValue(field, e.target.value);
+                };
+
+                return (
+                    <FormControl fullWidth style={{ height: '100%' }}>
+                        <Input
+                            type="date"
+                            name="date_sortie"
+                            value={value ? value.substring(0, 10) : ''}
+                            onChange={handleChange}
+                            disableUnderline
+                            style={{ height: '100%', outline: 'none' }}
+                        />
+                    </FormControl>
+                );
+            },
         },
-        { field: 'actif', headerName: 'Actif', width: 90, editable: true, type: 'boolean' },
+        {
+            field: 'actif',
+            headerName: 'Actif',
+            flex: 1,
+            type: 'boolean',
+            editable: editableRow,
+            renderEditCell: (params) => {
+                return (
+                    <Checkbox
+                        checked={formNewParam.values.actif}
+                        type="checkbox"
+                        name='actif'
+                        onChange={(e) => handleCheckboxChange(e.target.checked)}
+                    />
+                );
+            },
+        },
     ];
+
+    const handleRowEditStop = (params, event) => {
+        if (params.reason === GridRowEditStopReasons.rowFocusOut) {
+            event.defaultMuiPrevented = true;
+        }
+    }
 
     const fetchPersonnels = () => {
         axios.get(`/administration/personnel/${Number(compteId)}/${Number(id)}`)
@@ -224,7 +498,7 @@ export default function PersonnelComponent() {
         if (!dossierId) {
             dossierId = sessionStorage.getItem("fileId");
         }
-        if (!dossierId) return; // Ne pas faire d'appel API si pas de dossier
+        if (!dossierId) return;
         console.log("Appel API classifications sur dossier", dossierId);
         axios.get(`/parametres/classification/dossier/${Number(compteId)}/${Number(dossierId)}`).then(res => {
             console.log("Réponse API classifications", res.data);
@@ -237,33 +511,73 @@ export default function PersonnelComponent() {
         if (ids.length === 1) {
             setSelectedRowId(ids);
             setDisableModifyBouton(false);
-            setDisableSaveBouton(false);
+            setDisableSaveBouton(true);
             setDisableCancelBouton(false);
             setDisableDeleteBouton(false);
         } else {
             setSelectedRowId([]);
             setDisableModifyBouton(true);
-            setDisableSaveBouton(true);
+            setDisableSaveBouton(false);
             setDisableCancelBouton(true);
             setDisableDeleteBouton(true);
         }
     }
 
     // Edition
-    const handleEditClick = (ids) => () => {
-        if (ids.length === 1) {
-            const row = rows.find(r => r.id === ids[0]);
-            setEditRow(row);
-            setNewRow(null);
-            setRowModesModel({ ...rowModesModel, [ids[0]]: { mode: GridRowModes.Edit } });
+    const handleEditClick = (id) => () => {
+        const selectedRowInfos = rows.find(r => r.id === id[0]);
+        // setEditRow(row);
+        // setNewRow(null);
+        formNewParam.setFieldValue('idParam', selectedRowInfos.id ?? null);
+        formNewParam.setFieldValue('compteId', compteId);
+        formNewParam.setFieldValue('fileId', fileId);
+        formNewParam.setFieldValue('matricule', selectedRowInfos.matricule ?? '');
+        formNewParam.setFieldValue('nom', selectedRowInfos.nom ?? '');
+        formNewParam.setFieldValue('prenom', selectedRowInfos.prenom ?? '');
+        formNewParam.setFieldValue('id_fonction', selectedRowInfos.id_fonction ?? null);
+        formNewParam.setFieldValue('id_classe', selectedRowInfos.id_classe ?? null);
+        formNewParam.setFieldValue('numero_cnaps', selectedRowInfos.numero_cnaps ?? '');
+        formNewParam.setFieldValue('cin_ou_carte_resident', selectedRowInfos.cin_ou_carte_resident ?? '');
+        formNewParam.setFieldValue('nombre_enfants_charge', selectedRowInfos.nombre_enfants_charge ?? 0);
+        formNewParam.setFieldValue('date_entree', selectedRowInfos.date_entree ?? '');
+        formNewParam.setFieldValue('date_sortie', selectedRowInfos.date_sortie ?? '');
+        formNewParam.setFieldValue('actif', selectedRowInfos.actif ?? false);
+
+        setRowModesModel({ ...rowModesModel, [id[0]]: { mode: GridRowModes.Edit } });
+        setDisableSaveBouton(false);
+    };
+
+    const handleCellEditCommit = (params) => {
+        if (selectedRowId.length > 1 || selectedRowId.length === 0) {
+            setEditableRow(false);
+            setDisableModifyBouton(true);
+            setDisableSaveBouton(true);
+            setDisableCancelBouton(true);
+            toast.error("Sélectionnez une seule ligne pour pouvoir la modifier");
+        } else {
+            setDisableModifyBouton(false);
             setDisableSaveBouton(false);
+            setDisableCancelBouton(false);
+            if (!selectedRowId.includes(params.id)) {
+                setEditableRow(false);
+                toast.error("Sélectionnez une ligne pour pouvoir la modifier");
+            } else {
+                setEditableRow(true);
+            }
         }
     };
 
     // Ajout
     const handleOpenDialogAddNewAssocie = () => {
-        if (newRow) return;
-        const newId = -(Math.max(0, ...rows.map(r => r.id || 0)) + 1);
+        // if (newRow) return;
+
+        setDisableModifyBouton(false);
+        setDisableCancelBouton(false);
+        setDisableDeleteBouton(false);
+        setDisableSaveBouton(false);
+
+        const newId = -Date.now();
+        formNewParam.setFieldValue("idParam", newId);
         const newPersonnel = {
             id: newId,
             matricule: '',
@@ -280,107 +594,61 @@ export default function PersonnelComponent() {
             id_compte: Number(compteId),
             id_dossier: Number(id),
         };
+
         setRows([...rows, newPersonnel]);
-        setNewRow(newPersonnel);
-        setEditRow(null);
         setSelectedRowId([newId]);
-        setRowModesModel({ ...rowModesModel, [newId]: { mode: GridRowModes.Edit } });
-        setDisableSaveBouton(false);
-        setDisableModifyBouton(true);
-        setDisableCancelBouton(false);
-        setDisableDeleteBouton(true);
+        setSelectedRow([newId]);
+        setDisableAddRowBouton(true);
     }
 
     // Sauvegarde
-    const handleSaveClick = (ids) => () => {
-        if (editRow) {
-            const rowToSend = {
-                ...editRow,
-                nombre_enfants_charge: parseInt(editRow.nombre_enfants_charge || '0', 10),
-            };
-            axios.put(`/administration/personnel/${editRow.id}`, rowToSend)
-                .then(res => {
-                    console.log('Response:', res.data);
-                    if (res.data && res.data.state) {
-                        fetchPersonnels();
-                        setEditRow(null);
-                        setNewRow(null);
-                        setRowModesModel({});
-                        setSelectedRowId([]);
-                        setDisableSaveBouton(true);
-                        setDisableModifyBouton(true);
-                        setDisableCancelBouton(true);
-                        setDisableDeleteBouton(true);
-                        toast.success(res.data.msg || 'Personnel modifié');
-                    } else {
-                        toast.error(res.data.msg || 'Erreur lors de la modification');
-                    }
-                })
-                .catch(() => toast.error('Erreur lors de la modification'));
-        } else if (newRow) {
-            const rowToSend = {
-                ...newRow,
-                nombre_enfants_charge: parseInt(newRow.nombre_enfants_charge || '0', 10),
-            };
-            console.log('rowToSend : ', rowToSend);
-            axios.post(`/administration/personnel`, rowToSend)
-                .then(res => {
-                    if (res.data && res.data.state) {
-                        fetchPersonnels();
-                        setEditRow(null);
-                        setNewRow(null);
-                        setRowModesModel({});
-                        setSelectedRowId([]);
-                        setDisableSaveBouton(true);
-                        setDisableModifyBouton(true);
-                        setDisableCancelBouton(true);
-                        setDisableDeleteBouton(true);
-                        toast.success(res.data.msg || 'Personnel ajouté');
-                    } else {
-                        toast.error(res.data.msg || 'Erreur lors de l\'ajout');
-                    }
-                })
-                .catch(() => toast.error('Erreur lors de l\'ajout'));
-        }
+    const handleSaveClick = (id) => () => {
+        setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
+        const dataToSend = { ...formNewParam.values, fileId, compteId };
+        axios.post(`/administration/personnel`, dataToSend).then((response) => {
+            const resData = response.data;
+            if (resData.state) {
+                setDisableAddRowBouton(false);
+                setDisableSaveBouton(true);
+                formNewParam.resetForm();
+                toast.success(resData.msg);
+                fetchPersonnels();
+            } else {
+                toast.error(resData.msg);
+            }
+        })
     };
 
     // Annulation
-    const handleCancelClick = (ids) => () => {
-        setEditRow(null);
-        setNewRow(null);
-        setRowModesModel({});
-        setSelectedRowId([]);
-        setDisableSaveBouton(true);
-        setDisableModifyBouton(true);
-        setDisableCancelBouton(true);
-        setDisableDeleteBouton(true);
-
-        if (newRow) {
-            setRows(rows.filter(r => r.id !== newRow.id));
-        }
+    const handleCancelClick = (id) => () => {
+        setRowModesModel({
+            ...rowModesModel,
+            [id]: { mode: GridRowModes.View, ignoreModifications: true },
+        });
+        setDisableAddRowBouton(false);
     };
 
     // Suppression
     const handleOpenDialogConfirmDeleteAssocieRow = () => {
         setOpenDialogDeleteRow(true);
+        setDisableAddRowBouton(false);
     }
+
     const deleteRow = (value) => {
         if (value === true && selectedRowId.length === 1) {
             const idToDelete = selectedRowId[0];
+            if (idToDelete < 0) {
+                setRows(rows.filter((row) => row.id !== idToDelete));
+                setOpenDialogDeleteRow(false);
+                setDisableAddRowBouton(false);
+                return;
+            }
             axios.delete(`/administration/personnel/${idToDelete}`)
                 .then(res => {
                     if (res.data && res.data.state) {
                         setRows(rows.filter((row) => row.id !== idToDelete));
-                        setEditRow(null);
-                        setNewRow(null);
-                        setRowModesModel({});
-                        setSelectedRowId([]);
-                        setDisableSaveBouton(true);
-                        setDisableModifyBouton(true);
-                        setDisableCancelBouton(true);
-                        setDisableDeleteBouton(true);
-                        toast.success(res.data.msg || 'Personnel supprimé');
                         setOpenDialogDeleteRow(false);
+                        setDisableAddRowBouton(false);
                     } else {
                         toast.error(res.data.msg || 'Erreur lors de la suppression');
                         setOpenDialogDeleteRow(false);
@@ -395,15 +663,9 @@ export default function PersonnelComponent() {
         }
     }
 
-    // Edition cellule
-    const processRowUpdate = (updatedRow) => {
-        console.log("Updated Row:", updatedRow);
-
-        if (editRow) {
-            setEditRow(updatedRow);
-        } else if (newRow) {
-            setNewRow(updatedRow);
-        }
+    const processRowUpdate = (newRow) => {
+        const updatedRow = { ...newRow, isNew: false };
+        setRows(rows.map((row) => (row.id === newRow.id ? updatedRow : row)));
         return updatedRow;
     };
 
@@ -411,10 +673,18 @@ export default function PersonnelComponent() {
         setRowModesModel(newRowModesModel);
     };
 
-    console.log("classifications", classifications);
-    const filteredRows = rows.filter(row =>
-        (classifications.some(c => c.id === row.id_classe) || (row.id < 0))
-    );
+    const deselectRow = (ids) => {
+        const deselected = selectedRowId.filter(id => !ids.includes(id));
+
+        const updatedRowModes = { ...rowModesModel };
+        deselected.forEach((id) => {
+            updatedRowModes[id] = { mode: GridRowModes.View, ignoreModifications: true };
+        });
+        setRowModesModel(updatedRowModes);
+
+        setDisableAddRowBouton(false);
+        setSelectedRowId(ids);
+    }
 
     return (
         <Box>
@@ -444,6 +714,7 @@ export default function PersonnelComponent() {
                             <Tooltip title="Ajouter une ligne">
                                 <span>
                                     <IconButton
+                                        disabled={disableAddRowBouton}
                                         variant="contained"
                                         onClick={handleOpenDialogAddNewAssocie}
                                         style={{
@@ -460,7 +731,7 @@ export default function PersonnelComponent() {
                             <Tooltip title="Modifier la ligne sélectionnée">
                                 <span>
                                     <IconButton
-                                        disabled={!selectedRowId.length || !isEditable(rows.find(r => r.id === selectedRowId[0]))}
+                                        disabled={disableModifyBouton}
                                         variant="contained"
                                         onClick={handleEditClick(selectedRowId)}
                                         style={{
@@ -511,7 +782,7 @@ export default function PersonnelComponent() {
                             <Tooltip title="Supprimer la ligne sélectionnée">
                                 <span>
                                     <IconButton
-                                        disabled={!selectedRowId.length || !isEditable(rows.find(r => r.id === selectedRowId[0]))}
+                                        disabled={disableDeleteBouton}
                                         onClick={handleOpenDialogConfirmDeleteAssocieRow}
                                         variant="contained"
                                         style={{
@@ -530,39 +801,80 @@ export default function PersonnelComponent() {
                             <DataGrid
                                 rows={rows}
                                 columns={personnelsColumns}
-                                autoHeight
-                                pageSizeOptions={[5, 10, 20, 100]}
                                 disableMultipleSelection={DataGridStyle.disableMultipleSelection}
                                 disableColumnSelector={DataGridStyle.disableColumnSelector}
                                 disableDensitySelector={DataGridStyle.disableDensitySelector}
+                                localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
                                 disableRowSelectionOnClick
                                 disableSelectionOnClick={true}
-                                localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
                                 slots={{ toolbar: QuickFilter }}
-                                sx={DataGridStyle.sx}
+                                sx={{
+                                    ...DataGridStyle.sx,
+                                    '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+                                        outline: 'none',
+                                        border: 'none',
+                                    },
+                                    '& .MuiDataGrid-virtualScroller': {
+                                        maxHeight: '100%',
+                                    },
+                                }}
                                 rowHeight={DataGridStyle.rowHeight}
                                 columnHeaderHeight={DataGridStyle.columnHeaderHeight}
                                 editMode='row'
+                                onRowClick={(e) => handleCellEditCommit(e.row)}
                                 onRowSelectionModelChange={ids => {
+                                    setSelectedRow(ids);
                                     saveSelectedRow(ids);
+                                    deselectRow(ids);
                                 }}
                                 rowModesModel={rowModesModel}
                                 onRowModesModelChange={handleRowModesModelChange}
+                                onRowEditStop={handleRowEditStop}
                                 processRowUpdate={processRowUpdate}
                                 initialState={{
                                     pagination: {
                                         paginationModel: { page: 0, pageSize: 100 },
                                     },
                                 }}
-                                experimentalFeatures={{ newEditingApi: true }}
+                                pageSizeOptions={[50, 100]}
                                 pagination={DataGridStyle.pagination}
                                 checkboxSelection={DataGridStyle.checkboxSelection}
                                 columnVisibilityModel={{
                                     id: false,
                                 }}
-                                getRowClassName={(params) =>
-                                    !isEditable(params.row) ? 'row-non-editable' : ''
-                                }
+                                rowSelectionModel={selectedRow}
+                                onRowEditStart={(params, event) => {
+                                    if (!selectedRow.length || selectedRow[0] !== params.id) {
+                                        event.defaultMuiPrevented = true;
+                                    }
+                                    if (selectedRow.includes(params.id)) {
+                                        setDisableAddRowBouton(true);
+                                        event.stopPropagation();
+
+                                        const rowId = params.id;
+                                        const rowData = params.row;
+
+                                        formNewParam.setFieldValue("idParam", rowId);
+                                        formNewParam.setFieldValue("matricule", rowData.matricule ?? '');
+                                        formNewParam.setFieldValue("nom", rowData.nom ?? '');
+                                        formNewParam.setFieldValue("prenom", rowData.prenom ?? '');
+                                        formNewParam.setFieldValue("id_fonction", rowData.id_fonction ?? null);
+                                        formNewParam.setFieldValue("id_classe", rowData.id_classe ?? null);
+                                        formNewParam.setFieldValue("numero_cnaps", rowData.numero_cnaps ?? '');
+                                        formNewParam.setFieldValue("cin_ou_carte_resident", rowData.cin_ou_carte_resident ?? '');
+                                        formNewParam.setFieldValue("nombre_enfants_charge", rowData.nombre_enfants_charge ?? 0);
+                                        formNewParam.setFieldValue("date_entree", rowData.date_entree ?? '');
+                                        formNewParam.setFieldValue("date_sortie", rowData.date_sortie ?? '');
+                                        formNewParam.setFieldValue("actif", rowData.actif ?? false);
+
+                                        setRowModesModel((oldModel) => ({
+                                            ...oldModel,
+                                            [rowId]: { mode: GridRowModes.Edit },
+                                        }));
+
+                                        setDisableSaveBouton(false);
+                                    }
+                                }}
                             />
                         </Stack>
                     </Stack>

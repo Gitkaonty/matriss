@@ -61,6 +61,9 @@ export default function ConsultationComponent() {
     const [filteredList, setFilteredList] = useState(null);
     const [listePlanComptable, setListePlanComptable] = useState([]);
     const [listePlanComptableInitiale, setListePlanComptableInitiale] = useState([]);
+    const [listeCodeJournaux, setListeCodeJournaux] = useState([]);
+    const [listeDevise, setListeDevise] = useState([]);
+    const [listeAnnee, setListeAnnee] = useState([]);
 
     const [filtrageCompte, setFiltrageCompte] = useState("0")
 
@@ -172,7 +175,6 @@ export default function ConsultationComponent() {
     const getPc = () => {
         axios.get(`/paramPlanComptable/PcIdLibelle/${compteId}/${id}`).then((response) => {
             const resData = response.data;
-            console.log("Liste plan comptable : ", resData);
             if (resData.state) {
                 setListePlanComptable(resData.liste);
                 setListePlanComptableInitiale(resData.liste);
@@ -209,7 +211,7 @@ export default function ConsultationComponent() {
                 const rawDate = params.value;
                 const dateObj = new Date(rawDate);
 
-                if (isNaN(dateObj.getTime())) return ""; // sécurité si mauvaise date
+                if (isNaN(dateObj.getTime())) return "";
 
                 const day = String(dateObj.getDate()).padStart(2, '0');
                 const month = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -549,6 +551,53 @@ export default function ConsultationComponent() {
     const soldeStr = calculateDebitCredit(selectedRows).solde.replace(/\s/g, '').replace(',', '.');
     const solde = parseFloat(soldeStr);
 
+    //Récupération données liste code journaux
+    const GetListeCodeJournaux = () => {
+        axios.get(`/paramCodeJournaux/listeCodeJournaux/${fileId}`).then((response) => {
+            const resData = response.data;
+            if (resData.state) {
+                setListeCodeJournaux(resData.list);
+            } else {
+                setListeCodeJournaux([]);
+                toast.error(resData.msg);
+            }
+        })
+    }
+
+    //Récupération données liste des devises
+    const getListeDevises = () => {
+        axios.get(`/devises/devise/compte/${compteId}/${fileId}`).then((response) => {
+            const resData = response.data;
+            setListeDevise(response.data);
+        })
+    }
+
+    //Recupérer l'année min et max de l'éxercice
+    const getAnneesEntreDeuxDates = (dateDebut, dateFin) => {
+        const debut = new Date(dateDebut).getFullYear();
+        const fin = new Date(dateFin).getFullYear();
+        const annees = [];
+
+        for (let annee = debut; annee <= fin; annee++) {
+            annees.push(annee);
+        }
+
+        return annees;
+    };
+
+    //Récupération la liste des exercices BY ID EXERCICE
+    const getDateDebutFinExercice = () => {
+        axios.get(`/paramExercice/listeExerciceById/${selectedExerciceId}`).then((response) => {
+            const resData = response.data;
+            if (resData.state) {
+                const annee = getAnneesEntreDeuxDates(resData.list.date_debut, resData.list.date_fin)
+                setListeAnnee(annee)
+            } else {
+                setListeAnnee([])
+            }
+        })
+    }
+
     // Liste saisie
     useEffect(() => {
         getListeSaisie();
@@ -591,6 +640,13 @@ export default function ConsultationComponent() {
     useEffect(() => {
         getPc()
     }, [id, compteId])
+
+    useEffect(() => {
+        if (fileId && compteId) {
+            GetListeCodeJournaux();
+            getListeDevises();
+        }
+    }, [fileId, compteId]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -664,6 +720,13 @@ export default function ConsultationComponent() {
         }
     }, [valSelectedCompte]);
 
+    // Liste des années
+    useEffect(() => {
+        if (selectedExerciceId) {
+            getDateDebutFinExercice();
+        }
+    }, [selectedExerciceId])
+
     return (
         // <Paper elevation={3} sx={{ margin: "5px", padding: "0px", width: "99%", height: "98%" }}>
         <Box >
@@ -677,6 +740,11 @@ export default function ConsultationComponent() {
                     setRefresh={() => setIsRefreshed(!isRefresehed)}
                     setRowSelectionModel={() => setRowSelectionModel([])}
                     type={'modification'}
+                    listeCodeJournaux={listeCodeJournaux}
+                    listePlanComptable={listePlanComptableInitiale}
+                    listeAnnee={listeAnnee}
+                    listeDevise={listeDevise}
+                    setSelectedRowsSaisie={() => setSelectedRows([])}
                 /> : null}
             <TabContext value={"1"} >
                 <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -950,7 +1018,7 @@ export default function ConsultationComponent() {
                                 marginLeft: "0px",
                                 marginTop: "20px",
                             }}
-                            height={"500px"}>
+                            height={"600px"}>
                             <DataGrid
                                 disableMultipleSelection={DataGridStyle.disableMultipleSelection}
                                 disableColumnSelector={DataGridStyle.disableColumnSelector}
@@ -983,10 +1051,12 @@ export default function ConsultationComponent() {
                                 columnVisibilityModel={{
                                     id: false,
                                 }}
-                                // rowSelectionModel={rowSelectionModel}
+                                rowSelectionModel={rowSelectionModel}
                                 onRowSelectionModelChange={(ids) => {
                                     const selectedData = rowsAvecSolde.filter((row) => ids.includes(row.id));
                                     setSelectedRows(selectedData);
+                                    const newRowIds = selectedData.map(row => row.id);
+                                    setRowSelectionModel(newRowIds);
                                 }}
                             />
                         </Stack>
@@ -997,7 +1067,7 @@ export default function ConsultationComponent() {
                                 <span>
                                     Débit : <strong
                                         style={{
-                                            color: '#FF8A8A' // couleur du texte
+                                            color: '#FF8A8A'
                                         }}
                                     >
                                         {calculateDebitCredit(selectedRows).debit}

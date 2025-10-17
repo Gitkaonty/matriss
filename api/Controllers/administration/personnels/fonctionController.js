@@ -30,9 +30,64 @@ exports.getOne = async (req, res) => {
 // Ajout d'une fonction
 exports.create = async (req, res) => {
   try {
-    const { nom, id_dossier, id_compte } = req.body;
-    const fonction = await Fonction.create({ nom, id_dossier, id_compte });
-    return res.json({ state: true, msg: 'Fonction ajoutée', data: fonction });
+    const { nom, fileId, compteId, idFonction } = req.body;
+
+    let resData = {
+      state: false,
+      msg: 'Une erreur est survenue au moment du traitement.',
+    }
+
+    if (!fileId || !compteId || !nom || !idFonction) {
+      return res.json({ state: false, msg: 'Champs obligatoires manquants' });
+    }
+
+    const id_compte = parseInt(compteId);
+    const id_dossier = parseInt(fileId);
+    const id = parseInt(idFonction);
+
+    if (isNaN(id) || isNaN(id_compte) || isNaN(id_dossier)) {
+      return res.status(400).json({
+        state: false,
+        message: "id_compte ou id_dossier invalide"
+      });
+    }
+
+    const testIfExist = await Fonction.findAll({
+      where: {
+        id,
+        id_compte,
+        id_dossier,
+      }
+    })
+
+    if (testIfExist.length === 0) {
+      const fonctionAdded = await Fonction.create({
+        id_compte,
+        id_dossier,
+        nom
+      })
+      if (fonctionAdded) {
+        resData.state = true;
+        resData.msg = "Nouvelle ligne sauvegardée avec succès.";
+      } else {
+        resData.state = false;
+        resData.msg = "Une erreur est survenue au moment du traitement des données";
+      }
+    } else {
+      const fonctionUpdated = await Fonction.update({
+        nom,
+      }, {
+        where: { id }
+      });
+      if (fonctionUpdated) {
+        resData.state = true;
+        resData.msg = "Modification effectuée avec succès.";
+      } else {
+        resData.state = false;
+        resData.msg = "Une erreur est survenue au moment du traitement des données";
+      }
+    }
+    return res.json(resData);
   } catch (error) {
     if (error.name === 'SequelizeUniqueConstraintError') {
       return res.json({ state: false, msg: 'Cette fonction existe déjà.' });

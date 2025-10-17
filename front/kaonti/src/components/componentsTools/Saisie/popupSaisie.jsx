@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { Typography, Stack, Box, Button, Divider } from '@mui/material';
+import { Typography, Stack, Box, Button, Divider, DialogTitle } from '@mui/material';
 import { TabContext, TabPanel } from '@mui/lab';
 import { styled } from '@mui/material/styles';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
 import { init } from '../../../../init';
@@ -20,21 +19,12 @@ import OptionJoy from '@mui/joy/Option';
 import SelectJoy from '@mui/joy/Select';
 import InputJoy from '@mui/joy/Input';
 import { DataGridStyle } from '../DatagridToolsStyle';
-import { DataGrid, frFR, useGridApiRef } from '@mui/x-data-grid';
+import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes, useGridApiRef } from '@mui/x-data-grid';
 import QuickFilter from '../DatagridToolsStyle';
-
-import ClearIcon from '@mui/icons-material/Clear';
-import InputAdornment from '@mui/material/InputAdornment';
-
 import { useFormik } from 'formik';
-import { Autocomplete, TextField } from '@mui/material';
 import PopupConfirmDelete from '../popupConfirmDelete';
 import FormatedInput from '../FormatedInput';
 import Tooltip from '@mui/material/Tooltip';
-import { IoAddSharp } from "react-icons/io5";
-import { GoX } from "react-icons/go";
-
-import { GridPagination } from '@mui/x-data-grid';
 import DropPDFUploader from '../FileUploader/DropPdfUploader';
 
 import toast from 'react-hot-toast';
@@ -43,24 +33,15 @@ import axios from '../../../../config/axios';
 import useAuth from '../../../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
 
+import { IoMdTrash } from "react-icons/io";
+import { TbPlaylistAdd } from "react-icons/tb";
+import { FaRegPenToSquare } from "react-icons/fa6";
+import { VscClose } from 'react-icons/vsc';
+import { TfiSave } from 'react-icons/tfi';
+import { PiKeyboardDuotone } from "react-icons/pi";
+import { getSaisieColumnHeader } from './saisieColumns';
+
 let initial = init[0];
-
-function createData(id, jour, compte, num_facture, piece, libelle, debit, credit) {
-    return {
-        id,
-        jour,
-        compte,
-        piece,
-        libelle,
-        num_facture,
-        debit,
-        credit,
-    };
-}
-
-const rows = [
-    createData(-1, null, null, null, null, null, 0, 0),
-];
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialogContent-root': {
@@ -71,19 +52,26 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     },
 }));
 
-const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh, type, rowsEdit, setRowSelectionModel }) => {
+const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh, type, rowsEdit, setRowSelectionModel, listeCodeJournaux, listePlanComptable, listeAnnee, listeDevise, setSelectedRowsSaisie }) => {
     const [taux, setTaux] = useState(rowsEdit[0]?.taux || 0);
     const selectRef = useRef();
-    const [listeAnnee, setListeAnnee] = useState([]);
-    const [listeDevise, setListeDevise] = useState([]);
-    const [listePlanComptable, setListePlanComptable] = useState([]);
 
-    const [tableRows, setTableRows] = useState(type === 'ajout' ? rows : rowsEdit);
+    const [tableRows, setTableRows] = useState(type === 'ajout' ? [] : rowsEdit);
+
+    const [disableModifyBouton, setDisableModifyBouton] = useState(true);
+    const [disableCancelBouton, setDisableCancelBouton] = useState(true);
+    const [disableSaveBouton, setDisableSaveBouton] = useState(true);
+    const [disableDeleteBouton, setDisableDeleteBouton] = useState(true);
+    const [disableAddRowBouton, setDisableAddRowBouton] = useState(false);
+
+    const [selectedRow, setSelectedRow] = useState([]);
+    const [selectedRowId, setSelectedRowId] = useState([]);
+    const [rowModesModel, setRowModesModel] = useState({});
+    const [editableRow, setEditableRow] = useState(true);
+
     const [invalidRows, setInvalidRows] = useState([]);
 
     const [deletedRowIds, setDeletedRowIds] = useState([]);
-
-    const [listeCodeJournaux, setListeCodeJournaux] = useState([]);
 
     const [openDialogDeleteSaisie, setOpenDialogDeleteSaisie] = useState(false);
 
@@ -100,67 +88,41 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
     //Fichier importé
     const [file, setFile] = useState(type === 'ajout' ? null : rowsEdit[0]?.fichier);
 
-    //Id du ligne à supprimer
-    const [selectedIdToDelete, setSelectedIdToDelete] = useState(null);
-
     const handleClose = () => {
         confirmationState(false);
+        setSelectedRowsSaisie();
+        setRowSelectionModel();
     }
 
-    //Supprimer la ligne pour ajout
-    const handleDeleteRowAdd = (value) => {
-        exitEditingToDatagrid();
+    //Supprimer la ligne
+    const handleDeleteRow = (value) => {
         if (value) {
-            setTableRows((prevRows) => prevRows.filter((row) => row.id !== selectedIdToDelete));
+            setDisableAddRowBouton(false);
+            setDisableSaveBouton(true);
+
+            setDeletedRowIds((prev) => [...prev, ...selectedRowId]);
+
+            setTableRows((prevRows) =>
+                prevRows.filter((row) => !selectedRowId.includes(row.id))
+            );
+
             setOpenDialogDeleteSaisie(false);
         } else {
             setOpenDialogDeleteSaisie(false);
         }
     };
-
-    const handleDeleteRowEdit = (value) => {
-        exitEditingToDatagrid();
-        if (value) {
-            setTableRows((prevRows) => prevRows.filter((row) => row.id !== selectedIdToDelete));
-            setOpenDialogDeleteSaisie(false);
-            if (selectedIdToDelete > 0) {
-                setDeletedRowIds(prev => [...prev, selectedIdToDelete]);
-            }
-        } else {
-            setOpenDialogDeleteSaisie(false);
-        }
-    };
-
-    const handleDeleteRow = type === 'ajout' ? handleDeleteRowAdd : handleDeleteRowEdit;
 
     //Formik ajout saisie
-    const formSaisieAjout = useFormik({
+    const formSaisie = useFormik({
         initialValues: {
-            valSelectCodeJnl: "",
-            valSelectMois: "",
-            valSelectAnnee: "",
-            choixDevise: 'MGA',
-            taux: taux,
-            currency: "",
-            tableRows: [],
-            file: null,
-            id_dossier: fileId,
-            id_compte: compteId,
-            id_exercice: selectedExerciceId,
-            id_devise: '',
-        }
-    })
-
-    const formSaisieModification = useFormik({
-        initialValues: {
-            valSelectCodeJnl: parseInt(rowsEdit[0]?.id_journal),
-            valSelectMois: parseInt(rowsEdit[0]?.dateecriture?.split('-')[1]),
-            valSelectAnnee: rowsEdit[0]?.dateecriture?.split('-')[0],
-            choixDevise: (rowsEdit[0]?.devise === 'MGA' || rowsEdit[0]?.devise === "") ? 'MGA' : 'Devises',
+            valSelectCodeJnl: parseInt(rowsEdit[0]?.id_journal) || "",
+            valSelectMois: parseInt(rowsEdit[0]?.dateecriture?.split('-')[1]) || "",
+            valSelectAnnee: rowsEdit[0]?.dateecriture?.split('-')[0] || "",
+            choixDevise: rowsEdit[0]?.devise || 'MGA',
             taux: rowsEdit[0]?.taux || taux,
             currency: rowsEdit[0]?.devise || "",
             tableRows: [],
-            file: rowsEdit[0]?.fichier,
+            file: rowsEdit[0]?.fichier || null,
             id_dossier: fileId,
             id_compte: compteId,
             id_exercice: selectedExerciceId,
@@ -168,1189 +130,315 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
         }
     })
 
-    const formSaisie = type === 'ajout' ? formSaisieAjout : formSaisieModification;
-
-    const getSaisieColumnHeader = () => {
-        const columns = [
-            // Colonnes de base : jour, compte, piece, libelle
-            {
-                field: 'jour',
-                headerName: 'Jour',
-                type: 'number',
-                editable: true,
-                sortable: true,
-                // width: 60,
-                flex: 0.4,
-                headerAlign: 'left',
-                align: 'left',
-                headerClassName: 'HeaderbackColor',
-                renderEditCell: (params) => {
-                    const selectedMonth = parseInt(formSaisie.values.valSelectMois); // 1-12
-                    const selectedYear = parseInt(formSaisie.values.valSelectAnnee) || new Date().getFullYear();
-                    const maxDay = (selectedMonth >= 1 && selectedMonth <= 12)
-                        ? new Date(selectedYear, selectedMonth, 0).getDate()
-                        : 31;
-
-                    return (
-                        <TextField
-                            size="small"
-                            type="number"
-                            name="jour"
-                            fullWidth
-                            value={params.value ?? ''}
-                            onChange={(event) => {
-                                const inputValue = event.target.value;
-
-                                // 1. Suppression totale (champ vide)
-                                if (inputValue === '') {
-                                    params.api.setEditCellValue({
-                                        id: params.id,
-                                        field: 'jour',
-                                        value: '',
-                                    });
-
-                                    // Garde ou ajoute "jour" dans les erreurs si champ vide
-                                    setInvalidRows((prev) => {
-                                        const exists = prev.find(r => r.id === params.id);
-                                        if (exists) {
-                                            if (!exists.fields.includes('jour')) {
-                                                return prev.map(r =>
-                                                    r.id === params.id ? { ...r, fields: [...r.fields, 'jour'] } : r
-                                                );
-                                            }
-                                            return prev;
-                                        } else {
-                                            return [...prev, { id: params.id, fields: ['jour'] }];
-                                        }
-                                    });
-
-                                    return;
-                                }
-
-                                // 2. Conversion en entier
-                                const intValue = parseInt(inputValue);
-
-                                // 3. Si valeur valide entre 1 et maxDay
-                                if (!isNaN(intValue) && intValue >= 1 && intValue <= maxDay) {
-                                    params.api.setEditCellValue({
-                                        id: params.id,
-                                        field: 'jour',
-                                        value: intValue,
-                                    });
-
-                                    // Supprimer l'erreur "jour" s’il y en avait une
-                                    setInvalidRows((prev) => {
-                                        const row = prev.find(r => r.id === params.id);
-                                        if (!row) return prev;
-
-                                        const updatedFields = row.fields.filter(f => f !== 'jour');
-                                        if (updatedFields.length === 0) {
-                                            return prev.filter(r => r.id !== params.id);
-                                        }
-                                        return prev.map(r =>
-                                            r.id === params.id ? { ...r, fields: updatedFields } : r
-                                        );
-                                    });
-                                }
-                            }}
-
-                            inputProps={{
-                                min: 1,
-                                max: maxDay,
-                                step: 1,
-                            }}
-                            sx={{
-                                '& input[type=number]': {
-                                    MozAppearance: 'textfield',
-                                },
-                                '& input[type=number]::-webkit-outer-spin-button': {
-                                    WebkitAppearance: 'none',
-                                    margin: 0,
-                                },
-                                '& input[type=number]::-webkit-inner-spin-button': {
-                                    WebkitAppearance: 'none',
-                                    margin: 0,
-                                },
-                                textAlign: 'center',
-                            }}
-                        />
-                    );
-                },
-                cellClassName: (params) => {
-                    const classes = [];
-
-                    //Appliquer l'erreur uniquement sur le champ "jour"
-                    const rowInvalid = invalidRows.find(row => row.id === params.id);
-                    if (params.field === 'jour' && rowInvalid?.fields.includes('jour')) {
-                        classes.push('cell-error');
-                    }
-
-                    //Appliquer la sélection uniquement sur la cellule "jour"
-                    if (selectedCell.id === params.id && selectedCell.field === 'jour') {
-                        classes.push('cell-selected');
-                    }
-
-                    return classes.join(' ');
-                },
-            }, {
-                field: 'compte',
-                headerName: 'Compte',
-                editable: true,
-                // width: 500,
-                flex: 0.8,
-                renderEditCell: (params) => {
-                    const options = listePlanComptable.map((pc) => ({
-                        label: `${pc.compte} - ${pc.libelle}`,
-                        value: pc.id,
-                        key: pc.id
-                    }));
-
-                    const currentValue = options.find(opt => opt.value === params.value) || null;
-
-                    const handleClear = () => {
-                        params.api.setEditCellValue({
-                            id: params.id,
-                            field: 'compte',
-                            value: null,
-                        });
-
-                        if (type === 'ajout') {
-                            params.api.setEditCellValue({
-                                id: params.id,
-                                field: 'libelle',
-                                value: '',
-                            });
-                        }
-                    };
-
-                    return (
-                        <Autocomplete
-                            key={params.id}
-                            autoHighlight
-                            options={options}
-                            getOptionLabel={(option) => option.label}
-                            value={currentValue}
-                            onChange={(e, newValue) => {
-                                const newCompteId = newValue ? newValue.value : null;
-                                const libelleAssocie1 = newValue ? newValue.label.split(' - ')[1] : '';
-
-                                params.api.setEditCellValue({
-                                    id: params.id,
-                                    field: 'compte',
-                                    value: newCompteId,
-                                }, e);
-
-                                if (type === 'ajout') {
-                                    params.api.setEditCellValue({
-                                        id: params.id,
-                                        field: 'libelle',
-                                        value: libelleAssocie1,
-                                    }, e);
-                                }
-
-                                if (newCompteId) {
-                                    setInvalidRows((prevInvalidRows) => {
-                                        const row = prevInvalidRows.find(r => r.id === params.id);
-                                        if (!row) return prevInvalidRows;
-
-                                        const newFields = row.fields.filter(f => f !== 'compte' && f !== 'libelle');
-                                        if (newFields.length === 0) {
-                                            return prevInvalidRows.filter(r => r.id !== params.id);
-                                        }
-                                        return prevInvalidRows.map(r =>
-                                            r.id === params.id ? { ...r, fields: newFields } : r
-                                        );
-                                    });
-                                }
-                            }}
-                            noOptionsText="Aucun compte trouvé"
-                            renderInput={(paramsInput) => (
-                                <TextField
-                                    {...paramsInput}
-                                    variant="standard"
-                                    placeholder="Choisir un compte"
-                                    fullWidth
-                                    InputProps={{
-                                        ...paramsInput.InputProps,
-                                        disableUnderline: true,
-                                        endAdornment: (
-                                            <>
-                                                {paramsInput.InputProps.endAdornment}
-                                                {currentValue && (
-                                                    <InputAdornment position="end">
-                                                        <IconButton onClick={handleClear} size="small">
-                                                            <ClearIcon fontSize="small" />
-                                                        </IconButton>
-                                                    </InputAdornment>
-                                                )}
-                                            </>
-                                        )
-                                    }}
-                                    style={{ width: 500 }}
-                                />
-                            )}
-                        />
-                    );
-                },
-                cellClassName: (params) => {
-                    const classes = [];
-
-                    //Gestion des erreurs
-                    const rowInvalid = invalidRows.find(row => row.id === params.id);
-                    const compte = Number(params.row.compte) || null;
-
-                    if (rowInvalid && rowInvalid.fields.includes('compte')) {
-                        classes.push('cell-error');
-                    }
-
-                    //Mise en surbrillance de la cellule sélectionnée
-                    if (selectedCell.id === params.id && selectedCell.field === 'compte') {
-                        classes.push('cell-selected');
-                    }
-
-                    return classes.join(' ');
-                },
-                renderCell: (params) => {
-                    const pc = listePlanComptable.find((item) => item.id === params.value);
-
-                    if (!pc) return params.value || ''; // si non trouvé affiche id ou rien
-
-                    return `${pc.compte}`;
-                },
-            },
-            {
-                field: 'piece',
-                headerName: 'Pièce',
-                type: 'string',
-                sortable: true,
-                editable: true,
-                flex: 1.3,
-                headerAlign: 'left',
-                align: 'left',
-                headerClassName: 'HeaderbackColor',
-
-                renderEditCell: (params) => {
-                    return (
-                        <TextField
-                            variant="standard"
-                            defaultValue={params.value}
-                            fullWidth
-                            InputProps={{
-                                disableUnderline: true,
-                            }}
-                            sx={{
-                                backgroundColor: 'white',
-                                border: 'none',
-                                outline: 'none',
-                                '& input': {
-                                    padding: '4px 8px',
-                                    outline: 'none',
-                                    border: 'none',
-                                    boxShadow: 'none',
-                                },
-                                '& input:focus': {
-                                    outline: 'none',
-                                    border: 'none',
-                                    boxShadow: 'none',
-                                },
-                                '&.Mui-focused': {
-                                    outline: 'none',
-                                    border: 'none',
-                                    boxShadow: 'none',
-                                },
-                                '& .MuiInput-root:before, & .MuiInput-root:after': {
-                                    borderBottom: 'none !important',
-                                },
-                            }}
-                            onChange={(e) => {
-                                const value = e.target.value;
-
-                                // Met à jour la valeur dans la table
-                                params.api.setEditCellValue({
-                                    id: params.id,
-                                    field: 'piece',
-                                    value: value,
-                                }, e);
-
-                                //Met à jour les erreurs
-                                setInvalidRows((prev) => {
-                                    const row = prev.find(r => r.id === params.id);
-
-                                    if (value.trim() === '') {
-                                        // Ajoute l’erreur si champ vide
-                                        if (row) {
-                                            if (!row.fields.includes('piece')) {
-                                                return prev.map(r =>
-                                                    r.id === params.id ? { ...r, fields: [...r.fields, 'piece'] } : r
-                                                );
-                                            }
-                                            return prev;
-                                        } else {
-                                            return [...prev, { id: params.id, fields: ['piece'] }];
-                                        }
-                                    } else {
-                                        // Supprime l’erreur si valeur valide
-                                        if (!row) return prev;
-
-                                        const updatedFields = row.fields.filter(f => f !== 'piece');
-                                        if (updatedFields.length === 0) {
-                                            return prev.filter(r => r.id !== params.id);
-                                        }
-
-                                        return prev.map(r =>
-                                            r.id === params.id ? { ...r, fields: updatedFields } : r
-                                        );
-                                    }
-                                });
-                            }}
-                        />
-                    );
-                },
-
-                cellClassName: (params) => {
-                    const classes = [];
-
-                    // Appliquer l'erreur uniquement sur le champ "piece"
-                    // const rowInvalid = invalidRows.find(row => row.id === params.id);
-                    // if (params.field === 'piece' && rowInvalid?.fields.includes('piece')) {
-                    //     classes.push('cell-error');
-                    // }
-
-                    // Appliquer la sélection uniquement sur la cellule "piece"
-                    if (selectedCell.id === params.id && selectedCell.field === 'piece') {
-                        classes.push('cell-selected');
-                    }
-
-                    return classes.join(' ');
-                },
-            }, {
-                field: 'libelle',
-                headerName: 'Libellé',
-                type: 'string',
-                sortable: true,
-                editable: true,
-                flex: 1.35,
-                headerAlign: 'left',
-                align: 'left',
-                headerClassName: 'HeaderbackColor',
-
-                renderEditCell: (params) => {
-                    return (
-                        <TextField
-                            variant="standard"
-                            defaultValue={params.value}
-                            fullWidth
-                            InputProps={{
-                                disableUnderline: true, //Supprimer le soulignement noir par défaut
-                            }}
-                            sx={{
-                                backgroundColor: 'white',
-                                border: 'none',
-                                outline: 'none',
-                                '& input': {
-                                    padding: '4px 8px',
-                                    outline: 'none',
-                                    border: 'none',
-                                    boxShadow: 'none',
-                                },
-                                '& input:focus': {
-                                    outline: 'none',
-                                    border: 'none',
-                                    boxShadow: 'none',
-                                },
-                                '& input:focus-visible': {
-                                    outline: 'none !important',
-                                },
-                                '&.Mui-focused': {
-                                    outline: 'none',
-                                    border: 'none',
-                                    boxShadow: 'none',
-                                },
-                                '& .MuiInput-root:before, & .MuiInput-root:after': {
-                                    borderBottom: 'none !important',
-                                },
-                            }}
-
-
-                            onChange={(e) => {
-                                const value = e.target.value;
-
-                                //Met à jour la valeur dans la table
-                                params.api.setEditCellValue({
-                                    id: params.id,
-                                    field: 'libelle',
-                                    value: value,
-                                }, e);
-
-                                // Mise à jour dynamique des erreurs
-                                setInvalidRows((prev) => {
-                                    const row = prev.find(r => r.id === params.id);
-
-                                    if (value.trim() === '') {
-                                        // Ajoute l’erreur si vide
-                                        if (row) {
-                                            if (!row.fields.includes('libelle')) {
-                                                return prev.map(r =>
-                                                    r.id === params.id
-                                                        ? { ...r, fields: [...r.fields, 'libelle'] }
-                                                        : r
-                                                );
-                                            }
-                                            return prev;
-                                        } else {
-                                            return [...prev, { id: params.id, fields: ['libelle'] }];
-                                        }
-                                    } else {
-                                        // Supprime l’erreur si rempli
-                                        if (!row) return prev;
-
-                                        const updatedFields = row.fields.filter(f => f !== 'libelle');
-                                        if (updatedFields.length === 0) {
-                                            return prev.filter(r => r.id !== params.id);
-                                        }
-
-                                        return prev.map(r =>
-                                            r.id === params.id
-                                                ? { ...r, fields: updatedFields }
-                                                : r
-                                        );
-                                    }
-                                });
-                            }}
-                        />
-                    );
-                },
-                cellClassName: (params) => {
-                    const classes = [];
-
-                    const rowInvalid = invalidRows.find(row => row.id === params.id);
-                    if (params.field === 'libelle' && rowInvalid?.fields.includes('libelle')) {
-                        classes.push('cell-error');
-                    }
-
-                    if (selectedCell.id === params.id && selectedCell.field === 'libelle') {
-                        classes.push('cell-selected');
-                    }
-
-                    return classes.join(' ');
-                }
-            },
-            {
-                field: 'num_facture',
-                headerName: 'N° Facture',
-                type: 'string',
-                sortable: true,
-                editable: true,
-                flex: 1.3,
-                headerAlign: 'left',
-                align: 'left',
-                headerClassName: 'HeaderbackColor',
-
-                renderEditCell: (params) => {
-                    return (
-                        <TextField
-                            variant="standard"
-                            defaultValue={params.value}
-                            fullWidth
-                            InputProps={{
-                                disableUnderline: true,
-                            }}
-                            sx={{
-                                backgroundColor: 'white',
-                                border: 'none',
-                                outline: 'none',
-                                '& input': {
-                                    padding: '4px 8px',
-                                    outline: 'none',
-                                    border: 'none',
-                                    boxShadow: 'none',
-                                },
-                                '& input:focus': {
-                                    outline: 'none',
-                                    border: 'none',
-                                    boxShadow: 'none',
-                                },
-                                '&.Mui-focused': {
-                                    outline: 'none',
-                                    border: 'none',
-                                    boxShadow: 'none',
-                                },
-                                '& .MuiInput-root:before, & .MuiInput-root:after': {
-                                    borderBottom: 'none !important',
-                                },
-                            }}
-                            onChange={(e) => {
-                                const value = e.target.value;
-
-                                // Met à jour la valeur dans la table
-                                params.api.setEditCellValue({
-                                    id: params.id,
-                                    field: 'num_facture',
-                                    value: value,
-                                }, e);
-
-                                //Met à jour les erreurs
-                                setInvalidRows((prev) => {
-                                    const row = prev.find(r => r.id === params.id);
-
-                                    if (value.trim() === '') {
-                                        // Ajoute l’erreur si champ vide
-                                        if (row) {
-                                            if (!row.fields.includes('num_facture')) {
-                                                return prev.map(r =>
-                                                    r.id === params.id ? { ...r, fields: [...r.fields, 'num_facture'] } : r
-                                                );
-                                            }
-                                            return prev;
-                                        } else {
-                                            return [...prev, { id: params.id, fields: ['num_facture'] }];
-                                        }
-                                    } else {
-                                        // Supprime l’erreur si valeur valide
-                                        if (!row) return prev;
-
-                                        const updatedFields = row.fields.filter(f => f !== 'num_facture');
-                                        if (updatedFields.length === 0) {
-                                            return prev.filter(r => r.id !== params.id);
-                                        }
-
-                                        return prev.map(r =>
-                                            r.id === params.id ? { ...r, fields: updatedFields } : r
-                                        );
-                                    }
-                                });
-                            }}
-                        />
-                    );
-                },
-
-                cellClassName: (params) => {
-                    const classes = [];
-
-                    // Appliquer l'erreur uniquement sur le champ "num_facture"
-                    // const rowInvalid = invalidRows.find(row => row.id === params.id);
-                    // if (params.field === 'num_facture' && rowInvalid?.fields.includes('num_facture')) {
-                    //     classes.push('cell-error');
-                    // }
-
-                    // Appliquer la sélection uniquement sur la cellule "num_facture"
-                    if (selectedCell.id === params.id && selectedCell.field === 'num_facture') {
-                        classes.push('cell-selected');
-                    }
-
-                    return classes.join(' ');
-                },
-            }
-        ];
-
-        // Si l'utilisateur sélectionne "Devises", ajouter deux colonnes
-        if (formSaisie.values.choixDevise === 'Devises') {
-            columns.push({
-                field: 'montant_devise',
-                headerName: 'Montant en Devise',
-                editable: true,
-                headerAlign: 'right',
-                align: 'right',
-                flex: 1.3,
-                renderEditCell: (params) => {
-                    const debit = params.row.debit;
-                    const credit = params.row.credit;
-                    return (
-                        <TextField
-                            size="small"
-                            name="montant_devise"
-                            fullWidth
-                            value={params.value ?? ''}
-                            onChange={(event) => {
-                                const rawValue = event.target.value ?? '';
-                                const cleaned = rawValue.toString().replace(/\s/g, '').replace(',', '.');
-                                const numeric = Number(cleaned);
-
-                                if (!isNaN(numeric)) {
-                                    params.api.setEditCellValue({
-                                        id: params.id,
-                                        field: 'montant_devise',
-                                        value: numeric,
-                                    }, event);
-                                    const isDebitEmpty = debit === 0 || debit === '' || debit === null || debit === undefined;
-                                    const isCreditEmpty = credit === 0 || credit === '' || credit === null || credit === undefined;
-                                    if (isDebitEmpty && isCreditEmpty) {
-                                        params.api.setEditCellValue({
-                                            id: params.id,
-                                            field: 'debit',
-                                            value: numeric * taux
-                                        })
-                                    } else if (isDebitEmpty) {
-                                        params.api.setEditCellValue({
-                                            id: params.id,
-                                            field: 'credit',
-                                            value: numeric * taux
-                                        })
-                                    } else if (isCreditEmpty) {
-                                        params.api.setEditCellValue({
-                                            id: params.id,
-                                            field: 'debit',
-                                            value: numeric * taux
-                                        })
-                                    }
-                                }
-                            }}
-                            style={{ marginBottom: '0px', width: '200px', textAlign: 'right' }}
-                            InputProps={{
-                                inputComponent: FormatedInput,
-                                sx: {
-                                    '& input': { textAlign: 'right' },
-                                },
-                            }}
-                        />
-                    );
-                },
-                renderCell: (params) => {
-                    const raw = params.value;
-                    // Si vide, affiche 0,00
-                    const value = raw === undefined || raw === '' ? 0 : Number(raw);
-
-                    const formatted = value.toLocaleString('fr-FR', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                    });
-
-                    return formatted.replace(/\u202f/g, ' ');
-                },
-                cellClassName: (params) => {
-                    const classes = [];
-
-                    const rowInvalid = invalidRows.find(row => row.id === params.id);
-                    if (params.field === 'montant_devise' && rowInvalid?.fields.includes('montant_devise')) {
-                        classes.push('cell-error');
-                    }
-
-                    if (selectedCell.id === params.id && selectedCell.field === 'montant_devise') {
-                        classes.push('cell-selected');
-                    }
-
-                    return classes.join(' ');
-                }
+    const formNewParam = useFormik({
+        initialValues: {
+            idSaisie: 0,
+            jour: '',
+            compte: '',
+            piece: '',
+            libelle: '',
+            montant_devise: 0,
+            debit: 0,
+            credit: 0
+        },
+        validateOnChange: false,
+        validateOnBlur: true,
+    })
+
+    //Equilibrer le debit et credit
+    const equilibrateDebitCredit = (id, type) => {
+        let totalDebit = 0.0;
+        let totalCredit = 0.0;
+
+        // Fonction de nettoyage de nombre
+        const parseNumber = (val) => {
+            const num = parseFloat(val);
+            return isNaN(num) ? 0 : num;
+        };
+
+        // 1. Calcul des totaux
+        tableRows.forEach((row) => {
+            const debitNum = parseNumber(row.debit);
+            const creditNum = parseNumber(row.credit);
+
+            totalDebit += debitNum;
+            totalCredit += creditNum;
+        });
+
+        const difference = parseFloat((totalDebit - totalCredit).toFixed(2));
+
+        const rowIndex = tableRows.findIndex((row) => row.id === id);
+        if (rowIndex === -1) {
+            toast.error("Ligne introuvable.", {
+                duration: 1000
             });
+            return;
         }
 
-        // Colonnes constantes : débit, crédit, action
-        columns.push(
-            {
-                field: 'debit',
-                headerName: 'Débit',
-                type: 'string',
-                sortable: true,
-                editable: true,
-                // width: 200,
-                flex: 1.3,
-                headerAlign: 'right',
-                align: 'right',
-                headerClassName: 'HeaderbackColor',
-                renderEditCell: (params) => {
-                    return (
-                        <TextField
-                            size="small"
-                            name="debit"
-                            fullWidth
-                            value={params.value || ''}
-                            onChange={(event) => {
-                                const inputValue = event.target.value;
+        const selectedRow = tableRows[rowIndex];
+        const newRows = [...tableRows];
 
-                                if (Number(inputValue) >= 0 || isNaN(inputValue)) {
-                                    params.api.setEditCellValue({
-                                        id: params.id,
-                                        field: 'debit',
-                                        value: inputValue,
-                                    }, event);
+        const debit = parseNumber(selectedRow.debit);
+        const credit = parseNumber(selectedRow.credit);
 
-                                    // Réinitialiser le crédit si un débit > 0 est saisi
-                                    const rawValue = inputValue ?? '';
-                                    const cleaned = rawValue.toString().replace(/\s/g, '').replace(',', '.');
-                                    const numeric = Number(cleaned);
+        if (type === "debit" && difference <= 0) {
+            if (credit !== 0) {
+                toast.error("Aucun ajustement car un seul montant est renseigné.", {
+                    duration: 1000
+                });
+                return;
+            }
 
-                                    if (!isNaN(numeric) && numeric > 0) {
-                                        params.api.setEditCellValue({
-                                            id: params.id,
-                                            field: 'credit',
-                                            value: '',
-                                        }, event);
-                                    }
-                                }
-                            }}
+            const adjustedDebit = parseFloat((debit + Math.abs(difference)).toFixed(2));
+            let adjustedMontantDevise = selectedRow.montant_devise;
 
-                            style={{ marginBottom: '0px', width: '200px', textAlign: 'right' }}
-                            InputProps={{
-                                inputComponent: FormatedInput,
-                                sx: {
-                                    '& input': { textAlign: 'right' },
-                                },
-                            }}
-                        />
-                    );
-                },
-                renderCell: (params) => {
-                    const raw = params.value;
-                    // Si vide, affiche 0,00
-                    const value = raw === undefined || raw === '' ? 0 : Number(raw);
+            if (formSaisie.values.choixDevise !== 'MGA') {
+                const taux = parseNumber(formSaisie.values.taux);
 
-                    const formatted = value.toLocaleString('fr-FR', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
+                if (!taux || taux <= 0) {
+                    toast.error("Taux invalide pour la conversion.", {
+                        duration: 1000
                     });
-
-                    return formatted.replace(/\u202f/g, ' ');
-                },
-                cellClassName: (params) => {
-                    const classes = [];
-
-                    //Gestion des erreurs
-                    const rowInvalid = invalidRows.find(row => row.id === params.id);
-                    const debit = Number(params.row.debit) || 0;
-                    const credit = Number(params.row.credit) || 0;
-
-                    if (rowInvalid && debit === 0 && credit === 0 && rowInvalid.fields.includes('debit')) {
-                        classes.push('cell-error');
-                    }
-
-                    //Mise en surbrillance de la cellule sélectionnée
-                    if (selectedCell.id === params.id && selectedCell.field === 'debit') {
-                        classes.push('cell-selected');
-                    }
-
-                    return classes.join(' ');
+                    return;
                 }
 
+                adjustedMontantDevise = parseFloat((adjustedDebit / taux).toFixed(2));
             }
-            , {
-                field: 'credit',
-                headerName: 'Crédit',
-                type: 'string',
-                sortable: true,
-                editable: true,
-                // width: 200,
-                flex: 1.3,
-                headerAlign: 'right',
-                align: 'right',
-                headerClassName: 'HeaderbackColor',
-                renderEditCell: (params) => {
-                    return (
-                        <TextField
-                            size="small"
-                            name="credit"
-                            fullWidth
-                            value={params.value || ''}
-                            onChange={(event) => {
-                                const inputValue = event.target.value;
 
-                                if (Number(inputValue) >= 0 || isNaN(inputValue)) {
-                                    params.api.setEditCellValue({
-                                        id: params.id,
-                                        field: 'credit',
-                                        value: inputValue,
-                                    }, event);
+            newRows[rowIndex] = {
+                ...selectedRow,
+                debit: adjustedDebit,
+                ...(formSaisie.values.choixDevise !== 'MGA' && {
+                    montant_devise: adjustedMontantDevise,
+                }),
+            };
 
-                                    // Réinitialiser le crédit si un débit > 0 est saisi
-                                    const rawValue = inputValue ?? '';
-                                    const cleaned = rawValue.toString().replace(/\s/g, '').replace(',', '.');
-                                    const numeric = Number(cleaned);
+            setTableRows(newRows);
+            toast.success("Débit ajusté pour équilibrer les montants.", {
+                duration: 1000
+            });
+        }
+        else if (type === "credit" && difference >= 0) {
+            if (debit !== 0) {
+                toast.error("Aucun ajustement car un seul montant est renseigné.", {
+                    duration: 1000
+                });
+                return;
+            }
 
-                                    if (!isNaN(numeric) && numeric > 0) {
-                                        params.api.setEditCellValue({
-                                            id: params.id,
-                                            field: 'debit',
-                                            value: '',
-                                        }, event);
-                                    }
-                                }
-                            }}
+            const adjustedCredit = parseFloat((credit + difference).toFixed(2));
+            let adjustedMontantDevise = selectedRow.montant_devise;
 
-                            style={{ marginBottom: '0px', width: '200px', textAlign: 'right' }}
-                            InputProps={{
-                                inputComponent: FormatedInput,
-                                sx: {
-                                    '& input': { textAlign: 'right' },
-                                },
-                            }}
-                        />
-                    );
-                },
-                renderCell: (params) => {
-                    const raw = params.value;
-                    // Si vide, affiche 0,00
-                    const value = raw === undefined || raw === '' ? 0 : Number(raw);
+            if (formSaisie.values.choixDevise !== 'MGA') {
+                const taux = parseNumber(formSaisie.values.taux);
 
-                    const formatted = value.toLocaleString('fr-FR', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
+                if (!taux || taux <= 0) {
+                    toast.error("Taux invalide pour la conversion.", {
+                        duration: 1000
                     });
-
-                    return formatted.replace(/\u202f/g, ' ');
-                },
-                cellClassName: (params) => {
-                    const classes = [];
-
-                    //Gestion des erreurs
-                    const rowInvalid = invalidRows.find(row => row.id === params.id);
-                    const debit = Number(params.row.debit) || 0;
-                    const credit = Number(params.row.credit) || 0;
-
-                    if (rowInvalid && credit === 0 && debit === 0 && rowInvalid.fields.includes('credit')) {
-                        classes.push('cell-error');
-                    }
-
-                    // Mise en surbrillance de la cellule sélectionnée
-                    if (selectedCell.id === params.id && selectedCell.field === 'credit') {
-                        classes.push('cell-selected');
-                    }
-
-                    return classes.join(' ');
+                    return;
                 }
-            },
-            {
-                field: 'actions',
-                headerName: 'Action',
-                width: 150,
-                sortable: false,
-                headerAlign: 'center',
-                // align: 'center',
-                renderCell: (params) => {
-                    const isLastRow = params.id === tableRows[tableRows.length - 1]?.id;
-                    return (
-                        <>
-                            <Tooltip title="Supprimer une ligne">
-                                <span>
-                                    <Button
-                                        onClick={() => handleOpenDialogConfirmDeleteSaisie(params.id)}
-                                        disabled={tableRows.length === 1 || isDatagridEditing()}
-                                        color="error"
-                                        sx={{
-                                            outline: 'none',
-                                            boxShadow: 'none',
-                                            '&:focus': {
-                                                outline: 'none',
-                                                boxShadow: 'none',
-                                            },
-                                            '&:focus-visible': {
-                                                outline: 'none',
-                                                boxShadow: 'none',
-                                            },
-                                            ml: 0,
-                                            pointerEvents: tableRows.length === 1 ? 'none' : 'auto',
-                                        }}
-                                    >
-                                        <GoX style={{ width: '30px', height: '30px' }} />
-                                    </Button>
-                                </span>
-                            </Tooltip>
 
-                            {isLastRow && (
-                                <Tooltip title="Ajouter une ligne">
-                                    <Button
-                                        onClick={ajouterNouvelleLigne}
-                                        sx={{
-                                            boxShadow: 'none',
-                                            '&:focus': {
-                                                outline: 'none',
-                                                boxShadow: 'none',
-                                            }
-                                        }}
-                                        disabled={isDatagridEditing()}
-                                    >
-                                        <IoAddSharp style={{ width: '30px', height: '30px' }} />
-                                    </Button>
-                                </Tooltip>
-                            )}
-                        </>
-                    )
-                },
+                adjustedMontantDevise = parseFloat((adjustedCredit / taux).toFixed(2));
             }
-        );
-        return columns;
+
+            newRows[rowIndex] = {
+                ...selectedRow,
+                credit: adjustedCredit,
+                ...(formSaisie.values.choixDevise !== 'MGA' && {
+                    montant_devise: adjustedMontantDevise,
+                }),
+            };
+
+            setTableRows(newRows);
+            toast.success("Crédit ajusté pour équilibrer les montants.", {
+                duration: 1000
+            });
+        }
+        else {
+            toast.error("Aucun ajustement nécessaire.", {
+                duration: 1000
+            });
+        }
     };
 
-    // Lors d’un clic sur une cellule
+    const columns = getSaisieColumnHeader({
+        editableRow,
+        formSaisie,
+        formNewParam,
+        setInvalidRows,
+        invalidRows,
+        selectedCell,
+        listePlanComptable,
+        taux,
+        equilibrateDebitCredit,
+    });
+
     const handleCellClick = (params) => {
+        if (params.field === '__check__') return;
+
         if (
             ['debit', 'credit', 'libelle', 'piece', 'compte', 'jour', 'montant_devise', 'num_facture'].includes(params.field)
         ) {
             setSelectedCell({ id: params.id, field: params.field });
         }
-    };
 
-    //Afficher une erreur si aucune mois n'est selectionné
-    const handleRowEditStart = (params, event) => {
-        if (!formSaisie.values.valSelectMois) {
-            event.defaultMuiPrevented = true; // empêche l'édition
-            toast.error("Veuillez d'abord sélectionner un mois");
+        const isRowInEdit =
+            rowModesModel[params.id]?.mode === GridRowModes.Edit;
+
+        if ((params.field === 'debit' || params.field === 'credit') && !isRowInEdit) {
+            if (!window.lastDebitCreditToast || Date.now() - window.lastDebitCreditToast > 3000) {
+                toast.custom((t) => (
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 2,
+                            backgroundColor: '#2B2D42',
+                            color: '#fff',
+                            padding: '12px 16px',
+                            borderRadius: '12px',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                            borderLeft: `6px solid ${params.field === 'debit' ? '#00bfa5' : '#ffb703'}`,
+                            minWidth: '320px',
+                        }}
+                    >
+                        <PiKeyboardDuotone size={28} color="#90caf9" />
+                        <Box>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                                Raccourci disponible !
+                            </Typography>
+                            <Typography variant="body2">
+                                Appuyez sur <b>Ctrl + Entrée</b> pour équilibrer automatiquement le solde du
+                                <b> {params.field === 'debit' ? 'débit' : 'crédit'}</b>.
+                            </Typography>
+                        </Box>
+                    </Box>
+                ), { duration: 1000 });
+                window.lastDebitCreditToast = Date.now();
+            }
+            return;
+        }
+
+        if (isRowInEdit) return;
+
+        if (selectedRowId.length > 1 || selectedRowId.length === 0) {
+            setEditableRow(false);
+            setDisableModifyBouton(true);
+            setDisableSaveBouton(true);
+            setDisableCancelBouton(true);
+            toast.error("Sélectionnez une seule ligne pour pouvoir la modifier");
+        } else {
+            setDisableModifyBouton(false);
+            setDisableSaveBouton(false);
+            setDisableCancelBouton(false);
+            if (!selectedRowId.includes(params.row.id)) {
+                setEditableRow(false);
+                toast.error("Sélectionnez une ligne pour pouvoir la modifier");
+            } else {
+                setEditableRow(true);
+            }
         }
     };
 
-    //supprimer un saisie
-    const handleOpenDialogConfirmDeleteSaisie = (id) => {
+    // Suppressino saisie
+    const handleOpenDialogConfirmDeleteRow = () => {
         setOpenDialogDeleteSaisie(true);
-        setSelectedIdToDelete(id);
     }
 
-    //Récupérer les données du ligne selectionné
-    const handleSelectionChange = (newSelectionModel) => {
-        const selectedId = newSelectionModel[0];
-        const row = tableRows.find((row) => row.id === selectedId);
-        setSelectedRow(row);
-    };
-
-    const exitEditingToDatagrid = () => {
-        const editingRows = Object.keys(apiRef.current.state.editRows || {});
-
-        editingRows.forEach((id) => {
-            const rowInEdit = apiRef.current.getRow(id);
-
-            // 🔹 Commit la ligne dans le state DataGrid
-            apiRef.current.updateRows([rowInEdit]);
-
-            // 🔹 Quitte le row edit mode
-            apiRef.current.stopRowEditMode({ id, ignoreModifications: false });
+    const addOrUpdateJournal = async () => {
+        const newRowModesModel = {};
+        tableRows.forEach(row => {
+            newRowModesModel[row.id] = { mode: GridRowModes.View };
         });
-    };
 
-    //Ajouter une ligne
-    const ajouterNouvelleLigne = async () => {
-        // exitEditingToDatagrid();
-        // await new Promise(resolve => setTimeout(resolve, 1000));
-        // const newId = tableRows.length > 0 ? Math.max(...tableRows.map(r => r.id)) + 1 * -1 : 1 * -1;
-        if (!formSaisie.values.valSelectCodeJnl && !formSaisie.values.valSelectMois && !formSaisie.values.valSelectAnnee) {
-            toast.error("Veuillez remplir les formulaires s'il vous plaît !");
-        } else if (!formSaisie.values.valSelectCodeJnl) {
-            toast.error("Sélectionner le code journal s'il vous plaît !");
-        } else if (!formSaisie.values.valSelectMois) {
-            toast.error("Sélectionner le mois s'il vous plaît !");
-        } else if (!formSaisie.values.valSelectAnnee) {
-            toast.error("Sélectionner l'année s'il vous plaît !");
-        } else if (formSaisie.values.choixDevise !== 'MGA' && !formSaisie.values.currency) {
-            toast.error("Veuillez sélectionner une devise s'il vous plaît !");
-        } else {
-            const minId = Math.min(...tableRows.map(r => r.id), -1); // min ou 0 si aucun
-            const newId = minId <= 0 ? minId - 1 : -1;
+        setRowModesModel(newRowModesModel);
 
-            let dernierJour = '';
-            let dernierLibelle = '';
-            let dernierPiece = '';
-            let dernierCompte = '';
-            let dernierNumfacture = '';
+        const rowsInvalides = [];
 
-            // Parcourir le tableau à l'envers
-            for (let i = tableRows.length - 1; i >= 0; i--) {
-                const row = tableRows[i];
+        // Validation des lignes
+        tableRows.forEach((row) => {
+            const champsVides = [];
 
-                // Si `jour` est défini et non vide
-                if (row.jour !== null && row.jour !== '' && dernierJour === '') {
-                    dernierJour = row.jour;
-                }
+            if (!row.jour) champsVides.push('jour');
+            if (!row.compte) champsVides.push('compte');
+            if (!row.libelle) champsVides.push('libelle');
+            if (formSaisie.values.choixDevise !== 'MGA' && !row.montant_devise)
+                champsVides.push('montant_devise');
 
-                // Si `libelle` est défini et non vide
-                if (row.libelle !== null && row.libelle !== '' && dernierLibelle === '') {
-                    dernierLibelle = row.libelle;
-                }
+            const debitVide = !row.debit || isNaN(Number(row.debit)) || Number(row.debit) === 0;
+            const creditVide = !row.credit || isNaN(Number(row.credit)) || Number(row.credit) === 0;
+            if (debitVide && creditVide) champsVides.push('debit', 'credit');
 
-                // Si `pièce` est défini et non vide
-                // if (row.piece !== null && row.piece !== '' && dernierPiece === '') {
-                //     dernierPiece = row.piece;
-                // }
-
-                // Si `compte` est défini et non vide
-                if (row.compte !== null && row.compte !== '' && dernierCompte === '') {
-                    dernierCompte = row.compte;
-                }
-
-                // Si `num_facture` est défini et non vide
-                // if (row.num_facture !== null && row.num_facture !== '' && dernierNumfacture === '') {
-                //     dernierNumfacture = row.num_facture;
-                // }
-
-                // Si les deux sont trouvés, on arrête
-                if (dernierJour !== '' && dernierLibelle !== '' && dernierPiece !== '' && dernierCompte !== '') break;
+            if (champsVides.length > 0) {
+                rowsInvalides.push({ id: row.id, fields: champsVides });
             }
+        });
 
-            const newRow = {
-                id: newId,
-                jour: dernierJour,
-                compte: dernierCompte,
-                piece: dernierPiece,
-                libelle: dernierLibelle,
-                num_facture: dernierNumfacture,
-                debit: 0,
-                credit: 0,
+        // Gestion devise
+        let id_devise = '';
+        if (formSaisie.values.choixDevise !== 'MGA') {
+            const devise = listeDevise.find((val) => val.code === formSaisie.values.currency);
+            id_devise = devise?.id;
+        }
+
+        setInvalidRows(rowsInvalides);
+
+        // Vérification des erreurs
+        if (rowsInvalides.length > 0) {
+            toast.error('Les champs en surbrillance sont obligatoires');
+            return;
+        }
+
+        if (total !== 0) {
+            toast.error('Total débit doit être égal à total crédit');
+            return;
+        }
+
+        try {
+            const formData = new FormData();
+            formSaisie.values.id_devise = id_devise;
+
+            const conserverFichier = type === 'modification' ? (!file && !!formSaisie.values.file) : undefined;
+
+            const valeursSansFichier = {
+                ...formSaisie.values,
+                file: undefined,
+                tableRows,
+                ...(type === 'modification' ? { conserverFichier, deletedIds: deletedRowIds } : {})
             };
 
-            setTableRows([...tableRows, newRow]);
-        }
-    };
+            formData.append("data", JSON.stringify(valeursSansFichier));
+            if (file) formData.append("file", file);
 
-    //Afficher les contenus de tableRows
-    const addTableRows = async () => {
-        const rowsInvalides = [];
+            const url =
+                type === 'ajout'
+                    ? '/administration/traitementSaisie/ajoutJournal'
+                    : '/administration/traitementSaisie/modificationJournal';
 
-        tableRows.forEach((row) => {
-            const champsVides = [];
+            const response = await axios.post(url, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
 
-            if (!row.jour) champsVides.push('jour');
-            if (!row.compte) champsVides.push('compte');
-            // if (!row.piece) champsVides.push('piece');
-            if (!row.libelle) champsVides.push('libelle');
-            // if (!row.num_facture) champsVides.push('num_facture');
-            if (formSaisie.values.choixDevise !== 'MGA') {
-                if (!row.montant_devise) champsVides.push('montant_devise');
-            }
+            if (response?.data?.state) {
+                toast.success(response?.data?.message);
+                setRowSelectionModel();
+                setSelectedRowsSaisie();
 
-            const debitVide = !row.debit || isNaN(Number(row.debit)) || Number(row.debit) === 0;
-            const creditVide = !row.credit || isNaN(Number(row.credit)) || Number(row.credit) === 0;
-
-            if (debitVide && creditVide) {
-                champsVides.push('debit', 'credit');
-            }
-
-            if (champsVides.length > 0) {
-                rowsInvalides.push({ id: row.id, fields: champsVides });
-            }
-        });
-
-        let id_devise = '';
-        if (formSaisie.values.choixDevise !== 'MGA') {
-            const devise = listeDevise.find((val) => val.code === formSaisie.values.currency);
-            id_devise = devise?.id;
-        }
-
-        setInvalidRows(rowsInvalides);
-
-        if (rowsInvalides.length === 0) {
-            if (total !== 0) {
-                toast.error('Total débit doit être égal à total crédit');
-            } else {
-                try {
-                    const formData = new FormData();
-                    formSaisie.values.id_devise = id_devise;
-
-                    const valeursSansFichier = {
-                        ...formSaisie.values,
-                        file: undefined,
-                        tableRows: tableRows
-                    };
-
-                    formData.append("data", JSON.stringify(valeursSansFichier));
-
-                    if (file) {
-                        formData.append("file", file);
-                    }
-
-                    axios.post('/administration/traitementSaisie/ajoutJournal', formData, {
-                        headers: {
-                            'Content-Type': 'multipart/form-data'
-                        }
-                    })
-                        .then((response) => {
-                            toast.success(response?.data?.message);
-                            setRefresh();
-                            setInvalidRows([]);
-                        })
-                        .catch((error) => {
-                            toast.error(response?.data?.message);
-                        });
-                } catch (error) {
-                    toast.error(error);
+                if (type === 'ajout') {
+                    clearData();
                 }
-            }
-        } else {
-            toast.error('Les champs en surbrillance sont obligatoires');
-        }
-    };
 
-    const editTableRows = () => {
-        exitEditingToDatagrid();
-        const rowsInvalides = [];
-
-        tableRows.forEach((row) => {
-            const champsVides = [];
-
-            if (!row.jour) champsVides.push('jour');
-            if (!row.compte) champsVides.push('compte');
-            // if (!row.piece) champsVides.push('piece');
-            if (!row.libelle) champsVides.push('libelle');
-            // if (!row.num_facture) champsVides.push('num_facture');
-            if (formSaisie.values.choixDevise !== 'MGA') {
-                if (!row.montant_devise) champsVides.push('montant_devise');
-            }
-
-            const debitVide = !row.debit || isNaN(Number(row.debit)) || Number(row.debit) === 0;
-            const creditVide = !row.credit || isNaN(Number(row.credit)) || Number(row.credit) === 0;
-
-            if (debitVide && creditVide) {
-                champsVides.push('debit', 'credit');
-            }
-
-            if (champsVides.length > 0) {
-                rowsInvalides.push({ id: row.id, fields: champsVides });
-            }
-        });
-
-        let id_devise = '';
-        if (formSaisie.values.choixDevise !== 'MGA') {
-            const devise = listeDevise.find((val) => val.code === formSaisie.values.currency);
-            id_devise = devise?.id;
-        }
-
-        setInvalidRows(rowsInvalides);
-
-        if (rowsInvalides.length === 0) {
-            if (total !== 0) {
-                toast.error('Total débit doit être égal à total crédit');
+                setRefresh();
+                setInvalidRows([]);
             } else {
-                try {
-                    const conserverFichier = !file && !!formSaisie.values.file;
-                    const formData = new FormData();
-                    formSaisie.values.id_devise = id_devise;
-
-                    const valeursSansFichier = {
-                        ...formSaisie.values,
-                        file: undefined,
-                        tableRows: tableRows,
-                        conserverFichier,
-                        deletedIds: deletedRowIds
-                    };
-
-                    formData.append("data", JSON.stringify(valeursSansFichier));
-
-                    if (file) {
-                        formData.append("file", file);
-                    }
-
-                    axios.post('/administration/traitementSaisie/modificationJournal', formData, {
-                        headers: {
-                            'Content-Type': 'multipart/form-data'
-                        }
-                    })
-                        .then((response) => {
-                            if (response.data.state) {
-                                toast.success("Informations modifiés");
-                                setRowSelectionModel();
-                                setRefresh();
-                                setInvalidRows([]);
-                            } else {
-                                toast.error(response?.data?.message);
-                            }
-                        })
-                        .catch((error) => {
-                            toast.error(error)
-                        });
-                } catch (error) {
-                    toast.error(error);
-                }
+                toast.error(response?.data?.message);
             }
-        } else {
-            toast.error('Les champs en surbrillance sont obligatoires');
+
+        } catch (error) {
+            toast.error(error);
         }
     };
-
-    const viewTableRows = type === 'ajout' ? addTableRows : editTableRows;
 
     const totalDebitNotParsed = tableRows.reduce((total, row) => {
         const debit = parseFloat(row.debit) || 0;
@@ -1383,182 +471,155 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
         maximumFractionDigits: 2
     }).replace(/\u202f/g, ' ')
 
-    //Récupération données liste code journaux
-    const GetListeCodeJournaux = (id) => {
-        axios.get(`/paramCodeJournaux/listeCodeJournaux/${id}`).then((response) => {
-            const resData = response.data;
-            if (resData.state) {
-                setListeCodeJournaux(resData.list);
-            } else {
-                setListeCodeJournaux([]);
-                toast.error(resData.msg);
-            }
-        })
-    }
-
-    //Récupération la liste des exercices BY ID EXERCICE
-    const GetDateDebutFinExercice = (id) => {
-        axios.get(`/paramExercice/listeExerciceById/${id}`).then((response) => {
-            const resData = response.data;
-            if (resData.state) {
-                const annee = getAnneesEntreDeuxDates(resData.list.date_debut, resData.list.date_fin)
-                setListeAnnee(annee)
-            } else {
-                setListeAnnee([])
-                toast.error("une erreur est survenue lors de la récupération de la liste des exercices");
-            }
-        })
-    }
-
-    //Récupération données liste des devises
-    const GetListeDevises = (id) => {
-        axios.get(`administration/traitementsaisie/recupDevise/${id}`).then((response) => {
-            const resData = response.data;
-            if (resData.state) {
-                setListeDevise(response.data.list);
-            } else {
-                setListeDevise([])
-                toast.error("Une erreur est survenue lors de la récupération de la liste des devises");
-            }
-        })
-    }
-
-    //Récupération du plan comptable
-    const getPc = () => {
-        axios.get(`/paramPlanComptable/PcIdLibelle/${compteId}/${fileId}`).then((response) => {
-            const resData = response.data;
-            if (resData.state) {
-                setListePlanComptable(resData.liste);
-            } else {
-                toast.error(resData.msg);
-            }
-        })
-    }
-
-    //Recupérer l'année min et max de l'éxercice
-    const getAnneesEntreDeuxDates = (dateDebut, dateFin) => {
-        const debut = new Date(dateDebut).getFullYear();
-        const fin = new Date(dateFin).getFullYear();
-        const annees = [];
-
-        for (let annee = debut; annee <= fin; annee++) {
-            annees.push(annee);
-        }
-
-        return annees;
-    };
-
-    //Equilibrer le debit et credit
-    const EquilibrateDebitCredit = (id, type) => {
-        let totalDebit = 0.0;
-        let totalCredit = 0.0;
-
-        // Fonction de nettoyage de nombre
-        const parseNumber = (val) => {
-            const num = parseFloat(val);
-            return isNaN(num) ? 0 : num;
-        };
-
-        // 1. Calcul des totaux
-        tableRows.forEach((row) => {
-            const debitNum = parseNumber(row.debit);
-            const creditNum = parseNumber(row.credit);
-
-            totalDebit += debitNum;
-            totalCredit += creditNum;
-        });
-
-        const difference = parseFloat((totalDebit - totalCredit).toFixed(2));
-
-        const rowIndex = tableRows.findIndex((row) => row.id === id);
-        if (rowIndex === -1) {
-            toast.error("Ligne introuvable.");
-            return;
-        }
-
-        const selectedRow = tableRows[rowIndex];
-        const newRows = [...tableRows];
-
-        const debit = parseNumber(selectedRow.debit);
-        const credit = parseNumber(selectedRow.credit);
-
-        if (type === "debit" && difference <= 0) {
-            if (credit !== 0) {
-                toast.error("Aucun ajustement car un seul montant est renseigné.");
-                return;
-            }
-
-            const adjustedDebit = parseFloat((debit + Math.abs(difference)).toFixed(2));
-            let adjustedMontantDevise = selectedRow.montant_devise;
-
-            if (formSaisie.values.choixDevise !== 'MGA') {
-                const taux = parseNumber(formSaisie.values.taux);
-
-                if (!taux || taux <= 0) {
-                    toast.error("Taux invalide pour la conversion.");
-                    return;
-                }
-
-                adjustedMontantDevise = parseFloat((adjustedDebit / taux).toFixed(2));
-            }
-
-            newRows[rowIndex] = {
-                ...selectedRow,
-                debit: adjustedDebit,
-                ...(formSaisie.values.choixDevise !== 'MGA' && {
-                    montant_devise: adjustedMontantDevise,
-                }),
-            };
-
-            setTableRows(newRows);
-            toast.success("Débit ajusté pour équilibrer les montants.");
-        }
-        else if (type === "credit" && difference >= 0) {
-            if (debit !== 0) {
-                toast.error("Aucun ajustement car un seul montant est renseigné.");
-                return;
-            }
-
-            const adjustedCredit = parseFloat((credit + difference).toFixed(2));
-            let adjustedMontantDevise = selectedRow.montant_devise;
-
-            if (formSaisie.values.choixDevise !== 'MGA') {
-                const taux = parseNumber(formSaisie.values.taux);
-
-                if (!taux || taux <= 0) {
-                    toast.error("Taux invalide pour la conversion.");
-                    return;
-                }
-
-                adjustedMontantDevise = parseFloat((adjustedCredit / taux).toFixed(2));
-            }
-
-            newRows[rowIndex] = {
-                ...selectedRow,
-                credit: adjustedCredit,
-                ...(formSaisie.values.choixDevise !== 'MGA' && {
-                    montant_devise: adjustedMontantDevise,
-                }),
-            };
-
-            setTableRows(newRows);
-            toast.success("Crédit ajusté pour équilibrer les montants.");
-        }
-        else {
-            toast.error("Aucun ajustement nécessaire.");
-        }
-    };
-
     const clearData = () => {
         formSaisie.resetForm();
         setTaux(0);
-        setTableRows(rows);
+        setTableRows([]);
         setFile(null);
     }
 
-    const isDatagridEditing = () => {
-        return Object.keys(apiRef.current?.state?.editRows || {}).length > 0;
+    const handleAddNewLine = () => {
+        if (!formSaisie.values.valSelectCodeJnl) {
+            toast.error("Sélectionner le code journal s'il vous plaît !");
+        } else if (!formSaisie.values.valSelectMois) {
+            toast.error("Sélectionner le mois s'il vous plaît !");
+        } else if (!formSaisie.values.valSelectAnnee) {
+            toast.error("Sélectionner l'année s'il vous plaît !");
+        } else if (formSaisie.values.choixDevise !== 'MGA' && !formSaisie.values.currency) {
+            toast.error("Veuillez sélectionner une devise s'il vous plaît !");
+        } else {
+            setDisableModifyBouton(false);
+            setDisableCancelBouton(false);
+            setDisableDeleteBouton(false);
+            setDisableSaveBouton(false);
+            setDisableAddRowBouton(true);
+            const newId = -Date.now();
+
+            let dernierJour = '';
+            let dernierLibelle = '';
+            let dernierPiece = '';
+            let dernierCompte = '';
+            let dernierNumfacture = '';
+
+            for (let i = tableRows.length - 1; i >= 0; i--) {
+                const row = tableRows[i];
+
+                if (row.jour !== null && row.jour !== '' && dernierJour === '') {
+                    dernierJour = row.jour;
+                }
+
+                if (row.libelle !== null && row.libelle !== '' && dernierLibelle === '') {
+                    dernierLibelle = row.libelle;
+                }
+                if (row.compte !== null && row.compte !== '' && dernierCompte === '') {
+                    dernierCompte = row.compte;
+                }
+                if (dernierJour !== '' && dernierLibelle !== '' && dernierPiece !== '' && dernierCompte !== '') break;
+            }
+
+            const newRow = {
+                id: newId,
+                jour: dernierJour,
+                compte: dernierCompte,
+                piece: dernierPiece,
+                libelle: dernierLibelle,
+                num_facture: dernierNumfacture,
+                debit: 0,
+                credit: 0,
+            };
+
+            setTableRows([...tableRows, newRow]);
+            setSelectedRowId([newRow.id]);
+            setSelectedRow([newRow.id]);
+        }
+    }
+
+    const saveSelectedRow = (ids) => {
+        if (ids.length === 1) {
+            setSelectedRowId(ids);
+            setDisableModifyBouton(false);
+            setDisableSaveBouton(false);
+            setDisableCancelBouton(false);
+            setDisableDeleteBouton(false);
+        } else {
+            setSelectedRowId([]);
+            setDisableModifyBouton(true);
+            setDisableSaveBouton(true);
+            setDisableCancelBouton(true);
+            // setDisableDeleteBouton(true);
+        }
+    }
+
+    const deselectRow = (ids) => {
+        const deselected = selectedRowId.filter(id => !ids.includes(id));
+
+        const updatedRowModes = { ...rowModesModel };
+        deselected.forEach((id) => {
+            updatedRowModes[id] = { mode: GridRowModes.View, ignoreModifications: true };
+        });
+        setRowModesModel(updatedRowModes);
+
+        setDisableAddRowBouton(false);
+        setSelectedRowId(ids);
+    }
+
+    const processRowUpdate = (newRow) => {
+        const updatedRow = { ...newRow, isNew: false };
+        setTableRows(tableRows.map((row) => (row.id === newRow.id ? updatedRow : row)));
+        return updatedRow;
     };
+
+    const handleRowModesModelChange = (newRowModesModel) => {
+        setRowModesModel(newRowModesModel);
+    };
+
+    const handleRowEditStop = (params, event) => {
+        if (params.reason === GridRowEditStopReasons.rowFocusOut) {
+            event.defaultMuiPrevented = true;
+        }
+    };
+
+    const handleCancelClick = (id) => () => {
+        setRowModesModel({
+            ...rowModesModel,
+            [id]: { mode: GridRowModes.View, ignoreModifications: true },
+        });
+        setDisableAddRowBouton(false);
+        setDisableSaveBouton(true);
+        setDisableDeleteBouton(true);
+        setDisableModifyBouton(true);
+        setSelectedRow([]);
+        setSelectedRowId([]);
+    };
+
+    const handleSaveClick = (id) => () => {
+        setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
+        setDisableAddRowBouton(false);
+        setDisableModifyBouton(true);
+        setDisableSaveBouton(true);
+        setDisableCancelBouton(true);
+        setDisableDeleteBouton(true);
+        setSelectedRow([]);
+        setSelectedRowId([]);
+        toast.success('Modification enregistré avec succès');
+    };
+
+    const handleEditClick = (id) => () => {
+        const selectedRowInfos = tableRows?.filter((item) => item.id === id[0]);
+
+        formNewParam.setFieldValue("idsaisie", selectedRowInfos[0]?.id ? selectedRowInfos[0]?.id : 0);
+        formNewParam.setFieldValue("jour", selectedRowInfos[0]?.jour ? selectedRowInfos[0]?.jour : '');
+        formNewParam.setFieldValue("compte", selectedRowInfos[0]?.compte ? selectedRowInfos[0].compte : '');
+        formNewParam.setFieldValue("piece", selectedRowInfos[0]?.piece ? selectedRowInfos[0]?.piece : '');
+        formNewParam.setFieldValue("libelle", selectedRowInfos[0]?.libelle ? selectedRowInfos[0]?.libelle : '');
+        formNewParam.setFieldValue("montant_devise", selectedRowInfos[0]?.montant_devise ? selectedRowInfos[0].montant_devise : 0);
+        formNewParam.setFieldValue("debit", selectedRowInfos[0]?.debit ? selectedRowInfos[0].debit : 0);
+        formNewParam.setFieldValue("credit", selectedRowInfos[0]?.credit ? selectedRowInfos[0].credit : 0);
+
+        setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
+    };
+
+    const paddingRightTotal = tableRows.length > 19 ? 6.5 : 4;
 
     useEffect(() => {
         const handleKeyDown = (event) => {
@@ -1567,9 +628,9 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
                     const { id, field } = selectedCell;
 
                     if (field === 'debit') {
-                        EquilibrateDebitCredit(id, 'debit');
+                        equilibrateDebitCredit(id, 'debit');
                     } else if (field === 'credit') {
-                        EquilibrateDebitCredit(id, 'credit');
+                        equilibrateDebitCredit(id, 'credit');
                     }
                 }
             }
@@ -1581,11 +642,8 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
 
     useEffect(() => {
         const handleClickOutside = (event) => {
-            // Si aucune cellule n'est sélectionnée, on ne fait rien
             if (!selectedCell.id && !selectedCell.field) return;
 
-            // Chercher si le clic est sur une cellule ou un élément lié au DataGrid
-            // Exemple simple : on vérifie si le clic est dans un élément avec classe 'MuiDataGrid-cell'
             let el = event.target;
             let clickedOnCell = false;
             while (el) {
@@ -1606,19 +664,6 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [selectedCell]);
-
-    useEffect(() => {
-        GetListeDevises(compteId)
-    }, [compteId]);
-
-    useEffect(() => {
-        GetListeCodeJournaux(fileId);
-        getPc();
-    }, [fileId, compteId]);
-
-    useEffect(() => {
-        GetDateDebutFinExercice(selectedExerciceId)
-    }, [selectedExerciceId])
 
     //Algorithme MGA et Devises
     useEffect(() => {
@@ -1648,360 +693,519 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
     }, []);
 
     return (
-        <BootstrapDialog
-            onClose={handleClose}
-            aria-labelledby="customized-dialog-title"
-            open={true}
-            // maxWidth="lg"
-            fullWidth={true}
-            fullScreen={true}
-        >
-            {openDialogDeleteSaisie ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer la ligne sélectionné ?"} confirmationState={handleDeleteRow} /> : null}
-
-            <IconButton
-                style={{ color: 'red', textTransform: 'none', outline: 'none' }}
-                aria-label="close"
-                onClick={handleClose}
-                sx={{
-                    position: 'absolute',
-                    right: 15,
-                    top: 8,
-                    color: (theme) => theme.palette.grey[500],
-                }}
+        <>
+            {
+                openDialogDeleteSaisie
+                    ?
+                    <PopupConfirmDelete
+                        msg={"Voulez-vous vraiment supprimer la ligne sélectionné ?"}
+                        confirmationState={handleDeleteRow}
+                    />
+                    :
+                    null
+            }
+            <BootstrapDialog
+                onClose={handleClose}
+                aria-labelledby="customized-dialog-title"
+                open={true}
+                // maxWidth="lg"
+                fullWidth={true}
+                fullScreen={true}
             >
-                <CloseIcon />
-            </IconButton>
-            <DialogContent >
-                <TabContext value={"1"} >
-                    <Typography
-                        variant='h6'
-                        sx={{ marginLeft: 3 }}
+                <DialogTitle
+                    sx={{
+                        m: 0,
+                        py: 1.5,
+                        px: 2,
+                        bgcolor: "#f5f5f5",
+                        borderBottom: "1px solid #ddd",
+                    }}
+                >
+                    <Stack
+                        direction="row"
+                        alignItems="center"
+                        justifyContent="space-between"
                     >
-                        {"Ajout d'une nouvelle saisie"}
-                    </Typography>
-                    <TabPanel value="1" style={{ height: '85%' }}>
-                        <Stack width={"100%"} height={"100%"} spacing={6} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
-                            <Stack
-                                direction="row"
-                                flexWrap="wrap"
-                                spacing={2}
-                                alignItems="center"
-                                justifyContent="flex-start"
-                                sx={{ width: '100%' }}
-                                style={{
-                                    marginLeft: "0px",
-                                    padding: 10,
-                                    backgroundColor: '#F4F9F9',
-                                    borderRadius: "5px"
-                                }}
-                            >
-                                {/* Code Journal */}
-                                <FormControl variant="standard" sx={{ minWidth: 200, flex: 0.5 }}>
-                                    <InputLabel>Code journal</InputLabel>
-                                    <Select
-                                        value={formSaisie.values.valSelectCodeJnl}
-                                        onChange={formSaisie.handleChange}
-                                        name="valSelectCodeJnl"
-                                    >
-                                        {listeCodeJournaux.map((value, index) => (
-                                            <MenuItem key={index} value={value.id}>
-                                                {`${value.code} - ${value.libelle}`}
-                                            </MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
+                        <Typography
+                            variant="h6"
+                            component="div"
+                            fontWeight="bold"
+                            color="text.primary"
+                        >
+                            {
+                                type === "ajout"
+                                    ? "Ajout d'une nouvelle saisie"
+                                    : "Modification d'une saisie"
+                            }
+                        </Typography>
 
-                                {/* Mois */}
-                                <FormControl variant="standard" sx={{ minWidth: 90, flex: 0.3 }}>
-                                    <InputLabel>Mois</InputLabel>
-                                    <Select
-                                        value={formSaisie.values.valSelectMois}
-                                        onChange={formSaisie.handleChange}
-                                        name="valSelectMois"
-                                    >
-                                        {[...Array(12).keys()].map(m => (
-                                            <MenuItem key={m + 1} value={m + 1}>
-                                                {new Date(0, m).toLocaleString('fr-FR', { month: 'long' }).replace(/^./, c => c.toUpperCase())}
-                                            </MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
-
-                                {/* Année */}
-                                <FormControl variant="standard" sx={{ minWidth: 120, flex: 0.3, marginLeft: 10 }} >
-                                    <InputLabel>Année</InputLabel>
-                                    <Select
-                                        value={formSaisie.values.valSelectAnnee}
-                                        onChange={formSaisie.handleChange}
-                                        name="valSelectAnnee"
-                                    >
-                                        {listeAnnee.map((year) => (
-                                            <MenuItem key={year} value={year}>
-                                                {year}
-                                            </MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
-
-                                {/* Choix devise */}
-                                <RadioGroup
-                                    row
-                                    name="choixDevise"
-                                    value={formSaisie.values.choixDevise}
-                                    onChange={formSaisie.handleChange}
+                        <IconButton
+                            onClick={handleClose}
+                            style={{ color: 'red', textTransform: 'none', outline: 'none' }}
+                        >
+                            <CloseIcon />
+                        </IconButton>
+                    </Stack>
+                </DialogTitle>
+                <DialogContent >
+                    <TabContext value={"1"} >
+                        <TabPanel value="1" style={{ height: '85%' }}>
+                            <Stack width={"100%"} height={"100%"} spacing={6} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
+                                <Stack
+                                    sx={{ width: '100%', p: 1 }}
+                                    direction={'row'}
+                                    justifyContent={'space-between'}
+                                    alignItems={'center'}
+                                    style={{
+                                        marginLeft: "0px",
+                                        // padding: 10,
+                                        backgroundColor: '#F4F9F9',
+                                        borderRadius: "5px"
+                                    }}
                                 >
-                                    <FormControlLabel value="MGA" control={<Radio />} label="MGA" />
-                                    <FormControlLabel value="Devises" control={<Radio />} label="Devises" />
-                                </RadioGroup>
+                                    <Stack
+                                        direction="row"
+                                        flexWrap="wrap"
+                                        spacing={3}
+                                        alignItems="center"
+                                        justifyContent="flex-start"
+                                        sx={{ width: '100%' }}
+                                    >
+                                        {/* Code Journal */}
+                                        <FormControl variant="standard" sx={{ width: 250 }}>
+                                            <InputLabel>Code journal</InputLabel>
+                                            <Select
+                                                value={formSaisie.values.valSelectCodeJnl}
+                                                onChange={formSaisie.handleChange}
+                                                name="valSelectCodeJnl"
+                                            >
+                                                {listeCodeJournaux.map((value, index) => (
+                                                    <MenuItem sx={{ flex: 0.18 }} key={index} value={value.id}>
+                                                        {`${value.code} - ${value.libelle}`}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
 
-                                {/* Taux de conversion */}
-                                <Stack spacing={1.5} sx={{ minWidth: 200, flex: 0.3 }}>
-                                    <InputJoy
-                                        placeholder="Taux"
-                                        type="text"
-                                        name="taux"
-                                        step="0.01"
-                                        value={taux}
-                                        // onChange={(e) => setTaux(e.target.value)}
-                                        onChange={(e) => {
-                                            let value = e.target.value;
-                                            // Si value est un objet de react-number-format
-                                            if (typeof value === 'object' && value !== null) {
-                                                value = value.floatValue ?? 0;
-                                            }
-                                            // Si c'est un nombre simple
-                                            if (typeof value === 'number') {
-                                                setTaux(value);
-                                                formSaisie.setFieldValue('taux', value);
-                                                return;
-                                            }
-                                            // Sinon c'est une string → nettoyer
-                                            const parsedValue = String(value)
-                                                .replace(/\s/g, '')
-                                                .replace(',', '.');
+                                        {/* Mois */}
+                                        <FormControl variant="standard" sx={{ width: 115 }}>
+                                            <InputLabel>Mois</InputLabel>
+                                            <Select
+                                                value={formSaisie.values.valSelectMois}
+                                                onChange={formSaisie.handleChange}
+                                                name="valSelectMois"
+                                            >
+                                                {[...Array(12).keys()].map(m => (
+                                                    <MenuItem key={m + 1} value={m + 1}>
+                                                        {new Date(0, m).toLocaleString('fr-FR', { month: 'long' }).replace(/^./, c => c.toUpperCase())}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
 
-                                            setTaux(parsedValue);
-                                            formSaisie.setFieldValue('taux', parsedValue);
-                                            selectRef.current?.blur();
-                                        }}
+                                        {/* Année */}
+                                        <FormControl variant="standard" sx={{ width: 90 }} style={{ marginRight: '50px' }} >
+                                            <InputLabel>Année</InputLabel>
+                                            <Select
+                                                value={formSaisie.values.valSelectAnnee}
+                                                onChange={formSaisie.handleChange}
+                                                name="valSelectAnnee"
+                                            >
+                                                {listeAnnee.map((year) => (
+                                                    <MenuItem key={year} value={year}>
+                                                        {year}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
 
-                                        disabled={formSaisie.values.choixDevise === "MGA"}
-                                        slotProps={{
-                                            input: {
-                                                component: FormatedInput,
-                                                sx: {
-                                                    textAlign: 'right',
-                                                },
-                                            },
-                                        }}
-                                        endDecorator={
-                                            <>
-                                                <Divider orientation="vertical" />
-                                                <SelectJoy
-                                                    ref={selectRef}
-                                                    variant="plain"
-                                                    value={formSaisie.values.currency}
-                                                    onChange={(_, value) => formSaisie.setFieldValue('currency', value)}
-                                                    name="currency"
-                                                    slotProps={{
-                                                        button: {
-                                                            sx: {
-                                                                boxShadow: 'none',
-                                                                outline: 'none',
+                                        {/* Choix devise */}
+                                        <RadioGroup
+                                            row
+                                            name="choixDevise"
+                                            value={formSaisie.values.choixDevise}
+                                            onChange={formSaisie.handleChange}
+                                        >
+                                            <FormControlLabel value="MGA" control={<Radio />} label="MGA" />
+                                            <FormControlLabel value="Devises" control={<Radio />} label="Autres" />
+                                        </RadioGroup>
+
+                                        {/* Taux de conversion */}
+                                        <Stack spacing={1.5} sx={{ width: 220 }}>
+                                            <InputJoy
+                                                placeholder="Taux"
+                                                type="text"
+                                                name="taux"
+                                                step="0.01"
+                                                value={taux}
+                                                onChange={(e) => {
+                                                    let value = e.target.value;
+                                                    if (typeof value === 'object' && value !== null) {
+                                                        value = value.floatValue ?? 0;
+                                                    }
+                                                    if (typeof value === 'number') {
+                                                        setTaux(value);
+                                                        formSaisie.setFieldValue('taux', value);
+                                                        return;
+                                                    }
+                                                    const parsedValue = String(value)
+                                                        .replace(/\s/g, '')
+                                                        .replace(',', '.');
+
+                                                    setTaux(parsedValue);
+                                                    formSaisie.setFieldValue('taux', parsedValue);
+                                                    selectRef.current?.blur();
+                                                }}
+
+                                                disabled={formSaisie.values.choixDevise === "MGA"}
+                                                slotProps={{
+                                                    input: {
+                                                        component: FormatedInput,
+                                                        sx: {
+                                                            textAlign: 'right',
+                                                        },
+                                                    },
+                                                }}
+                                                endDecorator={
+                                                    <>
+                                                        <Divider orientation="vertical" />
+                                                        <SelectJoy
+                                                            ref={selectRef}
+                                                            variant="plain"
+                                                            value={formSaisie.values.currency}
+                                                            onChange={(_, value) => formSaisie.setFieldValue('currency', value)}
+                                                            name="currency"
+                                                            slotProps={{
+                                                                button: {
+                                                                    sx: {
+                                                                        boxShadow: 'none',
+                                                                        outline: 'none',
+                                                                        border: 'none',
+                                                                        '&:focus': { outline: 'none' },
+                                                                        '&:focus-visible': { outline: 'none' },
+                                                                    },
+                                                                },
+                                                                listbox: {
+                                                                    variant: 'plain',
+                                                                    sx: {
+                                                                        zIndex: 2000,
+                                                                    },
+                                                                },
+                                                            }}
+                                                            sx={{
+                                                                mr: -1.5,
                                                                 border: 'none',
+                                                                outline: 'none',
+                                                                boxShadow: 'none',
+                                                                '--Select-focusedThickness': '0px',
+                                                                '--Select-indicator-thickness': '0px',
                                                                 '&:focus': { outline: 'none' },
                                                                 '&:focus-visible': { outline: 'none' },
-                                                            },
-                                                        },
-                                                        listbox: {
-                                                            variant: 'plain',
-                                                            sx: {
-                                                                zIndex: 2000,
-                                                            },
-                                                        },
-                                                    }}
-                                                    sx={{
-                                                        mr: -1.5,
-                                                        border: 'none',
-                                                        outline: 'none',
-                                                        boxShadow: 'none',
-                                                        '--Select-focusedThickness': '0px',
-                                                        '--Select-indicator-thickness': '0px',
-                                                        '&:focus': { outline: 'none' },
-                                                        '&:focus-visible': { outline: 'none' },
-                                                    }}
-                                                >
-                                                    {listeDevise.map((value, index) => (
-                                                        <OptionJoy key={index} value={value.code}>
-                                                            {`${value.code}`}
-                                                        </OptionJoy>
-                                                    ))}
-                                                </SelectJoy>
-                                            </>
-                                        }
-                                        sx={{
-                                            width: '100%',
-                                            '& input[type=number]': { MozAppearance: 'textfield' },
-                                            '& input[type=number]::-webkit-outer-spin-button': { WebkitAppearance: 'none', margin: 0 },
-                                            '& input[type=number]::-webkit-inner-spin-button': { WebkitAppearance: 'none', margin: 0 },
-                                        }}
-                                    />
+                                                            }}
+                                                        >
+                                                            {listeDevise.map((value, index) => (
+                                                                <OptionJoy key={index} value={value.code}>
+                                                                    {`${value.code}`}
+                                                                </OptionJoy>
+                                                            ))}
+                                                        </SelectJoy>
+                                                    </>
+                                                }
+                                                sx={{
+                                                    width: '100%',
+                                                    '& input[type=number]': { MozAppearance: 'textfield' },
+                                                    '& input[type=number]::-webkit-outer-spin-button': { WebkitAppearance: 'none', margin: 0 },
+                                                    '& input[type=number]::-webkit-inner-spin-button': { WebkitAppearance: 'none', margin: 0 },
+                                                }}
+                                            />
+                                        </Stack>
+                                    </Stack>
+
+                                    <Stack>
+                                        {/* Bouton Enregistrer */}
+                                        <Button
+                                            autoFocus
+                                            sx={{ flex: 0.06 }}
+                                            variant="contained"
+                                            style={{
+                                                height: "39px",
+                                                textTransform: 'none',
+                                                outline: 'none',
+                                                backgroundColor: initial.theme,
+                                                color: "white",
+                                                marginTop: '0px',
+                                            }}
+                                            onClick={addOrUpdateJournal}
+                                            disabled={!formSaisie.values.valSelectCodeJnl || !formSaisie.values.valSelectMois || !formSaisie.values.valSelectAnnee || tableRows.length === 0}
+                                        >
+                                            {type === 'ajout' ? 'Enregistrer' : 'Modifier'}
+                                        </Button>
+                                    </Stack>
                                 </Stack>
 
-                                {/* Bouton Enregistrer */}
-                                <Button
-                                    autoFocus
-                                    sx={{ minWidth: 100, flex: 0.1 }}
-                                    variant="contained"
-                                    style={{
-                                        height: "39px",
-                                        textTransform: 'none',
-                                        outline: 'none',
-                                        backgroundColor: initial.theme,
-                                        color: "white",
-                                        marginTop: '0px'
-                                    }}
-                                    onClick={() => { viewTableRows(); clearData() }}
-                                    disabled={!formSaisie.values.valSelectCodeJnl || !formSaisie.values.valSelectMois || !formSaisie.values.valSelectAnnee || isDatagridEditing()}
-                                >
-                                    {type === 'ajout' ? 'Enregistrer' : 'Modifier'}
-                                </Button>
-                            </Stack>
-                            <Stack
-                                width={"100%"}
-                                height={"800px"}
-                                style={{
-                                    marginLeft: "0px",
-                                    marginTop: "20px",
-                                }}
-                            >
-                                <DataGrid
-                                    apiRef={apiRef}
-                                    disableMultipleSelection={DataGridStyle.disableMultipleSelection}
-                                    disableColumnSelector={DataGridStyle.disableColumnSelector}
-                                    disableDensitySelector={DataGridStyle.disableDensitySelector}
-                                    disableRowSelectionOnClick
-                                    disableSelectionOnClick={true}
-                                    localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
-                                    slots={{
-                                        toolbar: QuickFilter,
-                                        footer: () => (
-                                            <>
-                                                <Box
-                                                    sx={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        bgcolor: '#F4F9F9',
-                                                        borderTop: '1px solid #ccc',
-                                                        height: '45px',
-                                                        width: '100%',
-                                                    }}
-                                                >
-                                                    {/* Flex identique aux colonnes */}
-                                                    <Box sx={{ flex: 0.4, px: 1 }} >
-                                                        <Typography fontWeight="bold">Total</Typography>
-                                                    </Box>
-                                                    <Box sx={{ flex: 0.8, px: 1 }} />
-                                                    <Box sx={{ flex: 1.3, px: 1 }} />
-                                                    <Box sx={{ flex: 2.7, px: 1 }}>
-                                                    </Box>
-                                                    <Box sx={{ flex: 1.3, textAlign: 'right', pr: 1 }}>
-                                                        <Typography fontWeight="bold">{totalDebitFormatted}</Typography>
-                                                    </Box>
-                                                    <Box sx={{ flex: 1.3, textAlign: 'right', pr: 1, ml: 0.9 }}>
-                                                        <Typography fontWeight="bold">{totalCreditFormatted}</Typography>
-                                                    </Box>
-                                                    <Box sx={{ width: 150, pr: 1 }} />
-                                                </Box>
+                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"left"} alignContent={"left"}
+                                    direction={"row"} justifyContent={"right"} style={{ marginRight: "0px", marginTop: '20px' }}>
+                                    <Tooltip title="Ajouter une ligne">
+                                        <IconButton
+                                            disabled={disableAddRowBouton}
+                                            variant="contained"
+                                            onClick={handleAddNewLine}
+                                            style={{
+                                                width: "35px", height: '35px',
+                                                borderRadius: "2px", borderColor: "transparent",
+                                                backgroundColor: initial.theme,
+                                                textTransform: 'none', outline: 'none'
+                                            }}
+                                        >
+                                            <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
+                                        </IconButton>
+                                    </Tooltip>
 
-                                                <GridPagination
-                                                    sx={{
-                                                        overflow: 'hidden',
-                                                    }}
-                                                />
-                                            </>
-                                        ),
+                                    <Tooltip title="Modifier la ligne sélectionnée">
+                                        <IconButton
+                                            disabled={disableModifyBouton}
+                                            variant="contained"
+                                            onClick={handleEditClick(selectedRowId)}
+                                            style={{
+                                                width: "35px", height: '35px',
+                                                borderRadius: "2px", borderColor: "transparent",
+                                                backgroundColor: initial.theme,
+                                                textTransform: 'none', outline: 'none'
+                                            }}
+                                        >
+                                            <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
+                                        </IconButton>
+                                    </Tooltip>
+
+                                    <Tooltip title="Sauvegarder les modifications">
+                                        <span>
+                                            <IconButton
+                                                disabled={disableSaveBouton}
+                                                variant="contained"
+                                                onClick={handleSaveClick(selectedRowId)}
+                                                style={{
+                                                    width: "35px", height: '35px',
+                                                    borderRadius: "2px", borderColor: "transparent",
+                                                    backgroundColor: initial.theme,
+                                                    textTransform: 'none', outline: 'none'
+                                                }}
+                                            >
+                                                <TfiSave style={{ width: '50px', height: '50px', color: 'white' }} />
+                                            </IconButton>
+                                        </span>
+                                    </Tooltip>
+
+                                    <Tooltip title="Annuler les modifications">
+                                        <span>
+                                            <IconButton
+                                                disabled={disableCancelBouton}
+                                                variant="contained"
+                                                onClick={handleCancelClick(selectedRowId)}
+                                                style={{
+                                                    width: "35px", height: '35px',
+                                                    borderRadius: "2px", borderColor: "transparent",
+                                                    backgroundColor: initial.button_delete_color,
+                                                    textTransform: 'none', outline: 'none'
+                                                }}
+                                            >
+                                                <VscClose style={{ width: '50px', height: '50px', color: 'white' }} />
+                                            </IconButton>
+                                        </span>
+                                    </Tooltip>
+
+                                    <Tooltip title="Supprimer la ligne sélectionné">
+                                        <span>
+                                            <IconButton
+                                                disabled={disableDeleteBouton}
+                                                onClick={handleOpenDialogConfirmDeleteRow}
+                                                variant="contained"
+                                                style={{
+                                                    width: "35px", height: '35px',
+                                                    borderRadius: "2px", borderColor: "transparent",
+                                                    backgroundColor: initial.button_delete_color,
+                                                    textTransform: 'none', outline: 'none'
+                                                }}
+                                            >
+                                                <IoMdTrash style={{ width: '50px', height: '50px', color: 'white' }} />
+                                            </IconButton>
+                                        </span>
+                                    </Tooltip>
+                                </Stack>
+                                <Stack
+                                    width={"100%"}
+                                    style={{
+                                        marginLeft: "0px",
+                                        marginTop: "20px",
                                     }}
-                                    sx={{
-                                        ...DataGridStyle.sx, // les styles existants
-                                        '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
-                                            outline: 'none',
-                                            border: 'none',
-                                        },
-                                        '& .MuiInputBase-root': {
-                                            boxShadow: 'none',
-                                            border: 'none',
-                                        },
-                                        '& .MuiOutlinedInput-notchedOutline': {
-                                            border: 'none',
-                                        },
-                                        '& .cell-error': {
-                                            backgroundColor: 'rgba(238, 109, 109, 0.3) ',
-                                        },
-                                        '& .cell-selected': {
-                                            backgroundColor: '#e0f7fa',
-                                        },
-                                        '& .MuiDataGrid-virtualScroller': {
-                                            maxHeight: '500px',
-                                        },
-                                    }}
-                                    processRowUpdate={(newRow, oldRow) => {
-                                        const updatedRows = tableRows.map((row) =>
-                                            row.id === oldRow.id ? { ...row, ...newRow } : row
-                                        );
-                                        setTableRows(updatedRows);
-                                        return newRow;
-                                    }}
-                                    rowHeight={DataGridStyle.rowHeight}
-                                    columnHeaderHeight={DataGridStyle.columnHeaderHeight}
-                                    editMode='row'
-                                    // editMode="cell"
-                                    // columns={SaisieColumnHeader}
-                                    columns={getSaisieColumnHeader()}
-                                    // columns={columns}
-                                    rows={tableRows}
-                                    initialState={{
-                                        pagination: {
-                                            paginationModel: { page: 0, pageSize: 100 },
-                                        },
-                                    }}
-                                    experimentalFeatures={{ newEditingApi: true }}
-                                    pageSizeOptions={[5, 10, 20, 30, 50, 100]}
-                                    pagination={DataGridStyle.pagination}
-                                    // checkboxSelection={DataGridStyle.checkboxSelection}
-                                    columnVisibilityModel={{
-                                        id: false,
-                                    }}
-                                    onRowSelectionModelChange={handleSelectionChange}
-                                    onRowEditStart={handleRowEditStart}
-                                    onCellClick={handleCellClick}
-                                />
-                                <Typography fontWeight="bold">
-                                    {
-                                        "Débit - Crédit : " + totalFormatted + " " +
-                                        (formSaisie.values.choixDevise === "MGA" ? formSaisie.values.choixDevise : formSaisie.values.currency === null ? '' : formSaisie.values.currency)
-                                    }
-                                </Typography>
-                                <DropPDFUploader
-                                    mode={type}
-                                    file={file}
-                                    setFile={setFile}
-                                />
+                                >
+                                    <Stack
+                                        width="100%"
+                                        maxHeight="900px"
+                                        minHeight="600px"
+                                        style={{
+                                            marginLeft: "0px",
+                                        }}
+                                    >
+                                        <DataGrid
+                                            autoHeight={false}
+                                            apiRef={apiRef}
+                                            disableMultipleSelection={DataGridStyle.disableMultipleSelection}
+                                            disableColumnSelector={DataGridStyle.disableColumnSelector}
+                                            disableDensitySelector={DataGridStyle.disableDensitySelector}
+                                            disableRowSelectionOnClick
+                                            disableSelectionOnClick={true}
+                                            localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                                            slots={{
+                                                toolbar: QuickFilter,
+                                            }}
+                                            sx={{
+                                                ...DataGridStyle.sx,
+                                                '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+                                                    outline: 'none',
+                                                    border: 'none',
+                                                },
+                                                '& .MuiInputBase-root': {
+                                                    boxShadow: 'none',
+                                                    border: 'none',
+                                                },
+                                                '& .MuiOutlinedInput-notchedOutline': {
+                                                    border: 'none',
+                                                },
+                                                '& .cell-error': {
+                                                    backgroundColor: 'rgba(238, 109, 109, 0.3) ',
+                                                },
+                                                '& .cell-selected': {
+                                                    backgroundColor: '#e0f7fa',
+                                                },
+                                            }}
+                                            processRowUpdate={processRowUpdate}
+                                            rowHeight={DataGridStyle.rowHeight}
+                                            columnHeaderHeight={DataGridStyle.columnHeaderHeight}
+                                            editMode='row'
+                                            columns={columns}
+                                            rows={tableRows}
+                                            initialState={{
+                                                pagination: {
+                                                    paginationModel: { page: 0, pageSize: 100 },
+                                                },
+                                            }}
+                                            experimentalFeatures={{ newEditingApi: true }}
+                                            pageSizeOptions={[5, 10, 20, 30, 50, 100]}
+                                            pagination={DataGridStyle.pagination}
+                                            checkboxSelection={DataGridStyle.checkboxSelection}
+                                            columnVisibilityModel={{
+                                                id: false,
+                                            }}
+
+                                            onRowSelectionModelChange={ids => {
+                                                setSelectedRow(ids);
+                                                saveSelectedRow(ids);
+                                                deselectRow(ids);
+                                            }}
+                                            rowModesModel={rowModesModel}
+                                            rowSelectionModel={selectedRow}
+                                            onRowModesModelChange={handleRowModesModelChange}
+                                            onCellClick={handleCellClick}
+                                            onRowEditStop={handleRowEditStop}
+                                            onRowEditStart={(params, event) => {
+                                                if (!selectedRow.length || selectedRow[0] !== params.id) {
+                                                    event.defaultMuiPrevented = true;
+                                                }
+                                                if (selectedRow.includes(params.id)) {
+                                                    setDisableAddRowBouton(true);
+                                                    event.stopPropagation();
+
+                                                    const rowId = params.id;
+                                                    const rowData = params.row;
+
+                                                    formNewParam.setFieldValue("idSaisie", rowId);
+                                                    formNewParam.setFieldValue("jour", rowData.jour ?? '');
+                                                    formNewParam.setFieldValue("compte", rowData.compte ?? '');
+                                                    formNewParam.setFieldValue("piece", rowData.piece ?? '');
+                                                    formNewParam.setFieldValue("libelle", rowData.libelle ?? '');
+                                                    formNewParam.setFieldValue("montant_devise", rowData.montant_devise ?? 0);
+                                                    formNewParam.setFieldValue("debit", rowData.debit ?? 0);
+                                                    formNewParam.setFieldValue("credit", rowData.credit ?? 0);
+
+                                                    setRowModesModel((oldModel) => ({
+                                                        ...oldModel,
+                                                        [rowId]: { mode: GridRowModes.Edit },
+                                                    }));
+                                                }
+                                            }}
+                                        />
+
+                                    </Stack>
+                                    <Typography fontWeight="bold">
+                                        {
+                                            "Débit - Crédit : " + totalFormatted + " " +
+                                            (formSaisie.values.choixDevise === "MGA" ? formSaisie.values.choixDevise : formSaisie.values.currency === null ? '' : formSaisie.values.currency)
+                                        }
+                                    </Typography>
+                                    <Stack
+                                        style={{
+                                            marginBottom: '25px'
+                                        }}
+                                    >
+                                        <DropPDFUploader
+                                            mode={type}
+                                            file={file}
+                                            setFile={setFile}
+                                        />
+                                    </Stack>
+                                </Stack>
                             </Stack>
-                        </Stack>
-                    </TabPanel>
-                </TabContext>
-            </DialogContent>
-            <DialogActions>
-                <Button autoFocus
-                    style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
-                    type='submit'
-                    onClick={handleClose}
+                        </TabPanel>
+                    </TabContext>
+                </DialogContent>
+
+                <DialogTitle
+                    sx={{
+                        m: 0,
+                        py: 1.5,
+                        px: 2,
+                        bgcolor: "#F9FAFB",
+                        borderTop: "1px solid #ddd",
+                    }}
                 >
-                    Fermer
-                </Button>
-            </DialogActions>
-        </BootstrapDialog>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            width: '100%',
+                            px: 2,
+                        }}
+                    >
+                        <Box sx={{ flex: 0.4, display: 'flex', justifyContent: 'flex-start' }}>
+                            <Typography fontWeight="bold" variant="h6" color="text.primary">
+                                Total
+                            </Typography>
+                        </Box>
+                        <Box sx={{ flex: 0.8 }} />
+                        <Box sx={{ flex: 1.3 }} />
+                        <Box sx={{ flex: 2.7 }} />
+
+                        {
+                            (formSaisie.values.choixDevise === 'Devises' && (
+                                <Box sx={{ flex: 1.3 }} />
+                            ))
+                        }
+
+                        <Box sx={{ flex: 1.4, textAlign: 'right' }}>
+                            <Typography fontWeight="bold" variant="subtitle1" >
+                                {totalDebitFormatted}
+                            </Typography>
+                        </Box>
+
+                        <Box sx={{ flex: 1.3, textAlign: 'right', pr: paddingRightTotal }}>
+                            <Typography fontWeight="bold" variant="subtitle1" >
+                                {totalCreditFormatted}
+                            </Typography>
+                        </Box>
+                    </Box>
+                </DialogTitle>
+            </BootstrapDialog>
+        </>
     )
 }
 

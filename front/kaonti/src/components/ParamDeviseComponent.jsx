@@ -1,7 +1,6 @@
 import { React, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Typography, Stack, Paper, IconButton } from '@mui/material';
-import Button from '@mui/material/Button';
+import { Typography, Stack, Paper, IconButton, FormControl, Input } from '@mui/material';
 import { TbPlaylistAdd } from "react-icons/tb";
 import { FaRegPenToSquare } from "react-icons/fa6";
 import { TfiSave } from "react-icons/tfi";
@@ -25,6 +24,8 @@ import useAuth from '../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
 import axios from '../../config/axios';
 import toast from 'react-hot-toast';
+import { useFormik } from 'formik';
+import * as Yup from "yup";
 
 export default function ParamDeviseComponent() {
     const initial = init[0];
@@ -39,16 +40,19 @@ export default function ParamDeviseComponent() {
     const compteId = decoded?.UserInfo?.compteId || null;
     const userId = decoded?.UserInfo?.userId || null;
     const navigate = useNavigate();
-    // --- États pour la gestion d'édition et des boutons (UNE SEULE FOIS) ---
+    const [editableRow, setEditableRow] = useState(true);
+
     const [rowModesModel, setRowModesModel] = useState({});
     const [selectedRowId, setSelectedRowId] = useState([]);
     const [disableModifyBouton, setDisableModifyBouton] = useState(true);
     const [disableCancelBouton, setDisableCancelBouton] = useState(true);
     const [disableSaveBouton, setDisableSaveBouton] = useState(true);
     const [disableDeleteBouton, setDisableDeleteBouton] = useState(true);
+    const [disableAddRowBouton, setDisableAddRowBouton] = useState(false);
+
     const [openDialogDeleteRow, setOpenDialogDeleteRow] = useState(false);
-    const [editRow, setEditRow] = useState(null);
-    const [newRow, setNewRow] = useState(null);
+
+    const [selectedRow, setSelectedRow] = useState([]);
 
     // récupération infos de dossier sélectionné
     useEffect(() => {
@@ -87,24 +91,88 @@ export default function ParamDeviseComponent() {
         navigate('/tab/home');
     }
 
+    const formNewParam = useFormik({
+        initialValues: {
+            idDevise: 0,
+            compteId: compteId,
+            fileId: fileId,
+            code: '',
+            libelle: '',
+        },
+        onSubmit: (values) => {
+
+        },
+        validateOnChange: false,
+        validateOnBlur: true,
+    });
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        formNewParam.setFieldValue(name, value);
+    };
+
     const deviseColumns = [
         {
             field: 'code',
             headerName: 'Code',
-            width: 120,
-            editable: true,
+            flex: 1,
+            editable: editableRow,
             headerAlign: 'left',
             align: 'left',
+            renderEditCell: (params) => {
+                return (
+                    <FormControl fullWidth style={{ height: '100%' }}>
+                        <Input
+                            style={{
+                                height: '100%', alignItems: 'center',
+                                outline: 'none',
+                            }}
+                            name='code'
+                            type="text"
+                            value={formNewParam.values.code}
+                            onChange={handleChange}
+                            label="code"
+                            disableUnderline={true}
+                        // disabled={disableDefaultFieldModif}
+                        />
+                    </FormControl>
+                );
+            },
         },
         {
             field: 'libelle',
             headerName: 'Libellé',
-            width: 200,
-            editable: true,
+            flex: 5,
+            editable: editableRow,
             headerAlign: 'left',
             align: 'left',
+            renderEditCell: (params) => {
+                return (
+                    <FormControl fullWidth style={{ height: '100%' }}>
+                        <Input
+                            style={{
+                                height: '100%', alignItems: 'center',
+                                outline: 'none',
+                            }}
+                            name='libelle'
+                            type="text"
+                            value={formNewParam.values.libelle}
+                            onChange={handleChange}
+                            label="libelle"
+                            disableUnderline={true}
+                        // disabled={disableDefaultFieldModif}
+                        />
+                    </FormControl>
+                );
+            },
         },
     ];
+
+    const handleRowEditStop = (params, event) => {
+        if (params.reason === GridRowEditStopReasons.rowFocusOut) {
+            event.defaultMuiPrevented = true;
+        }
+    }
 
     // Charger la liste des devises
     const fetchDevises = () => {
@@ -116,7 +184,6 @@ export default function ParamDeviseComponent() {
                     libelle: item.libelle,
                     id_compte: item.id_compte
                 })) : [];
-                console.log("data : ", data);
                 setRows(data);
             })
             .catch(() => setRows([]));
@@ -131,128 +198,143 @@ export default function ParamDeviseComponent() {
         if (ids.length === 1) {
             setSelectedRowId(ids);
             setDisableModifyBouton(false);
-            setDisableSaveBouton(false);
+            setDisableSaveBouton(true);
             setDisableCancelBouton(false);
             setDisableDeleteBouton(false);
         } else {
             setSelectedRowId([]);
             setDisableModifyBouton(true);
-            setDisableSaveBouton(true);
+            setDisableSaveBouton(false);
             setDisableCancelBouton(true);
             setDisableDeleteBouton(true);
         }
     }
 
+    const deselectRow = (ids) => {
+        const deselected = selectedRowId.filter(id => !ids.includes(id));
+
+        const updatedRowModes = { ...rowModesModel };
+        deselected.forEach((id) => {
+            updatedRowModes[id] = { mode: GridRowModes.View, ignoreModifications: true };
+        });
+        setRowModesModel(updatedRowModes);
+
+        setDisableAddRowBouton(false);
+        setSelectedRowId(ids);
+    }
+
     // Edition
-    const handleEditClick = (ids) => () => {
-        if (ids.length === 1) {
-            const row = rows.find(r => r.id === ids[0]);
-            setEditRow(row);
-            setNewRow(null);
-            setRowModesModel({ ...rowModesModel, [ids[0]]: { mode: GridRowModes.Edit } });
+    const handleEditClick = (id) => () => {
+        const selectedRowInfos = rows.find(r => r.id === id[0]);
+        // setEditRow(row);
+        // setNewRow(null);
+        formNewParam.setFieldValue('idDevise', selectedRowInfos.id ?? null);
+        formNewParam.setFieldValue('compteId', compteId);
+        formNewParam.setFieldValue('fileId', fileId);
+        formNewParam.setFieldValue('code', selectedRowInfos.code ?? '');
+        formNewParam.setFieldValue('libelle', selectedRowInfos.libelle ?? '');
+
+        setRowModesModel({ ...rowModesModel, [id[0]]: { mode: GridRowModes.Edit } });
+        setDisableSaveBouton(false);
+    };
+
+    const handleCellEditCommit = (params) => {
+        if (selectedRowId.length > 1 || selectedRowId.length === 0) {
+            setEditableRow(false);
+            setDisableModifyBouton(true);
+            setDisableSaveBouton(true);
+            setDisableCancelBouton(true);
+            toast.error("Sélectionnez une seule ligne pour pouvoir la modifier");
+        } else {
+            setDisableModifyBouton(false);
             setDisableSaveBouton(false);
+            setDisableCancelBouton(false);
+            if (!selectedRowId.includes(params.id)) {
+                setEditableRow(false);
+                toast.error("Sélectionnez une ligne pour pouvoir la modifier");
+            } else {
+                setEditableRow(true);
+            }
         }
     };
 
     // Ajout
     const handleOpenDialogAddNewAssocie = () => {
+        // if (newRow) return;
 
-        if (newRow) return;
-        const newId = -(Math.max(0, ...rows.map(r => r.id || 0)) + 1);
-        const newDevise = { id: newId, code: '', libelle: '', id_compte: Number(compteId), id_dossier : Number(fileId) };
-        setRows([...rows, newDevise]);
-        setNewRow(newDevise);
-        setEditRow(null);
-        setSelectedRowId([newId]);
-        setRowModesModel({ ...rowModesModel, [newId]: { mode: GridRowModes.Edit } });
-        setDisableSaveBouton(false);
-        setDisableModifyBouton(true);
+        setDisableModifyBouton(false);
         setDisableCancelBouton(false);
-        setDisableDeleteBouton(true);
+        setDisableDeleteBouton(false);
+        setDisableSaveBouton(false);
+
+        const newId = -Date.now();
+        formNewParam.setFieldValue("idDevise", newId);
+        const newDevise = {
+            id_compte: Number(compteId),
+            id_dossier: Number(id),
+            id: newId,
+            code: '',
+            libelle: '',
+        };
+
+        setRows([...rows, newDevise]);
+        setSelectedRowId([newId]);
+        setSelectedRow([newId]);
+        setDisableAddRowBouton(true);
     }
 
     // Sauvegarde
-    const handleSaveClick = (ids) => () => {
-        if (editRow) {
-            axios.put(`/devises/devise/${editRow.id}`, editRow)
-                .then(res => {
-                    if (res.data && res.data.state) {
-                        fetchDevises();
-                        setEditRow(null);
-                        setNewRow(null);
-                        setRowModesModel({});
-                        setSelectedRowId([]);
-                        setDisableSaveBouton(true);
-                        setDisableModifyBouton(true);
-                        setDisableCancelBouton(true);
-                        setDisableDeleteBouton(true);
-                        toast.success(res.data.msg || 'Devise modifiée');
-                    } else {
-                        toast.error(res.data.msg || 'Erreur lors de la modification');
-                    }
-                })
-                .catch(() => toast.error('Erreur lors de la modification'));
-        } else if(newRow) {
-            console.log(newRow);
-            axios.post(`/devises/devise`, newRow)
-                .then(res => {
-                    if (res.data && res.data.state) {
-                        fetchDevises();
-                        setEditRow(null);
-                        setNewRow(null);
-                        setRowModesModel({});
-                        setSelectedRowId([]);
-                        setDisableSaveBouton(true);
-                        setDisableModifyBouton(true);
-                        setDisableCancelBouton(true);
-                        setDisableDeleteBouton(true);
-                        toast.success(res.data.msg || 'Devise ajoutée');
-                    } else {
-                        toast.error(res.data.msg || 'Erreur lors de l\'ajout');
-                    }
-                })
-                .catch(() => toast.error('Erreur lors de l\'ajout'));
-        }
+    const handleSaveClick = (id) => () => {
+        setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
+        const dataToSend = { ...formNewParam.values, fileId, compteId };
+        axios.post(`/devises/devise`, dataToSend).then((response) => {
+            const resData = response.data;
+            if (resData.state) {
+                setDisableAddRowBouton(false);
+                setDisableSaveBouton(true);
+                formNewParam.resetForm();
+                toast.success(resData.msg);
+                fetchDevises();
+            } else {
+                toast.error(resData.msg);
+            }
+        })
     };
 
     // Annulation
-    const handleCancelClick = (ids) => () => {
-        setEditRow(null);
-        setNewRow(null);
-        setRowModesModel({});
-        setSelectedRowId([]);
+    const handleCancelClick = (id) => () => {
+        setRowModesModel({
+            ...rowModesModel,
+            [id]: { mode: GridRowModes.View, ignoreModifications: true },
+        });
+        setDisableAddRowBouton(false);
         setDisableSaveBouton(true);
-        setDisableModifyBouton(true);
-        setDisableCancelBouton(true);
         setDisableDeleteBouton(true);
-
-        if (newRow) {
-            setRows(rows.filter(r => r.id !== newRow.id));
-        }
+        setDisableModifyBouton(true);
+        setSelectedRow([]);
+        setSelectedRowId([]);
     };
 
     // Suppression
     const handleOpenDialogConfirmDeleteAssocieRow = () => {
         setOpenDialogDeleteRow(true);
+        setDisableAddRowBouton(false);
     }
+
     const deleteRow = (value) => {
         if (value === true && selectedRowId.length === 1) {
             const idToDelete = selectedRowId[0];
+            if (idToDelete < 0) {
+                setOpenDialogDeleteRow(false);
+                setRows(rows.filter((row) => row.id !== idToDelete));
+                return;
+            }
             axios.delete(`/devises/devise/${idToDelete}`)
                 .then(res => {
-                    console.log('Réponse suppression:', res.data);
                     if (res.data && res.data.state) {
                         setRows(rows.filter((row) => row.id !== idToDelete));
-                        setEditRow(null);
-                        setNewRow(null);
-                        setRowModesModel({});
-                        setSelectedRowId([]);
-                        setDisableSaveBouton(true);
-                        setDisableModifyBouton(true);
-                        setDisableCancelBouton(true);
-                        setDisableDeleteBouton(true);
-                        toast.success(res.data.msg || 'Devise supprimée');
                         setOpenDialogDeleteRow(false);
+                        setDisableAddRowBouton(false);
                     } else {
                         toast.error(res.data.msg || 'Erreur lors de la suppression');
                         setOpenDialogDeleteRow(false);
@@ -268,12 +350,9 @@ export default function ParamDeviseComponent() {
     }
 
     // Edition cellule
-    const processRowUpdate = (updatedRow) => {
-        if (editRow) {
-            setEditRow(updatedRow);
-        } else if (newRow) {
-            setNewRow(updatedRow);
-        }
+    const processRowUpdate = (newRow) => {
+        const updatedRow = { ...newRow, isNew: false };
+        setRows(rows.map((row) => (row.id === newRow.id ? updatedRow : row)));
         return updatedRow;
     };
 
@@ -309,6 +388,7 @@ export default function ParamDeviseComponent() {
                             <Tooltip title="Ajouter une ligne">
                                 <span>
                                     <IconButton
+                                        disabled={disableAddRowBouton}
                                         variant="contained"
                                         onClick={handleOpenDialogAddNewAssocie}
                                         style={{
@@ -395,35 +475,70 @@ export default function ParamDeviseComponent() {
                             <DataGrid
                                 rows={rows}
                                 columns={deviseColumns}
-                                autoHeight
-                                pageSizeOptions={[5, 10, 20, 50, 100]}
                                 disableMultipleSelection={DataGridStyle.disableMultipleSelection}
                                 disableColumnSelector={DataGridStyle.disableColumnSelector}
                                 disableDensitySelector={DataGridStyle.disableDensitySelector}
+                                localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
                                 disableRowSelectionOnClick
                                 disableSelectionOnClick={true}
-                                localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
                                 slots={{ toolbar: QuickFilter }}
-                                sx={DataGridStyle.sx}
+                                sx={{
+                                    ...DataGridStyle.sx,
+                                    '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+                                        outline: 'none',
+                                        border: 'none',
+                                    },
+                                    '& .MuiDataGrid-virtualScroller': {
+                                        maxHeight: '100%',
+                                    },
+                                }}
                                 rowHeight={DataGridStyle.rowHeight}
                                 columnHeaderHeight={DataGridStyle.columnHeaderHeight}
                                 editMode='row'
+                                onRowClick={(e) => handleCellEditCommit(e.row)}
                                 onRowSelectionModelChange={ids => {
+                                    setSelectedRow(ids);
                                     saveSelectedRow(ids);
+                                    deselectRow(ids);
                                 }}
                                 rowModesModel={rowModesModel}
                                 onRowModesModelChange={handleRowModesModelChange}
+                                onRowEditStop={handleRowEditStop}
                                 processRowUpdate={processRowUpdate}
                                 initialState={{
                                     pagination: {
                                         paginationModel: { page: 0, pageSize: 100 },
                                     },
                                 }}
-                                experimentalFeatures={{ newEditingApi: true }}
+                                pageSizeOptions={[50, 100]}
                                 pagination={DataGridStyle.pagination}
                                 checkboxSelection={DataGridStyle.checkboxSelection}
                                 columnVisibilityModel={{
                                     id: false,
+                                }}
+                                rowSelectionModel={selectedRow}
+                                onRowEditStart={(params, event) => {
+                                    if (!selectedRow.length || selectedRow[0] !== params.id) {
+                                        event.defaultMuiPrevented = true;
+                                    }
+                                    if (selectedRow.includes(params.id)) {
+                                        setDisableAddRowBouton(true);
+                                        event.stopPropagation();
+
+                                        const rowId = params.id;
+                                        const rowData = params.row;
+
+                                        formNewParam.setFieldValue("idDevise", rowId);
+                                        formNewParam.setFieldValue("code", rowData.code ?? '');
+                                        formNewParam.setFieldValue("libelle", rowData.libelle ?? '');
+
+                                        setRowModesModel((oldModel) => ({
+                                            ...oldModel,
+                                            [rowId]: { mode: GridRowModes.Edit },
+                                        }));
+
+                                        setDisableSaveBouton(false);
+                                    }
                                 }}
                             />
                         </Stack>
