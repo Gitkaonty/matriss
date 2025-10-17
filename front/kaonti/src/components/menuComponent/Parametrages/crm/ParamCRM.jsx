@@ -41,10 +41,10 @@ import { TbPlaylistAdd } from 'react-icons/tb';
 import { IoMdTrash } from 'react-icons/io';
 
 export default function ParamCRM() {
-  // État pour le type de centre fiscal (DGE ou centre fiscale)
-  const [typeCentre, setTypeCentre] = useState('DGE');
- //Choix TAB value-------------------------------------------------------------------------------------
- const [value, setValue] = useState(0);
+    // État pour le type de centre fiscal (DGE ou centre fiscale)
+    const [typeCentre, setTypeCentre] = useState('DGE');
+    //Choix TAB value-------------------------------------------------------------------------------------
+    const [valueEbilan, setValueEbilan] = useState('0');
 
     const navigate = useNavigate();
     //récupération information du dossier sélectionné

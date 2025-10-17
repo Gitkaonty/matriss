@@ -116,7 +116,7 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
   const listeEtatPlp = await etatsplpmatrices.findAll({});
   const listeRubrique = await rubriquesmatrices.findAll({});
   const listeEtatCentresFiscales = await etatsCentresFiscalesmatrices.findAll({});
-  const listeEtatDge = await etatsDgeMatrices.findAll({});
+  //const listeEtatDge = await etatsDgeMatrices.findAll({});
 
   const createdExerciceInfosData = await exercice.findOne({
     where: { id: createExercice.id }
