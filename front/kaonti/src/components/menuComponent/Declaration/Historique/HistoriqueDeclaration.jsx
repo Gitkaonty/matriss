@@ -78,7 +78,20 @@ export default function HistoriqueDeclaration({
 
       const { data } = await axios.get('/historique/declaration', { params });
       if (data?.success) {
-        setRows(Array.isArray(data.historique) ? data.historique : []);
+        const allRows = Array.isArray(data.historique) ? data.historique : [];
+
+        // Filtrer pour ne garder que les fichiers XML (exclure PDF et Excel)
+        const xmlOnlyRows = allRows.filter(row => {
+          const designation = (row.designation || '').toLowerCase();
+          // Exclure les fichiers PDF et Excel
+          return !designation.includes('.pdf') &&
+                 !designation.includes('.xlsx') &&
+                 !designation.includes('.xls') &&
+                 !designation.includes('pdf') &&
+                 !designation.includes('excel');
+        });
+
+        setRows(xmlOnlyRows);
       } else {
         setRows([]);
         toast.error(data?.message || 'Erreur lors du chargement de l’historique');

@@ -7,13 +7,9 @@ import { Typography, Stack, Paper, IconButton, FormControl, Input } from "@mui/m
 import Button from "@mui/material/Button";
 
 import { TbPlaylistAdd } from "react-icons/tb";
-
 import { FaRegPenToSquare } from "react-icons/fa6";
-
 import { TfiSave } from "react-icons/tfi";
-
 import { VscClose } from "react-icons/vsc";
-
 import { IoMdTrash } from "react-icons/io";
 
 import Tooltip from "@mui/material/Tooltip";
@@ -63,43 +59,29 @@ export default function ClassificationSalariesComponent() {
     const initial = init[0];
 
     const { id } = useParams(); // id du dossier
-
     const [fileId, setFileId] = useState(0);
 
     const [fileInfos, setFileInfos] = useState("");
 
     const [noFile, setNoFile] = useState(false);
-
     const [rows, setRows] = useState([]);
-
     const { auth } = useAuth();
-
     const decoded = auth?.accessToken ? jwtDecode(auth.accessToken) : undefined;
-
     const compteId = decoded?.UserInfo?.compteId || null;
-
     const userId = decoded?.UserInfo?.userId || null;
-
     const navigate = useNavigate();
     const [editableRow, setEditableRow] = useState(true);
 
     const [rowModesModel, setRowModesModel] = useState({});
-
     const [selectedRowId, setSelectedRowId] = useState([]);
-
     const [disableModifyBouton, setDisableModifyBouton] = useState(true);
-
     const [disableCancelBouton, setDisableCancelBouton] = useState(true);
-
     const [disableSaveBouton, setDisableSaveBouton] = useState(true);
-
     const [disableDeleteBouton, setDisableDeleteBouton] = useState(true);
     const [disableAddRowBouton, setDisableAddRowBouton] = useState(false);
 
     const [openDialogDeleteRow, setOpenDialogDeleteRow] = useState(false);
-
     const [editRow, setEditRow] = useState(null);
-
     const [newRow, setNewRow] = useState(null);
     const [selectedRow, setSelectedRow] = useState([]);
 
@@ -109,39 +91,31 @@ export default function ClassificationSalariesComponent() {
         const navigationEntries = performance.getEntriesByType("navigation");
 
         let idFile = 0;
-
         if (navigationEntries.length > 0) {
             const navigationType = navigationEntries[0].type;
 
             if (navigationType === "reload") {
                 const idDossier = sessionStorage.getItem("fileId");
-
                 setFileId(idDossier);
-
                 idFile = idDossier;
             } else {
                 sessionStorage.setItem("fileId", id);
 
                 setFileId(id);
-
                 idFile = id;
             }
         }
-
         GetInfosIdDossier(idFile);
     }, []);
 
     const GetInfosIdDossier = (id) => {
         axios.get(`/home/FileInfos/${id}`).then((response) => {
             const resData = response.data;
-
             if (resData.state) {
                 setFileInfos(resData.fileInfos[0]);
-
                 setNoFile(false);
             } else {
                 setFileInfos([]);
-
                 setNoFile(true);
             }
         });
@@ -268,7 +242,6 @@ export default function ClassificationSalariesComponent() {
 
                 setRows(data);
             })
-
             .catch(() => setRows([]));
     };
 

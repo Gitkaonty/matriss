@@ -754,15 +754,15 @@ export default function DeclarationComm() {
                                     // mx: 'auto',
                                 }}>
                                     <TabList onChange={handleChangeTAB} aria-label="lab API tabs example" variant='scrollable'>
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="SVT" value="1" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="ADR" value="2" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="AC" value="3" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="AI" value="4" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="DEB" value="5" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="MV" value="6" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="PSV" value="7" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="PL" value="8" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="PLP" value="9" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="SVT" value="1" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="ADR" value="2" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="AC" value="3" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="AI" value="4" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="DEB" value="5" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="MV" value="6" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="PSV" value="7" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="PL" value="8" />
+                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="PLP" value="9" />
                                     </TabList>
                                 </Box>
                                 <TabPanel

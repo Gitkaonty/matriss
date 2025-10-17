@@ -14,6 +14,39 @@ const generateIrsaContent = async (id_compte, id_dossier, id_exercice, mois, ann
         }
     });
 
+    // Préparer le mapping pour afficher le libellé de fonction (et non l'ID)
+const PersonnelModel = db.personnels;
+const FonctionModel = db.fonctions;
+let persByMat = new Map(); // matricule -> id_fonction
+let fonctionById = new Map(); // id_fonction -> nom
+
+try {
+    if (PersonnelModel && typeof PersonnelModel.findAll === 'function') {
+        const personnels = await PersonnelModel.findAll({
+            where: { id_compte, id_dossier },
+            attributes: ['matricule', 'id_fonction']
+        });
+
+        persByMat = new Map(
+            personnels.map(p => [String(p.matricule).trim(), Number(p.id_fonction)])
+        );
+    }
+
+    if (FonctionModel && typeof FonctionModel.findAll === 'function') {
+        const fonctions = await FonctionModel.findAll({
+            where: { id_compte, id_dossier },
+            attributes: ['id', 'nom']
+        });
+
+        fonctionById = new Map(
+            fonctions.map(f => [Number(f.id), String(f.nom)])
+        );
+    }
+} catch (e) {
+    console.warn('[IRSA PDF] mapping personnels/fonctions failed:', e?.message || e);
+}
+
+
     const buildTable = (data) => {
         const body = [];
     
@@ -55,12 +88,16 @@ const generateIrsaContent = async (id_compte, id_dossier, id_exercice, mois, ann
     
         const formatAmount = (value) => {
             if (value == null) return '0.00';
-            return Number(value).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        };
-        
-    
+            return Number(value)
+              .toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+              .replace(/\u202F/g, ' '); // remplace l’espace fine insécable
+          };
         // Lignes des données
         data.forEach(row => {
+            // Résoudre le libellé de la fonction via matricule -> id_fonction -> nom
+            const mat = String(row.matricule || '').trim();
+            const idFonct = persByMat.get(mat);
+            const fonctionLibelle = idFonct != null ? (fonctionById.get(Number(idFonct)) || '') : '';
             const values = [
                 parseFloat(row.salaireBase) || 0,
                 parseFloat(row.heuresSupp) || 0,
@@ -87,7 +124,7 @@ const generateIrsaContent = async (id_compte, id_dossier, id_exercice, mois, ann
                 { text: row.prenom || '', alignment: 'left', margin: [0, 2, 0, 2] },
                 { text: row.cin || '', alignment: 'left', margin: [0, 2, 0, 2] },
                 { text: row.cnaps || '', alignment: 'left', margin: [0, 2, 0, 2] },
-                { text: row.fonction || '', alignment: 'left', margin: [0, 2, 0, 2], noWrap: false },
+                { text: fonctionLibelle || '', alignment: 'left', margin: [0, 2, 0, 2], noWrap: false },
                 { text: formatDate(row.dateEntree) || '', alignment: 'center', margin: [0, 2, 0, 2] },
                 { text: formatDate(row.dateSortie) || '', alignment: 'center', margin: [0, 2, 0, 2] },
                 { text: formatAmount(values[0]), alignment: 'right', margin: [0, 2, 0, 2] },
@@ -138,8 +175,7 @@ const generateIrsaContent = async (id_compte, id_dossier, id_exercice, mois, ann
             {
                 table: {
                     headerRows: 1,
-                    // Largeurs adaptées pour IRSA (22 colonnes)
-                    widths: [35, 35, 35, 35, 40, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 40, 40, 35, 40, 35, 25, 25],
+                    widths: ['*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', 35, 35],
                     body
                 },
                 layout: 'lightHorizontalLines'

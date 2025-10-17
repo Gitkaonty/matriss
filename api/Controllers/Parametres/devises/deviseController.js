@@ -88,7 +88,7 @@ exports.createDevise = async (req, res) => {
 
   } catch (error) {
     if (error.name === 'SequelizeUniqueConstraintError') {
-      return res.json({ state: false, msg: 'Ce code existe déjà.' });
+      return res.json({ state: false, msg: 'Ce code existe déjà dans ce dossier.' });
     }
     return res.status(500).json({ state: false, msg: error.message });
   }

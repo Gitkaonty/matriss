@@ -588,16 +588,38 @@ export default function ImportModelePlanComptable() {
     }
 
     return (
-        <Box>
+        <Box sx={{ 
+            width: 'calc(100% - 40px)', 
+            maxWidth: 'calc(100vw - 100px)',
+            padding: '0 0 0 30px',
+            boxSizing: 'border-box'
+        }}>
             {openDetailsAnomalie ? <PopupViewDetailsImportModelePc msg={msgAnomalie} confirmationState={handleCloseAnomalieDetails} /> : null}
             {openDialogConfirmImport ? <PopupActionConfirm msg={"Voulez-vous vraiment importer le modèle de plan comptable en cours?"} confirmationState={handleImportModelePc} /> : null}
             {anomaliePersiste ? <PopupInformation msg={"Veuillez corriger toutes les anomalies pour pouvoir importer le modèle."} confirmationState={handleCloseInformation} /> : null}
             {nameExist ? <PopupInformation msg={"Le nom du modèle existe déjà. Veuillez spécifier un autre."} confirmationState={handleCloseInformationNameExist} /> : null}
 
             <form onSubmit={formikImport.handleSubmit}>
-                <Stack width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
+                <Stack 
+                    width={"100%"} 
+                    height={"100%"} 
+                    spacing={2} 
+                    alignItems={"flex-start"} 
+                    alignContent={"flex-start"} 
+                    justifyContent={"stretch"}
+                >
 
-                    <Typography style={{ marginBottom: "30px" }} variant='h6' sx={{ color: "black" }} align='left'>Administration - Import modèle plan comptable</Typography>
+                    <Typography 
+                        style={{ 
+                            marginTop: "50px", 
+                            marginBottom: "30px"
+                        }} 
+                        variant='h6' 
+                        sx={{ color: "black" }} 
+                        align='left'
+                    >
+                        Administration - Import modèle plan comptable
+                    </Typography>
 
                     <Stack width={"100%"} height={"50px"} spacing={2} alignItems={"center"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "20px" }}>
                         <FormControl variant="standard" sx={{ m: 0, minWidth: 250 }}>

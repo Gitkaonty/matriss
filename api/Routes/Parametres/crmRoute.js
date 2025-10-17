@@ -30,7 +30,6 @@ router.post('/domBank', paramCRMController.domBank);
 //supprimer un associer 
 router.post('/associeDelete', paramCRMController.deleteAssocie);
 
-//supprimer une filiale
 router.post('/filialeDelete', paramCRMController.deleteFiliale);
 
 //supprimer une dom bancaire
@@ -38,5 +37,8 @@ router.post('/domBankDelete', paramCRMController.deleteDomBank);
 
 //récupérer la liste des pays 
 router.get('/getListePays', paramCRMController.getListePays);
+
+//Mettre à jour la longueur de tous les comptes existants
+router.post('/updateAccountsLength', paramCRMController.updateAccountsLength);
 
 module.exports = router;

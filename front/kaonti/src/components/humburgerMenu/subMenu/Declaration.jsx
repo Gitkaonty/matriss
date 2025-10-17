@@ -80,16 +80,6 @@ const declSocialesList = [
         name: "prevoyancesociales",
         path: "#"
     },
-    {
-        text: 'Indemnités',
-        name: "indemnites",
-        path: "/tab/declaration/indemnites"
-    },
-    {
-        text: 'Avantages en nature',
-        name: "avantagesnature",
-        path: "/tab/declaration/avantagesnature"
-    },
 ];
 
 export default function Declaration({ onWindowState, pathToNavigate, humburgerMenuState, closeDrawer }) {

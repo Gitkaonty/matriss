@@ -86,7 +86,7 @@ const socialesList = [
         urldynamic: true
     },
     {
-        text: 'Classification',
+        text: 'Catégories',
         name: "classification",
         path: "/tab/parametrages/paramClassification",
         urldynamic: true
@@ -94,7 +94,7 @@ const socialesList = [
     {
         text: 'Fonctions',
         name: "fonctions",
-        path: "/tab/parametrages/fonctions",
+        path: "/tab/parametrages/paramFonctions",
         urldynamic: true
     },
 ];

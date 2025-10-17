@@ -90,24 +90,29 @@ export default function ParamChiffreAffairesComponent() {
 
     //récupérer les informations du dossier sélectionné
     useEffect(() => {
+        // console.log('🚀 Initialisation avec id (useParams):', id);
         //tester si la page est renvoyer par useNavigate
         const navigationEntries = performance.getEntriesByType('navigation');
         let idFile = 0;
 
         if (navigationEntries.length > 0) {
             const navigationType = navigationEntries[0].type;
+            // console.log('🔄 Type de navigation:', navigationType);
             if (navigationType === 'reload') {
                 const idDossier = sessionStorage.getItem("fileId");
+                // console.log('📁 FileId depuis sessionStorage:', idDossier);
                 setFileId(idDossier);
                 idFile = idDossier;
             } else {
+                // console.log('📁 FileId depuis useParams:', id);
                 sessionStorage.setItem('fileId', id);
                 setFileId(id);
                 idFile = id;
             }
         }
+        console.log('📂 FileId final utilisé:', idFile);
         GetInfosIdDossier(idFile);
-    }, []);
+    }, [id]); // Ajouter 'id' comme dépendance
 
     const GetInfosIdDossier = (id) => {
         axios.get(`/home/FileInfos/${id}`).then((response) => {
@@ -149,15 +154,22 @@ export default function ParamChiffreAffairesComponent() {
 
     //Récupération du plan comptable (afficher uniquement les comptes commençant par '7')
     const recupPc = () => {
+        console.log('🔍 Récupération PC avec fileId:', fileId);
         axios.post(`/paramPlanComptable/pc`, { fileId }).then((response) => {
             const resData = response.data;
+            // console.log('📊 Réponse API PC:', resData);
             if (resData.state) {
                 const pcToFilter = resData.liste;
+                // console.log('📋 PC avant filtrage:', pcToFilter?.length, 'comptes');
                 const filteredPc = pcToFilter?.filter((row) => String(row.compte || '').startsWith('7'));
+                // console.log('🎯 PC après filtrage classe 7:', filteredPc?.length, 'comptes', filteredPc);
                 setPc(filteredPc);
             } else {
+                console.error('❌ Erreur API PC:', resData.msg);
                 toast.error(resData.msg);
             }
+        }).catch((error) => {
+            console.error('❌ Erreur réseau PC:', error);
         })
     }
 
@@ -176,9 +188,16 @@ export default function ParamChiffreAffairesComponent() {
     }
 
     useEffect(() => {
-        recupPc();
-        GetListeCodeTva();
-        getListeParamTva();
+        // console.log('🔄 useEffect déclenché avec fileId:', fileId, typeof fileId);
+        // Vérifier que fileId est défini et différent de 0 (string ou number)
+        if (fileId && fileId !== '0' && fileId !== 0 && fileId !== null && fileId !== undefined) {
+            // console.log('✅ FileId valide, appel des APIs...');
+            recupPc();
+            GetListeCodeTva();
+            getListeParamTva();
+        } else {
+            console.log('❌ FileId invalide:', fileId, '- En attente du bon fileId...');
+        }
     }, [fileId]);
 
     //filtrer et associer à formik le choix de compte
@@ -244,11 +263,14 @@ export default function ParamChiffreAffairesComponent() {
                                 PaperProps: { sx: { maxHeight: 300 } },
                             }}
                         >
-                            {pc?.map((option) => (
-                                <MenuItem key={option.id} value={option.id}>
-                                    {option.compte} - {option.libelle}
-                                </MenuItem>
-                            ))}
+                            {(() => {
+                                // console.log('🎯 Rendu Select PC - Liste pc:', pc?.length, 'éléments', pc);
+                                return pc?.map((option) => (
+                                    <MenuItem key={option.id} value={option.id}>
+                                        {option.compte} - {option.libelle}
+                                    </MenuItem>
+                                ));
+                            })()}
                         </Select>
                         <FormHelperText style={{ color: 'red' }}>
                             {formikNewParamTva.errors.compte && formikNewParamTva.touched.compte && formikNewParamTva.errors.compte}
@@ -654,7 +676,7 @@ export default function ParamChiffreAffairesComponent() {
                     </TabList>
                 </Box>
                 <TabPanel value="1">
-                    <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages : CHIFFRE D'AFFAIRES</Typography>
+                    <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages : Chiffre d'affaires</Typography>
 
                     <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"}
                         direction={"column"} style={{ marginLeft: "0px", marginTop: "20px", justifyContent: "right" }}>

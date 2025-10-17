@@ -14,6 +14,34 @@ const exportIrsaTableExcel = async (id_compte, id_dossier, id_exercice, mois, an
         }
     });
 
+    // Charger personnels (matricule -> id_fonction) et fonctions (id -> nom) pour afficher le libellé
+    const PersonnelModel = db.Personnel || db.personnel || db.personnels;
+    const FonctionModel = db.Fonction || db.fonction || db.fonctions;
+    let persByMat = new Map();
+    let fonctionById = new Map();
+    try {
+        if (PersonnelModel && typeof PersonnelModel.findAll === 'function') {
+            const personnels = await PersonnelModel.findAll({
+                where: { id_compte, id_dossier },
+                attributes: ['matricule', 'id_fonction']
+            });
+            persByMat = new Map(personnels.map(p => [String(p.matricule).trim(), Number(p.id_fonction)]));
+        }
+        if (FonctionModel && typeof FonctionModel.findAll === 'function') {
+            const fonctions = await FonctionModel.findAll({
+                where: { id_compte, id_dossier },
+                attributes: ['id', 'nom']
+            });
+            fonctionById = new Map(fonctions.map(f => [Number(f.id), String(f.nom)]));
+        }
+        try {
+            console.log('[IRSA EXCEL] persByMat size:', persByMat.size);
+            console.log('[IRSA EXCEL] fonctionById size:', fonctionById.size);
+        } catch {}
+    } catch (e) {
+        console.warn('[IRSA EXCEL] mapping personnels/fonctions failed:', e?.message || e);
+    }
+
     // Créer une nouvelle feuille
     const sheetIrsa = workbook.addWorksheet(`IRSA ${nomMois} ${annee}`);
 
@@ -83,12 +111,17 @@ const exportIrsaTableExcel = async (id_compte, id_dossier, id_exercice, mois, an
 
     // Lignes de données
     irsaData.forEach(row => {
+        // Résoudre le libellé de la fonction via matricule -> id_fonction -> nom
+        const mat = String(row.matricule || '').trim();
+        const idFonct = persByMat.get(mat);
+        const fonctionLibelle = idFonct != null ? (fonctionById.get(Number(idFonct)) || '') : '';
+        try { console.log('[IRSA EXCEL][RESOLVE]', { mat, idFonct, fonctionLibelle }); } catch {}
         const dataRow = sheetIrsa.addRow([
             row.nom || '',
             row.prenom || '',
             row.cin || '',
             row.cnaps || '',
-            row.fonction || '',
+            fonctionLibelle || '',
             formatDate(row.dateEntree),
             formatDate(row.dateSortie),
             parseFloat(row.salaireBase) || 0,
@@ -121,19 +154,23 @@ const exportIrsaTableExcel = async (id_compte, id_dossier, id_exercice, mois, an
         }
     });
 
-    // Ligne Total
-    const totalRow = sheetIrsa.addRow([
-        'TOTAL', '', '', '', '', '', '',
-        ...totals,
-        '', '' // Mois, Année
-    ]);
-    totalRow.font = { bold: true };
-    totalRow.eachCell((cell, colNumber) => {
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF89A8B2' } };
-        cell.alignment = colNumber < 8 ? { horizontal: 'left', vertical: 'middle' } : { horizontal: 'right', vertical: 'middle' };
-    });
-
-    sheetIrsa.mergeCells(`A${totalRow.number}:G${totalRow.number}`);
+            // Ligne Total
+            const totalRow = sheetIrsa.addRow([
+                'TOTAL', '', '', '', '', '', '',
+                ...totals,
+                '', '' // Mois, Année
+            ]);
+            totalRow.font = { bold: true };
+            totalRow.eachCell((cell, colNumber) => {
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF89A8B2' } };
+                if (colNumber >= 8 && colNumber <= 20) { // colonnes de montants
+                    cell.numFmt = '#,##0.00'; // format français
+                    cell.alignment = { horizontal: 'right', vertical: 'middle' };
+                } else {
+                    cell.alignment = { horizontal: 'left', vertical: 'middle' };
+                }
+            });
+            sheetIrsa.mergeCells(`A${totalRow.number}:G${totalRow.number}`);
 
     return workbook;
 };

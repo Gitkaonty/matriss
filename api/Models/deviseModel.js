@@ -8,8 +8,7 @@ module.exports = (sequelize, DataTypes) => {
       },
       code: {
         type: DataTypes.STRING,
-        allowNull: false,
-        unique: true
+        allowNull: false
       },
       libelle: {
         type: DataTypes.STRING,
@@ -37,7 +36,14 @@ module.exports = (sequelize, DataTypes) => {
       }
     }, {
       tableName: 'devises',
-      timestamps: true
+      timestamps: true,
+      indexes: [
+        {
+          unique: true,
+          fields: ['code', 'id_dossier', 'id_compte'],
+          name: 'unique_code_per_dossier_compte'
+        }
+      ]
     });
     return Devise;
   }; 

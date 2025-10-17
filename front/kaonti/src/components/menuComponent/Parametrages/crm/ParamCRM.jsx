@@ -14,6 +14,7 @@ import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import { MdExpandCircleDown } from "react-icons/md";
 import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import useAuth from '../../../../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
 import { styled } from '@mui/material/styles';
@@ -69,6 +70,12 @@ export default function ParamCRM() {
     const [disableAddRowBouton, setDisableAddRowBouton] = useState(false);
 
     const [editableRow, setEditableRow] = useState(true);
+    const [disableAddRowBouton, setDisableAddRowBouton] = useState(false);
+    const [disableModifyBoutonDomBank, setDisableModifyBoutonDomBank] = useState(true);
+    const [disableCancelBoutonDomBank, setDisableCancelBoutonDomBank] = useState(true);
+    const [disableSaveBoutonDomBank, setDisableSaveBoutonDomBank] = useState(true);
+    const [disableDeleteBoutonDomBank, setDisableDeleteBoutonDomBank] = useState(true);
+    
     const [openDialogDeleteAssocieRow, setOpenDialogDeleteAssocieRow] = useState(false);
 
     const [selectedRowIdFiliale, setSelectedRowIdFiliale] = useState([]);
@@ -85,10 +92,6 @@ export default function ParamCRM() {
 
     const [selectedRowIdDomBank, setSelectedRowIdDomBank] = useState([]);
     const [rowModesModelDomBank, setRowModesModelDomBank] = useState({});
-    const [disableModifyBoutonDomBank, setDisableModifyBoutonDomBank] = useState(true);
-    const [disableCancelBoutonDomBank, setDisableCancelBoutonDomBank] = useState(true);
-    const [disableSaveBoutonDomBank, setDisableSaveBoutonDomBank] = useState(true);
-    const [disableDeleteBoutonDomBank, setDisableDeleteBoutonDomBank] = useState(true);
     const [editableRowDomBank, setEditableRowDomBank] = useState(true);
     const [openDialogDeleteDomBankRow, setOpenDialogDeleteDomBankRow] = useState(false);
 
@@ -97,6 +100,8 @@ export default function ParamCRM() {
     const [selectedRowDomBancaires, setSelectedRowDomBancaires] = useState([]);
 
     const [crm, setCrm] = useState([]);
+    const [selectedRowDomBank, setSelectedRowDomBank] = useState([]);
+    
 
     const [typeValidationColor, setTypeValidationColor] = useState('transparent');
     const [nomValidationColor, setNomValidationColor] = useState('transparent');
@@ -710,8 +715,17 @@ export default function ParamCRM() {
 
         if (saveBoolType && saveBoolNom && saveBoolAdresse && saveBoolDateentree && saveBoolNombreparts) {
             setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
-            axios.post(`/paramCrm/associe`, useFormikAssocie.values).then((response) => {
-                const resData = response.data;
+            setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
+            const associeId = Array.isArray(selectedRowId) ? selectedRowId[0] : selectedRowId;
+            const payloadAssocie = {
+            ...useFormikAssocie.values,   // contient 'nombreparts'
+            idCompte: compteId,
+            idDossier: fileId,
+            idAssocie: associeId,
+            };
+
+            axios.post(`/paramCrm/associe`, payloadAssocie).then((response) => {
+            const resData = response.data;
                 if (resData.state) {
                     setDisableSaveBouton(true);
                     setDisableAddRowBouton(false);
@@ -1121,8 +1135,17 @@ export default function ParamCRM() {
 
         if (saveBoolNom && saveBoolDateentree && saveBoolNombreparts) {
             setRowModesModelFiliale({ ...rowModesModelFiliale, [selectedRowIdFiliale]: { mode: GridRowModes.View } });
-            axios.post(`/paramCrm/filiale`, useFormikFiliale.values).then((response) => {
-                const resData = response.data;
+            const filialeId = Array.isArray(selectedRowIdFiliale) ? selectedRowIdFiliale[0] : selectedRowIdFiliale;
+            const payloadFiliale = {
+            ...useFormikFiliale.values,  // contient 'nombreparts'
+            idCompte: compteId,
+            idDossier: fileId,
+            idFiliale: filialeId,
+            };
+
+            axios.post(`/paramCrm/filiale`, payloadFiliale).then((response) => {
+            const resData = response.data;
+
                 if (resData.state) {
                     setDisableSaveBoutonFiliale(true);
                     setDisableAddRowBoutonFiliale(false);
@@ -1482,29 +1505,29 @@ export default function ParamCRM() {
         }
     };
 
-    const handleEditClickDomBank = (id) => () => {
-        //réinitialiser les couleurs des champs
-        setBankDomBankValidationColor('transparent');
-        setNumCompteDomBankValidationColor('transparent');
-        setDeviseDomBankValidationColor('transparent');
-        setPaysDomBankValidationColor('transparent');
-
-        //charger dans le formik les données de la ligne
-        const selectedRowInfos = listDomBank?.filter((item) => item.id === id[0]);
-
-        useFormikDomBank.setFieldValue("idCompte", compteId);
-        useFormikDomBank.setFieldValue("idDossier", fileId);
-        useFormikDomBank.setFieldValue("idDomBank", selectedRowInfos[0].id);
-        useFormikDomBank.setFieldValue("banque", selectedRowInfos[0].banque);
-        useFormikDomBank.setFieldValue("numcompte", selectedRowInfos[0].numcompte);
-        useFormikDomBank.setFieldValue("devise", selectedRowInfos[0].devise);
-        useFormikDomBank.setFieldValue("pays", selectedRowInfos[0].pays);
-        useFormikDomBank.setFieldValue("enactivite", selectedRowInfos[0].enactivite);
-
-        setRowModesModelDomBank({ ...rowModesModelDomBank, [id]: { mode: GridRowModes.Edit } });
-        setDisableSaveBoutonDomBank(false);
+const handleEditClickDomBank = (id) => () => {
+                //réinitialiser les couleurs des champs
+                setBankDomBankValidationColor('transparent');
+                setNumCompteDomBankValidationColor('transparent');
+                setDeviseDomBankValidationColor('transparent');
+                setPaysDomBankValidationColor('transparent');
+        
+                //charger dans le formik les données de la ligne
+                const selectedRowInfos = listDomBank?.filter((item) => item.id === id[0]);
+        
+                useFormikDomBank.setFieldValue("idCompte", compteId);
+                useFormikDomBank.setFieldValue("idDossier", fileId);
+                useFormikDomBank.setFieldValue("idDomBank", selectedRowInfos[0].id);
+                useFormikDomBank.setFieldValue("banque", selectedRowInfos[0].banque);
+                useFormikDomBank.setFieldValue("numcompte", selectedRowInfos[0].numcompte);
+                useFormikDomBank.setFieldValue("devise", selectedRowInfos[0].devise);
+                useFormikDomBank.setFieldValue("pays", selectedRowInfos[0].pays);
+                useFormikDomBank.setFieldValue("enactivite", selectedRowInfos[0].enactivite);
+        
+                setRowModesModelDomBank({ ...rowModesModelDomBank, [id]: { mode: GridRowModes.Edit } });
+                setDisableSaveBoutonDomBank(false);
     };
-
+    
     const handleSaveClickDomBank = (id) => () => {
         let saveBoolbanque = false;
         let saveBoolNumCompte = false;
@@ -1560,12 +1583,13 @@ export default function ParamCRM() {
             });
         } else {
             toast.error('Les champs en surbrillances sont obligatoires');
-            setDisableSaveBoutonDomBank(false);
+            setDisableAddRowBouton(false);
         }
     };
 
     const handleOpenDialogConfirmDeleteAssocieRowDomBank = () => {
         setOpenDialogDeleteDomBankRow(true);
+        setDisableAddRowBouton(false);
     }
 
     const deleteDomBankRow = (value) => {
@@ -1600,6 +1624,7 @@ export default function ParamCRM() {
             ...rowModesModelDomBank,
             [id]: { mode: GridRowModes.View, ignoreModifications: true },
         });
+        setDisableAddRowBouton(false);
     };
 
     const processRowUpdateDomBank = (setFieldValue) => (newRow) => {
@@ -1636,14 +1661,24 @@ export default function ParamCRM() {
 
     //Ajouter une ligne dans le tableau liste domiciliation bancaires
     const handleOpenDialogAddNewDomBank = () => {
-        setDisableModifyBoutonDomBank(false);
-        setDisableCancelBoutonDomBank(false);
-        setDisableDeleteBoutonDomBank(false);
+
+        setDisableModifyBouton(false);
+        setDisableCancelBouton(false);
+        setDisableDeleteBouton(false);
+        setDisableSaveBouton(false);
+
         const newId = -1 * (getMaxID(listDomBank) + 1);
         let arrayId = [];
         arrayId = [...arrayId, newId];
 
         useFormikDomBank.setFieldValue("idDomBank", newId);
+        useFormikDomBank.setFieldValue("idCompte", compteId);
+        useFormikDomBank.setFieldValue("idDossier", fileId);
+        useFormikDomBank.setFieldValue("banque", "");
+        useFormikDomBank.setFieldValue("numcompte", "");
+        useFormikDomBank.setFieldValue("devise", "");
+        useFormikDomBank.setFieldValue("pays", "");
+        useFormikDomBank.setFieldValue("enactivite", false);
 
         const newRow = {
             id: newId,
@@ -1653,11 +1688,12 @@ export default function ParamCRM() {
             pays: '',
         };
         setListDomBank([...listDomBank, newRow]);
-        setSelectedRowDomBancaires([newRow.id]);
-        setSelectedRowIdDomBank([newRow.id]);
-        // setSelectedRowIdDomBank(arrayId);
-        // setRowModesModelDomBank({ ...rowModesModelDomBank, [arrayId]: { mode: GridRowModes.Edit } });
-        // setDisableSaveBoutonDomBank(false);
+        setSelectedRowIdDomBank(arrayId);
+        setRowModesModelDomBank({ ...rowModesModelDomBank, [arrayId]: { mode: GridRowModes.Edit } });
+        setDisableSaveBoutonDomBank(false);
+        setSelectedRowId([newId]);
+        setSelectedRowDomBank([newId]);
+        setDisableAddRowBouton(true);
     }
 
     //Choix TAB value-------------------------------------------------------------------------------------
@@ -1717,50 +1753,89 @@ export default function ParamCRM() {
     }
 
     //submit les informations du nouveau dossier
-    const handlSubmitModification = (values) => {
-        const montantcapitalRaw = values.montantcapital || "0";
-        const montantcapitalNumber = parseFloat(
-            montantcapitalRaw.replace(/\s/g, "").replace(",", ".") || montantcapitalRaw
-        ).toFixed(2);
-        // return console.log(values);
-        const montantCapitalFormatted = Number(montantcapitalNumber);
-        values.montantcapital = montantCapitalFormatted;
-        axios.post(`/paramCrm/modifying`, values).then((response) => {
+    const handlSubmitModification = async (values) => {
+        console.log("Modifié : ", values);
+        
+        try {
+            // Récupérer les anciennes valeurs de longueur pour comparaison
+            const oldLongueurStd = crm?.longcomptestd || 6;
+            const oldLongueurAux = crm?.longcompteaux || 6;
+            const newLongueurStd = parseInt(values.longueurcptstd);
+            const newLongueurAux = parseInt(values.longueurcptaux);
+            
+            // Sauvegarder les modifications CRM
+            const response = await axios.post(`/paramCrm/modifying`, values);
             const resData = response.data;
+            
             if (resData.state) {
                 toast.success(resData.msg);
+                
+                // Si la longueur des comptes a changé, mettre à jour tous les comptes existants
+                if (oldLongueurStd !== newLongueurStd || oldLongueurAux !== newLongueurAux) {
+                    await updateExistingAccountsLength(oldLongueurStd, newLongueurStd, oldLongueurAux, newLongueurAux, values.autocompletion);
+                }
             } else {
                 toast.error(resData.msg);
             }
-            //closed();
-        });
+        } catch (error) {
+            console.error("Erreur lors de la modification:", error);
+            toast.error("Erreur lors de la sauvegarde");
+        }
     }
 
-    const deselectRow = (ids) => {
-        const deselected = selectedRowId.filter(id => !ids.includes(id));
-
-        const updatedRowModes = { ...rowModesModel };
-        deselected.forEach((id) => {
-            updatedRowModes[id] = { mode: GridRowModes.View, ignoreModifications: true };
-        });
-        setRowModesModel(updatedRowModes);
-
-        setDisableAddRowBouton(false);
-        setSelectedRowId(ids);
+    // Fonction pour mettre à jour la longueur de tous les comptes existants
+    const updateExistingAccountsLength = async (oldLongueurStd, newLongueurStd, oldLongueurAux, newLongueurAux, autocompletion) => {
+        try {
+            const updateData = {
+                fileId: fileId,
+                compteId: compteId,
+                oldLongueurStd: oldLongueurStd,
+                newLongueurStd: newLongueurStd,
+                oldLongueurAux: oldLongueurAux,
+                newLongueurAux: newLongueurAux,
+                autocompletion: autocompletion // Utiliser la valeur passée en paramètre
+            };
+            
+            console.log('Données envoyées:', updateData);
+            
+            const response = await axios.post(`/paramCrm/updateAccountsLength`, updateData);
+            
+            if (response.data.state) {
+                toast.success(`Longueur des comptes mise à jour : ${response.data.updatedCount} comptes modifiés`);
+            } else {
+                toast.error("Paramètres sauvegardés mais erreur lors de la mise à jour des comptes existants");
+            }
+        } catch (error) {
+            console.error("Erreur lors de la mise à jour des comptes:", error);
+            toast.error("Paramètres sauvegardés mais erreur lors de la mise à jour des comptes existants");
+        }
     }
-
-    const deselectRowFiliale = (ids) => {
-        const deselected = selectedRowIdFiliale.filter(id => !ids.includes(id));
-
-        const updatedRowModes = { ...rowModesModel };
-        deselected.forEach((id) => {
-            updatedRowModes[id] = { mode: GridRowModes.View, ignoreModifications: true };
-        });
-        setRowModesModelFiliale(updatedRowModes);
-
-        setDisableAddRowBoutonFiliale(false);
-        setSelectedRowIdFiliale(ids);
-    }
+    const handleChangeCentrefisc = async (newValue) => {
+        try {
+          await axios.put(`/home/FileCentrefisc/${fileId}`, { centrefisc: newValue });
+          setTypeCentre(newValue);
+          toast.success('CFISC mis à jour');
+      
+          // Recharger les infos dossier pour refléter la modif partout
+          await GetInfosIdDossier(fileId);
+      
+          // Optionnel: si tu veux forcer un refresh ailleurs (ex: un contexte global), déclenche-le ici.
+        } catch (e) {
+          toast.error("Mise à jour du centre fiscal échouée");
+        }
+      };
+      const deselectRow = (ids) => {
+              const deselected = selectedRowId.filter(id => !ids.includes(id));
+      
+              const updatedRowModes = { ...rowModesModel };
+              deselected.forEach((id) => {
+                  updatedRowModes[id] = { mode: GridRowModes.View, ignoreModifications: true };
+              });
+              setRowModesModel(updatedRowModes);
+      
+              setDisableAddRowBouton(false);
+              setSelectedRowId(ids);
+          }
 
     return (
         <Box>
@@ -2421,7 +2496,36 @@ export default function ParamCRM() {
                                                     <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
                                                         alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"20px"}
                                                     >
-                                                        <Typography style={{ fontWeight: 'bold', fontSize: "18px", marginLeft: "0px", marginTop: "5px" }}>Impôt sur le revenu (IR)</Typography>
+                                                         {/* Bloc radio DGE / centre fiscale */}
+                                                        <Stack spacing={1}>
+                                                        <Typography style={{ fontWeight: 'bold', fontSize: "18px", marginLeft: "0px", marginTop: "5px" }}>Type de centre fiscal</Typography>
+                                                                <Stack direction="row" spacing={4} alignItems="center">
+                                                                    <FormControlLabel
+                                                                    control={
+                                                                        <input
+                                                                        type="radio"
+                                                                        value="DGE"
+                                                                        checked={typeCentre === 'DGE'}
+                                                                        onChange={() => handleChangeCentrefisc('DGE')}
+                                                                        />
+                                                                    }
+                                                                    label={<span style={{ fontWeight: typeCentre === 'DGE' ? 600 : 400 }}>DGE</span>}
+                                                                    />
+                                                                    <FormControlLabel
+                                                                    control={
+                                                                        <input
+                                                                        type="radio"
+                                                                        value="CFISC"
+                                                                        checked={typeCentre === 'CFISC'}
+                                                                        onChange={() => handleChangeCentrefisc('CFISC')}
+                                                                        />
+                                                                    }
+                                                                    label={<span style={{ fontWeight: typeCentre === 'CFISC' ? 600 : 400 }}>Centre fiscales</span>}
+                                                                    />
+                                                                </Stack>
+                                                        </Stack>
+
+                                                        <Typography style={{ fontWeight: 'bold', fontSize: "18px", marginLeft: "0px", marginTop: "20px" }}>Impôt sur le revenu (IR)</Typography>
 
                                                         <Stack spacing={1}>
                                                             <label htmlFor="tauxir" style={{ fontSize: 12, color: '#3FA2F6' }}>Taux IR</label>
@@ -2440,27 +2544,6 @@ export default function ParamCRM() {
                                                             />
                                                             <ErrorMessage name='tauxir' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
                                                         </Stack>
-
-                                                        <Typography style={{ fontWeight: 'bold', fontSize: "18px", marginLeft: "0px", marginTop: "30px" }}>Impôt synthétique intermittent (ISI)</Typography>
-
-                                                        <Stack spacing={1}>
-                                                            <label htmlFor="compteisi" style={{ fontSize: 12, color: '#3FA2F6' }}>Compte associé à ISI</label>
-                                                            <Field
-                                                                required
-                                                                name='compteisi'
-                                                                onChange={handleChange}
-                                                                type='text'
-                                                                placeholder=""
-                                                                style={{
-                                                                    height: 22, borderTop: 'none',
-                                                                    borderLeft: 'none', borderRight: 'none',
-                                                                    outline: 'none', fontSize: 14, borderWidth: '0.5px',
-                                                                    width: '150px',
-                                                                }}
-                                                            />
-                                                            <ErrorMessage name='compteisi' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                        </Stack>
-
                                                         <Typography style={{ fontWeight: 'bold', fontSize: "14px", marginLeft: "0px", marginTop: "30px" }}>Paramétrages minimum de perception</Typography>
 
                                                         <Stack width={"100%"} height={"30px"} spacing={10} alignItems={"center"}
@@ -2503,6 +2586,27 @@ export default function ParamCRM() {
                                                                 />
                                                                 <ErrorMessage name='montantmin' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
                                                             </Stack>
+                                                        </Stack>
+
+
+                                                        <Typography style={{ fontWeight: 'bold', fontSize: "18px", marginLeft: "0px", marginTop: "30px" }}>Impôt synthétique intermittent (ISI)</Typography>
+
+                                                        <Stack spacing={1}>
+                                                            <label htmlFor="compteisi" style={{ fontSize: 12, color: '#3FA2F6' }}>Compte associé à ISI</label>
+                                                            <Field
+                                                                required
+                                                                name='compteisi'
+                                                                onChange={handleChange}
+                                                                type='text'
+                                                                placeholder=""
+                                                                style={{
+                                                                    height: 22, borderTop: 'none',
+                                                                    borderLeft: 'none', borderRight: 'none',
+                                                                    outline: 'none', fontSize: 14, borderWidth: '0.5px',
+                                                                    width: '150px',
+                                                                }}
+                                                            />
+                                                            <ErrorMessage name='compteisi' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
                                                         </Stack>
 
                                                         <Typography style={{ fontWeight: 'bold', fontSize: "18px", marginLeft: "0px", marginTop: "50px" }}>Taxe sur la valeur ajoutée (TVA)</Typography>
@@ -2962,6 +3066,7 @@ export default function ParamCRM() {
                                                         >
                                                             <Tooltip title="Ajouter une ligne">
                                                                 <IconButton
+                                                                    disabled={disableAddRowBouton}
                                                                     variant="contained"
                                                                     onClick={handleOpenDialogAddNewDomBank}
                                                                     style={{
@@ -2977,7 +3082,7 @@ export default function ParamCRM() {
 
                                                             <Tooltip title="Modifier la ligne sélectionnée">
                                                                 <IconButton
-                                                                    disabled={disableModifyBoutonDomBank}
+                                                                    disabled={disableModifyBouton}
                                                                     variant="contained"
                                                                     onClick={handleEditClickDomBank(selectedRowIdDomBank)}
                                                                     style={{
@@ -2994,7 +3099,7 @@ export default function ParamCRM() {
                                                             <Tooltip title="Sauvegarder les modifications">
                                                                 <span>
                                                                     <IconButton
-                                                                        disabled={disableSaveBoutonDomBank}
+                                                                        disabled={disableSaveBouton}
                                                                         variant="contained"
                                                                         onClick={handleSaveClickDomBank(selectedRowIdDomBank)}
                                                                         style={{
@@ -3012,7 +3117,7 @@ export default function ParamCRM() {
                                                             <Tooltip title="Annuler les modifications">
                                                                 <span>
                                                                     <IconButton
-                                                                        disabled={disableCancelBoutonDomBank}
+                                                                        disabled={disableCancelBouton}
                                                                         variant="contained"
                                                                         onClick={handleCancelClickDomBank(selectedRowIdDomBank)}
                                                                         style={{
@@ -3030,7 +3135,7 @@ export default function ParamCRM() {
                                                             <Tooltip title="Supprimer la ligne sélectionné">
                                                                 <span>
                                                                     <IconButton
-                                                                        disabled={disableDeleteBoutonDomBank}
+                                                                        disabled={disableDeleteBouton}
                                                                         onClick={handleOpenDialogConfirmDeleteAssocieRowDomBank}
                                                                         variant="contained"
                                                                         style={{
@@ -3058,12 +3163,14 @@ export default function ParamCRM() {
                                                                 sx={DataGridStyle.sx}
                                                                 rowHeight={DataGridStyle.rowHeight}
                                                                 columnHeaderHeight={DataGridStyle.columnHeaderHeight}
-                                                                rows={listDomBank}
+                                                                rows={Array.isArray(listDomBank) ? listDomBank : []}
                                                                 onRowClick={(e) => handleCellEditCommitDomBank(e.row)}
                                                                 onRowSelectionModelChange={ids => {
-                                                                    setSelectedRowDomBancaires(ids);
+                                                                    setSelectedRowDomBank(ids);
                                                                     saveSelectedRowDomBank(ids);
+                                                                    deselectRow(ids);
                                                                 }}
+                                                                  rowSelectionModel={selectedRowDomBank}
                                                                 editMode='row'
                                                                 selectionModel={selectedRowIdDomBank}
                                                                 rowModesModel={rowModesModelDomBank}

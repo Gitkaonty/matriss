@@ -383,7 +383,7 @@ export default function ParamDeviseComponent() {
                     <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages : Devises</Typography>
                     <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"}
                         direction={"column"} style={{ marginLeft: "0px", marginTop: "20px", justifyContent: "right" }}>
-                        <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"}
+                        <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
                             direction={"row"} justifyContent={"right"}>
                             <Tooltip title="Ajouter une ligne">
                                 <span>

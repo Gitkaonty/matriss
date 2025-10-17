@@ -95,12 +95,10 @@ export default function ParamTVAComponent() {
   // Verrouillage formulaire TVA (style Ebilan)
   const [verrTva, setverrTva] = useState(false);
   const [anoms, setAnoms] = useState({ count: 0, list: [] });
-  // Compteur anomalies affiché dans le badge (source unique)
-  // const [nbrAnomalieTVA, setNbrAnomalieTVA] = useState(0);
-
 
   // --- Popup Ajout Annexe
   const [openAddAnnexe, setOpenAddAnnexe] = useState(false);
+
   const [addAnnexeForm, setAddAnnexeForm] = useState({
     type_tva: "",
     origine: "",
@@ -119,6 +117,7 @@ export default function ParamTVAComponent() {
     n_dau: "",
     ligne_formulaire: "",
   });
+
   // Popup confirmation suppression (style Ebilan)
   const [confirmDeleteAnnexe, setConfirmDeleteAnnexe] = useState(false);
   const [rowToDelete, setRowToDelete] = useState(null);
@@ -148,7 +147,6 @@ export default function ParamTVAComponent() {
       await recalcFormFromExisting();
     }
   };
-
 
   // Ouvrir la popup de confirmation au style Ebilan
   const openConfirmDeleteAnnexe = (row) => {
@@ -191,8 +189,6 @@ export default function ParamTVAComponent() {
       toast.error("Erreur lors de la suppression");
     }
   };
-
-
 
   // Récupérer l'état de verrouillage côté serveur (TVA)
   const infosVerrouillage = async (compteId, fileId, exerciceId) => {
@@ -310,12 +306,13 @@ export default function ParamTVAComponent() {
       toast.error("Erreur serveur lors de l'ajout");
     }
   };
+
   const showAnomalieTVA = async () => {
     try {
       // Charger depuis la DB pour avoir les vrais IDs
       const list = await fetchDbAnomalies();
       const count = Array.isArray(list) ? list.length : 0;
-      console.log('[POPUP][OPEN] anomalies DB count:', count);
+      // console.log('[POPUP][OPEN] anomalies DB count:', count);
       if (count === 0) {
         toast.success('Aucune anomalie pour la période sélectionnée');
         return;
@@ -458,7 +455,7 @@ export default function ParamTVAComponent() {
       const params = { compteId, dossierId: fileId, exerciceId: selectedExerciceId, mois: valSelectMois, annee: valSelectAnnee };
       const { data } = await axios.get("/declaration/tva/annexes", { params, timeout: 60000 });
       if (data?.state) {
-        console.log('[ANNEXES] sample row:', (Array.isArray(data?.list) ? data.list[0] : data.list));
+        // console.log('[ANNEXES] sample row:', (Array.isArray(data?.list) ? data.list[0] : data.list));
         const list = Array.isArray(data.list) ? data.list : data.list ? [data.list] : [];
         // Fallback: compute commentaire (and anomalies if needed) when missing
         const enhanced = list.map((r) => {
@@ -548,13 +545,16 @@ export default function ParamTVAComponent() {
   const [selectedPeriodeChoiceId, setSelectedPeriodeChoiceId] = useState(0);
   const [selectedPeriodeId, setSelectedPeriodeId] = useState('');
   const [selectedExerciceId, setSelectedExerciceId] = useState('');
+
   // --- Sélection mois/année---
   const [valSelectMois, setValSelectMois] = useState(1); // Janvier par défaut
   const [valSelectAnnee, setValSelectAnnee] = useState(new Date().getFullYear());
   const [listeAnnee, setListeAnnee] = useState([]);
+
   // --- Refresh trigger used by data-loading effects
   const [refreshCounter, setRefreshCounter] = useState(0);
   const handleRefresh = () => setRefreshCounter((c) => c + 1);
+
   // --- Déclencheur manuel pour recalcul du CA (Formulaire TVA)
   const [computeTrigger, setComputeTrigger] = useState(0);
 
@@ -659,13 +659,12 @@ export default function ParamTVAComponent() {
   const [journalRows, setJournalRows] = useState([]);
   const [journalLoading, setJournalLoading] = useState(false);
   const [filteredList, setFilteredList] = useState(null);
+
   // ============================================================
-  // 🔹 Comptes TVA (filtre Détails) + navigation flèches
-  //    - Comptes issus de /paramTva/listeParamTva/{fileId}
-  //    - Navigation via flèches autour du Select
-  // ============================================================
+  // 🔹 Comptes TVA 
   const [comptesTvaOptions, setComptesTvaOptions] = useState([]);
   const [selectedCompteTva, setSelectedCompteTva] = useState('');
+
   // --- Navigation des comptes (flèches à côté du sélecteur)
   const currentCompteIndex = useMemo(() => {
     if (!Array.isArray(comptesTvaOptions) || comptesTvaOptions.length === 0) return -1;
@@ -950,38 +949,11 @@ const fetchDbAnomalies = async () => {
         idFile = id;
       }
     }
-    console.log('[ParamTVA] mount -> idFile:', idFile);
+    // console.log('[ParamTVA] mount -> idFile:', idFile);
     GetInfosIdDossier(idFile);
-    console.log('[ParamTVA] calling GetListeExercice with idFile:', idFile);
+    // console.log('[ParamTVA] calling GetListeExercice with idFile:', idFile);
     GetListeExercice(idFile);
   }, []);
-
-  /**
-   * Met à jour une ligne CFISC (mode DataGrid, non utilisé ici pour DGE direct).
-   */
-  // const processCFISCRowUpdate = async (newRow, oldRow) => {
-  //   try {
-  //     const payload = {
-  //       id_dossier: fileId,
-  //       id_compte: compteId,
-  //       id_exercice: selectedExerciceId,
-  //       montant: parseFloat(newRow.montant) || 0,
-  //     };
-  //     const { data } = await axios.put(`/declaration/tva/formulaire/${newRow.id}`, payload);
-  //     if (data?.state) {
-  //       toast.success('Montant mis à jour');
-  //       return { ...newRow, montant: payload.montant };
-  //     }
-  //     toast.error(data?.msg || 'Echec mise à jour');
-  //     return oldRow;
-  //   } catch (e) {
-  //     console.error('[FormTVA] update error', e);
-  //     toast.error('Erreur serveur lors de la mise à jour');
-  //     return oldRow;
-  //   }
-  // };
-
-  // (handlers d'édition déplacés dans FormulaireTvaUnified)
 
   /**
    * Récupère les informations du dossier sélectionné.
@@ -993,11 +965,11 @@ const fetchDbAnomalies = async () => {
       if (resData.state) {
         setFileInfos(resData.fileInfos[0]);
         setNoFile(false);
-        console.log('[ParamTVA] FileInfos:', resData.fileInfos[0]);
+        // console.log('[ParamTVA] FileInfos:', resData.fileInfos[0]);
       } else {
         setFileInfos([]);
         setNoFile(true);
-        console.warn('[ParamTVA] FileInfos not found for id', id);
+        // console.warn('[ParamTVA] FileInfos not found for id', id);
       }
     })
   }
@@ -1010,15 +982,15 @@ const fetchDbAnomalies = async () => {
       console.warn('[ParamTVA] GetListeExercice skipped, id dossier vide');
       return;
     }
-    console.log('[ParamTVA] GetListeExercice -> id:', id);
+    // console.log('[ParamTVA] GetListeExercice -> id:', id);
     axios.get(`/paramExercice/listeExercice/${id}`)
       .then((response) => {
         const resData = response.data;
-        console.log('[ParamTVA] GetListeExercice response:', resData);
+        // console.log('[ParamTVA] GetListeExercice response:', resData);
         if (resData.state) {
           const list = resData.list || [];
           setListeExercice(list);
-          console.log('[ParamTVA] exercices count:', list.length);
+          // console.log('[ParamTVA] exercices count:', list.length);
           const exerciceN = list.filter(it => it.libelle_rang === 'N');
           if (exerciceN.length > 0) {
             setSelectedExerciceId(exerciceN[0].id);
@@ -1034,11 +1006,11 @@ const fetchDbAnomalies = async () => {
         } else {
           setListeExercice([]);
           toast.error("Erreur lors de la récupération des exercices");
-          console.error('[ParamTVA] GetListeExercice state=false:', resData.msg);
+          // console.error('[ParamTVA] GetListeExercice state=false:', resData.msg);
         }
       })
       .catch(err => {
-        console.error('[ParamTVA] GetListeExercice error:', err);
+        // console.error('[ParamTVA] GetListeExercice error:', err);
         toast.error('Erreur réseau: exercices');
       });
   }
@@ -1051,11 +1023,11 @@ const fetchDbAnomalies = async () => {
       console.warn('[ParamTVA] GetListeSituation skipped, exerciceId vide');
       return;
     }
-    console.log('[ParamTVA] GetListeSituation -> exerciceId:', exerciceId);
+    // console.log('[ParamTVA] GetListeSituation -> exerciceId:', exerciceId);
     axios.get(`/paramExercice/listeSituation/${exerciceId}`)
       .then((response) => {
         const resData = response.data;
-        console.log('[ParamTVA] GetListeSituation response:', resData);
+        // console.log('[ParamTVA] GetListeSituation response:', resData);
         if (resData.state) {
           const raw = resData.list;
           const list = Array.isArray(raw) ? raw : (raw ? [raw] : []);
@@ -1068,11 +1040,11 @@ const fetchDbAnomalies = async () => {
         } else {
           setListeSituation([]);
           toast.error('Erreur lors du chargement des périodes');
-          console.error('[ParamTVA] GetListeSituation state=false:', resData.msg);
+          // console.error('[ParamTVA] GetListeSituation state=false:', resData.msg);
         }
       })
       .catch(err => {
-        console.error('[ParamTVA] GetListeSituation error:', err);
+        // console.error('[ParamTVA] GetListeSituation error:', err);
         toast.error('Erreur réseau: périodes');
       });
   }
@@ -1085,7 +1057,7 @@ const fetchDbAnomalies = async () => {
       console.warn('[ParamTVA] GetDateDebutFinExercice skipped, exerciceId vide');
       return;
     }
-    console.log('[ParamTVA] GetDateDebutFinExercice -> exerciceId:', exerciceId);
+    // console.log('[ParamTVA] GetDateDebutFinExercice -> exerciceId:', exerciceId);
     axios.get(`/paramExercice/listeExerciceById/${exerciceId}`)
       .then((response) => {
         const resData = response.data;
@@ -1100,7 +1072,7 @@ const fetchDbAnomalies = async () => {
           for (let y = startYear; y <= endYear; y++) years.push(y);
           setListeAnnee(years);
           if (years.length > 0) setValSelectAnnee(years[0]);
-          console.log('[ParamTVA] Années exercice:', years);
+          // console.log('[ParamTVA] Années exercice:', years);
           if (Number(selectedPeriodeChoiceId) === 0) {
             const fallback = [{ id: exerciceId, libelle_rang: 'Exercice', date_debut: dDebut, date_fin: dFin }];
             setListeSituation(fallback);
@@ -1109,12 +1081,12 @@ const fetchDbAnomalies = async () => {
             GetListeSituation(exerciceId);
           }
         } else {
-          console.error('[ParamTVA] GetDateDebutFinExercice state=false or empty', resData);
+          // console.error('[ParamTVA] GetDateDebutFinExercice state=false or empty', resData);
           setListeAnnee([]);
         }
       })
       .catch(err => {
-        console.error('[ParamTVA] GetDateDebutFinExercice error:', err);
+        // console.error('[ParamTVA] GetDateDebutFinExercice error:', err);
         toast.error('Erreur réseau: années');
       });
   }
@@ -1126,7 +1098,7 @@ const fetchDbAnomalies = async () => {
 
   // Handlers de sélection
   const handleChangeExercice = (exoId) => {
-    console.log('[ParamTVA] handleChangeExercice ->', exoId);
+    // console.log('[ParamTVA] handleChangeExercice ->', exoId);
     setSelectedExerciceId(exoId);
     setSelectedPeriodeChoiceId(0);
     setSelectedPeriodeId('');
@@ -1135,7 +1107,7 @@ const fetchDbAnomalies = async () => {
 
   // Handler pour changement de période
   const handleChangePeriode = (choiceId) => {
-    console.log('[ParamTVA] handleChangePeriode ->', choiceId);
+    // console.log('[ParamTVA] handleChangePeriode ->', choiceId);
     setSelectedPeriodeChoiceId(choiceId);
     if (Number(choiceId) === 1) {
       GetListeSituation(selectedExerciceId);
@@ -1205,7 +1177,6 @@ const fetchDbAnomalies = async () => {
     GetListeCodeTva();
     getListeParamTva();
   }, [fileId]);
-
 
   const handleEditClick = (id) => () => {
     //réinitialiser les couleurs des champs
@@ -1330,13 +1301,6 @@ const fetchDbAnomalies = async () => {
 
   const nbrAnomalieTVA = useMemo(() => Array.isArray(calcAnomalies) ? calcAnomalies.length : 0, [calcAnomalies]);
 
-  //   const showAnomalieTVA = async () => {
-  //   // Charger les anomalies depuis la DB puis ouvrir le popup
-  //   await fetchDbAnomalies();
-  //   setOpenAnomaliesPopup(true);
-  // };
-
-
   return (
     <Paper sx={{ p: 2 }}>
       {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
@@ -1453,7 +1417,7 @@ const fetchDbAnomalies = async () => {
           <Box sx={{ flexGrow: 1 }} />
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {(tabValue === '1' || tabValue === '2') && (
+            {(tabValue === '1' || tabValue === '2') && listeExercice && listeExercice.length > 0 && selectedExerciceId && selectedExerciceId !== 0 && (
               <Tooltip title="Exporter">
                 <span>
                   <Button
@@ -1471,6 +1435,7 @@ const fetchDbAnomalies = async () => {
         {tabValue !== '3' && (
           <Tooltip title={verrTva ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
             <IconButton
+              disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0}
               onClick={lockTableTVA}
               variant="contained"
               style={{
@@ -1499,9 +1464,9 @@ const fetchDbAnomalies = async () => {
       <TabContext value={tabValue}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
           <TabList onChange={handleTabChange} aria-label="Tabs TVA" variant="scrollable">
-            <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Formulaire TVA" value="1" />
-            <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Annexes déclarations" value="2" />
-            <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Détails" value="3" />
+            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Formulaire TVA" value="1" />
+            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Annexes déclarations" value="2" />
+            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Détails" value="3" />
           </TabList>
         </Box>
 

@@ -178,20 +178,25 @@ export default function ParamTVAComponent() {
     //filtrer et associer à formik le choix de compte
     const handleChangeCompte = (value) => {
         const infosCompte = pc?.filter((row) => row.id === value);
+        // console.log('Compte sélectionné:', infosCompte[0]);
+        // console.log('Liste codes TVA non filtrée:', listeCodeTvaUnfiltered);
 
         formikNewParamTva.setFieldValue('compte', infosCompte[0].id);
 
         if (infosCompte[0]?.compte.startsWith('4456')) {
             const filteredCode = (listeCodeTvaUnfiltered || [])
-                .filter((row) => row.nature === 'DED')
-                .filter((row) => !String(row.code || '').startsWith('1'));
+              .filter((row) => row.nature === 'DED')
+              .filter((row) => !String(row.code || '').startsWith('1'));
+            // console.log('Codes TVA filtrés pour 4456 (DED):', filteredCode);
             setListeCodeTva(filteredCode);
         } else if (infosCompte[0]?.compte.startsWith('4457')) {
             const filteredCode = (listeCodeTvaUnfiltered || [])
-                .filter((row) => row.nature === 'COLL')
-                .filter((row) => !String(row.code || '').startsWith('1'));
+              .filter((row) => row.nature === 'COLL')
+              .filter((row) => !String(row.code || '').startsWith('1'));
+            // console.log('Codes TVA filtrés pour 4457 (COLL):', filteredCode);
             setListeCodeTva(filteredCode);
         } else {
+            // console.log('Compte ne commence pas par 445x, chargement de tous les codes');
             GetListeCodeTva();
         }
 
@@ -282,7 +287,7 @@ export default function ParamTVAComponent() {
             field: 'listecodetva.code',
             headerName: 'Code tva',
             type: 'singleSelect',
-            valueOptions: listeCodeTva.map((row) => row.code),
+            valueOptions: () => listeCodeTva.map((row) => row.code),
             sortable: true,
             flex: 0.5,
             headerAlign: 'left',

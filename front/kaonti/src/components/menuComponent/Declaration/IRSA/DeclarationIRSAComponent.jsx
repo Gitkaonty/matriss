@@ -94,9 +94,22 @@ export default function DeclarationIRSAComponent() {
       const res = await axios.post('/irsa/irsa/generate-batch-snapshot', { paies: paiesToSend });
       if (res.data && res.data.state) {
         toast.success('Génération IRSA réussie !');
+        
+        // Recharger les données IRSA
         const irsaRes = await axios.get(`/irsa/irsa/${compteId}/${id}/${selectedExerciceId}`);
         if (irsaRes.data && Array.isArray(irsaRes.data.list)) {
           setIrsaData(irsaRes.data.list);
+        }
+        
+        // Recharger les données personnel pour synchronisation
+        try {
+          const personnelRes = await axios.get(`/administration/personnel/${compteId}/${id}`);
+          if (personnelRes.data && personnelRes.data.state) {
+            setPersonnels(personnelRes.data.list);
+            console.log('[IRSA][generate] Données personnel rechargées:', personnelRes.data.list.length, 'éléments');
+          }
+        } catch (personnelError) {
+          console.error('Erreur lors du rechargement des données personnel:', personnelError);
         }
       } else {
         toast.error(res.data && res.data.msg ? res.data.msg : 'Erreur lors de la génération IRSA');
@@ -135,7 +148,7 @@ export default function DeclarationIRSAComponent() {
 
   const [valSelectMois, setValSelectMois] = useState(1);
   const [valSelectAnnee, setValSelectAnnee] = useState('');
-  const [selectedExerciceId, setSelectedExerciceId] = useState(1); // Ajout de la variable manquante
+  const [selectedExerciceId, setSelectedExerciceId] = useState(0); // Initialisé à 0 pour éviter les faux positifs
   const [allIrsaData, setAllIrsaData] = useState([]);
   const [irsaData, setIrsaData] = useState([]);
 
@@ -180,15 +193,11 @@ export default function DeclarationIRSAComponent() {
       }
       return {
         ...row,
-        // Contexte période
         mois: Number(valSelectMois),
         annee: Number(valSelectAnnee),
-        // Contexte dossier/exercice requis par l'API
         id_compte: Number(compteId),
         id_dossier: Number(id),
         id_exercice: Number(selectedExerciceId),
-        // On n'envoie PAS personnelId pendant l'import; le backend résout via matricule
-        // Conserver matricule pour affichage/synchro
         matricule: row.matricule || row.Matricule || row.matricule_employe || null,
       };
     });
@@ -217,12 +226,12 @@ export default function DeclarationIRSAComponent() {
       if (res.data && Array.isArray(res.data.list)) {
         console.log('[DEBUG] Données brutes reçues de l\'API:', res.data.list);
 
-        // Synchroniser immédiatement chaque ligne avec l'objet personnel correspondant
-        const synchronizedAll = res.data.list.map(row => {
-          const personnelId = row.personnel_id ?? row.personnelId;
-          const foundPersonnel = personnels.find(p => p.id === personnelId);
+      // Synchroniser immédiatement chaque ligne avec l'objet personnel correspondant
+      const synchronizedAll = res.data.list.map(row => {
+      const personnelId = row.personnel_id ?? row.personnelId;
+      const foundPersonnel = personnels.find(p => p.id === personnelId);
 
-          return {
+        return {
             ...row,
             matricule: (foundPersonnel && foundPersonnel.matricule) || row.matricule || '',
             personnel: foundPersonnel || null
@@ -260,7 +269,6 @@ export default function DeclarationIRSAComponent() {
   const handleEditIrsa = (row) => {
     setIrsaData(prev => prev.map(r => r.id === row.id ? row : r));
   };
-
 
   const [verrIrsa, setVerrIrsa] = useState(false);
   const [tabValue, setTabValue] = useState('1');
@@ -368,7 +376,6 @@ export default function DeclarationIRSAComponent() {
       .finally(() => setLoadingPaie(false));
   }, [selectedExerciceId]);
 
-
   // State for modal form only (menu removed)
   const [openModal, setOpenModal] = useState(false);
   const [openModal2, setOpenModal2] = useState(false);
@@ -401,16 +408,19 @@ export default function DeclarationIRSAComponent() {
 
   // Synchronise l'objet personnel sur chaque ligne IRSA (sans set inutile)
   useEffect(() => {
-    if (irsaData.length === 0 || personnels.length === 0) return;
-    let changed = false;
-    const next = irsaData.map(row => {
-      const pid = row.personnel_id ?? row.personnelId;
-      if (row.personnel && row.personnel.id === pid) return row;
-      changed = true;
-      return { ...row, personnel: personnels.find(p => p.id === pid) || null };
+    if (personnels.length === 0) return;
+    setIrsaData(prevIrsaData => {
+      if (prevIrsaData.length === 0) return prevIrsaData;
+      let changed = false;
+      const next = prevIrsaData.map(row => {
+        const pid = row.personnel_id ?? row.personnelId;
+        if (row.personnel && row.personnel.id === pid) return row;
+        changed = true;
+        return { ...row, personnel: personnels.find(p => p.id === pid) || null };
+      });
+      return changed ? next : prevIrsaData;
     });
-    if (changed) setIrsaData(next);
-  }, [personnels, irsaData]);
+  }, [personnels]);
 
   // State for paie data
   const [allPaieData, setAllPaieData] = useState([]); // toutes les paies de l'exercice
@@ -418,17 +428,20 @@ export default function DeclarationIRSAComponent() {
 
   // Synchronise l'objet personnel sur chaque ligne PAIE (sans set inutile)
   useEffect(() => {
-    if (paieData.length === 0 || personnels.length === 0) return;
-    let changed = false;
-    const next = paieData.map(row => {
-      const personnelId = row.personnel_id ?? row.personnelId;
-      if (row.personnel && row.personnel.id === personnelId) return row;
-      changed = true;
-      const foundPersonnel = personnels.find(p => p.id === personnelId) || null;
-      return { ...row, personnel: foundPersonnel };
+    if (personnels.length === 0) return;
+    setPaieData(prevPaieData => {
+      if (prevPaieData.length === 0) return prevPaieData;
+      let changed = false;
+      const next = prevPaieData.map(row => {
+        const personnelId = row.personnel_id ?? row.personnelId;
+        if (row.personnel && row.personnel.id === personnelId) return row;
+        changed = true;
+        const foundPersonnel = personnels.find(p => p.id === personnelId) || null;
+        return { ...row, personnel: foundPersonnel };
+      });
+      return changed ? next : prevPaieData;
     });
-    if (changed) setPaieData(next);
-  }, [personnels, paieData]);
+  }, [personnels]);
 
   // Réinitialise la sélection et désactive les boutons lors du changement de période
   useEffect(() => {
@@ -899,6 +912,13 @@ export default function DeclarationIRSAComponent() {
         setDomBankData([]);
         setNoFile(true);
       }
+    }).catch((error) => {
+      console.error('[ERROR] Erreur lors de la récupération des informations du dossier:', error);
+      setFileInfos([]);
+      setAssocieData([]);
+      setDomBankData([]);
+      setNoFile(true);
+      toast.error("Erreur lors de la récupération des informations du dossier");
     })
   }
 
@@ -909,6 +929,16 @@ export default function DeclarationIRSAComponent() {
 
   const handleChangeMois = (event) => {
     setValSelectMois(event.target.value);
+  };
+
+  const handleChangeDateIntervalle = (value) => {
+    setSelectedPeriodeId(value);
+    // Mettre à jour selectedExerciceId si nécessaire
+    const selectedSituation = listeSituation?.find(item => item.id === value);
+    if (selectedSituation) {
+      setSelectedExerciceId(selectedSituation.id);
+      GetDateDebutFinExercice(selectedSituation.id);
+    }
   };
 
   // Gestion de la sélection
@@ -971,6 +1001,10 @@ export default function DeclarationIRSAComponent() {
         setListeExercice([]);
         toast.error("une erreur est survenue lors de la récupération de la liste des exercices");
       }
+    }).catch((error) => {
+      console.error('[ERROR] Erreur lors de la récupération des exercices:', error);
+      setListeExercice([]);
+      toast.error("Erreur de connexion lors de la récupération des exercices. Vérifiez votre connexion réseau.");
     })
   }
 
@@ -1568,7 +1602,9 @@ export default function DeclarationIRSAComponent() {
         setListeAnnee(annee);
       }
     }).catch((error) => {
-      toast.error(error)
+      console.error('[ERROR] Erreur lors de la récupération des dates d\'exercice:', error);
+      toast.error("Erreur lors de la récupération des dates d'exercice");
+      setListeAnnee([]);
     })
   }
 
@@ -2150,7 +2186,8 @@ export default function DeclarationIRSAComponent() {
   const apiRef = useGridApiRef();
 
   // Placeholder simple pendant l'init de la période pour éviter l'effet "tout puis filtré"
-  if (!valSelectAnnee) {
+  // Afficher la page même sans exercice sélectionné, mais avec les contrôles désactivés
+  if (!valSelectAnnee && listeExercice && listeExercice.length > 0 && selectedExerciceId && selectedExerciceId !== 0) {
     return (
       <Paper sx={{ elevation: "3", margin: "1px", padding: "20px", width: "99%", height: "auto" }}>
         <Typography>Chargement de la période...</Typography>
@@ -2297,19 +2334,22 @@ export default function DeclarationIRSAComponent() {
               <Select
                 value={valSelectMois}
                 onChange={handleChangeMois}
+                disabled={!listeExercice || listeExercice.length === 0}
               >
-                <MenuItem value={1}>Janvier</MenuItem>
-                <MenuItem value={2}>Février</MenuItem>
-                <MenuItem value={3}>Mars</MenuItem>
-                <MenuItem value={4}>Avril</MenuItem>
-                <MenuItem value={5}>Mai</MenuItem>
-                <MenuItem value={6}>Juin</MenuItem>
-                <MenuItem value={7}>Juillet</MenuItem>
-                <MenuItem value={8}>Août</MenuItem>
-                <MenuItem value={9}>Septembre</MenuItem>
-                <MenuItem value={10}>Octobre</MenuItem>
-                <MenuItem value={11}>Novembre</MenuItem>
-                <MenuItem value={12}>Décembre</MenuItem>
+                {[
+                  <MenuItem key={1} value={1}>Janvier</MenuItem>,
+                  <MenuItem key={2} value={2}>Février</MenuItem>,
+                  <MenuItem key={3} value={3}>Mars</MenuItem>,
+                  <MenuItem key={4} value={4}>Avril</MenuItem>,
+                  <MenuItem key={5} value={5}>Mai</MenuItem>,
+                  <MenuItem key={6} value={6}>Juin</MenuItem>,
+                  <MenuItem key={7} value={7}>Juillet</MenuItem>,
+                  <MenuItem key={8} value={8}>Août</MenuItem>,
+                  <MenuItem key={9} value={9}>Septembre</MenuItem>,
+                  <MenuItem key={10} value={10}>Octobre</MenuItem>,
+                  <MenuItem key={11} value={11}>Novembre</MenuItem>,
+                  <MenuItem key={12} value={12}>Décembre</MenuItem>
+                ]}
               </Select>
             </FormControl>
 
@@ -2319,6 +2359,7 @@ export default function DeclarationIRSAComponent() {
                 value={valSelectAnnee}
                 onChange={(e) => setValSelectAnnee(e.target.value)}
                 name="valSelectAnnee"
+                disabled={!listeExercice || listeExercice.length === 0}
               >
                 {listeAnnee.map((year, index) => (
                   <MenuItem key={index} value={year}>
@@ -2333,8 +2374,8 @@ export default function DeclarationIRSAComponent() {
         <TabContext value={tabValue}>
           <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
             <TabList onChange={handleTabChange} aria-label="Tabs" variant="scrollable">
-              <Tab label="IRSA" value="1" />
-              <Tab label="Paie" value="2" />
+              <Tab label="IRSA" value="1" disabled={!listeExercice || listeExercice.length === 0} />
+              <Tab label="Paie" value="2" disabled={!listeExercice || listeExercice.length === 0} />
             </TabList>
           </Box>
 
@@ -2353,7 +2394,7 @@ export default function DeclarationIRSAComponent() {
                       color: "white",
                       height: "35px",
                   }} 
-                    disabled={paieDataByPeriod.length === 0}
+                    disabled={paieDataByPeriod.length === 0 || !listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0}
                     onClick={handleOpenGenerateConfirm}
                     startIcon={<MdOutlineAutoMode size={20} />}                    
                   >
@@ -2364,6 +2405,7 @@ export default function DeclarationIRSAComponent() {
               <Tooltip title="Exporter">
                 <span>
                   <Button
+                  disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0}
                   variant="outlined"
                   style={{ textTransform: 'none', outline: 'none' }}
                   startIcon={<AiTwotoneFileText size={22} />}
@@ -2592,6 +2634,7 @@ export default function DeclarationIRSAComponent() {
                 <Tooltip title="Importer / Exporter">
                   <span>
                     <Button
+                      disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0}
                       variant="contained"
                       onClick={() => setOpenImportExportDialog(true)}
                       style={{
@@ -2714,3 +2757,8 @@ export default function DeclarationIRSAComponent() {
     </>
   );
 }
+
+
+
+
+

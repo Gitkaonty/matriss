@@ -276,60 +276,79 @@ exports.exportIrsaTablePdf = async (req, res) => {
 
       // Définition du document PDF
       const docDefinition = {
-        pageSize: 'A3',
+        pageSize: 'A2',
         pageOrientation: 'landscape',
-        pageMargins: [20, 60, 20, 60],
+        pageMargins: [10, 60, 5, 60],
         defaultStyle: {
-            font: 'Helvetica',
-            fontSize: 7
+          font: 'Helvetica',
+          fontSize: 7
         },
         content: [
-            // Titre
-            {
-                text: 'DÉCLARATION IRSA',
-                style: 'header',
-                alignment: 'center',
-                margin: [0, 0, 0, 10]
-            },
-            // Sous-titre
-            {
-                text: `Dossier : ${dossier?.dossier || ''}\nCompte : ${compte?.nom || ''}\nMois et année : ${moisNoms[mois - 1]} ${annee}\nExercice du : ${formatDate(exercice?.date_debut)} au ${formatDate(exercice?.date_fin)}`,
-                style: 'subheader',
-                margin: [0, 0, 0, 20]
-            },
-            // Tableau IRSA
-            buildTable(irsaData, {
-                headerStyle: 'tableHeader',
-                font: 'Helvetica'
-            })
+          // Titre
+          {
+            text: 'DÉCLARATION IRSA',
+            style: 'header',
+            alignment: 'center',
+            margin: [0, 0, 0, 20]
+          },
+          // Sous-titre
+          {
+            text: `Dossier : ${dossier?.dossier || ''}\nCompte : ${compte?.nom || ''}\nMois et année : ${moisNoms[mois - 1]} ${annee}\nExercice du : ${formatDate(exercice?.date_debut)} au ${formatDate(exercice?.date_fin)}`,
+            style: 'subheader',
+            lineHeight: 1.5,
+            margin: [0, 0, 0, 30]
+          },
+          // Tableau IRSA
+          {
+            ...buildTable(irsaData, {
+              headerStyle: 'tableHeader',
+              font: 'Helvetica'
+            })[0],
+            // 🔹 ajoute du padding pour les cellules du tableau (y compris l’en-tête)
+            layout: {
+              ...(
+                buildTable(irsaData, {
+                  headerStyle: 'tableHeader',
+                  font: 'Helvetica'
+                })[0].layout || {}
+              ),
+              hLineWidth: () => 0, // pas de ligne horizontale
+              vLineWidth: () => 0, // pas de ligne verticale
+              paddingTop: () => 4,
+              paddingBottom: () => 4
+            }
+          }
         ],
         styles: {
-            header: {
-                fontSize: 20,
-                bold: true,
-                font: 'Helvetica'
-            },
-            subheader: {
-                fontSize: 12,
-                bold: true,
-                font: 'Helvetica'
-            },
-            tableHeader: {
-                bold: true,
-                fontSize: 8,
-                color: 'white',
-                fillColor: '#1A5276',
-                alignment: 'center',
-                font: 'Helvetica'
-            },
-            totalRow: {
-                bold: true,
-                fillColor: '#89A8B2',
-                alignment: 'right',
-                font: 'Helvetica'
-            }
+          header: {
+            fontSize: 20,
+            bold: true,
+            font: 'Helvetica'
+          },
+          subheader: {
+            fontSize: 12,
+            bold: true,
+            font: 'Helvetica'
+          },
+          tableHeader: {
+            bold: true,
+            fontSize: 6,
+            color: 'white',
+            fillColor: '#1A5276',
+            alignment: 'center',
+            font: 'Helvetica',
+            margin: [0, 5, 0, 5], // 🔹 ajoute de la hauteur aux en-têtes
+            lineHeight: 1.4       // 🔹 augmente légèrement l’espacement du texte
+          },
+          totalRow: {
+            bold: true,
+            fillColor: '#89A8B2',
+            alignment: 'right',
+            font: 'Helvetica'
+          }
         }
-    };
+      };
+      
 
     const printer = new PdfPrinter(fonts);
     const pdfDoc = printer.createPdfKitDocument(docDefinition);

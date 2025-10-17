@@ -8,6 +8,7 @@ const dossierassocies = db.dossierassocies;
 const dossierfiliales = db.dossierfiliales;
 const dossierDomBank = db.dombancaires;
 const pays = db.pays;
+const dossierplancomptable = db.dossierplancomptable;
 
 const getListePays = async (req, res) => {
   try {
@@ -557,6 +558,152 @@ const deleteDomBank = async (req, res) => {
   }
 }
 
+const updateAccountsLength = async (req, res) => {
+  try {
+    let resData = {
+      state: false,
+      msg: '',
+      updatedCount: 0
+    }
+
+    const {
+      fileId,
+      compteId,
+      oldLongueurStd,
+      newLongueurStd,
+      oldLongueurAux,
+      newLongueurAux,
+      autocompletion
+    } = req.body;
+
+    console.log('Mise à jour longueur comptes:', {
+      fileId,
+      compteId,
+      oldLongueurStd,
+      newLongueurStd,
+      oldLongueurAux,
+      newLongueurAux,
+      autocompletion
+    });
+
+    // Récupérer tous les comptes du dossier
+    const comptes = await dossierplancomptable.findAll({
+      where: {
+        id_dossier: fileId,
+        id_compte: compteId
+      }
+    });
+
+    console.log(`Nombre de comptes trouvés: ${comptes.length}`);
+    if (comptes.length > 0) {
+      console.log('Échantillon des premiers comptes:', comptes.slice(0, 3).map(c => ({
+        id: c.id,
+        compte: c.compte,
+        libelle: c.libelle,
+        nature: c.nature,
+        baseaux: c.baseaux
+      })));
+    }
+
+    let updatedCount = 0;
+
+    // Traiter chaque compte
+    for (const compte of comptes) {
+      const currentCompte = compte.compte;
+      if (!currentCompte) {
+        console.log(`Compte ignoré (numéro vide): id=${compte.id}, libelle=${compte.libelle}`);
+        continue;
+      }
+      
+      let newCompte = currentCompte;
+      let shouldUpdate = false;
+
+      // Déterminer si c'est un compte standard ou auxiliaire
+      const isCompteStandard = compte.nature === 'General' || compte.nature === 'Collectif';
+      
+      const isCompteAuxiliaire = !isCompteStandard && currentCompte && (
+        compte.nature === 'Aux' ||
+        compte.nature === 'auxiliaire' ||
+        (compte.baseaux && compte.baseaux !== currentCompte)
+      );
+
+      console.log(`Traitement compte ${currentCompte}: nature=${compte.nature}, isAuxiliaire=${isCompteAuxiliaire}, baseaux="${compte.baseaux}", baseaux_id=${compte.baseaux_id}, longueur=${currentCompte.length}`);
+
+      if (isCompteAuxiliaire && oldLongueurAux !== newLongueurAux) {
+        console.log(`Compte auxiliaire ${currentCompte}: ${oldLongueurAux} -> ${newLongueurAux}, autocompletion=${autocompletion}`);
+        // Traitement des comptes auxiliaires
+        if (newLongueurAux > currentCompte.length) {
+          // Cas 1: Nombre de caractères inférieur à celui modifié dans CRM
+          if (autocompletion) {
+            // Ajouter des zéros à droite si autocomplétion activée
+            const zerosToAdd = newLongueurAux - currentCompte.length;
+            newCompte = currentCompte + '0'.repeat(zerosToAdd);
+            shouldUpdate = true;
+            console.log(`Autocomplétion: ajout de ${zerosToAdd} zéros: ${currentCompte} -> ${newCompte}`);
+          } else {
+            // Laisser le compte tel quel si autocomplétion désactivée
+            console.log(`Autocomplétion désactivée: compte ${currentCompte} laissé tel quel`);
+          }
+        } else if (newLongueurAux < currentCompte.length) {
+          // Cas 2: Nombre de caractères supérieur à celui modifié dans CRM
+          // Toujours tronquer pour avoir le nombre exact de caractères
+          newCompte = currentCompte.substring(0, newLongueurAux);
+          shouldUpdate = true;
+          console.log(`Troncature: ${currentCompte} -> ${newCompte}`);
+        }
+      } else if (!isCompteAuxiliaire && oldLongueurStd !== newLongueurStd) {
+        console.log(`Compte standard ${currentCompte}: ${oldLongueurStd} -> ${newLongueurStd}`);
+        // Traitement des comptes standard
+        if (newLongueurStd > currentCompte.length) {
+          // Ajouter des zéros à droite
+          const zerosToAdd = newLongueurStd - currentCompte.length;
+          newCompte = currentCompte + '0'.repeat(zerosToAdd);
+          shouldUpdate = true;
+          console.log(`Ajout de ${zerosToAdd} zéros: ${currentCompte} -> ${newCompte}`);
+        } else if (newLongueurStd < currentCompte.length) {
+          // Tronquer le compte
+          newCompte = currentCompte.substring(0, newLongueurStd);
+          shouldUpdate = true;
+          console.log(`Troncature: ${currentCompte} -> ${newCompte}`);
+        }
+      } else {
+        console.log(`Compte ${currentCompte} ignoré: pas de changement nécessaire`);
+      }
+
+      // Mettre à jour le compte si nécessaire
+      if (shouldUpdate && newCompte !== currentCompte) {
+        const updateData = { compte: newCompte };
+        
+        // Pour les comptes standard, mettre à jour aussi la centralisation (baseaux)
+        if (!isCompteAuxiliaire) {
+          updateData.baseaux = newCompte;
+          console.log(`Mise à jour centralisation: baseaux = ${newCompte}`);
+        }
+        
+        await dossierplancomptable.update(
+          updateData,
+          { where: { id: compte.id } }
+        );
+        updatedCount++;
+        console.log(`Compte mis à jour: ${currentCompte} -> ${newCompte}`);
+      }
+    }
+
+    resData.state = true;
+    resData.msg = `Mise à jour terminée. ${updatedCount} comptes modifiés.`;
+    resData.updatedCount = updatedCount;
+
+    return res.json(resData);
+  } catch (error) {
+    console.log('Erreur updateAccountsLength:', error);
+    return res.json({
+      state: false,
+      msg: 'Erreur lors de la mise à jour des comptes',
+      updatedCount: 0
+    });
+  }
+}
+
 module.exports = {
   getInfosCRM,
   modifyingInfos,
@@ -569,5 +716,6 @@ module.exports = {
   deleteAssocie,
   deleteFiliale,
   deleteDomBank,
-  getListePays
+  getListePays,
+  updateAccountsLength
 };

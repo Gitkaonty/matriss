@@ -90,6 +90,9 @@ const AddCptToPc = async (req, res) => {
       commune
     } = req.body;
 
+    console.log(req.body);
+    
+
     const DossierParam = await dossiers.findOne({
       where: {
         id: idDossier,
@@ -113,6 +116,7 @@ const AddCptToPc = async (req, res) => {
 
         if (nature === 'General' || nature === 'Collectif') {
           baseauxiliaire = compte;
+          
 
           const findedID = await dossierPlanComptable.findOne({
             where:
@@ -363,6 +367,7 @@ const AddCptToPc = async (req, res) => {
 
         if (nature === 'General' || nature === 'Collectif') {
           baseauxiliaire = compte;
+
 
           const findedID = await dossierPlanComptable.findOne({
             where:
@@ -617,24 +622,27 @@ const AddCptToPc = async (req, res) => {
 
         if (nature === 'General' || nature === 'Collectif') {
           baseauxiliaire = compte;
+          // baseaux_id = itemId;
 
-          const findedID = await dossierPlanComptable.findOne({
-            where:
-            {
-              id_compte: idCompte,
-              id_dossier: idDossier,
-              compte: compte
-            }
-          });
+          // const findedID = await dossierPlanComptable.findOne({
+          //   where:
+          //   {
+          //     id_compte: idCompte,
+          //     id_dossier: idDossier,
+          //     compte: compte
+          //   }
+          // });
 
-          if (findedID) {
-            baseaux_id = findedID.id;
-          }
+          // if (findedID) {
+          //   baseaux_id = findedID.id;
+          // }
         } else {
+          // Pour les comptes auxiliaires, récupérer le compte de base
           const findedID = await dossierPlanComptable.findOne({
-            where:
-            {
-              id: itemId
+            where: {
+              id: baseCptCollectif,
+              id_compte: idCompte,
+              id_dossier: idDossier
             }
           });
 
@@ -677,41 +685,39 @@ const AddCptToPc = async (req, res) => {
           cptTvaNb = listeCptTva.length;
         }
 
+        const updateData = {
+          id_compte: idCompte,
+          id_dossier: idDossier,
+          compte: compteFormated,
+          libelle: libelle,
+          nature: nature,
+          baseaux: baseAux,
+          cptcharge: cptChNb,
+          cpttva: cptTvaNb,
+
+          typetier: typeTier,
+          cin: cin,
+          datecin: dateCin,
+          autrepieceid: autrePieceID,
+          refpieceid: refPieceID,
+          adressesansnif: adresseSansNIF,
+          motcle: motcle,
+          ...(nature === 'Aux' && { baseaux_id: baseCptCollectif }),
+
+          province: province,
+          region: region,
+          district: district,
+          commune: commune
+        };
+
         const NewCptAdded = await dossierPlanComptable.update(
-          {
-            id_compte: idCompte,
-            id_dossier: idDossier,
-            compte: compteFormated,
-            libelle: libelle,
-            nature: nature,
-            baseaux: baseAux,
-            cptcharge: cptChNb,
-            cpttva: cptTvaNb,
-
-            typetier: typeTier,
-            cin: cin,
-            datecin: dateCin,
-            autrepieceid: autrePieceID,
-            refpieceid: refPieceID,
-            adressesansnif: adresseSansNIF,
-            motcle: motcle,
-            baseaux_id: baseaux_id,
-
-            province: province,
-            region: region,
-            district: district,
-            commune: commune
-          },
+          updateData,
           {
             where: {
               id: itemId,
             }
           }
         );
-
-        if (NewCptAdded.id) {
-          await NewCptAdded.update({ baseaux_id: NewCptAdded.id });
-        }
 
         //Enregistrer les compte de charges et TVA associés au compte
         if (listeCptChg.length > 0) {
@@ -756,24 +762,27 @@ const AddCptToPc = async (req, res) => {
 
         if (nature === 'General' || nature === 'Collectif') {
           baseauxiliaire = compte;
+          // baseaux_id = itemId;
 
-          const findedID = await dossierPlanComptable.findOne({
-            where:
-            {
-              id_compte: idCompte,
-              id_dossier: idDossier,
-              compte: compte
-            }
-          });
+          // const findedID = await dossierPlanComptable.findOne({
+          //   where:
+          //   {
+          //     id_compte: idCompte,
+          //     id_dossier: idDossier,
+          //     compte: compte
+          //   }
+          // });
 
-          if (findedID) {
-            baseaux_id = findedID.id;
-          }
+          // if (findedID) {
+          //   baseaux_id = findedID.id;
+          // }
         } else {
+          // Pour les comptes auxiliaires, récupérer le compte de base
           const findedID = await dossierPlanComptable.findOne({
-            where:
-            {
-              id: itemId
+            where: {
+              id: baseCptCollectif,
+              id_compte: idCompte,
+              id_dossier: idDossier
             }
           });
 
@@ -816,37 +825,35 @@ const AddCptToPc = async (req, res) => {
           cptTvaNb = listeCptTva.length;
         }
 
+        const updateData = {
+          id_compte: idCompte,
+          id_dossier: idDossier,
+          compte: compteFormated,
+          libelle: libelle,
+          nature: nature,
+          baseaux: baseAux,
+          cptcharge: cptChNb,
+          cpttva: cptTvaNb,
+
+          typetier: typeTier,
+          nif: nif,
+          statistique: stat,
+          adresse: adresse,
+          motcle: motcle,
+          ...(nature === 'Aux' && { baseaux_id: baseCptCollectif }),
+
+          province: province,
+          region: region,
+          district: district,
+          commune: commune
+        };
+
         const NewCptAdded = await dossierPlanComptable.update(
-          {
-            id_compte: idCompte,
-            id_dossier: idDossier,
-            compte: compteFormated,
-            libelle: libelle,
-            nature: nature,
-            baseaux: baseAux,
-            cptcharge: cptChNb,
-            cpttva: cptTvaNb,
-
-            typetier: typeTier,
-            nif: nif,
-            statistique: stat,
-            adresse: adresse,
-            motcle: motcle,
-            baseaux_id: baseaux_id,
-
-            province: province,
-            region: region,
-            district: district,
-            commune: commune
-          },
+          updateData,
           {
             where: { id: itemId }
           }
         );
-
-        if (NewCptAdded.id) {
-          await NewCptAdded.update({ baseaux_id: NewCptAdded.id });
-        }
 
         //Enregistrer les compte de charges et TVA associés au compte
         if (listeCptChg.length > 0) {
@@ -891,24 +898,27 @@ const AddCptToPc = async (req, res) => {
 
         if (nature === 'General' || nature === 'Collectif') {
           baseauxiliaire = compte;
+          // baseaux_id = itemId;
 
-          const findedID = await dossierPlanComptable.findOne({
-            where:
-            {
-              id_compte: idCompte,
-              id_dossier: idDossier,
-              compte: compte
-            }
-          });
+          // const findedID = await dossierPlanComptable.findOne({
+          //   where:
+          //   {
+          //     id_compte: idCompte,
+          //     id_dossier: idDossier,
+          //     compte: compte
+          //   }
+          // });
 
-          if (findedID) {
-            baseaux_id = findedID.id;
-          }
+          // if (findedID) {
+          //   baseaux_id = findedID.id;
+          // }
         } else {
+          // Pour les comptes auxiliaires, récupérer le compte de base
           const findedID = await dossierPlanComptable.findOne({
-            where:
-            {
-              id: itemId
+            where: {
+              id: baseCptCollectif,
+              id_compte: idCompte,
+              id_dossier: idDossier
             }
           });
 
@@ -951,37 +961,35 @@ const AddCptToPc = async (req, res) => {
           cptTvaNb = listeCptTva.length;
         }
 
+        const updateData = {
+          id_compte: idCompte,
+          id_dossier: idDossier,
+          compte: compteFormated,
+          libelle: libelle,
+          nature: nature,
+          baseaux: baseAux,
+          cptcharge: cptChNb,
+          cpttva: cptTvaNb,
+
+          typetier: typeTier,
+          nifrepresentant: nifRepresentant,
+          adresseetranger: adresseEtranger,
+          pays: pays,
+          motcle: motcle,
+          ...(nature === 'Aux' && { baseaux_id: baseCptCollectif }),
+
+          province: province,
+          region: region,
+          district: district,
+          commune: commune
+        };
+
         const NewCptAdded = await dossierPlanComptable.update(
-          {
-            id_compte: idCompte,
-            id_dossier: idDossier,
-            compte: compteFormated,
-            libelle: libelle,
-            nature: nature,
-            baseaux: baseAux,
-            cptcharge: cptChNb,
-            cpttva: cptTvaNb,
-
-            typetier: typeTier,
-            nifrepresentant: nifRepresentant,
-            adresseetranger: adresseEtranger,
-            pays: pays,
-            motcle: motcle,
-            baseaux_id: baseaux_id,
-
-            province: province,
-            region: region,
-            district: district,
-            commune: commune
-          },
+          updateData,
           {
             where: { id: itemId }
           }
         );
-
-        if (NewCptAdded.id) {
-          await NewCptAdded.update({ baseaux_id: NewCptAdded.id });
-        }
 
         //Enregistrer les compte de charges et TVA associés au compte
         if (listeCptChg.length > 0) {
@@ -1026,24 +1034,27 @@ const AddCptToPc = async (req, res) => {
 
         if (nature === 'General' || nature === 'Collectif') {
           baseauxiliaire = compte;
+          // baseaux_id = itemId;
 
-          const findedID = await dossierPlanComptable.findOne({
-            where:
-            {
-              id_compte: idCompte,
-              id_dossier: idDossier,
-              compte: compte
-            }
-          });
+          // const findedID = await dossierPlanComptable.findOne({
+          //   where:
+          //   {
+          //     id_compte: idCompte,
+          //     id_dossier: idDossier,
+          //     compte: compte
+          //   }
+          // });
 
-          if (findedID) {
-            baseaux_id = findedID.id;
-          }
+          // if (findedID) {
+          //   baseaux_id = findedID.id;
+          // }
         } else {
+          // Pour les comptes auxiliaires, récupérer le compte de base
           const findedID = await dossierPlanComptable.findOne({
-            where:
-            {
-              id: itemId
+            where: {
+              id: baseCptCollectif,
+              id_compte: idCompte,
+              id_dossier: idDossier
             }
           });
 
@@ -1086,35 +1097,33 @@ const AddCptToPc = async (req, res) => {
           cptTvaNb = listeCptTva.length;
         }
 
+        const updateData = {
+          id_compte: idCompte,
+          id_dossier: idDossier,
+          compte: compteFormated,
+          libelle: libelle,
+          nature: nature,
+          baseaux: baseAux,
+          cptcharge: cptChNb,
+          cpttva: cptTvaNb,
+
+          typetier: typeTier,
+          pays: 'Madagascar',
+          motcle: motcle,
+          ...(nature === 'Aux' && { baseaux_id: baseCptCollectif }),
+
+          province: province,
+          region: region,
+          district: district,
+          commune: commune
+        };
+
         const NewCptAdded = await dossierPlanComptable.update(
-          {
-            id_compte: idCompte,
-            id_dossier: idDossier,
-            compte: compteFormated,
-            libelle: libelle,
-            nature: nature,
-            baseaux: baseAux,
-            cptcharge: cptChNb,
-            cpttva: cptTvaNb,
-
-            typetier: typeTier,
-            pays: 'Madagascar',
-            motcle: motcle,
-            baseaux_id: baseaux_id,
-
-            province: province,
-            region: region,
-            district: district,
-            commune: commune
-          },
+          updateData,
           {
             where: { id: itemId }
           }
         );
-
-        if (NewCptAdded.id) {
-          await NewCptAdded.update({ baseaux_id: NewCptAdded.id });
-        }
 
         //Enregistrer les compte de charges et TVA associés au compte
         if (listeCptChg.length > 0) {

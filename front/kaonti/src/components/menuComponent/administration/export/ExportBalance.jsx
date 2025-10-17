@@ -359,6 +359,7 @@ export default function ExportBalance() {
                                 />
 
                                 <Button
+                                    disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0}
                                     type='submit'
                                     variant="contained"
                                     style={{
