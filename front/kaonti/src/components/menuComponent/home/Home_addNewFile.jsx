@@ -92,8 +92,8 @@ export default function AddNewFile({ confirmationState }) {
     const [deviseDomBankValidationColor, setDeviseDomBankValidationColor] = useState('transparent');
     const [paysDomBankValidationColor, setPaysDomBankValidationColor] = useState('transparent');
     
-        const [selectedRowDomBank, setSelectedRowDomBank] = useState([]);
-        const [disableAddRowBouton, setDisableAddRowBouton] = useState(false);
+    const [selectedRowDomBank, setSelectedRowDomBank] = useState([]);
+    
     
     //récupération infos compte
     const { auth } = useAuth();
@@ -864,7 +864,7 @@ export default function AddNewFile({ confirmationState }) {
     }
 
     return (
-        <Box
+        <Paper
             sx={{
                 paddingX: 3,
                 paddingY: 2

@@ -31,7 +31,7 @@ import ParamMappingComponent from './components/menuComponent/Parametrages/mappi
 import AnalitiqueComponent from './components/menuComponent/Parametrages/analytiques/AnalitiqueComponent';
 import DeclarationComm from './components/menuComponent/Declaration/Dcom/DeclarationComm';
 import ClassificationSalariesComponent from './components/menuComponent/Parametrages/classifications/ClassificationSalariesComponent';
-import PersonnelComponent from './components/menuComponent/administration/Personnel/PersonnelComponent';
+import PersonnelComponent from './components/menuComponent/administration/personnel/PersonnelComponent';
 import FonctionsComponent from './components/menuComponent/Parametrages/fonctions/FonctionsComponent';
 import DeclarationIRSAComponent from './components/menuComponent/Declaration/IRSA/DeclarationIRSAComponent';
 import HistoriqueDeclaration from './components/menuComponent/Declaration/Historique/HistoriqueDeclaration';

@@ -70,7 +70,6 @@ export default function ParamCRM() {
     const [disableAddRowBouton, setDisableAddRowBouton] = useState(false);
 
     const [editableRow, setEditableRow] = useState(true);
-    const [disableAddRowBouton, setDisableAddRowBouton] = useState(false);
     const [disableModifyBoutonDomBank, setDisableModifyBoutonDomBank] = useState(true);
     const [disableCancelBoutonDomBank, setDisableCancelBoutonDomBank] = useState(true);
     const [disableSaveBoutonDomBank, setDisableSaveBoutonDomBank] = useState(true);
@@ -3191,7 +3190,6 @@ const handleEditClickDomBank = (id) => () => {
                                                                 columnVisibilityModel={{
                                                                     id: false,
                                                                 }}
-                                                                rowSelectionModel={selectedRowDomBancaires}
                                                             />
                                                         </Stack>
 

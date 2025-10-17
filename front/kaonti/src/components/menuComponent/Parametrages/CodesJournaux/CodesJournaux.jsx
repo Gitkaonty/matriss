@@ -566,12 +566,7 @@ export default function ParamCodeJournalComponent() {
                 const isEditable = formikNewCodeJournal.values.type === 'BANQUE';
                 return (
                     <FormControl fullWidth style={{ height: '100%' }}>
-                    <FormControl fullWidth style={{ height: '100%' }}>
                         <Input
-                            style={{
-                                height: '100%', alignItems: 'center',
-                                outline: 'none',
-                                backgroundColor: nifValidationColor
                             style={{
                                 height: '100%', alignItems: 'center',
                                 outline: 'none',
@@ -639,7 +634,6 @@ export default function ParamCodeJournalComponent() {
             renderEditCell: (params) => {
                 const isEditable = formikNewCodeJournal.values.type === 'BANQUE';
                 return (
-                    <FormControl fullWidth style={{ height: '100%' }}>
                     <FormControl fullWidth style={{ height: '100%' }}>
                         <Input
                             style={{
