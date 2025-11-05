@@ -99,6 +99,10 @@ const importModelePc = async (req, res)  => {
             nifrepresentant: item.nifrepresentant,
             adresseetranger: item.adresserepresentant,
             pays: pays,
+            province: item.province || '',
+            region: item.region || '',
+            district: item.district || '',
+            commune: item.commune || '',
           });
 
           // await db.query(`

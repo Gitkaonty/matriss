@@ -2,8 +2,7 @@ module.exports = (sequelize, DataTypes) => {
     const caAxes = sequelize.define("caaxes", {
         code: {
             type: DataTypes.STRING(50),
-            allowNull: false,
-            unique: true
+            allowNull: false
         },
         libelle: {
             type: DataTypes.STRING(100),
@@ -31,7 +30,14 @@ module.exports = (sequelize, DataTypes) => {
         }
     }, {
         tableName: "caaxes",
-        timestamps: true
+        timestamps: true,
+        indexes: [
+            {
+                unique: true,
+                fields: ['code', 'id_dossier', 'id_compte'],
+                name: 'unique_caaxe_per_dossier'
+            }
+        ]
     });
     return caAxes;
 };

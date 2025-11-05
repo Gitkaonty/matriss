@@ -1,41 +1,24 @@
 import { React, useState, useEffect } from "react";
-
 import { useNavigate } from "react-router-dom";
-
 import { Typography, Stack, Paper, IconButton, FormControl, Input } from "@mui/material";
-
 import Button from "@mui/material/Button";
-
 import { TbPlaylistAdd } from "react-icons/tb";
 import { FaRegPenToSquare } from "react-icons/fa6";
 import { TfiSave } from "react-icons/tfi";
 import { VscClose } from "react-icons/vsc";
 import { IoMdTrash } from "react-icons/io";
-
 import Tooltip from "@mui/material/Tooltip";
-
 import { InfoFileStyle } from "../../../componentsTools/InfosFileStyle";
-
 import { useParams } from "react-router-dom";
-
 import Box from "@mui/material/Box";
-
 import Tab from "@mui/material/Tab";
-
 import TabContext from "@mui/lab/TabContext";
-
 import TabList from "@mui/lab/TabList";
-
 import TabPanel from "@mui/lab/TabPanel";
-
 import PopupConfirmDelete from "../../../componentsTools/popupConfirmDelete";
-
 import PopupTestSelectedFile from "../../../componentsTools/popupTestSelectedFile";
-
 import { init } from "../../../../../init";
-
 import { DataGridStyle } from "../../../componentsTools/DatagridToolsStyle";
-
 import {
     DataGrid,
     frFR,
@@ -44,17 +27,13 @@ import {
 } from "@mui/x-data-grid";
 
 import QuickFilter from "../../../componentsTools/DatagridToolsStyle";
-
 import useAuth from "../../../../hooks/useAuth";
-
 import { jwtDecode } from "jwt-decode";
-
 import axios from "../../../../../config/axios";
-
 import toast from "react-hot-toast";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-
+ 
 export default function ClassificationSalariesComponent() {
     const initial = init[0];
 
@@ -84,6 +63,8 @@ export default function ClassificationSalariesComponent() {
     const [editRow, setEditRow] = useState(null);
     const [newRow, setNewRow] = useState(null);
     const [selectedRow, setSelectedRow] = useState([]);
+
+    const [submitAttempt, setSubmitAttempt] = useState(false);
 
     // récupération infos de dossier sélectionné
 
@@ -145,22 +126,22 @@ export default function ClassificationSalariesComponent() {
         formNewParam.setFieldValue(name, value);
     };
 
+    const isRequiredEmpty = (name) => {
+        const v = formNewParam.values[name];
+        return submitAttempt && (v === '' || v === null || v === undefined);
+    };
+
     const classificationColumns = [
         {
             field: "classe",
-
             headerName: "Catégorie",
-
             flex: 1,
-
             editable: editableRow,
-
             headerAlign: "left",
-
             align: "left",
             renderEditCell: (params) => {
                 return (
-                    <FormControl fullWidth style={{ height: '100%' }}>
+                    <FormControl fullWidth style={{ height: '100%', backgroundColor: isRequiredEmpty('classe') ? '#F8D7DA' : 'transparent', border: isRequiredEmpty('classe') ? '1px solid #F5C2C7' : '1px solid transparent', borderRadius: '4px' }}>
                         <Input
                             style={{
                                 height: '100%', alignItems: 'center',
@@ -181,15 +162,10 @@ export default function ClassificationSalariesComponent() {
 
         {
             field: "remarque",
-
             headerName: "Remarque",
-
             flex: 5,
-
             editable: editableRow,
-
             headerAlign: "left",
-
             align: "left",
             renderEditCell: (params) => {
                 return (
@@ -220,26 +196,20 @@ export default function ClassificationSalariesComponent() {
     }
 
     // Charger la liste des classifications
-
     const fetchClassifications = () => {
         axios
             .get(
                 `/parametres/classification/dossier/${Number(compteId)}/${Number(id)}`
             )
-
             .then((res) => {
                 const data = Array.isArray(res.data.list)
                     ? res.data.list.map((item, idx) => ({
                         id: item.id || idx + 1,
-
                         classe: item.classe,
-
                         remarque: item.remarque,
-
                         id_dossier: item.id_dossier,
                     }))
                     : [];
-
                 setRows(data);
             })
             .catch(() => setRows([]));
@@ -248,8 +218,6 @@ export default function ClassificationSalariesComponent() {
     useEffect(() => {
         fetchClassifications();
     }, []);
-
-    // Sélection d'une ligne
 
     // Sélection d'une ligne
     const saveSelectedRow = (ids) => {
@@ -282,7 +250,6 @@ export default function ClassificationSalariesComponent() {
     }
 
     // Edition
-
     const handleEditClick = (id) => () => {
         const selectedRowInfos = rows.find(r => r.id === id[0]);
         // setEditRow(row);
@@ -319,11 +286,11 @@ export default function ClassificationSalariesComponent() {
 
     const handleOpenDialogAddNewAssocie = () => {
         // if (newRow) return;
-
         setDisableModifyBouton(false);
         setDisableCancelBouton(false);
         setDisableDeleteBouton(false);
         setDisableSaveBouton(false);
+        setSubmitAttempt(false);
 
         const newId = -Date.now();
         formNewParam.setFieldValue("idClassification", newId);
@@ -343,7 +310,14 @@ export default function ClassificationSalariesComponent() {
 
     // Sauvegarde
     const handleSaveClick = (id) => () => {
-        setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
+        // Validation champ obligatoire: classe
+        if (!formNewParam.values.classe || formNewParam.values.classe.trim() === '') {
+            setSubmitAttempt(true);
+            toast.error('La catégorie est obligatoire');
+            setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
+            setDisableSaveBouton(false);
+            return;
+        }
         const dataToSend = { ...formNewParam.values, fileId, compteId };
         axios.post(`/parametres/classification`, dataToSend).then((response) => {
             const resData = response.data;
@@ -351,9 +325,13 @@ export default function ClassificationSalariesComponent() {
                 setDisableAddRowBouton(false);
                 setDisableSaveBouton(true);
                 formNewParam.resetForm();
+                setSubmitAttempt(false);
                 toast.success(resData.msg);
                 fetchClassifications();
+                setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
             } else {
+                setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
+                setDisableSaveBouton(false);
                 toast.error(resData.msg);
             }
         })
@@ -439,11 +417,8 @@ export default function ClassificationSalariesComponent() {
                         <Tab
                             style={{
                                 textTransform: "none",
-
                                 outline: "none",
-
                                 border: "none",
-
                                 margin: -5,
                             }}
                             label={InfoFileStyle(fileInfos?.dossier)}
@@ -460,7 +435,7 @@ export default function ClassificationSalariesComponent() {
                     <Stack
                         width={"100%"}
                         height={"30px"}
-                        spacing={1}
+                        spacing={0.5}
                         alignItems={"center"}
                         alignContent={"center"}
                         direction={"column"}
@@ -473,7 +448,7 @@ export default function ClassificationSalariesComponent() {
                         <Stack
                             width={"100%"}
                             height={"30px"}
-                            spacing={1}
+                            spacing={0.5}
                             alignItems={"center"}
                             alignContent={"center"}
                             direction={"row"}
@@ -488,12 +463,9 @@ export default function ClassificationSalariesComponent() {
                                         style={{
                                             width: "35px",
                                             height: "35px",
-
                                             borderRadius: "2px",
                                             borderColor: "transparent",
-
                                             backgroundColor: initial.theme,
-
                                             textTransform: "none",
                                             outline: "none",
                                         }}
@@ -514,12 +486,9 @@ export default function ClassificationSalariesComponent() {
                                         style={{
                                             width: "35px",
                                             height: "35px",
-
                                             borderRadius: "2px",
                                             borderColor: "transparent",
-
                                             backgroundColor: initial.theme,
-
                                             textTransform: "none",
                                             outline: "none",
                                         }}
@@ -540,12 +509,9 @@ export default function ClassificationSalariesComponent() {
                                         style={{
                                             width: "35px",
                                             height: "35px",
-
                                             borderRadius: "2px",
                                             borderColor: "transparent",
-
                                             backgroundColor: initial.theme,
-
                                             textTransform: "none",
                                             outline: "none",
                                         }}
@@ -566,12 +532,9 @@ export default function ClassificationSalariesComponent() {
                                         style={{
                                             width: "35px",
                                             height: "35px",
-
                                             borderRadius: "2px",
                                             borderColor: "transparent",
-
                                             backgroundColor: initial.button_delete_color,
-
                                             textTransform: "none",
                                             outline: "none",
                                         }}
@@ -592,12 +555,9 @@ export default function ClassificationSalariesComponent() {
                                         style={{
                                             width: "35px",
                                             height: "35px",
-
                                             borderRadius: "2px",
                                             borderColor: "transparent",
-
                                             backgroundColor: initial.button_delete_color,
-
                                             textTransform: "none",
                                             outline: "none",
                                         }}
@@ -636,9 +596,10 @@ export default function ClassificationSalariesComponent() {
                                 editMode='row'
                                 onRowClick={(e) => handleCellEditCommit(e.row)}
                                 onRowSelectionModelChange={ids => {
-                                    setSelectedRow(ids);
-                                    saveSelectedRow(ids);
-                                    deselectRow(ids);
+                                    const single = Array.isArray(ids) && ids.length ? [ids[ids.length - 1]] : [];
+                                    setSelectedRow(single);
+                                    saveSelectedRow(single);
+                                    deselectRow(single);
                                 }}
                                 rowModesModel={rowModesModel}
                                 onRowModesModelChange={handleRowModesModelChange}

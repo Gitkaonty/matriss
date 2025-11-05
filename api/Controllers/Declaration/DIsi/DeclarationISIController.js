@@ -40,11 +40,10 @@ const moisNoms = [
 ];
 
 // Fonction pour récupérer les entêtes du PDF
-const infoBlock = (dossier, compte, exercice, mois, annee) => ([
+const infoBlock = (dossier, exercice, mois, annee) => ([
     { text: `Dossier : ${dossier?.dossier}`, style: 'subTitle', margin: [0, 0, 0, 5] },
-    { text: `Compte : ${compte?.nom}`, style: 'subTitle', margin: [0, 0, 0, 5] },
-    { text: `Mois et année : ${moisNoms[mois - 1]} ${annee}`, style: 'subTitle', margin: [0, 0, 0, 5] },
-    { text: `Exercice du : ${formatDate(exercice.date_debut)} au ${formatDate(exercice.date_fin)}`, style: 'subTitle', margin: [0, 0, 0, 10] }
+    { text: `Mois et année : ${moisNoms[mois - 1]} ${annee}`, style: 'subTitleExo', margin: [0, 0, 0, 5] },
+    { text: `Exercice du : ${formatDate(exercice.date_debut)} au ${formatDate(exercice.date_fin)}`, style: 'subTitleExo', margin: [0, 0, 0, 10] }
 ]);
 
 exports.getJournalsISI = async (req, res) => {
@@ -1313,12 +1312,13 @@ exports.exportISIToPDF = async (req, res) => {
             pageOrientation: 'landscape',
             content: [
                 { text: 'Liste des déclarations ISI', style: 'title' },
-                infoBlock(dossier, compte, exercice, mois, annee),
+                infoBlock(dossier, exercice, mois, annee),
                 ...buildTable(isi)
             ],
             styles: {
                 title: { fontSize: 18, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-                subTitle: { fontSize: 9 },
+                subTitle: { fontSize: 14,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+                subTitleExo: { fontSize: 9},
                 tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
             },
             defaultStyle: { font: 'Helvetica', fontSize: 7 }

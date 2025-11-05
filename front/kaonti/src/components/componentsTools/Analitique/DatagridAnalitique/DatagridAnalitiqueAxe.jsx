@@ -40,6 +40,9 @@ const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeId, setSel
     const [openDialogDeleteRow, setOpenDialogDeleteRow] = useState(false);
     const [disableDefaultFieldModif, setDisableDefaultFieldModif] = useState(false);
 
+    // Normaliser un code pour comparaison (trim + uppercase)
+    const normalizeCode = (v) => (v || '').toString().trim().toUpperCase();
+
     //formulaire pour la sauvegarde
     const formNewParam = useFormik({
         initialValues: {
@@ -205,6 +208,15 @@ const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeId, setSel
         }
 
         if (saveBoolCode && saveBoolLibelle) {
+            // Vérifier l'unicité du code (autre ligne avec le même code)
+            const currentId = Number(formNewParam.values.id) || 0;
+            const newCode = normalizeCode(formNewParam.values.code);
+            const exists = Array.isArray(axesData) && axesData.some(r => Number(r.id) !== currentId && normalizeCode(r.code) === newCode);
+            if (exists) {
+                toast.error('Ce code Axe existe déjà');
+                return;
+            }
+
             setRowModesModel({
                 ...rowModesModel,
                 [id]: { mode: GridRowModes.View, ignoreModifications: true },
@@ -496,18 +508,13 @@ const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeId, setSel
                         columnHeaderHeight={DataGridStyle.columnHeaderHeight}
                         editMode='row'
                         onRowClick={(e) => handleCellEditCommit(e.row)}
-                        onRowSelectionModelChange={ids => {
-                            const lastId = ids[ids.length - 1];
-                            deselectRow(ids);
-
-                            if (!ids || ids.length === 0) {
-                                setSelectedRowAxeId([]);
-                                return;
-                            }
-
-                            setSelectedRowAxeId([lastId]);
-                            saveSelectedRow([lastId]);
-                        }}
+                        onRowSelectionModelChange={(ids) => {
+                        const arr = Array.isArray(ids) ? ids : [ids];
+                        const single = arr.length ? [arr[arr.length - 1]] : [];
+                        setSelectedRowAxeId(single);
+                        saveSelectedRow(single);
+                        deselectRow(single);
+                    }}
                         rowModesModel={rowModesModel}
                         onRowModesModelChange={handleRowModesModelChange}
                         onRowEditStop={handleRowEditStop}

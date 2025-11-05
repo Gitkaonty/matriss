@@ -59,6 +59,7 @@ export default function ImportJournal() {
     const [journalData, setJournalData] = useState([]);
     const [planComptable, setPlanComptable] = useState([]);
     const [codeJournal, setCodeJournal] = useState([]);
+    const [devises, setDevises] = useState([]);
     const [msgAnomalie, setMsgAnomalie] = useState([]);
     const [couleurBoutonAnomalie, setCouleurBoutonAnomalie] = useState('white');
     const [nbrAnomalie, setNbrAnomalie] = useState(0);
@@ -635,6 +636,15 @@ export default function ImportJournal() {
         });
     }
 
+    // Récupérer la liste des devises existantes pour le dossier/compte
+    const GetListeDevises = (id) => {
+        if (!compteId || !id) { setDevises([]); return; }
+        axios.get(`/devises/devise/compte/${compteId}/${id}`).then((res) => {
+            const data = Array.isArray(res.data) ? res.data : [];
+            setDevises(data);
+        }).catch(() => setDevises([]));
+    }
+
     //récupération données liste code journaux
     const GetListeCodeJournaux = (id) => {
         axios.get(`/paramCodeJournaux/listeCodeJournaux/${id}`).then((response) => {
@@ -651,6 +661,7 @@ export default function ImportJournal() {
     useEffect(() => {
         GetListeCodeJournaux(fileId);
         recupPlanComptable();
+        GetListeDevises(fileId);
     }, [fileId]);
 
     //Valeur du listbox choix Type exercice-----------------------------------------------------
@@ -806,17 +817,51 @@ export default function ImportJournal() {
                         const compteNotInParamsGen = existance(ListeCompteParams, listeUniqueCompteGen);
                         const compteNotInParamsAux = existance(ListeCompteParams, listeUniqueCompteAux);
 
+                        // Devises: détecter les codes manquants et les vides
+                        const listeUniqueDevisesInitial = [...new Set(result.data.map(item => (item.Idevise || '').trim()))];
+                        const listeUniqueDevises = listeUniqueDevisesInitial.filter(item => item !== '');
+                        const listeDevisesParams = [...new Set((devises || []).map(d => d.code))];
+                        const devisesNotInParams = existance(listeDevisesParams, listeUniqueDevises);
+                        const numberOfEmptyDevises = result.data.filter(row => !row.Idevise || row.Idevise.trim() === '').length;
+
                         if (codeJournalNotInParams.length > 0) {
                             msg.push(`Les codes journaux suivants n'existent pas encore dans votre dossier : ${codeJournalNotInParams.join(', ')}`);
                             nbrAnom = nbrAnom + 1;
                             setNbrAnomalie(nbrAnom);
                             setCouleurBoutonAnomalie(couleurAnom);
-                            setCodeJournalToCreate(codeJournalNotInParams);
+
+                            // Construire { code, libelle } à partir du fichier importé (JournalLib si présent)
+                            const missingCodeWithLib = codeJournalNotInParams.map((code) => {
+                                const row = result.data.find(r => r.JournalCode === code);
+                                const libelle = row && (row.JournalLib || row.JournalLabel || row.Journal || '')
+                                    ? (row.JournalLib || row.JournalLabel || row.Journal)
+                                    : `Journal ${code}`;
+                                return { code, libelle };
+                            });
+                            setCodeJournalToCreate(missingCodeWithLib);
                         }
 
                         if (compteNotInParams.length > 0) {
                             msg.push(`Les numéros de compte suivants n'existent pas encore dans votre dossier : ${compteNotInParams.join(', ')}`);
 
+                            nbrAnom = nbrAnom + 1;
+                            setNbrAnomalie(nbrAnom);
+                            setCouleurBoutonAnomalie(couleurAnom);
+                        }
+
+                        // Anomalies devises manquantes (seront créées automatiquement)
+                        if (devisesNotInParams.length > 0) {
+                            msg.push(`Les devises suivantes n'existent pas encore dans votre dossier et seront créées automatiquement : ${devisesNotInParams.join(', ')}`);
+                            nbrAnom = nbrAnom + 1;
+                            setNbrAnomalie(nbrAnom);
+                            setCouleurBoutonAnomalie(couleurAnom);
+                        }
+
+                        // Anomalies devises vides (par défaut MGA)
+                        if (numberOfEmptyDevises > 0) {
+                            const hasMGA = listeDevisesParams.includes('MGA') || devisesNotInParams.includes('MGA');
+                            const suffix = hasMGA ? '' : " (MGA sera créé au besoin)";
+                            msg.push(`Certaines lignes n'ont pas de devise : elles utiliseront la devise par défaut 'MGA'${suffix}.`);
                             nbrAnom = nbrAnom + 1;
                             setNbrAnomalie(nbrAnom);
                             setCouleurBoutonAnomalie(couleurAnom);
@@ -830,15 +875,66 @@ export default function ImportJournal() {
                             DataWithId = result.data.map((row, index) => ({ ...row, id: index }));
                         }
 
-                        //const dataWithFooter = [...DataWithId, footerRow];
-                        setJournalData(DataWithId);
-                        calculTotal(DataWithId);
-                        formikImport.setFieldValue('journalData', DataWithId);
+                        // Déterminer la période de l'exercice sélectionné
+                        const getExerciseRange = () => {
+                            const ex = (listeExercice || []).find(e => e.id === selectedExerciceId) || {};
+                            // Support de plusieurs clés possibles
+                            const start = ex.datedebut || ex.date_debut || ex.debut || ex.startDate || null;
+                            const end = ex.datefin || ex.date_fin || ex.fin || ex.endDate || null;
+                            return { start, end };
+                        };
+
+                        const parseToDate = (str) => {
+                            if (!str) return null;
+                            if (typeof str === 'string') {
+                                if (str.includes('/')) {
+                                    const [day, month, year] = str.split('/');
+                                    return new Date(`${year}-${month}-${day}`);
+                                }
+                                if (/^\d{8}$/.test(str)) {
+                                    return new Date(`${str.substring(0, 4)}-${str.substring(4, 6)}-${str.substring(6, 8)}`);
+                                }
+                            }
+                            const d = new Date(str);
+                            return isNaN(d.getTime()) ? null : d;
+                        };
+
+                        // Filtrage des lignes hors exercice si dates disponibles
+                        const { start, end } = getExerciseRange();
+                        let finalData = DataWithId;
+                        if (start && end) {
+                            const dStart = parseToDate(start);
+                            const dEnd = parseToDate(end);
+                            if (dStart && dEnd) {
+                                const outOfRange = DataWithId.filter(r => {
+                                    const d = parseToDate(r.EcritureDate);
+                                    return !d || d < dStart || d > dEnd;
+                                });
+                                if (outOfRange.length > 0) {
+                                    msg.push("Certaines lignes ne seront pas importées car leurs date d'écriture est en déhors de l'exercice");
+                                    nbrAnom = nbrAnom + 1;
+                                    setNbrAnomalie(nbrAnom);
+                                    setCouleurBoutonAnomalie(couleurAnom);
+                                }
+                                finalData = DataWithId.filter(r => {
+                                    const d = parseToDate(r.EcritureDate);
+                                    return d && d >= dStart && d <= dEnd;
+                                });
+                            }
+                        }
+
+                        //const dataWithFooter = [...finalData, footerRow];
+                        setJournalData(finalData);
+                        calculTotal(finalData);
+                        formikImport.setFieldValue('journalData', finalData);
 
                         const cptToCreateGen = DataWithId.filter(item => compteNotInParamsGen.includes(item.CompteNum));
                         const cptToCreateAux = DataWithId.filter(item => compteNotInParamsAux.includes(item.CompAuxNum));
                         setCompteToCreateGen(cptToCreateGen);
                         setCompteToCreateAux(cptToCreateAux);
+
+                        // Mettre à jour les messages d'anomalies agrégés
+                        setMsgAnomalie(msg);
 
                         event.target.value = null;
                         setTraitementJournalWaiting(false);
@@ -1065,9 +1161,19 @@ export default function ImportJournal() {
 
                                     <List style={{ marginLeft: "10px" }}>
                                         <ListItem style={{ width: "100px", justifyContent: "center" }}>
-                                            <ListItemButton onClick={handleDownloadModel}>
+                                            <ListItemButton
+                                                disabled={!fileTypeCSV}
+                                                onClick={fileTypeCSV ? handleDownloadModel : undefined}
+                                            >
                                                 <ListItemIcon >
-                                                    <LogoutIcon style={{ width: "40px", height: "30px", color: 'rgba(5,96,116,0.60)', transform: "rotate(270deg)" }} />
+                                                    <LogoutIcon
+                                                        style={{
+                                                            width: "40px",
+                                                            height: "30px",
+                                                            color: fileTypeCSV ? 'rgba(5,96,116,0.60)' : '#bdbdbd',
+                                                            transform: "rotate(270deg)"
+                                                        }}
+                                                    />
                                                 </ListItemIcon>
                                             </ListItemButton>
                                         </ListItem>

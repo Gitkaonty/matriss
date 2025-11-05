@@ -705,7 +705,8 @@ export default function ParamExerciceComponent() {
                                 columns={ExerciceColumnHeader}
                                 rows={listeExercice}
                                 onRowSelectionModelChange={ids => {
-                                    saveSelectedExercice(ids);
+                                    const single = Array.isArray(ids) && ids.length ? [ids[ids.length - 1]] : [];
+                                    saveSelectedExercice(single);
                                 }}
                                 initialState={{
                                     pagination: {
@@ -719,6 +720,7 @@ export default function ParamExerciceComponent() {
                                 columnVisibilityModel={{
                                     id: false,
                                 }}
+                                rowSelectionModel={selectedExerciceRow}
                             />
                         </Stack>
                     </Stack>

@@ -59,6 +59,7 @@ export default function AddNewFile({ confirmationState }) {
     const [disableSaveBouton, setDisableSaveBouton] = useState(true);
     const [disableDeleteBouton, setDisableDeleteBouton] = useState(true);
     const [disableAddRowBouton, setDisableAddRowBouton] = useState(false);
+    const [disableAddRowBoutonDomBank, setDisableAddRowBoutonDomBank] = useState(false);
 
     const [editableRow, setEditableRow] = useState(true);
     const [openDialogDeleteAssocieRow, setOpenDialogDeleteAssocieRow] = useState(false);
@@ -598,6 +599,23 @@ export default function AddNewFile({ confirmationState }) {
         }
     }
 
+    const saveSelectedRowDomBank = (ids) => {
+        if (ids.length === 1) {
+            setSelectedRowIdDomBank(ids);
+            setDisableModifyBoutonDomBank(false);
+            setDisableSaveBoutonDomBank(false);
+            setDisableCancelBoutonDomBank(false);
+            setDisableDeleteBoutonDomBank(false);
+        } else {
+            setSelectedRowIdDomBank([]);
+            setDisableModifyBoutonDomBank(true);
+            setDisableSaveBoutonDomBank(true);
+            setDisableCancelBoutonDomBank(true);
+            setDisableDeleteBoutonDomBank(true);
+        }
+    }
+    }
+
     const handleRowEditStopFiliale = (params, event) => {
         if (params.reason === GridRowEditStopReasons.rowFocusOut) {
             event.defaultMuiPrevented = true;
@@ -773,6 +791,29 @@ export default function AddNewFile({ confirmationState }) {
         }).catch(() => setListDomBank([]));
     };
 
+
+    useEffect(() => {
+    //récupérer la liste des pays
+    const getListePays = async () => {
+        await axios.get(`/paramCrm/getListePays/`).then((response) => {
+            const resData = response.data;
+
+            if (resData.state) {
+                setListPays(resData.list);
+            } else {
+                setListPays([]);
+            }
+        });
+    }
+
+    const getInfosDomBank = (id) => {
+        axios.get(`/paramCrm/listeDomBank/${id}`).then((response) => {
+            const resData = response.data;
+            const safeList = Array.isArray(resData?.list) ? resData.list : [];
+            setListDomBank(safeList);
+        }).catch(() => setListDomBank([]));
+    };
+
     const getMaxID = (data) => {
         const Ids = data.map(item => item.id);
         return Math.max(...Ids);
@@ -887,6 +928,383 @@ export default function AddNewFile({ confirmationState }) {
         setDisableAddRowBoutonFiliale(false);
         setSelectedRowIdFiliale(ids);
     }
+
+    const handleOpenDialogAddNewDomBank = () => {
+
+        setDisableModifyBoutonDomBank(false);
+        setDisableCancelBoutonDomBank(false);
+        setDisableDeleteBoutonDomBank(false);
+        setDisableSaveBoutonDomBank(false);
+
+        const newId = -Date.now();
+        let arrayId = [];
+        arrayId = [...arrayId, newId];
+
+        useFormikDomBank.setFieldValue("idDomBank", newId);
+        useFormikDomBank.setFieldValue("idCompte", compteId);
+        useFormikDomBank.setFieldValue("idDossier", fileId);
+        useFormikDomBank.setFieldValue("banque", "");
+        useFormikDomBank.setFieldValue("numcompte", "");
+        useFormikDomBank.setFieldValue("devise", "");
+        useFormikDomBank.setFieldValue("pays", "");
+        useFormikDomBank.setFieldValue("enactivite", false);
+
+        const newRow = {
+            id: newId,
+            banque: '',
+            numcompte: '',
+            devise: '',
+            pays: '',
+        };
+        setListDomBank([...listDomBank, newRow]);
+        setSelectedRowIdDomBank(arrayId);
+        setRowModesModelDomBank({ ...rowModesModelDomBank, [arrayId]: { mode: GridRowModes.Edit } });
+        setDisableSaveBoutonDomBank(false);
+        setSelectedRowDomBank([newId]);
+        setDisableAddRowBoutonDomBank(true);
+    }
+
+    const handleEditClickDomBank = (id) => () => {
+        //réinitialiser les couleurs des champs
+        setBankDomBankValidationColor('transparent');
+        setNumCompteDomBankValidationColor('transparent');
+        setDeviseDomBankValidationColor('transparent');
+        setPaysDomBankValidationColor('transparent');
+
+        //charger dans le formik les données de la ligne
+        const selectedRowInfos = listDomBank?.filter((item) => item.id === id[0]);
+
+        useFormikDomBank.setFieldValue("idCompte", compteId);
+        useFormikDomBank.setFieldValue("idDossier", fileId);
+        useFormikDomBank.setFieldValue("idDomBank", selectedRowInfos[0].id);
+        useFormikDomBank.setFieldValue("banque", selectedRowInfos[0].banque);
+        useFormikDomBank.setFieldValue("numcompte", selectedRowInfos[0].numcompte);
+        useFormikDomBank.setFieldValue("devise", selectedRowInfos[0].devise);
+        useFormikDomBank.setFieldValue("pays", selectedRowInfos[0].pays);
+        useFormikDomBank.setFieldValue("enactivite", selectedRowInfos[0].enactivite);
+
+        setRowModesModelDomBank({ ...rowModesModelDomBank, [id]: { mode: GridRowModes.Edit } });
+        setDisableSaveBoutonDomBank(false);
+    };
+
+
+    const handleSaveClickDomBank = (id) => () => {
+        let saveBoolbanque = false;
+        let saveBoolNumCompte = false;
+        let saveBoolDevise = false;
+        let saveBoolPays = false;
+
+        if (useFormikDomBank.values.banque === '') {
+            setBankDomBankValidationColor('#F6D6D6');
+            saveBoolbanque = false;
+        } else {
+            setBankDomBankValidationColor('transparent');
+            saveBoolbanque = true;
+        }
+
+        if (!useFormikDomBank.values.numcompte) {
+            setNumCompteDomBankValidationColor('#F6D6D6');
+            saveBoolNumCompte = false;
+        } else {
+            setNumCompteDomBankValidationColor('transparent');
+            saveBoolNumCompte = true;
+        }
+
+        if (!useFormikDomBank.values.devise) {
+            setDeviseDomBankValidationColor('#F6D6D6');
+            saveBoolDevise = false;
+        } else {
+            setDeviseDomBankValidationColor('transparent');
+            saveBoolDevise = true;
+        }
+
+        if (!useFormikDomBank.values.pays) {
+            setPaysDomBankValidationColor('#F6D6D6');
+            saveBoolPays = false;
+        } else {
+            setPaysDomBankValidationColor('transparent');
+            saveBoolPays = true;
+        }
+
+        if (saveBoolbanque && saveBoolNumCompte && saveBoolDevise && saveBoolPays) {
+            // Sauvegarde locale seulement (comme les associés)
+            setRowModesModelDomBank({ ...rowModesModelDomBank, [selectedRowIdDomBank]: { mode: GridRowModes.View } });
+            setDisableSaveBoutonDomBank(true);
+            setDisableAddRowBoutonDomBank(false);
+            toast.success("Informations sauvegardées");
+            
+            // Réinitialiser le formulaire
+            useFormikDomBank.resetForm();
+        } else {
+            toast.error('Les champs en surbrillances sont obligatoires');
+            setDisableAddRowBoutonDomBank(false);
+        }
+    };
+
+    const handleOpenDialogConfirmDeleteAssocieRowDomBank = () => {
+        setOpenDialogDeleteDomBankRow(true);
+        setDisableAddRowBoutonDomBank(false);
+    }
+
+    const handleCancelClickDomBank = (id) => () => {
+        setRowModesModelDomBank({
+            ...rowModesModelDomBank,
+            [id]: { mode: GridRowModes.View, ignoreModifications: true },
+        });
+        setDisableAddRowBoutonDomBank(false);
+    };
+
+    const deleteDomBankRow = (value) => {
+        if (value === true) {
+            setListDomBank(listDomBank.filter((row) => row.id !== selectedRowIdDomBank[0]));
+            setOpenDialogDeleteDomBankRow(false);
+            setDisableAddRowBoutonDomBank(false);
+            toast.success('Ligne supprimée avec succès');
+        } else {
+            setOpenDialogDeleteDomBankRow(false);
+        }
+    }
+
+    const processRowUpdateDomBank = (setFieldValue) => (newRow) => {
+        const updatedRow = { ...newRow, isNew: false };
+        setListDomBank(listDomBank.map((row) => (row.id === newRow.id ? updatedRow : row)));
+        setFieldValue('listeDomBank', listDomBank.map((row) => (row.id === newRow.id ? updatedRow : row)));
+        return updatedRow;
+    };
+
+    const handleRowModesModelChangeDomBank = (newRowModesModel) => {
+        setRowModesModelDomBank(newRowModesModel);
+    };
+
+    const handleCellEditCommitDomBank = (params) => {
+        if (selectedRowIdDomBank.length > 1 || selectedRowIdDomBank.length === 0) {
+            setEditableRowDomBank(false);
+            setDisableModifyBoutonDomBank(true);
+            setDisableSaveBoutonDomBank(true);
+            setDisableCancelBoutonDomBank(true);
+            toast.error("sélectionnez une seule ligne pour pouvoir la modifier");
+        } else {
+            setDisableModifyBoutonDomBank(false);
+            setDisableSaveBoutonDomBank(false);
+            setDisableCancelBoutonDomBank(false);
+            if (!selectedRowIdDomBank.includes(params.id)) {
+                setEditableRowDomBank(false);
+                toast.error("sélectionnez une ligne pour pouvoir la modifier");
+            } else {
+                setEditableRowDomBank(true);
+            }
+        }
+    };
+
+    const handleRowEditStopDomBank = (params, event) => {
+        if (params.reason === GridRowEditStopReasons.rowFocusOut) {
+            event.defaultMuiPrevented = true;
+        }
+    };
+
+    //Entête tableau liste domiciliation bancaire
+    const DomBankColumnHeader = [
+        {
+            field: 'banque',
+            headerName: 'Banque',
+            type: 'text',
+            sortable: true,
+            width: 350,
+            headerAlign: 'left',
+            headerClassName: 'HeaderbackColor',
+            disableClickEventBubbling: true,
+            editable: editableRowDomBank,
+            renderCell: (params) => {
+                return <div>{params.value}</div>;
+            },
+            renderEditCell: (params) => {
+                return (
+                    <FormControl fullWidth style={{ height: '120%' }}>
+                        <Input
+                            style={{
+                                height: '100%', alignItems: 'center',
+                                outline: 'none',
+                                backgroundColor: bankDomBankValidationColor
+                            }}
+                            type="text"
+                            value={useFormikDomBank.values.banque}
+                            onChange={(e) => {
+                                const v = e.target.value;
+                                useFormikDomBank.setFieldValue('banque', v);
+                                params.api.setEditCellValue({ id: params.id, field: params.field, value: v });
+                            }}
+                            label="banque"
+                            disableUnderline={true}
+                        />
+
+                        <FormHelperText style={{ color: 'red' }}>
+                            {useFormikDomBank.errors.banque && useFormikDomBank.touched.banque && useFormikDomBank.errors.banque}
+                        </FormHelperText>
+                    </FormControl>
+                );
+            },
+        },
+        {
+            field: 'numcompte',
+            headerName: 'N° de compte',
+            type: 'text',
+            sortable: true,
+            width: 300,
+            headerAlign: 'left',
+            headerClassName: 'HeaderbackColor',
+            disableClickEventBubbling: true,
+            editable: editableRowDomBank,
+            renderCell: (params) => {
+                return <div>{params.value}</div>;
+            },
+            renderEditCell: (params) => {
+                return (
+                    <FormControl fullWidth style={{ height: '120%' }}>
+                        <Input
+                            style={{
+                                height: '100%', alignItems: 'center',
+                                outline: 'none',
+                                backgroundColor: numCompteDomBankValidationColor
+                            }}
+                            type="text"
+                            value={useFormikDomBank.values.numcompte}
+                            onChange={(e) => {
+                                const v = e.target.value;
+                                useFormikDomBank.setFieldValue('numcompte', v);
+                                params.api.setEditCellValue({ id: params.id, field: params.field, value: v });
+                            }}
+                            label="numcompte"
+                            disableUnderline={true}
+                        />
+
+                        <FormHelperText style={{ color: 'red' }}>
+                            {useFormikDomBank.errors.numcompte && useFormikDomBank.touched.numcompte && useFormikDomBank.errors.numcompte}
+                        </FormHelperText>
+                    </FormControl>
+                );
+            },
+        },
+        {
+            field: 'devise',
+            headerName: 'Devise',
+            type: 'text',
+            sortable: true,
+            width: 120,
+            headerAlign: 'left',
+            headerClassName: 'HeaderbackColor',
+            disableClickEventBubbling: true,
+            editable: editableRowDomBank,
+            renderCell: (params) => {
+                return <div>{params.value}</div>;
+            },
+            renderEditCell: (params) => {
+                return (
+                    <FormControl fullWidth style={{ height: '120%' }}>
+                        <Input
+                            style={{
+                                height: '100%', alignItems: 'center',
+                                outline: 'none',
+                                backgroundColor: deviseDomBankValidationColor
+                            }}
+                            type="text"
+                            value={useFormikDomBank.values.devise}
+                            onChange={(e) => {
+                                const v = e.target.value;
+                                useFormikDomBank.setFieldValue('devise', v);
+                                params.api.setEditCellValue({ id: params.id, field: params.field, value: v });
+                            }}
+                            label="devise"
+                            disableUnderline={true}
+                        />
+
+                        <FormHelperText style={{ color: 'red' }}>
+                            {useFormikDomBank.errors.devise && useFormikDomBank.touched.devise && useFormikDomBank.errors.devise}
+                        </FormHelperText>
+                    </FormControl>
+                );
+            },
+        },
+        {
+            field: "pays",
+            headerName: "Pays",
+            sortable: true,
+            width: 250,
+            headerAlign: "left",
+            align: "left",
+            headerClassName: "HeaderbackColor",
+            editable: editableRowDomBank,
+            // valueFormatter: (params) => {
+            //     const selectedType = listPays.find((option) => option.code === params.value);
+            //     return selectedType ? selectedType.nompays : params.value;
+            // },
+            renderEditCell: (params) => {
+                return (
+                    <Autocomplete
+                        fullWidth
+                        options={listPays}
+                        getOptionLabel={(option) => option.nompays}
+                        value={
+                            listPays.find((option) => option.nompays === params.value) || null
+                        }
+                        onChange={(event, newValue) => {
+                            params.api.setEditCellValue({
+                                id: params.id,
+                                field: params.field,
+                                value: newValue ? newValue.nompays : "",
+                            });
+                            useFormikDomBank.setFieldValue('pays', newValue ? newValue.nompays : "");
+
+                        }}
+                        noOptionsText="Aucun pays trouvé"
+                        renderInput={(paramsInput) => (
+                            <TextField
+                                {...paramsInput}
+                                variant="standard"
+                                error={
+                                    Boolean(
+                                        useFormikDomBank.touched.pays && useFormikDomBank.errors.pays
+                                    )
+                                }
+                                helperText={
+                                    useFormikDomBank.touched.pays && useFormikDomBank.errors.pays
+                                }
+                                sx={{
+                                    "& .MuiInputBase-root": {
+                                        height: 50,
+                                        fontSize: 14,
+                                    },
+                                }}
+                            />
+                        )}
+                    />
+                );
+            },
+        },
+        {
+            field: 'enactivite',
+            headerName: 'En activité',
+            type: 'boolean',
+            sortable: true,
+            width: 150,
+            headerAlign: 'center',
+            headerClassName: 'HeaderbackColor',
+            editable: editableRowDomBank,
+            renderEditCell: (params) => {
+                return (
+                    <input
+                        checked={Boolean(params.value)}
+                        type="checkbox"
+                        onChange={(e) => {
+                            const v = e.target.checked;
+                            useFormikDomBank.setFieldValue('enactivite', v);
+                            params.api.setEditCellValue({ id: params.id, field: params.field, value: v });
+                            setListDomBank(prev => prev.map(row => row.id === params.id ? { ...row, enactivite: v } : row));
+                        }}
+                    />
+                );
+            }
+        },
+    ];
 
     const handleOpenDialogAddNewDomBank = () => {
 
@@ -2494,6 +2912,147 @@ export default function AddNewFile({ confirmationState }) {
 
                                             </Stack>
                                         </TabPanel>
+
+                                        <TabPanel value="6">
+                                            <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
+                                                alignContent={"flex-start"} justifyContent={"stretch"} >
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                                    direction={"row"} justifyContent={"right"}
+                                                >
+                                                    <Tooltip title="Ajouter une ligne">
+                                                        <IconButton
+                                                            disabled={disableAddRowBoutonDomBank}
+                                                            variant="contained"
+                                                            onClick={handleOpenDialogAddNewDomBank}
+                                                            style={{
+                                                                width: "35px", height: '35px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Modifier la ligne sélectionnée">
+                                                        <IconButton
+                                                            disabled={disableModifyBoutonDomBank}
+                                                            variant="contained"
+                                                            onClick={handleEditClickDomBank(selectedRowIdDomBank)}
+                                                            style={{
+                                                                width: "35px", height: '35px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Sauvegarder les modifications">
+                                                        <span>
+                                                            <IconButton
+                                                                disabled={disableSaveBoutonDomBank}
+                                                                variant="contained"
+                                                                onClick={handleSaveClickDomBank(selectedRowIdDomBank)}
+                                                                style={{
+                                                                    width: "35px", height: '35px',
+                                                                    borderRadius: "2px", borderColor: "transparent",
+                                                                    backgroundColor: initial.theme,
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                            >
+                                                                <TfiSave style={{ width: '50px', height: '50px', color: 'white' }} />
+                                                            </IconButton>
+                                                        </span>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Annuler les modifications">
+                                                        <span>
+                                                            <IconButton
+                                                                disabled={disableCancelBoutonDomBank}
+                                                                variant="contained"
+                                                                onClick={handleCancelClickDomBank(selectedRowIdDomBank)}
+                                                                style={{
+                                                                    width: "35px", height: '35px',
+                                                                    borderRadius: "2px", borderColor: "transparent",
+                                                                    backgroundColor: initial.button_delete_color,
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                            >
+                                                                <VscClose style={{ width: '50px', height: '50px', color: 'white' }} />
+                                                            </IconButton>
+                                                        </span>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Supprimer la ligne sélectionné">
+                                                        <span>
+                                                            <IconButton
+                                                                disabled={disableDeleteBoutonDomBank}
+                                                                onClick={handleOpenDialogConfirmDeleteAssocieRowDomBank}
+                                                                variant="contained"
+                                                                style={{
+                                                                    width: "35px", height: '35px',
+                                                                    borderRadius: "2px", borderColor: "transparent",
+                                                                    backgroundColor: initial.button_delete_color,
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                            >
+                                                                <IoMdTrash style={{ width: '50px', height: '50px', color: 'white' }} />
+                                                            </IconButton>
+                                                        </span>
+                                                    </Tooltip>
+                                                </Stack>
+
+                                                <Stack width={"100%"} height={'60vh'}>
+                                                    <DataGrid
+                                                        disableMultipleSelection={DataGridStyle.disableMultipleSelection}
+                                                        disableColumnSelector={DataGridStyle.disableColumnSelector}
+                                                        disableDensitySelector={DataGridStyle.disableDensitySelector}
+                                                        disableRowSelectionOnClick
+                                                        disableSelectionOnClick={true}
+                                                        localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                                                        slots={{ toolbar: QuickFilter }}
+                                                        sx={DataGridStyle.sx}
+                                                        rowHeight={DataGridStyle.rowHeight}
+                                                        columnHeaderHeight={DataGridStyle.columnHeaderHeight}
+                                                        rows={Array.isArray(listDomBank) ? listDomBank : []}
+                                                        onRowClick={(e) => handleCellEditCommitDomBank(e.row)}
+                                                        onRowSelectionModelChange={ids => {
+                                                            setSelectedRowDomBank(ids);
+                                                            saveSelectedRowDomBank(ids);
+                                                            deselectRow(ids);
+                                                        }}
+                                                        rowSelectionModel={selectedRowDomBank}
+
+                                                        editMode='row'
+                                                        selectionModel={selectedRowIdDomBank}
+                                                        rowModesModel={rowModesModelDomBank}
+                                                        onRowModesModelChange={handleRowModesModelChangeDomBank}
+                                                        onRowEditStop={handleRowEditStopDomBank}
+                                                        processRowUpdate={processRowUpdateDomBank(setFieldValue)}
+
+                                                        columns={DomBankColumnHeader}
+                                                        initialState={{
+                                                            pagination: {
+                                                                paginationModel: { page: 0, pageSize: 100 },
+                                                            },
+                                                        }}
+                                                        experimentalFeatures={{ newEditingApi: true }}
+                                                        pageSizeOptions={[50, 100]}
+                                                        pagination={DataGridStyle.pagination}
+                                                        checkboxSelection={DataGridStyle.checkboxSelection}
+                                                        columnVisibilityModel={{
+                                                            id: false,
+                                                        }}
+                                                    />
+                                                </Stack>
+
+                                            </Stack>
+                                        </TabPanel>
+
 
                                         <TabPanel value="6">
                                             <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}

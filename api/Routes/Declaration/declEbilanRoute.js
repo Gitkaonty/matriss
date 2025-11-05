@@ -43,6 +43,9 @@ router.post('/deleteAjust', declEbilanController.deleteAjustement);
 //sauvegarder les modifications et commentaires sur les anomalies des tableaux
 router.put('/savemodifAnom/:id', declEbilanController.savemodifAnom);
 
+// mettre à jour le statut de validation d'un état (etats.valide)
+router.put('/etat/valide', declEbilanController.setEtatValide);
+
 // Exportation en pdf
 router.get('/exportToPDF/:id_compte/:id_dossier/:id_exercice/:id_etat', declEbilanController.exportToPDF);
 
@@ -78,5 +81,9 @@ router.post('/generateDpAuto', declEbilanController.generateDpAuto);
 
 // Génération global des tableaux bilan
 router.get('/exportAllToXml/:id_compte/:id_dossier/:id_exercice', declEbilanController.exportAllToXml);
+
+// Revision anomalies overview & details
+router.get('/overview/:compteId/:dossierId/:exerciceId', declEbilanController.overview);
+router.get('/controles/:compteId/:dossierId/:exerciceId/:tableau', declEbilanController.details);
 
 module.exports = router;

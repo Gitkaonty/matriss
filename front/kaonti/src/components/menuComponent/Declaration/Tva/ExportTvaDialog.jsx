@@ -231,8 +231,7 @@ export default function ExportTvaDialog({
               <FormControlLabel value="pdf" control={<Radio size="small" />} label="PDF" />
               <FormControlLabel value="csv" control={<Radio size="small" />} label="EXCEL" />
             </RadioGroup>
-
-            {/* Bouton export dynamique */}
+            {/* Bouton export dynamique (Annexes) */}
             <Box display="flex" flexDirection="column" alignItems="left" justifyContent="center" height={50} mb={2}>
               <Button
                 variant="contained"
@@ -246,6 +245,7 @@ export default function ExportTvaDialog({
             </Box>
           </FormControl>
         </Box>
+
         {/* Historique unifié (TVA) -> Réserver un espace fixe pour éviter le changement de taille */}
         <Box mt={2} sx={{ height: '40vh' }}>
           {selectedOption === 'xml' ? (

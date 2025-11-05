@@ -21,13 +21,13 @@ const createNotExistingCodeJournal = async (req, res) => {
 
     if (codeJournalToCreate.length > 0) {
       await codeJournalToCreate.map(item => {
-        codejournals.create({
+        const payload = {
           id_compte: compteId,
           id_dossier: fileId,
-          code: item,
-          libelle: 'Libellé et type à définir',
-          type: 'OD',
-        });
+          code: typeof item === 'string' ? item : (item?.code || ''),
+          libelle: typeof item === 'object' && item?.libelle ? item.libelle : 'Libellé à définir',
+        };
+        codejournals.create(payload);
       })
 
       //récuperer la liste à jour des codes journaux
@@ -97,8 +97,8 @@ const createNotExistingCompte = async (req, res) => {
 
     //création des comptes auxiliaires
     if (compteToCreateAux.length > 0) {
-
-      const baseauxID = dossierPlanComptable.findOne({
+      await compteToCreateAux.map(item => {
+              const baseauxID = dossierPlanComptable.findOne({
         where:
         {
           id_compte: compteId,
@@ -106,8 +106,7 @@ const createNotExistingCompte = async (req, res) => {
           compte: item.CompteNum
         }
       });
-
-      await compteToCreateAux.map(item => {
+      
         dossierPlanComptable.create({
           id_compte: compteId,
           id_dossier: fileId,
@@ -197,6 +196,28 @@ const importJournal = async (req, res) => {
     if (journalData.length > 0) {
       let importSuccess = 1;
 
+      // Assurer l'existence des devises utilisées et de la devise par défaut MGA
+      const deviseCodes = [...new Set((journalData || [])
+        .map(r => (r.Idevise || '').trim())
+        .filter(v => v))];
+
+      // S'assurer que MGA existera comme fallback
+      if (!deviseCodes.includes('MGA')) deviseCodes.push('MGA');
+
+      // Créer les devises manquantes pour ce compte/dossier
+      for (const code of deviseCodes) {
+        const existing = await db.Devise.findOne({ where: { id_compte: compteId, id_dossier: fileId, code } });
+        if (!existing) {
+          await db.Devise.create({ id_compte: compteId, id_dossier: fileId, code, libelle: code });
+        }
+      }
+
+      // Construire une map code -> id pour résolution rapide
+      const allDevises = await db.Devise.findAll({ where: { id_compte: compteId, id_dossier: fileId }, raw: true });
+      const deviseMap = new Map();
+      allDevises.forEach(dv => deviseMap.set(dv.code, dv.id));
+      const defaultDeviseId = deviseMap.get('MGA');
+
       // Grouper une seule fois
       const grouped = journalData.reduce((acc, item) => {
         if (!acc[item.EcritureNum]) acc[item.EcritureNum] = [];
@@ -233,6 +254,10 @@ const importJournal = async (req, res) => {
             const debit = item.Debit ? parseFloat(item.Debit.replace(',', '.')) : 0;
             const credit = item.Credit ? parseFloat(item.Credit.replace(',', '.')) : 0;
 
+            // Résoudre la devise (id et code)
+            const usedCode = (item.Idevise && item.Idevise.trim()) ? item.Idevise.trim() : 'MGA';
+            const idDevise = deviseMap.get(usedCode) || defaultDeviseId || null;
+
             // Création journal
             await journals.create({
               id_compte: compteId,
@@ -248,7 +273,8 @@ const importJournal = async (req, res) => {
               libelle: item.EcritureLib,
               debit,
               credit,
-              devise: item.Idevise || 'MGA',
+              id_devise: idDevise || 0,
+              devise: usedCode,
               lettrage: item.EcritureLet || null,
               lettragedate: datelettrage || null,
               saisiepar: userId,
@@ -281,8 +307,9 @@ const importJournal = async (req, res) => {
 
     return res.json(resData);
   } catch (error) {
-    importSuccess = importSuccess * 0;
-    resData.msg = error.message || JSON.stringify(error);
+    let importSuccess = importSuccess * 0;
+    let resData = { state: false, msg: '', details: null };
+    console.log(error); 
   }
 }
 

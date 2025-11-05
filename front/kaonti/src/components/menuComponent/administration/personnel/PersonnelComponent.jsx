@@ -50,6 +50,8 @@ export default function PersonnelComponent() {
     const [disableDeleteBouton, setDisableDeleteBouton] = useState(true);
     const [disableAddRowBouton, setDisableAddRowBouton] = useState(false);
 
+    const [submitAttempt, setSubmitAttempt] = useState(false);
+
     const [openDialogDeleteRow, setOpenDialogDeleteRow] = useState(false);
 
     const [selectedRow, setSelectedRow] = useState([]);
@@ -143,6 +145,11 @@ export default function PersonnelComponent() {
         formNewParam.setFieldValue("actif", value);
     }
 
+    const isRequiredEmpty = (name) => {
+        const v = formNewParam.values[name];
+        return submitAttempt && (v === '' || v === null || v === undefined);
+    };
+
     const personnelsColumns = [
         {
             field: 'id',
@@ -157,7 +164,7 @@ export default function PersonnelComponent() {
             editable: editableRow,
             renderEditCell: (params) => {
                 return (
-                    <FormControl fullWidth style={{ height: '100%' }}>
+                    <FormControl fullWidth style={{ height: '100%', backgroundColor: isRequiredEmpty('matricule') ? '#F8D7DA' : 'transparent', border: isRequiredEmpty('matricule') ? '1px solid #F5C2C7' : '1px solid transparent', borderRadius: '4px' }}>
                         <Input
                             style={{
                                 height: '100%', alignItems: 'center',
@@ -184,7 +191,7 @@ export default function PersonnelComponent() {
             editable: editableRow,
             renderEditCell: (params) => {
                 return (
-                    <FormControl fullWidth style={{ height: '100%' }}>
+                    <FormControl fullWidth style={{ height: '100%', backgroundColor: isRequiredEmpty('nom') ? '#F8D7DA' : 'transparent', border: isRequiredEmpty('nom') ? '1px solid #F5C2C7' : '1px solid transparent', borderRadius: '4px' }}>
                         <Input
                             style={{
                                 height: '100%', alignItems: 'center',
@@ -209,7 +216,7 @@ export default function PersonnelComponent() {
             editable: editableRow,
             renderEditCell: (params) => {
                 return (
-                    <FormControl fullWidth style={{ height: '100%' }}>
+                    <FormControl fullWidth style={{ height: '100%', backgroundColor: isRequiredEmpty('prenom') ? '#F8D7DA' : 'transparent', border: isRequiredEmpty('prenom') ? '1px solid #F5C2C7' : '1px solid transparent', borderRadius: '4px' }}>
                         <Input
                             style={{
                                 height: '100%', alignItems: 'center',
@@ -242,7 +249,7 @@ export default function PersonnelComponent() {
                 };
 
                 return (
-                    <FormControl fullWidth style={{ height: '100%' }}>
+                    <FormControl fullWidth style={{ height: '100%', backgroundColor: isRequiredEmpty('id_fonction') ? '#F8D7DA' : 'transparent', border: isRequiredEmpty('id_fonction') ? '1px solid #F5C2C7' : '1px solid transparent', borderRadius: '4px' }}>
                         <Select
                             variant="standard"
                             disableUnderline
@@ -278,7 +285,7 @@ export default function PersonnelComponent() {
                 };
 
                 return (
-                    <FormControl fullWidth sx={{ height: '100%' }}>
+                    <FormControl fullWidth sx={{ height: '100%' }} style={{ backgroundColor: isRequiredEmpty('id_classe') ? '#F8D7DA' : 'transparent', border: isRequiredEmpty('id_classe') ? '1px solid #F5C2C7' : '1px solid transparent', borderRadius: '4px' }}>
                         <Select
                             variant="standard"
                             disableUnderline
@@ -575,6 +582,7 @@ export default function PersonnelComponent() {
         setDisableCancelBouton(false);
         setDisableDeleteBouton(false);
         setDisableSaveBouton(false);
+        setSubmitAttempt(false);
 
         const newId = -Date.now();
         formNewParam.setFieldValue("idParam", newId);
@@ -603,7 +611,20 @@ export default function PersonnelComponent() {
 
     // Sauvegarde
     const handleSaveClick = (id) => () => {
-        setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
+        // Required fields validation
+        const req = ['matricule','nom','prenom','id_fonction','id_classe'];
+        const missing = req.filter(k => {
+            const v = formNewParam.values[k];
+            return v === '' || v === null || v === undefined;
+        });
+        if (missing.length > 0) {
+            setSubmitAttempt(true);
+            toast.error('Veuillez renseigner tous les champs obligatoires');
+            // keep row in edit mode
+            setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
+            return;
+        }
+
         const dataToSend = { ...formNewParam.values, fileId, compteId };
         axios.post(`/administration/personnel`, dataToSend).then((response) => {
             const resData = response.data;
@@ -611,8 +632,11 @@ export default function PersonnelComponent() {
                 setDisableAddRowBouton(false);
                 setDisableSaveBouton(true);
                 formNewParam.resetForm();
+                setSubmitAttempt(false);
                 toast.success(resData.msg);
                 fetchPersonnels();
+                // switch to view mode after successful save
+                setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
             } else {
                 toast.error(resData.msg);
             }
@@ -709,7 +733,7 @@ export default function PersonnelComponent() {
                     <Typography variant='h6' sx={{ color: "black" }} align='left'>Administration : Personnels</Typography>
                     <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"}
                         direction={"column"} style={{ marginLeft: "0px", marginTop: "20px", justifyContent: "right" }}>
-                        <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"}
+                        <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
                             direction={"row"} justifyContent={"right"}>
                             <Tooltip title="Ajouter une ligne">
                                 <span>
@@ -822,10 +846,11 @@ export default function PersonnelComponent() {
                                 columnHeaderHeight={DataGridStyle.columnHeaderHeight}
                                 editMode='row'
                                 onRowClick={(e) => handleCellEditCommit(e.row)}
-                                onRowSelectionModelChange={ids => {
-                                    setSelectedRow(ids);
-                                    saveSelectedRow(ids);
-                                    deselectRow(ids);
+                                onRowSelectionModelChange={(ids) => {
+                                    const single = Array.isArray(ids) && ids.length ? [ids[ids.length - 1]] : [];
+                                    setSelectedRow(single);
+                                    saveSelectedRow(single);
+                                    deselectRow(single);
                                 }}
                                 rowModesModel={rowModesModel}
                                 onRowModesModelChange={handleRowModesModelChange}

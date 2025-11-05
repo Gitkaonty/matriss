@@ -11,8 +11,7 @@ module.exports = {
       },
       code: {
         type: Sequelize.STRING(50),
-        allowNull: false,
-        unique: true
+        allowNull: false
       },
       libelle: {
         type: Sequelize.STRING(100),

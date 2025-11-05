@@ -3,6 +3,8 @@ const { Op } = require('sequelize');
 const {exportTvaTableExcel} = require('../../../Middlewares/tva/DeclTvaGenerateExcel');
 const {generateTvaXml} = require('../../../Middlewares/tva/DeclTvaGenerateXml');
 const PdfPrinter = require('pdfmake');
+const { exportFormulaireTvaExcel } = require('../../../Middlewares/tva/FormTvaExcelDGE');
+const { generateFormulairePdfContent } = require('../../../Middlewares/tva/FormTvaPdfDGE');
 
 const Annex = db.etatsTvaAnnexes;
 const FormTva = db.formulaireTvaAnnexes;
@@ -20,6 +22,29 @@ const Dossier = db.dossiers;
 const { autoCalcDGE, autoCalcUnified } = require('../../../Middlewares/tva/AutoCalcFormTva');
 const Etats = db.etats;
 const EtatsDeclarations = db.etatsdeclarations;
+
+// Helper: check if given mois/annee is within exercice date range
+async function assertPeriodInExercice(exerciceId, mois, annee) {
+  if (mois == null || annee == null) return { ok: true };
+  try {
+    const ex = await db.exercices.findByPk(Number(exerciceId));
+    if (!ex || !ex.date_debut || !ex.date_fin) return { ok: true };
+    const toYm = (d) => {
+      const dt = new Date(d);
+      if (isNaN(dt.getTime())) return null;
+      return dt.getFullYear() * 100 + (dt.getMonth() + 1);
+    };
+    const ymStart = toYm(ex.date_debut);
+    const ymEnd = toYm(ex.date_fin);
+    const ym = Number(annee) * 100 + Number(mois);
+    if (ymStart != null && ymEnd != null && (ym < ymStart || ym > ymEnd)) {
+      return { ok: false, range: { start: ymStart, end: ymEnd } };
+    }
+    return { ok: true };
+  } catch (_) {
+    return { ok: true };
+  }
+}
 
     // Frontend formulas replicated for backend checks
     const formulas = {
@@ -53,6 +78,243 @@ const EtatsDeclarations = db.etatsdeclarations;
       ]},
     };
 
+    // Apply formulas on server to ensure computed lines (e.g., 400, 700, 701) are populated in exports
+    function applyFormulasServer(list) {
+      try {
+        if (!Array.isArray(list)) return [];
+        // Work on a copy
+        let current = list.map(r => ({ ...r, id: Number(r.id_code), montant: Number(r.montant) || 0 }));
+        const getDef = (id) => formulas[id];
+        const maxIterations = 5;
+        for (let it = 0; it < maxIterations; it++) {
+          let changed = false;
+          const byId = new Map(current.map(r => [Number(r.id_code), r]));
+          current = current.map(r => {
+            const code = Number(r.id_code);
+            const def = getDef(code);
+            if (!def) return r;
+            let value = 0;
+            if (Array.isArray(def)) {
+              value = def.reduce((acc, sid) => acc + (Number(byId.get(Number(sid))?.montant) || 0), 0);
+            } else if (def && Array.isArray(def.terms)) {
+              value = def.terms.reduce((acc, t) => acc + ((Number(byId.get(Number(t.id))?.montant) || 0) * Number(t.w || 0)), 0);
+            } else {
+              return r;
+            }
+            // round to 2 decimals similar to front rounding
+            const rounded = Math.round(Number(value) * 100) / 100;
+            if (Math.abs((Number(r.montant) || 0) - rounded) > 0.01) changed = true;
+            return { ...r, montant: rounded };
+          });
+          if (!changed) break;
+        }
+        return current;
+      } catch (e) {
+        return list || [];
+      }
+    }
+
+// -------------------------
+// EXPORT FORMULAIRE TVA (EXCEL)
+// -------------------------
+exports.exportFormulaireExcel = async (req, res) => {
+  try {
+    const { id_dossier, id_compte, id_exercice } = req.params;
+    const mois = req.query?.mois != null ? Number(req.query.mois) : null;
+    const annee = req.query?.annee != null ? Number(req.query.annee) : null;
+    if (!id_dossier || !id_compte || !id_exercice) {
+      return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
+    }
+
+    const dossier = await Dossier.findByPk(id_dossier);
+    const exercice = await db.exercices.findByPk(id_exercice);
+    const compte = await db.userscomptes.findByPk(id_compte);
+    if (!dossier || !exercice || !compte) {
+      return res.status(400).json({ state: false, msg: 'Dossier/Exercice/Compte introuvable' });
+    }
+
+    const where = { id_dossier: Number(id_dossier), id_compte: Number(id_compte), id_exercice: Number(id_exercice) };
+    if (mois != null) where.mois = mois;
+    if (annee != null) where.annee = annee;
+    const rows = await FormTva.findAll({ where, order: [['id_code', 'ASC'], ['updatedAt', 'DESC']] });
+    const seen = new Set();
+    const unique = [];
+    for (const r of (rows || [])) {
+      const code = Number(r.id_code);
+      if (seen.has(code)) continue;
+      seen.add(code);
+      unique.push(typeof r.toJSON === 'function' ? r.toJSON() : r);
+    }
+    const templates = await FormTvaMatrices.findAll();
+    const mapCodeToGroupe = new Map((templates || []).map(t => [Number(t.id_code), t.groupe || null]));
+    const enriched = unique.map(o => ({ ...o, groupe: mapCodeToGroupe.get(Number(o.id_code)) || null }));
+
+    const workbook = new ExcelJS.Workbook();
+    const mode = String((req.query?.mode || '')).toLowerCase() === 'dge' ? 'dge' : 'cfisc';
+    const includeDetails = (String(req.query?.includeDetails || '').toLowerCase() === 'true') || (req.query?.includeDetails === '1');
+    let detailsByCode = {};
+    if (includeDetails) {
+      const whereA = { id_dossier: Number(id_dossier), id_compte: Number(id_compte), id_exercice: Number(id_exercice) };
+      if (mois != null) whereA.mois = Number(mois);
+      if (annee != null) whereA.annee = Number(annee);
+      const annexRows = await Annex.findAll({ where: whereA, order: [['date_facture', 'ASC']] });
+      const map = {};
+      for (const a of (annexRows || [])) {
+        const codeRaw = String(a.code_tva || '').trim();
+        const m = codeRaw.match(/\d+/);
+        const norm = m ? String(Number(m[0])) : '';
+        if (!norm) continue;
+        if (!map[norm]) map[norm] = [];
+        map[norm].push({
+          reference_facture: a.reference_facture,
+          date_facture: a.date_facture,
+          libelle_operation: a.libelle_operation,
+          montant_ht: Number(a.montant_ht || 0),
+          montant_tva: Number(a.montant_tva || 0),
+        });
+      }
+      detailsByCode = map;
+    }
+    // Compute exercise date range (DD/MM/YYYY - DD/MM/YYYY)
+    const fmtDMYx = (d) => {
+      const dt = d ? new Date(d) : null;
+      if (!dt || isNaN(dt.getTime())) return '';
+      return `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()}`;
+    };
+    const exerciceRange = (exercice?.date_debut && exercice?.date_fin)
+      ? `${fmtDMYx(exercice.date_debut)} - ${fmtDMYx(exercice.date_fin)}`
+      : (exercice?.libelle_rang || '');
+
+    await exportFormulaireTvaExcel({
+      workbook,
+      rows: applyFormulasServer(enriched),
+      meta: {
+        dossier: dossier?.dossier || '',
+        compte: compte?.nom || '',
+        exercice: exerciceRange,
+        mois,
+        annee,
+        mode,
+        includeDetails,
+      },
+      detailsByCode,
+    });
+    workbook.views = [{ activeTab: 0 }];
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    const fname = `formulaire_tva_${mode}_${id_dossier}_${id_exercice}${mois != null && annee != null ? `_${String(mois).padStart(2,'0')}-${annee}` : ''}.xlsx`;
+    res.setHeader('Content-Disposition', `attachment; filename="${fname}"`);
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (err) {
+    console.error('[FormTVA][EXPORT_EXCEL] error:', err);
+    return res.status(500).json({ state: false, msg: 'Erreur serveur' });
+  }
+};
+
+// -------------------------
+// EXPORT FORMULAIRE TVA (PDF)
+// -------------------------
+exports.exportFormulairePdf = async (req, res) => {
+  try {
+    const { id_dossier, id_compte, id_exercice } = req.params;
+    const mois = req.query?.mois != null ? Number(req.query.mois) : null;
+    const annee = req.query?.annee != null ? Number(req.query.annee) : null;
+    if (!id_dossier || !id_compte || !id_exercice) {
+      return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
+    }
+
+    const dossier = await Dossier.findByPk(id_dossier);
+    const exercice = await db.exercices.findByPk(id_exercice);
+    const compte = await db.userscomptes.findByPk(id_compte);
+    if (!dossier || !exercice || !compte) {
+      return res.status(400).json({ state: false, msg: 'Dossier/Exercice/Compte introuvable' });
+    }
+
+    const where = { id_dossier: Number(id_dossier), id_compte: Number(id_compte), id_exercice: Number(id_exercice) };
+    if (mois != null) where.mois = mois;
+    if (annee != null) where.annee = annee;
+    const rows = await FormTva.findAll({ where, order: [['id_code', 'ASC'], ['updatedAt', 'DESC']] });
+    const seen = new Set();
+    const unique = [];
+    for (const r of (rows || [])) {
+      const code = Number(r.id_code);
+      if (seen.has(code)) continue;
+      seen.add(code);
+      unique.push(typeof r.toJSON === 'function' ? r.toJSON() : r);
+    }
+    const templates = await FormTvaMatrices.findAll();
+    const mapCodeToGroupe = new Map((templates || []).map(t => [Number(t.id_code), t.groupe || null]));
+    const enriched = unique.map(o => ({ ...o, groupe: mapCodeToGroupe.get(Number(o.id_code)) || null }));
+
+    const fonts = { Helvetica: { normal: 'Helvetica', bold: 'Helvetica-Bold', italics: 'Helvetica-Oblique', bolditalics: 'Helvetica-BoldOblique' } };
+    const printer = new PdfPrinter(fonts);
+    const mode = String((req.query?.mode || '')).toLowerCase() === 'dge' ? 'dge' : 'cfisc';
+    const includeDetails = (String(req.query?.includeDetails || '').toLowerCase() === 'true') || (req.query?.includeDetails === '1');
+    let detailsByCode = {};
+    if (includeDetails) {
+      // Only annex-based details for groups 02/03
+      const whereA = { id_dossier: Number(id_dossier), id_compte: Number(id_compte), id_exercice: Number(id_exercice) };
+      if (mois != null) whereA.mois = Number(mois);
+      if (annee != null) whereA.annee = Number(annee);
+      const annexRows = await Annex.findAll({ where: whereA, order: [['date_facture', 'ASC']] });
+      const map = {};
+      for (const a of (annexRows || [])) {
+        const codeRaw = String(a.code_tva || '').trim();
+        const m = codeRaw.match(/\d+/);
+        const norm = m ? String(Number(m[0])) : '';
+        if (!norm) continue;
+        if (!map[norm]) map[norm] = [];
+        map[norm].push({
+          reference_facture: a.reference_facture,
+          date_facture: a.date_facture,
+          libelle_operation: a.libelle_operation,
+          montant_ht: Number(a.montant_ht || 0),
+          montant_tva: Number(a.montant_tva || 0),
+        });
+      }
+      detailsByCode = map;
+    }
+    // Compute exercise date range (DD/MM/YYYY - DD/MM/YYYY)
+    const fmtDMY = (d) => {
+      const dt = d ? new Date(d) : null;
+      if (!dt || isNaN(dt.getTime())) return '';
+      return `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()}`;
+    };
+    const exerciceRangePdf = (exercice?.date_debut && exercice?.date_fin)
+      ? `${fmtDMY(exercice.date_debut)} - ${fmtDMY(exercice.date_fin)}`
+      : (exercice?.libelle_rang || '');
+
+    const sections = generateFormulairePdfContent({ rows: applyFormulasServer(enriched), mode, detailsByCode });
+    const docDefinition = {
+      pageSize: 'A4',
+      pageOrientation: 'portrait',
+      pageMargins: [20, 60, 20, 40],
+      defaultStyle: { font: 'Helvetica', fontSize: 9 },
+      content: [
+        { text: mode === 'dge' ? 'Formulaire de déclaration du TVA - Modèle DGE' : 'Formulaire de déclaration du TVA - Modèle Centre fiscal', style: 'title', alignment: 'center', margin: [0,0,0,12] },
+        { text: `Dossier : ${dossier?.dossier || ''}` , style: 'subTitle', margin: [0,0,0,8], lineHeight: 1.2 },
+        { text: `Exercice : ${exerciceRangePdf}${(mois!=null&&annee!=null)?`\nPériode : ${String(mois).padStart(2,'0')}/${annee}`:''}` , style: 'subTitleExo', margin: [0,0,0,8], lineHeight: 1.2 },
+        ...sections
+      ],
+      styles: {
+        title: { fontSize: 16, bold: true },
+        subTitle: { fontSize: 11, bold: true, alignment: 'center' },
+        subTitleExo: { fontSize: 11, bold: true },
+        tableHeader: { bold: true, color: 'white', fillColor: '#1A5276', alignment: 'center' },
+      }
+    };
+    const pdfDoc = printer.createPdfKitDocument(docDefinition);
+    res.setHeader('Content-Type', 'application/pdf');
+    const fname = `formulaire_tva_${mode}_${id_dossier}_${id_exercice}${mois != null && annee != null ? `_${String(mois).padStart(2,'0')}-${annee}` : ''}.pdf`;
+    res.setHeader('Content-Disposition', `inline; filename="${fname}"`);
+    pdfDoc.pipe(res);
+    pdfDoc.end();
+  } catch (err) {
+    console.error('[FormTVA][EXPORT_PDF] error:', err);
+    return res.status(500).json({ state: false, msg: 'Erreur serveur' });
+  }
+};
+
 // Helper: resolve code_tva for a given dossier/account mapping
 async function resolveCodeTvaByCompte({ id_dossier, id_numcpt, id_ecriture }) {
   try {
@@ -74,7 +336,6 @@ async function resolveCodeTvaByCompte({ id_dossier, id_numcpt, id_ecriture }) {
       const codeRow = await ListeCodeTVA.findByPk(typeId);
       return codeRow?.code || null;
     }
-
     // 2) Fallback by numero de compte (e.g., 4456xxxx)
     const pcRow = await DossierPC.findByPk(effectiveNumcpt);
     const numeroCompte = pcRow?.compte;
@@ -241,7 +502,7 @@ exports.computeFormAnomaliesPeriod = async (req, res) => {
             diff: diff2,
             kind: 'formula',
             message: `- Montant attendu par formule (code ${idCode}) = ${fmt(expRounded)}\n- Montant formulaire (code ${idCode}) = ${fmt(actual)}\n- Ecart = ${fmt(diff2)}${breakdown ? `\n- Formule: ${breakdown}` : ''}`,
-          });
+          });        
         }
       }
     }
@@ -681,8 +942,6 @@ exports.updateAnnexe = async (req, res) => {
     const payload = req.body || {};
 
     // Backend field restrictions: prevent updates to locked columns
-    // Locked: collecte_deductible, local_etranger, raison_sociale, montant_ht, montant_tva,
-    // date_facture, nature, mois, annee, date_paiement
     const locked = new Set([
       'raison_sociale',
       'montant_ht',
@@ -1089,10 +1348,22 @@ exports.exportTvaToPDF = async (req, res) => {
             },
             // Sous-titre
             {
-              text: `Dossier : ${dossier?.dossier || ''}\nCompte : ${compte?.nom || ''}\nMois et année : ${moisNoms[mois - 1]} ${annee}\nExercice du : ${formatDate(exercice?.date_debut)} au ${formatDate(exercice?.date_fin)}`,
+              text: `Dossier : ${dossier?.dossier || ''}`,
               style: 'subTitle',
               lineHeight: 1.2,
               margin: [0, 0, 0, 10]
+            },
+            {
+              text: `Mois et année : ${moisNoms[mois - 1]} ${annee}`,
+              style: 'subTitleExo',
+              lineHeight: 1.2,
+              margin: [0, 0, 0, 8]
+            },
+            {
+              text: `Exercice du : ${formatDate(exercice?.date_debut)} au ${formatDate(exercice?.date_fin)}`,
+              style: 'subTitleExo',
+              lineHeight: 1.2,
+              margin: [0, 0, 0, 8]
             },
             {
               ...buildTable(annexes, {
@@ -1115,7 +1386,8 @@ exports.exportTvaToPDF = async (req, res) => {
           ],
           styles: {
             title: { fontSize: 20, bold: true, alignment: 'center', font: 'Helvetica', margin: [0, 0, 0, 10] },
-            subTitle: { fontSize: 12, bold: true, font: 'Helvetica' },
+            subTitle: { fontSize: 14, bold: true, font: 'Helvetica' ,alignment: 'center'},
+            subTitleExo: { fontSize: 10, bold: true, font: 'Helvetica', margin: [0, 0, 0, 8] },
             tableHeader: {
               bold: true,
               fontSize: 7,
@@ -1283,15 +1555,27 @@ exports.listFormulaire = async (req, res) => {
 exports.updateMontantFormulaire = async (req, res) => {
   try {
     const id_code = Number(req.params.id_code);
-    const { id_dossier, id_compte, id_exercice, montant } = req.body || {};
+    const { id_dossier, id_compte, id_exercice, montant, mois, annee } = req.body || {};
     if (!id_code || !id_dossier || !id_compte || !id_exercice) {
       return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
+    }
+    // Sécuriser l'update à la période sélectionnée uniquement
+    const m = mois != null ? Number(mois) : null;
+    const y = annee != null ? Number(annee) : null;
+    if (m == null || y == null) {
+      return res.status(400).json({ state: false, msg: 'Période (mois/annee) requise pour la mise à jour.' });
+    }
+    const chk = await assertPeriodInExercice(id_exercice, m, y);
+    if (!chk.ok) {
+      return res.status(400).json({ state: false, msg: 'Période hors bornes de l\'exercice.' });
     }
     const where = {
       id_code: Number(id_code),
       id_dossier: Number(id_dossier),
       id_compte: Number(id_compte),
       id_exercice: Number(id_exercice),
+      mois: m,
+      annee: y,
     };
     const [count] = await FormTva.update({ montant: Number(montant) || 0 }, { where });
     if (count > 0) return res.json({ state: true, msg: 'Montant mis à jour' });
@@ -1317,6 +1601,30 @@ exports.initializeFormulaire = async (req, res) => {
     if (annee != null) where.annee = annee;
     console.log('[FormTVA][INIT] params:', { dossierId, compteId, exerciceId, mois, annee });
     console.log('[FormTVA][INIT] where:', where);
+
+    // Validation de période par rapport à l'exercice
+    const chkInit = await assertPeriodInExercice(exerciceId, mois, annee);
+    if (!chkInit.ok) {
+      return res.status(400).json({ state: false, msg: 'Période hors bornes de l\'exercice.' });
+    }
+    // Si une période est fournie, tenter d'abord de réutiliser les lignes placeholder (mois/annee NULL)
+    if (mois != null && annee != null) {
+      const placeholderWhere = {
+        id_dossier: dossierId,
+        id_compte: compteId,
+        id_exercice: exerciceId,
+        mois: { [Op.is]: null },
+        annee: { [Op.is]: null },
+      };
+      const placeholderCount = await FormTva.count({ where: placeholderWhere });
+      if (placeholderCount > 0) {
+        // Mettre à jour les placeholders vers la période demandée
+        await FormTva.update({ mois: mois, annee: annee }, { where: placeholderWhere });
+        const updated = await FormTva.findAll({ where, order: [['id_code', 'ASC']] });
+        return res.json({ state: true, msg: 'Formulaire réaffecté à la période', list: updated });
+      }
+    }
+
     const count = await FormTva.count({ where });
     if (count > 0) {
       const existing = await FormTva.findAll({ where, order: [['id_code', 'ASC']] });
@@ -1385,6 +1693,11 @@ exports.autoCalcFormulaireFromAnnexes = async (req, res) => {
     if (!dossierId || !compteId || !exerciceId) {
       return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
     }
+    // Validation de période par rapport à l'exercice
+    const chkAuto = await assertPeriodInExercice(exerciceId, mois, annee);
+    if (!chkAuto.ok) {
+      return res.status(400).json({ state: false, msg: 'Période hors bornes de l\'exercice.' });
+    }
     const result = await autoCalcUnified({ dossierId, compteId, exerciceId, mois, annee, debug });
 
     if (resetManual === true || String(resetManual).toLowerCase() === 'true') {
@@ -1416,7 +1729,6 @@ exports.autoCalcFormulaireFromAnnexes = async (req, res) => {
         console.warn('[AUTO-CALC] reset groupe 04 échoué (non bloquant):', e?.message || e);
       }
     }
-
 
     // Optionnel: inclure le calcul d'anomalies (sans persistance)
     let anomaliesBlock = undefined;

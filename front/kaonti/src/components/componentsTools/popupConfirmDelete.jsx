@@ -28,9 +28,8 @@ const PopupConfirmDelete = ({ msg, confirmationState, type, presonalisedMessage 
 
     const confirmation = () => {
         confirmationState(true);
-        type === 'Generer' || type === 'Reinialiser' ? null :
-            presonalisedMessage ? null :
-                toast.success('Ligne supprimés avec succès');
+        // Ne pas afficher de toast de succès ici.
+        // Laisser l'appelant gérer l'affichage selon le résultat de l'API (succès/erreur).
     }
 
     const handleCloseDeleteModel = () => {

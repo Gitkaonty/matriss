@@ -8,8 +8,7 @@ module.exports = {
       },
       nom: {
         type: Sequelize.STRING,
-        allowNull: false,
-        unique: true
+        allowNull: false
       },
       id_dossier: {
         type: Sequelize.INTEGER,

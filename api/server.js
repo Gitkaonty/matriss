@@ -86,6 +86,8 @@ app.use('/administration/personnel', require('./Routes/Administration/personnels
 app.use('/administration/etatFinancier', require('./Routes/Administration/etatFinancier/etatFinancierRoute'));
 //export
 app.use('/administration/exportBalance', require('./Routes/Administration/exportBalanceRoute'));
+app.use('/administration/exportJournal', require('./Routes/Administration/exportJournalRoute'));
+app.use('/administration/exportGrandLivre', require('./Routes/Administration/exportGrandLivreRoute'));
 //saisie
 app.use('/administration/traitementSaisie', require('./Routes/Administration/saisieRoute'));
 

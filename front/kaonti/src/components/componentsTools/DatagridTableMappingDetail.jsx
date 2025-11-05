@@ -700,6 +700,20 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
                     rowHeight={DataGridStyle.rowHeight}
                     columnHeaderHeight={DataGridStyle.columnHeaderHeight}
                     editMode='row'
+                    onRowClick={(e) => handleCellEditCommit(e.row)}
+                    onRowSelectionModelChange={(ids) => {
+                        const arr = Array.isArray(ids) ? ids : [ids];
+                        const single = arr.length ? [arr[arr.length - 1]] : [];
+                        setSelectedRow(single);
+                        saveSelectedRow(single);
+                        deselectRow(single);
+                    }}
+                    rowModesModel={rowModesModel}
+                    onRowModesModelChange={handleRowModesModelChange}
+                    onRowEditStop={handleRowEditStop}
+                    processRowUpdate={processRowUpdate}
+                    rows={compteRubriqueData}
+                    columns={columnHeader}
                     initialState={{
                         pagination: {
                             paginationModel: { page: 0, pageSize: 100 },

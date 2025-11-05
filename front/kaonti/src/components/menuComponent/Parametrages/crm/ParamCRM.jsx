@@ -1835,6 +1835,18 @@ const handleEditClickDomBank = (id) => () => {
               setDisableAddRowBouton(false);
               setSelectedRowId(ids);
           }
+        const deselectRowFiliale = (ids) => {
+        const deselected = selectedRowIdFiliale.filter(id => !ids.includes(id));
+ 
+        const updatedRowModes = { ...rowModesModel };
+        deselected.forEach((id) => {
+            updatedRowModes[id] = { mode: GridRowModes.View, ignoreModifications: true };
+        });
+        setRowModesModelFiliale(updatedRowModes);
+ 
+        setDisableAddRowBoutonFiliale(false);
+        setSelectedRowIdFiliale(ids);
+    }
 
     return (
         <Box>

@@ -612,6 +612,7 @@ export default function ParamCodeJournalComponent() {
                             onChange={(e) => formikNewCodeJournal.setFieldValue('stat', e.target.value)}
                             label="stat"
                             disableUnderline={true}
+                            disabled={!isEditable} // Désactiver complètement si non éditable
                         />
 
                         <FormHelperText style={{  color:  'red'  }}>
@@ -646,6 +647,7 @@ export default function ParamCodeJournalComponent() {
                             onChange={(e) => formikNewCodeJournal.setFieldValue('adresse', e.target.value)}
                             label="adresse"
                             disableUnderline={true}
+                            disabled={!isEditable} // Désactiver complètement si non éditable
                         />
 
                         <FormHelperText style={{ color: 'red' }}>
@@ -829,6 +831,15 @@ export default function ParamCodeJournalComponent() {
         }
         
         if(saveBoolCode && saveBoolLibelle && saveBoolType && saveBoolCompteAssocie && saveBoolNif && saveBoolStat && saveBoolAdresse){
+            // Vérification locale de doublon de code (hors ligne courante)
+            const currentId = Array.isArray(id) ? id[0] : id;
+            const newCode = String(formikNewCodeJournal.values.code || '').trim();
+            const hasDuplicate = listeCodeJournaux.some(row => String(row.code).trim() === newCode && row.id !== currentId);
+            if (hasDuplicate) {
+                toast.error('Ce code journal existe déjà.');
+                return;
+            }
+
             setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
             axios.post(`/paramCodeJournaux/codeJournauxAdd`, formikNewCodeJournal.values).then((response) => {
                 const resData = response.data;
@@ -1102,9 +1113,10 @@ export default function ParamCodeJournalComponent() {
                                 onRowClick={(e) => handleCellEditCommit(e.row)}
                                 // onCellClick={(e) => test(e.row)}
                                 onRowSelectionModelChange={ids => {
-                                    setSelectedRow(ids);
-                                    saveSelectedRow(ids);
-                                    deselectRow(ids);
+                                    const single = Array.isArray(ids) && ids.length ? [ids[ids.length - 1]] : [];
+                                    setSelectedRow(single);
+                                    saveSelectedRow(single);
+                                    deselectRow(single);
                                 }}
                                 rowModesModel={rowModesModel}
                                 onRowModesModelChange={handleRowModesModelChange}

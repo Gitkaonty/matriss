@@ -37,13 +37,13 @@ module.exports = (sequelize, DataTypes) => {
     }, {
       tableName: 'devises',
       timestamps: true,
-      indexes: [
-        {
-          unique: true,
-          fields: ['code', 'id_dossier', 'id_compte'],
-          name: 'unique_code_per_dossier_compte'
-        }
-      ]
+      // indexes: [
+      //   {
+      //     unique: true,
+      //     fields: ['cod', 'id_dossier', 'id_compte'],
+      //     name: 'unique_code_per_dossier_compte'
+      //   }
+      // ]
     });
     return Devise;
   }; 

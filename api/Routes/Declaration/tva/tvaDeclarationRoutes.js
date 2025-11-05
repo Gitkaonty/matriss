@@ -20,11 +20,12 @@ const {
   initializeDGE,
   autoCalcDGEFromAnnexes,
   autoCalcFormulaireFromAnnexes,
+  exportFormulaireExcel,
+  exportFormulairePdf,
 } = require('../../../Controllers/Declaration/tva/tvaControllers');
 const { listAnomalies, replaceAnomalies, updateAnomalie, updateAnomalieByKey, clearAnomalies } = require('../../../Controllers/Declaration/tva/anomaliesFormulaireController');
 
 ///////////////////////// Annexes
-
 // Liste (filtrable par compte/dossier/exercice/mois/annee via query params)
 router.get('/annexes', listAnnexes);
 
@@ -119,6 +120,10 @@ router.get('/export-xml/:id_compte/:id_dossier/:id_exercice/:mois/:annee', expor
 
 // Export PDF Annexes TVA 
 router.get('/export-pdf-tableau/:id_compte/:id_dossier/:id_exercice/:mois/:annee', exportTvaToPDF);
+
+// Export Formulaire TVA (unifié) - Excel/PDF (mois/annee via query params)
+router.get('/formulaire/export-excel/:id_dossier/:id_compte/:id_exercice', exportFormulaireExcel);
+router.get('/formulaire/export-pdf/:id_dossier/:id_compte/:id_exercice', exportFormulairePdf);
 
 // Générer les détails automatiquement
 router.post('/generateTvaAutoDetail', paramTvaController.generateTvaAutoDetail);

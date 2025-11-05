@@ -148,7 +148,8 @@ export default function ParamTVAComponent() {
             if (resData.state) {
                 const pcToFilter = resData.liste;
                 const filteredPc = pcToFilter?.filter((row) => row.compte.startsWith('445'));
-                setPc(filteredPc);
+                const uniquePc = Array.from(new Map((filteredPc || []).map(r => [r.id, r])).values());
+                setPc(uniquePc);
             } else {
                 toast.error(resData.msg);
             }
@@ -219,7 +220,7 @@ export default function ParamTVAComponent() {
             field: 'dossierplancomptable.compte',
             headerName: 'Compte',
             type: 'singleSelect',
-            valueOptions: pc?.map((code) => code.compte),
+            valueOptions: Array.from(new Set((pc || []).map((code) => code.compte))),
             sortable: true,
             flex: 2.5,
             headerAlign: 'left',
@@ -241,7 +242,7 @@ export default function ParamTVAComponent() {
                             onChange={(e) => handleChangeCompte(e.target.value)}
                             label="Type"
                         >
-                            {pc?.map((option) => (
+                            {Array.from(new Map((pc || []).map(o => [`${o.compte}||${o.libelle}`, o])).values()).map((option) => (
                                 <MenuItem key={option.id} value={option.id}>
                                     {option.compte} - {option.libelle}
                                 </MenuItem>
@@ -758,9 +759,10 @@ export default function ParamTVAComponent() {
                                 onRowClick={(e) => handleCellEditCommit(e.row)}
                                 // onCellClick={(e) => test(e.row)}
                                 onRowSelectionModelChange={ids => {
-                                    setSelectedRow(ids);
-                                    saveSelectedRow(ids);
-                                    deselectRow(ids);
+                                    const single = Array.isArray(ids) && ids.length ? [ids[ids.length - 1]] : [];
+                                    setSelectedRow(single);
+                                    saveSelectedRow(single);
+                                    deselectRow(single);
                                 }}
                                 rowModesModel={rowModesModel}
                                 onRowModesModelChange={handleRowModesModelChange}
