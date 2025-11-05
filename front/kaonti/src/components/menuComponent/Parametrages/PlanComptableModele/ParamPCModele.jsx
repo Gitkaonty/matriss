@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import {
     Typography, Stack, Paper, RadioGroup, FormControlLabel, Radio, FormControl,
     InputLabel, Select, MenuItem, TextField, Box, Tab,
-    FormHelperText,Autocomplete
+    FormHelperText, Autocomplete
 } from '@mui/material';
 import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
@@ -30,6 +30,7 @@ import { jwtDecode } from 'jwt-decode';
 import QuickFilter from '../../../componentsTools/DatagridToolsStyle';
 import { DataGridStyle } from '../../../componentsTools/DatagridToolsStyle';
 import PopupConfirmDelete from '../../../componentsTools/popupConfirmDelete';
+import PopupImportModelePlanComptable from '../../administration/import/PopupImportModelePlanComptable';
 import { format } from 'date-fns';
 import { FaGlobeAmericas } from "react-icons/fa";
 import { DetailsInformation } from '../../../componentsTools/DetailsInformation';
@@ -59,6 +60,7 @@ export default function ParamPlanComptableModele() {
     const [openNewModel, setOpenNewModel] = useState(false);
     const [modeleLibre, setModeleLibre] = useState(true);
     const [listDossier, setListeDossier] = useState([]);
+    const [openImportDialog, setOpenImportDialog] = useState(false);
 
     const [openDialogDeleteModel, setOpenDialogDeleteModel] = useState(false);
     const [modelSelectedRow, setModelSelectedRow] = useState(null);
@@ -94,9 +96,9 @@ export default function ParamPlanComptableModele() {
     const [listeCptCollectif, setListeCptCollectif] = useState([]);
     const [disableLocalites, setDisableLocalites] = useState(false);
     const [disableTypeTiers, setDisableTypeTiers] = useState(true);
-    
 
-    
+
+
     const [provinces, setProvinces] = useState([]);
     const [regions, setRegions] = useState([]);
     const [districts, setDistricts] = useState([]);
@@ -108,7 +110,7 @@ export default function ParamPlanComptableModele() {
     const [selectedCommune, setSelectedCommune] = useState('');
     const [rowCptInfos, setRowCptInfos] = useState([]);
     const [openInfos, setOpenInfos] = useState(false);
-    
+
 
     //paramètres de connexion------------------------------------
     const decoded = auth?.accessToken
@@ -264,7 +266,7 @@ export default function ParamPlanComptableModele() {
             setListCptChg([]);
             setListCptTva([]);
 
-             // Option A: reset local selections and dependent lists on open
+            // Option A: reset local selections and dependent lists on open
             setSelectedProvince('');
             setSelectedRegion('');
             setSelectedDistrict('');
@@ -288,7 +290,7 @@ export default function ParamPlanComptableModele() {
             setFieldValue('typeTier', 'general');
             setFormulaireTier('general');
             setDisableLocalites(true);
-            
+
             // Garder le champ 'Type du tier' actif
             setFieldValue('typeTier', 'general');
             setFormulaireTier('general');
@@ -301,10 +303,10 @@ export default function ParamPlanComptableModele() {
     }
 
     //gestion tableau ajout compte de TVA associé au nouveau compte à créer
-     const recupererListeCptCollectif = () => {
-            const result = detailModel?.filter(item => item.nature === 'Collectif');
-            setListeCptCollectif(result);
-        }
+    const recupererListeCptCollectif = () => {
+        const result = detailModel?.filter(item => item.nature === 'Collectif');
+        setListeCptCollectif(result);
+    }
 
     const handleOpenDialogDetailModelModify = (setFieldValue) => () => {
         recupererListeCptCollectif();
@@ -316,7 +318,7 @@ export default function ParamPlanComptableModele() {
         setFieldValue("compte", detailModelSelectedRow.compte);
         setFieldValue("libelle", detailModelSelectedRow.libelle);
         setFieldValue("nature", detailModelSelectedRow.nature);
-         // En modification: si General/Collectif, la base = le compte lui-même (id);
+        // En modification: si General/Collectif, la base = le compte lui-même (id);
         // sinon (Aux), on garde la base existante (baseaux_id)
         if (detailModelSelectedRow.nature === 'General' || detailModelSelectedRow.nature === 'Collectif') {
             setFieldValue("baseCptCollectif", detailModelSelectedRow.id);
@@ -377,8 +379,8 @@ export default function ParamPlanComptableModele() {
     const handleChangeTabValueAjoutNewRowModelDetail = (event, newValue) => {
         setTabValueAjoutNewRowModelDetail(newValue);
     };
-     // Normalise: supprime espaces/points/tirets, trim, majuscules
-     const normalizeCompte = (v) =>
+    // Normalise: supprime espaces/points/tirets, trim, majuscules
+    const normalizeCompte = (v) =>
         (v || '')
             .toString()
             .toUpperCase()
@@ -416,27 +418,27 @@ export default function ParamPlanComptableModele() {
     };
 
     const formAddCptModelValidationSchema = Yup.object({
-         compte: Yup.string()
-                .required("Veuillez tapez un numéro de compte")
-                .test('unique-compte', 'Ce compte existe déjà', function (value) {
+        compte: Yup.string()
+            .required("Veuillez tapez un numéro de compte")
+            .test('unique-compte', 'Ce compte existe déjà', function (value) {
                 const list = Array.isArray(detailModel) ? detailModel : [];
                 const v = normalizeCompte(value);
-        
+
                 const action = this.parent?.action;   // 'new' | 'modify'
                 const itemId = Number(this.parent?.itemId);
-        
+
                 if (!v) return false;
-        
+
                 // En modification: autoriser si la valeur n'a pas changé
                 if (action === 'modify') {
                     const current = list.find(r => Number(r.id) === itemId)?.compte;
                     if (normalizeCompte(current) === v) return true;
                 }
-        
+
                 // En création (ou compte modifié): bloquer si existe déjà
                 const exists = list.some(r => Number(r.id) !== itemId && normalizeCompte(r.compte) === v);
                 return !exists;
-                }),
+            }),
         libelle: Yup.string().required("Veuillez insérer un libellé pour le numéro de compte"),
         nature: Yup.string().required("Veuillez séléctionner dans la liste la nature du compte"),
         baseCptCollectif: Yup.number()
@@ -475,36 +477,36 @@ export default function ParamPlanComptableModele() {
                     }).required('La date est requise'),
                 otherwise: () => Yup.string().notRequired(),
             }),
-            nifRepresentant: Yup.string()
-                        .when('typeTier', {
-                            is: (value) => value === 'etranger',
-                            then: () => Yup.string().required("Veuillez ajouter le numéro NIF du tier").min(10, 'Veuillez bien formater le numéro NIF'),
-                            otherwise: () => Yup.string().notRequired(),
-                        }),
-                    province: Yup.string()
-                        .when('nature', {
-                            is: (value) => value === 'General' || value === 'Collectif',
-                            then: () => Yup.string().notRequired(),
-                            otherwise: () => Yup.string().required("Veuillez sélectionner une province"),
-                        }),
-                    region: Yup.string()
-                        .when('nature', {
-                            is: (value) => value === 'General' || value === 'Collectif',
-                            then: () => Yup.string().notRequired(),
-                            otherwise: () => Yup.string().required("Veuillez sélectionner une région"),
-                        }),
-                    district: Yup.string()
-                        .when('nature', {
-                            is: (value) => value === 'General' || value === 'Collectif',
-                            then: () => Yup.string().notRequired(),
-                            otherwise: () => Yup.string().required("Veuillez sélectionner un district"),
-                        }),
-                    commune: Yup.string()
-                        .when('nature', {
-                            is: (value) => value === 'General' || value === 'Collectif',
-                            then: () => Yup.string().notRequired(),
-                            otherwise: () => Yup.string().required("Veuillez sélectionner une commune"),
-                        }),
+        nifRepresentant: Yup.string()
+            .when('typeTier', {
+                is: (value) => value === 'etranger',
+                then: () => Yup.string().required("Veuillez ajouter le numéro NIF du tier").min(10, 'Veuillez bien formater le numéro NIF'),
+                otherwise: () => Yup.string().notRequired(),
+            }),
+        province: Yup.string()
+            .when(['nature', 'typeTier'], {
+                is: (nature, typeTier) => nature === 'General' || nature === 'Collectif' || typeTier === 'etranger',
+                then: () => Yup.string().notRequired(),
+                otherwise: () => Yup.string().required("Veuillez sélectionner une province"),
+            }),
+        region: Yup.string()
+            .when(['nature', 'typeTier'], {
+                is: (nature, typeTier) => nature === 'General' || nature === 'Collectif' || typeTier === 'etranger',
+                then: () => Yup.string().notRequired(),
+                otherwise: () => Yup.string().required("Veuillez sélectionner une région"),
+            }),
+        district: Yup.string()
+            .when(['nature', 'typeTier'], {
+                is: (nature, typeTier) => nature === 'General' || nature === 'Collectif' || typeTier === 'etranger',
+                then: () => Yup.string().notRequired(),
+                otherwise: () => Yup.string().required("Veuillez sélectionner un district"),
+            }),
+        commune: Yup.string()
+            .when(['nature', 'typeTier'], {
+                is: (nature, typeTier) => nature === 'General' || nature === 'Collectif' || typeTier === 'etranger',
+                then: () => Yup.string().notRequired(),
+                otherwise: () => Yup.string().required("Veuillez sélectionner une commune"),
+            }),
     });
 
     const formAddCptModelhandleSubmit = (values) => {
@@ -524,109 +526,109 @@ export default function ParamPlanComptableModele() {
         }
     }
 
-     const getProvinces = async () => {
-            try {
-                const response = await axios.get('/paramPlanComptable/getProvinces');
-                return response.data;
-            } catch (error) {
-                console.error('Erreur fetchProvinces:', error);
-                return [];
-            }
+    const getProvinces = async () => {
+        try {
+            const response = await axios.get('/paramPlanComptable/getProvinces');
+            return response.data;
+        } catch (error) {
+            console.error('Erreur fetchProvinces:', error);
+            return [];
         }
-    
-        const getRegions = async (province) => {
-            if (!province) return [];
-            try {
-                const response = await axios.get(`/paramPlanComptable/getRegions/${province}`);
-                return response.data;
-            } catch (error) {
-                console.error('Erreur fetchRegions:', error);
-                return [];
-            }
+    }
+
+    const getRegions = async (province) => {
+        if (!province) return [];
+        try {
+            const response = await axios.get(`/paramPlanComptable/getRegions/${province}`);
+            return response.data;
+        } catch (error) {
+            console.error('Erreur fetchRegions:', error);
+            return [];
         }
-    
-        const getDistricts = async (province, region) => {
-            if (!province || !region) return [];
-            try {
-                const response = await axios.get(`/paramPlanComptable/getDistricts/${province}/${region}`);
-                return response.data;
-            } catch (error) {
-                console.error('Erreur fetchDistricts:', error);
-                return [];
-            }
+    }
+
+    const getDistricts = async (province, region) => {
+        if (!province || !region) return [];
+        try {
+            const response = await axios.get(`/paramPlanComptable/getDistricts/${province}/${region}`);
+            return response.data;
+        } catch (error) {
+            console.error('Erreur fetchDistricts:', error);
+            return [];
         }
-    
-        const getCommunes = async (province, region, district) => {
-            if (!province || !region || !district) return [];
-            try {
-                const response = await axios.get(`/paramPlanComptable/getCommunes/${province}/${region}/${district}`);
-                return response.data;
-            } catch (error) {
-                console.error('Erreur fetchCommunes:', error);
-                return [];
-            }
+    }
+
+    const getCommunes = async (province, region, district) => {
+        if (!province || !region || !district) return [];
+        try {
+            const response = await axios.get(`/paramPlanComptable/getCommunes/${province}/${region}/${district}`);
+            return response.data;
+        } catch (error) {
+            console.error('Erreur fetchCommunes:', error);
+            return [];
         }
-        // Charger les provinces
-        useEffect(() => {
-            getProvinces().then(setProvinces);
-        }, []);
-    
-        // Charger les régions quand la province change, mais ne pas réinitialiser si on a déjà une région sélectionnée
-        useEffect(() => {
-            if (selectedProvince) {
-                getRegions(selectedProvince).then((data) => setRegions(data));
-    
-                // Ne réinitialise que si on est en création (pas de selectedRegion)
-                if (!selectedRegion) setSelectedRegion('');
-                if (!selectedDistrict) setDistricts([]);
-                if (!selectedDistrict) setSelectedDistrict('');
-                if (!selectedCommune) setCommunes([]);
-                if (!selectedCommune) setSelectedCommune('');
-            } else {
-                setRegions([]);
-                setSelectedRegion('');
-                setDistricts([]);
-                setSelectedDistrict('');
-                setCommunes([]);
-                setSelectedCommune('');
-            }
-        }, [selectedProvince]);
-    
-        // Charger les districts quand la région change, idem
-        useEffect(() => {
-            if (selectedProvince && selectedRegion) {
-                getDistricts(selectedProvince, selectedRegion).then((data) => setDistricts(data));
-    
-                if (!selectedDistrict) setSelectedDistrict('');
-                if (!selectedCommune) setCommunes([]);
-                if (!selectedCommune) setSelectedCommune('');
-            } else {
-                setDistricts([]);
-                setSelectedDistrict('');
-                setCommunes([]);
-                setSelectedCommune('');
-            }
-        }, [selectedProvince, selectedRegion]);
-    
-        // Charger les communes quand le district change
-        useEffect(() => {
-            if (selectedProvince && selectedRegion && selectedDistrict) {
-                getCommunes(selectedProvince, selectedRegion, selectedDistrict).then((data) => setCommunes(data));
-            } else {
-                setCommunes([]);
-                setSelectedCommune('');
-            }
-        }, [selectedProvince, selectedRegion, selectedDistrict]);
-    
-        // Remplissage automatique pour les localites
-        useEffect(() => {
-            if (detailModelSelectedRow) {
-                setSelectedProvince(detailModelSelectedRow.province);
-                setSelectedRegion(detailModelSelectedRow.region);
-                setSelectedDistrict(detailModelSelectedRow.district);
-                setSelectedCommune(detailModelSelectedRow.commune);
-            }
-        }, [detailModelSelectedRow])
+    }
+    // Charger les provinces
+    useEffect(() => {
+        getProvinces().then(setProvinces);
+    }, []);
+
+    // Charger les régions quand la province change, mais ne pas réinitialiser si on a déjà une région sélectionnée
+    useEffect(() => {
+        if (selectedProvince) {
+            getRegions(selectedProvince).then((data) => setRegions(data));
+
+            // Ne réinitialise que si on est en création (pas de selectedRegion)
+            if (!selectedRegion) setSelectedRegion('');
+            if (!selectedDistrict) setDistricts([]);
+            if (!selectedDistrict) setSelectedDistrict('');
+            if (!selectedCommune) setCommunes([]);
+            if (!selectedCommune) setSelectedCommune('');
+        } else {
+            setRegions([]);
+            setSelectedRegion('');
+            setDistricts([]);
+            setSelectedDistrict('');
+            setCommunes([]);
+            setSelectedCommune('');
+        }
+    }, [selectedProvince]);
+
+    // Charger les districts quand la région change, idem
+    useEffect(() => {
+        if (selectedProvince && selectedRegion) {
+            getDistricts(selectedProvince, selectedRegion).then((data) => setDistricts(data));
+
+            if (!selectedDistrict) setSelectedDistrict('');
+            if (!selectedCommune) setCommunes([]);
+            if (!selectedCommune) setSelectedCommune('');
+        } else {
+            setDistricts([]);
+            setSelectedDistrict('');
+            setCommunes([]);
+            setSelectedCommune('');
+        }
+    }, [selectedProvince, selectedRegion]);
+
+    // Charger les communes quand le district change
+    useEffect(() => {
+        if (selectedProvince && selectedRegion && selectedDistrict) {
+            getCommunes(selectedProvince, selectedRegion, selectedDistrict).then((data) => setCommunes(data));
+        } else {
+            setCommunes([]);
+            setSelectedCommune('');
+        }
+    }, [selectedProvince, selectedRegion, selectedDistrict]);
+
+    // Remplissage automatique pour les localites
+    useEffect(() => {
+        if (detailModelSelectedRow) {
+            setSelectedProvince(detailModelSelectedRow.province);
+            setSelectedRegion(detailModelSelectedRow.region);
+            setSelectedDistrict(detailModelSelectedRow.district);
+            setSelectedCommune(detailModelSelectedRow.commune);
+        }
+    }, [detailModelSelectedRow])
 
     //Action pour disable ou enable base compte collectif dans le formulaire nouveau compte pour le modèle
     const handleChangeListBoxNature = (setFieldValue) => (e) => {
@@ -635,8 +637,8 @@ export default function ParamPlanComptableModele() {
         if (value === 'General' || value === 'Collectif') {
             setTypeCptGeneral(true);
             setDisableTypeTiers(true); // Désactiver le champ Type Tiers
-             // En MODIFICATION, forcer la base à l'ID du compte
-             if (detailModelSelectedRow && detailModelSelectedRow.id) {
+            // En MODIFICATION, forcer la base à l'ID du compte
+            if (detailModelSelectedRow && detailModelSelectedRow.id) {
                 setFieldValue('baseCptCollectif', detailModelSelectedRow.id);
             }
             // Si Nature = General OU Collectif, mettre Type du Tier = general et griser les localités
@@ -786,11 +788,10 @@ export default function ParamPlanComptableModele() {
         const value = e.target.value;
         setFieldValue('typeTier', value);
         setFormulaireTier(value);
-         
-        // Si Type du Tier = "etranger", griser les localités
-        if (value === 'etranger') {
+
+        // Griser et vider les localités seulement pour 'etranger' ou 'general'
+        if (value === 'etranger' || value === 'general') {
             setDisableLocalites(true);
-            // Réinitialiser les localités
             setFieldValue('province', '');
             setFieldValue('region', '');
             setFieldValue('district', '');
@@ -825,24 +826,24 @@ export default function ParamPlanComptableModele() {
             })
         }
     }
-     const showCptInfos = (state) => {
-            setOpenInfos(state);
-        }
-    
-        const handleShowCptInfos = (row) => {
-            const itemId = row.id;
-            axios.get(`/paramPlanComptableModele/keepListCptChgTvaAssoc/${itemId}`).then((response) => {
-                const resData = response.data;
-                if (resData.state) {
-                    setListCptChg(resData.detailChg);
-                    setListCptTva(resData.detailTva);
-                    setRowCptInfos(row);
-                    setOpenInfos(true);
-                } else {
-                    toast.error(resData.msg);
-                }
-            })
-        }
+    const showCptInfos = (state) => {
+        setOpenInfos(state);
+    }
+
+    const handleShowCptInfos = (row) => {
+        const itemId = row.id;
+        axios.get(`/paramPlanComptableModele/keepListCptChgTvaAssoc/${itemId}`).then((response) => {
+            const resData = response.data;
+            if (resData.state) {
+                setListCptChg(resData.detailChg);
+                setListCptTva(resData.detailTva);
+                setRowCptInfos(row);
+                setOpenInfos(true);
+            } else {
+                toast.error(resData.msg);
+            }
+        })
+    }
 
 
     //Suppression des comptes sélectionnés dans le tableau du plan comptable
@@ -888,8 +889,8 @@ export default function ParamPlanComptableModele() {
                 paddingY: 2
             }}
         >
-        {openInfos ? <DetailsInformation row={rowCptInfos} confirmOpen={showCptInfos} listCptChg={listCptChg} listCptTva={listCptTva} /> : null}
-            
+            {openInfos ? <DetailsInformation row={rowCptInfos} confirmOpen={showCptInfos} listCptChg={listCptChg} listCptTva={listCptTva} /> : null}
+
             <Stack width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"} justifyContent={"stretch"}>
                 <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages : Plan comptable - modèle</Typography>
 
@@ -898,6 +899,25 @@ export default function ParamPlanComptableModele() {
                     <Typography variant='h7' sx={{ color: "black", fontWeight: "bold" }} align='left'>Modèle</Typography>
                     <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
                         direction={"row"} justifyContent={"right"}>
+                        <Tooltip title="Importer un modèle">
+                            <span>
+                                <Button
+                                    onClick={() => setOpenImportDialog(true)}
+                                    variant="contained"
+                                    style={{
+                                        height: '35px',
+                                        borderRadius: '5px',
+                                        backgroundColor: initial.theme,
+                                        color: 'white',
+                                        textTransform: 'none',
+                                        outline: 'none',
+                                        marginLeft: '8px'
+                                    }}
+                                >
+                                    Importer
+                                </Button>
+                            </span>
+                        </Tooltip>
 
                         <Tooltip title="Ajouter un nouveau modèle">
                             <IconButton
@@ -1042,6 +1062,30 @@ export default function ParamPlanComptableModele() {
                             </Button>
                         </DialogActions>
                     </BootstrapDialog>
+
+                    <BootstrapDialog
+                        onClose={() => setOpenImportDialog(false)}
+                        aria-labelledby="import-modele-dialog-title"
+                        open={openImportDialog}
+                        maxWidth={"xl"}
+                        fullWidth
+                    >
+                        <IconButton
+                            aria-label="close"
+                            onClick={() => setOpenImportDialog(false)}
+                            sx={{ position: 'absolute', right: 8, top: 8, color: (theme) => theme.palette.grey[500] }}
+                        >
+                            <CloseIcon />
+                        </IconButton>
+                        <DialogContent dividers>
+                            <Box sx={{ width: '100%', height: '70vh' }}>
+                                <PopupImportModelePlanComptable onSuccess={() => { GetListePlanComptableModele(); setOpenImportDialog(false); }} />
+                            </Box>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={() => setOpenImportDialog(false)} style={{ textTransform: 'none' }}>Fermer</Button>
+                        </DialogActions>
+                    </BootstrapDialog>
                 </form>
 
                 {/* MODAL POUR LA SUPPRESSION D'UN MODELE */}
@@ -1060,7 +1104,10 @@ export default function ParamPlanComptableModele() {
                         sx={DataGridStyle.sx}
                         rowHeight={DataGridStyle.rowHeight}
                         columnHeaderHeight={DataGridStyle.columnHeaderHeight}
-                        onRowSelectionModelChange={listModelPCSelectedRow}
+                        onRowSelectionModelChange={(ids) => {
+                            const single = Array.isArray(ids) && ids.length ? [ids[ids.length - 1]] : [];
+                            listModelPCSelectedRow(single);
+                        }}
                         rows={listeModele}
                         columns={columnHeaderModel}
                         initialState={{
@@ -1074,6 +1121,7 @@ export default function ParamPlanComptableModele() {
                         columnVisibilityModel={{
                             id: false,
                         }}
+                        rowSelectionModel={modelId != null ? [modelId] : []}
                     />
                 </Stack>
 
@@ -1087,7 +1135,7 @@ export default function ParamPlanComptableModele() {
                         //();
                     }}
                 >
-                    {({ handleChange, handleSubmit, setFieldValue, resetForm }) => {
+                    {({ handleChange, handleSubmit, setFieldValue, setFieldTouched, resetForm }) => {
                         // useEffect(() => {
                         //     if (openDialogAddNewCptModelDetail) {
                         //         resetForm();
@@ -1542,181 +1590,181 @@ export default function ParamPlanComptableModele() {
                                                                 <ErrorMessage name='motcle' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
                                                             </Stack>
 
-                                                <Stack direction={'row'} width={'100%'} spacing={2} style={{ marginTop: 25 }} >
-                                                   <Stack spacing={-0.5} flex={0.75} minWidth={0}>
-                                                     <Autocomplete
-                                                        disabled={disableLocalites}
-                                                        options={provinces}
-                                                        value={selectedProvince || null}
-                                                        onChange={(event, newValue) => {
-                                                        setFieldValue("province", newValue || "");
-                                                        setSelectedProvince(newValue || "");
-                                                        }}
-                                                        onBlur={(e) => { if (!disableLocalites) setFieldTouched("province", true, false); }}
-                                                        noOptionsText="Aucune province trouvée"
-                                                        renderInput={(params) => (
-                                                        <TextField
-                                                        {...params}
-                                                        label="Province"
-                                                        variant="outlined"
-                                                        size="small"
-                                                        sx={{
-                                                           borderRadius: 0,
-                                                            '& .MuiOutlinedInput-notchedOutline': {
-                                                             borderTop: 'none',
-                                                             borderLeft: 'none',
-                                                             borderRight: 'none',
-                                                             borderWidth: '0.5px'
-                                                            },
-                                                             '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                             borderTop: 'none',
-                                                             borderLeft: 'none',
-                                                             borderRight: 'none',
-                                                             borderWidth: '0.5px'
-                                                            },
-                                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                             borderTop: 'none',
-                                                             borderLeft: 'none',
-                                                             borderRight: 'none',
-                                                             borderWidth: '0.5px'
-                                                            },
-                                                        }}
-                                                        />
-                                                        )}
-                                                      />
-                                                    <ErrorMessage name='province' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                    </Stack>
-                                                    <Stack spacing={-0.5} flex={0.9} minWidth={0}>
-                                                    <Autocomplete
-                                                    disabled={disableLocalites}
-                                                    options={regions}
-                                                    value={selectedRegion || null}
-                                                    onChange={(event, newValue) => {
-                                                    setFieldValue('region', newValue);
-                                                    setSelectedRegion(newValue)                                                                    
-                                                     }}
-                                                    onBlur={(e) => { if (!disableLocalites) setF("region", true, false); }}
-                                                   noOptionsText="Aucune région trouvée"
-                                                   renderInput={(params) => (
-                                                        <TextField                                                                
-                                                         {...params}
-                                                       label="Région"
-                                                        variant="outlined"
-                                                        size="small"
-                                                        sx={{
-                                                        borderRadius: 0,
-                                                        '& .MuiOutlinedInput-notchedOutline': {
-                                                        borderTop: 'none',
-                                                        borderLeft: 'none',
-                                                        borderRight: 'none',
-                                                        borderWidth: '0.5px'
-                                                        },
-                                                          '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                        borderTop: 'none',
-                                                        borderLeft: 'none',
-                                                        borderRight: 'none',
-                                                        borderWidth: '0.5px'
-                                                        },
-                                                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                        borderTop: 'none',
-                                                        borderLeft: 'none',
-                                                        borderRight: 'none',
-                                                        borderWidth: '0.5px'
-                                                        },
-                                                            }}
-                                                            />
-                                                          )}
-                                                        />
-                                                       <ErrorMessage name='region' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                    </Stack>
-                                                    <Stack spacing={-0.5} flex={1} minWidth={0}>
-                                                        <Autocomplete
-                                                        disabled={disableLocalites}
-                                                        options={districts}
-                                                        value={selectedDistrict || null}
-                                                      onChange={(event, newValue) => {
-                                                      setFieldValue('district', newValue);
-                                                      setSelectedDistrict(newValue);
-                                                      }}
-                                                     onBlur={(e) => { if (!disableLocalites) setFieldTouched("district", true, false); }}
-                                                    noOptionsText="Aucune district trouvée"
-                                                    renderInput={(params) => (
-                                                     <TextField
-                                                    {...params}
-                                                        label="District"
-                                                        variant="outlined"
-                                                        size="small"
-                                                        sx={{
-                                                        borderRadius: 0,
-                                                        '& .MuiOutlinedInput-notchedOutline': {
-                                                        borderTop: 'none',
-                                                        borderLeft: 'none',
-                                                        borderRight: 'none',
-                                                        borderWidth: '0.5px'
-                                                        },
-                                                         '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                         borderTop: 'none',
-                                                         borderLeft: 'none',
-                                                         borderRight: 'none',
-                                                         borderWidth: '0.5px'
-                                                         },
-                                                         '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                         borderTop: 'none',
-                                                         borderLeft: 'none',
-                                                         borderRight: 'none',
-                                                         borderWidth: '0.5px'
-                                                          },
-                                                          }}
-                                                          />
-                                                          )}
-                                                          />
-                                                        <ErrorMessage name='district' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                    </Stack>
-                                                    <Stack spacing={-0.5} flex={1} minWidth={0}>
-                                                        <Autocomplete
-                                                        disabled={disableLocalites}
-                                                        options={communes}
-                                                        value={selectedCommune || null}
-                                                      onChange={(event, newValue) => {
-                                                      setFieldValue('commune', newValue);
-                                                      setSelectedCommune(newValue);
-                                                      }}
-                                                     onBlur={(e) => { if (!disableLocalites) setFieldTouched("commune", true, false); }}
-                                                    noOptionsText="Aucune commmune trouvée"
-                                                    renderInput={(params) => (
-                                                     <TextField
-                                                    {...params}
-                                                        label="Commune"
-                                                        variant="outlined"
-                                                        size="small"
-                                                        sx={{
-                                                        borderRadius: 0,
-                                                        '& .MuiOutlinedInput-notchedOutline': {
-                                                         borderTop: 'none',
-                                                         borderLeft: 'none',
-                                                         borderRight: 'none',
-                                                         borderWidth: '0.5px'
-                                                        },
-                                                         '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                         borderTop: 'none',
-                                                         borderLeft: 'none',
-                                                         borderRight: 'none',
-                                                         borderWidth: '0.5px'
-                                                        },
-                                                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                         borderTop: 'none',
-                                                         borderLeft: 'none',
-                                                         borderRight: 'none',
-                                                         borderWidth: '0.5px'
-                                                        },
-                                                          }}
-                                                          />
-                                                         )}
-                                                        />
-                                                    <ErrorMessage name='commune' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                    </Stack>
-                                                    </Stack>
-                
+                                                            <Stack direction={'row'} width={'100%'} spacing={2} style={{ marginTop: 25 }} >
+                                                                <Stack spacing={-0.5} flex={0.75} minWidth={0}>
+                                                                    <Autocomplete
+                                                                        disabled={disableLocalites}
+                                                                        options={provinces}
+                                                                        value={selectedProvince || null}
+                                                                        onChange={(event, newValue) => {
+                                                                            setFieldValue("province", newValue || "");
+                                                                            setSelectedProvince(newValue || "");
+                                                                        }}
+                                                                        onBlur={(e) => { if (!disableLocalites) setFieldTouched("province", true, false); }}
+                                                                        noOptionsText="Aucune province trouvée"
+                                                                        renderInput={(params) => (
+                                                                            <TextField
+                                                                                {...params}
+                                                                                label="Province"
+                                                                                variant="outlined"
+                                                                                size="small"
+                                                                                sx={{
+                                                                                    borderRadius: 0,
+                                                                                    '& .MuiOutlinedInput-notchedOutline': {
+                                                                                        borderTop: 'none',
+                                                                                        borderLeft: 'none',
+                                                                                        borderRight: 'none',
+                                                                                        borderWidth: '0.5px'
+                                                                                    },
+                                                                                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                                                        borderTop: 'none',
+                                                                                        borderLeft: 'none',
+                                                                                        borderRight: 'none',
+                                                                                        borderWidth: '0.5px'
+                                                                                    },
+                                                                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                                                        borderTop: 'none',
+                                                                                        borderLeft: 'none',
+                                                                                        borderRight: 'none',
+                                                                                        borderWidth: '0.5px'
+                                                                                    },
+                                                                                }}
+                                                                            />
+                                                                        )}
+                                                                    />
+                                                                    <ErrorMessage name='province' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                </Stack>
+                                                                <Stack spacing={-0.5} flex={0.9} minWidth={0}>
+                                                                    <Autocomplete
+                                                                        disabled={disableLocalites}
+                                                                        options={regions}
+                                                                        value={selectedRegion || null}
+                                                                        onChange={(event, newValue) => {
+                                                                            setFieldValue('region', newValue);
+                                                                            setSelectedRegion(newValue)
+                                                                        }}
+                                                                        onBlur={(e) => { if (!disableLocalites) setF("region", true, false); }}
+                                                                        noOptionsText="Aucune région trouvée"
+                                                                        renderInput={(params) => (
+                                                                            <TextField
+                                                                                {...params}
+                                                                                label="Région"
+                                                                                variant="outlined"
+                                                                                size="small"
+                                                                                sx={{
+                                                                                    borderRadius: 0,
+                                                                                    '& .MuiOutlinedInput-notchedOutline': {
+                                                                                        borderTop: 'none',
+                                                                                        borderLeft: 'none',
+                                                                                        borderRight: 'none',
+                                                                                        borderWidth: '0.5px'
+                                                                                    },
+                                                                                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                                                        borderTop: 'none',
+                                                                                        borderLeft: 'none',
+                                                                                        borderRight: 'none',
+                                                                                        borderWidth: '0.5px'
+                                                                                    },
+                                                                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                                                        borderTop: 'none',
+                                                                                        borderLeft: 'none',
+                                                                                        borderRight: 'none',
+                                                                                        borderWidth: '0.5px'
+                                                                                    },
+                                                                                }}
+                                                                            />
+                                                                        )}
+                                                                    />
+                                                                    <ErrorMessage name='region' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                </Stack>
+                                                                <Stack spacing={-0.5} flex={1} minWidth={0}>
+                                                                    <Autocomplete
+                                                                        disabled={disableLocalites}
+                                                                        options={districts}
+                                                                        value={selectedDistrict || null}
+                                                                        onChange={(event, newValue) => {
+                                                                            setFieldValue('district', newValue);
+                                                                            setSelectedDistrict(newValue);
+                                                                        }}
+                                                                        onBlur={(e) => { if (!disableLocalites) setFieldTouched("district", true, false); }}
+                                                                        noOptionsText="Aucune district trouvée"
+                                                                        renderInput={(params) => (
+                                                                            <TextField
+                                                                                {...params}
+                                                                                label="District"
+                                                                                variant="outlined"
+                                                                                size="small"
+                                                                                sx={{
+                                                                                    borderRadius: 0,
+                                                                                    '& .MuiOutlinedInput-notchedOutline': {
+                                                                                        borderTop: 'none',
+                                                                                        borderLeft: 'none',
+                                                                                        borderRight: 'none',
+                                                                                        borderWidth: '0.5px'
+                                                                                    },
+                                                                                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                                                        borderTop: 'none',
+                                                                                        borderLeft: 'none',
+                                                                                        borderRight: 'none',
+                                                                                        borderWidth: '0.5px'
+                                                                                    },
+                                                                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                                                        borderTop: 'none',
+                                                                                        borderLeft: 'none',
+                                                                                        borderRight: 'none',
+                                                                                        borderWidth: '0.5px'
+                                                                                    },
+                                                                                }}
+                                                                            />
+                                                                        )}
+                                                                    />
+                                                                    <ErrorMessage name='district' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                </Stack>
+                                                                <Stack spacing={-0.5} flex={1} minWidth={0}>
+                                                                    <Autocomplete
+                                                                        disabled={disableLocalites}
+                                                                        options={communes}
+                                                                        value={selectedCommune || null}
+                                                                        onChange={(event, newValue) => {
+                                                                            setFieldValue('commune', newValue);
+                                                                            setSelectedCommune(newValue);
+                                                                        }}
+                                                                        onBlur={(e) => { if (!disableLocalites) setFieldTouched("commune", true, false); }}
+                                                                        noOptionsText="Aucune commmune trouvée"
+                                                                        renderInput={(params) => (
+                                                                            <TextField
+                                                                                {...params}
+                                                                                label="Commune"
+                                                                                variant="outlined"
+                                                                                size="small"
+                                                                                sx={{
+                                                                                    borderRadius: 0,
+                                                                                    '& .MuiOutlinedInput-notchedOutline': {
+                                                                                        borderTop: 'none',
+                                                                                        borderLeft: 'none',
+                                                                                        borderRight: 'none',
+                                                                                        borderWidth: '0.5px'
+                                                                                    },
+                                                                                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                                                        borderTop: 'none',
+                                                                                        borderLeft: 'none',
+                                                                                        borderRight: 'none',
+                                                                                        borderWidth: '0.5px'
+                                                                                    },
+                                                                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                                                        borderTop: 'none',
+                                                                                        borderLeft: 'none',
+                                                                                        borderRight: 'none',
+                                                                                        borderWidth: '0.5px'
+                                                                                    },
+                                                                                }}
+                                                                            />
+                                                                        )}
+                                                                    />
+                                                                    <ErrorMessage name='commune' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                </Stack>
+                                                            </Stack>
+
                                                         </Stack>
                                                     </TabPanel>
 
@@ -2043,7 +2091,10 @@ export default function ParamPlanComptableModele() {
                         sx={DataGridStyle.sx}
                         rowHeight={DataGridStyle.rowHeight}
                         columnHeaderHeight={DataGridStyle.columnHeaderHeight}
-                        onRowSelectionModelChange={listDetailModelPCSelectedRow}
+                        onRowSelectionModelChange={(ids) => {
+                            const single = Array.isArray(ids) && ids.length ? [ids[ids.length - 1]] : [];
+                            listDetailModelPCSelectedRow(single);
+                        }}
                         rows={detailModel}
                         columns={ParamPCModele_column.columnHeaderDetail(handleShowCptInfos)}
                         initialState={{
@@ -2058,6 +2109,7 @@ export default function ParamPlanComptableModele() {
                         columnVisibilityModel={{
                             id: false,
                         }}
+                        rowSelectionModel={pcAllselectedRow}
                     />
                 </Stack>
 

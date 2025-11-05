@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
-import { Typography, Stack, Paper, IconButton, FormControl, InputLabel, Select, MenuItem, Input, FormHelperText, Dialog, DialogTitle, DialogContent, DialogActions, Grid, TextField } from '@mui/material';
+import { Typography, Stack, Paper, IconButton, FormControl, InputLabel, Select, MenuItem, Input, FormHelperText, Dialog, DialogTitle, DialogContent, DialogActions, Grid, TextField, Menu } from '@mui/material';
+
 import Button from '@mui/material/Button';
 import { IoAddSharp } from "react-icons/io5";
 import { GoX } from "react-icons/go";
@@ -52,6 +52,32 @@ import { AiTwotoneFileText } from 'react-icons/ai';
 import EditTvaAnnexeDialog from '../../../componentsTools/tva/dialogs/EditTvaAnnexeDialog';
 import ExportTvaDialog from './ExportTvaDialog';
 import { CiLock, CiUnlock } from 'react-icons/ci';
+// ============================================================
+// 🔹 Colonnes pour le tableau Annexes déclarations
+// ============================================================
+const annexesColumns = [
+  { id: "action", label: "Action", minWidth: 120, align: "center", required: false },
+  { id: "anomalies", label: "Anomalies", minWidth: 100, align: "center", required: false },
+  { id: "collecte_deductible", label: "Collectée ou Déductible", minWidth: 180, align: "center", required: true },
+  { id: "local_etranger", label: "Local ou Etranger", minWidth: 180, align: "center", required: true },
+  { id: "nif", label: "NIF", minWidth: 100, align: "center", required: true },
+  { id: "raison_sociale", label: "Raison sociale", minWidth: 160, align: "center", required: true },
+  { id: "stat", label: "Stat", minWidth: 100, align: "center", required: true },
+  { id: "adresse", label: "Adresse", minWidth: 100, align: "center", required: true },
+  { id: "montant_ht", label: "Montant HT", minWidth: 120, align: "right", required: true },
+  { id: "montant_tva", label: "Montant TVA", minWidth: 120, align: "right", required: true },
+  { id: "reference_facture", label: "Référence facture", minWidth: 140, align: "center", required: true },
+  { id: "date_facture", label: "Date facture", minWidth: 120, align: "center", required: true },
+  { id: "nature", label: "Nature", minWidth: 120, align: "center", required: true },
+  { id: "libelle_operation", label: "Libellé opération", minWidth: 160, align: "center", required: true },
+  { id: "date_paiement", label: "Date de paiement", minWidth: 180, align: "center", required: true },
+  { id: "code_tva", label: "Code TVA", minWidth: 120, align: "center", required: false },
+  { id: "observation", label: "Observation", minWidth: 140, align: "center", required: true },
+  { id: "n_dau", label: "N DAU", minWidth: 100, align: "center", required: true },
+  { id: "ligne_formulaire", label: "Ligne de formulaire", minWidth: 180, align: "center", required: true },
+  { id: "mois", label: "Mois", minWidth: 80, align: "center", required: true },
+  { id: "annee", label: "Année", minWidth: 80, align: "center", required: true },
+];
 
 export default function ParamTVAComponent() {
   let initial = init[0];
@@ -180,7 +206,7 @@ export default function ParamTVAComponent() {
       const url = `/declaration/tva/annexes/${row.id}/${fileId}/${compteId}/${selectedExerciceId}/${valSelectMois}/${valSelectAnnee}`;
       await axios.delete(url);
       toast.success('Ligne supprimée');
-      
+
       await recalcFormFromExisting();
       fetchAnnexes();
       await fetchDbAnomalies();
@@ -447,54 +473,80 @@ export default function ParamTVAComponent() {
    * Récupère la liste des annexes TVA pour le contexte courant.
    * GET /declaration/tva/annexes
    */
-  const fetchAnnexes = async () => {
+const fetchAnnexes = async () => {
+  try {
+    if (!fileId || !compteId || !selectedExerciceId || !valSelectMois || !valSelectAnnee) {
+      setAnnexesRows([]);
+      return;
+    }
 
-    if (!fileId || !compteId || !selectedExerciceId || !valSelectMois || !valSelectAnnee) return;
-    try {
-      setAnnexesLoading(true);
-      const params = { compteId, dossierId: fileId, exerciceId: selectedExerciceId, mois: valSelectMois, annee: valSelectAnnee };
-      const { data } = await axios.get("/declaration/tva/annexes", { params, timeout: 60000 });
-      if (data?.state) {
-        // console.log('[ANNEXES] sample row:', (Array.isArray(data?.list) ? data.list[0] : data.list));
-        const list = Array.isArray(data.list) ? data.list : data.list ? [data.list] : [];
-        // Fallback: compute commentaire (and anomalies if needed) when missing
-        const enhanced = list.map((r) => {
+    const params = {
+      id_dossier: fileId,
+      id_compte: compteId,
+      id_exercice: selectedExerciceId,
+      mois: valSelectMois,
+      annee: valSelectAnnee,
+    };
+
+    const { data } = await axios.get('/declaration/tva/annexes', { 
+      params,
+      timeout: 60000 
+    });
+
+    if (data?.state) {
+      const updatedRows = Array.isArray(data.list) ? data.list : (data.list ? [data.list] : []);
+      
+      setAnnexesRows(prevRows => {
+        // Créer une map des lignes existantes pour un accès rapide
+        const existingRowsMap = new Map(prevRows.map(row => [row.id, row]));
+        
+        return updatedRows.map(row => {
+          const existingRow = existingRowsMap.get(row.id);
+          
+          // Si la ligne existe déjà, conserver son état d'anomalie et son commentaire
+          if (existingRow) {
+            return {
+              ...row,
+              anomalies: existingRow.anomalies || row.anomalies || false,
+              commentaire: existingRow.commentaire || row.commentaire || ''
+            };
+          }
+          
+          // Pour les nouvelles lignes, calculer les anomalies si nécessaire
           const isEmpty = (v) => {
-            const s = String(v ?? '').trim();
+            if (v === null || v === undefined) return true;
+            const s = String(v).trim();
             if (s === '') return true;
             const low = s.toLowerCase();
-            return low === 'n/a' || low === 'na' || low === 'null' || low === 'undefined' || low === '-';
+            return low === 'n/a' || low === 'na' || low === 'null' || low === 'undefined' || low === '-' || low === '0';
           };
+          
           const notes = [];
-          if (isEmpty(r?.nif)) notes.push('NIF vide');
-          if (isEmpty(r?.stat)) notes.push('STAT vide');
-          if (isEmpty(r?.raison_sociale)) notes.push('Raison sociale vide');
-          if (isEmpty(r?.adresse)) notes.push('Adresse vide');
-          if (isEmpty(r?.reference_facture)) notes.push('Référence facture vide');
-          if (isEmpty(r?.date_facture)) notes.push('Date facture vide');
-          const computedComment = notes.join(', ');
-          const hasAnomaly = notes.length > 0;
-          const anomaliesField = r?.anomalies;
-          const anomaliesBool = anomaliesField === true || anomaliesField === 1 || anomaliesField === '1' || anomaliesField === 'true' || anomaliesField === 'TRUE';
+          if (isEmpty(row?.nif)) notes.push('NIF vide');
+          if (isEmpty(row?.stat)) notes.push('STAT vide');
+          if (isEmpty(row?.raison_sociale)) notes.push('Raison sociale vide');
+          if (isEmpty(row?.adresse)) notes.push('Adresse vide');
+          if (isEmpty(row?.reference_facture)) notes.push('Référence facture vide');
+          if (isEmpty(row?.date_facture)) notes.push('Date facture vide');
+          
           return {
-            ...r,
-            anomalies: anomaliesBool || hasAnomaly,
-            commentaire: r?.commentaire || computedComment,
+            ...row,
+            anomalies: notes.length > 0,
+            commentaire: notes.join(', ')
           };
         });
-        setAnnexesRows(enhanced);
-      } else {
-        setAnnexesRows([]);
-        toast.error(data?.msg || "Erreur chargement Annexes TVA");
+      });
+    } else {
+      setAnnexesRows([]);
+      if (data?.msg) {
+        toast.error(data.msg);
       }
-    } catch (e) {
-      console.error("[Annexes] fetch error", e);
-      toast.error("Erreur serveur lors du chargement des Annexes");
-    } finally {
-      setAnnexesLoading(false);
     }
-  };
-
+  } catch (e) {
+    console.error('[Annexes] fetch error', e);
+    // toast.error("Erreur lors du chargement des annexes");
+  }
+};
 
   /**
    * Génère les annexes TVA automatiquement.
@@ -557,6 +609,12 @@ export default function ParamTVAComponent() {
 
   // --- Déclencheur manuel pour recalcul du CA (Formulaire TVA)
   const [computeTrigger, setComputeTrigger] = useState(0);
+  // Menu d'export du Formulaire (ancre)
+  const [formExportAnchor, setFormExportAnchor] = useState(null);
+  // Sous-menu PDF (ancre)
+  const [pdfExportAnchor, setPdfExportAnchor] = useState(null);
+  // Sous-menu Excel (ancre)
+  const [excelExportAnchor, setExcelExportAnchor] = useState(null);
 
   //récupération infos de connexion
   const { auth } = useAuth();
@@ -613,9 +671,9 @@ export default function ParamTVAComponent() {
       // 2) Lancer l'auto-calcul unifié (CFISC/DGE) avec la période sélectionnée
       const autoUrl = `/declaration/tva/formulaire/auto-calc/${fileId}/${compteId}/${selectedExerciceId}`;
       const payload = { mois: valSelectMois, annee: valSelectAnnee, debug: true };
-      try { console.log('[FRONT][AUTO-CALC][REQUEST]', autoUrl, payload); } catch {}
+      try { console.log('[FRONT][AUTO-CALC][REQUEST]', autoUrl, payload); } catch { }
       const { data: autoData } = await axios.post(autoUrl, payload, { timeout: 120000 });
-      try { console.log('[FRONT][AUTO-CALC][RESPONSE]', autoData); } catch {}
+      try { console.log('[FRONT][AUTO-CALC][RESPONSE]', autoData); } catch { }
       if (autoData?.state) {
         toast.success(autoData?.msg || 'Calcul automatique: succès');
         // forcer refresh de la table formulaire
@@ -746,7 +804,7 @@ export default function ParamTVAComponent() {
         code: r.code,
         kind: r.kind,
       }));
-      try { console.log('[POPUP][ROWS] built from DB anomalies:', rows.length); } catch {}
+      try { console.log('[POPUP][ROWS] built from DB anomalies:', rows.length); } catch { }
       return rows;
     }
     return [];
@@ -783,54 +841,53 @@ export default function ParamTVAComponent() {
   //   }
   // };
   // Récupère les anomalies persistées (DB) pour le contexte courant
-const fetchDbAnomalies = async () => {
-  try {
-    if (!fileId || !compteId || !selectedExerciceId || !valSelectMois || !valSelectAnnee) {
-      // Contexte incomplet: ne pas écraser l'affichage actuel pour éviter le clignotement
+  const fetchDbAnomalies = async () => {
+    try {
+      if (!fileId || !compteId || !selectedExerciceId || !valSelectMois || !valSelectAnnee) {
+        // Contexte incomplet: ne pas écraser l'affichage actuel pour éviter le clignotement
+        return Array.isArray(dbAnomaliesRows) ? dbAnomaliesRows : [];
+      }
+      const moisNow = Number(valSelectMois);
+      const anneeNow = Number(valSelectAnnee);
+      const params = {
+        id_dossier: fileId,
+        id_compte: compteId,
+        id_exercice: selectedExerciceId,
+        mois: moisNow,
+        annee: anneeNow,
+      };
+
+      try {
+        // Timeout étendu
+        const { data } = await axios.get('/declaration/tva/anomalies', { params, timeout: 120000 });
+        const list = Array.isArray(data?.list) ? data.list : (data?.list ? [data.list] : []);
+        if (moisNow === Number(valSelectMois) && anneeNow === Number(valSelectAnnee)) {
+          setDbAnomaliesRows(list);
+        }
+        return list;
+      } catch (e) {
+        // Fallback si timeout
+        if (e?.code === 'ECONNABORTED') {
+          try {
+            const { data } = await axios.get('/declaration/tva/anomalies/compute', { params, timeout: 120000 });
+            const list = Array.isArray(data?.list) ? data.list : [];
+            if (moisNow === Number(valSelectMois) && anneeNow === Number(valSelectAnnee)) {
+              setDbAnomaliesRows(list);
+            }
+            toast('Anomalies affichées via calcul à la volée (fallback).', { icon: '⚠️' });
+            return list;
+          } catch (e2) {
+            console.error('[POPUP] anomalies compute fallback error', e2);
+          }
+        }
+        throw e;
+      }
+    } catch (e) {
+      console.error('[POPUP] fetchDbAnomalies error', e);
+      // Erreur transitoire: conserver l'état courant pour éviter le clignotement
       return Array.isArray(dbAnomaliesRows) ? dbAnomaliesRows : [];
     }
-    const moisNow = Number(valSelectMois);
-    const anneeNow = Number(valSelectAnnee);
-    const params = {
-      id_dossier: fileId,
-      id_compte: compteId,
-      id_exercice: selectedExerciceId,
-      mois: moisNow,
-      annee: anneeNow,
-    };
-
-    try {
-      // Timeout étendu
-      const { data } = await axios.get('/declaration/tva/anomalies', { params, timeout: 120000 });
-      const list = Array.isArray(data?.list) ? data.list : (data?.list ? [data.list] : []);
-      if (moisNow === Number(valSelectMois) && anneeNow === Number(valSelectAnnee)) {
-        setDbAnomaliesRows(list);
-      }
-      return list;
-    } catch (e) {
-      // Fallback si timeout
-      if (e?.code === 'ECONNABORTED') {
-        try {
-          const { data } = await axios.get('/declaration/tva/anomalies/compute', { params, timeout: 120000 });
-          const list = Array.isArray(data?.list) ? data.list : [];
-          if (moisNow === Number(valSelectMois) && anneeNow === Number(valSelectAnnee)) {
-            setDbAnomaliesRows(list);
-          }
-          toast('Anomalies affichées via calcul à la volée (fallback).', { icon: '⚠️' });
-          return list;
-        } catch (e2) {
-          console.error('[POPUP] anomalies compute fallback error', e2);
-        }
-      }
-      throw e;
-    }
-  } catch (e) {
-    console.error('[POPUP] fetchDbAnomalies error', e);
-    // Erreur transitoire: conserver l'état courant pour éviter le clignotement
-    return Array.isArray(dbAnomaliesRows) ? dbAnomaliesRows : [];
-  }
-};
-
+  };
 
   // ============================================================
   // 🔹 Onglets (TabContext)
@@ -889,9 +946,8 @@ const fetchDbAnomalies = async () => {
   const handleChangeMois = (event) => {
     setValSelectMois(Number(event.target.value));
   };
-  
+
   useEffect(() => {
-    setDbAnomaliesRows([]);
     setAnoms({ count: 0, list: [] });
   }, [valSelectMois, valSelectAnnee, fileId, compteId, selectedExerciceId]);
 
@@ -1141,11 +1197,20 @@ const fetchDbAnomalies = async () => {
         setListeCodeTvaUnfiltered([]);
         toast.error(resData.msg);
       }
+    }).catch((error) => {
+      console.error('[ParamTVA] GetListeCodeTva error:', error);
+      setListeCodeTva([]);
+      setListeCodeTvaUnfiltered([]);
+      toast.error('Erreur lors du chargement des codes TVA');
     });
   }
 
   //Récupération du plan comptable
   const recupPc = () => {
+    if (!fileId) {
+      console.warn('[ParamTVA] recupPc skipped, fileId vide');
+      return;
+    }
     axios.post(`/paramPlanComptable/pc`, { fileId }).then((response) => {
       const resData = response.data;
       if (resData.state) {
@@ -1155,12 +1220,19 @@ const fetchDbAnomalies = async () => {
       } else {
         toast.error(resData.msg);
       }
-    })
+    }).catch((error) => {
+      console.error('[ParamTVA] recupPc error:', error);
+      setPc([]);
+      toast.error('Erreur lors du chargement du plan comptable');
+    });
   }
 
   //Récupération du tableau des paramétrages de tva effectués
-  const getListeParamTva = () => {
-    const id = fileId;
+  const getListeParamTva = (id = fileId) => {
+    if (!id) {
+      console.warn('[ParamTVA] getListeParamTva skipped, fileId vide');
+      return;
+    }
     axios.get(`/paramTva/listeParamTva/${id}`).then((response) => {
       const resData = response.data;
       if (resData.state) {
@@ -1169,6 +1241,10 @@ const fetchDbAnomalies = async () => {
         setParamTva([]);
         toast.error(resData.msg);
       }
+    }).catch((error) => {
+      console.error('[ParamTVA] getListeParamTva error:', error);
+      setParamTva([]);
+      toast.error('Erreur lors du chargement des paramètres TVA');
     });
   }
 
@@ -1177,6 +1253,22 @@ const fetchDbAnomalies = async () => {
     GetListeCodeTva();
     getListeParamTva();
   }, [fileId]);
+
+  // Recharger les données quand refreshCounter change (après calculs automatiques)
+  useEffect(() => {
+    if (refreshCounter > 0 && fileId) {
+      getListeParamTva(fileId);
+    }
+  }, [refreshCounter, fileId]);
+
+  // Recharger les données quand la période change
+  useEffect(() => {
+    if (fileId && selectedExerciceId && valSelectMois && valSelectAnnee) {
+      // Recharger les données de base
+      getListeParamTva(fileId);
+      recupPc();
+    }
+  }, [fileId, selectedExerciceId, valSelectMois, valSelectAnnee]);
 
   const handleEditClick = (id) => () => {
     //réinitialiser les couleurs des champs
@@ -1243,13 +1335,24 @@ const fetchDbAnomalies = async () => {
 
         if (resData.state) {
           setDisableSaveBouton(true);
-
           formikNewParamTva.resetForm();
+
+          // Recharger toutes les données liées
           getListeParamTva(fileId);
+          recupPc(); // Recharger le plan comptable au cas où
+
+          // Déclencher le refresh pour les calculs automatiques
+          setRefreshCounter(prev => prev + 1);
+
           toast.success(resData.msg);
         } else {
           toast.error(resData.msg);
         }
+      }).catch((error) => {
+        console.error('[ParamTVA] handleSaveClick error:', error);
+        toast.error('Erreur lors de la sauvegarde');
+        // Remettre en mode édition en cas d'erreur
+        setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
       });
     } else {
       toast.error('Les champs en surbrillances sont obligatoires');
@@ -1417,7 +1520,7 @@ const fetchDbAnomalies = async () => {
           <Box sx={{ flexGrow: 1 }} />
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {(tabValue === '1' || tabValue === '2') && listeExercice && listeExercice.length > 0 && selectedExerciceId && selectedExerciceId !== 0 && (
+            {(tabValue === '2') && listeExercice && listeExercice.length > 0 && selectedExerciceId && selectedExerciceId !== 0 && (
               <Tooltip title="Exporter">
                 <span>
                   <Button
@@ -1430,32 +1533,204 @@ const fetchDbAnomalies = async () => {
                   </Button>
                 </span>
               </Tooltip>
-        )}
+            )}
 
-        {tabValue !== '3' && (
-          <Tooltip title={verrTva ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
-            <IconButton
-              disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0}
-              onClick={lockTableTVA}
-              variant="contained"
-              style={{
-                width: '45px',
-                height: '45px',
-                borderRadius: '2px',
-                borderColor: 'transparent',
-                backgroundColor: verrTva ? 'rgba(240, 43, 33, 1)' : 'rgba(9, 77, 31, 0.8)',
-                textTransform: 'none',
-                outline: 'none',
-              }}
-            >
-              {verrTva ? (
-                <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
-              ) : (
-                <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
-              )}
-            </IconButton>
-          </Tooltip>
-        )}
+            {tabValue === '1' && (
+              <>
+                <Tooltip title={fileInfos?.centrefisc === 'DGE' ? 'Exporter (Modèle DGE)' : 'Exporter (Modèle Centre fiscal)'}>
+                  <span>
+                    <Button
+                      variant="outlined"
+                      style={{ textTransform: 'none', outline: 'none' }}
+                      startIcon={<AiTwotoneFileText size={22} />}
+                      onClick={(e) => setFormExportAnchor(e.currentTarget)}
+                    >
+                      Exporter
+                    </Button>
+                  </span>
+                </Tooltip>
+                <Menu
+                  anchorEl={formExportAnchor}
+                  open={Boolean(formExportAnchor)}
+                  onClose={() => setFormExportAnchor(null)}
+                  anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                  transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                >
+                  <MenuItem
+                    onClick={(e) => {
+                      // Ouvre un sous-menu pour choisir avec/sans détails
+                      setExcelExportAnchor(e.currentTarget);
+                    }}
+                  >
+                    {fileInfos?.centrefisc === 'DGE' ? 'Formulaire DGE Excel' : 'Formulaire CFISC Excel'}
+                  </MenuItem>
+                  <MenuItem
+                    onClick={(e) => {
+                      // Ouvre un sous-menu pour choisir avec/sans détails
+                      setPdfExportAnchor(e.currentTarget);
+                    }}
+                  >
+                    {fileInfos?.centrefisc === 'DGE' ? 'Formulaire DGE PDF' : 'Formulaire CFISC PDF'}
+                  </MenuItem>
+                </Menu>
+
+                {/* Sous-menu Excel: avec / sans détails */}
+                <Menu
+                  anchorEl={excelExportAnchor}
+                  open={Boolean(excelExportAnchor)}
+                  onClose={() => setExcelExportAnchor(null)}
+                  anchorOrigin={{ vertical: 'center', horizontal: 'right' }}
+                  transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                >
+                  <MenuItem
+                    onClick={async () => {
+                      try {
+                        setExcelExportAnchor(null);
+                        setFormExportAnchor(null);
+                        const mois = Number(valSelectMois);
+                        const annee = Number(valSelectAnnee);
+                        const idDossier = fileId || sessionStorage.getItem('fileId');
+                        const mode = fileInfos?.centrefisc === 'DGE' ? 'dge' : 'cfisc';
+                        const url = `http://localhost:5100/declaration/tva/formulaire/export-excel/${idDossier}/${compteId}/${selectedExerciceId}?mois=${mois}&annee=${annee}&mode=${mode}`;
+                        const resp = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' } });
+                        if (!resp.ok) throw new Error('Erreur export Formulaire Excel');
+                        const blob = await resp.blob();
+                        const link = document.createElement('a');
+                        const href = window.URL.createObjectURL(blob);
+                        link.href = href;
+                        link.download = `formulaire_tva_${mode}_${String(mois).padStart(2, '0')}-${annee}.xlsx`;
+                        document.body.appendChild(link);
+                        link.click();
+                        link.remove();
+                        window.URL.revokeObjectURL(href);
+                      } catch (e) {
+                        toast.error("Erreur lors de l'export Excel (Formulaire)");
+                      }
+                    }}
+                  >
+                    Sans détails
+                  </MenuItem>
+                  <MenuItem
+                    onClick={async () => {
+                      try {
+                        setExcelExportAnchor(null);
+                        setFormExportAnchor(null);
+                        const mois = Number(valSelectMois);
+                        const annee = Number(valSelectAnnee);
+                        const idDossier = fileId || sessionStorage.getItem('fileId');
+                        const mode = fileInfos?.centrefisc === 'DGE' ? 'dge' : 'cfisc';
+                        const url = `http://localhost:5100/declaration/tva/formulaire/export-excel/${idDossier}/${compteId}/${selectedExerciceId}?mois=${mois}&annee=${annee}&mode=${mode}&includeDetails=1`;
+                        const resp = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' } });
+                        if (!resp.ok) throw new Error('Erreur export Formulaire Excel (détails)');
+                        const blob = await resp.blob();
+                        const link = document.createElement('a');
+                        const href = window.URL.createObjectURL(blob);
+                        link.href = href;
+                        link.download = `formulaire_tva_${mode}_${String(mois).padStart(2, '0')}-${annee}_details.xlsx`;
+                        document.body.appendChild(link);
+                        link.click();
+                        link.remove();
+                        window.URL.revokeObjectURL(href);
+                      } catch (e) {
+                        toast.error("Erreur lors de l'export Excel avec détails (Formulaire)");
+                      }
+                    }}
+                  >
+                    Avec détails
+                  </MenuItem>
+                </Menu>
+
+                {/* Sous-menu PDF: avec / sans détails */}
+                <Menu
+                  anchorEl={pdfExportAnchor}
+                  open={Boolean(pdfExportAnchor)}
+                  onClose={() => setPdfExportAnchor(null)}
+                  anchorOrigin={{ vertical: 'center', horizontal: 'right' }}
+                  transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                >
+                  <MenuItem
+                    onClick={async () => {
+                      try {
+                        setPdfExportAnchor(null);
+                        setFormExportAnchor(null);
+                        const mois = Number(valSelectMois);
+                        const annee = Number(valSelectAnnee);
+                        const idDossier = fileId || sessionStorage.getItem('fileId');
+                        const mode = fileInfos?.centrefisc === 'DGE' ? 'dge' : 'cfisc';
+                        const url = `http://localhost:5100/declaration/tva/formulaire/export-pdf/${idDossier}/${compteId}/${selectedExerciceId}?mois=${mois}&annee=${annee}&mode=${mode}`;
+                        const resp = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/pdf' } });
+                        if (!resp.ok) throw new Error('Erreur export Formulaire PDF');
+                        const blob = await resp.blob();
+                        const a = document.createElement('a');
+                        const href = window.URL.createObjectURL(blob);
+                        a.href = href;
+                        a.download = `formulaire_tva_${mode}_${String(mois).padStart(2, '0')}-${annee}.pdf`;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        window.URL.revokeObjectURL(href);
+                      } catch (e) {
+                        toast.error("Erreur lors de l'export PDF (Formulaire)");
+                      }
+                    }}
+                  >
+                    Sans détails
+                  </MenuItem>
+                  <MenuItem
+                    onClick={async () => {
+                      try {
+                        setPdfExportAnchor(null);
+                        setFormExportAnchor(null);
+                        const mois = Number(valSelectMois);
+                        const annee = Number(valSelectAnnee);
+                        const idDossier = fileId || sessionStorage.getItem('fileId');
+                        const mode = fileInfos?.centrefisc === 'DGE' ? 'dge' : 'cfisc';
+                        const url = `http://localhost:5100/declaration/tva/formulaire/export-pdf/${idDossier}/${compteId}/${selectedExerciceId}?mois=${mois}&annee=${annee}&mode=${mode}&includeDetails=1`;
+                        const resp = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/pdf' } });
+                        if (!resp.ok) throw new Error('Erreur export Formulaire PDF (détails)');
+                        const blob = await resp.blob();
+                        const a = document.createElement('a');
+                        const href = window.URL.createObjectURL(blob);
+                        a.href = href;
+                        a.download = `formulaire_tva_${mode}_${String(mois).padStart(2, '0')}-${annee}_details.pdf`;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        window.URL.revokeObjectURL(href);
+                      } catch (e) {
+                        toast.error("Erreur lors de l'export PDF avec détails (Formulaire)");
+                      }
+                    }}
+                  >
+                    Avec détails
+                  </MenuItem>
+                </Menu>
+              </>
+            )}
+            {tabValue !== '3' && (
+              <Tooltip title={verrTva ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
+                <IconButton
+                  disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0}
+                  onClick={lockTableTVA}
+                  variant="contained"
+                  style={{
+                    width: '45px',
+                    height: '45px',
+                    borderRadius: '2px',
+                    borderColor: 'transparent',
+                    backgroundColor: verrTva ? 'rgba(240, 43, 33, 1)' : 'rgba(9, 77, 31, 0.8)',
+                    textTransform: 'none',
+                    outline: 'none',
+                  }}
+                >
+                  {verrTva ? (
+                    <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
+                  ) : (
+                    <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
+                  )}
+                </IconButton>
+              </Tooltip>
+            )}
           </Box>
 
         </Stack>
@@ -1475,36 +1750,36 @@ const fetchDbAnomalies = async () => {
             <Typography variant='subtitle1'></Typography>
             <Stack direction="row" spacing={1} alignItems="center">
               <Tooltip title="Liste des anomalies (DB)">
-              <IconButton
-                style={{ textTransform: 'none', outline: 'none' }}
-                onClick={showAnomalieTVA}
-              >
-              {(() => {
-                const currentCount = Array.isArray(dbAnomaliesRows)
-                  ? dbAnomaliesRows.filter(r => Number(r?.mois) === Number(valSelectMois) && Number(r?.annee) === Number(valSelectAnnee)).length
-                  : 0;
-                return (
-                  <Badge badgeContent={currentCount} color={currentCount > 0 ? 'error' : 'default'}>
+                <IconButton
+                  style={{ textTransform: 'none', outline: 'none' }}
+                  onClick={showAnomalieTVA}
+                >
+                  {(() => {
+                    const currentCount = Array.isArray(dbAnomaliesRows)
+                      ? dbAnomaliesRows.filter(r => Number(r?.mois) === Number(valSelectMois) && Number(r?.annee) === Number(valSelectAnnee)).length
+                      : 0;
+                    return (
+                      <Badge badgeContent={currentCount} color={currentCount > 0 ? 'error' : 'default'}>
                         <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
-                  </Badge>
-                );
-              })()}
-              </IconButton>
-            </Tooltip>
+                      </Badge>
+                    );
+                  })()}
+                </IconButton>
+              </Tooltip>
               {!verrTva && (
                 <Tooltip title="Actualiser les calculs">
                   <IconButton
-                      onClick={openConfirmRefreshTva}
-                      variant="contained"
-                      style={{
-                          width: "45px", height: '45px',
-                          borderRadius: "1px", borderColor: "transparent",
-                          backgroundColor: initial.theme,
-                          textTransform: 'none', outline: 'none',
-                          display: 'inline-flex',
-                      }}
+                    onClick={openConfirmRefreshTva}
+                    variant="contained"
+                    style={{
+                      width: "45px", height: '45px',
+                      borderRadius: "1px", borderColor: "transparent",
+                      backgroundColor: initial.theme,
+                      textTransform: 'none', outline: 'none',
+                      display: 'inline-flex',
+                    }}
                   >
-                      <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                    <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
                   </IconButton>
                 </Tooltip>
               )}
@@ -1533,97 +1808,98 @@ const fetchDbAnomalies = async () => {
             mois={valSelectMois}
             annee={valSelectAnnee}
             computeTrigger={computeTrigger}
+            refreshCounter={refreshCounter}
             onAnomaliesChange={setDbAnomaliesRows}
           />
         </TabPanel>
 
-          <TabPanel value="2">
+        <TabPanel value="2">
 
           {confirmDeleteAnnexe && (
             <PopupConfirmDelete
-            msg={"Voulez-vous vraiment supprimer cette ligne d'annexe TVA ?"}
-            confirmationState={handleConfirmDeleteAnnexe}
-          />
-          )}
-            {/* Tableau Annexes déclarations (VirtualTable composant dédié) */}
-            <DatagridAnnexesTva
-              rows={annexesRows}
-              columns={annexesColumns}
-              selectedRowId={selectedRowId}
-              setSelectedRowId={setSelectedRowId}
-              setDisableModifyBouton={setDisableModifyBouton}
-              setDisableDeleteBouton={setDisableDeleteBouton}
-              height={'55vh'}
-              onGenerate={handleGenerateAnnexes}
-              onEditRow={handleOpenEditAnnexe}
-              onDeleteRow={openConfirmDeleteAnnexe}
+              msg={"Voulez-vous vraiment supprimer cette ligne d'annexe TVA ?"}
+              confirmationState={handleConfirmDeleteAnnexe}
             />
-          </TabPanel>
-          {/* Dialog Ajouter Annexe */}
-          <AddTvaAnnexeDialog
-            open={openAddAnnexe}
-            confirmationState={setOpenAddAnnexe}
-            id_compte={compteId}
-            id_dossier={fileId}
-            id_exercice={selectedExerciceId}
-            onAddAnnexe={handleSubmitAddAnnexeValues}
+          )}
+          {/* Tableau Annexes déclarations (VirtualTable composant dédié) */}
+          <DatagridAnnexesTva
+            rows={annexesRows}
+            columns={annexesColumns}
+            selectedRowId={selectedRowId}
+            setSelectedRowId={setSelectedRowId}
+            setDisableModifyBouton={setDisableModifyBouton}
+            setDisableDeleteBouton={setDisableDeleteBouton}
+            height={'55vh'}
+            onGenerate={handleGenerateAnnexes}
+            onEditRow={handleOpenEditAnnexe}
+            onDeleteRow={openConfirmDeleteAnnexe}
           />
+        </TabPanel>
+        {/* Dialog Ajouter Annexe */}
+        <AddTvaAnnexeDialog
+          open={openAddAnnexe}
+          confirmationState={setOpenAddAnnexe}
+          id_compte={compteId}
+          id_dossier={fileId}
+          id_exercice={selectedExerciceId}
+          onAddAnnexe={handleSubmitAddAnnexeValues}
+        />
 
-          {/* Dialog Modifier Annexe */}
-          <EditTvaAnnexeDialog
-            open={openEditAnnexe}
-            confirmationState={setOpenEditAnnexe}
-            row={editingRow}
-            onEditAnnexe={handleEditAnnexe}
-          />
+        {/* Dialog Modifier Annexe */}
+        <EditTvaAnnexeDialog
+          open={openEditAnnexe}
+          confirmationState={setOpenEditAnnexe}
+          row={editingRow}
+          onEditAnnexe={handleEditAnnexe}
+        />
 
-          {/* Dialog Export TVA  */}
-          <ExportTvaDialog
-            open={openExportDialog}
-            onClose={() => setOpenExportDialog(false)}
-            annexesData={annexesRows}
-            exerciceId={selectedExerciceId}
-            valSelectMois={valSelectMois}
-            valSelectAnnee={valSelectAnnee}
-            compteId={compteId}
-          />
+        {/* Dialog Export TVA  */}
+        <ExportTvaDialog
+          open={openExportDialog}
+          onClose={() => setOpenExportDialog(false)}
+          annexesData={annexesRows}
+          exerciceId={selectedExerciceId}
+          valSelectMois={valSelectMois}
+          valSelectAnnee={valSelectAnnee}
+          compteId={compteId}
+        />
 
-          <TabPanel value="3">
-            <TabContext value={detailsTabValue}>
-              <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-                <TabList onChange={handleDetailsTabChange} aria-label="Tabs Détails TVA" variant="scrollable">
-                  <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="Sélection de ligne" value="1" />
-                  <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="Ecriture associée" value="2" />
-                </TabList>
-              </Box>
+        <TabPanel value="3">
+          <TabContext value={detailsTabValue}>
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+              <TabList onChange={handleDetailsTabChange} aria-label="Tabs Détails TVA" variant="scrollable">
+                <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="Sélection de ligne" value="1" />
+                <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="Ecriture associée" value="2" />
+              </TabList>
+            </Box>
 
-              <TabPanel value="1">
-                <DatagridDetailSelectionLigne
-                  selectedExerciceId={selectedExerciceId}
-                  fileId={fileId}
-                  compteId={compteId}
-                  valSelectAnnee={valSelectAnnee}
-                  valSelectMois={valSelectMois}
-                  journalRows={journalRows}
-                  setJournalRows={setJournalRows}
-                  journalLoading={journalLoading}
-                  setJournalLoading={setJournalLoading}
-                  filteredList={filteredList}
-                  setFilteredList={setFilteredList}
-                />
-              </TabPanel>
+            <TabPanel value="1">
+              <DatagridDetailSelectionLigne
+                selectedExerciceId={selectedExerciceId}
+                fileId={fileId}
+                compteId={compteId}
+                valSelectAnnee={valSelectAnnee}
+                valSelectMois={valSelectMois}
+                journalRows={journalRows}
+                setJournalRows={setJournalRows}
+                journalLoading={journalLoading}
+                setJournalLoading={setJournalLoading}
+                filteredList={filteredList}
+                setFilteredList={setFilteredList}
+              />
+            </TabPanel>
 
-              <TabPanel value="2">
-                <DatagridDetailEcritureAssociee
-                  selectedExerciceId={selectedExerciceId}
-                  fileId={fileId}
-                  compteId={compteId}
-                  valSelectAnnee={valSelectAnnee}
-                  valSelectMois={valSelectMois}
-                />
-              </TabPanel>
-            </TabContext>
-          </TabPanel>
+            <TabPanel value="2">
+              <DatagridDetailEcritureAssociee
+                selectedExerciceId={selectedExerciceId}
+                fileId={fileId}
+                compteId={compteId}
+                valSelectAnnee={valSelectAnnee}
+                valSelectMois={valSelectMois}
+              />
+            </TabPanel>
+          </TabContext>
+        </TabPanel>
 
       </TabContext>
     </Paper>

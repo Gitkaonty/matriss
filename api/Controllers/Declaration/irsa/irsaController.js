@@ -2,16 +2,17 @@ const db = require('../../../Models');
 const { Op } = require('sequelize');
 const ExcelJS = require('exceljs');
 const path = require('path');
-const {exportIrsaTableExcel} = require('../../../Middlewares/irsa/DeclIrsaGenerateExcel');
-const {generateIrsaContent} = require('../../../Middlewares/irsa/DeclIrsaGeneratePdf');
-const {generateIrsaXml} = require('../../../Middlewares/irsa/DeclIrsaGenerateXml');
+const { exportIrsaTableExcel } = require('../../../Middlewares/irsa/DeclIrsaGenerateExcel');
+const { generateIrsaContent } = require('../../../Middlewares/irsa/DeclIrsaGeneratePdf');
+const { generateIrsaXml } = require('../../../Middlewares/irsa/DeclIrsaGenerateXml');
 const PdfPrinter = require('pdfmake');
 
 exports.getAll = async (req, res) => {
   try {
     const { id_compte, id_dossier, id_exercice } = req.params;
     // On récupère toutes les IRSA sans join, uniquement les champs plats
-    const list = await db.irsa.findAll({      where: {
+    const list = await db.irsa.findAll({
+      where: {
         id_compte: Number(id_compte),
         id_dossier: Number(id_dossier),
         id_exercice: Number(id_exercice)
@@ -227,128 +228,148 @@ exports.delete = async (req, res) => {
 
 exports.exportIrsaTablePdf = async (req, res) => {
   try {
-      const { id_dossier, id_compte, id_exercice, mois, annee } = req.params;
-      
-      if (!id_dossier || !id_compte || !id_exercice || !mois || !annee) {
-          return res.status(400).json({ msg: 'Paramètres manquants', state: false });
+    const { id_dossier, id_compte, id_exercice, mois, annee } = req.params;
+
+    if (!id_dossier || !id_compte || !id_exercice || !mois || !annee) {
+      return res.status(400).json({ msg: 'Paramètres manquants', state: false });
+    }
+
+    const dossier = await db.dossiers.findByPk(id_dossier);
+    const exercice = await db.exercices.findByPk(id_exercice);
+    const compte = await db.userscomptes.findByPk(id_compte);
+
+    if (!dossier || !exercice || !compte) {
+      return res.status(400).json({ msg: 'Dossier, exercice ou compte non trouvé', state: false });
+    }
+
+    // Générer le contenu IRSA
+    const { buildTable, irsaData } = await generateIrsaContent(id_compte, id_dossier, id_exercice, mois, annee);
+
+    if (irsaData.length === 0) {
+      return res.status(404).json({
+        msg: `Aucun document IRSA ne correspond aux termes de recherche spécifiés`,
+        state: false
+      });
+    }
+
+    const moisNoms = [
+      'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+      'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+    ];
+
+    const formatDate = (dateString) => {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return String(dateString);
+      const dd = String(date.getDate()).padStart(2, '0');
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const yyyy = date.getFullYear();
+      return `${dd}/${mm}/${yyyy}`;
+    };
+    const fonts = {
+      Helvetica: {
+        normal: 'Helvetica',
+        bold: 'Helvetica-Bold',
+        italics: 'Helvetica-Oblique',
+        bolditalics: 'Helvetica-BoldOblique'
       }
-
-      const dossier = await db.dossiers.findByPk(id_dossier);
-      const exercice = await db.exercices.findByPk(id_exercice);
-      const compte = await db.userscomptes.findByPk(id_compte);
-
-      if (!dossier || !exercice || !compte) {
-          return res.status(400).json({ msg: 'Dossier, exercice ou compte non trouvé', state: false });
-      }
-
-      // Générer le contenu IRSA
-      const { buildTable, irsaData } = await generateIrsaContent(id_compte, id_dossier, id_exercice, mois, annee);
-
-      if (irsaData.length === 0) {
-          return res.status(404).json({ 
-              msg: `Aucun document IRSA ne correspond aux termes de recherche spécifiés`, 
-              state: false 
-          });
-      }
-
-      const moisNoms = [
-          'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-          'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
-      ];
-
-      const formatDate = (dateString) => {
-          if (!dateString) return '';
-          const date = new Date(dateString);
-          if (isNaN(date.getTime())) return String(dateString);
-          const dd = String(date.getDate()).padStart(2, '0');
-          const mm = String(date.getMonth() + 1).padStart(2, '0');
-          const yyyy = date.getFullYear();
-          return `${dd}/${mm}/${yyyy}`;
-      };
-      const fonts = {
-        Helvetica: {
-            normal: 'Helvetica',
-            bold: 'Helvetica-Bold',
-            italics: 'Helvetica-Oblique',
-            bolditalics: 'Helvetica-BoldOblique'
-        }
     };
 
-      // Définition du document PDF
-      const docDefinition = {
-        pageSize: 'A2',
-        pageOrientation: 'landscape',
-        pageMargins: [10, 60, 5, 60],
-        defaultStyle: {
-          font: 'Helvetica',
-          fontSize: 7
+    // Définition du document PDF
+    const docDefinition = {
+      pageSize: 'A2',
+      pageOrientation: 'landscape',
+      pageMargins: [10, 60, 5, 60],
+      defaultStyle: {
+        font: 'Helvetica',
+        fontSize: 7
+      },
+      content: [
+        // Titre
+        {
+          text: 'DÉCLARATION IRSA',
+          style: 'header',
+          alignment: 'center',
+          margin: [0, 0, 0, 20]
         },
-        content: [
-          // Titre
-          {
-            text: 'DÉCLARATION IRSA',
-            style: 'header',
-            alignment: 'center',
-            margin: [0, 0, 0, 20]
-          },
-          // Sous-titre
-          {
-            text: `Dossier : ${dossier?.dossier || ''}\nCompte : ${compte?.nom || ''}\nMois et année : ${moisNoms[mois - 1]} ${annee}\nExercice du : ${formatDate(exercice?.date_debut)} au ${formatDate(exercice?.date_fin)}`,
-            style: 'subheader',
-            lineHeight: 1.5,
-            margin: [0, 0, 0, 30]
-          },
-          // Tableau IRSA
-          {
-            ...buildTable(irsaData, {
-              headerStyle: 'tableHeader',
-              font: 'Helvetica'
-            })[0],
-            // 🔹 ajoute du padding pour les cellules du tableau (y compris l’en-tête)
-            layout: {
-              ...(
-                buildTable(irsaData, {
-                  headerStyle: 'tableHeader',
-                  font: 'Helvetica'
-                })[0].layout || {}
-              ),
-              hLineWidth: () => 0, // pas de ligne horizontale
-              vLineWidth: () => 0, // pas de ligne verticale
-              paddingTop: () => 4,
-              paddingBottom: () => 4
-            }
-          }
-        ],
-        styles: {
-          header: {
-            fontSize: 20,
-            bold: true,
+        // Sous-titre
+        {
+          text: `Dossier : ${dossier?.dossier || ''}`,
+          style: 'subheader',
+          lineHeight: 1.5,
+          alignment: 'center',
+          margin: [0, 0, 0, 20]
+        },
+
+        {
+          text: `Mois et année : ${moisNoms[mois - 1]} ${annee}`,
+          style: 'subheaderExo',
+          lineHeight: 1.3,
+          margin: [0, 0, 0, 8]
+        },
+        {
+          text: `Période du : ${formatDate(exercice?.date_debut)} au ${formatDate(exercice?.date_fin)}`,
+          style: 'subheaderExo',
+          lineHeight: 1.3,
+          margin: [0, 0, 0, 8]
+        },
+
+        // Tableau IRSA
+        {
+          ...buildTable(irsaData, {
+            headerStyle: 'tableHeader',
             font: 'Helvetica'
-          },
-          subheader: {
-            fontSize: 12,
-            bold: true,
-            font: 'Helvetica'
-          },
-          tableHeader: {
-            bold: true,
-            fontSize: 6,
-            color: 'white',
-            fillColor: '#1A5276',
-            alignment: 'center',
-            font: 'Helvetica',
-            margin: [0, 5, 0, 5], // 🔹 ajoute de la hauteur aux en-têtes
-            lineHeight: 1.4       // 🔹 augmente légèrement l’espacement du texte
-          },
-          totalRow: {
-            bold: true,
-            fillColor: '#89A8B2',
-            alignment: 'right',
-            font: 'Helvetica'
+          })[0],
+          // 🔹 ajoute du padding pour les cellules du tableau (y compris l’en-tête)
+          layout: {
+            ...(
+              buildTable(irsaData, {
+                headerStyle: 'tableHeader',
+                font: 'Helvetica'
+              })[0].layout || {}
+            ),
+            hLineWidth: () => 0, // pas de ligne horizontale
+            vLineWidth: () => 0, // pas de ligne verticale
+            paddingTop: () => 4,
+            paddingBottom: () => 4
           }
         }
-      };
-      
+      ],
+      styles: {
+        header: {
+          fontSize: 20,
+          bold: true,
+          font: 'Helvetica'
+        },
+        subheader: {
+          fontSize: 14,
+          bold: true,
+          font: 'Helvetica'
+        },
+        subheaderExo: {
+          fontSize: 10,
+          bold: true,
+          font: 'Helvetica'
+        },
+        tableHeader: {
+          bold: true,
+          fontSize: 6,
+          color: 'white',
+          fillColor: '#1A5276',
+          alignment: 'center',
+          font: 'Helvetica',
+          margin: [0, 5, 0, 5], // 🔹 ajoute de la hauteur aux en-têtes
+          lineHeight: 1.4       // 🔹 augmente légèrement l’espacement du texte
+        },
+        totalRow: {
+          bold: true,
+          fillColor: '#89A8B2',
+          alignment: 'right',
+          font: 'Helvetica'
+        }
+      }
+    };
+
 
     const printer = new PdfPrinter(fonts);
     const pdfDoc = printer.createPdfKitDocument(docDefinition);
@@ -359,94 +380,94 @@ exports.exportIrsaTablePdf = async (req, res) => {
     pdfDoc.pipe(res);
     pdfDoc.end();
 
-} catch (error) {
+  } catch (error) {
     console.error('Erreur export PDF IRSA:', error);
     return res.status(500).json({
-        state: false,
-        message: "Erreur serveur",
-        error: error.message
+      state: false,
+      message: "Erreur serveur",
+      error: error.message
     });
-}
+  }
 };
 
 exports.exportIrsaTableExcel = async (req, res) => {
   try {
-      const { id_dossier, id_compte, id_exercice, mois, annee } = req.params;
-      if (!id_dossier || !id_compte || !id_exercice || !mois || !annee) {
-          return res.status(400).json({ msg: 'Paramètres manquants', state: false });
-      }
+    const { id_dossier, id_compte, id_exercice, mois, annee } = req.params;
+    if (!id_dossier || !id_compte || !id_exercice || !mois || !annee) {
+      return res.status(400).json({ msg: 'Paramètres manquants', state: false });
+    }
 
-      const dossier = await db.dossiers.findByPk(id_dossier);
-      const exercice = await db.exercices.findByPk(id_exercice);
-      const compte = await db.userscomptes.findByPk(id_compte);
+    const dossier = await db.dossiers.findByPk(id_dossier);
+    const exercice = await db.exercices.findByPk(id_exercice);
+    const compte = await db.userscomptes.findByPk(id_compte);
 
-      if (!dossier) {
-          return res.status(400).json({ msg: 'Dossier non trouvé', state: false });
-      }
-      if (!exercice) {
-          return res.status(400).json({ msg: 'Exercice non trouvé', state: false });
-      }
-      if (!compte) {
-          return res.status(400).json({ msg: 'Compte non trouvé', state: false });
-      }
+    if (!dossier) {
+      return res.status(400).json({ msg: 'Dossier non trouvé', state: false });
+    }
+    if (!exercice) {
+      return res.status(400).json({ msg: 'Exercice non trouvé', state: false });
+    }
+    if (!compte) {
+      return res.status(400).json({ msg: 'Compte non trouvé', state: false });
+    }
 
-      // Vérifier s'il y a des données IRSA
-      const irsaCount = await db.irsa.count({
-          where: {
-              id_compte,
-              id_dossier,
-              id_exercice,
-              mois: Number(mois),
-              annee: Number(annee)
-          }
+    // Vérifier s'il y a des données IRSA
+    const irsaCount = await db.irsa.count({
+      where: {
+        id_compte,
+        id_dossier,
+        id_exercice,
+        mois: Number(mois),
+        annee: Number(annee)
+      }
+    });
+
+    if (irsaCount === 0) {
+      return res.status(404).json({
+        msg: `Aucun document ne correspond aux termes de recherche spécifiés (id_compte: ${id_compte}, id_dossier: ${id_dossier}, id_exercice: ${id_exercice}, mois: ${mois}, annee: ${annee})`,
+        state: false
       });
+    }
 
-      if (irsaCount === 0) {
-          return res.status(404).json({ 
-              msg: `Aucun document ne correspond aux termes de recherche spécifiés (id_compte: ${id_compte}, id_dossier: ${id_dossier}, id_exercice: ${id_exercice}, mois: ${mois}, annee: ${annee})`, 
-              state: false 
-          });
-      }
+    const moisNoms = [
+      'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+      'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+    ];
 
-      const moisNoms = [
-          'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-          'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
-      ];
+    const formatDate = (dateString) => {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return String(dateString);
+      const dd = String(date.getDate()).padStart(2, '0');
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const yyyy = date.getFullYear();
+      return `${dd}/${mm}/${yyyy}`;
+    };
 
-      const formatDate = (dateString) => {
-          if (!dateString) return '';
-          const date = new Date(dateString);
-          if (isNaN(date.getTime())) return String(dateString);
-          const dd = String(date.getDate()).padStart(2, '0');
-          const mm = String(date.getMonth() + 1).padStart(2, '0');
-          const yyyy = date.getFullYear();
-          return `${dd}/${mm}/${yyyy}`;
-      };
+    const workbook = new ExcelJS.Workbook();
 
-      const workbook = new ExcelJS.Workbook();
+    await exportIrsaTableExcel(id_compte, id_dossier, id_exercice, mois, annee, workbook, dossier?.dossier, compte?.nom, moisNoms[mois - 1], formatDate(exercice?.date_debut), formatDate(exercice?.date_fin));
 
-      await exportIrsaTableExcel(id_compte, id_dossier, id_exercice, mois, annee, workbook, dossier?.dossier, compte?.nom, moisNoms[mois - 1], formatDate(exercice?.date_debut), formatDate(exercice?.date_fin));
+    workbook.views = [
+      { activeTab: 0 }
+    ];
 
-      workbook.views = [
-          { activeTab: 0 }
-      ];
-
-      res.setHeader(
-          'Content-Type',
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      );
-      res.setHeader(
-          'Content-Disposition',
-          `attachment; filename=IRSA_${mois}_${annee}.xlsx`
-      );
-      await workbook.xlsx.write(res);
-      res.end();
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=IRSA_${mois}_${annee}.xlsx`
+    );
+    await workbook.xlsx.write(res);
+    res.end();
 
   } catch (error) {
-      return res.status(500).json({
-          state: false,
-          message: "Erreur serveur", error: error.message
-      });
+    return res.status(500).json({
+      state: false,
+      message: "Erreur serveur", error: error.message
+    });
   }
 }
 

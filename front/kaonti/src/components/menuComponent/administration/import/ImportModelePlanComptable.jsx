@@ -334,6 +334,34 @@ export default function ImportModelePlanComptable() {
             align: 'left',
             isnumber: false
         },
+        {
+            id: 'province',
+            label: 'Province',
+            minWidth: 200,
+            align: 'left',
+            isnumber: false
+        },
+        {
+            id: 'region',
+            label: 'Région',
+            minWidth: 200,
+            align: 'left',
+            isnumber: false
+        },
+        {
+            id: 'district',
+            label: 'District',
+            minWidth: 200,
+            align: 'left',
+            isnumber: false
+        },
+        {
+            id: 'commune',
+            label: 'Commune',
+            minWidth: 200,
+            align: 'left',
+            isnumber: false
+        },
     ];
 
     //récupération infos de connexion
@@ -367,14 +395,25 @@ export default function ImportModelePlanComptable() {
         link.click();
     }
 
-    //validation des entêtes si c'est bon ou pas
+    //validation des entêtes si c'est bon ou pas (tolérant accents/casse/espaces)
     const validateHeaders = (headers) => {
-        const expectedHeaders = ["compte", "libelle", "nature", "baseaux", "typetier", "nif", "statistique", "adresse", "cin", "datecin", "autrepieceidentite", "refpieceidentite", "adressesansnif", "nifrepresentant", "adresserepresentant", "pays"];
+        const expectedHeaders = [
+            "compte", "libelle", "nature", "baseaux", "typetier", "nif", "statistique", "adresse", "cin", "datecin",
+            "autrepieceidentite", "refpieceidentite", "adressesansnif", "nifrepresentant", "adresserepresentant", "pays",
+            "province", "region", "district", "commune"
+        ];
 
-        // Comparer les en-têtes du CSV aux en-têtes attendus
-        const missingHeaders = expectedHeaders.filter(header => !headers.includes(header));
-        if (missingHeaders.length > 0) {
-            toast.error(`Les en-têtes du modèle d'import suivants sont manquants : ${missingHeaders.join(', ')}`);
+        const normalize = (s) => (s || "")
+            .toString()
+            .trim()
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
+
+        const actual = new Set(headers.map(normalize));
+        const missing = expectedHeaders.filter(h => !actual.has(normalize(h)));
+        if (missing.length > 0) {
+            toast.error(`Les en-têtes du modèle d'import suivants sont manquants : ${missing.join(', ')}`);
             return false;
         }
         return true;
@@ -509,7 +548,23 @@ export default function ImportModelePlanComptable() {
                         setCouleurBoutonAnomalie('white');
                         setNbrAnomalie(0);
 
-                        const DataWithId = result.data.map((row, index) => ({ ...row, id: index }));
+                        // Remapper vers des clés canoniques si le CSV utilise des accents/variantes
+                        const getValue = (row, keys) => {
+                            for (const k of keys) {
+                                if (row[k] !== undefined && row[k] !== null) return row[k];
+                            }
+                            return '';
+                        };
+
+                        const DataWithId = result.data.map((row, index) => ({
+                            ...row,
+                            // géographie (support accents/casse)
+                            province: row.province ?? row.Province ?? getValue(row, ['provinces', 'Provinces']),
+                            region: row.region ?? row.Region ?? row['région'] ?? row['Région'],
+                            district: row.district ?? row.District,
+                            commune: row.commune ?? row.Commune,
+                            id: index,
+                        }));
 
                         validationData(DataWithId);
                         setModelePc(DataWithId);

@@ -1,11 +1,12 @@
-import { React, useState, useEffect, useRef } from 'react';
+import { React, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Typography, Stack, Paper, Box, Tab, Tooltip, IconButton, FormHelperText, Button, Badge, Divider, Switch } from '@mui/material';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
 import RadioGroup from '@mui/material/RadioGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Radio from '@mui/material/Radio';
 import InputLabel from '@mui/material/InputLabel';
-import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import useAuth from '../../../../hooks/useAuth';
@@ -22,6 +23,9 @@ import { useFormik } from 'formik';
 import * as Yup from "yup";
 import CircularProgress from '@mui/material/CircularProgress';
 import VirtualTableModifiableExport from '../../../componentsTools/DeclarationEbilan/virtualTableModifiableExport';
+import { ListItemIcon, ListItemText } from '@mui/material';
+import { FaFilePdf, FaFileExcel } from 'react-icons/fa';
+import { CiExport } from "react-icons/ci";
 
 export default function ExportBalance() {
     //Valeur du listbox choix exercice ou situation-----------------------------------------------------
@@ -45,13 +49,58 @@ export default function ExportBalance() {
 
     const [traitementJournalWaiting, setTraitementJournalWaiting] = useState(false);
     const [traitementJournalMsg, setTraitementJournalMsg] = useState('');
+    const balanceFetchTimer = useRef(null);
 
-    //récupération infos de connexion
+    //récupération infos de connexion (doit être défini avant les hooks qui l'utilisent)
     const { auth } = useAuth();
     const decoded = auth?.accessToken ? jwtDecode(auth.accessToken) : undefined;
-    const compteId = decoded.UserInfo.compteId || null;
-    const userId = decoded.UserInfo.userId || null;
+    const compteId = decoded?.UserInfo?.compteId || null;
+    const userId = decoded?.UserInfo?.userId || null;
     const navigate = useNavigate();
+
+    // Menu Export
+    const [anchorElExport, setAnchorElExport] = useState(null);
+    const openExportMenu = Boolean(anchorElExport);
+    const handleOpenExportMenu = useCallback((event) => setAnchorElExport(event.currentTarget), []);
+    const handleCloseExportMenu = useCallback(() => setAnchorElExport(null), []);
+
+    const doExport = useCallback(async (type) => {
+        try {
+            if (!compteId || !fileId || !selectedPeriodeId) {
+                toast.error('Veuillez sélectionner un exercice valide avant d\'exporter.');
+                return;
+            }
+            setTraitementJournalMsg('Génération en cours...');
+            setTraitementJournalWaiting(true);
+            const url = type === 'pdf' ? '/administration/exportBalance/pdf' : '/administration/exportBalance/excel';
+            const body = {
+                centraliser: checked,
+                unSolded: unsoldedCompte,
+                movmentedCpt: movmentedCpt,
+                compteId,
+                fileId,
+                exerciceId: selectedPeriodeId,
+            };
+            const response = await axios.post(url, body, { responseType: 'blob' });
+            const blobType = type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+            const ext = type === 'pdf' ? 'pdf' : 'xlsx';
+            const blob = new Blob([response.data], { type: blobType });
+            const link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.download = `Balance_${fileId}_${selectedPeriodeId}.${ext}`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (e) {
+            toast.error('Erreur lors de l\'export');
+        } finally {
+            setTraitementJournalWaiting(false);
+            setTraitementJournalMsg('');
+            handleCloseExportMenu();
+        }
+    }, [checked, unsoldedCompte, movmentedCpt, compteId, fileId, selectedPeriodeId, handleCloseExportMenu]);
+
+    
 
     //récupérer les informations du dossier sélectionné
     useEffect(() => {
@@ -95,7 +144,7 @@ export default function ExportBalance() {
         navigate('/tab/home');
     }
 
-    const columns = [
+    const columns = useMemo(() => [
         {
             id: 'compteLibelle.compte',
             label: 'compte',
@@ -142,7 +191,7 @@ export default function ExportBalance() {
             format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             isnumber: true
         },
-    ];
+    ], []);
 
     //Récupérer la liste des exercices
     const GetListeExercice = (id) => {
@@ -158,7 +207,7 @@ export default function ExportBalance() {
                 setSelectedExerciceId(exerciceNId[0].id);
                 setSelectedPeriodeChoiceId(0);
                 setSelectedPeriodeId(exerciceNId[0].id);
-                recupBalance(checked, unsoldedCompte, compteId, fileId, exerciceNId[0].id);
+                // Laisser useEffect déclencher le chargement (évite double appels)
             } else {
                 setListeExercice([]);
                 toast.error("une erreur est survenue lors de la récupération de la liste des exercices");
@@ -189,7 +238,7 @@ export default function ExportBalance() {
         setSelectedPeriodeChoiceId("0");
         setListeSituation(listeExercice?.filter((item) => item.id === exercice_id));
         setSelectedPeriodeId(exercice_id);
-        recupBalance(checked, unsoldedCompte, compteId, fileId, exercice_id);
+        // Laisser useEffect déclencher le chargement (évite double appels)
     }
 
     //Choix période
@@ -199,7 +248,7 @@ export default function ExportBalance() {
         if (choix === 0) {
             setListeSituation(listeExercice?.filter((item) => item.id === selectedExerciceId));
             setSelectedPeriodeId(selectedExerciceId);
-            recupBalance(checked, unsoldedCompte, compteId, fileId, selectedExerciceId);
+            // Laisser useEffect déclencher le chargement (évite double appels)
         } else if (choix === 1) {
             GetListeSituation(selectedExerciceId);
         }
@@ -212,13 +261,26 @@ export default function ExportBalance() {
             if (resData.state) {
                 setBalance(resData.list);
             } else {
-                toast.error(resData.msg);
+                if (resData?.msg && !String(resData.msg).includes('Paramètres manquants')) {
+                    toast.error(resData.msg);
+                }
             }
+            setTraitementJournalWaiting(false);
+            setTraitementJournalMsg('');
         });
     }
 
     useEffect(() => {
-        recupBalance(checked, unsoldedCompte, movmentedCpt, compteId, fileId, selectedPeriodeId);
+        if (!compteId || !fileId || !selectedPeriodeId) return;
+        if (balanceFetchTimer.current) clearTimeout(balanceFetchTimer.current);
+        setTraitementJournalWaiting(true);
+        setTraitementJournalMsg('Chargement de la balance...');
+        balanceFetchTimer.current = setTimeout(() => {
+            recupBalance(checked, unsoldedCompte, movmentedCpt, compteId, fileId, selectedPeriodeId);
+        }, 200);
+        return () => {
+            if (balanceFetchTimer.current) clearTimeout(balanceFetchTimer.current);
+        };
     }, [fileId, selectedPeriodeId, checked, unsoldedCompte, movmentedCpt]);
 
     //Formulaire pour l'import du journal
@@ -245,7 +307,7 @@ export default function ExportBalance() {
     const handleChange = (event) => {
         const isChecked = event.target.checked;
         setChecked(isChecked);
-        recupBalance(isChecked, unsoldedCompte, movmentedCpt, compteId, fileId, selectedExerciceId);
+        // Laisser useEffect déclencher le chargement (évite double appels)
     };
 
     //choix compte soldé ou non 
@@ -358,20 +420,18 @@ export default function ExportBalance() {
                                     style={{ width: "56%" }}
                                 />
 
-                                <Button
-                                    disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0}
-                                    type='submit'
-                                    variant="contained"
-                                    style={{
-                                        height: "50px",
-                                        textTransform: 'none',
-                                        outline: 'none',
-                                        backgroundColor: initial.theme,
-                                        width: "7%"
-                                    }}
-                                >
-                                    Exporter
-                                </Button>
+                                <div>
+                                    <IconButton
+                                        disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0}
+                                        variant="contained"
+                                        onClick={handleOpenExportMenu}
+                                        aria-controls={openExportMenu ? 'export-menu' : undefined}
+                                        aria-haspopup="true"
+                                        aria-expanded={openExportMenu ? 'true' : undefined}
+                                    >
+                                        <CiExport style={{ width: 35, height: 35, color: "#D32F2F" }} />
+                                    </IconButton>
+                                </div>
                             </Stack>
 
                             {traitementJournalWaiting
@@ -383,12 +443,47 @@ export default function ExportBalance() {
                             }
 
                             <Stack width={"100%"} height={'50vh'} >
-                                <VirtualTableModifiableExport columns={columns} rows={balance} state={true} />
+                                {useMemo(() => (
+                                    <VirtualTableModifiableExport columns={columns} rows={balance} state={true} />
+                                ), [columns, balance])}
                             </Stack>
                         </Stack>
                     </form>
                 </TabPanel>
             </TabContext>
+
+            {/* Hoisted Export Menu for faster open (less layout work) */}
+            <Menu
+                id="export-menu"
+                anchorEl={anchorElExport}
+                open={openExportMenu}
+                onClose={handleCloseExportMenu}
+                keepMounted
+                disablePortal={false}
+                disableScrollLock
+                disableAutoFocus
+                disableEnforceFocus
+                disableRestoreFocus
+                TransitionProps={{ timeout: 0 }}
+                transitionDuration={0}
+                MenuListProps={{ dense: true, disablePadding: true }}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+            >
+                <MenuItem onClick={() => doExport('pdf')}>
+                <ListItemIcon>
+                    <FaFilePdf size={20} color="#D32F2F" />
+                </ListItemIcon>
+                <ListItemText primary="Exporter en PDF" />
+                </MenuItem>
+
+                <MenuItem onClick={() => doExport('excel')}>
+                <ListItemIcon>
+                    <FaFileExcel size={20} color="#2E7D32" />
+                </ListItemIcon>
+                <ListItemText primary="Exporter en Excel" />
+                </MenuItem>
+            </Menu>
         </Box>
     )
 }

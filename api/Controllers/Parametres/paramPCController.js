@@ -1220,6 +1220,8 @@ const deleteItemPc = async (req, res) => {
     }
 
     let msgErrorDelete = '';
+    let deletedCount = 0;
+    let blockedCount = 0;
     const { listId, compteId, fileId } = req.body;
 
     if (listId.length >= 1) {
@@ -1242,16 +1244,26 @@ const deleteItemPc = async (req, res) => {
           }
         });
 
-        if (cptInUse.length > 1) {
+        const usageInJournals = await db.journals.count({
+          where: {
+            id_compte: compteId,
+            id_dossier: fileId,
+            id_numcpt: listId[i]
+          }
+        });
+
+        if (cptInUse.length > 1 || usageInJournals > 0) {
           resData.stateUndeletableCpt = true;
+          blockedCount += 1;
           if (msgErrorDelete === '') {
-            msgErrorDelete = `Impossible de supprimer les comptes suivants car ils sont utilisés comme base des comptes auxiliaires: ${cpt}`;
+            msgErrorDelete = `Impossible de supprimer les comptes suivants car ils sont utilisés${cptInUse.length > 1 ? ' comme base des comptes auxiliaires' : ''}${usageInJournals > 0 ? ' dans des écritures' : ''}`;
           } else {
             msgErrorDelete = `${msgErrorDelete}, ${cpt}`;
           }
 
         } else {
           await dossierPlanComptable.destroy({ where: { id: listId[i] } });
+          deletedCount += 1;
 
           //supprimer si la ligne possède des comptes de charges ou TVA associés
           await dossierpcdetailcptchg.destroy({ where: { id_detail: listId[i] } });
@@ -1259,8 +1271,13 @@ const deleteItemPc = async (req, res) => {
         }
       }
 
-      resData.state = true;
-      resData.msg = "Les comptes séléctionés ont été supprimés avec succès.";
+      if (deletedCount === 0 && blockedCount > 0) {
+        resData.state = false;
+        resData.msg = msgErrorDelete || 'Impossible de supprimer les comptes sélectionnés.';
+      } else {
+        resData.state = true;
+        resData.msg = "Les comptes séléctionés ont été supprimés avec succès.";
+      }
     }
 
     resData.msgUndeletableCpt = msgErrorDelete;

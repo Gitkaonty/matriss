@@ -37,7 +37,7 @@ const exportIrsaTableExcel = async (id_compte, id_dossier, id_exercice, mois, an
         try {
             console.log('[IRSA EXCEL] persByMat size:', persByMat.size);
             console.log('[IRSA EXCEL] fonctionById size:', fonctionById.size);
-        } catch {}
+        } catch { }
     } catch (e) {
         console.warn('[IRSA EXCEL] mapping personnels/fonctions failed:', e?.message || e);
     }
@@ -76,19 +76,30 @@ const exportIrsaTableExcel = async (id_compte, id_dossier, id_exercice, mois, an
     sheetIrsa.mergeCells('A1:V1');
     const titre = sheetIrsa.getRow(1);
     titre.font = { bold: true, size: 20 };
-    titre.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    titre.alignment = { horizontal: 'center', vertical: 'middle' };
     titre.height = 25;
 
-    // Subtitle row
-    sheetIrsa.insertRow(2, [`Dossier : ${nomDossier}\nCompte : ${nomCompte}\nMois et année : ${nomMois} ${annee}\nExercice du : ${dateDebut} au ${dateFin}`]);
+    // --- Ligne du sous-titre (centrée seulement pour "Dossier") ---
+    sheetIrsa.insertRow(2, [`Dossier : ${nomDossier}`]);
     sheetIrsa.mergeCells('A2:V2');
-    const sousTitre = sheetIrsa.getRow(2);
+    const dossierRow = sheetIrsa.getRow(2);
+    dossierRow.font = { bold: true, size: 14 };
+    dossierRow.alignment = { horizontal: 'center', vertical: 'middle' };
+    dossierRow.height = 25;
+
+    // --- Ligne des infos restantes ---
+    sheetIrsa.insertRow(3, [
+        `Mois et année : ${nomMois} ${annee}\nExercice du : ${dateDebut} au ${dateFin}`
+    ]);
+    sheetIrsa.mergeCells('A3:V3');
+    const sousTitre = sheetIrsa.getRow(3);
     sousTitre.font = { bold: true, size: 12 };
     sousTitre.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
     sousTitre.height = 70;
 
-    // Header row (row 3)
-    const headerRow = sheetIrsa.getRow(3);
+
+    // Header row (row 4)
+    const headerRow = sheetIrsa.getRow(4);
     headerRow.eachCell(cell => {
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A5276' } };
         cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -115,7 +126,7 @@ const exportIrsaTableExcel = async (id_compte, id_dossier, id_exercice, mois, an
         const mat = String(row.matricule || '').trim();
         const idFonct = persByMat.get(mat);
         const fonctionLibelle = idFonct != null ? (fonctionById.get(Number(idFonct)) || '') : '';
-        try { console.log('[IRSA EXCEL][RESOLVE]', { mat, idFonct, fonctionLibelle }); } catch {}
+        try { console.log('[IRSA EXCEL][RESOLVE]', { mat, idFonct, fonctionLibelle }); } catch { }
         const dataRow = sheetIrsa.addRow([
             row.nom || '',
             row.prenom || '',
@@ -154,23 +165,23 @@ const exportIrsaTableExcel = async (id_compte, id_dossier, id_exercice, mois, an
         }
     });
 
-            // Ligne Total
-            const totalRow = sheetIrsa.addRow([
-                'TOTAL', '', '', '', '', '', '',
-                ...totals,
-                '', '' // Mois, Année
-            ]);
-            totalRow.font = { bold: true };
-            totalRow.eachCell((cell, colNumber) => {
-                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF89A8B2' } };
-                if (colNumber >= 8 && colNumber <= 20) { // colonnes de montants
-                    cell.numFmt = '#,##0.00'; // format français
-                    cell.alignment = { horizontal: 'right', vertical: 'middle' };
-                } else {
-                    cell.alignment = { horizontal: 'left', vertical: 'middle' };
-                }
-            });
-            sheetIrsa.mergeCells(`A${totalRow.number}:G${totalRow.number}`);
+    // Ligne Total
+    const totalRow = sheetIrsa.addRow([
+        'TOTAL', '', '', '', '', '', '',
+        ...totals,
+        '', '' // Mois, Année
+    ]);
+    totalRow.font = { bold: true };
+    totalRow.eachCell((cell, colNumber) => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF89A8B2' } };
+        if (colNumber >= 8 && colNumber <= 20) { // colonnes de montants
+            cell.numFmt = '#,##0.00'; // format français
+            cell.alignment = { horizontal: 'right', vertical: 'middle' };
+        } else {
+            cell.alignment = { horizontal: 'left', vertical: 'middle' };
+        }
+    });
+    sheetIrsa.mergeCells(`A${totalRow.number}:G${totalRow.number}`);
 
     return workbook;
 };

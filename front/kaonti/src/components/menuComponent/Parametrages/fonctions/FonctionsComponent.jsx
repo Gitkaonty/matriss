@@ -56,6 +56,9 @@ export default function FonctionsComponent() {
     const [openDialogDeleteRow, setOpenDialogDeleteRow] = useState(false);
     const [editRow, setEditRow] = useState(null);
     const [newRow, setNewRow] = useState(null);
+    const [dataGridKey, setDataGridKey] = useState(0);
+
+    const [submitAttempt, setSubmitAttempt] = useState(false);
 
     // récupération infos de dossier sélectionné
     useEffect(() => {
@@ -113,6 +116,11 @@ export default function FonctionsComponent() {
         formNewParam.setFieldValue(name, value);
     };
 
+    const isRequiredEmpty = (name) => {
+        const v = formNewParam.values[name];
+        return submitAttempt && (v === '' || v === null || v === undefined);
+    };
+
     // Colonnes pour la table fonctions
     const fonctionsColumns = [
         {
@@ -133,7 +141,7 @@ export default function FonctionsComponent() {
             editableRow: editableRow,
             renderEditCell: (params) => {
                 return (
-                    <FormControl fullWidth style={{ height: '100%' }}>
+                    <FormControl fullWidth style={{ height: '100%', backgroundColor: isRequiredEmpty('nom') ? '#F8D7DA' : 'transparent', border: isRequiredEmpty('nom') ? '1px solid #F5C2C7' : '1px solid transparent', borderRadius: '4px' }}>
                         <Input
                             style={{
                                 height: '100%', alignItems: 'center',
@@ -175,6 +183,12 @@ export default function FonctionsComponent() {
     useEffect(() => {
         fetchFonctions();
     }, []);
+
+    // Mettre à jour le fileId dans le formulaire quand il change
+    useEffect(() => {
+        formNewParam.setFieldValue('fileId', fileId);
+        formNewParam.setFieldValue('compteId', compteId);
+    }, [fileId, compteId]);
 
     // Sélection d'une ligne
     const saveSelectedRow = (ids) => {
@@ -248,6 +262,7 @@ export default function FonctionsComponent() {
         setDisableCancelBouton(false);
         setDisableDeleteBouton(false);
         setDisableSaveBouton(false);
+        setSubmitAttempt(false);
 
         const newId = -Date.now();
         formNewParam.setFieldValue("idFonction", newId);
@@ -266,29 +281,74 @@ export default function FonctionsComponent() {
 
     // Sauvegarde
     const handleSaveClick = (id) => () => {
-        setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
-        const dataToSend = { ...formNewParam.values, fileId, compteId };
+        // Validation côté frontend (champ obligatoire)
+        if (!formNewParam.values.nom || formNewParam.values.nom.trim() === '') {
+            setSubmitAttempt(true);
+            toast.error('Le nom de la fonction est obligatoire');
+            // rester en mode édition
+            setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
+            setDisableSaveBouton(false);
+            return;
+        }
+
+        // Passer en vue seulement après succès
+        const dataToSend = { 
+            ...formNewParam.values, 
+            fileId: fileId,  // S'assurer que le fileId actuel est utilisé
+            compteId: compteId 
+        };
+        
         axios.post(`/parametres/fonction`, dataToSend).then((response) => {
             const resData = response.data;
             if (resData.state) {
+                // Réinitialiser tous les états après sauvegarde réussie
                 setDisableAddRowBouton(false);
                 setDisableSaveBouton(true);
+                setDisableModifyBouton(true);
+                setDisableCancelBouton(true);
+                setDisableDeleteBouton(true);
+                setSelectedRowId([]);
+                setSelectedRow([]);
+                setRowModesModel({});
+                setDataGridKey(prev => prev + 1); // Forcer le re-render du DataGrid
                 formNewParam.resetForm();
+                setSubmitAttempt(false);
                 toast.success(resData.msg);
                 fetchFonctions();
+                setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
             } else {
-                toast.error(resData.msg);
+                // En cas d'erreur, remettre en mode édition
+                setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
+                setDisableSaveBouton(false);
+                toast.error(resData.msg || 'Erreur lors de la sauvegarde');
             }
-        })
+        }).catch((error) => {
+            // Gestion des erreurs réseau
+            setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
+            setDisableSaveBouton(false);
+            toast.error('Erreur de connexion lors de la sauvegarde');
+            console.error('Erreur sauvegarde fonction:', error);
+        });
     };
 
     // Annulation
     const handleCancelClick = (id) => () => {
-        setRowModesModel({
-            ...rowModesModel,
-            [id]: { mode: GridRowModes.View, ignoreModifications: true },
-        });
+        // Si c'est une nouvelle ligne (ID négatif), la supprimer
+        if (id < 0) {
+            setRows(rows.filter((row) => row.id !== id));
+            setSelectedRowId([]);
+            setSelectedRow([]);
+        } else {
+            setRowModesModel({
+                ...rowModesModel,
+                [id]: { mode: GridRowModes.View, ignoreModifications: true },
+            });
+        }
         setDisableAddRowBouton(false);
+        setDisableSaveBouton(true);
+        setDisableCancelBouton(true);
+        setDisableModifyBouton(true);
+        formNewParam.resetForm();
     };
 
     // Suppression
@@ -303,6 +363,9 @@ export default function FonctionsComponent() {
             if (idToDelete < 0) {
                 setOpenDialogDeleteRow(false);
                 setRows(rows.filter((row) => row.id !== idToDelete));
+                setSelectedRowId([]);
+                setSelectedRow([]);
+                setDataGridKey(prev => prev + 1);
                 return;
             }
             axios.delete(`/parametres/fonction/${idToDelete}`)
@@ -312,6 +375,10 @@ export default function FonctionsComponent() {
                         setRows(rows.filter((row) => row.id !== idToDelete));
                         setOpenDialogDeleteRow(false);
                         setDisableAddRowBouton(false);
+                        setSelectedRowId([]);
+                        setSelectedRow([]);
+                        setDataGridKey(prev => prev + 1);
+                        toast.success('Fonction supprimée avec succès');
                     } else {
                         toast.error(res.data.msg || 'Erreur lors de la suppression');
                         setOpenDialogDeleteRow(false);
@@ -330,6 +397,12 @@ export default function FonctionsComponent() {
     const processRowUpdate = (newRow) => {
         const updatedRow = { ...newRow, isNew: false };
         setRows(rows.map((row) => (row.id === newRow.id ? updatedRow : row)));
+        
+        // Synchroniser avec le formulaire
+        if (selectedRowId.includes(newRow.id)) {
+            formNewParam.setFieldValue('nom', newRow.nom || '');
+        }
+        
         return updatedRow;
     };
 
@@ -450,6 +523,7 @@ export default function FonctionsComponent() {
                         </Stack>
                         <Stack width={"100%"} height={'100%'} minHeight={'600px'}>
                             <DataGrid
+                                key={dataGridKey}
                                 columns={fonctionsColumns}
                                 rows={rows}
                                 disableMultipleSelection={DataGridStyle.disableMultipleSelection}
@@ -474,9 +548,10 @@ export default function FonctionsComponent() {
                                 editMode='row'
                                 onRowClick={(e) => handleCellEditCommit(e.row)}
                                 onRowSelectionModelChange={ids => {
-                                    setSelectedRow(ids);
-                                    saveSelectedRow(ids);
-                                    deselectRow(ids);
+                                    const single = Array.isArray(ids) && ids.length ? [ids[ids.length - 1]] : [];
+                                    setSelectedRow(single);
+                                    saveSelectedRow(single);
+                                    deselectRow(single);
                                 }}
                                 rowModesModel={rowModesModel}
                                 onRowModesModelChange={handleRowModesModelChange}

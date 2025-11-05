@@ -39,12 +39,27 @@ exports.createClassification = async (req, res) => {
     const id_compte = parseInt(compteId);
     const id_dossier = parseInt(fileId);
     const id = parseInt(idClassification);
+    const rowId = parseInt(id);
 
     if (isNaN(id) || isNaN(id_compte) || isNaN(id_dossier)) {
       return res.status(400).json({
         state: false,
         message: "id_compte ou id_dossier invalide"
       });
+    }
+    // Vérifier si un autre axe utilise déjà le même code dans ce compte/dossier
+    const duplicateWhere = {
+      id_compte,
+      id_dossier,
+      classe,
+    };
+    if (!isNaN(rowId) && rowId > 0) {
+      duplicateWhere.id = { [Sequelize.Op.ne]: rowId };
+    }
+
+    const duplicate = await classifications.findOne({ where: duplicateWhere });
+    if (duplicate) {
+      return res.json({ state: false, msg: 'Cette classe existe déjà dans ce dossier.' });
     }
 
     const testIfExist = await classifications.findAll({

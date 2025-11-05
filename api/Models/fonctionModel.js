@@ -7,8 +7,7 @@ module.exports = (sequelize, DataTypes) => {
       },
       nom: {
         type: DataTypes.STRING,
-        allowNull: false,
-        unique: true
+        allowNull: false
       },
       id_dossier: {
         type: DataTypes.INTEGER,
@@ -28,7 +27,14 @@ module.exports = (sequelize, DataTypes) => {
       },
     }, {
       tableName: 'fonctions',
-      timestamps: true
+      timestamps: true,
+      indexes: [
+        {
+          unique: true,
+          fields: ['nom', 'id_dossier', 'id_compte'],
+          name: 'unique_fonction_per_dossier'
+        }
+      ]
     });
   
     Fonction.associate = (models) => {

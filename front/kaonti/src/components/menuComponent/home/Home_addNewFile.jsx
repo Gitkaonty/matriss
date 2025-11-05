@@ -1,5 +1,5 @@
-import {React, useState, useEffect, useRef } from 'react';
-import { Typography, Stack, Paper, TextField, FormControl, InputLabel, Select, MenuItem, Tooltip, Button, IconButton, FormHelperText, Input,Autocomplete  } from '@mui/material';
+import { React, useState, useEffect, useRef } from 'react';
+import { Typography, Stack, Paper, TextField, FormControl, InputLabel, Select, MenuItem, Tooltip, Button, IconButton, FormHelperText, Input, Autocomplete } from '@mui/material';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
 import TabContext from '@mui/lab/TabContext';
@@ -32,7 +32,7 @@ import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes } from '@mui/x-dat
 import { TbPlaylistAdd } from 'react-icons/tb';
 import { IoMdTrash } from 'react-icons/io';
 import { FormControlLabel } from '@mui/material';
-
+import MontantCapitalField from './Field/MontantCapitalField';
 
 export default function AddNewFile({ confirmationState }) {
     const closed = () => {
@@ -51,7 +51,7 @@ export default function AddNewFile({ confirmationState }) {
     const [listRegions, setListRegions] = useState([]);
     const [listDistricts, setListDistricts] = useState([]);
     const [listCommunes, setListCommunes] = useState([]);
-    const initial = init[0]; 
+    const initial = init[0];
     const [selectedRowId, setSelectedRowId] = useState([]);
     const [rowModesModel, setRowModesModel] = useState({});
     const [disableModifyBouton, setDisableModifyBouton] = useState(true);
@@ -59,6 +59,7 @@ export default function AddNewFile({ confirmationState }) {
     const [disableSaveBouton, setDisableSaveBouton] = useState(true);
     const [disableDeleteBouton, setDisableDeleteBouton] = useState(true);
     const [disableAddRowBouton, setDisableAddRowBouton] = useState(false);
+    const [disableAddRowBoutonDomBank, setDisableAddRowBoutonDomBank] = useState(false);
 
     const [editableRow, setEditableRow] = useState(true);
     const [openDialogDeleteAssocieRow, setOpenDialogDeleteAssocieRow] = useState(false);
@@ -91,13 +92,13 @@ export default function AddNewFile({ confirmationState }) {
     const [numCompteDomBankValidationColor, setNumCompteDomBankValidationColor] = useState('transparent');
     const [deviseDomBankValidationColor, setDeviseDomBankValidationColor] = useState('transparent');
     const [paysDomBankValidationColor, setPaysDomBankValidationColor] = useState('transparent');
-    
+
     const [selectedRowDomBank, setSelectedRowDomBank] = useState([]);
-    
-    
+
+
     //récupération infos compte
     const { auth } = useAuth();
-    const decoded = auth?.accessToken ? jwtDecode(auth.accessToken): undefined;
+    const decoded = auth?.accessToken ? jwtDecode(auth.accessToken) : undefined;
     const compteId = decoded.UserInfo.compteId || null;
     const userId = decoded.UserInfo.userId || null;
 
@@ -119,7 +120,7 @@ export default function AddNewFile({ confirmationState }) {
         validateOnChange: false,
         validateOnBlur: true,
     });
-    
+
     //Form pour l'enregistrement des données
     const InfosNewFileInitialValues = {
         centrefisc: 'DGE', // Valeur par défaut, synchronisée avec le radio fiscal
@@ -127,33 +128,33 @@ export default function AddNewFile({ confirmationState }) {
         action: 'new',
         itemId: 0,
         idCompte: 0,
-        nomdossier:'',
-        raisonsociale:'',
-        denomination:'',
-        nif:'',
-        stat:'',
-        rcs:'',
-        responsable:'',
-        expertcomptable:'',
-        cac:'',
-        forme:'',
-        activite:'',
-        detailsactivite:'',
-        adresse:'',
+        nomdossier: '',
+        raisonsociale: '',
+        denomination: '',
+        nif: '',
+        stat: '',
+        rcs: '',
+        responsable: '',
+        expertcomptable: '',
+        cac: '',
+        forme: '',
+        activite: '',
+        detailsactivite: '',
+        adresse: '',
         email: '',
-        telephone:'',
-        province:'',
-        region:'',
-        district:'',
-        commune:'',
-        plancomptable:0,
-        longueurcptstd:6,
-        longueurcptaux:6,
+        telephone: '',
+        province: '',
+        region: '',
+        district: '',
+        commune: '',
+        plancomptable: 0,
+        longueurcptstd: 6,
+        longueurcptaux: 6,
         autocompletion: true,
         avecanalytique: false,
-        tauxir:'',
+        tauxir: '',
         assujettitva: false,
-        montantcapital:0,
+        montantcapital: 0,
         nbrpart: 0,
         valeurpart: 0,
         listeAssocies: [],
@@ -166,23 +167,23 @@ export default function AddNewFile({ confirmationState }) {
         raisonsociale: Yup.string().required("Veuillez insérer la raison sociale de votre société"),
         forme: Yup.string().required("Veuillez sélection la forme de votre société"),
         activite: Yup.string().required("Veuillez renseigner l'activité de votre société"),
-        longueurcptstd: Yup.number().moreThan(1,'Taper une longueur de compte supérieur à 1'),
-        longueurcptaux: Yup.number().moreThan(1,'Taper une longueur de compte supérieur à 1'),
-        tauxir: Yup.number().moreThan(0,'Taper votre taux IR'),
+        longueurcptstd: Yup.number().moreThan(1, 'Taper une longueur de compte supérieur à 1'),
+        longueurcptaux: Yup.number().moreThan(1, 'Taper une longueur de compte supérieur à 1'),
+        tauxir: Yup.number().moreThan(0, 'Taper votre taux IR'),
     });
 
     //GESTION DU TABLEAU ASSOCIE-------------------------------------------------------------------------------
     const TypesOptions = [
         { value: 'PP', label: 'Personne physique' },
         { value: 'PM', label: 'Personne morale' },
-      ];
+    ];
 
     //Entête tableau liste associé
-    const AssocieColumnHeader  = [
+    const AssocieColumnHeader = [
         {
-            field: 'type', 
-            headerName: 'Type', 
-            type: 'singleSelect', 
+            field: 'type',
+            headerName: 'Type',
+            type: 'singleSelect',
             valueOptions: TypesOptions.map((type) => type.value),
             sortable: true,
             flex: 1,
@@ -330,62 +331,62 @@ export default function AddNewFile({ confirmationState }) {
             headerClassName: 'HeaderbackColor',
             editable: editableRow,
         },
-      ];
+    ];
 
-      const saveSelectedRow = (ids) => {
-        if(ids.length === 1){
+    const saveSelectedRow = (ids) => {
+        if (ids.length === 1) {
             setSelectedRowId(ids);
             setDisableModifyBouton(false);
             setDisableSaveBouton(false);
             setDisableCancelBouton(false);
             setDisableDeleteBouton(false);
-        }else{
+        } else {
             setSelectedRowId([]);
             setDisableModifyBouton(true);
             setDisableSaveBouton(true);
             setDisableCancelBouton(true);
             setDisableDeleteBouton(true);
         }
-      }
+    }
 
-      const handleRowEditStop = (params, event) => {
+    const handleRowEditStop = (params, event) => {
         if (params.reason === GridRowEditStopReasons.rowFocusOut) {
-          event.defaultMuiPrevented = true;
+            event.defaultMuiPrevented = true;
         }
-      };
-    
-      const handleEditClick = (id) => () => {
+    };
+
+    const handleEditClick = (id) => () => {
         setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
         setDisableSaveBouton(false);
-      };
-    
-      const handleSaveClick = (id) => () => {
+    };
+
+    const handleSaveClick = (id) => () => {
         setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
         setDisableSaveBouton(true);
         toast.success("Informations sauvegardées");
         setDisableAddRowBouton(false);
     };
 
-      const handleOpenDialogConfirmDeleteAssocieRow = () => {
+    const handleOpenDialogConfirmDeleteAssocieRow = () => {
         setOpenDialogDeleteAssocieRow(true);
         setDisableAddRowBouton(false);
     }
 
-      const deleteAssocieRow = (value) => {
-        if(value === true){
+    const deleteAssocieRow = (value) => {
+        if (value === true) {
             setListAssocie(listAssocie.filter((row) => row.id !== selectedRowId[0]));
             setOpenDialogDeleteAssocieRow(false);
             setDisableAddRowBouton(false);
             toast.success('Ligne supprimée avec succès');
-        }else{
+        } else {
             setOpenDialogDeleteAssocieRow(false);
         }
-      }
-    
-      const handleCancelClick = (id) => () => {
+    }
+
+    const handleCancelClick = (id) => () => {
         setRowModesModel({
-          ...rowModesModel,
-          [id]: { mode: GridRowModes.View, ignoreModifications: true },
+            ...rowModesModel,
+            [id]: { mode: GridRowModes.View, ignoreModifications: true },
         });
         setDisableAddRowBouton(false);
     };
@@ -395,14 +396,14 @@ export default function AddNewFile({ confirmationState }) {
         setListAssocie(listAssocie.map((row) => (row.id === newRow.id ? updatedRow : row)));
         setFieldValue('listeAssocies', listAssocie.map((row) => (row.id === newRow.id ? updatedRow : row)));
         return updatedRow;
-      };
-    
-      const handleRowModesModelChange = (newRowModesModel) => {
-        setRowModesModel(newRowModesModel);
-      };
+    };
 
-      const handleCellEditCommit = (params) => {
-        if(selectedRowId.length > 1  || selectedRowId.length === 0){
+    const handleRowModesModelChange = (newRowModesModel) => {
+        setRowModesModel(newRowModesModel);
+    };
+
+    const handleCellEditCommit = (params) => {
+        if (selectedRowId.length > 1 || selectedRowId.length === 0) {
             setEditableRow(false);
             setDisableModifyBouton(true);
             setDisableSaveBouton(true);
@@ -419,8 +420,8 @@ export default function AddNewFile({ confirmationState }) {
                 setEditableRow(true);
             }
         }
-        
-      };
+
+    };
 
     //Ajouter une ligne dans le tableau liste associé
     const handleOpenDialogAddNewAssocie = () => {
@@ -453,7 +454,7 @@ export default function AddNewFile({ confirmationState }) {
     //GESTION DU TABLEAU FILIALE-------------------------------------------------------------------------------
 
     //Entête tableau liste associé
-    const FilialeColumnHeader  = [
+    const FilialeColumnHeader = [
         {
             field: 'nom',
             headerName: 'Nom',
@@ -580,62 +581,78 @@ export default function AddNewFile({ confirmationState }) {
             headerClassName: 'HeaderbackColor',
             editable: editableRowFiliale,
         },
-      ];
+    ];
 
-      const saveSelectedRowFiliale = (ids) => {
-        if(ids.length === 1){
+    const saveSelectedRowFiliale = (ids) => {
+        if (ids.length === 1) {
             setSelectedRowIdFiliale(ids);
             setDisableModifyBoutonFiliale(false);
             setDisableSaveBoutonFiliale(false);
             setDisableCancelBoutonFiliale(false);
             setDisableDeleteBoutonFiliale(false);
-        }else{
+        } else {
             setSelectedRowIdFiliale([]);
             setDisableModifyBoutonFiliale(true);
             setDisableSaveBoutonFiliale(true);
             setDisableCancelBoutonFiliale(true);
             setDisableDeleteBoutonFiliale(true);
         }
-      }
+    }
 
-      const handleRowEditStopFiliale = (params, event) => {
-        if (params.reason === GridRowEditStopReasons.rowFocusOut) {
-          event.defaultMuiPrevented = true;
+    const saveSelectedRowDomBank = (ids) => {
+        if (ids.length === 1) {
+            setSelectedRowIdDomBank(ids);
+            setDisableModifyBoutonDomBank(false);
+            setDisableSaveBoutonDomBank(false);
+            setDisableCancelBoutonDomBank(false);
+            setDisableDeleteBoutonDomBank(false);
+        } else {
+            setSelectedRowIdDomBank([]);
+            setDisableModifyBoutonDomBank(true);
+            setDisableSaveBoutonDomBank(true);
+            setDisableCancelBoutonDomBank(true);
+            setDisableDeleteBoutonDomBank(true);
         }
-      };
-    
-      const handleEditClickFiliale = (id) => () => {
+    }
+
+    const handleRowEditStopFiliale = (params, event) => {
+        if (params.reason === GridRowEditStopReasons.rowFocusOut) {
+            event.defaultMuiPrevented = true;
+        }
+    };
+
+    const handleEditClickFiliale = (id) => () => {
         setRowModesModelFiliale({ ...rowModesModelFiliale, [id]: { mode: GridRowModes.Edit } });
         setDisableSaveBoutonFiliale(false);
-      };
-    
-      const handleSaveClickFiliale = (setFieldValue) => () => {
+    };
+
+    const handleSaveClickFiliale = (setFieldValue) => () => {
         setRowModesModelFiliale({ ...rowModesModelFiliale, [selectedRowIdFiliale]: { mode: GridRowModes.View } });
         setDisableSaveBoutonFiliale(true);
         setDisableAddRowBoutonFiliale(false);
         toast.success("Informations sauvegardées");
-      };
+    };
 
-      const handleOpenDialogConfirmDeleteAssocieRowFiliale = () => {
+    const handleOpenDialogConfirmDeleteAssocieRowFiliale = () => {
         setOpenDialogDeleteFilialeRow(true);
         setDisableAddRowBoutonFiliale(false);
     }
 
-      const deleteFilialeRow = (value) => {
-        if(value === true){
+    const deleteFilialeRow = (value) => {
+        if (value === true) {
             setListFiliales(listFiliales.filter((row) => row.id !== selectedRowIdFiliale[0]));
             setOpenDialogDeleteFilialeRow(false);
             setDisableAddRowBoutonFiliale(false);
             toast.success('Ligne supprimée avec succès');
-        }else{
+        } else {
             setOpenDialogDeleteFilialeRow(false);
         }
-      }
-    
-      const handleCancelClickFiliale = (id) => () => {
+    }
+
+    const handleCancelClickFiliale = (id) => () => {
         setRowModesModelFiliale({
-          ...rowModesModelFiliale,
-          [id]: { mode: GridRowModes.View, ignoreModifications: true },
+            ...rowModesModelFiliale,
+            [id]: { mode: GridRowModes.View, ignoreModifications: true },
         });
         setDisableAddRowBoutonFiliale(false);
     };
@@ -645,32 +662,31 @@ export default function AddNewFile({ confirmationState }) {
         setListFiliales(listFiliales.map((row) => (row.id === newRow.id ? updatedRow : row)));
         setFieldValue('listeFiliales', listFiliales.map((row) => (row.id === newRow.id ? updatedRow : row)));
         return updatedRow;
-      };
-    
-      const handleRowModesModelChangeFiliale = (newRowModesModel) => {
-        setRowModesModelFiliale(newRowModesModel);
-      };
+    };
 
-      const handleCellEditCommitFiliale = (params) => {
-        if(selectedRowIdFiliale.length > 1  || selectedRowIdFiliale.length === 0){
+    const handleRowModesModelChangeFiliale = (newRowModesModel) => {
+        setRowModesModelFiliale(newRowModesModel);
+    };
+
+    const handleCellEditCommitFiliale = (params) => {
+        if (selectedRowIdFiliale.length > 1 || selectedRowIdFiliale.length === 0) {
             setEditableRowFiliale(false);
             setDisableModifyBoutonFiliale(true);
             setDisableSaveBoutonFiliale(true);
             setDisableCancelBoutonFiliale(true);
             toast.error("sélectionnez une seule ligne pour pouvoir la modifier");
-        }else{
+        } else {
             setDisableModifyBoutonFiliale(false);
             setDisableSaveBoutonFiliale(false);
             setDisableCancelBoutonFiliale(false);
             if (!selectedRowIdFiliale.includes(params.id)) {
-            setEditableRowFiliale(false);
-            toast.error("sélectionnez une ligne pour pouvoir la modifier");
-            }else{
+                setEditableRowFiliale(false);
+                toast.error("sélectionnez une ligne pour pouvoir la modifier");
+            } else {
                 setEditableRowFiliale(true);
             }
         }
-        
-      };
+    };
 
     //Ajouter une ligne dans le tableau liste associé
     const handleOpenDialogAddNewFiliale = () => {
@@ -698,7 +714,7 @@ export default function AddNewFile({ confirmationState }) {
 
     //Récupération de la liste des modèles de plan comptable
     const GetListePlanComptableModele = () => {
-        axios.post(`/paramPlanComptableModele/model`, {compteId, userId}).then((response) =>{
+        axios.post(`/paramPlanComptableModele/model`, { compteId, userId }).then((response) => {
             const resData = response.data;
             setListModel(resData.modelList);
         });
@@ -753,38 +769,60 @@ export default function AddNewFile({ confirmationState }) {
         });
     }
 
-    useEffect(() =>{
+    //récupérer la liste des pays
+    const getListePays = async () => {
+        await axios.get(`/paramCrm/getListePays/`).then((response) => {
+            const resData = response.data;
+
+            if (resData.state) {
+                setListPays(resData.list);
+            } else {
+                setListPays([]);
+            }
+        });
+    }
+
+    const getInfosDomBank = (id) => {
+        axios.get(`/paramCrm/listeDomBank/${id}`).then((response) => {
+            const resData = response.data;
+            const safeList = Array.isArray(resData?.list) ? resData.list : [];
+            setListDomBank(safeList);
+        }).catch(() => setListDomBank([]));
+    };
+
+
+    useEffect(() => {
         GetListePlanComptableModele();
     }, [compteId]);
-    useEffect(() =>{
+    useEffect(() => {
         getListePays();
         getListeProvinces();
     }, []);
-    useEffect(() =>{
+    useEffect(() => {
         getInfosDomBank(fileId);
     }, [fileId]);
 
 
     //Données pour les listbox
     const listeFormeJuridique = [
-        {id:'SAPP', libelle: 'SAPP - Société anonyme à participation publique'},
-        {id:'SA', libelle: 'SA - Société anonyme'},
-        {id:'SAS', libelle: 'SAS - Société par action simplifiée'},
-        {id:'SARL', libelle: 'SARL - Société à responsabilité limitée'},
-        {id:'SARLU', libelle: 'SARLU - Société à responsabilité limitée unipersonnel'},
-        {id:'SCS', libelle: 'SCS - Société en commandité simple'},
-        {id:'SNC', libelle: 'SNC - Société en nom collectif'},
-        {id:'SP', libelle: 'SP - Société en participation'},
+        { id: 'SAPP', libelle: 'SAPP - Société anonyme à participation publique' },
+        { id: 'SA', libelle: 'SA - Société anonyme' },
+        { id: 'SAS', libelle: 'SAS - Société par action simplifiée' },
+        { id: 'SARL', libelle: 'SARL - Société à responsabilité limitée' },
+        { id: 'SARLU', libelle: 'SARLU - Société à responsabilité limitée unipersonnel' },
+        { id: 'SCS', libelle: 'SCS - Société en commandité simple' },
+        { id: 'SNC', libelle: 'SNC - Société en nom collectif' },
+        { id: 'SP', libelle: 'SP - Société en participation' },
     ];
 
     const listeActivite = [
-        {id:'ART', libelle: 'Artisanale', icon: <FaTools style={{color: 'green'}}/>},
-        {id:'IND', libelle: 'Industrielle', icon: <FaIndustry style={{color: 'green'}}/>},
-        {id:'MIN', libelle: 'Minière', icon: <GiMineWagon style={{color: 'green'}}/>},
-        {id:'HOT', libelle: 'Hôtelière', icon: <FaHotel style={{color: 'green'}}/>},
-        {id:'TOU', libelle: 'Touristique' , icon: <MdOutlineTravelExplore style={{color: 'green'}}/>},
-        {id:'TRA', libelle: 'Transport' , icon: <FaTruck style={{color: 'green'}}/>},
-        {id:'AUT', libelle: 'Autres', icon: <VscLinkExternal style={{color: 'green'}}/>},
+        { id: 'ART', libelle: 'Artisanale', icon: <FaTools style={{ color: 'green' }} /> },
+        { id: 'IND', libelle: 'Industrielle', icon: <FaIndustry style={{ color: 'green' }} /> },
+        { id: 'MIN', libelle: 'Minière', icon: <GiMineWagon style={{ color: 'green' }} /> },
+        { id: 'HOT', libelle: 'Hôtelière', icon: <FaHotel style={{ color: 'green' }} /> },
+        { id: 'TOU', libelle: 'Touristique', icon: <MdOutlineTravelExplore style={{ color: 'green' }} /> },
+        { id: 'TRA', libelle: 'Transport', icon: <FaTruck style={{ color: 'green' }} /> },
+        { id: 'AUT', libelle: 'Autres', icon: <VscLinkExternal style={{ color: 'green' }} /> },
     ];
 
     const handleOnChangeFormeSelect = (setFieldValue) => (e) => {
@@ -826,11 +864,11 @@ export default function AddNewFile({ confirmationState }) {
             })),
         };
 
-        axios.post(`/home/newFile`, payload).then((response) =>{
+        axios.post(`/home/newFile`, payload).then((response) => {
             const resData = response.data;
-            if(resData.state){
+            if (resData.state) {
                 toast.success(resData.msg);
-            }else{
+            } else {
                 toast.error(resData.msg);
             }
             closed();
@@ -863,6 +901,383 @@ export default function AddNewFile({ confirmationState }) {
         setSelectedRowIdFiliale(ids);
     }
 
+    const handleOpenDialogAddNewDomBank = () => {
+
+        setDisableModifyBoutonDomBank(false);
+        setDisableCancelBoutonDomBank(false);
+        setDisableDeleteBoutonDomBank(false);
+        setDisableSaveBoutonDomBank(false);
+
+        const newId = -Date.now();
+        let arrayId = [];
+        arrayId = [...arrayId, newId];
+
+        useFormikDomBank.setFieldValue("idDomBank", newId);
+        useFormikDomBank.setFieldValue("idCompte", compteId);
+        useFormikDomBank.setFieldValue("idDossier", fileId);
+        useFormikDomBank.setFieldValue("banque", "");
+        useFormikDomBank.setFieldValue("numcompte", "");
+        useFormikDomBank.setFieldValue("devise", "");
+        useFormikDomBank.setFieldValue("pays", "");
+        useFormikDomBank.setFieldValue("enactivite", false);
+
+        const newRow = {
+            id: newId,
+            banque: '',
+            numcompte: '',
+            devise: '',
+            pays: '',
+        };
+        setListDomBank([...listDomBank, newRow]);
+        setSelectedRowIdDomBank(arrayId);
+        setRowModesModelDomBank({ ...rowModesModelDomBank, [arrayId]: { mode: GridRowModes.Edit } });
+        setDisableSaveBoutonDomBank(false);
+        setSelectedRowDomBank([newId]);
+        setDisableAddRowBoutonDomBank(true);
+    }
+
+    const handleEditClickDomBank = (id) => () => {
+        //réinitialiser les couleurs des champs
+        setBankDomBankValidationColor('transparent');
+        setNumCompteDomBankValidationColor('transparent');
+        setDeviseDomBankValidationColor('transparent');
+        setPaysDomBankValidationColor('transparent');
+
+        //charger dans le formik les données de la ligne
+        const selectedRowInfos = listDomBank?.filter((item) => item.id === id[0]);
+
+        useFormikDomBank.setFieldValue("idCompte", compteId);
+        useFormikDomBank.setFieldValue("idDossier", fileId);
+        useFormikDomBank.setFieldValue("idDomBank", selectedRowInfos[0].id);
+        useFormikDomBank.setFieldValue("banque", selectedRowInfos[0].banque);
+        useFormikDomBank.setFieldValue("numcompte", selectedRowInfos[0].numcompte);
+        useFormikDomBank.setFieldValue("devise", selectedRowInfos[0].devise);
+        useFormikDomBank.setFieldValue("pays", selectedRowInfos[0].pays);
+        useFormikDomBank.setFieldValue("enactivite", selectedRowInfos[0].enactivite);
+
+        setRowModesModelDomBank({ ...rowModesModelDomBank, [id]: { mode: GridRowModes.Edit } });
+        setDisableSaveBoutonDomBank(false);
+    };
+
+
+    const handleSaveClickDomBank = (id) => () => {
+        let saveBoolbanque = false;
+        let saveBoolNumCompte = false;
+        let saveBoolDevise = false;
+        let saveBoolPays = false;
+
+        if (useFormikDomBank.values.banque === '') {
+            setBankDomBankValidationColor('#F6D6D6');
+            saveBoolbanque = false;
+        } else {
+            setBankDomBankValidationColor('transparent');
+            saveBoolbanque = true;
+        }
+
+        if (!useFormikDomBank.values.numcompte) {
+            setNumCompteDomBankValidationColor('#F6D6D6');
+            saveBoolNumCompte = false;
+        } else {
+            setNumCompteDomBankValidationColor('transparent');
+            saveBoolNumCompte = true;
+        }
+
+        if (!useFormikDomBank.values.devise) {
+            setDeviseDomBankValidationColor('#F6D6D6');
+            saveBoolDevise = false;
+        } else {
+            setDeviseDomBankValidationColor('transparent');
+            saveBoolDevise = true;
+        }
+
+        if (!useFormikDomBank.values.pays) {
+            setPaysDomBankValidationColor('#F6D6D6');
+            saveBoolPays = false;
+        } else {
+            setPaysDomBankValidationColor('transparent');
+            saveBoolPays = true;
+        }
+
+        if (saveBoolbanque && saveBoolNumCompte && saveBoolDevise && saveBoolPays) {
+            // Sauvegarde locale seulement (comme les associés)
+            setRowModesModelDomBank({ ...rowModesModelDomBank, [selectedRowIdDomBank]: { mode: GridRowModes.View } });
+            setDisableSaveBoutonDomBank(true);
+            setDisableAddRowBoutonDomBank(false);
+            toast.success("Informations sauvegardées");
+            
+            // Réinitialiser le formulaire
+            useFormikDomBank.resetForm();
+        } else {
+            toast.error('Les champs en surbrillances sont obligatoires');
+            setDisableAddRowBoutonDomBank(false);
+        }
+    };
+
+    const handleOpenDialogConfirmDeleteAssocieRowDomBank = () => {
+        setOpenDialogDeleteDomBankRow(true);
+        setDisableAddRowBoutonDomBank(false);
+    }
+
+    const handleCancelClickDomBank = (id) => () => {
+        setRowModesModelDomBank({
+            ...rowModesModelDomBank,
+            [id]: { mode: GridRowModes.View, ignoreModifications: true },
+        });
+        setDisableAddRowBoutonDomBank(false);
+    };
+
+    const deleteDomBankRow = (value) => {
+        if (value === true) {
+            setListDomBank(listDomBank.filter((row) => row.id !== selectedRowIdDomBank[0]));
+            setOpenDialogDeleteDomBankRow(false);
+            setDisableAddRowBoutonDomBank(false);
+            toast.success('Ligne supprimée avec succès');
+        } else {
+            setOpenDialogDeleteDomBankRow(false);
+        }
+    }
+
+    const processRowUpdateDomBank = (setFieldValue) => (newRow) => {
+        const updatedRow = { ...newRow, isNew: false };
+        setListDomBank(listDomBank.map((row) => (row.id === newRow.id ? updatedRow : row)));
+        setFieldValue('listeDomBank', listDomBank.map((row) => (row.id === newRow.id ? updatedRow : row)));
+        return updatedRow;
+    };
+
+    const handleRowModesModelChangeDomBank = (newRowModesModel) => {
+        setRowModesModelDomBank(newRowModesModel);
+    };
+
+    const handleCellEditCommitDomBank = (params) => {
+        if (selectedRowIdDomBank.length > 1 || selectedRowIdDomBank.length === 0) {
+            setEditableRowDomBank(false);
+            setDisableModifyBoutonDomBank(true);
+            setDisableSaveBoutonDomBank(true);
+            setDisableCancelBoutonDomBank(true);
+            toast.error("sélectionnez une seule ligne pour pouvoir la modifier");
+        } else {
+            setDisableModifyBoutonDomBank(false);
+            setDisableSaveBoutonDomBank(false);
+            setDisableCancelBoutonDomBank(false);
+            if (!selectedRowIdDomBank.includes(params.id)) {
+                setEditableRowDomBank(false);
+                toast.error("sélectionnez une ligne pour pouvoir la modifier");
+            } else {
+                setEditableRowDomBank(true);
+            }
+        }
+    };
+
+    const handleRowEditStopDomBank = (params, event) => {
+        if (params.reason === GridRowEditStopReasons.rowFocusOut) {
+            event.defaultMuiPrevented = true;
+        }
+    };
+
+    //Entête tableau liste domiciliation bancaire
+    const DomBankColumnHeader = [
+        {
+            field: 'banque',
+            headerName: 'Banque',
+            type: 'text',
+            sortable: true,
+            width: 350,
+            headerAlign: 'left',
+            headerClassName: 'HeaderbackColor',
+            disableClickEventBubbling: true,
+            editable: editableRowDomBank,
+            renderCell: (params) => {
+                return <div>{params.value}</div>;
+            },
+            renderEditCell: (params) => {
+                return (
+                    <FormControl fullWidth style={{ height: '120%' }}>
+                        <Input
+                            style={{
+                                height: '100%', alignItems: 'center',
+                                outline: 'none',
+                                backgroundColor: bankDomBankValidationColor
+                            }}
+                            type="text"
+                            value={useFormikDomBank.values.banque}
+                            onChange={(e) => {
+                                const v = e.target.value;
+                                useFormikDomBank.setFieldValue('banque', v);
+                                params.api.setEditCellValue({ id: params.id, field: params.field, value: v });
+                            }}
+                            label="banque"
+                            disableUnderline={true}
+                        />
+
+                        <FormHelperText style={{ color: 'red' }}>
+                            {useFormikDomBank.errors.banque && useFormikDomBank.touched.banque && useFormikDomBank.errors.banque}
+                        </FormHelperText>
+                    </FormControl>
+                );
+            },
+        },
+        {
+            field: 'numcompte',
+            headerName: 'N° de compte',
+            type: 'text',
+            sortable: true,
+            width: 300,
+            headerAlign: 'left',
+            headerClassName: 'HeaderbackColor',
+            disableClickEventBubbling: true,
+            editable: editableRowDomBank,
+            renderCell: (params) => {
+                return <div>{params.value}</div>;
+            },
+            renderEditCell: (params) => {
+                return (
+                    <FormControl fullWidth style={{ height: '120%' }}>
+                        <Input
+                            style={{
+                                height: '100%', alignItems: 'center',
+                                outline: 'none',
+                                backgroundColor: numCompteDomBankValidationColor
+                            }}
+                            type="text"
+                            value={useFormikDomBank.values.numcompte}
+                            onChange={(e) => {
+                                const v = e.target.value;
+                                useFormikDomBank.setFieldValue('numcompte', v);
+                                params.api.setEditCellValue({ id: params.id, field: params.field, value: v });
+                            }}
+                            label="numcompte"
+                            disableUnderline={true}
+                        />
+
+                        <FormHelperText style={{ color: 'red' }}>
+                            {useFormikDomBank.errors.numcompte && useFormikDomBank.touched.numcompte && useFormikDomBank.errors.numcompte}
+                        </FormHelperText>
+                    </FormControl>
+                );
+            },
+        },
+        {
+            field: 'devise',
+            headerName: 'Devise',
+            type: 'text',
+            sortable: true,
+            width: 120,
+            headerAlign: 'left',
+            headerClassName: 'HeaderbackColor',
+            disableClickEventBubbling: true,
+            editable: editableRowDomBank,
+            renderCell: (params) => {
+                return <div>{params.value}</div>;
+            },
+            renderEditCell: (params) => {
+                return (
+                    <FormControl fullWidth style={{ height: '120%' }}>
+                        <Input
+                            style={{
+                                height: '100%', alignItems: 'center',
+                                outline: 'none',
+                                backgroundColor: deviseDomBankValidationColor
+                            }}
+                            type="text"
+                            value={useFormikDomBank.values.devise}
+                            onChange={(e) => {
+                                const v = e.target.value;
+                                useFormikDomBank.setFieldValue('devise', v);
+                                params.api.setEditCellValue({ id: params.id, field: params.field, value: v });
+                            }}
+                            label="devise"
+                            disableUnderline={true}
+                        />
+
+                        <FormHelperText style={{ color: 'red' }}>
+                            {useFormikDomBank.errors.devise && useFormikDomBank.touched.devise && useFormikDomBank.errors.devise}
+                        </FormHelperText>
+                    </FormControl>
+                );
+            },
+        },
+        {
+            field: "pays",
+            headerName: "Pays",
+            sortable: true,
+            width: 250,
+            headerAlign: "left",
+            align: "left",
+            headerClassName: "HeaderbackColor",
+            editable: editableRowDomBank,
+            // valueFormatter: (params) => {
+            //     const selectedType = listPays.find((option) => option.code === params.value);
+            //     return selectedType ? selectedType.nompays : params.value;
+            // },
+            renderEditCell: (params) => {
+                return (
+                    <Autocomplete
+                        fullWidth
+                        options={listPays}
+                        getOptionLabel={(option) => option.nompays}
+                        value={
+                            listPays.find((option) => option.nompays === params.value) || null
+                        }
+                        onChange={(event, newValue) => {
+                            params.api.setEditCellValue({
+                                id: params.id,
+                                field: params.field,
+                                value: newValue ? newValue.nompays : "",
+                            });
+                            useFormikDomBank.setFieldValue('pays', newValue ? newValue.nompays : "");
+
+                        }}
+                        noOptionsText="Aucun pays trouvé"
+                        renderInput={(paramsInput) => (
+                            <TextField
+                                {...paramsInput}
+                                variant="standard"
+                                error={
+                                    Boolean(
+                                        useFormikDomBank.touched.pays && useFormikDomBank.errors.pays
+                                    )
+                                }
+                                helperText={
+                                    useFormikDomBank.touched.pays && useFormikDomBank.errors.pays
+                                }
+                                sx={{
+                                    "& .MuiInputBase-root": {
+                                        height: 50,
+                                        fontSize: 14,
+                                    },
+                                }}
+                            />
+                        )}
+                    />
+                );
+            },
+        },
+        {
+            field: 'enactivite',
+            headerName: 'En activité',
+            type: 'boolean',
+            sortable: true,
+            width: 150,
+            headerAlign: 'center',
+            headerClassName: 'HeaderbackColor',
+            editable: editableRowDomBank,
+            renderEditCell: (params) => {
+                return (
+                    <input
+                        checked={Boolean(params.value)}
+                        type="checkbox"
+                        onChange={(e) => {
+                            const v = e.target.checked;
+                            useFormikDomBank.setFieldValue('enactivite', v);
+                            params.api.setEditCellValue({ id: params.id, field: params.field, value: v });
+                            setListDomBank(prev => prev.map(row => row.id === params.id ? { ...row, enactivite: v } : row));
+                        }}
+                    />
+                );
+            }
+        },
+    ];
+
     return (
         <Paper
             sx={{
@@ -873,839 +1288,871 @@ export default function AddNewFile({ confirmationState }) {
             {/* MODAL POUR LA SUPPRESSION D'UNE LIGNE DU TABLEAU ASSOCIE */}
             {openDialogDeleteAssocieRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer la ligne sélectionnée ?"} confirmationState={deleteAssocieRow} /> : null}
 
-        {/* MODAL POUR LA SUPPRESSION D'UNE LIGNE DU TABLEAU FILIALE */}
-        {openDialogDeleteFilialeRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer la ligne sélectionnée ?"} confirmationState={deleteFilialeRow}/>: null}
+            {/* MODAL POUR LA SUPPRESSION D'UNE LIGNE DU TABLEAU FILIALE */}
+            {openDialogDeleteFilialeRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer la ligne sélectionnée ?"} confirmationState={deleteFilialeRow} /> : null}
 
-        {/* MODAL POUR LA SUPPRESSION D'UNE LIGNE DU TABLEAU DOMICILIATION BANCAIRE */}
-        {openDialogDeleteDomBankRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer la ligne sélectionnée ?"} confirmationState={deleteDomBankRow} /> : null}
-        
-        <Formik
-            initialValues={InfosNewFileInitialValues}
-            validationSchema={formInfosNewFileValidationSchema}
-            onSubmit = {(values) =>{
+            {/* MODAL POUR LA SUPPRESSION D'UNE LIGNE DU TABLEAU DOMICILIATION BANCAIRE */}
+            {openDialogDeleteDomBankRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer la ligne sélectionnée ?"} confirmationState={deleteDomBankRow} /> : null}
 
-                // S'assurer que la valeur centrefisc est bien DGE ou CFISC (pas 'centre fiscale')
-                const payload = {
-                    ...values,
-                    centrefisc: values.centrefisc === 'CFISC' || values.centrefisc === 'DGE' ? values.centrefisc : (values.centrefisc === 'centre fiscale' ? 'CFISC' : 'DGE')
-                };
-                handlSubmitNewFile(payload);
-            }}
-        >
-            {({handleChange, handleSubmit, setFieldValue, resetForm, values}) => {
-                return (
-                <Form style={{width:'100%'}}>
-                    <Stack width={"100%"} height={"85%"} spacing={2} alignItems={"flex-start"} justifyContent={"stretch"}>
-                        <Stack width={"100%"} height={"30px"} spacing={2} alignItems={"center"} alignContent={"center"} 
-                                        direction={"row"} justifyContent={"right"}
-                        >
-                            <Typography variant='h6' sx={{color: "black", width: 'calc(100% - 120px)'}} align='left'>Paramétrages: CRM</Typography>
-                            <Button variant="contained" 
-                            onClick={handleSubmit}
-                            style={{borderRadius:"0", 
-                                height:'43px', marginLeft:"5px", width: '120px',
-                                textTransform: 'none', outline: 'none', border: 'none', backgroundColor:initial.theme
-                                }}
-                            >
-                                Enregistrer
-                            </Button>                
-                        </Stack>
+            <Formik
+                initialValues={InfosNewFileInitialValues}
+                validationSchema={formInfosNewFileValidationSchema}
+                onSubmit={(values) => {
 
-                        <Box sx={{ width: '100%', typography: 'body1' }}>
-                            <TabContext value={value}>
-                                <Box sx={{ borderBottom: 1, borderColor: 'transparent' }}>
-                                    <TabList onChange={handleChangeTAB} aria-label="lab API tabs example" variant='scrollable'>
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="infos société" value="1" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="comptabilité" value="2" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="fiscales" value="3" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="Associés" value="4" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="Filiales" value="5" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="Domiciliations bancaires" value="6" />
-                                        
-                                    </TabList>
-                                </Box>
+                    // S'assurer que la valeur centrefisc est bien DGE ou CFISC (pas 'centre fiscale')
+                    const payload = {
+                        ...values,
+                        centrefisc: values.centrefisc === 'CFISC' || values.centrefisc === 'DGE' ? values.centrefisc : (values.centrefisc === 'centre fiscale' ? 'CFISC' : 'DGE')
+                    };
+                    handlSubmitNewFile(payload);
+                }}
+            >
+                {({ handleChange, handleSubmit, setFieldValue, resetForm, values }) => {
 
-                                <TabPanel value="1">
-                                    <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"flex-start"} 
-                                            alignContent={"flex-start"} justifyContent={"stretch"} >
-                                        <Accordion elevation={0} style={{width:"100%", borderBlockColor:"transparent"}}>
-                                            <AccordionSummary
-                                            expandIcon={<MdExpandCircleDown style={{width:"25px", height:"25px", color: '#44D5F0'}}/>}
-                                            aria-controls="panel1-content"
-                                            id="panel1-header"
-                                            style={{flexDirection:"row-reverse"}}
-                                            >
-                                                <Typography style={{fontWeight:'normal', fontSize:"20px", marginLeft:"10px"}}>Coordonnées</Typography>
-                                            </AccordionSummary>
+                    const calculateValeurPart = (capital, nbrPart) => {
+                        const numCapital = parseFloat(capital?.toString().replace(/\s/g, '').replace(',', '.')) || 0;
+                        const numParts = parseFloat(nbrPart) || 0;
+                        if (numParts === 0) return 0;
+                        const valPart = numCapital / numParts;
+                        const valPartFormatted = Number((valPart).toFixed(2));
+                        return valPartFormatted;
+                    };
 
-                                            <AccordionDetails>
-                                                <Stack width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"} 
-                                                alignContent={"flex-start"} justifyContent={"stretch"} direction={"column"}
-                                                marginLeft={"50px"}
-                                                >
-                                                    <Stack spacing={1}>
-                                                        <label htmlFor="nomdossier" style={{fontSize:12, color: '#3FA2F6'}}>Nom du dossier</label>
-                                                        <Field
-                                                        required
-                                                        name='nomdossier'
-                                                        onChange={handleChange}
-                                                        type='text'
-                                                        placeholder=""
-                                                        style={{height:22, borderTop: 'none',
-                                                            borderLeft: 'none',borderRight: 'none', 
-                                                            outline: 'none', fontSize:14, borderWidth:'0.5px', 
-                                                            width: '400px'
-                                                        }}
-                                                        />
-                                                        <ErrorMessage name='nomdossier' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                                    </Stack>
-          
-                                                    <Stack spacing={1}>
-                                                        <label htmlFor="raisonsociale" style={{fontSize:12, color: '#3FA2F6'}}>Raison sociale</label>
-                                                        <Field
-                                                        required
-                                                        name='raisonsociale'
-                                                        onChange={handleChange}
-                                                        type='text'
-                                                        placeholder=""
-                                                        style={{height:22, borderTop: 'none',
-                                                            borderLeft: 'none',borderRight: 'none', 
-                                                            outline: 'none', fontSize:14, borderWidth:'0.5px', 
-                                                            width: '600px'
-                                                        }}
-                                                        />
-                                                        <ErrorMessage name='raisonsociale' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                                    </Stack>
-                                                    
-                                                    <Stack spacing={1}>
-                                                        <label htmlFor="denomination" style={{fontSize:12, color: '#3FA2F6'}}>Dénomination</label>
-                                                        <Field
-                                                        required
-                                                        name='denomination'
-                                                        onChange={handleChange}
-                                                        type='text'
-                                                        placeholder=""
-                                                        style={{height:22, borderTop: 'none',
-                                                            borderLeft: 'none',borderRight: 'none', 
-                                                            outline: 'none', fontSize:14, borderWidth:'0.5px', 
-                                                            width: '600px'
-                                                        }}
-                                                        />
-                                                        <ErrorMessage name='denomination' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                                    </Stack>
-                                                    
-                                                    <Stack width={"100%"} height={"30px"} spacing={20} alignItems={"center"} 
-                                                        alignContent={"center"} justifyContent={"stretch"} direction={"row"}
-                                                        >
-                                                        <Stack spacing={1}>
-                                                            <label htmlFor="nif" style={{fontSize:12, color: '#3FA2F6'}}>Numéro NIF</label>
-                                                            <Field
-                                                            required
-                                                            name='nif'
-                                                            onChange={handleChange}
-                                                            type='text'
-                                                            placeholder=""
-                                                            style={{height:22, borderTop: 'none',
-                                                                borderLeft: 'none',borderRight: 'none', 
-                                                                outline: 'none', fontSize:14, borderWidth:'0.5px', 
-                                                                width: '200px'
-                                                            }}
-                                                            />
-                                                            <ErrorMessage name='nif' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                                        </Stack>
-
-                                                        <Stack spacing={1}>
-                                                            <label htmlFor="stat" style={{fontSize:12, color: '#3FA2F6'}}>Numéro Statistique</label>
-                                                            <Field
-                                                            required
-                                                            name='stat'
-                                                            onChange={handleChange}
-                                                            type='text'
-                                                            placeholder=""
-                                                            style={{height:22, borderTop: 'none',
-                                                                borderLeft: 'none',borderRight: 'none', 
-                                                                outline: 'none', fontSize:14, borderWidth:'0.5px', 
-                                                                width: '200px'
-                                                            }}
-                                                            />
-                                                            <ErrorMessage name='stat' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                                        </Stack>
-                                                        
-                                                        <Stack spacing={1}>
-                                                            <label htmlFor="rcs" style={{fontSize:12, color: '#3FA2F6'}}>Numéro Rcs</label>
-                                                            <Field
-                                                            required
-                                                            name='rcs'
-                                                            onChange={handleChange}
-                                                            type='text'
-                                                            placeholder=""
-                                                            style={{height:22, borderTop: 'none',
-                                                                borderLeft: 'none',borderRight: 'none', 
-                                                                outline: 'none', fontSize:14, borderWidth:'0.5px', 
-                                                                width: '200px'
-                                                            }}
-                                                            />
-                                                            <ErrorMessage name='rcs' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                                        </Stack>
-
-                                                    </Stack>
-                                                    
-                                                    <Stack spacing={1}>
-                                                        <label htmlFor="responsable" style={{fontSize:12, color: '#3FA2F6'}}>Responsable</label>
-                                                        <Field
-                                                        required
-                                                        name='responsable'
-                                                        onChange={handleChange}
-                                                        type='text'
-                                                        placeholder=""
-                                                        style={{height:22, borderTop: 'none',
-                                                            borderLeft: 'none',borderRight: 'none', 
-                                                            outline: 'none', fontSize:14, borderWidth:'0.5px', 
-                                                            width: '400px'
-                                                        }}
-                                                        />
-                                                        <ErrorMessage name='responsable' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                                    </Stack>
-                                                    
-                                                    <Stack spacing={1}>
-                                                        <label htmlFor="expertcomptable" style={{fontSize:12, color: '#3FA2F6'}}>Expert comptable</label>
-                                                        <Field
-                                                        required
-                                                        name='expertcomptable'
-                                                        onChange={handleChange}
-                                                        type='text'
-                                                        placeholder=""
-                                                        style={{height:22, borderTop: 'none',
-                                                            borderLeft: 'none',borderRight: 'none', 
-                                                            outline: 'none', fontSize:14, borderWidth:'0.5px', 
-                                                            width: '400px'
-                                                        }}
-                                                        />
-                                                        <ErrorMessage name='expertcomptable' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                                    </Stack>
-                                                    
-                                                    <Stack spacing={1}>
-                                                        <label htmlFor="cac" style={{fontSize:12, color: '#3FA2F6'}}>Commissaire aux comptes</label>
-                                                        <Field
-                                                        required
-                                                        name='cac'
-                                                        onChange={handleChange}
-                                                        type='text'
-                                                        placeholder=""
-                                                        style={{height:22, borderTop: 'none',
-                                                            borderLeft: 'none',borderRight: 'none', 
-                                                            outline: 'none', fontSize:14, borderWidth:'0.5px', 
-                                                            width: '400px'
-                                                        }}
-                                                        />
-                                                        <ErrorMessage name='cac' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                                    </Stack>
-
-                                                </Stack>
-                                                
-                                            </AccordionDetails>
-                                        </Accordion>
-
-                                        <Accordion elevation={0} style={{width:"100%", borderBlockColor:"transparent"}}>
-                                            <AccordionSummary
-                                            expandIcon={<MdExpandCircleDown style={{width:"25px", height:"25px", color: '#44D5F0'}}/>}
-                                            aria-controls="panel1-content"
-                                            id="panel1-header"
-                                            style={{flexDirection:"row-reverse"}}
-                                            >
-                                                <Typography style={{fontWeight:'normal', fontSize:"20px", marginLeft:"10px"}}>Juridique</Typography>
-                                            </AccordionSummary>
-
-                                            <AccordionDetails>
-                                                <Stack width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"} 
-                                                alignContent={"flex-start"} justifyContent={"stretch"} direction={"column"}
-                                                style={{marginLeft:"50px"}} 
-                                                >
-                                                    <Stack spacing={1}>
-                                                        <label htmlFor="forme" style={{fontSize:12, color: '#3FA2F6'}}>Forme</label>
-                                                        <Field
-                                                        as={Select}
-                                                        required
-                                                        name='forme'
-                                                        type='text'
-                                                        placeholder=""
-                                                        onChange={handleOnChangeFormeSelect(setFieldValue)}
-                                                        sx={{
-                                                            borderRadius:0,
-                                                            width:500,
-                                                            height:40,
-                                                            '& .MuiOutlinedInput-notchedOutline': {
-                                                                borderTop: 'none', // Supprime le cadre
-                                                                borderLeft: 'none',
-                                                                borderRight: 'none',
-                                                                borderWidth:'0.5px'
-                                                            },
-                                                            '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                                borderTop: 'none', // Supprime le cadre
-                                                                borderLeft: 'none',
-                                                                borderRight: 'none',
-                                                                borderWidth:'0.5px'
-                                                            },
-                                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                                borderTop: 'none', // Supprime le cadre
-                                                                borderLeft: 'none',
-                                                                borderRight: 'none',
-                                                                borderWidth:'0.5px'
-                                                            },
-                                                        }}
-                                                        >
-                                                            {listeFormeJuridique.sort((a,b) => a.libelle.localeCompare(b.libelle)).map((item) => (
-                                                                <MenuItem key={item.id} value={item.id}>{item.libelle}</MenuItem>
-                                                            ))};
-                                                        </Field>
-                                                        <ErrorMessage name='forme' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                                    </Stack>
-
-                                                    <Stack spacing={1}>
-                                                        <label htmlFor="activite" style={{fontSize:12, color: '#3FA2F6'}}>Activité</label>
-                                                        <Field
-                                                        as={Select}
-                                                        required
-                                                        name='activite'
-                                                        type='text'
-                                                        placeholder=""
-                                                        onChange={handleOnChangeActiviteSelect(setFieldValue)}
-                                                        sx={{
-                                                            borderRadius:0,
-                                                            width:250,
-                                                            height:40,
-                                                            '& .MuiOutlinedInput-notchedOutline': {
-                                                                borderTop: 'none', // Supprime le cadre
-                                                                borderLeft: 'none',
-                                                                borderRight: 'none',
-                                                                borderWidth:'0.5px'
-                                                            },
-                                                            '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                                borderTop: 'none', // Supprime le cadre
-                                                                borderLeft: 'none',
-                                                                borderRight: 'none',
-                                                                borderWidth:'0.5px'
-                                                            },
-                                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                                borderTop: 'none', // Supprime le cadre
-                                                                borderLeft: 'none',
-                                                                borderRight: 'none',
-                                                                borderWidth:'0.5px'
-                                                            },
-                                                        }}
-                                                        >
-                                                            {listeActivite.sort((a,b) => a.libelle.localeCompare(b.libelle)).map((item) => (
-                                                                <MenuItem key={item.id} value={item.id}>
-                                                                    <Stack direction={'row'} spacing={2}
-                                                                        style={{alignContent:'center', alignItems:'center'}}
-                                                                    >
-                                                                        <Stack direction={'row'}>
-                                                                            {item.icon}
-                                                                        </Stack>
-
-                                                                        <Stack direction={'row'}>
-                                                                            {item.libelle}
-                                                                        </Stack>
-                                                                    </Stack>
-                                                                       
-                                                                </MenuItem>
-                                                            ))};
-                                                        </Field>
-                                                        <ErrorMessage name='activite' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                                    </Stack>
-
-                                                    <Stack spacing={1}>
-                                                        <label htmlFor="detailsactivite" style={{fontSize:12, color: '#3FA2F6'}}>Détails activités</label>
-                                                        <Field
-                                                        required
-                                                        name='detailsactivite'
-                                                        onChange={handleChange}
-                                                        type='text'
-                                                        placeholder=""
-                                                        style={{height:22, borderTop: 'none',
-                                                            borderLeft: 'none',borderRight: 'none', 
-                                                            outline: 'none', fontSize:14, borderWidth:'0.5px', 
-                                                            width: '400px'
-                                                        }}
-                                                        />
-                                                        <ErrorMessage name='detailsactivite' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                                    </Stack>
-                                                </Stack>
-                                            </AccordionDetails>
-                                        </Accordion>
-
-                                        <Accordion elevation={0} style={{width:"100%", borderBlockColor:"transparent"}}>
-                                            <AccordionSummary
-                                            expandIcon={<MdExpandCircleDown style={{width:"25px", height:"25px", color: '#44D5F0'}}/>}
-                                            aria-controls="panel1-content"
-                                            id="panel1-header"
-                                            style={{flexDirection:"row-reverse"}}
-                                            >
-                                                <Typography style={{fontWeight:'normal', fontSize:"20px", marginLeft:"10px"}}>Contact</Typography>
-                                            </AccordionSummary>
-
-                                            <AccordionDetails>
-                                                <Stack width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"} 
-                                                alignContent={"flex-start"} justifyContent={"stretch"} direction={"column"}
-                                                style={{marginLeft:"50px"}}
-                                                >
-                                                    <Stack spacing={1}>
-                                                        <label htmlFor="adresse" style={{fontSize:12, color: '#3FA2F6'}}>Adresse</label>
-                                                        <Field
-                                                        required
-                                                        name='adresse'
-                                                        onChange={handleChange}
-                                                        type='text'
-                                                        placeholder=""
-                                                        style={{height:22, borderTop: 'none',
-                                                            borderLeft: 'none',borderRight: 'none', 
-                                                            outline: 'none', fontSize:14, borderWidth:'0.5px', 
-                                                            width: '600px'
-                                                        }}
-                                                        />
-                                                        <ErrorMessage name='adresse' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                                    </Stack>
-
-                                                    <Stack spacing={1}>
-                                                        <label htmlFor="email" style={{fontSize:12, color: '#3FA2F6'}}>Email</label>
-                                                        <Field
-                                                        required
-                                                        name='email'
-                                                        onChange={handleChange}
-                                                        type='text'
-                                                        placeholder=""
-                                                        style={{height:22, borderTop: 'none',
-                                                            borderLeft: 'none',borderRight: 'none', 
-                                                            outline: 'none', fontSize:14, borderWidth:'0.5px', 
-                                                            width: '400px'
-                                                        }}
-                                                        />
-                                                        <ErrorMessage name='email' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                                    </Stack>
-
-                                                    <Stack spacing={1}>
-                                                        <label htmlFor="telephone" style={{fontSize:12, color: '#3FA2F6'}}>Téléphone</label>
-                                                        <Field
-                                                        required
-                                                        name='telephone'
-                                                        onChange={handleChange}
-                                                        type='text'
-                                                        placeholder=""
-                                                        style={{height:22, borderTop: 'none',
-                                                            borderLeft: 'none',borderRight: 'none', 
-                                                            outline: 'none', fontSize:14, borderWidth:'0.5px', 
-                                                            width: '200px'
-                                                        }}
-                                                        />
-                                                        <ErrorMessage name='telephone' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                                    </Stack>
-
-                                                    <Stack direction="row" spacing={2}>
-                                                        <Stack spacing={1}>
-                                                            <label htmlFor="province" style={{fontSize:12, color: '#3FA2F6'}}>Province</label>
-                                                            <Field
-                                                            as={Select}
-                                                            name='province'
-                                                            onChange={(e) => {
-                                                                handleChange(e);
-                                                                getListeRegions(e.target.value);
-                                                                setFieldValue('region', '');
-                                                                setFieldValue('district', '');
-                                                                setFieldValue('commune', '');
-                                                            }}
-                                                            sx={{
-                                                                borderRadius:0,
-                                                                width:200,
-                                                                height:30,
-                                                                '& .MuiOutlinedInput-notchedOutline': {
-                                                                    borderTop: 'none',
-                                                                    borderLeft: 'none',
-                                                                    borderRight: 'none',
-                                                                    borderWidth:'0.5px'
-                                                                },
-                                                                '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                                    borderTop: 'none',
-                                                                    borderLeft: 'none',
-                                                                    borderRight: 'none',
-                                                                    borderWidth:'0.5px'
-                                                                },
-                                                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                                    borderTop: 'none',
-                                                                    borderLeft: 'none',
-                                                                    borderRight: 'none',
-                                                                    borderWidth:'0.5px'
-                                                                },
-                                                            }}
-                                                            >
-                                                                {listProvinces.map((item) => (
-                                                                    <MenuItem key={item.id} value={item.name}>
-                                                                        {item.name}
-                                                                    </MenuItem>
-                                                                ))}
-                                                            </Field>
-                                                            <ErrorMessage name='province' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                                        </Stack>
-
-                                                        <Stack spacing={1}>
-                                                            <label htmlFor="region" style={{fontSize:12, color: '#3FA2F6'}}>Région</label>
-                                                            <Field
-                                                            as={Select}
-                                                            name='region'
-                                                            onChange={(e) => {
-                                                                handleChange(e);
-                                                                const province = values.province;
-                                                                getListeDistricts(province, e.target.value);
-                                                                setFieldValue('district', '');
-                                                                setFieldValue('commune', '');
-                                                            }}
-                                                            sx={{
-                                                                borderRadius:0,
-                                                                width:200,
-                                                                height:30,
-                                                                '& .MuiOutlinedInput-notchedOutline': {
-                                                                    borderTop: 'none',
-                                                                    borderLeft: 'none',
-                                                                    borderRight: 'none',
-                                                                    borderWidth:'0.5px'
-                                                                },
-                                                                '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                                    borderTop: 'none',
-                                                                    borderLeft: 'none',
-                                                                    borderRight: 'none',
-                                                                    borderWidth:'0.5px'
-                                                                },
-                                                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                                    borderTop: 'none',
-                                                                    borderLeft: 'none',
-                                                                    borderRight: 'none',
-                                                                    borderWidth:'0.5px'
-                                                                },
-                                                            }}
-                                                            >
-                                                                {listRegions.map((item) => (
-                                                                    <MenuItem key={item.id} value={item.name}>
-                                                                        {item.name}
-                                                                    </MenuItem>
-                                                                ))}
-                                                            </Field>
-                                                            <ErrorMessage name='region' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                                        </Stack>
-                                                    </Stack>
-
-                                                    <Stack direction="row" spacing={2}>
-                                                        <Stack spacing={1}>
-                                                            <label htmlFor="district" style={{fontSize:12, color: '#3FA2F6'}}>District</label>
-                                                            <Field
-                                                            as={Select}
-                                                            name='district'
-                                                            onChange={(e) => {
-                                                                handleChange(e);
-                                                                const province = values.province;
-                                                                const region = values.region;
-                                                                getListeCommunes(province, region, e.target.value);
-                                                                setFieldValue('commune', '');
-                                                            }}
-                                                            sx={{
-                                                                borderRadius:0,
-                                                                width:200,
-                                                                height:30,
-                                                                '& .MuiOutlinedInput-notchedOutline': {
-                                                                    borderTop: 'none',
-                                                                    borderLeft: 'none',
-                                                                    borderRight: 'none',
-                                                                    borderWidth:'0.5px'
-                                                                },
-                                                                '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                                    borderTop: 'none',
-                                                                    borderLeft: 'none',
-                                                                    borderRight: 'none',
-                                                                    borderWidth:'0.5px'
-                                                                },
-                                                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                                    borderTop: 'none',
-                                                                    borderLeft: 'none',
-                                                                    borderRight: 'none',
-                                                                    borderWidth:'0.5px'
-                                                                },
-                                                            }}
-                                                            >
-                                                                {listDistricts.map((item) => (
-                                                                    <MenuItem key={item.id} value={item.name}>
-                                                                        {item.name}
-                                                                    </MenuItem>
-                                                                ))}
-                                                            </Field>
-                                                            <ErrorMessage name='district' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                                        </Stack>
-
-                                                        <Stack spacing={1}>
-                                                            <label htmlFor="commune" style={{fontSize:12, color: '#3FA2F6'}}>Commune</label>
-                                                            <Field
-                                                            as={Select}
-                                                            name='commune'
-                                                            onChange={handleChange}
-                                                            sx={{
-                                                                borderRadius:0,
-                                                                width:200,
-                                                                height:30,
-                                                                '& .MuiOutlinedInput-notchedOutline': {
-                                                                    borderTop: 'none',
-                                                                    borderLeft: 'none',
-                                                                    borderRight: 'none',
-                                                                    borderWidth:'0.5px'
-                                                                },
-                                                                '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                                    borderTop: 'none',
-                                                                    borderLeft: 'none',
-                                                                    borderRight: 'none',
-                                                                    borderWidth:'0.5px'
-                                                                },
-                                                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                                    borderTop: 'none',
-                                                                    borderLeft: 'none',
-                                                                    borderRight: 'none',
-                                                                    borderWidth:'0.5px'
-                                                                },
-                                                            }}
-                                                            >
-                                                                {listCommunes.map((item) => (
-                                                                    <MenuItem key={item.id} value={item.name}>
-                                                                        {item.name}
-                                                                    </MenuItem>
-                                                                ))}
-                                                            </Field>
-                                                            <ErrorMessage name='commune' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                                        </Stack>
-                                                    </Stack>
-                                                </Stack>
-                                                
-                                            </AccordionDetails>
-                                        </Accordion>
-                                    </Stack>
-                                </TabPanel>
-
-                                <TabPanel value="2">
-                                    <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"} 
-                                            alignContent={"flex-start"} justifyContent={"stretch"}
+                    return (
+                        <Form style={{ width: '100%' }}>
+                            <Stack width={"100%"} height={"85%"} spacing={2} alignItems={"flex-start"} justifyContent={"stretch"}>
+                                <Stack width={"100%"} height={"30px"} spacing={2} alignItems={"center"} alignContent={"center"}
+                                    direction={"row"} justifyContent={"right"}
+                                >
+                                    <Typography variant='h6' sx={{ color: "black", width: 'calc(100% - 120px)' }} align='left'>Paramétrages: CRM</Typography>
+                                    <Button variant="contained"
+                                        onClick={handleSubmit}
+                                        style={{
+                                            borderRadius: "0",
+                                            height: '43px', marginLeft: "5px", width: '120px',
+                                            textTransform: 'none', outline: 'none', border: 'none', backgroundColor: initial.theme
+                                        }}
                                     >
-                                        <Stack spacing={1}>
-                                            <label htmlFor="plancomptable" style={{fontSize:12, color: '#3FA2F6'}}>Plan comptable</label>
-                                            <Field
-                                            as={Select}
-                                            required
-                                            name='plancomptable'
-                                            type='text'
-                                            placeholder=""
-                                            onChange={handleOnChangePlanComptableSelect(setFieldValue)}
-                                            sx={{
-                                                borderRadius:0,
-                                                width:300,
-                                                height:40,
-                                                '& .MuiOutlinedInput-notchedOutline': {
-                                                    borderTop: 'none', // Supprime le cadre
-                                                    borderLeft: 'none',
-                                                    borderRight: 'none',
-                                                    borderWidth:'0.5px'
-                                                },
-                                                '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                    borderTop: 'none', // Supprime le cadre
-                                                    borderLeft: 'none',
-                                                    borderRight: 'none',
-                                                    borderWidth:'0.5px'
-                                                },
-                                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                    borderTop: 'none', // Supprime le cadre
-                                                    borderLeft: 'none',
-                                                    borderRight: 'none',
-                                                    borderWidth:'0.5px'
-                                                },
-                                            }}
+                                        Enregistrer
+                                    </Button>
+                                </Stack>
+
+                                <Box sx={{ width: '100%', typography: 'body1' }}>
+                                    <TabContext value={value}>
+                                        <Box sx={{ borderBottom: 1, borderColor: 'transparent' }}>
+                                            <TabList onChange={handleChangeTAB} aria-label="lab API tabs example" variant='scrollable'>
+                                                <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="infos société" value="1" />
+                                                <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="comptabilité" value="2" />
+                                                <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="fiscales" value="3" />
+                                                <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="Associés" value="4" />
+                                                <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="Filiales" value="5" />
+                                                <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="Domiciliations bancaires" value="6" />
+
+                                            </TabList>
+                                        </Box>
+
+                                        <TabPanel value="1">
+                                            <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"flex-start"}
+                                                alignContent={"flex-start"} justifyContent={"stretch"} >
+                                                <Accordion elevation={0} style={{ width: "100%", borderBlockColor: "transparent" }}>
+                                                    <AccordionSummary
+                                                        expandIcon={<MdExpandCircleDown style={{ width: "25px", height: "25px", color: '#44D5F0' }} />}
+                                                        aria-controls="panel1-content"
+                                                        id="panel1-header"
+                                                        style={{ flexDirection: "row-reverse" }}
+                                                    >
+                                                        <Typography style={{ fontWeight: 'normal', fontSize: "20px", marginLeft: "10px" }}>Coordonnées</Typography>
+                                                    </AccordionSummary>
+
+                                                    <AccordionDetails>
+                                                        <Stack width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"}
+                                                            alignContent={"flex-start"} justifyContent={"stretch"} direction={"column"}
+                                                            marginLeft={"50px"}
+                                                        >
+                                                            <Stack spacing={1}>
+                                                                <label htmlFor="nomdossier" style={{ fontSize: 12, color: '#3FA2F6' }}>Nom du dossier</label>
+                                                                <Field
+                                                                    required
+                                                                    name='nomdossier'
+                                                                    onChange={handleChange}
+                                                                    type='text'
+                                                                    placeholder=""
+                                                                    style={{
+                                                                        height: 22, borderTop: 'none',
+                                                                        borderLeft: 'none', borderRight: 'none',
+                                                                        outline: 'none', fontSize: 14, borderWidth: '0.5px',
+                                                                        width: '400px'
+                                                                    }}
+                                                                />
+                                                                <ErrorMessage name='nomdossier' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                            </Stack>
+
+                                                            <Stack spacing={1}>
+                                                                <label htmlFor="raisonsociale" style={{ fontSize: 12, color: '#3FA2F6' }}>Raison sociale</label>
+                                                                <Field
+                                                                    required
+                                                                    name='raisonsociale'
+                                                                    onChange={handleChange}
+                                                                    type='text'
+                                                                    placeholder=""
+                                                                    style={{
+                                                                        height: 22, borderTop: 'none',
+                                                                        borderLeft: 'none', borderRight: 'none',
+                                                                        outline: 'none', fontSize: 14, borderWidth: '0.5px',
+                                                                        width: '600px'
+                                                                    }}
+                                                                />
+                                                                <ErrorMessage name='raisonsociale' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                            </Stack>
+
+                                                            <Stack spacing={1}>
+                                                                <label htmlFor="denomination" style={{ fontSize: 12, color: '#3FA2F6' }}>Dénomination</label>
+                                                                <Field
+                                                                    required
+                                                                    name='denomination'
+                                                                    onChange={handleChange}
+                                                                    type='text'
+                                                                    placeholder=""
+                                                                    style={{
+                                                                        height: 22, borderTop: 'none',
+                                                                        borderLeft: 'none', borderRight: 'none',
+                                                                        outline: 'none', fontSize: 14, borderWidth: '0.5px',
+                                                                        width: '600px'
+                                                                    }}
+                                                                />
+                                                                <ErrorMessage name='denomination' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                            </Stack>
+
+                                                            <Stack width={"100%"} height={"30px"} spacing={20} alignItems={"center"}
+                                                                alignContent={"center"} justifyContent={"stretch"} direction={"row"}
+                                                            >
+                                                                <Stack spacing={1}>
+                                                                    <label htmlFor="nif" style={{ fontSize: 12, color: '#3FA2F6' }}>Numéro NIF</label>
+                                                                    <Field
+                                                                        required
+                                                                        name='nif'
+                                                                        onChange={handleChange}
+                                                                        type='text'
+                                                                        placeholder=""
+                                                                        style={{
+                                                                            height: 22, borderTop: 'none',
+                                                                            borderLeft: 'none', borderRight: 'none',
+                                                                            outline: 'none', fontSize: 14, borderWidth: '0.5px',
+                                                                            width: '200px'
+                                                                        }}
+                                                                    />
+                                                                    <ErrorMessage name='nif' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                </Stack>
+
+                                                                <Stack spacing={1}>
+                                                                    <label htmlFor="stat" style={{ fontSize: 12, color: '#3FA2F6' }}>Numéro Statistique</label>
+                                                                    <Field
+                                                                        required
+                                                                        name='stat'
+                                                                        onChange={handleChange}
+                                                                        type='text'
+                                                                        placeholder=""
+                                                                        style={{
+                                                                            height: 22, borderTop: 'none',
+                                                                            borderLeft: 'none', borderRight: 'none',
+                                                                            outline: 'none', fontSize: 14, borderWidth: '0.5px',
+                                                                            width: '200px'
+                                                                        }}
+                                                                    />
+                                                                    <ErrorMessage name='stat' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                </Stack>
+
+                                                                <Stack spacing={1}>
+                                                                    <label htmlFor="rcs" style={{ fontSize: 12, color: '#3FA2F6' }}>Numéro Rcs</label>
+                                                                    <Field
+                                                                        required
+                                                                        name='rcs'
+                                                                        onChange={handleChange}
+                                                                        type='text'
+                                                                        placeholder=""
+                                                                        style={{
+                                                                            height: 22, borderTop: 'none',
+                                                                            borderLeft: 'none', borderRight: 'none',
+                                                                            outline: 'none', fontSize: 14, borderWidth: '0.5px',
+                                                                            width: '200px'
+                                                                        }}
+                                                                    />
+                                                                    <ErrorMessage name='rcs' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                </Stack>
+
+                                                            </Stack>
+
+                                                            <Stack spacing={1}>
+                                                                <label htmlFor="responsable" style={{ fontSize: 12, color: '#3FA2F6' }}>Responsable</label>
+                                                                <Field
+                                                                    required
+                                                                    name='responsable'
+                                                                    onChange={handleChange}
+                                                                    type='text'
+                                                                    placeholder=""
+                                                                    style={{
+                                                                        height: 22, borderTop: 'none',
+                                                                        borderLeft: 'none', borderRight: 'none',
+                                                                        outline: 'none', fontSize: 14, borderWidth: '0.5px',
+                                                                        width: '400px'
+                                                                    }}
+                                                                />
+                                                                <ErrorMessage name='responsable' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                            </Stack>
+
+                                                            <Stack spacing={1}>
+                                                                <label htmlFor="expertcomptable" style={{ fontSize: 12, color: '#3FA2F6' }}>Expert comptable</label>
+                                                                <Field
+                                                                    required
+                                                                    name='expertcomptable'
+                                                                    onChange={handleChange}
+                                                                    type='text'
+                                                                    placeholder=""
+                                                                    style={{
+                                                                        height: 22, borderTop: 'none',
+                                                                        borderLeft: 'none', borderRight: 'none',
+                                                                        outline: 'none', fontSize: 14, borderWidth: '0.5px',
+                                                                        width: '400px'
+                                                                    }}
+                                                                />
+                                                                <ErrorMessage name='expertcomptable' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                            </Stack>
+
+                                                            <Stack spacing={1}>
+                                                                <label htmlFor="cac" style={{ fontSize: 12, color: '#3FA2F6' }}>Commissaire aux comptes</label>
+                                                                <Field
+                                                                    required
+                                                                    name='cac'
+                                                                    onChange={handleChange}
+                                                                    type='text'
+                                                                    placeholder=""
+                                                                    style={{
+                                                                        height: 22, borderTop: 'none',
+                                                                        borderLeft: 'none', borderRight: 'none',
+                                                                        outline: 'none', fontSize: 14, borderWidth: '0.5px',
+                                                                        width: '400px'
+                                                                    }}
+                                                                />
+                                                                <ErrorMessage name='cac' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                            </Stack>
+
+                                                        </Stack>
+
+                                                    </AccordionDetails>
+                                                </Accordion>
+
+                                                <Accordion elevation={0} style={{ width: "100%", borderBlockColor: "transparent" }}>
+                                                    <AccordionSummary
+                                                        expandIcon={<MdExpandCircleDown style={{ width: "25px", height: "25px", color: '#44D5F0' }} />}
+                                                        aria-controls="panel1-content"
+                                                        id="panel1-header"
+                                                        style={{ flexDirection: "row-reverse" }}
+                                                    >
+                                                        <Typography style={{ fontWeight: 'normal', fontSize: "20px", marginLeft: "10px" }}>Juridique</Typography>
+                                                    </AccordionSummary>
+
+                                                    <AccordionDetails>
+                                                        <Stack width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"}
+                                                            alignContent={"flex-start"} justifyContent={"stretch"} direction={"column"}
+                                                            style={{ marginLeft: "50px" }}
+                                                        >
+                                                            <Stack spacing={1}>
+                                                                <label htmlFor="forme" style={{ fontSize: 12, color: '#3FA2F6' }}>Forme</label>
+                                                                <Field
+                                                                    as={Select}
+                                                                    required
+                                                                    name='forme'
+                                                                    type='text'
+                                                                    placeholder=""
+                                                                    onChange={handleOnChangeFormeSelect(setFieldValue)}
+                                                                    sx={{
+                                                                        borderRadius: 0,
+                                                                        width: 500,
+                                                                        height: 40,
+                                                                        '& .MuiOutlinedInput-notchedOutline': {
+                                                                            borderTop: 'none', // Supprime le cadre
+                                                                            borderLeft: 'none',
+                                                                            borderRight: 'none',
+                                                                            borderWidth: '0.5px'
+                                                                        },
+                                                                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                                            borderTop: 'none', // Supprime le cadre
+                                                                            borderLeft: 'none',
+                                                                            borderRight: 'none',
+                                                                            borderWidth: '0.5px'
+                                                                        },
+                                                                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                                            borderTop: 'none', // Supprime le cadre
+                                                                            borderLeft: 'none',
+                                                                            borderRight: 'none',
+                                                                            borderWidth: '0.5px'
+                                                                        },
+                                                                    }}
+                                                                >
+                                                                    {listeFormeJuridique.sort((a, b) => a.libelle.localeCompare(b.libelle)).map((item) => (
+                                                                        <MenuItem key={item.id} value={item.id}>{item.libelle}</MenuItem>
+                                                                    ))};
+                                                                </Field>
+                                                                <ErrorMessage name='forme' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                            </Stack>
+
+                                                            <Stack spacing={1}>
+                                                                <label htmlFor="activite" style={{ fontSize: 12, color: '#3FA2F6' }}>Activité</label>
+                                                                <Field
+                                                                    as={Select}
+                                                                    required
+                                                                    name='activite'
+                                                                    type='text'
+                                                                    placeholder=""
+                                                                    onChange={handleOnChangeActiviteSelect(setFieldValue)}
+                                                                    sx={{
+                                                                        borderRadius: 0,
+                                                                        width: 250,
+                                                                        height: 40,
+                                                                        '& .MuiOutlinedInput-notchedOutline': {
+                                                                            borderTop: 'none', // Supprime le cadre
+                                                                            borderLeft: 'none',
+                                                                            borderRight: 'none',
+                                                                            borderWidth: '0.5px'
+                                                                        },
+                                                                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                                            borderTop: 'none', // Supprime le cadre
+                                                                            borderLeft: 'none',
+                                                                            borderRight: 'none',
+                                                                            borderWidth: '0.5px'
+                                                                        },
+                                                                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                                            borderTop: 'none', // Supprime le cadre
+                                                                            borderLeft: 'none',
+                                                                            borderRight: 'none',
+                                                                            borderWidth: '0.5px'
+                                                                        },
+                                                                    }}
+                                                                >
+                                                                    {listeActivite.sort((a, b) => a.libelle.localeCompare(b.libelle)).map((item) => (
+                                                                        <MenuItem key={item.id} value={item.id}>
+                                                                            <Stack direction={'row'} spacing={2}
+                                                                                style={{ alignContent: 'center', alignItems: 'center' }}
+                                                                            >
+                                                                                <Stack direction={'row'}>
+                                                                                    {item.icon}
+                                                                                </Stack>
+
+                                                                                <Stack direction={'row'}>
+                                                                                    {item.libelle}
+                                                                                </Stack>
+                                                                            </Stack>
+
+                                                                        </MenuItem>
+                                                                    ))};
+                                                                </Field>
+                                                                <ErrorMessage name='activite' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                            </Stack>
+
+                                                            <Stack spacing={1}>
+                                                                <label htmlFor="detailsactivite" style={{ fontSize: 12, color: '#3FA2F6' }}>Détails activités</label>
+                                                                <Field
+                                                                    required
+                                                                    name='detailsactivite'
+                                                                    onChange={handleChange}
+                                                                    type='text'
+                                                                    placeholder=""
+                                                                    style={{
+                                                                        height: 22, borderTop: 'none',
+                                                                        borderLeft: 'none', borderRight: 'none',
+                                                                        outline: 'none', fontSize: 14, borderWidth: '0.5px',
+                                                                        width: '400px'
+                                                                    }}
+                                                                />
+                                                                <ErrorMessage name='detailsactivite' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                            </Stack>
+                                                        </Stack>
+                                                    </AccordionDetails>
+                                                </Accordion>
+
+                                                <Accordion elevation={0} style={{ width: "100%", borderBlockColor: "transparent" }}>
+                                                    <AccordionSummary
+                                                        expandIcon={<MdExpandCircleDown style={{ width: "25px", height: "25px", color: '#44D5F0' }} />}
+                                                        aria-controls="panel1-content"
+                                                        id="panel1-header"
+                                                        style={{ flexDirection: "row-reverse" }}
+                                                    >
+                                                        <Typography style={{ fontWeight: 'normal', fontSize: "20px", marginLeft: "10px" }}>Contact</Typography>
+                                                    </AccordionSummary>
+
+                                                    <AccordionDetails>
+                                                        <Stack width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"}
+                                                            alignContent={"flex-start"} justifyContent={"stretch"} direction={"column"}
+                                                            style={{ marginLeft: "50px" }}
+                                                        >
+                                                            <Stack spacing={1}>
+                                                                <label htmlFor="adresse" style={{ fontSize: 12, color: '#3FA2F6' }}>Adresse</label>
+                                                                <Field
+                                                                    required
+                                                                    name='adresse'
+                                                                    onChange={handleChange}
+                                                                    type='text'
+                                                                    placeholder=""
+                                                                    style={{
+                                                                        height: 22, borderTop: 'none',
+                                                                        borderLeft: 'none', borderRight: 'none',
+                                                                        outline: 'none', fontSize: 14, borderWidth: '0.5px',
+                                                                        width: '600px'
+                                                                    }}
+                                                                />
+                                                                <ErrorMessage name='adresse' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                            </Stack>
+
+                                                            <Stack spacing={1}>
+                                                                <label htmlFor="email" style={{ fontSize: 12, color: '#3FA2F6' }}>Email</label>
+                                                                <Field
+                                                                    required
+                                                                    name='email'
+                                                                    onChange={handleChange}
+                                                                    type='text'
+                                                                    placeholder=""
+                                                                    style={{
+                                                                        height: 22, borderTop: 'none',
+                                                                        borderLeft: 'none', borderRight: 'none',
+                                                                        outline: 'none', fontSize: 14, borderWidth: '0.5px',
+                                                                        width: '400px'
+                                                                    }}
+                                                                />
+                                                                <ErrorMessage name='email' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                            </Stack>
+
+                                                            <Stack spacing={1}>
+                                                                <label htmlFor="telephone" style={{ fontSize: 12, color: '#3FA2F6' }}>Téléphone</label>
+                                                                <Field
+                                                                    required
+                                                                    name='telephone'
+                                                                    onChange={handleChange}
+                                                                    type='text'
+                                                                    placeholder=""
+                                                                    style={{
+                                                                        height: 22, borderTop: 'none',
+                                                                        borderLeft: 'none', borderRight: 'none',
+                                                                        outline: 'none', fontSize: 14, borderWidth: '0.5px',
+                                                                        width: '200px'
+                                                                    }}
+                                                                />
+                                                                <ErrorMessage name='telephone' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                            </Stack>
+
+                                                            <Stack direction="row" spacing={2}>
+                                                                <Stack spacing={1}>
+                                                                    <label htmlFor="province" style={{ fontSize: 12, color: '#3FA2F6' }}>Province</label>
+                                                                    <Field
+                                                                        as={Select}
+                                                                        name='province'
+                                                                        onChange={(e) => {
+                                                                            handleChange(e);
+                                                                            getListeRegions(e.target.value);
+                                                                            setFieldValue('region', '');
+                                                                            setFieldValue('district', '');
+                                                                            setFieldValue('commune', '');
+                                                                        }}
+                                                                        sx={{
+                                                                            borderRadius: 0,
+                                                                            width: 200,
+                                                                            height: 30,
+                                                                            '& .MuiOutlinedInput-notchedOutline': {
+                                                                                borderTop: 'none',
+                                                                                borderLeft: 'none',
+                                                                                borderRight: 'none',
+                                                                                borderWidth: '0.5px'
+                                                                            },
+                                                                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                                                borderTop: 'none',
+                                                                                borderLeft: 'none',
+                                                                                borderRight: 'none',
+                                                                                borderWidth: '0.5px'
+                                                                            },
+                                                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                                                borderTop: 'none',
+                                                                                borderLeft: 'none',
+                                                                                borderRight: 'none',
+                                                                                borderWidth: '0.5px'
+                                                                            },
+                                                                        }}
+                                                                    >
+                                                                        {listProvinces.map((item) => (
+                                                                            <MenuItem key={item.id} value={item.name}>
+                                                                                {item.name}
+                                                                            </MenuItem>
+                                                                        ))}
+                                                                    </Field>
+                                                                    <ErrorMessage name='province' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                </Stack>
+
+                                                                <Stack spacing={1}>
+                                                                    <label htmlFor="region" style={{ fontSize: 12, color: '#3FA2F6' }}>Région</label>
+                                                                    <Field
+                                                                        as={Select}
+                                                                        name='region'
+                                                                        onChange={(e) => {
+                                                                            handleChange(e);
+                                                                            const province = values.province;
+                                                                            getListeDistricts(province, e.target.value);
+                                                                            setFieldValue('district', '');
+                                                                            setFieldValue('commune', '');
+                                                                        }}
+                                                                        sx={{
+                                                                            borderRadius: 0,
+                                                                            width: 200,
+                                                                            height: 30,
+                                                                            '& .MuiOutlinedInput-notchedOutline': {
+                                                                                borderTop: 'none',
+                                                                                borderLeft: 'none',
+                                                                                borderRight: 'none',
+                                                                                borderWidth: '0.5px'
+                                                                            },
+                                                                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                                                borderTop: 'none',
+                                                                                borderLeft: 'none',
+                                                                                borderRight: 'none',
+                                                                                borderWidth: '0.5px'
+                                                                            },
+                                                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                                                borderTop: 'none',
+                                                                                borderLeft: 'none',
+                                                                                borderRight: 'none',
+                                                                                borderWidth: '0.5px'
+                                                                            },
+                                                                        }}
+                                                                    >
+                                                                        {listRegions.map((item) => (
+                                                                            <MenuItem key={item.id} value={item.name}>
+                                                                                {item.name}
+                                                                            </MenuItem>
+                                                                        ))}
+                                                                    </Field>
+                                                                    <ErrorMessage name='region' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                </Stack>
+                                                            </Stack>
+
+                                                            <Stack direction="row" spacing={2}>
+                                                                <Stack spacing={1}>
+                                                                    <label htmlFor="district" style={{ fontSize: 12, color: '#3FA2F6' }}>District</label>
+                                                                    <Field
+                                                                        as={Select}
+                                                                        name='district'
+                                                                        onChange={(e) => {
+                                                                            handleChange(e);
+                                                                            const province = values.province;
+                                                                            const region = values.region;
+                                                                            getListeCommunes(province, region, e.target.value);
+                                                                            setFieldValue('commune', '');
+                                                                        }}
+                                                                        sx={{
+                                                                            borderRadius: 0,
+                                                                            width: 200,
+                                                                            height: 30,
+                                                                            '& .MuiOutlinedInput-notchedOutline': {
+                                                                                borderTop: 'none',
+                                                                                borderLeft: 'none',
+                                                                                borderRight: 'none',
+                                                                                borderWidth: '0.5px'
+                                                                            },
+                                                                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                                                borderTop: 'none',
+                                                                                borderLeft: 'none',
+                                                                                borderRight: 'none',
+                                                                                borderWidth: '0.5px'
+                                                                            },
+                                                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                                                borderTop: 'none',
+                                                                                borderLeft: 'none',
+                                                                                borderRight: 'none',
+                                                                                borderWidth: '0.5px'
+                                                                            },
+                                                                        }}
+                                                                    >
+                                                                        {listDistricts.map((item) => (
+                                                                            <MenuItem key={item.id} value={item.name}>
+                                                                                {item.name}
+                                                                            </MenuItem>
+                                                                        ))}
+                                                                    </Field>
+                                                                    <ErrorMessage name='district' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                </Stack>
+
+                                                                <Stack spacing={1}>
+                                                                    <label htmlFor="commune" style={{ fontSize: 12, color: '#3FA2F6' }}>Commune</label>
+                                                                    <Field
+                                                                        as={Select}
+                                                                        name='commune'
+                                                                        onChange={handleChange}
+                                                                        sx={{
+                                                                            borderRadius: 0,
+                                                                            width: 200,
+                                                                            height: 30,
+                                                                            '& .MuiOutlinedInput-notchedOutline': {
+                                                                                borderTop: 'none',
+                                                                                borderLeft: 'none',
+                                                                                borderRight: 'none',
+                                                                                borderWidth: '0.5px'
+                                                                            },
+                                                                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                                                borderTop: 'none',
+                                                                                borderLeft: 'none',
+                                                                                borderRight: 'none',
+                                                                                borderWidth: '0.5px'
+                                                                            },
+                                                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                                                borderTop: 'none',
+                                                                                borderLeft: 'none',
+                                                                                borderRight: 'none',
+                                                                                borderWidth: '0.5px'
+                                                                            },
+                                                                        }}
+                                                                    >
+                                                                        {listCommunes.map((item) => (
+                                                                            <MenuItem key={item.id} value={item.name}>
+                                                                                {item.name}
+                                                                            </MenuItem>
+                                                                        ))}
+                                                                    </Field>
+                                                                    <ErrorMessage name='commune' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                </Stack>
+                                                            </Stack>
+                                                        </Stack>
+
+                                                    </AccordionDetails>
+                                                </Accordion>
+                                            </Stack>
+                                        </TabPanel>
+
+                                        <TabPanel value="2">
+                                            <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
+                                                alignContent={"flex-start"} justifyContent={"stretch"}
                                             >
-                                                <MenuItem key={0} value={0}><em>Aucun</em></MenuItem>
-                                                {listModel?.map((item) => (
-                                                    <MenuItem key={item.id} value={item.id}>{item.nom}</MenuItem>
-                                                ))};
-                                            </Field>
-                                            <ErrorMessage name='plancomptable' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                        </Stack>
+                                                <Stack spacing={1}>
+                                                    <label htmlFor="plancomptable" style={{ fontSize: 12, color: '#3FA2F6' }}>Plan comptable</label>
+                                                    <Field
+                                                        as={Select}
+                                                        required
+                                                        name='plancomptable'
+                                                        type='text'
+                                                        placeholder=""
+                                                        onChange={handleOnChangePlanComptableSelect(setFieldValue)}
+                                                        sx={{
+                                                            borderRadius: 0,
+                                                            width: 300,
+                                                            height: 40,
+                                                            '& .MuiOutlinedInput-notchedOutline': {
+                                                                borderTop: 'none', // Supprime le cadre
+                                                                borderLeft: 'none',
+                                                                borderRight: 'none',
+                                                                borderWidth: '0.5px'
+                                                            },
+                                                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                                borderTop: 'none', // Supprime le cadre
+                                                                borderLeft: 'none',
+                                                                borderRight: 'none',
+                                                                borderWidth: '0.5px'
+                                                            },
+                                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                                borderTop: 'none', // Supprime le cadre
+                                                                borderLeft: 'none',
+                                                                borderRight: 'none',
+                                                                borderWidth: '0.5px'
+                                                            },
+                                                        }}
+                                                    >
+                                                        <MenuItem key={0} value={0}><em>Aucun</em></MenuItem>
+                                                        {listModel?.map((item) => (
+                                                            <MenuItem key={item.id} value={item.id}>{item.nom}</MenuItem>
+                                                        ))};
+                                                    </Field>
+                                                    <ErrorMessage name='plancomptable' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                </Stack>
 
-                                        <Typography style={{fontWeight:'bold', fontSize:"18px", marginLeft:"0px", marginTop:"50px"}}>Paramétrages de longueur des comptes</Typography>
-                                        
-                                        <Stack width={"100%"} height={"30px"} spacing={10} alignItems={"center"} 
-                                            alignContent={"center"} justifyContent={"stretch"} direction={"row"}
-                                            style={{marginLeft:"0px"}}
-                                        >
-                                            <Stack spacing={1}>
-                                                <label htmlFor="longueurcptstd" style={{fontSize:12, color: '#3FA2F6'}}>Compte standard</label>
-                                                <Field
-                                                required
-                                                name='longueurcptstd'
-                                                onChange={handleChange}
-                                                type='text'
-                                                placeholder=""
-                                                style={{height:22, borderTop: 'none',
-                                                    borderLeft: 'none',borderRight: 'none', 
-                                                    outline: 'none', fontSize:14, borderWidth:'0.5px', 
-                                                    width: '200px'
-                                                }}
-                                                />
-                                                <ErrorMessage name='longueurcptstd' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                            </Stack>
+                                                <Typography style={{ fontWeight: 'bold', fontSize: "18px", marginLeft: "0px", marginTop: "50px" }}>Paramétrages de longueur des comptes</Typography>
 
-                                            <Stack spacing={1}>
-                                                <label htmlFor="longueurcptaux" style={{fontSize:12, color: '#3FA2F6'}}>Compte auxiliaire</label>
-                                                <Field
-                                                required
-                                                name='longueurcptaux'
-                                                onChange={handleChange}
-                                                type='text'
-                                                placeholder=""
-                                                style={{height:22, borderTop: 'none',
-                                                    borderLeft: 'none',borderRight: 'none', 
-                                                    outline: 'none', fontSize:14, borderWidth:'0.5px', 
-                                                    width: '200px',
-                                                }}
-                                                />
-                                                <ErrorMessage name='longueurcptaux' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                            </Stack>
-                                            
-                                            <Stack spacing={0} direction={'row'}
-                                                style={{alignItems:'center'}}
-                                            >
-                                                <Field
-                                                required
-                                                name='autocompletion'
-                                                type='checkbox'
-                                                placeholder=""
-                                                style={{height:20, borderTop: 'none',
-                                                    borderLeft: 'none',borderRight: 'none', 
-                                                    outline: 'none', fontSize:14, borderWidth:'0.5px', 
-                                                    width: 20, marginRight: 10
-                                                }}
-                                                />
-                                                <label htmlFor="autocompletion" style={{fontSize:15, color: 'black'}}>Auto-complétion</label>
-                                                <ErrorMessage name='autocompletion' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                            </Stack>
-                                        </Stack>
-                                        
-                                        <Stack spacing={0} direction={'row'}
-                                                style={{alignItems:'center', marginTop: 40}}
-                                        >
-                                            <Field
-                                            required
-                                            name='avecanalytique'
-                                            type='checkbox'
-                                            placeholder=""
-                                            style={{height:20, borderTop: 'none',
-                                                borderLeft: 'none',borderRight: 'none', 
-                                                outline: 'none', fontSize:14, borderWidth:'0.5px', 
-                                                width: 20, marginRight: 10, 
-                                            }}
-                                            />
-                                            <label htmlFor="avecanalytique" style={{fontSize:15, color: 'black'}}>Avec analytique</label>
-                                            <ErrorMessage name='avecanalytique' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                        </Stack>
-                                    </Stack>
-                                </TabPanel>
+                                                <Stack width={"100%"} height={"30px"} spacing={10} alignItems={"center"}
+                                                    alignContent={"center"} justifyContent={"stretch"} direction={"row"}
+                                                    style={{ marginLeft: "0px" }}
+                                                >
+                                                    <Stack spacing={1}>
+                                                        <label htmlFor="longueurcptstd" style={{ fontSize: 12, color: '#3FA2F6' }}>Compte standard</label>
+                                                        <Field
+                                                            required
+                                                            name='longueurcptstd'
+                                                            onChange={handleChange}
+                                                            type='text'
+                                                            placeholder=""
+                                                            style={{
+                                                                height: 22, borderTop: 'none',
+                                                                borderLeft: 'none', borderRight: 'none',
+                                                                outline: 'none', fontSize: 14, borderWidth: '0.5px',
+                                                                width: '200px'
+                                                            }}
+                                                        />
+                                                        <ErrorMessage name='longueurcptstd' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                    </Stack>
 
-                                <TabPanel value="3">
-                                    <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"20px"}>
-                                        <Typography style={{fontWeight:'bold', fontSize:"18px", marginLeft:"0px", marginTop:"5px"}}>Impôt sur le revenu (IR)</Typography>
-                                   
-                                    {/* Bloc radio DGE / centre fiscale */}
-                                    <Stack direction="column" spacing={1} sx={{mt: 2, mb: 2}}>
-                                        <Typography variant="subtitle1" sx={{fontWeight: 500, color: '#888'}}>Type de centre fiscal</Typography>
-                                        <Stack direction="row" spacing={4} alignItems="center">
-                                            <FormControlLabel
-    control={<Field type="radio" name="centrefisc" value="DGE" as="input" />}
-    label={<span style={{fontWeight: values.centrefisc === 'DGE' ? 600 : 400}}>DGE</span>}
-/>
-<FormControlLabel
-    control={<Field type="radio" name="centrefisc" value="CFISC" as="input" />}
-    label={<span style={{fontWeight: values.centrefisc === 'CFISC' ? 600 : 400}}>centre fiscale</span>}
-/>
-                                        </Stack>
-                                    </Stack>
-                                 
-                                        <Stack spacing={1}>
-                                            <label htmlFor="tauxir" style={{fontSize:12, color: '#3FA2F6'}}>Taux IR</label>
-                                            <Field
-                                            required
-                                            name='tauxir'
-                                            onChange={handleChange}
-                                            type='text'
-                                            placeholder=""
-                                            style={{height:22, borderTop: 'none',
-                                                    borderLeft: 'none',borderRight: 'none', 
-                                                    outline: 'none', fontSize:14, borderWidth:'0.5px', 
-                                                    width: '100px',
-                                                }}
-                                            />
-                                            <ErrorMessage name='tauxir' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                        </Stack>
-                                   
-                                        <Typography style={{fontWeight:'bold', fontSize:"14px", marginLeft:"0px", marginTop:"30px"}}>Paramétrages minimum de perception</Typography>
-                                                                                   
-                                        <Stack width={"100%"} height={"30px"} spacing={10} alignItems={"center"} 
-                                            alignContent={"center"} justifyContent={"stretch"} direction={"row"}
-                                            style={{marginLeft:"0px"}}
-                                        >
-                                            <Stack spacing={1}>
-                                                <label htmlFor="pourcentageca" style={{fontSize:12, color: '#3FA2F6'}}>Pourcentage CA</label>
-                                                <Field
-                                                required
-                                                name='pourcentageca'
-                                                onChange={handleChange}
-                                                type='text'
-                                                placeholder=""
-                                                style={{height:22, borderTop: 'none',
-                                                    borderLeft: 'none',borderRight: 'none', 
-                                                    outline: 'none', fontSize:14, borderWidth:'0.5px', 
-                                                    width: '100px'
-                                                }}
-                                            />
-                                            <ErrorMessage name='pourcentageca' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                        </Stack>
-                                   
-                                        <Stack spacing={1}>
-                                            <label htmlFor="montantmin" style={{fontSize:12, color: '#3FA2F6'}}>Montant minimum</label>
-                                            <Field
-                                            required
-                                            name='montantmin'
-                                            onChange={handleChange}
-                                            type='number'
-                                            placeholder=""
-                                            style={{height:22, borderTop: 'none',
-                                                borderLeft: 'none',borderRight: 'none', 
-                                                outline: 'none', fontSize:14, borderWidth:'0.5px', 
-                                                width: '150px', textAlign: 'right',
-                                            }}
-                                            />
-                                            <ErrorMessage name='montantmin' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                        </Stack>
-                                    </Stack>
-                                   
-                                        <Typography style={{fontWeight:'bold', fontSize:"18px", marginLeft:"0px", marginTop:"50px"}}>Taxe sur la valeur ajoutée (TVA)</Typography>
-                                                                               
-                                        <Stack spacing={0} direction={'row'}
-                                            style={{alignItems:'center', marginTop: 20}}
-                                        >
-                                            <Field
-                                            required
-                                            name='assujettitva'
-                                            type='checkbox'
-                                            placeholder=""
-                                            style={{height:20, borderTop: 'none',
-                                                borderLeft: 'none',borderRight: 'none', 
-                                                outline: 'none', fontSize:14, borderWidth:'0.5px', 
-                                                width: 20, marginRight: 10, 
-                                            }}
-                                            />
-                                            <label htmlFor="assujettitva" style={{fontSize:15, color: 'black'}}>Assujettie à la TVA</label>
-                                            <ErrorMessage name='assujettitva' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                        </Stack>
-                                    </Stack>
-                                </TabPanel>
+                                                    <Stack spacing={1}>
+                                                        <label htmlFor="longueurcptaux" style={{ fontSize: 12, color: '#3FA2F6' }}>Compte auxiliaire</label>
+                                                        <Field
+                                                            required
+                                                            name='longueurcptaux'
+                                                            onChange={handleChange}
+                                                            type='text'
+                                                            placeholder=""
+                                                            style={{
+                                                                height: 22, borderTop: 'none',
+                                                                borderLeft: 'none', borderRight: 'none',
+                                                                outline: 'none', fontSize: 14, borderWidth: '0.5px',
+                                                                width: '200px',
+                                                            }}
+                                                        />
+                                                        <ErrorMessage name='longueurcptaux' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                    </Stack>
+
+                                                    <Stack spacing={0} direction={'row'}
+                                                        style={{ alignItems: 'center' }}
+                                                    >
+                                                        <Field
+                                                            required
+                                                            name='autocompletion'
+                                                            type='checkbox'
+                                                            placeholder=""
+                                                            style={{
+                                                                height: 20, borderTop: 'none',
+                                                                borderLeft: 'none', borderRight: 'none',
+                                                                outline: 'none', fontSize: 14, borderWidth: '0.5px',
+                                                                width: 20, marginRight: 10
+                                                            }}
+                                                        />
+                                                        <label htmlFor="autocompletion" style={{ fontSize: 15, color: 'black' }}>Auto-complétion</label>
+                                                        <ErrorMessage name='autocompletion' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                    </Stack>
+                                                </Stack>
+
+                                                <Stack spacing={0} direction={'row'}
+                                                    style={{ alignItems: 'center', marginTop: 40 }}
+                                                >
+                                                    <Field
+                                                        required
+                                                        name='avecanalytique'
+                                                        type='checkbox'
+                                                        placeholder=""
+                                                        style={{
+                                                            height: 20, borderTop: 'none',
+                                                            borderLeft: 'none', borderRight: 'none',
+                                                            outline: 'none', fontSize: 14, borderWidth: '0.5px',
+                                                            width: 20, marginRight: 10,
+                                                        }}
+                                                    />
+                                                    <label htmlFor="avecanalytique" style={{ fontSize: 15, color: 'black' }}>Avec analytique</label>
+                                                    <ErrorMessage name='avecanalytique' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                </Stack>
+                                            </Stack>
+                                        </TabPanel>
+
+                                        <TabPanel value="3">
+                                            <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"20px"}>
+                                                <Typography style={{ fontWeight: 'bold', fontSize: "18px", marginLeft: "0px", marginTop: "5px" }}>Impôt sur le revenu (IR)</Typography>
+
+                                                {/* Bloc radio DGE / centre fiscale */}
+                                                <Stack direction="column" spacing={1} sx={{ mt: 2, mb: 2 }}>
+                                                    <Typography variant="subtitle1" sx={{ fontWeight: 500, color: '#888' }}>Type de centre fiscal</Typography>
+                                                    <Stack direction="row" spacing={4} alignItems="center">
+                                                        <FormControlLabel
+                                                            control={<Field type="radio" name="centrefisc" value="DGE" as="input" />}
+                                                            label={<span style={{ fontWeight: values.centrefisc === 'DGE' ? 600 : 400 }}>DGE</span>}
+                                                        />
+                                                        <FormControlLabel
+                                                            control={<Field type="radio" name="centrefisc" value="CFISC" as="input" />}
+                                                            label={<span style={{ fontWeight: values.centrefisc === 'CFISC' ? 600 : 400 }}>centre fiscale</span>}
+                                                        />
+                                                    </Stack>
+                                                </Stack>
+
+                                                <Stack spacing={1}>
+                                                    <label htmlFor="tauxir" style={{ fontSize: 12, color: '#3FA2F6' }}>Taux IR</label>
+                                                    <Field
+                                                        required
+                                                        name='tauxir'
+                                                        onChange={handleChange}
+                                                        type='text'
+                                                        placeholder=""
+                                                        style={{
+                                                            height: 22, borderTop: 'none',
+                                                            borderLeft: 'none', borderRight: 'none',
+                                                            outline: 'none', fontSize: 14, borderWidth: '0.5px',
+                                                            width: '100px',
+                                                        }}
+                                                    />
+                                                    <ErrorMessage name='tauxir' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                </Stack>
+
+                                                <Typography style={{ fontWeight: 'bold', fontSize: "14px", marginLeft: "0px", marginTop: "30px" }}>Paramétrages minimum de perception</Typography>
+
+                                                <Stack width={"100%"} height={"30px"} spacing={10} alignItems={"center"}
+                                                    alignContent={"center"} justifyContent={"stretch"} direction={"row"}
+                                                    style={{ marginLeft: "0px" }}
+                                                >
+                                                    <Stack spacing={1}>
+                                                        <label htmlFor="pourcentageca" style={{ fontSize: 12, color: '#3FA2F6' }}>Pourcentage CA</label>
+                                                        <Field
+                                                            required
+                                                            name='pourcentageca'
+                                                            onChange={handleChange}
+                                                            type='text'
+                                                            placeholder=""
+                                                            style={{
+                                                                height: 22, borderTop: 'none',
+                                                                borderLeft: 'none', borderRight: 'none',
+                                                                outline: 'none', fontSize: 14, borderWidth: '0.5px',
+                                                                width: '100px'
+                                                            }}
+                                                        />
+                                                        <ErrorMessage name='pourcentageca' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                    </Stack>
+
+                                                    <Stack spacing={1}>
+                                                        <label htmlFor="montantmin" style={{ fontSize: 12, color: '#3FA2F6' }}>Montant minimum</label>
+                                                        <Field
+                                                            required
+                                                            name='montantmin'
+                                                            onChange={handleChange}
+                                                            type='number'
+                                                            placeholder=""
+                                                            style={{
+                                                                height: 22, borderTop: 'none',
+                                                                borderLeft: 'none', borderRight: 'none',
+                                                                outline: 'none', fontSize: 14, borderWidth: '0.5px',
+                                                                width: '150px', textAlign: 'right',
+                                                            }}
+                                                        />
+                                                        <ErrorMessage name='montantmin' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                    </Stack>
+                                                </Stack>
+
+                                                <Typography style={{ fontWeight: 'bold', fontSize: "18px", marginLeft: "0px", marginTop: "50px" }}>Taxe sur la valeur ajoutée (TVA)</Typography>
+
+                                                <Stack spacing={0} direction={'row'}
+                                                    style={{ alignItems: 'center', marginTop: 20 }}
+                                                >
+                                                    <Field
+                                                        required
+                                                        name='assujettitva'
+                                                        type='checkbox'
+                                                        placeholder=""
+                                                        style={{
+                                                            height: 20, borderTop: 'none',
+                                                            borderLeft: 'none', borderRight: 'none',
+                                                            outline: 'none', fontSize: 14, borderWidth: '0.5px',
+                                                            width: 20, marginRight: 10,
+                                                        }}
+                                                    />
+                                                    <label htmlFor="assujettitva" style={{ fontSize: 15, color: 'black' }}>Assujettie à la TVA</label>
+                                                    <ErrorMessage name='assujettitva' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                </Stack>
+                                            </Stack>
+                                        </TabPanel>
 
                                         <TabPanel value="4">
                                             <Stack width={"100%"} height={"100%"} spacing={6} alignItems={"flex-start"}
@@ -1806,54 +2253,57 @@ export default function AddNewFile({ confirmationState }) {
                                                         </IconButton>
                                                     </Tooltip>
 
-                                            <Tooltip title="Modifier la ligne sélectionnée">
-                                                <IconButton
-                                                disabled={disableModifyBouton}
-                                                variant="contained" 
-                                                onClick={handleEditClick(selectedRowId)}
-                                                style={{width:"35px", height:'35px', 
-                                                    borderRadius:"2px", borderColor: "transparent",
-                                                    backgroundColor: initial.theme,
-                                                    textTransform: 'none', outline: 'none'
-                                                    }}
-                                                >
-                                                    <FaRegPenToSquare style={{width:'25px', height:'25px', color:'white'}}/>
-                                                </IconButton>
-                                            </Tooltip>
+                                                    <Tooltip title="Modifier la ligne sélectionnée">
+                                                        <IconButton
+                                                            disabled={disableModifyBouton}
+                                                            variant="contained"
+                                                            onClick={handleEditClick(selectedRowId)}
+                                                            style={{
+                                                                width: "35px", height: '35px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
 
-                                            <Tooltip title="Sauvegarder les modifications">
-                                                <span>
-                                                    <IconButton 
-                                                    disabled={disableSaveBouton}
-                                                    variant="contained" 
-                                                    onClick={handleSaveClick(selectedRowId)}
-                                                    style={{width:"35px", height:'35px', 
-                                                        borderRadius:"2px", borderColor: "transparent",
-                                                        backgroundColor: initial.theme,
-                                                        textTransform: 'none', outline: 'none'
-                                                    }}
-                                                    >
-                                                        <TfiSave style={{width:'50px', height:'50px',color: 'white'}}/>
-                                                    </IconButton>
-                                                </span>
-                                            </Tooltip>
+                                                    <Tooltip title="Sauvegarder les modifications">
+                                                        <span>
+                                                            <IconButton
+                                                                disabled={disableSaveBouton}
+                                                                variant="contained"
+                                                                onClick={handleSaveClick(selectedRowId)}
+                                                                style={{
+                                                                    width: "35px", height: '35px',
+                                                                    borderRadius: "2px", borderColor: "transparent",
+                                                                    backgroundColor: initial.theme,
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                            >
+                                                                <TfiSave style={{ width: '50px', height: '50px', color: 'white' }} />
+                                                            </IconButton>
+                                                        </span>
+                                                    </Tooltip>
 
-                                            <Tooltip title="Annuler les modifications">
-                                                <span>
-                                                    <IconButton 
-                                                    disabled={disableCancelBouton}
-                                                    variant="contained" 
-                                                    onClick={handleCancelClick(selectedRowId)}
-                                                    style={{width:"35px", height:'35px', 
-                                                        borderRadius:"2px", borderColor: "transparent",
-                                                        backgroundColor: initial.button_delete_color,
-                                                        textTransform: 'none', outline: 'none'
-                                                    }}
-                                                    >
-                                                        <VscClose style={{width:'50px', height:'50px', color: 'white'}}/>
-                                                    </IconButton>
-                                                </span>
-                                            </Tooltip>
+                                                    <Tooltip title="Annuler les modifications">
+                                                        <span>
+                                                            <IconButton
+                                                                disabled={disableCancelBouton}
+                                                                variant="contained"
+                                                                onClick={handleCancelClick(selectedRowId)}
+                                                                style={{
+                                                                    width: "35px", height: '35px',
+                                                                    borderRadius: "2px", borderColor: "transparent",
+                                                                    backgroundColor: initial.button_delete_color,
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                            >
+                                                                <VscClose style={{ width: '50px', height: '50px', color: 'white' }} />
+                                                            </IconButton>
+                                                        </span>
+                                                    </Tooltip>
 
                                                     <Tooltip title="Supprimer la ligne sélectionné">
                                                         <span>
@@ -2062,14 +2512,155 @@ export default function AddNewFile({ confirmationState }) {
 
                                             </Stack>
                                         </TabPanel>
+
+                                        <TabPanel value="6">
+                                            <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
+                                                alignContent={"flex-start"} justifyContent={"stretch"} >
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                                    direction={"row"} justifyContent={"right"}
+                                                >
+                                                    <Tooltip title="Ajouter une ligne">
+                                                        <IconButton
+                                                            disabled={disableAddRowBoutonDomBank}
+                                                            variant="contained"
+                                                            onClick={handleOpenDialogAddNewDomBank}
+                                                            style={{
+                                                                width: "35px", height: '35px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Modifier la ligne sélectionnée">
+                                                        <IconButton
+                                                            disabled={disableModifyBoutonDomBank}
+                                                            variant="contained"
+                                                            onClick={handleEditClickDomBank(selectedRowIdDomBank)}
+                                                            style={{
+                                                                width: "35px", height: '35px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Sauvegarder les modifications">
+                                                        <span>
+                                                            <IconButton
+                                                                disabled={disableSaveBoutonDomBank}
+                                                                variant="contained"
+                                                                onClick={handleSaveClickDomBank(selectedRowIdDomBank)}
+                                                                style={{
+                                                                    width: "35px", height: '35px',
+                                                                    borderRadius: "2px", borderColor: "transparent",
+                                                                    backgroundColor: initial.theme,
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                            >
+                                                                <TfiSave style={{ width: '50px', height: '50px', color: 'white' }} />
+                                                            </IconButton>
+                                                        </span>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Annuler les modifications">
+                                                        <span>
+                                                            <IconButton
+                                                                disabled={disableCancelBoutonDomBank}
+                                                                variant="contained"
+                                                                onClick={handleCancelClickDomBank(selectedRowIdDomBank)}
+                                                                style={{
+                                                                    width: "35px", height: '35px',
+                                                                    borderRadius: "2px", borderColor: "transparent",
+                                                                    backgroundColor: initial.button_delete_color,
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                            >
+                                                                <VscClose style={{ width: '50px', height: '50px', color: 'white' }} />
+                                                            </IconButton>
+                                                        </span>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Supprimer la ligne sélectionné">
+                                                        <span>
+                                                            <IconButton
+                                                                disabled={disableDeleteBoutonDomBank}
+                                                                onClick={handleOpenDialogConfirmDeleteAssocieRowDomBank}
+                                                                variant="contained"
+                                                                style={{
+                                                                    width: "35px", height: '35px',
+                                                                    borderRadius: "2px", borderColor: "transparent",
+                                                                    backgroundColor: initial.button_delete_color,
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                            >
+                                                                <IoMdTrash style={{ width: '50px', height: '50px', color: 'white' }} />
+                                                            </IconButton>
+                                                        </span>
+                                                    </Tooltip>
+                                                </Stack>
+
+                                                <Stack width={"100%"} height={'60vh'}>
+                                                    <DataGrid
+                                                        disableMultipleSelection={DataGridStyle.disableMultipleSelection}
+                                                        disableColumnSelector={DataGridStyle.disableColumnSelector}
+                                                        disableDensitySelector={DataGridStyle.disableDensitySelector}
+                                                        disableRowSelectionOnClick
+                                                        disableSelectionOnClick={true}
+                                                        localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                                                        slots={{ toolbar: QuickFilter }}
+                                                        sx={DataGridStyle.sx}
+                                                        rowHeight={DataGridStyle.rowHeight}
+                                                        columnHeaderHeight={DataGridStyle.columnHeaderHeight}
+                                                        rows={Array.isArray(listDomBank) ? listDomBank : []}
+                                                        onRowClick={(e) => handleCellEditCommitDomBank(e.row)}
+                                                        onRowSelectionModelChange={ids => {
+                                                            setSelectedRowDomBank(ids);
+                                                            saveSelectedRowDomBank(ids);
+                                                            deselectRow(ids);
+                                                        }}
+                                                        rowSelectionModel={selectedRowDomBank}
+
+                                                        editMode='row'
+                                                        selectionModel={selectedRowIdDomBank}
+                                                        rowModesModel={rowModesModelDomBank}
+                                                        onRowModesModelChange={handleRowModesModelChangeDomBank}
+                                                        onRowEditStop={handleRowEditStopDomBank}
+                                                        processRowUpdate={processRowUpdateDomBank(setFieldValue)}
+
+                                                        columns={DomBankColumnHeader}
+                                                        initialState={{
+                                                            pagination: {
+                                                                paginationModel: { page: 0, pageSize: 100 },
+                                                            },
+                                                        }}
+                                                        experimentalFeatures={{ newEditingApi: true }}
+                                                        pageSizeOptions={[50, 100]}
+                                                        pagination={DataGridStyle.pagination}
+                                                        checkboxSelection={DataGridStyle.checkboxSelection}
+                                                        columnVisibilityModel={{
+                                                            id: false,
+                                                        }}
+                                                    />
+                                                </Stack>
+
+                                            </Stack>
+                                        </TabPanel>
+
                                     </TabContext>
                                 </Box>
                             </Stack>
 
-                </Form>
-                );
-            }}
-        </Formik>        
-    </Paper>
-  )
+                        </Form>
+                    );
+                }}
+            </Formik>
+        </Paper>
+    )
 }

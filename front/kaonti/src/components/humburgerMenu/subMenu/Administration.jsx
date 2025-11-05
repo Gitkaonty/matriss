@@ -25,6 +25,12 @@ const traitementList = [
         path: "/tab/administration/personnel",
         urldynamic: true
     },
+    {
+        text: 'Rapprochements bancaires',
+        name: "rapprochements",
+        path: "/tab/administration/rapprochements",
+        urldynamic: true
+    },
 ];
 
 const importList = [
@@ -52,12 +58,12 @@ const importList = [
         path: "/tab/administration/importJournal",
         urldynamic: true
     },
-    {
-        text: 'Modèle plan comptable',
-        name: "modelePlanComptable",
-        path: "/tab/administration/importModelePlanComptable",
-        urldynamic: false
-    },
+    // {
+    //     text: 'Modèle plan comptable',
+    //     name: "modelePlanComptable",
+    //     path: "/tab/administration/importModelePlanComptable",
+    //     urldynamic: false
+    // },
 ];
 
 const exportList = [
@@ -75,12 +81,14 @@ const exportList = [
     {
         text: 'Grand livre',
         name: "grandLivre",
-        path: "#"
+        path: "/tab/administration/exportGrandLivre",
+        urldynamic: true
     },
     {
         text: 'Journal comptable',
         name: "journalComptable",
-        path: "#"
+        path: "/tab/administration/exportJournal",
+        urldynamic: true
     },
     // {
     //     text: 'Liasse E-bilan',

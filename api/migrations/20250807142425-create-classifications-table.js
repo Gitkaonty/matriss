@@ -9,8 +9,7 @@ module.exports = {
       },
       classe: {
         type: Sequelize.STRING,
-        allowNull: false,
-        unique: true
+        allowNull: false
       },
       remarque: {
         type: Sequelize.STRING,

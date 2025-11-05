@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import Layout from './context/Layout';
 import RequireAuth from './context/RequireAuth';
 import NotFoundPage from './pages/NotFoundPage';
@@ -13,7 +14,7 @@ import SaisieComponent from './components/menuComponent/administration/saisie/Sa
 import ConsultationComponent from './components/menuComponent/administration/consultation/Consultation';
 import ImportBalance from './components/menuComponent/administration/import/ImportBalance';
 import ImportJournal from './components/menuComponent/administration/import/ImportJournal';
-import ImportModelePlanComptable from './components/menuComponent/administration/import/ImportModelePlanComptable';
+// import ImportModelePlanComptable from './components/menuComponent/administration/import/ImportModelePlanComptable';
 import ImportAnnexeComponent from './components/ImportAnnexeComponent';
 import ImportAnnexeDeclarationFiscaleComponent from './components/ImportAnnexeDeclarationFiscaleComponent';
 import ExportBalance from './components/menuComponent/administration/export/ExportBalance';
@@ -38,6 +39,9 @@ import HistoriqueDeclaration from './components/menuComponent/Declaration/Histor
 import DeclarationTVA from './components/menuComponent/Declaration/Tva/ParamTva';
 import ParamChiffreAffaires from './components/menuComponent/Parametrages/chiffreAffaires/ParamChiffreAffaires';
 import DeclarationIsi from './components/menuComponent/Declaration/ISI/DeclarationIsi';
+import ExportJournal from './components/menuComponent/administration/export/ExportJournal';
+import ExportGrandLivre from './components/menuComponent/administration/export/ExportGrandLivre';
+import RapprochementsBancaires from './components/menuComponent/administration/rapprochements/RapprochementsBancaires';
 
 const ROLES = {
   'SuperAdmin': 3355,
@@ -48,7 +52,9 @@ const ROLES = {
 
 export default function App() {
   return (
-    <Routes>
+    <>
+      <Toaster position="top-right" />
+      <Routes>
       <Route path="/" element={<Layout />} >
         {/*Publics routes */}
         <Route path='/' element={<Login />} />
@@ -67,12 +73,15 @@ export default function App() {
               <Route path='/tab/administration/consultation/:id' element={<ConsultationComponent />} />
               <Route path='/tab/administration/importBalance/:id' element={<ImportBalance />} />
               <Route path='/tab/administration/importJournal/:id' element={<ImportJournal />} />
-              <Route path='/tab/administration/importModelePlanComptable' element={<ImportModelePlanComptable />} />
+              {/* <Route path='/tab/administration/importModelePlanComptable' element={<ImportModelePlanComptable />} /> */}
               <Route path='/tab/administration/importAnnexeDeclarationEbilan/:id' element={<ImportAnnexeComponent />} />
               <Route path='/tab/administration/importAnnexeDeclarationFiscale' element={<ImportAnnexeDeclarationFiscaleComponent />} />
               <Route path='/tab/administration/exportBalance/:id' element={<ExportBalance />} />
               <Route path='/tab/administration/personnel/:id' element={<PersonnelComponent />} />
-
+              <Route path='/tab/administration/exportJournal/:id' element={<ExportJournal />} />
+              <Route path='/tab/administration/exportGrandLivre/:id' element={<ExportGrandLivre />} />
+              {/* <Route path='/tab/administration/rapprochements/:id' element={<RapprochementsBancaires />} /> */}
+              <Route path='/tab/administration/rapprochements/:id' element={<RapprochementsBancaires />} />
               <Route path='/tab/revision/revisionAnomalieEbilan' element={<RevisionAnomalieEbilanComponent />} />
               <Route path='/tab/revision/revisionPrecontrolFiscal' element={<RevisionPrecontroleFiscalComponent />} />
 
@@ -86,7 +95,7 @@ export default function App() {
               <Route path='/tab/parametrages/paramCrm/:id' element={<ParamCRM />} />
               <Route path='/tab/parametrages/paramMapping/:id' element={<ParamMappingComponent />} />
               <Route path='/tab/parametrages/paramClassification/:id' element={<ClassificationSalariesComponent />} />
-              <Route path='/tab/parametrages/fonctions/:id' element={<FonctionsComponent />} />
+              <Route path='/tab/parametrages/paramFonctions/:id' element={<FonctionsComponent />} />
               <Route path='/tab/parametrages/chiffreDaffaires/:id' element={<ParamChiffreAffaires />} />
 
               <Route path='/tab/declaration/declarationIRSA/:id' element={<DeclarationIRSAComponent />} />
@@ -100,6 +109,7 @@ export default function App() {
         {/* catch all */}
         <Route path='*' element={<NotFoundPage />} />
       </Route>
-    </Routes>
+      </Routes>
+    </>
   )
 }

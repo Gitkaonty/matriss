@@ -286,10 +286,40 @@ async function autoCalcUnified({ dossierId, compteId, exerciceId, mois, annee, d
                   libelle: lib,
                   montant: Number(amount || 0),
                 };
-                const created = await db.formulaireTvaAnnexes.create(payload);
-                if (debug) console.log('[AUTO-CALC][UNIFIED][CA] create missing row (grp01)', payload);
-                formRows.push(created);
-                updates.push({ id_code: Number(codeNum), groupe: '01', from: 'journals', montant: Number(amount || 0), created: true });
+                // 1) Rechercher s'il existe déjà une ligne sur la période (sécurité supplémentaire)
+                const existPeriod = await db.formulaireTvaAnnexes.findOne({ where: payload });
+                if (existPeriod) {
+                  // Mettre à jour le montant si différent
+                  if (Number(existPeriod.montant) !== Number(amount || 0)) {
+                    await existPeriod.update({ montant: Number(amount || 0) });
+                    updates.push({ id_code: Number(codeNum), groupe: '01', from: 'journals', montant: Number(amount || 0), updated: true });
+                  }
+                  formRows.push(existPeriod);
+                } else {
+                  // 2) Sinon, tenter de réutiliser un placeholder (mois/annee NULL) pour ce code
+                  const placeholder = await db.formulaireTvaAnnexes.findOne({
+                    where: {
+                      id_dossier: Number(dossierId),
+                      id_compte: Number(compteId),
+                      id_exercice: Number(exerciceId),
+                      id_code: Number(codeNum),
+                      mois: { [db.Sequelize.Op.is]: null },
+                      annee: { [db.Sequelize.Op.is]: null },
+                    }
+                  });
+                  if (placeholder) {
+                    await placeholder.update({ mois: mPer, annee: yPer, libelle: lib, montant: Number(amount || 0) });
+                    if (debug) console.log('[AUTO-CALC][UNIFIED][CA] reuse placeholder -> period (grp01)', { code: codeNum, mois: mPer, annee: yPer });
+                    formRows.push(placeholder);
+                    updates.push({ id_code: Number(codeNum), groupe: '01', from: 'journals', montant: Number(amount || 0), reused: true });
+                  } else {
+                    // 3) Dernier recours: upsert idempotent (protégé par un index unique côté DB si présent)
+                    const [rowUp, created] = await db.formulaireTvaAnnexes.upsert(payload, { returning: true });
+                    if (debug) console.log('[AUTO-CALC][UNIFIED][CA] upsert row (grp01)', { payload, created });
+                    formRows.push(rowUp);
+                    updates.push({ id_code: Number(codeNum), groupe: '01', from: 'journals', montant: Number(amount || 0), created: !!created });
+                  }
+                }
                 continue;
               }
             } catch (e) {

@@ -9,36 +9,45 @@ const formatDate = (dateStr) => {
 };
 
 const generateTitle = (sheetName, label, dossier, compte, date_debut, date_fin, cellEnd) => {
-    sheetName.insertRow(1, [
-        label
-    ])
+  // ===== Ligne 1 : Titre principal =====
+  sheetName.insertRow(1, [label]);
+  sheetName.mergeCells(`A1:${cellEnd}1`);
 
-    sheetName.insertRow(2, [
-        `Dossier : ${dossier}\nCompte : ${compte}\nExercice du : ${date_debut} au ${date_fin}`
-    ]);
+  const titreTftd = sheetName.getRow(1);
+  titreTftd.font = { bold: true, size: 20 };
+  titreTftd.alignment = {
+    horizontal: 'center',
+    vertical: 'middle',
+    wrapText: true
+  };
+  titreTftd.height = 25;
 
-    sheetName.mergeCells(`A1:${cellEnd}1`);
-    sheetName.mergeCells(`A2:${cellEnd}2`)
+  // ===== Ligne 2 : Dossier(centrés) =====
+  sheetName.insertRow(2, [`Dossier : ${dossier || ''}`]);
+  sheetName.mergeCells(`A2:${cellEnd}2`);
 
-    const titreTftd = sheetName.getRow(1);
-    titreTftd.font = { bold: true, size: 20 };
-    titreTftd.alignment = {
-        horizontal: 'center',
-        vertical: 'middle',
-        wrapText: true
-    };
-    titreTftd.height = 25;
+  const sousTitreTftd = sheetName.getRow(2);
+  sousTitreTftd.font = { italic: true, bold: true, size: 15, color: { argb: 'FF555555' } };
+  sousTitreTftd.alignment = {
+    horizontal: 'center',
+    vertical: 'middle',
+    wrapText: true
+  };
+  sousTitreTftd.height = 25;
 
-    const sousTitreTftd = sheetName.getRow(2);
+//   ===== Ligne 3 : Période (alignée à gauche) =====
+  sheetName.insertRow(3, [`Période du : ${date_debut || ''} au ${date_fin || ''}`]);
+  sheetName.mergeCells(`A3:${cellEnd}3`);
 
-    sousTitreTftd.font = { bold: true, size: 12 };
-    sousTitreTftd.alignment = {
-        horizontal: 'left',
-        vertical: 'middle',
-        wrapText: true
-    };
-    sousTitreTftd.height = 50;
-}
+  const periodeRow = sheetName.getRow(4);
+  periodeRow.font = { italic: true, size: 12, color: { argb: 'FF777777' } };
+  periodeRow.alignment = {
+    horizontal: 'left',
+    vertical: 'middle'
+  };
+  periodeRow.height = 20;
+};
+
 
 const exportBilanToExcel = async (id_compte, id_dossier, id_exercice, workbook, dossier, compte, date_debut, date_fin) => {
     const bilanActif = await recupTableau.recupBILAN_ACTIF(id_compte, id_dossier, id_exercice);
@@ -60,7 +69,7 @@ const exportBilanToExcel = async (id_compte, id_dossier, id_exercice, workbook, 
 
     generateTitle(sheetActif, 'Liste des Bilan actif', dossier, compte, date_debut, date_fin, 'F');
 
-    const headerActif = sheetActif.getRow(3);
+    const headerActif = sheetActif.getRow(4);
     headerActif.eachCell((cell, colNumber) => {
         cell.fill = {
             type: 'pattern',
@@ -105,7 +114,7 @@ const exportBilanToExcel = async (id_compte, id_dossier, id_exercice, workbook, 
         }
     });
 
-    for (let i = 3; i <= 6; i++) {
+    for (let i = 4; i <= 6; i++) {
         sheetActif.getColumn(i).numFmt = '#,##0.00';
     }
 
@@ -123,7 +132,7 @@ const exportBilanToExcel = async (id_compte, id_dossier, id_exercice, workbook, 
 
     generateTitle(sheetPassif, 'Liste des Bilan passif', dossier, compte, date_debut, date_fin, 'D');
 
-    const headerPassif = sheetPassif.getRow(3);
+    const headerPassif = sheetPassif.getRow(4);
     headerPassif.eachCell((cell, colNumber) => {
         cell.fill = {
             type: 'pattern',
@@ -186,7 +195,7 @@ const exportCrnToExcel = async (id_compte, id_dossier, id_exercice, workbook, do
 
     generateTitle(sheetCrn, 'Liste des compte de résultats par fonction', dossier, compte, date_debut, date_fin, 'D');
 
-    const headerCrn = sheetCrn.getRow(3);
+    const headerCrn = sheetCrn.getRow(4);
     headerCrn.eachCell((cell, colNumber) => {
         cell.fill = {
             type: 'pattern',
@@ -243,7 +252,7 @@ const exportCrfToExcel = async (id_compte, id_dossier, id_exercice, workbook, do
 
     generateTitle(sheetCrf, 'Liste des compte de résultats par fonction', dossier, compte, date_debut, date_fin, 'D');
 
-    const headerCrf = sheetCrf.getRow(3);
+    const headerCrf = sheetCrf.getRow(4);
     headerCrf.eachCell((cell, colNumber) => {
         cell.fill = {
             type: 'pattern',
@@ -305,7 +314,7 @@ const exportTftdToExcel = async (id_compte, id_dossier, id_exercice, workbook, d
     generateTitle(sheetTftd, 'Liste des Tableau de flux de trésoreries méthode directe', dossier, compte, date_debut, date_fin, 'E');
 
     // Style de l'entête
-    const headerRow = sheetTftd.getRow(3);
+    const headerRow = sheetTftd.getRow(4);
     headerRow.eachCell((cell, colNumber) => {
         cell.fill = {
             type: 'pattern',
@@ -368,7 +377,7 @@ const exportTftiToExcel = async (id_compte, id_dossier, id_exercice, workbook, d
     generateTitle(sheetTfti, 'Liste des Tableau de flux de trésoreries méthode indirecte', dossier, compte, date_debut, date_fin, 'D');
 
     // Style de l'entête
-    const headerRow = sheetTfti.getRow(3);
+    const headerRow = sheetTfti.getRow(4);
     headerRow.eachCell((cell, colNumber) => {
         cell.fill = {
             type: 'pattern',
@@ -431,7 +440,7 @@ const exportEvcpToExcel = async (id_compte, id_dossier, id_exercice, workbook, d
     generateTitle(sheetEvcp, 'Liste des Etat de variation des capitaux propres', dossier, compte, date_debut, date_fin, 'H');
 
     // Style de l'entête
-    const headerRow = sheetEvcp.getRow(3);
+    const headerRow = sheetEvcp.getRow(4);
     headerRow.eachCell((cell, colNumber) => {
         cell.fill = {
             type: 'pattern',
@@ -506,7 +515,7 @@ const exportDrfToExcel = async (id_compte, id_dossier, id_exercice, workbook, do
     sousTitreActif.height = 50;
 
     // Style de l'entête
-    const headerRow = sheetDrf.getRow(3);
+    const headerRow = sheetDrf.getRow(4);
     headerRow.eachCell((cell, colNumber) => {
         cell.fill = {
             type: 'pattern',
@@ -566,7 +575,7 @@ const exportBhiapcToExcel = async (id_compte, id_dossier, id_exercice, workbook,
     generateTitle(sheetBhiapc, 'Etat des bénéficiaires d\'honoraires, d\'intérêts ou d\'arrérages portés en charge', dossier, compte, date_debut, date_fin, 'E');
 
     // Style de l'entête
-    const headerRow = sheetBhiapc.getRow(3);
+    const headerRow = sheetBhiapc.getRow(4);
     headerRow.eachCell((cell, colNumber) => {
         cell.fill = {
             type: 'pattern',
@@ -645,7 +654,7 @@ const exportMpToExcel = async (id_compte, id_dossier, id_exercice, workbook, dos
     generateTitle(sheetMp, 'Liste des Marché public', dossier, compte, date_debut, date_fin, 'G');
 
     // Style de l'entête
-    const headerRow = sheetMp.getRow(3);
+    const headerRow = sheetMp.getRow(4);
     headerRow.eachCell((cell, colNumber) => {
         cell.fill = {
             type: 'pattern',
@@ -734,7 +743,7 @@ const exportDaToExcel = async (id_compte, id_dossier, id_exercice, workbook, dos
     generateTitle(sheetDa, 'Liste des Détails amortissements', dossier, compte, date_debut, date_fin, 'K');
 
     // Style entête
-    const headerRow = sheetDa.getRow(3);
+    const headerRow = sheetDa.getRow(4);
     headerRow.eachCell(cell => {
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A5276' } };
         cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -888,10 +897,10 @@ const exportDpToExcel = async (id_compte, id_dossier, id_exercice, workbook, dos
     generateTitle(sheetDp, 'Liste des Détails provisions', dossier, compte, date_debut, date_fin, 'E');
 
     // Style entête
-    const headerRow = sheetDp.getRow(3);
+    const headerRow = sheetDp.getRow(4);
     headerRow.eachCell(cell => {
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A5276' } };
-        cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };s
     });
 
     let total = {
@@ -1012,7 +1021,7 @@ const exportEiafncToExcel = async (id_compte, id_dossier, id_exercice, workbook,
     generateTitle(sheetEiafnc, 'Liste des Evolution des immobilisations et actifs financiers non courants', dossier, compte, date_debut, date_fin, 'F');
 
     // Style entête
-    const headerRow = sheetEiafnc.getRow(3);
+    const headerRow = sheetEiafnc.getRow(4);
     headerRow.eachCell(cell => {
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A5276' } };
         cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -1142,7 +1151,7 @@ const exportSadToExcel = async (id_compte, id_dossier, id_exercice, workbook, do
     generateTitle(sheetSad, 'Liste des Suivi des amortissements différés', dossier, compte, date_debut, date_fin, 'I');
 
     // Style de l'entête
-    const headerRow = sheetSad.getRow(3);
+    const headerRow = sheetSad.getRow(4);
     headerRow.eachCell((cell, colNumber) => {
         cell.fill = {
             type: 'pattern',
@@ -1203,7 +1212,7 @@ const exportSdrToExcel = async (id_compte, id_dossier, id_exercice, workbook, do
     generateTitle(sheetSdr, 'Liste des Suivi des déficits reportables', dossier, compte, date_debut, date_fin, 'K');
 
     // Style de l'entête
-    const headerRow = sheetSdr.getRow(3);
+    const headerRow = sheetSdr.getRow(4);
     headerRow.eachCell((cell, colNumber) => {
         cell.fill = {
             type: 'pattern',
@@ -1283,7 +1292,7 @@ const exportSeToExcel = async (id_compte, id_dossier, id_exercice, workbook, dos
     generateTitle(sheetSe, 'Liste des Suivi des emprunts', dossier, compte, date_debut, date_fin, 'K');
 
     // Style de l'entête
-    const headerRow = sheetSe.getRow(3);
+    const headerRow = sheetSe.getRow(4);
     headerRow.eachCell((cell, colNumber) => {
         cell.fill = {
             type: 'pattern',
@@ -1382,7 +1391,7 @@ const exportNeToExcel = async (id_compte, id_dossier, id_exercice, workbook, dos
     generateTitle(sheetNe, 'Liste des Notes explicatives', dossier, compte, date_debut, date_fin, 'C');
 
     // Style de l'entête
-    const headerRow = sheetNe.getRow(3);
+    const headerRow = sheetNe.getRow(4);
     headerRow.eachCell((cell, colNumber) => {
         cell.fill = {
             type: 'pattern',

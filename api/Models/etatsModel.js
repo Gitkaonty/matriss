@@ -52,6 +52,12 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue:0
         },
+        anomalies_valides: {
+            type: DataTypes.BOOLEAN,
+            unique: false,
+            allowNull: false,
+            defaultValue: false
+        },
     }, { timestamps: true },)
     return etats;
 }

@@ -564,10 +564,12 @@ const DatagridTableDpComMappingDetail = ({ compteId, fileId, exerciceId, etatId,
                     columnHeaderHeight={DataGridStyle.columnHeaderHeight}
                     editMode='row'
                     onRowClick={(e) => handleCellEditCommit(e.row)}
-                    onRowSelectionModelChange={ids => {
-                        setSelectedRow(ids);
-                        saveSelectedRow(ids);
-                        deselectRow(ids);
+                    onRowSelectionModelChange={(ids) => {
+                        const arr = Array.isArray(ids) ? ids : [ids];
+                        const single = arr.length ? [arr[arr.length - 1]] : [];
+                        setSelectedRow(single);
+                        saveSelectedRow(single);
+                        deselectRow(single);
                     }}
                     rowModesModel={rowModesModel}
                     onRowModesModelChange={handleRowModesModelChange}

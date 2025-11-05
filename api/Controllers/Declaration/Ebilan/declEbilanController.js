@@ -1,3 +1,4 @@
+
 const bcrypt = require("bcrypt");
 const db = require("../../../Models");
 require('dotenv').config();
@@ -53,7 +54,6 @@ const generateTftiContent = declEbilanGeneratePDF.generateTftiContent;
 const generateEvcpContent = declEbilanGeneratePDF.generateEvcpContent;
 const generateDrfContent = declEbilanGeneratePDF.generateDrfContent;
 const generateBhiapcContent = declEbilanGeneratePDF.generateBhiapcContent;
-const generateMpContent = declEbilanGeneratePDF.generateMpContent;
 const generateDaContent = declEbilanGeneratePDF.generateDaContent;
 const generateDpContent = declEbilanGeneratePDF.generateDpContent;
 const generateEiafncContent = declEbilanGeneratePDF.generateEiafncContent;
@@ -66,12 +66,6 @@ const generateNeContent = declEbilanGeneratePDF.generateNeContent;
 const exportBilanToExcel = declEbilanGenerateExcel.exportBilanToExcel;
 const exportCrnToExcel = declEbilanGenerateExcel.exportCrnToExcel;
 const exportCrfToExcel = declEbilanGenerateExcel.exportCrfToExcel;
-const exportTftdToExcel = declEbilanGenerateExcel.exportTftdToExcel;
-const exportTftiToExcel = declEbilanGenerateExcel.exportTftiToExcel;
-const exportEvcpToExcel = declEbilanGenerateExcel.exportEvcpToExcel;
-const exportDrfToExcel = declEbilanGenerateExcel.exportDrfToExcel;
-const exportBhiapcToExcel = declEbilanGenerateExcel.exportBhiapcToExcel;
-const exportMpToExcel = declEbilanGenerateExcel.exportMpToExcel;
 const exportDaToExcel = declEbilanGenerateExcel.exportDaToExcel;
 const exportDpToExcel = declEbilanGenerateExcel.exportDpToExcel;
 const exportEiafncToExcel = declEbilanGenerateExcel.exportEiafncToExcel;
@@ -84,24 +78,6 @@ const exportNeToExcel = declEbilanGenerateExcel.exportNeToExcel;
 // Ligne fixe
 const exportActifToXml = declEbilanGenerateXml.exportActifToXml;
 const exportPassifToXml = declEbilanGenerateXml.exportPassifToXml;
-const exportCrnToXml = declEbilanGenerateXml.exportCrnToXml;
-const exportCrfToXml = declEbilanGenerateXml.exportCrfToXml;
-const exportTftdToXml = declEbilanGenerateXml.exportTftdToXml;
-const exportTftiToXml = declEbilanGenerateXml.exportTftiToXml;
-const exportEvcpToXml = declEbilanGenerateXml.exportEvcpToXml;
-const exportDrfToXml = declEbilanGenerateXml.exportDrfToXml;
-const exportBhiapcbToXml = declEbilanGenerateXml.exportBhiapcbToXml;
-const exportMpa2ToXml = declEbilanGenerateXml.exportMpa2ToXml;
-const exportMpb2ToXml = declEbilanGenerateXml.exportMpb2ToXml;
-const exportDaToXml = declEbilanGenerateXml.exportDaToXml;
-const exportDpa1ToXml = declEbilanGenerateXml.exportDpa1ToXml;
-const exportSdrToXml = declEbilanGenerateXml.exportSdrToXml;
-const exportSadToXml = declEbilanGenerateXml.exportSadToXml;
-
-// Ligne variable
-const exportCapToXml = declEbilanGenerateXml.exportCapToXml;
-const exportDbToXml = declEbilanGenerateXml.exportDbToXml;
-const exportBhiapcaToXml = declEbilanGenerateXml.exportBhiapcaToXml;
 const exportMpa1ToXml = declEbilanGenerateXml.exportMpa1ToXml;
 const exportMpb1ToXml = declEbilanGenerateXml.exportMpb1ToXml;
 const exportDa1ToXml = declEbilanGenerateXml.exportDa1ToXml;
@@ -1094,6 +1070,27 @@ const savemodifAnom = async (req, res) => {
         }
       }
     )) {
+      // Recompute anomalies_valides for this table (all controles validated?)
+      const remaining = await controles.count({
+        where: {
+          id_compte: id_compte,
+          id_dossier: id_dossier,
+          id_exercice: id_exercice,
+          declaration: 'EBILAN',
+          etat_id: etat_id,
+          valide: { [Op.ne]: true }
+        }
+      });
+      const allOk = remaining === 0;
+      await etats.update({ anomalies_valides: allOk }, {
+        where: {
+          id_compte: id_compte,
+          id_dossier: id_dossier,
+          id_exercice: id_exercice,
+          code: etat_id
+        }
+      });
+
       resData.liste = await recupTableau.recupETATDETAIL(id_compte, id_dossier, id_exercice, etat_id);
       resData.state = true;
       resData.msg = 'Sauvegardes des modifications terminés avec succès.'
@@ -1106,10 +1103,9 @@ const savemodifAnom = async (req, res) => {
 }
 
 // Fonction pour récupérer les entêtes du PDF
-const infoBlock = (dossier, compte, exercice) => ([
+const infoBlock = (dossier, exercice) => ([
   { text: `Dossier : ${dossier?.dossier}`, style: 'subTitle', margin: [0, 0, 0, 5] },
-  { text: `Compte : ${compte?.nom}`, style: 'subTitle', margin: [0, 0, 0, 5] },
-  { text: `Exercice du : ${formatDate(exercice.date_debut)} au ${formatDate(exercice.date_fin)}`, style: 'subTitle', margin: [0, 0, 0, 10] }
+  { text: `Periode du : ${formatDate(exercice.date_debut)} au ${formatDate(exercice.date_fin)}`, style: 'subTitleExo', margin: [0, 0, 0, 10] }
 ]);
 
 const exportToPDF = async (req, res) => {
@@ -1140,16 +1136,17 @@ const exportToPDF = async (req, res) => {
       docDefinition = {
         content: [
           { text: 'Bilan actif', style: 'title' },
-          infoBlock(dossier, compte, exercice),
+          infoBlock(dossier, exercice),
           ...buildTable(bilanActif, 'actif'),
           { text: '', pageBreak: 'before' },
           { text: 'Bilan passif', style: 'title' },
-          infoBlock(dossier, compte, exercice),
+          infoBlock(dossier, exercice),
           ...buildTable(bilanPassif, 'passif')
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 9 },
+          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9},
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1159,12 +1156,13 @@ const exportToPDF = async (req, res) => {
       docDefinition = {
         content: [
           { text: 'Compte de résultat par nature', style: 'title' },
-          infoBlock(dossier, compte, exercice),
+          infoBlock(dossier, exercice),
           ...buildTable(crn)
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 9 },
+          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9},
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1174,12 +1172,13 @@ const exportToPDF = async (req, res) => {
       docDefinition = {
         content: [
           { text: 'Compte de résultat par fonction', style: 'title' },
-          infoBlock(dossier, compte, exercice),
+          infoBlock(dossier, exercice),
           ...buildTable(crf)
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 9 },
+          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9},
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1189,12 +1188,13 @@ const exportToPDF = async (req, res) => {
       docDefinition = {
         content: [
           { text: 'Tableau de flux de trésoreries méthode directe', style: 'title' },
-          infoBlock(dossier, compte, exercice),
+          infoBlock(dossier, exercice),
           ...buildTable(tftd)
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 9 },
+          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9},
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1204,12 +1204,13 @@ const exportToPDF = async (req, res) => {
       docDefinition = {
         content: [
           { text: 'Tableau de flux de trésoreries méthode indirecte', style: 'title' },
-          infoBlock(dossier, compte, exercice),
+          infoBlock(dossier, exercice),
           ...buildTable(tfti)
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 9 },
+          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9},
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1221,12 +1222,13 @@ const exportToPDF = async (req, res) => {
         pageOrientation: 'landscape',
         content: [
           { text: 'Etat de variation des capitaux propres', style: 'title' },
-          infoBlock(dossier, compte, exercice),
+          infoBlock(dossier, exercice),
           ...buildTable(evcp)
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 9 },
+          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9},
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1236,12 +1238,13 @@ const exportToPDF = async (req, res) => {
       docDefinition = {
         content: [
           { text: 'Détermination du résultat fiscal', style: 'title' },
-          infoBlock(dossier, compte, exercice),
+          infoBlock(dossier, exercice),
           ...buildTable(drf)
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 9 },
+          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9},
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1251,12 +1254,13 @@ const exportToPDF = async (req, res) => {
       docDefinition = {
         content: [
           { text: 'Etat des bénéficiaires d\'honoraires,d\'intérêts ou d\'arrérages portés en charge', style: 'title' },
-          infoBlock(dossier, compte, exercice),
+          infoBlock(dossier, exercice),
           ...buildTable(bhiapc)
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 9 },
+          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9},
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1266,12 +1270,13 @@ const exportToPDF = async (req, res) => {
       docDefinition = {
         content: [
           { text: 'Marché public', style: 'title' },
-          infoBlock(dossier, compte, exercice),
+          infoBlock(dossier, exercice),
           ...buildTable(mp)
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 9 },
+          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9},
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1282,12 +1287,13 @@ const exportToPDF = async (req, res) => {
         pageOrientation: 'landscape',
         content: [
           { text: 'Détails amortissements', style: 'title' },
-          infoBlock(dossier, compte, exercice),
+          infoBlock(dossier, exercice),
           ...buildTable(da)
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 9 },
+          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9},
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1298,12 +1304,13 @@ const exportToPDF = async (req, res) => {
         // pageOrientation: 'landscape',
         content: [
           { text: 'Détails provisions', style: 'title' },
-          infoBlock(dossier, compte, exercice),
+          infoBlock(dossier, exercice),
           ...buildTable(dp)
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 9 },
+          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9},
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1314,12 +1321,13 @@ const exportToPDF = async (req, res) => {
         // pageOrientation: 'landscape',
         content: [
           { text: 'Evolution des immobilisations et actifs financiers non courants', style: 'title' },
-          infoBlock(dossier, compte, exercice),
+          infoBlock(dossier, exercice),
           ...buildTable(eiafnc)
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 9 },
+          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9},
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1330,12 +1338,13 @@ const exportToPDF = async (req, res) => {
         pageOrientation: 'landscape',
         content: [
           { text: 'Suivi des amortissements différés', style: 'title' },
-          infoBlock(dossier, compte, exercice),
+          infoBlock(dossier, exercice),
           ...buildTable(sad)
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 9 },
+          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9},
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1346,12 +1355,13 @@ const exportToPDF = async (req, res) => {
         pageOrientation: 'landscape',
         content: [
           { text: 'Suivi des déficits reportables', style: 'title' },
-          infoBlock(dossier, compte, exercice),
+          infoBlock(dossier, exercice),
           ...buildTable(sdr)
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 9 },
+          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9},
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1362,12 +1372,13 @@ const exportToPDF = async (req, res) => {
         pageOrientation: 'landscape',
         content: [
           { text: 'Suivi des emprunts', style: 'title' },
-          infoBlock(dossier, compte, exercice),
+          infoBlock(dossier, exercice),
           ...buildTable(se)
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 9 },
+          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9},
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1378,12 +1389,13 @@ const exportToPDF = async (req, res) => {
         // pageOrientation: 'landscape',
         content: [
           { text: 'Notes explicatives', style: 'title' },
-          infoBlock(dossier, compte, exercice),
+          infoBlock(dossier, exercice),
           ...buildTable(ne)
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 9 },
+          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9},
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1589,7 +1601,7 @@ const exportAllToPDF = async (req, res) => {
           style: 'title',
           // pageBreak: i === 0 ? undefined : 'before'
         },
-        infoBlock(dossier, compte, exercice),
+        infoBlock(dossier, exercice),
         ...(buildTable && tableData.length > 0 ? buildTable(tableData) : [{ text: 'Aucune donnée', italics: true }])
       ];
 
@@ -1598,7 +1610,8 @@ const exportAllToPDF = async (req, res) => {
         pageOrientation: landscape ? 'landscape' : 'portrait',
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 9 },
+          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9},
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -2204,8 +2217,102 @@ const exportAllToXml = async (req, res) => {
     });
   }
 }
+// Overview des anomalies par tableau (jointure etats/controles)
+const overview = async (req, res) => {
+  try {
+    const { compteId, dossierId, exerciceId } = req.params;
+    const codes = ['BILAN','CRN','CRF','TFTD','TFTI','EVCP','DRF','BHIAPC','MP','DA','DP','EIAFNC','SAD','SDR','SE'];
+
+    const etatsRows = await etats.findAll({
+      where: {
+        id_compte: Number(compteId),
+        id_dossier: Number(dossierId),
+        id_exercice: Number(exerciceId)
+      },
+      raw: true,
+    });
+
+    const map = new Map(etatsRows.map(e => [String(e.code || '').toUpperCase(), e]));
+    const payload = codes.map(code => {
+      const key = String(code).toUpperCase();
+      // 1) exact match
+      let e = map.get(key);
+      // 2) fallback: first row whose code starts with the label (e.g., BILAN -> BILAN_ACTIF/PASSIF)
+      if (!e) {
+        e = etatsRows.find(r => String(r.code || '').toUpperCase().startsWith(key));
+      }
+      return {
+        tableau: code,
+        nbrAnomalies: Number(e?.nbranomalie || 0),
+        status: e?.valide ? 'Validée' : 'Non validée',
+        anomaliesValidee: typeof e?.anomalies_valides === 'boolean' ? !!e.anomalies_valides : (Number(e?.nbranomalie || 0) === 0),
+        nom: e?.nom || null,
+      };
+    });
+
+    return res.json({ state: true, list: payload });
+  } catch (error) {
+    return res.status(500).json({ state: false, message: 'overview error', error: error.message });
+  }
+};
+
+// Détails d'anomalies pour un tableau (liste des controles)
+const details = async (req, res) => {
+  try {
+    const { compteId, dossierId, exerciceId, tableau } = req.params;
+    const rows = await controles.findAll({
+      where: {
+        id_compte: Number(compteId),
+        id_dossier: Number(dossierId),
+        id_exercice: Number(exerciceId),
+        declaration: 'EBILAN',
+        etat_id: tableau,
+      },
+      order: [['createdAt', 'DESC']],
+      raw: true,
+    });
+    const count = rows.reduce((n, r) => n + (r.nbranomalie || 0), 0);
+    const list = rows.map(r => ({ id: r.id, control_id: r.control_id, anomalie: r.anomalie, valide: !!r.valide, comments: r.comments || '' }));
+    return res.json({ state: true, list, count });
+  } catch (error) {
+    return res.status(500).json({ state: false, message: 'details error', error: error.message });
+  }
+};
+
+// Met à jour le statut de validation d'un état (etats.valide)
+const setEtatValide = async (req, res) => {
+  try {
+    const { id_compte, id_dossier, id_exercice, code, valide } = req.body || {};
+    if (!id_compte || !id_dossier || !id_exercice || !code || typeof valide !== 'boolean') {
+      return res.status(400).json({ state: false, message: 'Paramètres manquants ou invalides' });
+    }
+
+    const [count] = await etats.update(
+      { valide: !!valide },
+      {
+        where: {
+          id_compte: Number(id_compte),
+          id_dossier: Number(id_dossier),
+          id_exercice: Number(id_exercice),
+          code: String(code)
+        }
+      }
+    );
+
+    if (count === 0) {
+      return res.status(404).json({ state: false, message: 'Etat non trouvé' });
+    }
+
+    return res.json({ state: true, message: 'Statut mis à jour', data: { code, valide: !!valide } });
+  } catch (error) {
+    return res.status(500).json({ state: false, message: 'setEtatValide error', error: error.message });
+  }
+};
 
 module.exports = {
+  overview,
+  details,
+  setEtatValide,
   infosVerrouillage,
   verrouillerTableau,
   getListeRubriqueGlobal,

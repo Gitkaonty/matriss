@@ -153,6 +153,8 @@ export default function ParamPlanComptable() {
     const [selectedRegion, setSelectedRegion] = useState('');
     const [selectedDistrict, setSelectedDistrict] = useState('');
     const [selectedCommune, setSelectedCommune] = useState('');
+    const [lastLocalites, setLastLocalites] = useState({ province: '', region: '', district: '', commune: '' });
+    const [isRestoringLocalites, setIsRestoringLocalites] = useState(false);
 
     //header pour le tableau détail
     //const columnHeaderDetail = ParamPlanComptable_column.columnHeaderDetail;
@@ -839,6 +841,17 @@ export default function ParamPlanComptable() {
             if (selectedRow && selectedRow.baseaux_id) {
                 setFieldValue('baseCptCollectif', selectedRow.baseaux_id);
             }
+            // Restaurer les localités mémorisées si disponibles
+            setIsRestoringLocalites(true);
+            const { province, region, district, commune } = lastLocalites;
+            setSelectedProvince(province || '');
+            setSelectedRegion(region || '');
+            setSelectedDistrict(district || '');
+            setSelectedCommune(commune || '');
+            setFieldValue('province', province || '');
+            setFieldValue('region', region || '');
+            setFieldValue('district', district || '');
+            setFieldValue('commune', commune || '');
         }
     }
 
@@ -964,11 +977,8 @@ export default function ParamPlanComptable() {
         const value = e.target.value;
         setFieldValue('typeTier', value);
         setFormulaireTier(value);
-        
-        // Si Type du Tier = "etranger", griser les localités
-        if (value === 'etranger') {
-            setDisableLocalites(true);
-            // Réinitialiser les localités
+        // Réinitialiser les localités uniquement si le type de tier impose le grisement
+        if (value === 'etranger' || value === 'general') {
             setFieldValue('province', '');
             setFieldValue('region', '');
             setFieldValue('district', '');
@@ -977,8 +987,6 @@ export default function ParamPlanComptable() {
             setSelectedRegion('');
             setSelectedDistrict('');
             setSelectedCommune('');
-        } else {
-            setDisableLocalites(false);
         }
     }
 
@@ -1110,14 +1118,17 @@ export default function ParamPlanComptable() {
                     const resData = response.data;
                     showPc();
                     setOpenDialogDeleteItemsPc(false);
+
+                    // Si certains comptes n'ont pas pu être supprimés, on n'affiche PAS le toast de succès.
+                    if (resData.stateUndeletableCpt) {
+                        toast.error(resData.msgUndeletableCpt || resData.msg);
+                        return;
+                    }
+
                     if (resData.state) {
                         toast.success(resData.msg);
                     } else {
                         toast.error(resData.msg);
-                    }
-
-                    if (resData.stateUndeletableCpt) {
-                        toast.error(resData.msgUndeletableCpt);
                     }
                 });
 
@@ -1202,52 +1213,69 @@ export default function ParamPlanComptable() {
         getProvinces().then(setProvinces);
     }, []);
 
-    // Charger les régions quand la province change, mais ne pas réinitialiser si on a déjà une région sélectionnée
+    // Charger les régions quand la province change, en évitant d'effacer pendant une restauration
     useEffect(() => {
         if (selectedProvince) {
-            getRegions(selectedProvince).then((data) => setRegions(data));
-
-            // Ne réinitialise que si on est en création (pas de selectedRegion)
-            if (!selectedRegion) setSelectedRegion('');
-            if (!selectedDistrict) setDistricts([]);
-            if (!selectedDistrict) setSelectedDistrict('');
-            if (!selectedCommune) setCommunes([]);
-            if (!selectedCommune) setSelectedCommune('');
+            getRegions(selectedProvince).then((data) => {
+                setRegions(data);
+                if (!isRestoringLocalites) {
+                    if (!selectedRegion) setSelectedRegion('');
+                    if (!selectedDistrict) setDistricts([]);
+                    if (!selectedDistrict) setSelectedDistrict('');
+                    if (!selectedCommune) setCommunes([]);
+                    if (!selectedCommune) setSelectedCommune('');
+                }
+            });
         } else {
-            setRegions([]);
-            setSelectedRegion('');
-            setDistricts([]);
-            setSelectedDistrict('');
-            setCommunes([]);
-            setSelectedCommune('');
+            if (!isRestoringLocalites) {
+                setRegions([]);
+                setSelectedRegion('');
+                setDistricts([]);
+                setSelectedDistrict('');
+                setCommunes([]);
+                setSelectedCommune('');
+            }
         }
-    }, [selectedProvince]);
+    }, [selectedProvince, isRestoringLocalites]);
 
-    // Charger les districts quand la région change, idem
+    // Charger les districts quand la région change, en évitant d'effacer pendant une restauration
     useEffect(() => {
         if (selectedProvince && selectedRegion) {
-            getDistricts(selectedProvince, selectedRegion).then((data) => setDistricts(data));
-
-            if (!selectedDistrict) setSelectedDistrict('');
-            if (!selectedCommune) setCommunes([]);
-            if (!selectedCommune) setSelectedCommune('');
+            getDistricts(selectedProvince, selectedRegion).then((data) => {
+                setDistricts(data);
+                if (!isRestoringLocalites) {
+                    if (!selectedDistrict) setSelectedDistrict('');
+                    if (!selectedCommune) setCommunes([]);
+                    if (!selectedCommune) setSelectedCommune('');
+                }
+            });
         } else {
-            setDistricts([]);
-            setSelectedDistrict('');
-            setCommunes([]);
-            setSelectedCommune('');
+            if (!isRestoringLocalites) {
+                setDistricts([]);
+                setSelectedDistrict('');
+                setCommunes([]);
+                setSelectedCommune('');
+            }
         }
-    }, [selectedProvince, selectedRegion]);
+    }, [selectedProvince, selectedRegion, isRestoringLocalites]);
 
-    // Charger les communes quand le district change
+    // Charger les communes quand le district change; terminer la restauration quand les données sont prêtes
     useEffect(() => {
         if (selectedProvince && selectedRegion && selectedDistrict) {
-            getCommunes(selectedProvince, selectedRegion, selectedDistrict).then((data) => setCommunes(data));
+            getCommunes(selectedProvince, selectedRegion, selectedDistrict).then((data) => {
+                setCommunes(data);
+                if (isRestoringLocalites) {
+                    // Fin de restauration une fois que la dernière liste est chargée
+                    setIsRestoringLocalites(false);
+                }
+            });
         } else {
-            setCommunes([]);
-            setSelectedCommune('');
+            if (!isRestoringLocalites) {
+                setCommunes([]);
+                setSelectedCommune('');
+            }
         }
-    }, [selectedProvince, selectedRegion, selectedDistrict]);
+    }, [selectedProvince, selectedRegion, selectedDistrict, isRestoringLocalites]);
 
     // Remplissage automatique pour les localites
     useEffect(() => {
@@ -1281,8 +1309,6 @@ export default function ParamPlanComptable() {
                     <Stack width={"100%"} height={"90%"} spacing={0.5} alignItems={"flex-start"} justifyContent={"stretch"}>
                         <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages : Plan comptable</Typography>
 
-                        {/* MODAL POUR L'AJOUT/MODIFICATION D'UN NOUVEAU COMPTE */}
-                        {/* <form onSubmit={formAddCptModelDetail.handleSubmit}> */}
                         <Formik
                             initialValues={formAddCptInitialValues}
                             enableReinitialize
@@ -1303,7 +1329,8 @@ export default function ParamPlanComptable() {
                                         setFormulaireTier('general');
                                     }
 
-                                    const disable = isGen || isEtr;
+                                    // Localités grisées si: nature Général/Collectif, ou type de tier Etranger ou Général (pour Aux)
+                                    const disable = isGen || values.typeTier === 'etranger' || values.typeTier === 'general';
                                     setDisableLocalites(disable);
 
                                     if (disable) {
@@ -1552,7 +1579,7 @@ export default function ParamPlanComptable() {
                                                                             as={Select}
                                                                             labelId="typeTier-label"
                                                                             name="typeTier"
-                                                                            disabled={disableLocalites}
+                                                                            disabled={values.nature === 'General' || values.nature === 'Collectif'}
                                                                             onBlur={(e) => { /* avoid Formik executeBlur with undefined event */ }}
                                                                             onChange={handleOnChangeListBoxTypeTier(setFieldValue)}
                                                                             sx={{
@@ -1991,13 +2018,14 @@ export default function ParamPlanComptable() {
                                                                             rowHeight={DataGridStyle.rowHeight}
                                                                             columnHeaderHeight={DataGridStyle.columnHeaderHeight}
                                                                             onRowSelectionModelChange={ids => {
-                                                                                if (ids.length === 1) {
-                                                                                    //setDisableButtonAddCompteCharge(false);
-                                                                                    setSelectedCptChgOnList(ids);
+                                                                                const lastId = ids && ids.length ? ids[ids.length - 1] : null;
+                                                                                if (lastId != null) {
+                                                                                    setSelectedCptChgOnList([lastId]);
                                                                                 } else {
                                                                                     setSelectedCptChgOnList([0]);
                                                                                 }
                                                                             }}
+                                                                            rowSelectionModel={Array.isArray(selectedCptChgOnList) ? selectedCptChgOnList : (selectedCptChgOnList ? [selectedCptChgOnList] : [])}
                                                                             rows={listCptChg}
                                                                             columns={columnHeaderAddNewRowModelDetail}
                                                                             initialState={{
@@ -2067,14 +2095,14 @@ export default function ParamPlanComptable() {
                                                                             rowHeight={DataGridStyle.rowHeight}
                                                                             columnHeaderHeight={DataGridStyle.columnHeaderHeight}
                                                                             onRowSelectionModelChange={ids => {
-
-                                                                                if (ids.length === 1) {
-                                                                                    //setDisableButtonAddCompteTva(false);
-                                                                                    setSelectedCptTvaOnList(ids);
+                                                                                const lastId = ids && ids.length ? ids[ids.length - 1] : null;
+                                                                                if (lastId != null) {
+                                                                                    setSelectedCptTvaOnList([lastId]);
                                                                                 } else {
                                                                                     setSelectedCptTvaOnList([0]);
                                                                                 }
                                                                             }}
+                                                                            rowSelectionModel={Array.isArray(selectedCptTvaOnList) ? selectedCptTvaOnList : (selectedCptTvaOnList ? [selectedCptTvaOnList] : [])}
                                                                             rows={listCptTva}
                                                                             columns={columnHeaderAddNewRowModelDetail}
                                                                             initialState={{
@@ -2261,7 +2289,11 @@ export default function ParamPlanComptable() {
                                 sx={DataGridStyle.sx}
                                 rowHeight={DataGridStyle.rowHeight}
                                 columnHeaderHeight={DataGridStyle.columnHeaderHeight}
-                                onRowSelectionModelChange={listPCSelectedRow}
+                                onRowSelectionModelChange={ids => {
+                                    const lastId = ids && ids.length ? ids[ids.length - 1] : null;
+                                    listPCSelectedRow(lastId != null ? [lastId] : []);
+                                }}
+                                rowSelectionModel={pcAllselectedRow}
                                 rows={pc}
                                 columns={columnHeaderDetail}
                                 initialState={{

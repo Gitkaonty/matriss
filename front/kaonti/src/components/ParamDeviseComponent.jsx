@@ -497,9 +497,10 @@ export default function ParamDeviseComponent() {
                                 editMode='row'
                                 onRowClick={(e) => handleCellEditCommit(e.row)}
                                 onRowSelectionModelChange={ids => {
-                                    setSelectedRow(ids);
-                                    saveSelectedRow(ids);
-                                    deselectRow(ids);
+                                    const single = Array.isArray(ids) && ids.length ? [ids[ids.length - 1]] : [];
+                                    setSelectedRow(single);
+                                    saveSelectedRow(single);
+                                    deselectRow(single);
                                 }}
                                 rowModesModel={rowModesModel}
                                 onRowModesModelChange={handleRowModesModelChange}

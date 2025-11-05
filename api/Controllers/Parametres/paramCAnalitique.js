@@ -128,12 +128,28 @@ exports.addOrUpdateAxes = async (req, res) => {
 
         const id_compte = parseInt(compteId);
         const id_dossier = parseInt(fileId);
+        const rowId = parseInt(id);
 
         if (isNaN(id_compte) || isNaN(id_dossier)) {
             return res.status(400).json({
                 state: false,
                 message: "id_compte ou id_dossier invalide"
             });
+        }
+
+        // Vérifier si un autre axe utilise déjà le même code dans ce compte/dossier
+        const duplicateWhere = {
+            id_compte,
+            id_dossier,
+            code,
+        };
+        if (!isNaN(rowId) && rowId > 0) {
+            duplicateWhere.id = { [Sequelize.Op.ne]: rowId };
+        }
+
+        const duplicate = await caAxes.findOne({ where: duplicateWhere });
+        if (duplicate) {
+            return res.json({ state: false, msg: 'Ce code Axe existe déjà dans ce dossier.' });
         }
 
         const testIfExist = await caAxes.findAll({
@@ -177,6 +193,9 @@ exports.addOrUpdateAxes = async (req, res) => {
         return res.json(resData);
 
     } catch (error) {
+        if (error.name === 'SequelizeUniqueConstraintError') {
+            return res.json({ state: false, msg: 'Ce code Axe existe déjà dans ce dossier.' });
+        }
         return res.status(500).json({
             state: false,
             message: "Erreur serveur",

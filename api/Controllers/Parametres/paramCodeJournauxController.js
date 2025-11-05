@@ -5,6 +5,7 @@ const Sequelize = require('sequelize');
 
 const codejournals = db.codejournals;
 const Dossier = db.dossiers;
+const journals = db.journals;
 
 const getListeCodeJournaux = async (req, res) => {
   try {
@@ -50,8 +51,16 @@ const addCodeJournal = async (req, res) => {
       where: { id: idCode, id_dossier: idDossier }
     });
 
-
     if (testIfExist.length === 0) {
+      // Vérifier doublon à la création
+      const duplicateCreate = await codejournals.findOne({
+        where: { id_dossier: idDossier, code: code }
+      });
+      if (duplicateCreate) {
+        resData.state = false;
+        resData.msg = "Ce code journal existe déjà.";
+        return res.json(resData);
+      }
       const addCode = await codejournals.create({
         id_compte: idCompte,
         id_dossier: idDossier,
@@ -72,6 +81,19 @@ const addCodeJournal = async (req, res) => {
         resData.msg = "Une erreur est survenue au moment du traitement des données";
       }
     } else {
+      // Vérifier doublon à la mise à jour (exclure l'enregistrement courant)
+      const duplicateUpdate = await codejournals.findOne({
+        where: {
+          id_dossier: idDossier,
+          code: code,
+          id: { [Sequelize.Op.ne]: idCode }
+        }
+      });
+      if (duplicateUpdate) {
+        resData.state = false;
+        resData.msg = "Ce code journal existe déjà.";
+        return res.json(resData);
+      }
       const ModifyCode = await codejournals.update(
         {
           id_compte: idCompte,
@@ -107,6 +129,9 @@ const addCodeJournal = async (req, res) => {
 const codeJournauxDelete = async (req, res) => {
   try {
     const { fileId, compteId, idToDelete } = req.body;
+    const fileIdNum = Number(fileId);
+    const compteIdNum = Number(compteId);
+    const idToDeleteNum = Number(idToDelete);
 
     let resData = {
       state: false,
@@ -114,25 +139,60 @@ const codeJournauxDelete = async (req, res) => {
       fileInfos: []
     }
 
-    const deletedCodeJournal = await codejournals.destroy({
+    // console.log('[codeJournauxDelete] Input parsed', { fileIdNum, compteIdNum, idToDeleteNum });
+
+    // Vérifier l'utilisation dans la table journals (sans filtrer par exercice)
+    const usageCount = await journals.count({
       where: {
-        id: idToDelete,
-        id_dossier: fileId,
-        id_compte: compteId
+        id_compte: compteIdNum,
+        id_dossier: fileIdNum,
+        id_journal: idToDeleteNum
       }
     });
+
+    // console.log('[codeJournauxDelete] Journals usageCount', usageCount);
+
+    if (usageCount > 0) {
+      resData.state = false;
+      resData.msg = "Impossible de supprimer ce code journal: il est utilisé dans des écritures.";
+      // console.log('[codeJournauxDelete] Deletion blocked due to usage');
+      return res.json(resData);
+    }
+
+    // console.log('[codeJournauxDelete] Attempt destroy (id,id_dossier,id_compte)');
+    let deletedCodeJournal = await codejournals.destroy({
+      where: {
+        id: idToDeleteNum,
+        id_dossier: fileIdNum,
+        id_compte: compteIdNum
+      }
+    });
+    // console.log('[codeJournauxDelete] First destroy affected rows', deletedCodeJournal);
+    // on retente la suppression en se basant sur (id, id_dossier) uniquement.
+    if (!deletedCodeJournal) {
+      // console.log('[codeJournauxDelete] Fallback destroy (id,id_dossier)');
+      deletedCodeJournal = await codejournals.destroy({
+        where: {
+          id: idToDeleteNum,
+          id_dossier: fileIdNum,
+        }
+      });
+      // console.log('[codeJournauxDelete] Fallback destroy affected rows', deletedCodeJournal);
+    }
 
     if (deletedCodeJournal) {
       resData.state = true;
       resData.msg = "Code journal supprimé avec succès.";
+      // console.log('[codeJournauxDelete] Deletion success');
     } else {
       resData.state = false;
       resData.msg = "Une erreur est survenue au moment du traitement des données.";
+      // console.warn('[codeJournauxDelete] No rows deleted');
     }
 
     return res.json(resData);
   } catch (error) {
-    console.log(error);
+    console.error('[codeJournauxDelete] Error', error);
   }
 }
 

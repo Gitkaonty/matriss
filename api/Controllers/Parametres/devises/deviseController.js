@@ -1,4 +1,5 @@
 const { Devise } = require('../../../Models');
+const db = require('../../../Models');
 
 // Liste toutes les devises
 exports.getAllDevises = async (req, res) => {
@@ -116,7 +117,34 @@ exports.updateDevise = async (req, res) => {
 // Suppression d'une devise
 exports.deleteDevise = async (req, res) => {
   try {
-    const id = req.params.id;
+    const id = parseInt(req.params.id);
+
+    // Retrouver la devise pour récupérer id_compte et id_dossier
+    const devise = await Devise.findByPk(id);
+    if (!devise) {
+      return res.json({ state: false, msg: 'Aucune devise trouvée à supprimer' });
+    }
+
+    const id_compte = parseInt(devise.id_compte);
+    const id_dossier = parseInt(devise.id_dossier);
+
+    // Vérifier l'utilisation dans les journaux (sans filtrer par exercice)
+    const usageCount = await db.journals.count({
+      where: {
+        id_devise: id,
+        id_compte: id_compte,
+        id_dossier: id_dossier,
+      }
+    });
+
+    if (usageCount > 0) {
+      return res.json({
+        state: false,
+        msg: `Impossible de supprimer cette devise car elle est utilisée dans des écritures.`
+      });
+    }
+
+    // Supprimer si non utilisée
     const nbDeleted = await Devise.destroy({ where: { id } });
     if (nbDeleted) {
       return res.json({ state: true, msg: 'Devise supprimée' });
@@ -126,4 +154,4 @@ exports.deleteDevise = async (req, res) => {
   } catch (error) {
     return res.json({ state: false, msg: 'Erreur lors de la suppression' });
   }
-}; 
+};
