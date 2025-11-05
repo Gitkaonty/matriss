@@ -9,7 +9,7 @@ const PORT = process.env.PORT;
 const { Pool } = require('pg');
 const isProduction = process.env.NODE_ENV === 'production';
 //const connectionString = `postgresql://${USER}:${process.env.PASSWORD}@${process.env.SERVER}:${process.env.PORT}/${process.env.DATABASENAME}`
-const connectionString = "postgresql://postgres:admin@localhost:5432/kaontyJaela"
+const connectionString = "postgresql://postgres:admin@localhost:5432/kaonty"
 
 
 const pool = new Pool({
