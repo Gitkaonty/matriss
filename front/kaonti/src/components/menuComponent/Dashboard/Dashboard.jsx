@@ -21,6 +21,7 @@ import LineChartComponent from '../../componentsTools/Dashboard/LineChartCompone
 import useAuth from '../../../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
 import toast from 'react-hot-toast';
+import { isNumber } from '@mui/x-data-grid/internals';
 
 const columns = [
   {
@@ -60,6 +61,7 @@ const columns = [
     minWidth: 100,
     align: 'right',
     format: (value) => value.toFixed(2),
+    isNumber: true
   },
   {
     id: 'credit',
@@ -67,6 +69,7 @@ const columns = [
     minWidth: 100,
     align: 'right',
     format: (value) => value.toFixed(2),
+    isNumber: true
   },
 ];
 
@@ -77,7 +80,16 @@ const rows = [
   { id: 1, date: '01/01/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "PREL SANS LIBELLE", debit: 1500.41, credit: 0.00 },
   { id: 2, date: '14/01/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "VIRT VERS AUTRES", debit: 780000.55, credit: 0.00 },
   { id: 3, date: '27/07/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "VIRT ENCAISSEMENT", debit: 0.00, credit: 300000 },
-  { id: 4, date: '17/12/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "CHQ 04572147", debit: 1500.41, credit: 0.00 }
+  { id: 4, date: '17/12/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "CHQ 04572147", debit: 1500.41, credit: 0.00 },
+  { id: 5, date: '14/01/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "VIRT VERS AUTRES", debit: 780000.55, credit: 0.00 },
+  { id: 6, date: '27/07/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "VIRT ENCAISSEMENT", debit: 0.00, credit: 300000 },
+  { id: 7, date: '17/12/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "CHQ 04572147", debit: 1500.41, credit: 0.00 },
+  { id: 8, date: '14/01/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "VIRT VERS AUTRES", debit: 780000.55, credit: 0.00 },
+  { id: 9, date: '27/07/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "VIRT ENCAISSEMENT", debit: 0.00, credit: 300000 },
+  { id: 10, date: '17/12/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "CHQ 04572147", debit: 1500.41, credit: 0.00 },
+  { id: 11, date: '14/01/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "VIRT VERS AUTRES", debit: 780000.55, credit: 0.00 },
+  { id: 12, date: '27/07/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "VIRT ENCAISSEMENT", debit: 0.00, credit: 300000 },
+  { id: 13, date: '17/12/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "CHQ 04572147", debit: 1500.41, credit: 0.00 }
 ];
 
 export default function DashboardComponent() {
@@ -295,6 +307,74 @@ export default function DashboardComponent() {
     "Juil", "Août", "Sep", "Oct", "Nov", "Déc"
   ];
 
+  const cards = [
+    {
+      text: 'Résultat',
+      type: 'total',
+      montant: '$5000',
+      backgroundColor: '#80f2c7',
+      resultatN,
+      resultatN1,
+    },
+    {
+      text: "Chiffre d'affaires",
+      type: 'comparaison',
+      pourcentage: '10',
+      variation: 'augmentation',
+      backgroundColor: '#80f2c7',
+      resultatN: resultatChiffreAffaireN,
+      resultatN1: resultatChiffreAffaireN1,
+      variationN: variationChiffreAffaireN,
+      variationN1: variationChiffreAffaireN1,
+      evolutionN: evolutionChiffreAffaireN,
+      evolutionN1: evolutionChiffreAffaireN1,
+    },
+    {
+      text: 'Dépenses (Achats)',
+      type: 'comparaison',
+      backgroundColor: '#e8775a',
+      resultatN: resultatDepenseAchatN,
+      resultatN1: resultatDepenseAchatN1,
+      variationN: variationDepenseAchatN,
+      variationN1: variationDepenseAchatN1,
+      evolutionN: evolutionDepenseAchatN,
+      evolutionN1: evolutionDepenseAchatN1,
+    },
+    {
+      text: 'Dépenses salariales',
+      type: 'comparaison',
+      backgroundColor: '#e8775a',
+      resultatN: resultatDepenseSalarialeN,
+      resultatN1: resultatDepenseSalarialeN1,
+      variationN: variationDepenseSalarialeN,
+      variationN1: variationDepenseSalarialeN1,
+      evolutionN: evolutionDepenseSalarialeN,
+      evolutionN1: evolutionDepenseSalarialeN1,
+    },
+    {
+      text: 'Trésoreries (Banques)',
+      type: 'comparaison',
+      backgroundColor: '#5a98e8',
+      resultatN: resultatTresorerieBanqueN,
+      resultatN1: resultatTresorerieBanqueN1,
+      variationN: variationTresorerieBanqueN,
+      variationN1: variationTresorerieBanqueN1,
+      evolutionN: evolutionTresorerieBanqueN,
+      evolutionN1: evolutionTresorerieBanqueN1,
+    },
+    {
+      text: 'Trésoreries (Caisses)',
+      type: 'comparaison',
+      backgroundColor: '#5a98e8',
+      resultatN: resultatTresorerieCaisseN,
+      resultatN1: resultatTresorerieCaisseN1,
+      variationN: variationTresorerieCaisseN,
+      variationN1: variationTresorerieCaisseN1,
+      evolutionN: evolutionTresorerieCaisseN,
+      evolutionN1: evolutionTresorerieCaisseN1,
+    },
+  ];
+
   useEffect(() => {
     //tester si la page est renvoyer par useNavigate
     const navigationEntries = performance.getEntriesByType('navigation');
@@ -431,15 +511,15 @@ export default function DashboardComponent() {
                 <Stack
                   width="100%"
                   height="100%"
-                  spacing={1}
                   direction={'column'}
+                  spacing={1}
                 >
                   <Stack
                     width="100%"
                     height="100%"
-                    spacing={1}
                     direction={'row'}
                     justifyContent="space-between"
+                    spacing={1}
                   >
                     <LineChartComponent
                       xAxis={xAxis}
@@ -459,9 +539,9 @@ export default function DashboardComponent() {
                   <Stack
                     width="100%"
                     height="100%"
-                    spacing={0.5}
                     direction={'row'}
                     justifyContent="space-between"
+                    spacing={1}
                   >
                     <LineChartComponent
                       xAxis={xAxis}

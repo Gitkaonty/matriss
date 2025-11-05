@@ -485,31 +485,16 @@ export default function SaisieComponent() {
     //Récupération données liste des devises
     const getListeDevises = () => {
         axios.get(`/devises/devise/compte/${compteId}/${fileId}`).then((response) => {
-            const resData = response.data;
             setListeDevise(response.data);
         })
     }
 
-    //Recupérer l'année min et max de l'éxercice
-    const getAnneesEntreDeuxDates = (dateDebut, dateFin) => {
-        const debut = new Date(dateDebut).getFullYear();
-        const fin = new Date(dateFin).getFullYear();
-        const annees = [];
-
-        for (let annee = debut; annee <= fin; annee++) {
-            annees.push(annee);
-        }
-
-        return annees;
-    };
-
     //Récupération la liste des exercices BY ID EXERCICE
     const getDateDebutFinExercice = () => {
-        axios.get(`/paramExercice/listeExerciceById/${selectedExerciceId}`).then((response) => {
+        axios.get(`/paramExercice/getListeAnnee/${Number(compteId)}/${Number(fileId)}`).then((response) => {
             const resData = response.data;
             if (resData.state) {
-                const annee = getAnneesEntreDeuxDates(resData.list.date_debut, resData.list.date_fin)
-                setListeAnnee(annee)
+                setListeAnnee(resData.list)
             } else {
                 setListeAnnee([])
             }

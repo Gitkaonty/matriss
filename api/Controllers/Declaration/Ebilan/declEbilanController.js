@@ -11,6 +11,7 @@ const declEbilanGenerateExcel = require('../../../Middlewares/Ebilan/declEbilanG
 const declEbilanGenerateXml = require('../../../Middlewares/Ebilan/declEbillanGenerateXml');
 const recupTableau = require('../../../Middlewares/Ebilan/recupTableau');
 const functionControles = require('../../../Middlewares/Ebilan/controles');
+const fonctionUpdateBalanceSold = require('../../../Middlewares/UpdateSolde/updateBalanceSold');
 
 const { create } = require('xmlbuilder2');
 
@@ -375,6 +376,13 @@ const activateCalcul = async (req, res) => {
       list2: [],
       etatglobal: [],
       detailAnom: []
+    }
+
+    try {
+      await fonctionUpdateBalanceSold.updateSold(compteId, fileId, exerciceId, [], true);
+
+    } catch (err) {
+      throw new Error(`Erreur lors de la mise à jour des soldes ou des rubriques : ${err.message}`);
     }
 
     if (tableau === 'BILAN') {
@@ -1816,7 +1824,10 @@ const generateBhiapcAuto = async (req, res) => {
         {
           model: dossierplancomptable,
           attributes: ['compte'],
-          required: true
+          required: uniqueComptes ? true : false,
+          where: uniqueComptes
+            ? { compte: { [Op.like]: `${uniqueComptes}%` } }
+            : undefined
         },
       ],
       order: [['dateecriture', 'ASC']]

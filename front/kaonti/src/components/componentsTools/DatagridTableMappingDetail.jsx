@@ -1,8 +1,8 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
 import {
-    Typography, Stack, Paper, RadioGroup, FormControlLabel, Radio, FormControl,
-    InputLabel, Select, MenuItem, TextField, Box, Tab,
+    Typography, Stack, FormControl,
+    InputLabel, Select, MenuItem,
     FormHelperText,
     Input,
     Checkbox
@@ -405,8 +405,6 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
 
             const dataToSend = { ...formNewParam.values, compteId: compteId, exerciceId: exerciceId, fileId: fileId, rubriqueId: rubriqueId };
 
-            console.log('dataToSend : ', dataToSend);
-
             axios.post(`/paramMappingCompte/MappingCompteAdd`, dataToSend).then((response) => {
                 const resData = response.data;
 
@@ -512,7 +510,6 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
                 setEditableRow(true);
             }
         }
-
     };
 
     //Ajouter une ligne dans le tableau
@@ -539,12 +536,6 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
 
         setDisableAddRowBouton(true);
     }
-
-    //récupérer le numéro id le plus grand dans le tableau
-    const getMaxID = (data) => {
-        const Ids = data.map(item => item.id);
-        return Math.max(...Ids);
-    };
 
     const getListeCompteRubriqueAfterUpdating = () => {
         const choixPoste = nature;
@@ -709,18 +700,6 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
                     rowHeight={DataGridStyle.rowHeight}
                     columnHeaderHeight={DataGridStyle.columnHeaderHeight}
                     editMode='row'
-                    onRowClick={(e) => handleCellEditCommit(e.row)}
-                    onRowSelectionModelChange={ids => {
-                        setSelectedRow(ids);
-                        saveSelectedRow(ids);
-                        deselectRow(ids);
-                    }}
-                    rowModesModel={rowModesModel}
-                    onRowModesModelChange={handleRowModesModelChange}
-                    onRowEditStop={handleRowEditStop}
-                    processRowUpdate={processRowUpdate}
-                    rows={compteRubriqueData}
-                    columns={columnHeader}
                     initialState={{
                         pagination: {
                             paginationModel: { page: 0, pageSize: 100 },
@@ -732,7 +711,20 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
                     columnVisibilityModel={{
                         id: false,
                     }}
+
+                    rows={compteRubriqueData}
+                    columns={columnHeader}
+                    rowModesModel={rowModesModel}
+                    onRowModesModelChange={handleRowModesModelChange}
+                    onRowEditStop={handleRowEditStop}
+                    processRowUpdate={processRowUpdate}
                     rowSelectionModel={selectedRow}
+                    onRowClick={(e) => handleCellEditCommit(e.row)}
+                    onRowSelectionModelChange={ids => {
+                        setSelectedRow(ids);
+                        saveSelectedRow(ids);
+                        deselectRow(ids);
+                    }}
                     onRowEditStart={(params, event) => {
                         if (!selectedRow.length || selectedRow[0] !== params.id) {
                             event.defaultMuiPrevented = true;

@@ -580,9 +580,11 @@ const PopupAjustRubriqueEbilan = ({ actionState, row, column, value }) => {
                                 rows={listAjust}
                                 onRowClick={(e) => handleCellEditCommit(e.row)}
                                 onRowSelectionModelChange={ids => {
-                                    setSelectedRow(ids);
-                                    saveSelectedRow(ids);
-                                    deselectRow(ids);
+                                    const singleSelection = ids.length > 0 ? [ids[ids.length - 1]] : [];
+
+                                    setSelectedRow(singleSelection);
+                                    saveSelectedRow(singleSelection);
+                                    deselectRow(singleSelection);
                                 }}
                                 editMode='row'
                                 selectionModel={selectedRowId}

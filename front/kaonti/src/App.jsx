@@ -38,6 +38,9 @@ import HistoriqueDeclaration from './components/menuComponent/Declaration/Histor
 import DeclarationTVA from './components/menuComponent/Declaration/Tva/ParamTva';
 import ParamChiffreAffaires from './components/menuComponent/Parametrages/chiffreAffaires/ParamChiffreAffaires';
 import DeclarationIsi from './components/menuComponent/Declaration/ISI/DeclarationIsi';
+import ParamMappingExterne from './components/menuComponent/Parametrages/mappingCompteExterne/ParamMappingExterne';
+import EtatFinancier from './components/menuComponent/administration/etatFinancier/EtatFinancier';
+import Sig from './components/menuComponent/administration/SIG/Sig';
 
 const ROLES = {
   'SuperAdmin': 3355,
@@ -72,6 +75,8 @@ export default function App() {
               <Route path='/tab/administration/importAnnexeDeclarationFiscale' element={<ImportAnnexeDeclarationFiscaleComponent />} />
               <Route path='/tab/administration/exportBalance/:id' element={<ExportBalance />} />
               <Route path='/tab/administration/personnel/:id' element={<PersonnelComponent />} />
+              <Route path='/tab/administration/etatFinacier/:id' element={<EtatFinancier />} />
+              <Route path='/tab/administration/sig/:id' element={<Sig />} />
 
               <Route path='/tab/revision/revisionAnomalieEbilan' element={<RevisionAnomalieEbilanComponent />} />
               <Route path='/tab/revision/revisionPrecontrolFiscal' element={<RevisionPrecontroleFiscalComponent />} />
@@ -88,6 +93,7 @@ export default function App() {
               <Route path='/tab/parametrages/paramClassification/:id' element={<ClassificationSalariesComponent />} />
               <Route path='/tab/parametrages/fonctions/:id' element={<FonctionsComponent />} />
               <Route path='/tab/parametrages/chiffreDaffaires/:id' element={<ParamChiffreAffaires />} />
+              <Route path='/tab/parametrages/paramMapping-externe/:id' element={<ParamMappingExterne />} />
 
               <Route path='/tab/declaration/declarationIRSA/:id' element={<DeclarationIRSAComponent />} />
               <Route path='/tab/declaration/declarationISI/:id' element={<DeclarationIsi />} />

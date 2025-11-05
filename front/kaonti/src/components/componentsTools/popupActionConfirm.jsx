@@ -1,87 +1,94 @@
-import React from 'react';
-import { Typography, Stack } from '@mui/material';
-import Button from '@mui/material/Button';
+import { Typography, Stack, Button, Dialog, DialogContent, DialogActions, IconButton, CircularProgress } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
+import { IoIosWarning } from 'react-icons/io';
 import { init } from '../../../init';
-import { CiWarning } from "react-icons/ci";
-import { IoIosWarning } from "react-icons/io";
 
-let initial = init[0];
+const initial = init[0];
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialogContent-root': {
-      padding: theme.spacing(2),
+        padding: theme.spacing(3),
     },
     '& .MuiDialogActions-root': {
-      padding: theme.spacing(1),
+        padding: theme.spacing(2),
     },
-  }));
+    '& .MuiPaper-root': {
+        minHeight: '25vh',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+    },
+}));
 
-const PopupActionConfirm = ({msg, confirmationState}) =>{
-    
-    const confirmation = () => {
-        confirmationState(true);
-      }
-
-    const handleCloseDeleteModel = () => {
-        confirmationState(false);
-    }
+const PopupActionConfirm = ({ msg, confirmationState, isLoading }) => {
+    const handleConfirm = () => confirmationState(true);
+    const handleClose = () => confirmationState(false);
 
     return (
         <BootstrapDialog
-            onClose={handleCloseDeleteModel}
-            aria-labelledby="customized-dialog-title"
+            onClose={handleClose}
+            aria-labelledby="confirmation-dialog-title"
             open={true}
+            maxWidth="xs"
+            fullWidth
         >
-            <DialogTitle sx={{ m: 0, p: 2 }} id="customized-dialog-title" style={{fontWeight:'bold', width:'600px', height:'50px',backgroundColor : 'transparent'}}>
-            
-            </DialogTitle>
-            
             <IconButton
-                style={{color:'red', textTransform: 'none', outline: 'none'}}
+                style={{ color: 'red', textTransform: 'none', outline: 'none' }}
                 aria-label="close"
-                onClick={handleCloseDeleteModel}
+                onClick={handleClose}
                 sx={{
                     position: 'absolute',
                     right: 8,
                     top: 8,
                     color: (theme) => theme.palette.grey[500],
                 }}
-                >
-            <CloseIcon />
+            >
+                <CloseIcon />
             </IconButton>
-            <DialogContent>
-           
-            <Stack width={"90%"} height={"100px"} spacing={0} alignItems={'center'} alignContent={"center"} 
-            direction={"column"} justifyContent={"center"} style={{marginLeft:'10px'}}>
-                <Typography sx={{ ml: 2, flex: 1 }} variant="h7" component="div" >
-                    {msg}
-                </Typography>
-            </Stack>
 
+            <DialogContent>
+                <Stack alignItems="center" spacing={2} textAlign="center">
+                    <IoIosWarning style={{ width: 70, height: 70, color: '#FF8A8A' }} />
+                    <Typography
+                        fontWeight={550}
+                        color="text.primary"
+                        sx={{ mt: 1, fontSize: '17px' }}
+                    >
+                        {msg}
+                    </Typography>
+                </Stack>
             </DialogContent>
+
             <DialogActions>
                 <Button autoFocus
-                    style={{backgroundColor:initial.theme, color:'white', width:"100px", textTransform: 'none', outline: 'none'}}
+                    style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
                     type='submit'
-                    onClick={handleCloseDeleteModel}
-                    >
-                        Annuler
-                </Button>
-                <Button autoFocus onClick={confirmation} 
-                style={{backgroundColor:initial.theme, color:'white', width:"100px", textTransform: 'none', outline: 'none'}}
+                    onClick={handleClose}
                 >
-                    Poursuivre
+                    Annuler
                 </Button>
+                <Button
+                    autoFocus
+                    onClick={handleConfirm}
+                    disabled={isLoading}
+                    style={{
+                        backgroundColor: initial.theme,
+                        color: 'white',
+                        width: isLoading ? '130px' : '100px',
+                        textTransform: 'none',
+                        outline: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                    }}
+                >
+                    <span>Poursuivre</span>
+                    {isLoading && <CircularProgress size={18} color="inherit" />}
+                </Button>
+
             </DialogActions>
         </BootstrapDialog>
-    )
-}
+    );
+};
 
 export default PopupActionConfirm;

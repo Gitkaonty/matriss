@@ -1,5 +1,5 @@
 import Typography from '@mui/material/Typography';
-import { Stack, Button, IconButton } from '@mui/material';
+import { Stack, IconButton } from '@mui/material';
 import { Clear } from '@mui/icons-material';
 
 export default function SubMenuHeader({ caption, openWindow, humburgerMenuState, closeDrawer }) {

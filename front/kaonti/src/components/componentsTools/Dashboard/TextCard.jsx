@@ -41,10 +41,10 @@ const TextCard = ({
                         <Typography variant="h6" fontWeight={750}>
                             {text}
                         </Typography>
-                        <Typography variant="h5" fontWeight={800}>
+                        <Typography variant="subtitle1" fontWeight={800}>
                             {formatMontant(montant)}
                         </Typography>
-                        <Typography variant="h5" color={'#6d645dff'} fontWeight={800}>
+                        <Typography variant="subtitle1" color={'#6d645dff'} fontWeight={800}>
                             {formatMontant(montantN1)}
                         </Typography>
                     </>
@@ -56,7 +56,7 @@ const TextCard = ({
                     <Typography variant="h6" color={color} fontWeight={750}>
                         {text}
                     </Typography>
-                    <Typography variant="h5" color={color} fontWeight={800}>
+                    <Typography variant="subtitle1" color={color} fontWeight={800}>
                         {formatMontant(montant)}
                     </Typography>
                     <Stack direction="row" alignItems="center" spacing={1}>
