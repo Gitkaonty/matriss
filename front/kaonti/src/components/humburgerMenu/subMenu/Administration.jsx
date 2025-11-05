@@ -82,6 +82,18 @@ const exportList = [
         name: "journalComptable",
         path: "#"
     },
+    {
+        text: 'Etats financiers',
+        name: "etatfinancière",
+        path: "/tab/administration/etatFinacier",
+        urldynamic: true
+    },
+    {
+        text: 'SIG',
+        name: "sig",
+        path: "/tab/administration/sig",
+        urldynamic: true
+    },
     // {
     //     text: 'Liasse E-bilan',
     //     name: "liasseEbilan",

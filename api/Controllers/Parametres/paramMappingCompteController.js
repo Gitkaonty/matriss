@@ -39,9 +39,7 @@ const getListeRubrique = async (req, res) => {
           ],
           required: false,
           where: {
-            //id_rubrique: Sequelize.col('rubriques.id_rubrique'),
             id_etat: tableau,
-            //nature:{[Op.notIn]: ['TOTAL','TITRE']}, 
           }
         },
       ],

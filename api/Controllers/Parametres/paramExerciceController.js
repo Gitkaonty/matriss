@@ -33,7 +33,15 @@ const liassesads = db.liassesads;
 const liassesdrs = db.liassesdrs;
 const liasseses = db.liasseses;
 
+const rubriquesExternes = db.rubriquesExternes;
+const compteRubriquesExternes = db.compteRubriquesExternes;
+const rubriqueExternesEvcp = db.rubriqueExternesEvcp;
 
+const compteRubriquesExternesMatrices = db.compteRubriquesExternesMatrices;
+const rubriquesExternesMatrices = db.rubriquesExternesMatrices;
+
+const etatsEtatFinancier = db.etatsEtatFinancier;
+const etatsEtatFinancierMatrice = db.etatsEtatFinancierMatrice;
 
 // Unified Formulaire TVA
 const formulaireTvaAnnexes = db.formulaireTvaAnnexes;
@@ -112,8 +120,10 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
   const listeEtatPlp = await etatsplpmatrices.findAll({});
   const listeRubrique = await rubriquesmatrices.findAll({});
   const listeCompteRubrique = await compterubriquematrices.findAll({});
+  const listeRubriqueExterne = await rubriquesExternesMatrices.findAll({});
+  const listeCompteRubriqueExterne = await compteRubriquesExternesMatrices.findAll({});
+  const listeEtatFinancier = await etatsEtatFinancierMatrice.findAll({});
   // const listeEtatCentresFiscales = await etatsCentresFiscalesmatrices.findAll({});
-  //// const listeEtatDge = await etatsDgeMatrices.findAll({});
 
   const createdExerciceInfosData = await exercice.findOne({
     where: { id: createExercice.id }
@@ -212,30 +222,50 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
     })
   })
 
-  // // console.log(listeEtatCentresFiscales);
-  // listeEtatCentresFiscales.map(async (item) => {
+  listeRubriqueExterne.map(async (item) => {
+    await rubriquesExternes.create({
+      id_compte: id_compte,
+      id_dossier: id_dossier,
+      id_exercice: createExercice.id,
+      id_etat: item.id_etat,
+      id_rubrique: item.id_rubrique,
+      libelle: item.libelle,
+      type: item.type,
+      ordre: item.ordre,
+      subtable: item.subtable,
+      par_default: item.par_default,
+      active: item.active,
+    })
+  })
 
-  //   await etatsCentresFiscales.create({
-  //     id_compte: id_compte,
-  //     id_dossier: id_dossier,
-  //     id_exercice: createExercice.id,
-  //     id_cfisc: item.id_cfisc,
-  //     libelle: item.libelle,
-  //     montant: item.montant,
-  //   })
-  // })
+  listeCompteRubriqueExterne.map(async (item) => {
+    await compteRubriquesExternes.create({
+      id_compte: id_compte,
+      id_dossier: id_dossier,
+      id_exercice: createExercice.id,
+      id_etat: item.id_etat,
+      id_rubrique: item.id_rubrique,
+      tableau: item.tableau,
+      compte: item.compte,
+      nature: item.nature,
+      senscalcul: item.senscalcul,
+      condition: item.condition,
+      equation: item.equation,
+      par_default: item.par_default,
+      active: item.active,
+    })
+  })
 
-  // console.log('novidvnsoidvdcdsbsod',listeEtatDge);
-  // listeEtatDge.map(async (item) => {
-  //   await etatsDge.create({
-  //     id_compte: id_compte,
-  //     id_dossier: id_dossier,
-  //     id_exercice: createExercice.id,
-  //     id_dge: item.id_dge,
-  //     libelle: item.libelle,
-  //     montant: item.montant,
-  //   })
-  // })
+  listeEtatFinancier.map(async (item) => {
+    await etatsEtatFinancier.create({
+      id_compte: id_compte,
+      id_dossier: id_dossier,
+      id_exercice: createExercice.id,
+      code: item.code,
+      nom: item.nom,
+      ordre: item.ordre,
+    })
+  })
 
   // --- Unified Formulaire TVA initialization (based on dossier's centrefisc)
   try {
@@ -257,7 +287,6 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
   } catch (e) {
     console.log('[Unified TVA] init error:', e?.message || e);
   }
-
 
   listeRubrique.map(async (item) => {
     const copyrubriques = await rubriques.create({
@@ -284,8 +313,8 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
   });
 
   if (listeRubriqueEVCP.length > 0) {
-    listeRubriqueEVCP.map((item) => {
-      liasseevcps.create({
+    listeRubriqueEVCP.map(async (item) => {
+      await liasseevcps.create({
         id_compte: id_compte,
         id_dossier: id_dossier,
         id_exercice: createExercice.id,
@@ -296,6 +325,18 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
         ordre: item.ordre,
         niveau: item.niveau,
       });
+      await rubriqueExternesEvcp.create({
+        id_compte: id_compte,
+        id_dossier: id_dossier,
+        id_exercice: createExercice.id,
+        id_etat: item.id_etat,
+        id_rubrique: item.id_rubrique,
+        note: item.note,
+        nature: item.nature,
+        ordre: item.ordre,
+        niveau: item.niveau,
+        libelle: item.libelle,
+      })
     });
   }
 
@@ -781,6 +822,55 @@ const getListeExerciceById = async (req, res) => {
   }
 }
 
+const getListeAnnee = async (req, res) => {
+  try {
+    const { id_dossier, id_compte } = req.params;
+
+    let resData = {
+      state: false,
+      msg: '',
+      list: []
+    };
+
+    if (!id_dossier || !id_compte) {
+      resData.msg = 'Compte et dossier non trouvé';
+      return res.json(resData);
+    }
+
+    const list = await exercice.findAll({
+      where: { id_dossier, id_compte },
+      attributes: ['date_debut', 'date_fin'],
+      order: [['date_debut', 'ASC']]
+    });
+
+    if (list.length > 0) {
+      const years = [];
+
+      list.forEach(e => {
+        const startYear = new Date(e.date_debut).getFullYear();
+        const endYear = new Date(e.date_fin).getFullYear();
+
+        for (let y = startYear; y <= endYear; y++) {
+          years.push(y);
+        }
+      });
+
+      const uniqueYears = [...new Set(years)].sort((a, b) => a - b);
+
+      resData.state = true;
+      resData.list = uniqueYears;
+    } else {
+      resData.msg = 'Aucun exercice trouvé';
+    }
+
+    return res.json(resData);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ state: false, msg: 'Erreur serveur', error: error.message });
+  }
+};
+
+
 module.exports = {
   getListeExercice,
   createFirstExercice,
@@ -790,5 +880,6 @@ module.exports = {
   deverrouillerExercice,
   deleteExercice,
   getListeSituation,
-  getListeExerciceById
+  getListeExerciceById,
+  getListeAnnee
 };

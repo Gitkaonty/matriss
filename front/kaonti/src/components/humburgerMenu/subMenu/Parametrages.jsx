@@ -65,9 +65,15 @@ const comptaList = [
 
 const liassesList = [
     {
-        text: 'Mapping des comptes',
+        text: 'Mapping des comptes - Ebilan',
         name: "mappingComptes",
         path: "/tab/parametrages/paramMapping",
+        urldynamic: true
+    },
+    {
+        text: 'Mapping des comptes - Etats externes',
+        name: "mappingComptes",
+        path: "/tab/parametrages/paramMapping-externe",
         urldynamic: true
     },
 ];

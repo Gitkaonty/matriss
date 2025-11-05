@@ -2347,6 +2347,7 @@ export default function DeclarationEbilan() {
     const recupRubriqueGlobal = (compteId, fileId, exerciceId) => {
         axios.post(`/declaration/ebilan/listeRubriqueGlobal`, { compteId, fileId, exerciceId }).then((response) => {
             const resData = response.data;
+            console.log('resData : ', resData);
             if (resData.state) {
                 setBilanActifData(resData.bilanActif);
                 setBilanPassifData(resData.bilanPassif);

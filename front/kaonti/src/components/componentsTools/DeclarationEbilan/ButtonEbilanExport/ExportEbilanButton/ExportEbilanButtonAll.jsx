@@ -3,7 +3,6 @@ import React, { useState } from 'react'
 import { CiExport } from 'react-icons/ci';
 import { FaFilePdf } from "react-icons/fa6";
 import { FaFileExcel } from "react-icons/fa";
-import { BsFiletypeXml } from "react-icons/bs";
 import { TbFileTypeXml } from "react-icons/tb";
 
 const ExportEbilanButtonAll = ({ exportAllToPdf, exportAllToExcel, exportAllToXML }) => {

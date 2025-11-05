@@ -30,4 +30,7 @@ router.post('/deleteExercice', paramExerciceController.deleteExercice);
 //récupérer une exercice par son identifiant
 router.get('/listeExerciceById/:id', paramExerciceController.getListeExerciceById);
 
+//récupérer la liste des années
+router.get('/getListeAnnee/:id_compte/:id_dossier', paramExerciceController.getListeAnnee);
+
 module.exports = router;

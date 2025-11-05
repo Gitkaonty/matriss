@@ -1,23 +1,27 @@
-import { TextField, Autocomplete } from '@mui/material';
+import { TextField, Autocomplete, Tooltip, Button, Popper } from '@mui/material';
 import FormatedInput from '../FormatedInput';
+import { IoAddSharp } from "react-icons/io5";
+import { GoX } from "react-icons/go";
 
 export const getSaisieColumnHeader = ({
-    editableRow,
     formSaisie,
-    formNewParam,
     setInvalidRows,
     invalidRows,
     selectedCell,
     listePlanComptable,
     taux,
     equilibrateDebitCredit,
+    tableRows,
+    handleOpenDialogConfirmDeleteSaisie,
+    isDatagridEditing,
+    ajouterNouvelleLigne
 }) => {
     const columns = [
         {
             field: 'jour',
             headerName: 'Jour',
             type: 'number',
-            editable: editableRow,
+            editable: true,
             sortable: true,
             // width: 60,
             flex: 0.4,
@@ -49,8 +53,6 @@ export const getSaisieColumnHeader = ({
                                     value: '',
                                 });
 
-                                formNewParam.setFieldValue('jour', '');
-
                                 // Garde ou ajoute "jour" dans les erreurs si champ vide
                                 setInvalidRows((prev) => {
                                     const exists = prev.find(r => r.id === params.id);
@@ -79,8 +81,6 @@ export const getSaisieColumnHeader = ({
                                     field: 'jour',
                                     value: intValue,
                                 });
-
-                                formNewParam.setFieldValue('jour', intValue);
 
                                 // Supprimer l'erreur "jour" s’il y en avait une
                                 setInvalidRows((prev) => {
@@ -172,10 +172,6 @@ export const getSaisieColumnHeader = ({
                                 e
                             );
 
-                            formNewParam.setFieldValue('compte', newCompteId);
-
-                            formNewParam.setFieldValue('libelle', libelleAssocie1);
-
                             if (newCompteId) {
                                 setInvalidRows((prevInvalidRows) => {
                                     const row = prevInvalidRows.find(r => r.id === params.id);
@@ -191,7 +187,13 @@ export const getSaisieColumnHeader = ({
                                 });
                             }
                         }}
-                        noOptionsText="Aucun compte trouvé"
+                        filterOptions={(opts, state) => {
+                            const filtered = opts.filter(o =>
+                                o.label.toLowerCase().includes(state.inputValue.toLowerCase())
+                            );
+                            return filtered;
+                        }}
+                        noOptionsText="Aucune compte trouvé"
                         renderInput={(paramsInput) => (
                             <TextField
                                 {...paramsInput}
@@ -285,8 +287,6 @@ export const getSaisieColumnHeader = ({
                                 field: 'piece',
                                 value: value,
                             }, e);
-
-                            formNewParam.setFieldValue('piece', value);
 
                             //Met à jour les erreurs
                             setInvalidRows((prev) => {
@@ -396,8 +396,6 @@ export const getSaisieColumnHeader = ({
                                 value: value,
                             }, e);
 
-                            formNewParam.setFieldValue('libelle', value);
-
                             // Mise à jour dynamique des erreurs
                             setInvalidRows((prev) => {
                                 const row = prev.find(r => r.id === params.id);
@@ -505,8 +503,6 @@ export const getSaisieColumnHeader = ({
                                 value: value,
                             }, e);
 
-                            formNewParam.setFieldValue('num_facture', value);
-
                             //Met à jour les erreurs
                             setInvalidRows((prev) => {
                                 const row = prev.find(r => r.id === params.id);
@@ -582,8 +578,6 @@ export const getSaisieColumnHeader = ({
                                     value: numeric,
                                 }, event);
 
-                                formNewParam.setFieldValue('montant_devise', numeric);
-
                                 const isDebitEmpty = debit === 0 || debit === '' || debit === null || debit === undefined;
                                 const isCreditEmpty = credit === 0 || credit === '' || credit === null || credit === undefined;
                                 if (isDebitEmpty && isCreditEmpty) {
@@ -593,8 +587,6 @@ export const getSaisieColumnHeader = ({
                                         value: numeric * taux
                                     })
 
-                                    formNewParam.setFieldValue('debit', numeric * taux);
-
                                 } else if (isDebitEmpty) {
                                     params.api.setEditCellValue({
                                         id: params.id,
@@ -602,16 +594,12 @@ export const getSaisieColumnHeader = ({
                                         value: numeric * taux
                                     })
 
-                                    formNewParam.setFieldValue('credit', numeric * taux);
-
                                 } else if (isCreditEmpty) {
                                     params.api.setEditCellValue({
                                         id: params.id,
                                         field: 'debit',
                                         value: numeric * taux
                                     })
-
-                                    formNewParam.setFieldValue('debit', numeric * taux);
 
                                 }
                             }
@@ -693,18 +681,15 @@ export const getSaisieColumnHeader = ({
                                     event
                                 );
 
-                                formNewParam.setFieldValue('debit', numeric);
-
                                 if (numeric > 0) {
                                     params.api.setEditCellValue(
                                         {
                                             id: params.id,
                                             field: 'credit',
-                                            value: '',
+                                            value: 0,
                                         },
                                         event
                                     );
-                                    formNewParam.setFieldValue('credit', '');
                                 }
                             }
                         }}
@@ -712,8 +697,10 @@ export const getSaisieColumnHeader = ({
                             if (event.ctrlKey && event.key === 'Enter') {
                                 event.preventDefault();
                                 equilibrateDebitCredit(params.id, 'debit');
-                                formNewParam.setFieldValue('debit', inputValue);
                             }
+                        }}
+                        onFocus={(e) => {
+                            e.target.setSelectionRange(0, 0);
                         }}
                         style={{ marginBottom: '0px', textAlign: 'right' }}
                         InputProps={{
@@ -787,7 +774,6 @@ export const getSaisieColumnHeader = ({
                                     field: 'credit',
                                     value: inputValue,
                                 }, event);
-                                formNewParam.setFieldValue('credit', inputValue);
 
                                 const rawValue = inputValue ?? '';
                                 const cleaned = rawValue.toString().replace(/\s/g, '').replace(',', '.');
@@ -797,9 +783,8 @@ export const getSaisieColumnHeader = ({
                                     params.api.setEditCellValue({
                                         id: params.id,
                                         field: 'debit',
-                                        value: '',
+                                        value: 0,
                                     }, event);
-                                    formNewParam.setFieldValue('debit', '');
                                 }
                             }
                         }}
@@ -807,13 +792,10 @@ export const getSaisieColumnHeader = ({
                             if (event.ctrlKey && event.key === 'Enter') {
                                 event.preventDefault();
                                 equilibrateDebitCredit(params.id, 'credit');
-                                // params.api.setEditCellValue({
-                                //     id: params.id,
-                                //     field: 'credit',
-                                //     value: 6666,
-                                // }, event);
-                                formNewParam.setFieldValue('credit', inputValue);
                             }
+                        }}
+                        onFocus={(e) => {
+                            e.target.setSelectionRange(0, 0);
                         }}
                         style={{ marginBottom: '0px', textAlign: 'right' }}
                         InputProps={{
@@ -857,6 +839,64 @@ export const getSaisieColumnHeader = ({
                 return classes.join(' ');
             }
         },
+        {
+            field: 'actions',
+            headerName: 'Action',
+            width: 150,
+            sortable: false,
+            headerAlign: 'center',
+            // align: 'center',
+            renderCell: (params) => {
+                const isLastRow = params.id === tableRows[tableRows.length - 1]?.id;
+                return (
+                    <>
+                        <Tooltip title="Supprimer une ligne">
+                            <span>
+                                <Button
+                                    onClick={() => handleOpenDialogConfirmDeleteSaisie(params.id)}
+                                    disabled={tableRows.length === 1 || isDatagridEditing()}
+                                    color="error"
+                                    sx={{
+                                        outline: 'none',
+                                        boxShadow: 'none',
+                                        '&:focus': {
+                                            outline: 'none',
+                                            boxShadow: 'none',
+                                        },
+                                        '&:focus-visible': {
+                                            outline: 'none',
+                                            boxShadow: 'none',
+                                        },
+                                        ml: 0,
+                                        pointerEvents: tableRows.length === 1 ? 'none' : 'auto',
+                                    }}
+                                >
+                                    <GoX style={{ width: '30px', height: '30px' }} />
+                                </Button>
+                            </span>
+                        </Tooltip>
+
+                        {isLastRow && (
+                            <Tooltip title="Ajouter une ligne">
+                                <Button
+                                    onClick={ajouterNouvelleLigne}
+                                    sx={{
+                                        boxShadow: 'none',
+                                        '&:focus': {
+                                            outline: 'none',
+                                            boxShadow: 'none',
+                                        }
+                                    }}
+                                    disabled={isDatagridEditing()}
+                                >
+                                    <IoAddSharp style={{ width: '30px', height: '30px' }} />
+                                </Button>
+                            </Tooltip>
+                        )}
+                    </>
+                )
+            },
+        }
     );
     return columns;
 }

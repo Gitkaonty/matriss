@@ -584,25 +584,15 @@ export default function ParamMappingComponent() {
     }
 
     const restaureDefaultParameter = (tableau) => {
-        if (value) {
-            const exerciceId = selectedExerciceId;
-            axios.post(`/paramMappingCompte/restaureDefaultParameter`, { compteId, fileId, exerciceId, tableau }).then((response) => {
-                const resData = response.data;
-                if (resData.state) {
-                    toast.success(resData.msg);
-                } else {
-                    toast.error(resData.msg);
-                }
-            });
-        } else {
-            setShowRestaurePopupBilan(false);
-            setShowRestaurePopupCrn(false);
-            setShowRestaurePopupCrf(false);
-            setShowRestaurePopupTftd(false);
-            setShowRestaurePopupTfti(false);
-            setShowRestaurePopupDp(false);
-            setShowRestaurePopupBhiapc(false);
-        }
+        const exerciceId = selectedExerciceId;
+        axios.post(`/paramMappingCompte/restaureDefaultParameter`, { compteId, fileId, exerciceId, tableau }).then((response) => {
+            const resData = response.data;
+            if (resData.state) {
+                toast.success(resData.msg);
+            } else {
+                toast.error(resData.msg);
+            }
+        });
     }
 
     //restaurer paramétrage par défaut BILAN

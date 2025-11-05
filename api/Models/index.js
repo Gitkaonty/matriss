@@ -105,6 +105,8 @@ db.etatsplpmatrices = require('./etatsPlpMatriceModel')(sequelize, DataTypes);
 db.resetToken = require('./resetTokenModel')(sequelize, DataTypes);
 db.isi = require('./isiModel')(sequelize, DataTypes);
 //
+db.compteRubriquesExternesMatrices = require('./compteRubriqueExterneMatriceModel')(sequelize, DataTypes);
+db.rubriquesExternesMatrices = require('./rubriquesExterneMatriceModel')(sequelize, DataTypes);
 
 //
 db.caSections = require('./caSectionMolel')(sequelize, DataTypes);
@@ -118,6 +120,21 @@ db.localites = require('./localites')(sequelize, DataTypes);
 //
 db.abonnements = require('./abonnementModel')(sequelize, DataTypes);
 db.paiements = require('./paiementModel')(sequelize, DataTypes);
+//
+
+//
+db.rubriquesExternes = require('./rubriquesExternesModel')(sequelize, DataTypes);
+db.compteRubriquesExternes = require('./compteRubriqueExterneModel')(sequelize, DataTypes);
+db.rubriqueExternesEvcp = require('./rubriqueExternesEvcpModel')(sequelize, DataTypes);
+//
+
+//
+db.ajustementExternes = require('./ajustementExterneModel')(sequelize, DataTypes);
+//
+
+//
+db.etatsEtatFinancier = require('./etatsEtatFinancierModel')(sequelize, DataTypes);
+db.etatsEtatFinancierMatrice = require('./etatsEtatFinancierMatriceModel')(sequelize, DataTypes);
 //
 
 const Devise = require('./deviseModel')(sequelize, DataTypes);
@@ -257,6 +274,64 @@ db.isi.belongsTo(db.exercices, { foreignKey: 'id_exercice', targetKey: 'id' });
 
 db.dossierplancomptable.hasMany(db.isi, { foreignKey: 'id_numcpt', sourceKey: 'id' });
 db.isi.belongsTo(db.dossierplancomptable, { foreignKey: 'id_numcpt', targetKey: 'id' });
+
+// Rubriques externes
+db.userscomptes.hasMany(db.rubriquesExternes, { foreignKey: 'id_compte', sourceKey: 'id' });
+db.rubriquesExternes.belongsTo(db.userscomptes, { foreignKey: 'id_compte', targetKey: 'id' });
+
+db.dossiers.hasMany(db.rubriquesExternes, { foreignKey: 'id_dossier', sourceKey: 'id' });
+db.rubriquesExternes.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id' });
+
+db.exercices.hasMany(db.rubriquesExternes, { foreignKey: 'id_exercice', sourceKey: 'id' });
+db.rubriquesExternes.belongsTo(db.exercices, { foreignKey: 'id_exercice', targetKey: 'id' });
+
+db.rubriquesExternes.hasMany(db.ajustementExternes, { foreignKey: 'id_rubrique', sourceKey: 'id_rubrique', as: 'ajusts' });
+db.ajustementExternes.belongsTo(db.rubriquesExternes, { foreignKey: 'id_rubrique', targetKey: 'id_rubrique', });
+
+// Comptes Rubriques externes
+db.userscomptes.hasMany(db.compteRubriquesExternes, { foreignKey: 'id_compte', sourceKey: 'id' });
+db.compteRubriquesExternes.belongsTo(db.userscomptes, { foreignKey: 'id_compte', targetKey: 'id' });
+
+db.dossiers.hasMany(db.compteRubriquesExternes, { foreignKey: 'id_dossier', sourceKey: 'id' });
+db.compteRubriquesExternes.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id' });
+
+db.exercices.hasMany(db.compteRubriquesExternes, { foreignKey: 'id_exercice', sourceKey: 'id' });
+db.compteRubriquesExternes.belongsTo(db.exercices, { foreignKey: 'id_exercice', targetKey: 'id' });
+
+// Ajustement externes
+db.userscomptes.hasMany(db.ajustementExternes, { foreignKey: 'id_compte', sourceKey: 'id' });
+db.ajustementExternes.belongsTo(db.userscomptes, { foreignKey: 'id_compte', targetKey: 'id' });
+
+db.dossiers.hasMany(db.droitcommas, { foreignKey: 'id_dossier', sourceKey: 'id' });
+db.ajustementExternes.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id' });
+
+db.exercices.hasMany(db.ajustementExternes, { foreignKey: 'id_exercice', sourceKey: 'id' });
+db.ajustementExternes.belongsTo(db.exercices, { foreignKey: 'id_exercice', targetKey: 'id' });
+
+// Rubrique externe EVCP
+db.userscomptes.hasMany(db.rubriqueExternesEvcp, { foreignKey: 'id_compte', sourceKey: 'id' });
+db.rubriqueExternesEvcp.belongsTo(db.userscomptes, { foreignKey: 'id_compte', targetKey: 'id' });
+
+db.dossiers.hasMany(db.droitcommas, { foreignKey: 'id_dossier', sourceKey: 'id' });
+db.rubriqueExternesEvcp.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id' });
+
+db.exercices.hasMany(db.rubriqueExternesEvcp, { foreignKey: 'id_exercice', sourceKey: 'id' });
+db.rubriqueExternesEvcp.belongsTo(db.exercices, { foreignKey: 'id_exercice', targetKey: 'id' });
+
+db.rubriqueExternesEvcp.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique', targetKey: 'id_rubrique' });
+
+db.rubriqueExternesEvcp.hasMany(db.ajustementExternes, { foreignKey: 'id_rubrique', sourceKey: 'id_rubrique', as: 'ajusts' });
+db.ajustementExternes.belongsTo(db.rubriqueExternesEvcp, { foreignKey: 'id_rubrique', targetKey: 'id_rubrique', });
+
+// Etats etat financier
+db.userscomptes.hasMany(db.etatsEtatFinancier, { foreignKey: 'id_compte', sourceKey: 'id' });
+db.etatsEtatFinancier.belongsTo(db.userscomptes, { foreignKey: 'id_compte', targetKey: 'id' });
+
+db.dossiers.hasMany(db.droitcommas, { foreignKey: 'id_dossier', sourceKey: 'id' });
+db.etatsEtatFinancier.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id' });
+
+db.exercices.hasMany(db.etatsEtatFinancier, { foreignKey: 'id_exercice', sourceKey: 'id' });
+db.etatsEtatFinancier.belongsTo(db.exercices, { foreignKey: 'id_exercice', targetKey: 'id' });
 
 // Abonnement
 db.userscomptes.hasMany(db.abonnements, { foreignKey: 'compte_id', sourceKey: 'id' });

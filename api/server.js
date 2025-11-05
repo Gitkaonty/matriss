@@ -83,6 +83,7 @@ app.use('/administration/ImportJournal', require('./Routes/Administration/import
 app.use('/administration/ImportBalance', require('./Routes/Administration/importBalanceRoute'));
 app.use('/administration/ImportModelePc', require('./Routes/Administration/importModelePCRoute'));
 app.use('/administration/personnel', require('./Routes/Administration/personnels/personnelRoute'));
+app.use('/administration/etatFinancier', require('./Routes/Administration/etatFinancier/etatFinancierRoute'));
 //export
 app.use('/administration/exportBalance', require('./Routes/Administration/exportBalanceRoute'));
 //saisie
@@ -120,8 +121,10 @@ app.use('/paramCa', require('./Routes/Parametres/paramCARoute'));
 
 app.use('/parametres/fonction', require('./Routes/Parametres/personnels/fonctionsRoute'));
 
-
 app.use('/devises/devise', require('./Routes/Parametres/Devises/deviseRoutes'));
+
+//router pour paramètres rubrique externes
+app.use('/paramRubriqueExterne', require('./Routes/Parametres/RubriqueExtrenes/paramRubriquesExternesRoute'));
 
 //----------------------------------------------------------------------------------------------------------------
 // MENU DECLARATION

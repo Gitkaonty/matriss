@@ -1,16 +1,15 @@
-import * as React from 'react';
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import List from '@mui/material/List';
 import Typography from '@mui/material/Typography';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
-import { useLocation } from "react-router-dom";
+import { matchPath, useLocation } from "react-router-dom";
 
 export default function SubMenuList({ list, navigatePath }) {
   const [fileId, setFileId] = useState(0);
   const location = useLocation();
   let idDossier;
+  
   useEffect(() => {
     idDossier = sessionStorage.getItem("fileId");
     setFileId(idDossier);
@@ -27,18 +26,28 @@ export default function SubMenuList({ list, navigatePath }) {
   }
 
   return (
-    <List style={{ width: '100%' }}>
-      {list?.map(item => (
-        <ListItem key={item.name} onClick={() => navigateToPage(item)}>
-          <ListItemButton style={{
-            backgroundColor: location.pathname.startsWith(item.path)
-              ? "rgba(241, 218, 230, 0.3)"
-              : "transparent", marginBottom: '-12px', borderRadius: '5px'
-          }}>
-            <Typography variant='h8' color={"white"}>{item.text}</Typography>
-          </ListItemButton>
-        </ListItem>
-      ))}
+    <List style={{ width: "100%" }}>
+      {list.map((item) => {
+        const isActive = matchPath({ path: item.path, end: false }, location.pathname);
+
+        return (
+          <ListItem key={item.text} onClick={() => navigateToPage(item)}>
+            <ListItemButton
+              style={{
+                backgroundColor: isActive
+                  ? "rgba(241, 218, 230, 0.3)"
+                  : "transparent",
+                borderRadius: "5px",
+                marginBottom: "-12px",
+              }}
+            >
+              <Typography variant="h8" color="white">
+                {item.text}
+              </Typography>
+            </ListItemButton>
+          </ListItem>
+        );
+      })}
     </List>
   )
 }
