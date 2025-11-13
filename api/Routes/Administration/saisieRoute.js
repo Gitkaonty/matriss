@@ -28,6 +28,16 @@ router.post('/ajoutJournal', upload.single('file'), saisieController.addJournal)
 
 router.delete('/deleteJournal', saisieController.deleteJournal);
 
+// Rapprochements bancaires
+router.get('/rapprochements', saisieController.listRapprochements); // expects query: fileId, compteId, exerciceId, pcId
+router.get('/rapprochements/pcs', saisieController.listEligiblePc512); // expects query: fileId, compteId, exerciceId
+router.get('/rapprochements/ecritures', saisieController.listEcrituresForRapprochement); // expects query: fileId, compteId, exerciceId, pcId, endDate?
+router.post('/rapprochements/ecritures/mark', saisieController.updateEcrituresRapprochement); // body: { ids[], fileId, compteId, exerciceId, rapprocher:boolean, dateRapprochement? }
+router.get('/rapprochements/soldes', saisieController.computeSoldesRapprochement); // query: fileId, compteId, exerciceId, pcId, endDate, soldeBancaire?
+router.post('/rapprochements', saisieController.createRapprochement);
+router.put('/rapprochements/:id', saisieController.updateRapprochement);
+router.delete('/rapprochements/:id', saisieController.deleteRapprochement);
+
 router.get('/getJournal/:id_compte/:id_dossier/:id_exercice', saisieController.getJournal);
 
 router.post('/addLettrage', saisieController.addLettrage);
