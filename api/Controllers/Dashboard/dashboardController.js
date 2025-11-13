@@ -275,6 +275,7 @@ exports.getAllInfo = async (req, res) => {
         }
 
         const moisN = getMonthsBetween(exerciceNData?.date_debut, exerciceNData?.date_fin);
+        console.log('moisN : ', moisN);
 
         const journalData = await journals.findAll({
             where: { id_compte, id_dossier, id_exercice },
@@ -499,7 +500,7 @@ exports.getAllInfo = async (req, res) => {
 
             resultatN,
             resultatN1,
-            
+
             state: true,
         });
     } catch (error) {
