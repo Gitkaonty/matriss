@@ -10,12 +10,11 @@ const dossierplancomptableModel = db.dossierplancomptable;
 const ajustementExternes = db.ajustementExternes;
 const compterubriques = db.compterubriques;
 const rubriquesexternesevcps = db.rubriqueExternesEvcp;
+const balances = db.balances;
 
 const recupExerciceN1 = fonctionRecupExerciceN1.recupInfos;
 
 const calculateRubrique = async (id_dossier, id_compte, id_exercice, id_etat) => {
-
-    // Récupération ajustemenent externe
     const ajustementData = await ajustementExternes.findAll({
         where: {
             id_dossier,
@@ -86,104 +85,94 @@ const calculateRubrique = async (id_dossier, id_compte, id_exercice, id_etat) =>
         console.warn(`Aucune liaison compte-rubrique trouvée pour ${id_dossier}/${id_compte}/${id_exercice}`);
     }
 
-    const comptesList = compteRubriqueData.map(c => c.compte);
-    const journalData = await journals.findAll({
-        where: {
-            id_dossier,
-            id_exercice,
-            id_compte,
-        },
-        include: [
-            {
-                model: dossierplancomptableModel,
-                attributes: ['compte'],
-                required: true,
-                where: {
-                    [Op.or]: comptesList.map(c => ({
-                        compte: { [Op.like]: `${c}%` }
-                    })),
-                    nature: { [Op.notIn]: ['Collectif'] }
-                }
-            },
-        ],
-    });
-
-    const mappedJournalData = await Promise.all(
-        journalData.map(async (journal) => {
-            const { dossierplancomptable, ...rest } = journal.toJSON();
-            return {
-                ...rest,
-                compte: dossierplancomptable?.compte || null,
-            };
-        }));
-
     const results = await Promise.all(
-        compteRubriqueData.map(async (compteRubrique) => {
-            try {
-                const associatedIdRubrique = rubriqueData.find(
-                    b => b.id_rubrique.toString() === compteRubrique.id_rubrique.toString()
-                );
+        compteRubriqueData
+            .filter(c => c && c.id_rubrique)
+            .map(async (compteRubrique) => {
+                try {
+                    const associatedIdRubrique = rubriqueData.find(
+                        b => b.id_rubrique?.toString() === compteRubrique.id_rubrique?.toString()
+                    );
 
-                const relatedEntries = mappedJournalData.filter(
-                    j => j.compte && j.compte.toString().startsWith(compteRubrique.compte.toString())
-                );
-
-                const totalDebit = relatedEntries.reduce((sum, j) => sum + (Number(j.debit) || 0), 0);
-                const totalCredit = relatedEntries.reduce((sum, j) => sum + (Number(j.credit) || 0), 0);
-
-                let solde = 0;
-                if (compteRubrique.senscalcul === "D-C") {
-                    solde = totalDebit - totalCredit;
-                    if (compteRubrique.condition === "SiD" && solde <= 0) solde = 0;
-                    else if (compteRubrique.condition === "SiC" && solde >= 0) solde = 0;
-                } else if (compteRubrique.senscalcul === "C-D") {
-                    solde = totalCredit - totalDebit;
-                    if (compteRubrique.condition === "SiD" && solde >= 0) solde = 0;
-                    else if (compteRubrique.condition === "SiC" && solde <= 0) solde = 0;
-                }
-
-                if (associatedIdRubrique) {
-                    const rubriqueExterneAssociatedIdRubrique = await rubriquesExternes.findOne({
+                    const relatedBalances = await balances.findAll({
                         where: {
+                            id_compte,
                             id_dossier,
                             id_exercice,
-                            id_compte,
-                            id_etat: compteRubrique.tableau,
-                            id_rubrique: compteRubrique.compte
-                        }
-                    })
-                    switch ((associatedIdRubrique.type || "").toUpperCase()) {
-                        case "LIAISON VAR ACTIF":
-                            solde = (rubriqueExterneAssociatedIdRubrique.montantnet || 0) - (rubriqueExterneAssociatedIdRubrique.montantnetn1 || 0);
-                            break;
-                        case "LIAISON VAR PASSIF":
-                            solde = (rubriqueExterneAssociatedIdRubrique.montantnetn1 || 0) - (rubriqueExterneAssociatedIdRubrique.montantnet || 0);
-                            break;
-                        case "LIAISON":
-                            solde = rubriqueExterneAssociatedIdRubrique.montantnet || 0;
-                            break;
-                        default:
-                            break;
+                        },
+                        attributes: ['soldedebit', 'soldecredit', 'id_numcompte'],
+                        include: [
+                            {
+                                model: dossierplancomptableModel,
+                                as: 'infosCompte',
+                                attributes: ['compte'],
+                                required: true,
+                            }
+                        ],
+                        raw: true,
+                    });
+
+                    const filteredBalances = relatedBalances.filter(b =>
+                        b['infosCompte.compte']?.startsWith(compteRubrique.compte?.toString())
+                    );
+
+                    const totalDebit = filteredBalances.reduce((sum, b) => sum + (Number(b.soldedebit) || 0), 0);
+                    const totalCredit = filteredBalances.reduce((sum, b) => sum + (Number(b.soldecredit) || 0), 0);
+
+                    let solde = 0;
+
+                    if (compteRubrique.senscalcul === "D-C") {
+                        solde = totalDebit;
+                    } else if (compteRubrique.senscalcul === "C-D") {
+                        solde = totalCredit;
                     }
+
+                    if (compteRubrique.condition === "SiD" && solde <= 0) solde = 0;
+                    else if (compteRubrique.condition === "SiC" && solde >= 0) solde = 0;
+
+                    if (associatedIdRubrique) {
+                        const rubriqueExterneAssociatedIdRubrique = await rubriquesExternes.findOne({
+                            where: {
+                                id_dossier,
+                                id_exercice,
+                                id_compte,
+                                id_etat: compteRubrique.tableau,
+                                id_rubrique: compteRubrique.id_rubrique
+                            }
+                        });
+
+                        switch ((associatedIdRubrique.type || "").toUpperCase()) {
+                            case "LIAISON VAR ACTIF":
+                                solde = (rubriqueExterneAssociatedIdRubrique?.montantnet || 0) -
+                                    (rubriqueExterneAssociatedIdRubrique?.montantnetn1 || 0);
+                                break;
+                            case "LIAISON VAR PASSIF":
+                                solde = (rubriqueExterneAssociatedIdRubrique?.montantnetn1 || 0) -
+                                    (rubriqueExterneAssociatedIdRubrique?.montantnet || 0);
+                                break;
+                            case "LIAISON":
+                                solde = rubriqueExterneAssociatedIdRubrique?.montantnet || 0;
+                                break;
+                        }
+                    }
+
+                    if (compteRubrique.equation === "SOUSTRACTIF") solde = -solde;
+
+                    return {
+                        id_rubrique: compteRubrique.id_rubrique,
+                        compte: compteRubrique.compte,
+                        nature: compteRubrique.nature,
+                        senscalcul: compteRubrique.senscalcul,
+                        condition: compteRubrique.condition,
+                        equation: compteRubrique.equation,
+                        montantbrut: compteRubrique.nature === "BRUT" ? solde : 0,
+                        montantamort: compteRubrique.nature === "AMORT" ? solde : 0,
+                    };
+                } catch (error) {
+                    console.error(`Erreur pour la compteRubrique ${compteRubrique?.id_rubrique} :`, error.message);
+                    return null;
                 }
-
-                if (compteRubrique.equation === "SOUSTRACTIF") solde = -solde;
-
-                return {
-                    id_rubrique: compteRubrique.id_rubrique,
-                    compte: compteRubrique.compte,
-                    nature: compteRubrique.nature,
-                    senscalcul: compteRubrique.senscalcul,
-                    condition: compteRubrique.condition,
-                    equation: compteRubrique.equation,
-                    montantbrut: compteRubrique.nature === "BRUT" ? solde : 0,
-                    montantamort: compteRubrique.nature === "AMORT" ? solde : 0,
-                };
-            } catch (error) {
-                console.error(`Erreur pour la compteRubrique ${compteRubrique.id_rubrique} :`, error.message);
-                return null;
-            }
-        })
+            })
     );
 
     const tableauFinal = results.reduce((acc, r) => {
@@ -221,8 +210,6 @@ const calculateRubrique = async (id_dossier, id_compte, id_exercice, id_etat) =>
 };
 
 const calculateRubriqueSig = async (id_dossier, id_compte, id_exercice, id_etat) => {
-
-    // Récupération ajustemenent externe
     const ajustementData = await ajustementExternes.findAll({
         where: {
             id_dossier,
@@ -490,8 +477,6 @@ const calculateTotal = async (id_dossier, id_compte, id_exercice, id_etat, table
         if (typeDiff !== 0) return typeDiff;
         return Number(a.ordre) - Number(b.ordre);
     });
-
-    // console.log(sortedTotalData.map(r => `${r.id_rubrique}:${r.type}`));
 
     const totalIds = sortedTotalData.map(r => r.id_rubrique.toString());
 

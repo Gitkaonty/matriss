@@ -48,7 +48,6 @@ const PopupAjustRubriqueEbilanEtatFinancier = ({ actionState, row, column, setIs
     const [openDialogDeleteRow, setOpenDialogDeleteRow] = useState(false);
     const nature = column === 'montantamort' ? 'AMORT' : 'BRUT';
     const [listAjust, setListAjust] = useState([]);
-    const [totalNet, setTotalNet] = useState(0);
     const [totalAjustement, setTotalAjustement] = useState(0);
     const [stateUpdateTable, setStateUpdateTable] = useState({ tableName: '', state: false });
 
@@ -118,7 +117,6 @@ const PopupAjustRubriqueEbilanEtatFinancier = ({ actionState, row, column, setIs
                             }}
                             type="text"
                             value={formDataFinal.motif}
-                            //onChange = {(e) => formData.setFieldValue('motif', e.target.value)}
                             onChange={handleChange}
                             label="motif"
                             name="motif"
@@ -246,7 +244,6 @@ const PopupAjustRubriqueEbilanEtatFinancier = ({ actionState, row, column, setIs
     };
 
     const handleEditClick = (id) => () => {
-        //charger dans le formik les données de la ligne
         const selectedRowInfos = listAjust?.filter((item) => item.id === id[0]);
 
         setFormDataFinal((prev) => ({
@@ -272,7 +269,6 @@ const PopupAjustRubriqueEbilanEtatFinancier = ({ actionState, row, column, setIs
             [id]: { mode: GridRowModes.View, ignoreModifications: true },
         });
 
-        //setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
         const newFormDataFinal = { ...formDataFinal, state: true };
         axios.post(`/administration/etatFinancier/addModifyAjustementExterne`, newFormDataFinal).then((response) => {
             const resData = response.data;
@@ -280,12 +276,6 @@ const PopupAjustRubriqueEbilanEtatFinancier = ({ actionState, row, column, setIs
                 setIsRefreshed();
                 setDisableSaveBouton(true);
                 setDisableAddRowBouton(false);
-                // setStateUpdateTable((prev) => ({
-                //     ...prev,
-                //     tableName: idEtat,
-                //     state: true
-                // })
-                // );
                 getInfosAjust(idCompte, idDossier, idExercice, idEtat, idRubrique, nature);
                 toast.success(resData.msg);
             } else {
@@ -315,12 +305,6 @@ const PopupAjustRubriqueEbilanEtatFinancier = ({ actionState, row, column, setIs
                         setIsRefreshed();
                         setListAjust(listAjust?.filter((row) => row.id !== idToDelete));
                         setDisableAddRowBouton(false);
-                        // setStateUpdateTable((prev) => ({
-                        //     ...prev,
-                        //     tableName: idEtat,
-                        //     state: true
-                        // })
-                        // );
 
                         toast.success(resData.msg);
                         setOpenDialogDeleteRow(false);
@@ -366,14 +350,12 @@ const PopupAjustRubriqueEbilanEtatFinancier = ({ actionState, row, column, setIs
             setDisableModifyBouton(true);
             setDisableSaveBouton(true);
             setDisableCancelBouton(true);
-            //toast.error("sélectionnez une seule ligne pour pouvoir la modifier");
         } else {
             setDisableModifyBouton(false);
             setDisableSaveBouton(false);
             setDisableCancelBouton(false);
             if (!selectedRowId.includes(params.id)) {
                 setEditableRow(false);
-                //toast.error("sélectionnez une ligne pour pouvoir la modifier");
             } else {
                 setEditableRow(true);
             }
@@ -386,7 +368,6 @@ const PopupAjustRubriqueEbilanEtatFinancier = ({ actionState, row, column, setIs
         setDisableCancelBouton(false);
         setDisableDeleteBouton(false);
 
-        // const newId = -1 * (getMaxID(listAjust) + 1) - 1;
         const newId = -Date.now();
         let arrayId = [];
         arrayId = [...arrayId, newId];
@@ -689,7 +670,7 @@ const PopupAjustRubriqueEbilanEtatFinancier = ({ actionState, row, column, setIs
                                             '& .MuiInputBase-input': {
                                                 textAlign: 'right',
                                                 fontSize: 14,
-                                                padding: '4px 0 4px', // haut / bas
+                                                padding: '4px 0 4px',
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 color: '#1976d2'
@@ -703,7 +684,8 @@ const PopupAjustRubriqueEbilanEtatFinancier = ({ actionState, row, column, setIs
 
                 </DialogContent>
                 <DialogActions>
-                    <Button autoFocus
+                    <Button 
+                    autoFocus
                         onClick={handleClose}
                         style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
                     >

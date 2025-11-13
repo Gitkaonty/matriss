@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Stack, Box, Button, FormControl, Input } from '@mui/material';
+import { Stack, Box, FormControl, Input } from '@mui/material';
 import { IconButton, Tooltip } from '@mui/material';
 
 import { IoMdTrash } from "react-icons/io";
@@ -150,7 +150,6 @@ const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeId, setSel
     }
 
     const deselectRow = (ids) => {
-        console.log('deselectRows', ids);
         const deselected = selectedRowId.filter(id => !ids.includes(id));
 
         const updatedRowModes = { ...rowModesModel };
@@ -208,7 +207,6 @@ const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeId, setSel
         }
 
         if (saveBoolCode && saveBoolLibelle) {
-            // Vérifier l'unicité du code (autre ligne avec le même code)
             const currentId = Number(formNewParam.values.id) || 0;
             const newCode = normalizeCode(formNewParam.values.code);
             const exists = Array.isArray(axesData) && axesData.some(r => Number(r.id) !== currentId && normalizeCode(r.code) === newCode);
@@ -509,12 +507,12 @@ const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeId, setSel
                         editMode='row'
                         onRowClick={(e) => handleCellEditCommit(e.row)}
                         onRowSelectionModelChange={(ids) => {
-                        const arr = Array.isArray(ids) ? ids : [ids];
-                        const single = arr.length ? [arr[arr.length - 1]] : [];
-                        setSelectedRowAxeId(single);
-                        saveSelectedRow(single);
-                        deselectRow(single);
-                    }}
+                            const arr = Array.isArray(ids) ? ids : [ids];
+                            const single = arr.length ? [arr[arr.length - 1]] : [];
+                            setSelectedRowAxeId(single);
+                            saveSelectedRow(single);
+                            deselectRow(single);
+                        }}
                         rowModesModel={rowModesModel}
                         onRowModesModelChange={handleRowModesModelChange}
                         onRowEditStop={handleRowEditStop}

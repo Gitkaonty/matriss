@@ -27,4 +27,10 @@ router.post('/deleteAxes', paramCAController.deleteAxes);
 // Supprimer les sections selectionnés
 router.post('/deleteSections', paramCAController.deleteSections);
 
+// Récupération sections et axes
+router.get('/getListAxeSection/:id_compte/:id_dossier', paramCAController.getListAxeSection);
+
+// Récupération répartition Ca
+router.get('/getRepartitionCA/:id_journal', paramCAController.getRepartitionCA);
+
 module.exports = router;

@@ -9,43 +9,40 @@ const formatDate = (dateStr) => {
 };
 
 const generateTitle = (sheetName, label, dossier, compte, date_debut, date_fin, cellEnd) => {
-  // ===== Ligne 1 : Titre principal =====
-  sheetName.insertRow(1, [label]);
-  sheetName.mergeCells(`A1:${cellEnd}1`);
+    sheetName.insertRow(1, [label]);
+    sheetName.mergeCells(`A1:${cellEnd}1`);
 
-  const titreTftd = sheetName.getRow(1);
-  titreTftd.font = { bold: true, size: 20 };
-  titreTftd.alignment = {
-    horizontal: 'center',
-    vertical: 'middle',
-    wrapText: true
-  };
-  titreTftd.height = 25;
+    const titre = sheetName.getRow(1);
+    titre.font = { bold: true, size: 20 };
+    titre.alignment = {
+        horizontal: 'center',
+        vertical: 'middle',
+        wrapText: true
+    };
+    titre.height = 25;
 
-  // ===== Ligne 2 : Dossier(centrés) =====
-  sheetName.insertRow(2, [`Dossier : ${dossier || ''}`]);
-  sheetName.mergeCells(`A2:${cellEnd}2`);
+    sheetName.insertRow(2, [`Dossier : ${dossier || ''}`]);
+    sheetName.mergeCells(`A2:${cellEnd}2`);
 
-  const sousTitreTftd = sheetName.getRow(2);
-  sousTitreTftd.font = { italic: true, bold: true, size: 15, color: { argb: 'FF555555' } };
-  sousTitreTftd.alignment = {
-    horizontal: 'center',
-    vertical: 'middle',
-    wrapText: true
-  };
-  sousTitreTftd.height = 25;
+    const sousTitre = sheetName.getRow(2);
+    sousTitre.font = { italic: true, bold: true, size: 15, color: { argb: 'FF555555' } };
+    sousTitre.alignment = {
+        horizontal: 'center',
+        vertical: 'middle',
+        wrapText: true
+    };
+    sousTitre.height = 25;
 
-//   ===== Ligne 3 : Période (alignée à gauche) =====
-  sheetName.insertRow(3, [`Période du : ${date_debut || ''} au ${date_fin || ''}`]);
-  sheetName.mergeCells(`A3:${cellEnd}3`);
+    sheetName.insertRow(3, [`Période du : ${date_debut || ''} au ${date_fin || ''}`]);
+    sheetName.mergeCells(`A3:${cellEnd}3`);
 
-  const periodeRow = sheetName.getRow(4);
-  periodeRow.font = { italic: true, size: 12, color: { argb: 'FF777777' } };
-  periodeRow.alignment = {
-    horizontal: 'left',
-    vertical: 'middle'
-  };
-  periodeRow.height = 20;
+    const periodeRow = sheetName.getRow(4);
+    periodeRow.font = { italic: true, size: 12, color: { argb: 'FF777777' } };
+    periodeRow.alignment = {
+        horizontal: 'left',
+        vertical: 'middle'
+    };
+    periodeRow.height = 20;
 };
 
 
@@ -55,9 +52,6 @@ const exportBilanToExcel = async (id_compte, id_dossier, id_exercice, workbook, 
 
     // Feuille Actif
     const sheetActif = workbook.addWorksheet('Bilan Actif');
-    // sheetActif.views = [
-    //     { state: 'frozen', ySplit: 1 }
-    // ];
     sheetActif.columns = [
         { header: 'Actif', width: 45 },
         { header: 'Note', width: 12 },
@@ -900,7 +894,7 @@ const exportDpToExcel = async (id_compte, id_dossier, id_exercice, workbook, dos
     const headerRow = sheetDp.getRow(4);
     headerRow.eachCell(cell => {
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A5276' } };
-        cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };s
+        cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
     });
 
     let total = {

@@ -1,7 +1,79 @@
-import { TextField, Autocomplete, Tooltip, Button, Popper } from '@mui/material';
+import { TextField, Autocomplete, Tooltip, Button } from '@mui/material';
 import FormatedInput from '../FormatedInput';
 import { IoAddSharp } from "react-icons/io5";
 import { GoX } from "react-icons/go";
+import { useMemo } from 'react';
+import { FaRegEdit } from "react-icons/fa";import { LuView } from "react-icons/lu";
+
+function CompteEditCell({ params, listePlanComptable }) {
+    const options = useMemo(
+        () =>
+            listePlanComptable.map((pc) => ({
+                label: `${pc.compte} - ${pc.libelle}`,
+                value: pc.id,
+                key: pc.id,
+            })),
+        [listePlanComptable]
+    );
+
+    const currentValue = options.find((opt) => opt.value === params.value) || null;
+
+    return (
+        <>
+            <Autocomplete
+                key={params.id}
+                autoHighlight
+                autoComplete
+                openOnFocus
+                disableClearable={false}
+                popperprops={{ disablePortal: true }}
+                options={options}
+                getOptionLabel={(option) => option.label || ''}
+                value={currentValue}
+                onChange={(e, newValue) => {
+                    const newCompteId = newValue ? newValue.value : null;
+                    const libelleAssocie1 = newValue
+                        ? newValue.label.split(' - ')[1]
+                        : '';
+
+                    const currentRow = params.api.getRow(params.id);
+                    const currentLibelle = currentRow?.libelle || '';
+
+                    params.api.setEditCellValue(
+                        { id: params.id, field: 'compte', value: newCompteId },
+                        e
+                    );
+
+                    if (!currentLibelle || currentLibelle.trim() === '') {
+                        params.api.setEditCellValue(
+                            { id: params.id, field: 'libelle', value: libelleAssocie1 },
+                            e
+                        );
+                    }
+                }}
+                noOptionsText="Aucune compte trouvé"
+                renderInput={(paramsInput) => {
+                    return (
+                        <TextField
+                            {...paramsInput}
+                            variant="standard"
+                            placeholder="Choisir un compte"
+                            fullWidth
+                            InputProps={{
+                                ...paramsInput.InputProps,
+                                disableUnderline: true,
+                            }}
+                            style={{
+                                width: 700,
+                                transition: 'width 0.2s ease-in-out',
+                            }}
+                        />
+                    );
+                }}
+            />
+        </>
+    );
+}
 
 export const getSaisieColumnHeader = ({
     formSaisie,
@@ -14,16 +86,18 @@ export const getSaisieColumnHeader = ({
     tableRows,
     handleOpenDialogConfirmDeleteSaisie,
     isDatagridEditing,
-    ajouterNouvelleLigne
+    ajouterNouvelleLigne,
+    isCaActive,
+    handleOpenPopupCa
 }) => {
+
     const columns = [
         {
             field: 'jour',
             headerName: 'Jour',
-            type: 'number',
+            type: 'text',
             editable: true,
             sortable: true,
-            // width: 60,
             flex: 0.4,
             headerAlign: 'left',
             align: 'left',
@@ -38,14 +112,13 @@ export const getSaisieColumnHeader = ({
                 return (
                     <TextField
                         size="small"
-                        type="number"
+                        type="text"
                         name="jour"
                         fullWidth
                         value={params.value ?? ''}
                         onChange={(event) => {
-                            const inputValue = event.target.value;
+                            const inputValue = event.target.value.replace(/\D/g, '');
 
-                            // 1. Suppression totale (champ vide)
                             if (inputValue === '') {
                                 params.api.setEditCellValue({
                                     id: params.id,
@@ -53,7 +126,6 @@ export const getSaisieColumnHeader = ({
                                     value: '',
                                 });
 
-                                // Garde ou ajoute "jour" dans les erreurs si champ vide
                                 setInvalidRows((prev) => {
                                     const exists = prev.find(r => r.id === params.id);
                                     if (exists) {
@@ -71,10 +143,8 @@ export const getSaisieColumnHeader = ({
                                 return;
                             }
 
-                            // 2. Conversion en entier
                             const intValue = parseInt(inputValue);
 
-                            // 3. Si valeur valide entre 1 et maxDay
                             if (!isNaN(intValue) && intValue >= 1 && intValue <= maxDay) {
                                 params.api.setEditCellValue({
                                     id: params.id,
@@ -82,7 +152,6 @@ export const getSaisieColumnHeader = ({
                                     value: intValue,
                                 });
 
-                                // Supprimer l'erreur "jour" s’il y en avait une
                                 setInvalidRows((prev) => {
                                     const row = prev.find(r => r.id === params.id);
                                     if (!row) return prev;
@@ -123,13 +192,11 @@ export const getSaisieColumnHeader = ({
             cellClassName: (params) => {
                 const classes = [];
 
-                //Appliquer l'erreur uniquement sur le champ "jour"
                 const rowInvalid = invalidRows.find(row => row.id === params.id);
                 if (params.field === 'jour' && rowInvalid?.fields.includes('jour')) {
                     classes.push('cell-error');
                 }
 
-                //Appliquer la sélection uniquement sur la cellule "jour"
                 if (selectedCell.id === params.id && selectedCell.field === 'jour') {
                     classes.push('cell-selected');
                 }
@@ -140,81 +207,17 @@ export const getSaisieColumnHeader = ({
             field: 'compte',
             headerName: 'Compte',
             editable: true,
-            // width: 500,
             flex: 0.8,
-            renderEditCell: (params) => {
-                const options = listePlanComptable.map((pc) => ({
-                    label: `${pc.compte} - ${pc.libelle}`,
-                    value: pc.id,
-                    key: pc.id
-                }));
-
-                const currentValue = options.find(opt => opt.value === params.value) || null;
-                return (
-                    <Autocomplete
-                        key={params.id}
-                        autoHighlight
-                        options={options}
-                        getOptionLabel={(option) => option.label}
-                        value={currentValue}
-                        onChange={(e, newValue) => {
-                            const newCompteId = newValue ? newValue.value : null;
-                            const libelleAssocie1 = newValue ? newValue.label.split(' - ')[1] : '';
-
-                            params.api.setEditCellValue({
-                                id: params.id,
-                                field: 'compte',
-                                value: newCompteId,
-                            }, e);
-
-                            params.api.setEditCellValue(
-                                { id: params.id, field: 'libelle', value: libelleAssocie1 },
-                                e
-                            );
-
-                            if (newCompteId) {
-                                setInvalidRows((prevInvalidRows) => {
-                                    const row = prevInvalidRows.find(r => r.id === params.id);
-                                    if (!row) return prevInvalidRows;
-
-                                    const newFields = row.fields.filter(f => f !== 'compte' && f !== 'libelle');
-                                    if (newFields.length === 0) {
-                                        return prevInvalidRows.filter(r => r.id !== params.id);
-                                    }
-                                    return prevInvalidRows.map(r =>
-                                        r.id === params.id ? { ...r, fields: newFields } : r
-                                    );
-                                });
-                            }
-                        }}
-                        filterOptions={(opts, state) => {
-                            const filtered = opts.filter(o =>
-                                o.label.toLowerCase().includes(state.inputValue.toLowerCase())
-                            );
-                            return filtered;
-                        }}
-                        noOptionsText="Aucune compte trouvé"
-                        renderInput={(paramsInput) => (
-                            <TextField
-                                {...paramsInput}
-                                variant="standard"
-                                placeholder="Choisir un compte"
-                                fullWidth
-                                InputProps={{
-                                    ...paramsInput.InputProps,
-                                    disableUnderline: true,
-                                }}
-                                style={{ width: 500 }}
-                            />
-                        )}
-                    />
-                );
-            },
+            renderEditCell: (params) => (
+                <CompteEditCell
+                    params={params}
+                    listePlanComptable={listePlanComptable}
+                />
+            ),
             cellClassName: (params) => {
                 const classes = [];
 
                 const rowInvalid = invalidRows.find(row => row.id === params.id);
-                const compte = Number(params.row.compte) || null;
 
                 if (rowInvalid && rowInvalid.fields.includes('compte')) {
                     classes.push('cell-error');
@@ -281,19 +284,16 @@ export const getSaisieColumnHeader = ({
                         onChange={(e) => {
                             const value = e.target.value;
 
-                            // Met à jour la valeur dans la table
                             params.api.setEditCellValue({
                                 id: params.id,
                                 field: 'piece',
                                 value: value,
                             }, e);
 
-                            //Met à jour les erreurs
                             setInvalidRows((prev) => {
                                 const row = prev.find(r => r.id === params.id);
 
                                 if (value.trim() === '') {
-                                    // Ajoute l’erreur si champ vide
                                     if (row) {
                                         if (!row.fields.includes('piece')) {
                                             return prev.map(r =>
@@ -305,7 +305,6 @@ export const getSaisieColumnHeader = ({
                                         return [...prev, { id: params.id, fields: ['piece'] }];
                                     }
                                 } else {
-                                    // Supprime l’erreur si valeur valide
                                     if (!row) return prev;
 
                                     const updatedFields = row.fields.filter(f => f !== 'piece');
@@ -325,11 +324,6 @@ export const getSaisieColumnHeader = ({
 
             cellClassName: (params) => {
                 const classes = [];
-
-                // const rowInvalid = invalidRows.find(row => row.id === params.id);
-                // if (params.field === 'piece' && rowInvalid?.fields.includes('piece')) {
-                //     classes.push('cell-error');
-                // }
 
                 if (selectedCell.id === params.id && selectedCell.field === 'piece') {
                     classes.push('cell-selected');
@@ -355,7 +349,7 @@ export const getSaisieColumnHeader = ({
                         defaultValue={params.value}
                         fullWidth
                         InputProps={{
-                            disableUnderline: true, //Supprimer le soulignement noir par défaut
+                            disableUnderline: true,
                         }}
                         sx={{
                             backgroundColor: 'white',
@@ -389,19 +383,16 @@ export const getSaisieColumnHeader = ({
                         onChange={(e) => {
                             const value = e.target.value;
 
-                            //Met à jour la valeur dans la table
                             params.api.setEditCellValue({
                                 id: params.id,
                                 field: 'libelle',
                                 value: value,
                             }, e);
 
-                            // Mise à jour dynamique des erreurs
                             setInvalidRows((prev) => {
                                 const row = prev.find(r => r.id === params.id);
 
                                 if (value.trim() === '') {
-                                    // Ajoute l’erreur si vide
                                     if (row) {
                                         if (!row.fields.includes('libelle')) {
                                             return prev.map(r =>
@@ -415,7 +406,6 @@ export const getSaisieColumnHeader = ({
                                         return [...prev, { id: params.id, fields: ['libelle'] }];
                                     }
                                 } else {
-                                    // Supprime l’erreur si rempli
                                     if (!row) return prev;
 
                                     const updatedFields = row.fields.filter(f => f !== 'libelle');
@@ -496,19 +486,16 @@ export const getSaisieColumnHeader = ({
                         onChange={(e) => {
                             const value = e.target.value;
 
-                            // Met à jour la valeur dans la table
                             params.api.setEditCellValue({
                                 id: params.id,
                                 field: 'num_facture',
                                 value: value,
                             }, e);
 
-                            //Met à jour les erreurs
                             setInvalidRows((prev) => {
                                 const row = prev.find(r => r.id === params.id);
 
                                 if (value.trim() === '') {
-                                    // Ajoute l’erreur si champ vide
                                     if (row) {
                                         if (!row.fields.includes('num_facture')) {
                                             return prev.map(r =>
@@ -520,7 +507,6 @@ export const getSaisieColumnHeader = ({
                                         return [...prev, { id: params.id, fields: ['num_facture'] }];
                                     }
                                 } else {
-                                    // Supprime l’erreur si valeur valide
                                     if (!row) return prev;
 
                                     const updatedFields = row.fields.filter(f => f !== 'num_facture');
@@ -616,7 +602,6 @@ export const getSaisieColumnHeader = ({
             },
             renderCell: (params) => {
                 const raw = params.value;
-                // Si vide, affiche 0,00
                 const value = raw === undefined || raw === '' ? 0 : Number(raw);
 
                 const formatted = value.toLocaleString('fr-FR', {
@@ -643,209 +628,294 @@ export const getSaisieColumnHeader = ({
         });
     }
 
-    columns.push(
-        {
-            field: 'debit',
-            headerName: 'Débit',
-            type: 'string',
-            sortable: true,
-            editable: true,
-            // width: 200,
-            flex: 1.3,
-            headerAlign: 'right',
-            align: 'right',
-            headerClassName: 'HeaderbackColor',
-            renderEditCell: (params) => {
-                let localValue = params.formattedValue ?? '';
+    columns.push({
+        field: 'debit',
+        headerName: 'Débit',
+        type: 'string',
+        sortable: true,
+        editable: true,
+        flex: 1.3,
+        headerAlign: 'right',
+        align: 'right',
+        headerClassName: 'HeaderbackColor',
+        renderEditCell: (params) => {
+            let localValue = params.formattedValue ?? '';
 
-                return (
-                    <TextField
-                        size="small"
-                        name="debit"
-                        fullWidth
-                        value={localValue}
-                        onChange={(event) => {
-                            const inputValue = event.target.value;
-                            localValue = inputValue;
+            return (
+                <TextField
+                    size="small"
+                    name="debit"
+                    fullWidth
+                    value={localValue}
+                    onChange={(event) => {
+                        const inputValue = event.target.value;
+                        localValue = inputValue;
 
-                            const cleaned = inputValue.toString().replace(/\s/g, '').replace(',', '.');
-                            const numeric = Number(cleaned);
+                        const cleaned = inputValue.toString().replace(/\s/g, '').replace(',', '.');
+                        const numeric = Number(cleaned);
 
-                            if (!isNaN(numeric) && numeric >= 0) {
+                        if (!isNaN(numeric) && numeric >= 0) {
+                            params.api.setEditCellValue(
+                                {
+                                    id: params.id,
+                                    field: 'debit',
+                                    value: numeric,
+                                },
+                                event
+                            );
+
+                            if (numeric > 0) {
                                 params.api.setEditCellValue(
                                     {
                                         id: params.id,
-                                        field: 'debit',
-                                        value: numeric,
+                                        field: 'credit',
+                                        value: 0,
                                     },
                                     event
                                 );
-
-                                if (numeric > 0) {
-                                    params.api.setEditCellValue(
-                                        {
-                                            id: params.id,
-                                            field: 'credit',
-                                            value: 0,
-                                        },
-                                        event
-                                    );
-                                }
                             }
-                        }}
-                        onKeyDown={(event) => {
-                            if (event.ctrlKey && event.key === 'Enter') {
-                                event.preventDefault();
-                                equilibrateDebitCredit(params.id, 'debit');
-                            }
-                        }}
-                        onFocus={(e) => {
-                            e.target.setSelectionRange(0, 0);
-                        }}
-                        style={{ marginBottom: '0px', textAlign: 'right' }}
-                        InputProps={{
-                            inputComponent: FormatedInput,
-                            sx: {
-                                '& input': { textAlign: 'right' },
-                            },
-                        }}
-                    />
-                );
-            },
-            renderCell: (params) => {
-                const raw = params.value;
-                // Si vide, affiche 0,00
-                const value = raw === undefined || raw === '' ? 0 : Number(raw);
+                        }
+                    }}
+                    onKeyDown={(event) => {
+                        if (event.ctrlKey && event.key === 'Enter') {
+                            event.preventDefault();
+                            equilibrateDebitCredit(params.id, 'debit');
+                        }
+                    }}
+                    onFocus={(e) => {
+                        e.target.setSelectionRange(0, 0);
+                    }}
+                    style={{ marginBottom: '0px', textAlign: 'right' }}
+                    InputProps={{
+                        inputComponent: FormatedInput,
+                        sx: {
+                            '& input': { textAlign: 'right' },
+                        },
+                    }}
+                />
+            );
+        },
+        renderCell: (params) => {
+            const raw = params.value;
+            const value = raw === undefined || raw === '' ? 0 : Number(raw);
 
-                const formatted = value.toLocaleString('fr-FR', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                });
+            const formatted = value.toLocaleString('fr-FR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            });
 
-                return formatted.replace(/\u202f/g, ' ');
-            },
-            cellClassName: (params) => {
-                const classes = [];
+            return formatted.replace(/\u202f/g, ' ');
+        },
+        cellClassName: (params) => {
+            const classes = [];
 
-                //Gestion des erreurs
-                const rowInvalid = invalidRows.find(row => row.id === params.id);
-                const debit = Number(params.row.debit) || 0;
-                const credit = Number(params.row.credit) || 0;
+            const rowInvalid = invalidRows.find(row => row.id === params.id);
+            const debit = Number(params.row.debit) || 0;
+            const credit = Number(params.row.credit) || 0;
 
-                if (rowInvalid && debit === 0 && credit === 0 && rowInvalid.fields.includes('debit')) {
-                    classes.push('cell-error');
-                }
-
-                //Mise en surbrillance de la cellule sélectionnée
-                if (selectedCell.id === params.id && selectedCell.field === 'debit') {
-                    classes.push('cell-selected');
-                }
-
-                return classes.join(' ');
+            if (rowInvalid && debit === 0 && credit === 0 && rowInvalid.fields.includes('debit')) {
+                classes.push('cell-error');
             }
 
-        }
-        , {
-            field: 'credit',
-            headerName: 'Crédit',
-            type: 'string',
-            sortable: true,
-            editable: true,
-            // width: 200,
-            flex: 1.3,
-            headerAlign: 'right',
-            align: 'right',
-            headerClassName: 'HeaderbackColor',
-            renderEditCell: (params) => {
-                let localValue = params.formattedValue ?? '';
-                return (
-                    <TextField
-                        size="small"
-                        name="credit"
-                        fullWidth
-                        value={localValue}
-                        onChange={(event) => {
-                            const inputValue = event.target.value;
-                            localValue = inputValue;
+            if (selectedCell.id === params.id && selectedCell.field === 'debit') {
+                classes.push('cell-selected');
+            }
 
-                            if (Number(inputValue) >= 0 || isNaN(inputValue)) {
+            return classes.join(' ');
+        }
+
+    })
+
+    if (isCaActive) {
+        columns.push({
+            field: 'debitAction',
+            headerName: '',
+            sortable: false,
+            width: 50,
+            headerAlign: 'center',
+            align: 'center',
+            renderCell: (params) => {
+                const pc = listePlanComptable.find((item) => item.id === params.row.compte);
+                const valueDebit = params.row.debit;
+                if (!pc) return null
+                const compteValue = String(pc?.compte || '');
+
+                if (!isCaActive || tableRows.length === 0 || valueDebit === 0 || !['2', '6', '7'].some(prefix => compteValue.startsWith(prefix))) {
+                    return null;
+                }
+                return (
+                    <Tooltip title="Modifier le debit">
+                        <span>
+                            <Button
+                                onClick={() => handleOpenPopupCa(params.id, 'debit', valueDebit)}
+                                disabled={isDatagridEditing()}
+                                sx={{
+                                    outline: 'none',
+                                    boxShadow: 'none',
+                                    '&:focus': {
+                                        outline: 'none',
+                                        boxShadow: 'none',
+                                    },
+                                    '&:focus-visible': {
+                                        outline: 'none',
+                                        boxShadow: 'none',
+                                    },
+                                    ml: 0,
+                                }}
+                            >
+                                <FaRegEdit style={{ width: '30px', height: '30px' }} />
+                            </Button>
+                        </span>
+                    </Tooltip>
+                )
+            }
+        });
+    }
+
+    columns.push({
+        field: 'credit',
+        headerName: 'Crédit',
+        type: 'string',
+        sortable: true,
+        editable: true,
+        flex: 1.3,
+        headerAlign: 'right',
+        align: 'right',
+        headerClassName: 'HeaderbackColor',
+        renderEditCell: (params) => {
+            let localValue = params.formattedValue ?? '';
+            return (
+                <TextField
+                    size="small"
+                    name="credit"
+                    fullWidth
+                    value={localValue}
+                    onChange={(event) => {
+                        const inputValue = event.target.value;
+                        localValue = inputValue;
+
+                        if (Number(inputValue) >= 0 || isNaN(inputValue)) {
+                            params.api.setEditCellValue({
+                                id: params.id,
+                                field: 'credit',
+                                value: inputValue,
+                            }, event);
+
+                            const rawValue = inputValue ?? '';
+                            const cleaned = rawValue.toString().replace(/\s/g, '').replace(',', '.');
+                            const numeric = Number(cleaned);
+
+                            if (!isNaN(numeric) && numeric > 0) {
                                 params.api.setEditCellValue({
                                     id: params.id,
-                                    field: 'credit',
-                                    value: inputValue,
+                                    field: 'debit',
+                                    value: 0,
                                 }, event);
-
-                                const rawValue = inputValue ?? '';
-                                const cleaned = rawValue.toString().replace(/\s/g, '').replace(',', '.');
-                                const numeric = Number(cleaned);
-
-                                if (!isNaN(numeric) && numeric > 0) {
-                                    params.api.setEditCellValue({
-                                        id: params.id,
-                                        field: 'debit',
-                                        value: 0,
-                                    }, event);
-                                }
                             }
-                        }}
-                        onKeyDown={(event) => {
-                            if (event.ctrlKey && event.key === 'Enter') {
-                                event.preventDefault();
-                                equilibrateDebitCredit(params.id, 'credit');
-                            }
-                        }}
-                        onFocus={(e) => {
-                            e.target.setSelectionRange(0, 0);
-                        }}
-                        style={{ marginBottom: '0px', textAlign: 'right' }}
-                        InputProps={{
-                            inputComponent: FormatedInput,
-                            sx: {
-                                '& input': { textAlign: 'right' },
-                            },
-                        }}
-                    />
-                );
-            },
-            renderCell: (params) => {
-                const raw = params.value;
-                // Si vide, affiche 0,00
-                const value = raw === undefined || raw === '' ? 0 : Number(raw);
-
-                const formatted = value.toLocaleString('fr-FR', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                });
-
-                return formatted.replace(/\u202f/g, ' ');
-            },
-            cellClassName: (params) => {
-                const classes = [];
-
-                //Gestion des erreurs
-                const rowInvalid = invalidRows.find(row => row.id === params.id);
-                const debit = Number(params.row.debit) || 0;
-                const credit = Number(params.row.credit) || 0;
-
-                if (rowInvalid && credit === 0 && debit === 0 && rowInvalid.fields.includes('credit')) {
-                    classes.push('cell-error');
-                }
-
-                // Mise en surbrillance de la cellule sélectionnée
-                if (selectedCell.id === params.id && selectedCell.field === 'credit') {
-                    classes.push('cell-selected');
-                }
-
-                return classes.join(' ');
-            }
+                        }
+                    }}
+                    onKeyDown={(event) => {
+                        if (event.ctrlKey && event.key === 'Enter') {
+                            event.preventDefault();
+                            equilibrateDebitCredit(params.id, 'credit');
+                        }
+                    }}
+                    onFocus={(e) => {
+                        e.target.setSelectionRange(0, 0);
+                    }}
+                    style={{ marginBottom: '0px', textAlign: 'right' }}
+                    InputProps={{
+                        inputComponent: FormatedInput,
+                        sx: {
+                            '& input': { textAlign: 'right' },
+                        },
+                    }}
+                />
+            );
         },
+        renderCell: (params) => {
+            const raw = params.value;
+            const value = raw === undefined || raw === '' ? 0 : Number(raw);
+
+            const formatted = value.toLocaleString('fr-FR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            });
+
+            return formatted.replace(/\u202f/g, ' ');
+        },
+        cellClassName: (params) => {
+            const classes = [];
+
+            const rowInvalid = invalidRows.find(row => row.id === params.id);
+            const debit = Number(params.row.debit) || 0;
+            const credit = Number(params.row.credit) || 0;
+
+            if (rowInvalid && credit === 0 && debit === 0 && rowInvalid.fields.includes('credit')) {
+                classes.push('cell-error');
+            }
+
+            if (selectedCell.id === params.id && selectedCell.field === 'credit') {
+                classes.push('cell-selected');
+            }
+
+            return classes.join(' ');
+        }
+    })
+
+    if (isCaActive) {
+        columns.push({
+            field: 'creditAction',
+            headerName: '',
+            sortable: false,
+            width: 50,
+            headerAlign: 'center',
+            align: 'center',
+            renderCell: (params) => {
+                const pc = listePlanComptable.find((item) => item.id === params.row.compte);
+                if (!pc) return null
+                const compteValue = String(pc?.compte || '');
+                const valueCredit = params.row.credit;
+
+                if (!isCaActive || tableRows.length === 0 || valueCredit === 0 || !['2', '6', '7'].some(prefix => compteValue.startsWith(prefix))) {
+                    return null;
+                }
+                return (
+                    <Tooltip title="Modifier le crédit">
+                        <span>
+                            <Button
+                                onClick={() => handleOpenPopupCa(params.id, 'credit', valueCredit)}
+                                disabled={isDatagridEditing()}
+                                sx={{
+                                    outline: 'none',
+                                    boxShadow: 'none',
+                                    '&:focus': {
+                                        outline: 'none',
+                                        boxShadow: 'none',
+                                    },
+                                    '&:focus-visible': {
+                                        outline: 'none',
+                                        boxShadow: 'none',
+                                    },
+                                    ml: 0,
+                                }}
+                            >
+                                <FaRegEdit style={{ width: '30px', height: '30px' }} />
+                            </Button>
+                        </span>
+                    </Tooltip>
+                )
+            }
+        });
+    }
+
+    columns.push(
         {
             field: 'actions',
             headerName: 'Action',
             width: 150,
             sortable: false,
             headerAlign: 'center',
-            // align: 'center',
             renderCell: (params) => {
                 const isLastRow = params.id === tableRows[tableRows.length - 1]?.id;
                 return (

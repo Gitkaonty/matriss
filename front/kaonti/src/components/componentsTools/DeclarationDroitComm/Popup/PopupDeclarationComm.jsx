@@ -1,5 +1,3 @@
-import { React, useState, useEffect } from 'react';
-
 import { Typography, Stack, TextField, FormControl, Divider } from '@mui/material';
 import Button from '@mui/material/Button';
 import { styled } from '@mui/material/styles';
@@ -12,21 +10,11 @@ import Select from '@mui/material/Select';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
 import MenuItem from '@mui/material/MenuItem';
-import RadioGroup from '@mui/material/RadioGroup';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Radio from '@mui/material/Radio';
-import OptionJoy from '@mui/joy/Option';
-import SelectJoy from '@mui/joy/Select';
-import InputJoy from '@mui/joy/Input';
-import { Grid } from "@mui/material";
 
 import { init } from '../../../../../init';
-import { CiWarning } from "react-icons/ci";
-import { IoIosWarning } from "react-icons/io";
 import toast from 'react-hot-toast';
 import axios from '../../../../../config/axios';
 import InputAdornment from '@mui/material/InputAdornment';
-import { NumericFormat } from 'react-number-format';
 import { useFormik } from 'formik';
 import * as Yup from "yup";
 import FormatedInput from '../../FormatedInput';
@@ -119,14 +107,6 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
         pays: Yup.string().required('Le pays est obligatoire'),
 
         nature: Yup.string().required('La nature est obligatoire'),
-
-        // comptabilisees: Yup.number()
-        //     .min(0, 'Doit être un nombre positif')
-        //     .required('Le champ est obligatoire'),
-
-        // versees: Yup.number()
-        //     .min(0, 'Doit être un nombre positif')
-        //     .required('Le champ est obligatoire'),
     });
 
     // Validation formik pour MV et PSV
@@ -200,14 +180,6 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
         nature: Yup.string().required('La nature est obligatoire'),
 
         mode_payement: Yup.string().required('Le mode de payement est obligatoire'),
-
-        // montanth_tva: Yup.number()
-        //     .min(0, 'Doit être un nombre positif')
-        //     .required('Le champ est obligatoire'),
-
-        // tva: Yup.number()
-        //     .min(0, 'Doit être un nombre positif')
-        //     .required('Le champ est obligatoire'),
     });
 
     // Validation formik pour PL
@@ -279,14 +251,6 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
         pays: Yup.string().required('Le pays est obligatoire'),
 
         nature: Yup.string().required('La nature est obligatoire'),
-
-        // montanth_tva: Yup.number()
-        //     .min(0, 'Doit être un nombre positif')
-        //     .required('Le champ est obligatoire'),
-
-        // tva: Yup.number()
-        //     .min(0, 'Doit être un nombre positif')
-        //     .required('Le champ est obligatoire'),
     });
 
     const validationSchema =
@@ -327,8 +291,6 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
         if (!cleanFormData.date_cin || cleanFormData.date_cin === 'Invalid date') {
             cleanFormData.date_cin = null;
         }
-
-        console.log('Formulaire detecté : ', cleanFormData);
 
         axios.post('/declaration/comm/addDroitCommB', {
             formData: cleanFormData
@@ -445,8 +407,7 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
             type: nature
         },
         validationSchema,
-        onSubmit: (values) => {
-            console.log('values : ', values);
+        onSubmit: () => {
             handleSubmitData();
         }
     })
@@ -480,7 +441,7 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
             type: nature
         },
         validationSchema,
-        onSubmit: (values) => {
+        onSubmit: () => {
             handleSubmitData();
         }
     })
@@ -514,7 +475,7 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
             type: nature
         },
         validationSchema,
-        onSubmit: (values) => {
+        onSubmit: () => {
             handleAddDroitComm();
         }
     })
@@ -559,7 +520,6 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                 open={true}
                 maxWidth="md"
                 fullWidth={true}
-            // fullScreen={true}
             >
                 <DialogTitle
                     id="customized-dialog-title"
@@ -569,7 +529,6 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                         {type} d'une ligne pour : {textTitle}
                     </Typography>
                 </DialogTitle>
-
 
                 <IconButton
                     style={{ color: 'red', textTransform: 'none', outline: 'none' }}
@@ -1387,10 +1346,6 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                 label="Comptabilisées"
                                                 name="comptabilisees"
                                                 value={formData.values.comptabilisees}
-                                                // onChange={formData.handleChange}
-                                                // onBlur={formData.handleBlur}
-                                                // error={Boolean(formData.touched.comptabilisees && formData.errors.comptabilisees)}
-                                                // helperText={formData.touched.comptabilisees && formData.errors.comptabilisees}
                                                 fullWidth
                                                 variant='standard'
                                                 InputProps={{
@@ -1406,7 +1361,7 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                     sx: {
                                                         '& input': {
                                                             height: '30px',
-                                                            textAlign: 'right', // Alignement du texte dans le champ à droite
+                                                            textAlign: 'right',
                                                         },
                                                     },
                                                 }}
@@ -1429,10 +1384,6 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                 label="Versees"
                                                 name="versees"
                                                 value={formData.values.versees}
-                                                // onChange={formData.handleChange}
-                                                // onBlur={formData.handleBlur}
-                                                // error={Boolean(formData.touched.versees && formData.errors.versees)}
-                                                // helperText={formData.touched.versees && formData.errors.versees}
                                                 fullWidth
                                                 variant='standard'
                                                 InputProps={{
@@ -1512,10 +1463,6 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                     label="Montants hors TVA"
                                                     name="montanth_tva"
                                                     value={formData.values.montanth_tva}
-                                                    // onChange={formData.handleChange}
-                                                    // onBlur={formData.handleBlur}
-                                                    // error={Boolean(formData.touched.montanth_tva && formData.errors.montanth_tva)}
-                                                    // helperText={formData.touched.montanth_tva && formData.errors.montanth_tva}
                                                     fullWidth
                                                     variant='standard'
                                                     InputProps={{
@@ -1561,10 +1508,6 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                         const roundedValue = Math.round(value * 10) / 10;
                                                         formData.setFieldValue("tva", roundedValue);
                                                     }}
-                                                    // onBlur={formData.handleBlur}
-                                                    // error={Boolean(formData.touched.tva && formData.errors.tva)}
-                                                    // helperText={formData.touched.tva && formData.errors.tva}
-                                                    // fullWidth
                                                     variant='standard'
                                                     InputProps={{
                                                         style: {
@@ -1609,10 +1552,6 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                         label="Montants hors TVA"
                                                         name="montanth_tva"
                                                         value={formData.values.montanth_tva}
-                                                        // onChange={formData.handleChange}
-                                                        // onBlur={formData.handleBlur}
-                                                        // error={Boolean(formData.touched.montanth_tva && formData.errors.montanth_tva)}
-                                                        // helperText={formData.touched.montanth_tva && formData.errors.montanth_tva}
                                                         fullWidth
                                                         variant='standard'
                                                         InputProps={{
@@ -1628,7 +1567,7 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                             sx: {
                                                                 '& input': {
                                                                     height: '30px',
-                                                                    textAlign: 'right', // Alignement du texte dans le champ à droite
+                                                                    textAlign: 'right',
                                                                 },
                                                             },
                                                         }}
@@ -1650,10 +1589,6 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                         label="TVA"
                                                         name="tva"
                                                         value={formData.values.tva}
-                                                        // onChange={formData.handleChange}
-                                                        // onBlur={formData.handleBlur}
-                                                        // error={Boolean(formData.touched.tva && formData.errors.tva)}
-                                                        // helperText={formData.touched.tva && formData.errors.tva}
                                                         fullWidth
                                                         variant='standard'
                                                         InputProps={{
@@ -1669,7 +1604,7 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                             sx: {
                                                                 '& input': {
                                                                     height: '30px',
-                                                                    textAlign: 'right', // Alignement du texte dans le champ à droite
+                                                                    textAlign: 'right',
                                                                 },
                                                             },
                                                         }}

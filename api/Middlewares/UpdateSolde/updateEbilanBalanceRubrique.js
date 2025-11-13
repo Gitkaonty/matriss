@@ -1,69 +1,44 @@
-const bcrypt = require("bcrypt");
 const db = require("../../Models");
 require('dotenv').config();
-const Sequelize = require('sequelize');
 const { Op } = require('sequelize');
-const updateEbilanTotalRubrique = require('./updateEbilanSoldeTotalRubrique');
-
-const journals = db.journals;
-const codejournals = db.codejournals;
-const dossierPlanComptable = db.dossierplancomptable;
 const balances = db.balances;
-
-const liassebhiapcs = db.liassebhiapcs;
-const liassebilans = db.liassebilans;
-const liassecrfs = db.liassecrfs;
-const liassecrns = db.liassecrns;
-const liassedas = db.liassedas;
-const liassedps = db.liassedps;
-const liassedrfs = db.liassedrfs;
-const liasseeiafncs = db.liasseeiafncs;
-const liasseevcps = db.liasseevcps;
-const liassempautres = db.liassempautres;
-const liassemps = db.liassemps;
-const liassenotes = db.liassenotes;
-const liassesads = db.liassesads;
-const liassesdrs = db.liassesdrs;
-const liasseses = db.liasseses;
-const liassetftds = db.liassetftds;
-const liassetftis = db.liassetftis;
 
 const rubriques = db.rubriques;
 const compterubriques = db.compterubriques;
 
 const recupIdCompteFromPlanComptable = async (compte_id, dossier_id, numCompte) => {
-    try{
+    try {
         const listCpt = await dossierPlanComptable.findAll({
             where:
-                {
-                    id_compte: compte_id,
-                    id_dossier: dossier_id,
-                    baseaux : {[Op.like]: `${numCompte}%`}
-                },
-            raw:true
+            {
+                id_compte: compte_id,
+                id_dossier: dossier_id,
+                baseaux: { [Op.like]: `${numCompte}%` }
+            },
+            raw: true
         });
         return { listCpt };
-    }catch (error){
+    } catch (error) {
         return { listBrut: [] };
         console.log(error);
     }
 }
 
 const balanceColumnBilan = async (compte_id, dossier_id, exercice_id) => {
-    try{
+    try {
         //supprimer les id sur la colonne rubriquebilanbrut et amort
         await balances.update(
             {
                 rubriquebilanbrut: 0,
-                rubriquebilanamort:0,
-                senscalculbilan:''
+                rubriquebilanamort: 0,
+                senscalculbilan: ''
             },
             {
-            where: 
+                where:
                 {
-                    id_compte : compte_id,
-                    id_dossier : dossier_id,
-                    id_exercice : exercice_id,
+                    id_compte: compte_id,
+                    id_dossier: dossier_id,
+                    id_exercice: exercice_id,
                 }
             }
         );
@@ -79,9 +54,9 @@ const balanceColumnBilan = async (compte_id, dossier_id, exercice_id) => {
             order: [['ordre', 'ASC']]
         });
 
-        if(listRubrique.length >= 1){
-            for(let item of listRubrique){
-                if(item.nature !== "TOTAL" && item.nature !== "TITRE"){
+        if (listRubrique.length >= 1) {
+            for (let item of listRubrique) {
+                if (item.nature !== "TOTAL" && item.nature !== "TITRE") {
                     const listeAssociatedCompte = await compterubriques.findAll({
                         where:
                         {
@@ -89,14 +64,14 @@ const balanceColumnBilan = async (compte_id, dossier_id, exercice_id) => {
                             id_dossier: dossier_id,
                             id_exercice: exercice_id,
                             id_etat: 'BILAN',
-                            id_rubrique : item.id_rubrique,
+                            id_rubrique: item.id_rubrique,
                             //nature: 'BRUT',
                             active: true
                         }
                     });
 
-                    if(listeAssociatedCompte.length > 0){
-                        for(let param of listeAssociatedCompte){
+                    if (listeAssociatedCompte.length > 0) {
+                        for (let param of listeAssociatedCompte) {
                             const { listCpt } = await recupIdCompteFromPlanComptable(compte_id, dossier_id, param.compte);
                             let fieldToUpdate = (param.nature === 'AMORT') ? 'rubriquebilanamort' : 'rubriquebilanbrut';
 
@@ -107,37 +82,37 @@ const balanceColumnBilan = async (compte_id, dossier_id, exercice_id) => {
 
                             switch (param.condition) {
                                 case "SOLDE":
-                                    if(listCpt.length > 0 ){
-                                        for(let compteInfos of listCpt){
+                                    if (listCpt.length > 0) {
+                                        for (let compteInfos of listCpt) {
                                             await balances.update(
                                                 fieldsToUpdate,
                                                 {
-                                                where: 
+                                                    where:
                                                     {
                                                         id_numcompte: compteInfos.id,
-                                                        id_compte : compte_id,
-                                                        id_dossier : dossier_id,
-                                                        id_exercice : exercice_id,
+                                                        id_compte: compte_id,
+                                                        id_dossier: dossier_id,
+                                                        id_exercice: exercice_id,
                                                     }
                                                 }
                                             );
                                         }
                                     }
-                                    
+
                                     break;
                                 case "SiC":
-                                    if(listCpt.length > 0 ){
-                                        for(let compteInfos of listCpt){
+                                    if (listCpt.length > 0) {
+                                        for (let compteInfos of listCpt) {
                                             await balances.update(
                                                 fieldsToUpdate,
                                                 {
-                                                where: 
+                                                    where:
                                                     {
                                                         id_numcompte: compteInfos.id,
-                                                        id_compte : compte_id,
-                                                        id_dossier : dossier_id,
-                                                        id_exercice : exercice_id,
-                                                        soldecredit: {[Op.gt]: 0}
+                                                        id_compte: compte_id,
+                                                        id_dossier: dossier_id,
+                                                        id_exercice: exercice_id,
+                                                        soldecredit: { [Op.gt]: 0 }
                                                     }
                                                 }
                                             );
@@ -146,24 +121,24 @@ const balanceColumnBilan = async (compte_id, dossier_id, exercice_id) => {
 
                                     break;
                                 case "SiD":
-                                    if(listCpt.length > 0 ){
-                                        for(let compteInfos of listCpt){
+                                    if (listCpt.length > 0) {
+                                        for (let compteInfos of listCpt) {
                                             await balances.update(
                                                 fieldsToUpdate,
                                                 {
-                                                where: 
+                                                    where:
                                                     {
                                                         id_numcompte: compteInfos.id,
-                                                        id_compte : compte_id,
-                                                        id_dossier : dossier_id,
-                                                        id_exercice : exercice_id,
-                                                        soldedebit: {[Op.gt]: 0}
+                                                        id_compte: compte_id,
+                                                        id_dossier: dossier_id,
+                                                        id_exercice: exercice_id,
+                                                        soldedebit: { [Op.gt]: 0 }
                                                     }
                                                 }
                                             );
                                         }
                                     }
-                                break;
+                                    break;
                             }
                         }
                     }
@@ -178,22 +153,22 @@ const balanceColumnBilan = async (compte_id, dossier_id, exercice_id) => {
             rubriquebilanbrut = rubriquebilanamort
             WHERE balances.id_compte = :compte_id AND balances.id_dossier = :dossier_id AND balances.id_exercice = :exercice_id
             AND balances.rubriquebilanamort > 0
-        `, 
-        {
-            replacements: { compte_id, dossier_id, exercice_id },
-            type: db.Sequelize.QueryTypes.UPDATE
-        }
+        `,
+            {
+                replacements: { compte_id, dossier_id, exercice_id },
+                type: db.Sequelize.QueryTypes.UPDATE
+            }
         );
 
         return true;
-       
-    }catch (error){
+
+    } catch (error) {
         console.log(error);
     }
 }
 
 const balanceColumnCRN = async (compte_id, dossier_id, exercice_id) => {
-    try{
+    try {
         //supprimer les id sur la colonne rubriquecrn (réinitialiser)
         await balances.update(
             {
@@ -201,11 +176,11 @@ const balanceColumnCRN = async (compte_id, dossier_id, exercice_id) => {
                 senscalculcrn: ''
             },
             {
-            where: 
+                where:
                 {
-                    id_compte : compte_id,
-                    id_dossier : dossier_id,
-                    id_exercice : exercice_id,
+                    id_compte: compte_id,
+                    id_dossier: dossier_id,
+                    id_exercice: exercice_id,
                 }
             }
         );
@@ -221,9 +196,9 @@ const balanceColumnCRN = async (compte_id, dossier_id, exercice_id) => {
             order: [['ordre', 'ASC']]
         });
 
-        if(listRubrique.length >= 1){
-            for(let item of listRubrique){
-                if(item.nature !== "TOTAL" && item.nature !== "TITRE"){
+        if (listRubrique.length >= 1) {
+            for (let item of listRubrique) {
+                if (item.nature !== "TOTAL" && item.nature !== "TITRE") {
                     const listeAssociatedCompte = await compterubriques.findAll({
                         where:
                         {
@@ -231,14 +206,14 @@ const balanceColumnCRN = async (compte_id, dossier_id, exercice_id) => {
                             id_dossier: dossier_id,
                             id_exercice: exercice_id,
                             id_etat: 'CRN',
-                            id_rubrique : item.id_rubrique,
+                            id_rubrique: item.id_rubrique,
                             //nature: 'BRUT',
                             active: true
                         }
                     });
 
-                    if(listeAssociatedCompte.length > 0){
-                        for(let param of listeAssociatedCompte){
+                    if (listeAssociatedCompte.length > 0) {
+                        for (let param of listeAssociatedCompte) {
                             const { listCpt } = await recupIdCompteFromPlanComptable(compte_id, dossier_id, param.compte);
                             let fieldToUpdate = 'rubriquecrn';
 
@@ -249,37 +224,37 @@ const balanceColumnCRN = async (compte_id, dossier_id, exercice_id) => {
 
                             switch (param.condition) {
                                 case "SOLDE":
-                                    if(listCpt.length > 0 ){
-                                        for(let compteInfos of listCpt){
+                                    if (listCpt.length > 0) {
+                                        for (let compteInfos of listCpt) {
                                             await balances.update(
                                                 fieldsToUpdate,
                                                 {
-                                                where: 
+                                                    where:
                                                     {
                                                         id_numcompte: compteInfos.id,
-                                                        id_compte : compte_id,
-                                                        id_dossier : dossier_id,
-                                                        id_exercice : exercice_id,
+                                                        id_compte: compte_id,
+                                                        id_dossier: dossier_id,
+                                                        id_exercice: exercice_id,
                                                     }
                                                 }
                                             );
                                         }
                                     }
-                                    
+
                                     break;
                                 case "SiC":
-                                    if(listCpt.length > 0 ){
-                                        for(let compteInfos of listCpt){
+                                    if (listCpt.length > 0) {
+                                        for (let compteInfos of listCpt) {
                                             await balances.update(
                                                 fieldsToUpdate,
                                                 {
-                                                where: 
+                                                    where:
                                                     {
                                                         id_numcompte: compteInfos.id,
-                                                        id_compte : compte_id,
-                                                        id_dossier : dossier_id,
-                                                        id_exercice : exercice_id,
-                                                        soldecredit: {[Op.gt]: 0}
+                                                        id_compte: compte_id,
+                                                        id_dossier: dossier_id,
+                                                        id_exercice: exercice_id,
+                                                        soldecredit: { [Op.gt]: 0 }
                                                     }
                                                 }
                                             );
@@ -288,25 +263,25 @@ const balanceColumnCRN = async (compte_id, dossier_id, exercice_id) => {
 
                                     break;
                                 case "SiD":
-                                    if(listCpt.length > 0 ){
-                                        for(let compteInfos of listCpt){
+                                    if (listCpt.length > 0) {
+                                        for (let compteInfos of listCpt) {
                                             await balances.update(
                                                 fieldsToUpdate,
                                                 {
-                                                where: 
+                                                    where:
                                                     {
                                                         id_numcompte: compteInfos.id,
-                                                        id_compte : compte_id,
-                                                        id_dossier : dossier_id,
-                                                        id_exercice : exercice_id,
-                                                        soldedebit: {[Op.gt]: 0}
+                                                        id_compte: compte_id,
+                                                        id_dossier: dossier_id,
+                                                        id_exercice: exercice_id,
+                                                        soldedebit: { [Op.gt]: 0 }
                                                     }
                                                 }
                                             );
                                         }
                                     }
 
-                                break;
+                                    break;
                             }
                         }
                     }
@@ -315,14 +290,14 @@ const balanceColumnCRN = async (compte_id, dossier_id, exercice_id) => {
         }
 
         return true;
-       
-    }catch (error){
+
+    } catch (error) {
         console.log(error);
     }
 }
 
 const balanceColumnCRF = async (compte_id, dossier_id, exercice_id) => {
-    try{
+    try {
         //supprimer les id sur la colonne rubriquecrf (réinitialiser)
         await balances.update(
             {
@@ -330,11 +305,11 @@ const balanceColumnCRF = async (compte_id, dossier_id, exercice_id) => {
                 senscalculcrf: ''
             },
             {
-            where: 
+                where:
                 {
-                    id_compte : compte_id,
-                    id_dossier : dossier_id,
-                    id_exercice : exercice_id,
+                    id_compte: compte_id,
+                    id_dossier: dossier_id,
+                    id_exercice: exercice_id,
                 }
             }
         );
@@ -350,9 +325,9 @@ const balanceColumnCRF = async (compte_id, dossier_id, exercice_id) => {
             order: [['ordre', 'ASC']]
         });
 
-        if(listRubrique.length >= 1){
-            for(let item of listRubrique){
-                if(item.nature !== "TOTAL" && item.nature !== "TITRE"){
+        if (listRubrique.length >= 1) {
+            for (let item of listRubrique) {
+                if (item.nature !== "TOTAL" && item.nature !== "TITRE") {
                     const listeAssociatedCompte = await compterubriques.findAll({
                         where:
                         {
@@ -360,14 +335,14 @@ const balanceColumnCRF = async (compte_id, dossier_id, exercice_id) => {
                             id_dossier: dossier_id,
                             id_exercice: exercice_id,
                             id_etat: 'CRF',
-                            id_rubrique : item.id_rubrique,
+                            id_rubrique: item.id_rubrique,
                             //nature: 'BRUT',
                             active: true
                         }
                     });
 
-                    if(listeAssociatedCompte.length > 0){
-                        for(let param of listeAssociatedCompte){
+                    if (listeAssociatedCompte.length > 0) {
+                        for (let param of listeAssociatedCompte) {
                             const { listCpt } = await recupIdCompteFromPlanComptable(compte_id, dossier_id, param.compte);
                             let fieldToUpdate = 'rubriquecrf';
 
@@ -378,37 +353,37 @@ const balanceColumnCRF = async (compte_id, dossier_id, exercice_id) => {
 
                             switch (param.condition) {
                                 case "SOLDE":
-                                    if(listCpt.length > 0 ){
-                                        for(let compteInfos of listCpt){
+                                    if (listCpt.length > 0) {
+                                        for (let compteInfos of listCpt) {
                                             await balances.update(
                                                 fieldsToUpdate,
                                                 {
-                                                where: 
+                                                    where:
                                                     {
                                                         id_numcompte: compteInfos.id,
-                                                        id_compte : compte_id,
-                                                        id_dossier : dossier_id,
-                                                        id_exercice : exercice_id,
+                                                        id_compte: compte_id,
+                                                        id_dossier: dossier_id,
+                                                        id_exercice: exercice_id,
                                                     }
                                                 }
                                             );
                                         }
                                     }
-                                    
+
                                     break;
                                 case "SiC":
-                                    if(listCpt.length > 0 ){
-                                        for(let compteInfos of listCpt){
+                                    if (listCpt.length > 0) {
+                                        for (let compteInfos of listCpt) {
                                             await balances.update(
                                                 fieldsToUpdate,
                                                 {
-                                                where: 
+                                                    where:
                                                     {
                                                         id_numcompte: compteInfos.id,
-                                                        id_compte : compte_id,
-                                                        id_dossier : dossier_id,
-                                                        id_exercice : exercice_id,
-                                                        soldecredit: {[Op.gt]: 0}
+                                                        id_compte: compte_id,
+                                                        id_dossier: dossier_id,
+                                                        id_exercice: exercice_id,
+                                                        soldecredit: { [Op.gt]: 0 }
                                                     }
                                                 }
                                             );
@@ -417,25 +392,25 @@ const balanceColumnCRF = async (compte_id, dossier_id, exercice_id) => {
 
                                     break;
                                 case "SiD":
-                                    if(listCpt.length > 0 ){
-                                        for(let compteInfos of listCpt){
+                                    if (listCpt.length > 0) {
+                                        for (let compteInfos of listCpt) {
                                             await balances.update(
                                                 fieldsToUpdate,
                                                 {
-                                                where: 
+                                                    where:
                                                     {
                                                         id_numcompte: compteInfos.id,
-                                                        id_compte : compte_id,
-                                                        id_dossier : dossier_id,
-                                                        id_exercice : exercice_id,
-                                                        soldedebit: {[Op.gt]: 0}
+                                                        id_compte: compte_id,
+                                                        id_dossier: dossier_id,
+                                                        id_exercice: exercice_id,
+                                                        soldedebit: { [Op.gt]: 0 }
                                                     }
                                                 }
                                             );
                                         }
                                     }
 
-                                break;
+                                    break;
                             }
                         }
                     }
@@ -444,14 +419,14 @@ const balanceColumnCRF = async (compte_id, dossier_id, exercice_id) => {
         }
 
         return true;
-       
-    }catch (error){
+
+    } catch (error) {
         console.log(error);
     }
 }
 
 const balanceColumnTFTD = async (compte_id, dossier_id, exercice_id) => {
-    try{
+    try {
         //supprimer les id sur la colonne rubriquecrf (réinitialiser)
         await balances.update(
             {
@@ -459,11 +434,11 @@ const balanceColumnTFTD = async (compte_id, dossier_id, exercice_id) => {
                 senscalcultftd: ''
             },
             {
-            where: 
+                where:
                 {
-                    id_compte : compte_id,
-                    id_dossier : dossier_id,
-                    id_exercice : exercice_id,
+                    id_compte: compte_id,
+                    id_dossier: dossier_id,
+                    id_exercice: exercice_id,
                 }
             }
         );
@@ -479,9 +454,9 @@ const balanceColumnTFTD = async (compte_id, dossier_id, exercice_id) => {
             order: [['ordre', 'ASC']]
         });
 
-        if(listRubrique.length >= 1){
-            for(let item of listRubrique){
-                if(item.nature !== "TOTAL" && item.nature !== "TITRE" && item.nature !== "TOTALMIXTE"){
+        if (listRubrique.length >= 1) {
+            for (let item of listRubrique) {
+                if (item.nature !== "TOTAL" && item.nature !== "TITRE" && item.nature !== "TOTALMIXTE") {
                     const listeAssociatedCompte = await compterubriques.findAll({
                         where:
                         {
@@ -489,14 +464,14 @@ const balanceColumnTFTD = async (compte_id, dossier_id, exercice_id) => {
                             id_dossier: dossier_id,
                             id_exercice: exercice_id,
                             id_etat: 'TFTD',
-                            id_rubrique : item.id_rubrique,
+                            id_rubrique: item.id_rubrique,
                             //nature: 'BRUT',
                             active: true
                         }
                     });
 
-                    if(listeAssociatedCompte.length > 0){
-                        for(let param of listeAssociatedCompte){
+                    if (listeAssociatedCompte.length > 0) {
+                        for (let param of listeAssociatedCompte) {
                             const { listCpt } = await recupIdCompteFromPlanComptable(compte_id, dossier_id, param.compte);
                             let fieldToUpdate = 'rubriquetftd';
 
@@ -507,37 +482,37 @@ const balanceColumnTFTD = async (compte_id, dossier_id, exercice_id) => {
 
                             switch (param.condition) {
                                 case "SOLDE":
-                                    if(listCpt.length > 0 ){
-                                        for(let compteInfos of listCpt){
+                                    if (listCpt.length > 0) {
+                                        for (let compteInfos of listCpt) {
                                             await balances.update(
                                                 fieldsToUpdate,
                                                 {
-                                                where: 
+                                                    where:
                                                     {
                                                         id_numcompte: compteInfos.id,
-                                                        id_compte : compte_id,
-                                                        id_dossier : dossier_id,
-                                                        id_exercice : exercice_id,
+                                                        id_compte: compte_id,
+                                                        id_dossier: dossier_id,
+                                                        id_exercice: exercice_id,
                                                     }
                                                 }
                                             );
                                         }
                                     }
-                                    
+
                                     break;
                                 case "SiC":
-                                    if(listCpt.length > 0 ){
-                                        for(let compteInfos of listCpt){
+                                    if (listCpt.length > 0) {
+                                        for (let compteInfos of listCpt) {
                                             await balances.update(
                                                 fieldsToUpdate,
                                                 {
-                                                where: 
+                                                    where:
                                                     {
                                                         id_numcompte: compteInfos.id,
-                                                        id_compte : compte_id,
-                                                        id_dossier : dossier_id,
-                                                        id_exercice : exercice_id,
-                                                        soldecredittreso: {[Op.gt]: 0}
+                                                        id_compte: compte_id,
+                                                        id_dossier: dossier_id,
+                                                        id_exercice: exercice_id,
+                                                        soldecredittreso: { [Op.gt]: 0 }
                                                     }
                                                 }
                                             );
@@ -546,25 +521,25 @@ const balanceColumnTFTD = async (compte_id, dossier_id, exercice_id) => {
 
                                     break;
                                 case "SiD":
-                                    if(listCpt.length > 0 ){
-                                        for(let compteInfos of listCpt){
+                                    if (listCpt.length > 0) {
+                                        for (let compteInfos of listCpt) {
                                             await balances.update(
                                                 fieldsToUpdate,
                                                 {
-                                                where: 
+                                                    where:
                                                     {
                                                         id_numcompte: compteInfos.id,
-                                                        id_compte : compte_id,
-                                                        id_dossier : dossier_id,
-                                                        id_exercice : exercice_id,
-                                                        soldedebittreso: {[Op.gt]: 0}
+                                                        id_compte: compte_id,
+                                                        id_dossier: dossier_id,
+                                                        id_exercice: exercice_id,
+                                                        soldedebittreso: { [Op.gt]: 0 }
                                                     }
                                                 }
                                             );
                                         }
                                     }
 
-                                break;
+                                    break;
                             }
                         }
                     }
@@ -573,14 +548,14 @@ const balanceColumnTFTD = async (compte_id, dossier_id, exercice_id) => {
         }
 
         return true;
-       
-    }catch (error){
+
+    } catch (error) {
         console.log(error);
     }
 }
 
 const balanceColumnTFTI = async (compte_id, dossier_id, exercice_id) => {
-    try{
+    try {
         //supprimer les id sur la colonne rubriquecrf (réinitialiser)
         await balances.update(
             {
@@ -588,11 +563,11 @@ const balanceColumnTFTI = async (compte_id, dossier_id, exercice_id) => {
                 senscalcultfti: ''
             },
             {
-            where: 
+                where:
                 {
-                    id_compte : compte_id,
-                    id_dossier : dossier_id,
-                    id_exercice : exercice_id,
+                    id_compte: compte_id,
+                    id_dossier: dossier_id,
+                    id_exercice: exercice_id,
                 }
             }
         );
@@ -608,9 +583,9 @@ const balanceColumnTFTI = async (compte_id, dossier_id, exercice_id) => {
             order: [['ordre', 'ASC']]
         });
 
-        if(listRubrique.length >= 1){
-            for(let item of listRubrique){
-                if(item.nature !== "TOTAL" && item.nature !== "TITRE" && item.nature !== "TOTALMIXTE"){
+        if (listRubrique.length >= 1) {
+            for (let item of listRubrique) {
+                if (item.nature !== "TOTAL" && item.nature !== "TITRE" && item.nature !== "TOTALMIXTE") {
                     const listeAssociatedCompte = await compterubriques.findAll({
                         where:
                         {
@@ -618,14 +593,14 @@ const balanceColumnTFTI = async (compte_id, dossier_id, exercice_id) => {
                             id_dossier: dossier_id,
                             id_exercice: exercice_id,
                             id_etat: 'TFTI',
-                            id_rubrique : item.id_rubrique,
+                            id_rubrique: item.id_rubrique,
                             //nature: 'BRUT',
                             active: true
                         }
                     });
 
-                    if(listeAssociatedCompte.length > 0){
-                        for(let param of listeAssociatedCompte){
+                    if (listeAssociatedCompte.length > 0) {
+                        for (let param of listeAssociatedCompte) {
                             const { listCpt } = await recupIdCompteFromPlanComptable(compte_id, dossier_id, param.compte);
                             let fieldToUpdate = 'rubriquetfti';
 
@@ -636,37 +611,37 @@ const balanceColumnTFTI = async (compte_id, dossier_id, exercice_id) => {
 
                             switch (param.condition) {
                                 case "SOLDE":
-                                    if(listCpt.length > 0 ){
-                                        for(let compteInfos of listCpt){
+                                    if (listCpt.length > 0) {
+                                        for (let compteInfos of listCpt) {
                                             await balances.update(
                                                 fieldsToUpdate,
                                                 {
-                                                where: 
+                                                    where:
                                                     {
                                                         id_numcompte: compteInfos.id,
-                                                        id_compte : compte_id,
-                                                        id_dossier : dossier_id,
-                                                        id_exercice : exercice_id,
+                                                        id_compte: compte_id,
+                                                        id_dossier: dossier_id,
+                                                        id_exercice: exercice_id,
                                                     }
                                                 }
                                             );
                                         }
                                     }
-                                    
+
                                     break;
                                 case "SiC":
-                                    if(listCpt.length > 0 ){
-                                        for(let compteInfos of listCpt){
+                                    if (listCpt.length > 0) {
+                                        for (let compteInfos of listCpt) {
                                             await balances.update(
                                                 fieldsToUpdate,
                                                 {
-                                                where: 
+                                                    where:
                                                     {
                                                         id_numcompte: compteInfos.id,
-                                                        id_compte : compte_id,
-                                                        id_dossier : dossier_id,
-                                                        id_exercice : exercice_id,
-                                                        soldecredit: {[Op.gt]: 0}
+                                                        id_compte: compte_id,
+                                                        id_dossier: dossier_id,
+                                                        id_exercice: exercice_id,
+                                                        soldecredit: { [Op.gt]: 0 }
                                                     }
                                                 }
                                             );
@@ -675,25 +650,25 @@ const balanceColumnTFTI = async (compte_id, dossier_id, exercice_id) => {
 
                                     break;
                                 case "SiD":
-                                    if(listCpt.length > 0 ){
-                                        for(let compteInfos of listCpt){
+                                    if (listCpt.length > 0) {
+                                        for (let compteInfos of listCpt) {
                                             await balances.update(
                                                 fieldsToUpdate,
                                                 {
-                                                where: 
+                                                    where:
                                                     {
                                                         id_numcompte: compteInfos.id,
-                                                        id_compte : compte_id,
-                                                        id_dossier : dossier_id,
-                                                        id_exercice : exercice_id,
-                                                        soldedebit: {[Op.gt]: 0}
+                                                        id_compte: compte_id,
+                                                        id_dossier: dossier_id,
+                                                        id_exercice: exercice_id,
+                                                        soldedebit: { [Op.gt]: 0 }
                                                     }
                                                 }
                                             );
                                         }
                                     }
 
-                                break;
+                                    break;
                             }
                         }
                     }
@@ -702,16 +677,16 @@ const balanceColumnTFTI = async (compte_id, dossier_id, exercice_id) => {
         }
 
         return true;
-       
-    }catch (error){
+
+    } catch (error) {
         console.log(error);
     }
 }
 
-module.exports = { 
+module.exports = {
     balanceColumnBilan,
     balanceColumnCRN,
     balanceColumnCRF,
     balanceColumnTFTD,
-    balanceColumnTFTI 
+    balanceColumnTFTI
 };

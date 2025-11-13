@@ -230,33 +230,10 @@ export default function ParamMappingComponent() {
         })
     }
 
-    // useEffect(() =>{
-    //     GetListeExercice(fileId);
-    // }, [fileId]);
-
-
     //Choix TAB value-------------------------------------------------------------------------------------
     const handleChangeTabEbilan = (event, newValue) => {
         setValueEbilanParamMapping(newValue);
         localStorage.setItem('valueEbilanParamMapping', newValue);
-
-        // if (newValue === "1") {
-        //     setBilanRubriqueData([]);
-        // } else if (newValue === "2") {
-        //     setCrnRubriqueData([]);
-        // } else if (newValue === "3") {
-        //     setCrfRubriqueData([]);
-        // } else if (newValue === "4") {
-        //     setTftdRubriqueData([]);
-        // } else if (newValue === "5") {
-        //     setTftiRubriqueData([]);
-        // } else if (newValue === "6") {
-        //     setBhiapcRubriqueData([]);
-        //     updateSelectedRowIdBHIAPC(1, compteId, fileId, selectedPeriodeId);
-        // } else if (newValue === "7") {
-        //     setDpRubriqueData([]);
-        // }
-
     };
 
     const handleChangeTab = (event, newValue) => {
@@ -841,7 +818,7 @@ export default function ParamMappingComponent() {
                 </Box>
                 <TabPanel value="1" style={{ height: '85%' }}>
                     <Stack width={"100%"} height={"95%"} spacing={1} alignItems={"flex-start"} justifyContent={"stretch"}>
-                        <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages: mapping des comptes</Typography>
+                        <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages: Mapping des comptes</Typography>
 
                         <Stack width={"100%"} height={"80px"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "20px" }}>
                             <Stack
@@ -938,6 +915,7 @@ export default function ParamMappingComponent() {
                                             <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"center"} alignContent={"center"}
                                                 justifyContent={"stretch"}
                                             >
+
                                                 <Stack width={"100%"} height={"35px"} spacing={0.5} alignItems={"right"} alignContent={"right"}
                                                     direction={"row"} justifyContent={"right"}
                                                 >

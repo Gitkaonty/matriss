@@ -14,12 +14,12 @@ const TextCard = ({
 
     const IconVariation = () => {
         if (evolution === 'augmentation') {
-            return <FiTrendingUp size={30} color='green' />;
+            return <FiTrendingUp size={30} color='#0dba2a' />;
         }
         if (evolution === 'diminution') {
-            return <FiTrendingDown size={30} color='red' />;
+            return <FiTrendingDown size={30} color='#ba210d' />;
         }
-        return <FiMinus size={30} color='gray' />;
+        return <FiMinus size={30} color='#a3b8b7' />;
     };
 
     const formatePourcentage = (value, varType) => {
@@ -41,10 +41,10 @@ const TextCard = ({
                         <Typography variant="h6" fontWeight={750}>
                             {text}
                         </Typography>
-                        <Typography variant="subtitle1" fontWeight={800}>
+                        <Typography fontSize={'18px'} textAlign={'right'} sx={{ width: '100%' }} fontWeight={800}>
                             {formatMontant(montant)}
                         </Typography>
-                        <Typography variant="subtitle1" color={'#6d645dff'} fontWeight={800}>
+                        <Typography fontSize={'18px'} color={'#292724ff'} textAlign={'right'} sx={{ width: '100%' }} fontWeight={800}>
                             {formatMontant(montantN1)}
                         </Typography>
                     </>
@@ -56,16 +56,22 @@ const TextCard = ({
                     <Typography variant="h6" color={color} fontWeight={750}>
                         {text}
                     </Typography>
-                    <Typography variant="subtitle1" color={color} fontWeight={800}>
+                    <Typography fontSize={'18px'} color={color} textAlign={'right'} sx={{ width: '100%' }} fontWeight={800}>
                         {formatMontant(montant)}
                     </Typography>
-                    <Stack direction="row" alignItems="center" spacing={1}>
+                    <Stack
+                        direction="row"
+                        alignItems="end"
+                        justifyContent="flex-end"
+                        sx={{ width: '100%' }}
+                        spacing={1}
+                    >
                         <IconVariation />
                         <Typography variant="h5" color={color} fontWeight={600}>
                             {formatePourcentage(variation, evolution)}
                         </Typography>
                     </Stack>
-                    <Typography variant="subtitle1" color={color} fontWeight={600}>
+                    <Typography fontSize={'18px'} color={color} fontWeight={600}>
                         {exercice}
                     </Typography>
                 </>

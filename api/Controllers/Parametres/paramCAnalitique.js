@@ -1,16 +1,10 @@
-const bcrypt = require("bcrypt");
 const db = require("../../Models");
 require('dotenv').config();
 const Sequelize = require('sequelize');
 
 const caAxes = db.caAxes;
 const caSections = db.caSections;
-const dossier = db.dossiers;
-
-// Fonction pour plurieliser un mot
-function pluralize(count, word) {
-    return count > 1 ? word + 's' : word;
-}
+const analytiques = db.analytiques;
 
 exports.getAxes = async (req, res) => {
     try {
@@ -301,12 +295,13 @@ exports.deleteAxes = async (req, res) => {
         }
 
         if (!idToDelete) {
-            return res.status(400).json({
+            return res.status(200).json({
                 state: false,
                 message: "Données manquantes ou invalides"
             });
         }
 
+        await caSections.destroy({ where: { id_axe: idToDelete } });
         const result = await caAxes.destroy({
             where: { id: idToDelete }
         });
@@ -367,3 +362,109 @@ exports.deleteSections = async (req, res) => {
         });
     }
 }
+
+exports.getListAxeSection = async (req, res) => {
+    try {
+        const { id_dossier, id_compte } = req.params;
+        if (!id_dossier || !id_compte) {
+            return res.status(200).json({
+                state: false,
+                message: "Données manquantes ou invalides"
+            });
+        }
+        const data = await caSections.findAll({
+            where: {
+                id_dossier,
+                id_compte
+            },
+            include: [
+                {
+                    model: caAxes,
+                    as: 'axe',
+                    attributes: ['id', 'libelle', 'code'],
+                    required: false
+                }
+            ],
+            attributes: ['id', 'section', 'intitule', 'id_axe', 'compte', 'pourcentage'],
+            order: [
+                ['id_axe', 'ASC'],
+                ['id', 'ASC']
+            ]
+        });
+
+        const result = data.map(item => ({
+            id_axe: item.id_axe,
+            libelle_axe: item.axe?.libelle,
+            code_axe: item.axe?.code,
+            compte_axe: item.compte,
+            pourcentage: item.pourcentage,
+            intitule_section: item.intitule,
+            id_section: item.id,
+            section: item.section,
+        }));
+
+        return res.json(result);
+
+    } catch (error) {
+        return res.status(500).json({
+            state: false,
+            message: "Erreur serveur",
+            error: error.message
+        });
+    }
+}
+
+exports.getRepartitionCA = async (req, res) => {
+    const { id_journal } = req.params;
+
+    if (!id_journal) {
+        return res.status(200).json({
+            state: false,
+            message: "Données manquantes ou invalides"
+        });
+    }
+
+    try {
+        const rows = await analytiques.findAll({
+            where: { id_ligne_ecriture: id_journal },
+            include: [
+                {
+                    model: caAxes,
+                    as: 'axe',
+                    attributes: ['id', 'libelle', 'code'],
+                },
+                {
+                    model: caSections,
+                    as: 'section',
+                    attributes: ['id', 'intitule', 'section', 'compte', 'pourcentage'],
+                }
+            ],
+            order: [['id_axe', 'ASC'], ['id_section', 'ASC']]
+        });
+
+        const result = rows.map(r => ({
+            id_compte: Number(r.id_compte),
+            id_dossier: Number(r.id_dossier),
+            id_exercice: Number(r.id_exercice),
+            id_ligne_ecriture: Number(r.id_ligne_ecriture),
+            id_axe: Number(r.id_axe),
+            libelle_axe: r.axe?.libelle || '',
+            code_axe: r.axe?.code || '',
+            compte_axe: r.section?.compte || '',
+            pourcentage: r.pourcentage || 0,
+            id_section: Number(r.id_section),
+            intitule_section: r.section?.intitule || '',
+            section: r.section?.section || '',
+            debit: r.debit,
+            credit: r.credit,
+        }));
+
+        return res.status(200).json({ state: true, list: result });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            state: false,
+            message: "Erreur lors de la récupération des données"
+        });
+    }
+};

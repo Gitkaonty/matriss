@@ -4,10 +4,10 @@ const devises = db.devises;
 const journals = db.journals;
 const dossierplancomptable = db.dossierplancomptable;
 const codejournals = db.codejournals;
+const analytiques = db.analytiques;
 
 const fs = require('fs');
 const path = require('path');
-const basePath = path.join(__dirname, '..', '..', 'public', 'ScanEcriture');
 
 // Fonction pour plurieliser un mot
 function pluralize(count, word) {
@@ -30,7 +30,6 @@ exports.getAllDevises = async (req, res) => {
     }
 };
 
-const formatDeuxChiffres = (val) => String(val).padStart(2, '0');
 const isValidDate = (d) => d instanceof Date && !isNaN(d.getTime());
 
 const getDateSaisieNow = (id) => {
@@ -71,6 +70,7 @@ exports.addJournal = async (req, res) => {
         const currency = jsonData.currency;
         const devise = jsonData.choixDevise === 'MGA' ? jsonData.choixDevise : currency;
         const tableRows = jsonData.tableRows;
+        const listCa = jsonData.listCa;
         const taux = jsonData.taux;
 
         let fichierCheminRelatif = null;
@@ -117,6 +117,7 @@ exports.addJournal = async (req, res) => {
             }
 
             return {
+                id_temporaire: row.id,
                 id_compte,
                 id_dossier,
                 id_exercice,
@@ -141,10 +142,29 @@ exports.addJournal = async (req, res) => {
         }));
 
         let count = 0;
-
         for (const row of newTableRows) {
-            await journals.create({ ...row });
+            const createdJournal = await journals.create({ ...row });
             count++;
+
+            const journalId = createdJournal.id;
+
+            const relevantCa = listCa?.filter(item => item.id_ligne_ecriture === row.id_temporaire) || [];
+
+            if (relevantCa.length > 0) {
+                const listCaRows = relevantCa.map(item => ({
+                    id_compte,
+                    id_dossier,
+                    id_exercice,
+                    id_ligne_ecriture: journalId,
+                    id_axe: item.id_axe,
+                    id_section: item.id_section,
+                    debit: item.debit || 0,
+                    credit: item.credit || 0,
+                    pourcentage: item.pourcentage || 0
+                }));
+
+                await analytiques.bulkCreate(listCaRows);
+            }
         }
 
         return res.json({
@@ -186,6 +206,7 @@ exports.modificationJournal = async (req, res) => {
         const currency = jsonData.currency;
         const devise = jsonData.choixDevise === 'MGA' ? jsonData.choixDevise : currency;
         const tableRows = jsonData.tableRows;
+        const listCa = jsonData.listCa;
         const taux = jsonData.taux;
         const deletedIds = jsonData.deletedIds || [];
         const num_facture = jsonData.num_facture;
@@ -246,6 +267,7 @@ exports.modificationJournal = async (req, res) => {
             }
 
             const journalData = {
+                id_temporaire: row.id,
                 id_compte,
                 id_dossier,
                 id_exercice,
@@ -295,11 +317,47 @@ exports.modificationJournal = async (req, res) => {
                 await journals.update(journalData, { where: { id: row.id } });
                 modification++;
 
+                const relevantCa = listCa?.filter(item => item.id_ligne_ecriture === row.id) || [];
+                for (const item of relevantCa) {
+                    await analytiques.update(
+                        {
+                            debit: item.debit || 0, credit: item.credit || 0, pourcentage: item.pourcentage || 0
+                        },
+                        {
+                            where: {
+                                id_ligne_ecriture: row.id,
+                                id_axe: item.id_axe,
+                                id_section: item.id_section
+                            }
+                        }
+                    );
+                }
             }
             else {
                 journalData.fichier = fichierCheminRelatif || null;
 
-                await journals.create(journalData);
+                const createdJournal = await journals.create(journalData);
+
+                const journalId = createdJournal.id;
+
+                const relevantCa = listCa?.filter(item => item.id_ligne_ecriture === row.id_temporaire) || [];
+
+                if (relevantCa.length > 0) {
+                    const listCaRows = relevantCa.map(item => ({
+                        id_compte,
+                        id_dossier,
+                        id_exercice,
+                        id_ligne_ecriture: journalId,
+                        id_axe: item.id_axe,
+                        id_section: item.id_section,
+                        debit: item.debit || 0,
+                        credit: item.credit || 0,
+                        pourcentage: item.pourcentage || 0
+
+                    }));
+
+                    await analytiques.bulkCreate(listCaRows);
+                }
                 ajout++;
             }
         }
@@ -494,7 +552,7 @@ exports.deleteJournal = async (req, res) => {
 
         return res.json({
             state: result > 0,
-            msg: result > 0 ? "Données supprimées avec succès" : "Aucune ligne supprimée"
+            msg: result > 0 ? "Lignes supprimées avec succès" : "Aucune ligne supprimée"
         });
 
     } catch (error) {

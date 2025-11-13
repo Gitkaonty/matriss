@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
-import { Typography, Stack, TextField, Divider, FormHelperText } from '@mui/material';
-import { FormControl, FormGroup, FormControlLabel, Checkbox, FormLabel } from "@mui/material";
+import { Typography, Stack, TextField, Divider } from '@mui/material';
+import { FormControl } from "@mui/material";
 import Button from '@mui/material/Button';
 import { styled } from '@mui/material/styles';
 import InputAdornment from '@mui/material/InputAdornment';
@@ -18,7 +17,6 @@ import toast from 'react-hot-toast';
 import axios from '../../../../../config/axios';
 import { useFormik } from 'formik';
 import * as Yup from "yup";
-
 
 let initial = init[0];
 
@@ -65,22 +63,11 @@ const PopupEditIsi = ({ confirmationState, objectAnnexeDIsi, setRowToModify }) =
             .required("La date de transaction est obligatoire")
             .typeError("Date invalide"),
 
-        // montant_transaction: Yup.number()
-        //     .required("Le montant de la transaction est obligatoire")
-        //     .min(0, "Le montant doit être supérieur à 0"),
-
-        // montant_isi: Yup.number()
-        //     .required("Le montant ISI est obligatoire")
-        //     .min(0, "Le montant doit être supérieur à 0"),
-
         province: Yup.string().required("La province est obligatoire"),
         region: Yup.string().required("La région est obligatoire"),
         district: Yup.string().required("Le district est obligatoire"),
         commune: Yup.string().required("La commune est obligatoire"),
         fokontany: Yup.string().required("Le fokontany est obligatoire"),
-
-        // validite: Yup.string()
-        //     .required("La validité est obligatoire")
     });
 
     const formData = useFormik({
@@ -369,8 +356,6 @@ const PopupEditIsi = ({ confirmationState, objectAnnexeDIsi, setRowToModify }) =
                                     label="Montant de la transaction"
                                     name="montant_transaction"
                                     value={formData.values.montant_transaction}
-                                    // onChange={formData.handleChange}
-                                    // onBlur={formData.handleBlur}
                                     fullWidth
                                     style={{
                                         textAlign: 'right',
@@ -400,8 +385,6 @@ const PopupEditIsi = ({ confirmationState, objectAnnexeDIsi, setRowToModify }) =
                                         },
                                     }}
                                     variant='standard'
-                                    // error={Boolean(formData.touched.montant_transaction && formData.errors.montant_transaction)}
-                                    // helperText={formData.touched.montant_transaction && formData.errors.montant_transaction}
                                     disabled
                                 />
                             </FormControl>
@@ -412,8 +395,6 @@ const PopupEditIsi = ({ confirmationState, objectAnnexeDIsi, setRowToModify }) =
                                     label="Montant ISI"
                                     name="montant_isi"
                                     value={formData.values.montant_isi}
-                                    // onChange={formData.handleChange}
-                                    // onBlur={formData.handleBlur}
                                     fullWidth
                                     style={{
                                         textAlign: 'right',
@@ -443,8 +424,6 @@ const PopupEditIsi = ({ confirmationState, objectAnnexeDIsi, setRowToModify }) =
                                         },
                                     }}
                                     variant='standard'
-                                    // error={Boolean(formData.touched.montant_isi && formData.errors.montant_isi)}
-                                    // helperText={formData.touched.montant_isi && formData.errors.montant_isi}
                                     disabled
                                 />
                             </FormControl>
@@ -649,12 +628,8 @@ const PopupEditIsi = ({ confirmationState, objectAnnexeDIsi, setRowToModify }) =
                                     name="validite"
                                     fullWidth
                                     variant='standard'
-                                    // required
                                     value={formData.values.validite}
                                     onChange={formData.handleChange}
-                                    // onBlur={formData.handleBlur}
-                                    // error={Boolean(formData.touched.validite && formData.errors.validite)}
-                                    // helperText={formData.touched.validite && formData.errors.validite}
                                     InputProps={{
                                         style: {
                                             fontSize: '13px',

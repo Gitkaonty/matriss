@@ -86,7 +86,6 @@ const DatagridHistoriqueISI = ({ columns, rows, DATAGRID_HEIGHT, setHistoriqueIs
                 </Stack>
                 <Stack
                     width={"100%"}
-                    // height={'80%'}
                     style={{
                         marginLeft: "0px",
                         marginTop: "5px",

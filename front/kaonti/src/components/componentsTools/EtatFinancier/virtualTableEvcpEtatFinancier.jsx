@@ -8,7 +8,7 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
-import { Box, Button, Chip, Collapse, IconButton, Typography } from '@mui/material';
+import { Box, Chip, Collapse, IconButton, Typography } from '@mui/material';
 import AddBoxIcon from '@mui/icons-material/AddBox';
 import IndeterminateCheckBoxIcon from '@mui/icons-material/IndeterminateCheckBox';
 import { RiExchangeBoxFill } from "react-icons/ri";
@@ -16,7 +16,7 @@ import { FaRegPenToSquare } from "react-icons/fa6";
 import { init } from '../../../../init';
 import PopupAjustRubriqueEvcpEtatFinancier from './popup/popupAjustRubriqueEvcpEtatFinancier';
 
-const virtualTableEvcpEtatFinancier = ({ refreshTable, columns, rows, noCollapsible, state, setIsRefreshed }) => {
+const virtualTableEvcpEtatFinancier = ({ columns, rows, noCollapsible, state, setIsRefreshed }) => {
   const initial = init[0];
   const targetColumnId = 'libelle';
   const [openRows, setOpenRows] = React.useState({});
@@ -32,10 +32,6 @@ const virtualTableEvcpEtatFinancier = ({ refreshTable, columns, rows, noCollapsi
       [rowKey]: !prev[rowKey],
     }));
   };
-
-  const handleRowClick = (row) => {
-    //console.log(row.id);
-  }
 
   //ajout de montant ajustement valeur d'une rubrique
   const handleCellClick = (row, column, value) => {
@@ -59,16 +55,15 @@ const virtualTableEvcpEtatFinancier = ({ refreshTable, columns, rows, noCollapsi
 
   //calcul total
   const totalColumnAjust = (rows, columnId, nature) => {
-    //const data = rows?.filter(item => item.nature === nature);
     const total = rows.reduce((acc, item) => {
-      const Value = parseFloat(item[columnId]) || 0; // Convertir en nombre
+      const Value = parseFloat(item[columnId]) || 0; 
       return acc + Value;
     }, 0);
 
     return total;
   };
 
-  //calcul total
+  //Calcul total
   const totalColumnDetail = (rows, columnId) => {
 
     let data = [];
@@ -180,7 +175,6 @@ const virtualTableEvcpEtatFinancier = ({ refreshTable, columns, rows, noCollapsi
                 <React.Fragment key={rowKey}>
                   <TableRow
                     style={{ border: 'none', height: '20px', ...rowStyle }}
-                    onClick={() => handleRowClick(row)}
                   >
                     <TableCell
                       style={{
@@ -189,8 +183,6 @@ const virtualTableEvcpEtatFinancier = ({ refreshTable, columns, rows, noCollapsi
                         width: 40,
                         paddingTop: '5px',
                         paddingBottom: '5px',
-                        // borderRight: '1px solid #ddd', 
-                        // borderLeft: '1px solid #ddd',
                         border: 'none',
                         fontSize: 15,
                         color: 'white'
@@ -209,7 +201,7 @@ const virtualTableEvcpEtatFinancier = ({ refreshTable, columns, rows, noCollapsi
                               }}
                               size="small"
                               onClick={(e) => {
-                                e.stopPropagation(); // évite de déclencher handleRowClick
+                                e.stopPropagation(); 
                                 toggleRow(rowKey);
                               }}
                             >
@@ -230,7 +222,6 @@ const virtualTableEvcpEtatFinancier = ({ refreshTable, columns, rows, noCollapsi
                             style={{
                               paddingTop: '5px',
                               paddingBottom: '5px',
-                              // borderRight: '1px solid #ddd', borderLeft: '1px solid #ddd' ,
                               fontSize: 15,
                               ...cellStyle,
                             }}
@@ -249,7 +240,6 @@ const virtualTableEvcpEtatFinancier = ({ refreshTable, columns, rows, noCollapsi
                               paddingTop: '5px',
                               paddingBottom: '5px',
                               fontWeight: row.niveau === 1 ? 'bold' : 'normal',
-                              // borderRight: '1px solid #ddd', borderLeft: '1px solid #ddd' ,
                               fontSize: 15,
                             }}
                           >
@@ -265,7 +255,6 @@ const virtualTableEvcpEtatFinancier = ({ refreshTable, columns, rows, noCollapsi
                               paddingTop: '5px',
                               paddingBottom: '5px',
                               fontWeight: row.niveau === 1 ? 'bold' : 'normal',
-                              // borderRight: '1px solid #ddd', borderLeft: '1px solid #ddd' ,
                               fontSize: 15,
                               cursor: 'pointer'
                             }}
@@ -321,7 +310,7 @@ const virtualTableEvcpEtatFinancier = ({ refreshTable, columns, rows, noCollapsi
 
                             style={{
                               width: 175,
-                              display: 'flex', // ou block, selon le rendu souhaité
+                              display: 'flex',
                               justifyContent: 'space-between',
                               backgroundColor: '#67AE6E',
                               color: 'white'

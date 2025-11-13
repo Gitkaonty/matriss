@@ -22,7 +22,7 @@ import axios from '../../../../config/axios';
 import QuickFilter, { DataGridStyle } from '../DatagridToolsStyle';
 import PopupConfirmDelete from '../popupConfirmDelete';
 
-const DatagridDetailExterne = ({ compteId, fileId, exerciceId, id_etat, rubriqueId, nature, rubriqueData, typeRubrique }) => {
+const DatagridDetailExterne = ({ compteId, fileId, exerciceId, id_etat, rubriqueId, nature, rubriqueData, typeRubrique, isCompteRubriqueRefreshed, setIsCompteRubriqueRefreshed }) => {
     let initial = init[0];
     const DataDetail = rubriqueData;
     const [compteRubriqueData, setCompteRubriqueData] = useState([]);
@@ -58,6 +58,10 @@ const DatagridDetailExterne = ({ compteId, fileId, exerciceId, id_etat, rubrique
             }
         });
     }
+
+    useEffect(() => {
+        getListeCompteRubriqueAfterUpdating();
+    }, [isCompteRubriqueRefreshed])
 
     useEffect(() => {
         if (rubriqueId === 0 || !rubriqueId) {
@@ -169,7 +173,10 @@ const DatagridDetailExterne = ({ compteId, fileId, exerciceId, id_etat, rubrique
                             }}
                             type="text"
                             value={formNewParam.values.compte}
-                            onChange={(e) => handleChangeCompte(e.target.value)}
+                            onChange={(e) => {
+                                const value = e.target.value.replace(/\D/g, '');
+                                handleChangeCompte(value);
+                            }}
                             label="libelle"
                             disableUnderline={true}
                             disabled={disableDefaultFieldModif}
@@ -238,7 +245,6 @@ const DatagridDetailExterne = ({ compteId, fileId, exerciceId, id_etat, rubrique
                         <InputLabel><em>Choisir...</em></InputLabel>
                         <Select
                             disabled={disableDefaultFieldModif || (typeRubrique === "SOUS-TOTAL" || typeRubrique === "TOTAL" || typeRubrique === "TOTAL SOUS-RUBRIQUES")}
-                            // style={{ backgroundColor: sensCalculValidationColor }}
                             value={formNewParam.values.senscalcul}
                             onChange={(e) => handleChangeSensCalcul(e.target.value)}
                             label="sensCalucl"
@@ -276,7 +282,6 @@ const DatagridDetailExterne = ({ compteId, fileId, exerciceId, id_etat, rubrique
                         <InputLabel><em>Choisir...</em></InputLabel>
                         <Select
                             disabled={disableDefaultFieldModif || (typeRubrique === "SOUS-TOTAL" || typeRubrique === "TOTAL" || typeRubrique === "TOTAL SOUS-RUBRIQUES")}
-                            // style={{ backgroundColor: conditionValidationColor }}
                             value={formNewParam.values.condition}
                             onChange={(e) => handleChangeCondition(e.target.value)}
                             label="sensCalucl"
@@ -346,7 +351,6 @@ const DatagridDetailExterne = ({ compteId, fileId, exerciceId, id_etat, rubrique
             renderEditCell: (params) => {
                 return (
                     <Checkbox
-                        // value={formNewParam.values.active}
                         checked={formNewParam.values.active}
                         type="checkbox"
                         onChange={(e) => handleCheckboxChange(e.target.checked)}
@@ -420,8 +424,6 @@ const DatagridDetailExterne = ({ compteId, fileId, exerciceId, id_etat, rubrique
 
     const handleSaveClick = (id) => async () => {
         let saveBoolCompte = false;
-        let saveBoolSensCalcul = false;
-        let saveBoolCondition = false;
         let saveBoolEquation = false;
         let saveBoolIdEtat = false;
 
@@ -465,7 +467,7 @@ const DatagridDetailExterne = ({ compteId, fileId, exerciceId, id_etat, rubrique
                 const resData = response.data;
 
                 if (resData.state) {
-                    getListeCompteRubriqueAfterUpdating();
+                    setIsCompteRubriqueRefreshed(prev => !prev);
                     setDisableAddRowBouton(false);
                     setDisableSaveBouton(true);
                     formNewParam.resetForm();
@@ -490,6 +492,7 @@ const DatagridDetailExterne = ({ compteId, fileId, exerciceId, id_etat, rubrique
                 const idToDelete = selectedRowId[0];
                 if (idToDelete < 0) {
                     setOpenDialogDeleteRow(false);
+                    toast.success('Ligne supprimé avec succès');
                     setCompteRubriqueData(compteRubriqueData.filter((row) => row.id !== idToDelete));
                     return;
                 }
@@ -510,13 +513,13 @@ const DatagridDetailExterne = ({ compteId, fileId, exerciceId, id_etat, rubrique
                             setOpenDialogDeleteRow(false);
                             setDisableAddRowBouton(false);
                             setCompteRubriqueData(compteRubriqueData.filter((row) => row.id !== selectedRowId[0]));
+                            toast.success(resData.message);
                         } else {
                             setOpenDialogDeleteRow(false);
                             toast.error(resData.msg);
                         }
                     });
                 }
-
             }
             setOpenDialogDeleteRow(false);
         } else {

@@ -1,4 +1,4 @@
-import { React, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Typography, Stack, TextField, FormControl, Tooltip, Box, Input } from '@mui/material';
 import Button from '@mui/material/Button';
 import { styled } from '@mui/material/styles';
@@ -138,7 +138,6 @@ const popupAjustRubriqueEVCPEbilan = ({ actionState, row, column, value }) => {
                             }}
                             type="text"
                             value={formDataFinal.motif}
-                            //onChange = {(e) => formData.setFieldValue('motif', e.target.value)}
                             onChange={handleChange}
                             label="motif"
                             name="motif"

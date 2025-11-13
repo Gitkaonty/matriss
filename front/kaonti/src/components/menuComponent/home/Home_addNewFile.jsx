@@ -1,5 +1,5 @@
-import { React, useState, useEffect, useRef } from 'react';
-import { Typography, Stack, Paper, TextField, FormControl, InputLabel, Select, MenuItem, Tooltip, Button, IconButton, FormHelperText, Input, Autocomplete } from '@mui/material';
+import { useState, useEffect } from 'react';
+import { Typography, Stack, Paper, TextField, FormControl, Select, MenuItem, Tooltip, Button, IconButton, FormHelperText, Input, Autocomplete } from '@mui/material';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
 import TabContext from '@mui/lab/TabContext';
@@ -42,9 +42,7 @@ export default function AddNewFile({ confirmationState }) {
     const [value, setValue] = useState("1");
     const [listModel, setListModel] = useState([]);
     const [listAssocie, setListAssocie] = useState([]);
-    const [listAssocieFormik, setListAssocieFormik] = useState([]);
     const [listFiliales, setListFiliales] = useState([]);
-    const [listFilialesFormik, setListFilialesFormik] = useState([]);
     const [listDomBank, setListDomBank] = useState([]);
     const [listPays, setListPays] = useState([]);
     const [listProvinces, setListProvinces] = useState([]);
@@ -91,10 +89,8 @@ export default function AddNewFile({ confirmationState }) {
     const [bankDomBankValidationColor, setBankDomBankValidationColor] = useState('transparent');
     const [numCompteDomBankValidationColor, setNumCompteDomBankValidationColor] = useState('transparent');
     const [deviseDomBankValidationColor, setDeviseDomBankValidationColor] = useState('transparent');
-    const [paysDomBankValidationColor, setPaysDomBankValidationColor] = useState('transparent');
 
     const [selectedRowDomBank, setSelectedRowDomBank] = useState([]);
-
 
     //récupération infos compte
     const { auth } = useAuth();
@@ -769,10 +765,6 @@ export default function AddNewFile({ confirmationState }) {
         });
     }
 
-
-
-
-
     //récupérer la liste des pays
     const getListePays = async () => {
         await axios.get(`/paramCrm/getListePays/`).then((response) => {
@@ -856,7 +848,6 @@ export default function AddNewFile({ confirmationState }) {
         const montantcapitalNumber = parseFloat(
             montantcapitalRaw.replace(/\s/g, "").replace(",", ".") || montantcapitalRaw
         ).toFixed(2);
-        // return console.log(values);
         const montantCapitalFormatted = Number(montantcapitalNumber);
         values.montantcapital = montantCapitalFormatted;
         // Construit un payload incluant idCompte et la liste DomBank depuis le state
@@ -949,7 +940,6 @@ export default function AddNewFile({ confirmationState }) {
         setBankDomBankValidationColor('transparent');
         setNumCompteDomBankValidationColor('transparent');
         setDeviseDomBankValidationColor('transparent');
-        setPaysDomBankValidationColor('transparent');
 
         //charger dans le formik les données de la ligne
         const selectedRowInfos = listDomBank?.filter((item) => item.id === id[0]);
@@ -996,14 +986,6 @@ export default function AddNewFile({ confirmationState }) {
         } else {
             setDeviseDomBankValidationColor('transparent');
             saveBoolDevise = true;
-        }
-
-        if (!useFormikDomBank.values.pays) {
-            setPaysDomBankValidationColor('#F6D6D6');
-            saveBoolPays = false;
-        } else {
-            setPaysDomBankValidationColor('transparent');
-            saveBoolPays = true;
         }
 
         if (saveBoolbanque && saveBoolNumCompte && saveBoolDevise && saveBoolPays) {

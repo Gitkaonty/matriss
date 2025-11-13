@@ -41,8 +41,6 @@ const generateDroitComm = async (res, nature, list, id_compte, id_dossier, id_ex
             return acc;
         }, {});
 
-        // return console.log(compteSensMapTemp);
-
         const compteSensMap = Object.fromEntries(
             Object.entries(compteSensMapTemp)
                 .filter(([compte, sensSet]) => sensSet.size === 1)

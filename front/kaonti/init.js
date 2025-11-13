@@ -1,5 +1,3 @@
-import React from 'react'
-
 export const init = [
     {
         theme : "#1A5276",

@@ -9,17 +9,14 @@ import TableRow from '@mui/material/TableRow';
 import TableFooter from '@mui/material/TableFooter';
 import Paper from '@mui/material/Paper';
 import { init } from '../../../../init';
-import { Box, Button, Collapse, IconButton, Stack, Typography } from '@mui/material';
+import { Box, Collapse, IconButton, Stack, Typography } from '@mui/material';
 import { IoMdTrash } from "react-icons/io";
-import { TbPlaylistAdd } from "react-icons/tb";
 import { IoMdCreate } from "react-icons/io";
 import { format } from 'date-fns';
 import { ExpandMore, ExpandLess } from '@mui/icons-material';
 
 const VirtualTableModifiableGroupableEbilanDP = ({ columns, rows, deleteState, modifyState, state }) => {
-  console.log('rows : ', rows);
   const initial = init[0];
-  const targetColumnId = 'rubriquesmatrix.libelle';
 
   const handleRowModifClick = (row) => {
     modifyState(row);
@@ -36,21 +33,6 @@ const VirtualTableModifiableGroupableEbilanDP = ({ columns, rows, deleteState, m
       ...prevExpanded,
       [groupName]: !prevExpanded[groupName],
     }));
-  };
-
-  const soustotalGroup = (item, columnId) => {
-    return rows.reduce((totals, group) => {
-      if (group.nature_prov === item) {
-        group.items.forEach((item) => {
-          const value = item[columnId];
-
-          if (value != null && !isNaN(value)) {
-            totals += value;
-          }
-        });
-      }
-      return totals;
-    }, 0);
   };
 
   const colWidths = columns.map((c) => (typeof c.minWidth === "number" ? `${c.minWidth}px` : c.minWidth || "auto"));

@@ -47,7 +47,6 @@ const PopupAjustRubriqueEbilan = ({ actionState, row, column, value }) => {
     const [openDialogDeleteRow, setOpenDialogDeleteRow] = useState(false);
     const nature = column === 'montantamort' ? 'AMORT' : 'BRUT';
     const [listAjust, setListAjust] = useState([]);
-    const [totalNet, setTotalNet] = useState(0);
     const [totalAjustement, setTotalAjustement] = useState(0);
     const [stateUpdateTable, setStateUpdateTable] = useState({ tableName: '', state: false });
 
@@ -117,7 +116,6 @@ const PopupAjustRubriqueEbilan = ({ actionState, row, column, value }) => {
                             }}
                             type="text"
                             value={formDataFinal.motif}
-                            //onChange = {(e) => formData.setFieldValue('motif', e.target.value)}
                             onChange={handleChange}
                             label="motif"
                             name="motif"
@@ -163,7 +161,7 @@ const PopupAjustRubriqueEbilan = ({ actionState, row, column, value }) => {
                     }}
                 />
             ),
-            renderEditCell: (params) => {
+            renderEditCell: () => {
                 return (
                     <TextField
                         size="small"
@@ -208,7 +206,6 @@ const PopupAjustRubriqueEbilan = ({ actionState, row, column, value }) => {
             }
         }).then((response) => {
             const resData = response.data;
-            console.log('getInfosAjust : ', resData);
             if (resData.state) {
                 setListAjust([]);
                 const filteredData = resData.liste.filter(item => item.nature === nature);
@@ -364,14 +361,12 @@ const PopupAjustRubriqueEbilan = ({ actionState, row, column, value }) => {
             setDisableModifyBouton(true);
             setDisableSaveBouton(true);
             setDisableCancelBouton(true);
-            //toast.error("sélectionnez une seule ligne pour pouvoir la modifier");
         } else {
             setDisableModifyBouton(false);
             setDisableSaveBouton(false);
             setDisableCancelBouton(false);
             if (!selectedRowId.includes(params.id)) {
                 setEditableRow(false);
-                //toast.error("sélectionnez une ligne pour pouvoir la modifier");
             } else {
                 setEditableRow(true);
             }
@@ -384,7 +379,6 @@ const PopupAjustRubriqueEbilan = ({ actionState, row, column, value }) => {
         setDisableCancelBouton(false);
         setDisableDeleteBouton(false);
 
-        // const newId = -1 * (getMaxID(listAjust) + 1) - 1;
         const newId = -Date.now();
         let arrayId = [];
         arrayId = [...arrayId, newId];

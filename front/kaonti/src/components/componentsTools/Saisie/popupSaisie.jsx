@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { Typography, Stack, Box, Button, Divider, DialogTitle } from '@mui/material';
+import { Typography, Stack, Box, Button, Divider, DialogTitle, Tooltip } from '@mui/material';
 import { TabContext, TabPanel } from '@mui/lab';
 import { styled } from '@mui/material/styles';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
 import { init } from '../../../../init';
@@ -20,13 +19,12 @@ import OptionJoy from '@mui/joy/Option';
 import SelectJoy from '@mui/joy/Select';
 import InputJoy from '@mui/joy/Input';
 import { DataGridStyle } from '../DatagridToolsStyle';
-import { DataGrid, frFR, useGridApiRef } from '@mui/x-data-grid';
+import { DataGrid, frFR, useGridApiRef, GridRowModes } from '@mui/x-data-grid';
 import QuickFilter from '../DatagridToolsStyle';
 
 import { useFormik } from 'formik';
 import PopupConfirmDelete from '../popupConfirmDelete';
 import FormatedInput from '../FormatedInput';
-import { GridPagination } from '@mui/x-data-grid';
 import DropPDFUploader from '../FileUploader/DropPdfUploader';
 
 import toast from 'react-hot-toast';
@@ -37,6 +35,9 @@ import { jwtDecode } from 'jwt-decode';
 import { getSaisieColumnHeader } from './saisieColumns';
 
 import { PiKeyboardDuotone } from "react-icons/pi";
+import PopupAddNewAccount from '../PlanComptable/PopupAddNewAccount';
+import { MdAccountBalance } from "react-icons/md";
+import PopupAjustCa from './popupAjustCa';
 
 let initial = init[0];
 
@@ -66,18 +67,78 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     },
 }));
 
-const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh, type, rowsEdit, setRowSelectionModel, listeCodeJournaux, listePlanComptable, listeAnnee, listeDevise }) => {
+const PopupSaisie = ({
+    confirmationState,
+    fileId,
+    selectedExerciceId,
+    setRefresh,
+    setRefreshListAxeSection,
+    type,
+    rowsEdit,
+    setRowSelectionModel,
+    listeCodeJournaux,
+    listePlanComptable,
+    listeAnnee,
+    listeDevise,
+    setIsRefreshedPlanComptable,
+    isCaActive,
+    listCa,
+    setListCa
+}) => {
     const [taux, setTaux] = useState(rowsEdit[0]?.taux || 0);
     const selectRef = useRef();
 
     const [tableRows, setTableRows] = useState(type === 'ajout' ? rows : rowsEdit);
     const [invalidRows, setInvalidRows] = useState([]);
+    const [rowModesModel, setRowModesModel] = useState({});
 
     const [deletedRowIds, setDeletedRowIds] = useState([]);
+    const [isDisabledAddButton, setIsDisabledAddButton] = useState(false);
 
     const [openDialogDeleteSaisie, setOpenDialogDeleteSaisie] = useState(false);
+    const [openDialogAddNewAccount, setOpenDialogAddNewAccount] = useState(false);
 
     const [selectedCell, setSelectedCell] = useState({ id: null, field: null });
+
+    const [openPopupCa, setOpenPopupCa] = useState(false);
+    const [popupCaData, setPopupCaData] = useState(null);
+    const [listCaFinal, setListCaFinal] = useState([]);
+
+    const handleOpenPopupCa = (rowId, type, montant) => {
+        setRefreshListAxeSection();
+        setListCaFinal(prev => {
+            const newEntries = listCa.map(item => ({
+                id_dossier: Number(fileId),
+                id_exercice: Number(selectedExerciceId),
+                id_compte: Number(compteId),
+                id_axe: item.id_axe,
+                id_section: item.id_section,
+                id_ligne_ecriture: rowId,
+                code_axe: item.code_axe,
+                libelle_axe: item.libelle_axe,
+                compte_axe: item.compte_axe,
+                pourcentage: item.pourcentage,
+                section: item.section,
+                intitule_section: item.intitule_section,
+                debit: 0,
+                credit: 0,
+            }));
+
+            const filteredEntries = newEntries.filter(
+                entry => !prev.some(e => e.id_ligne_ecriture === rowId && e.id_section === entry.id_section)
+            );
+
+            return [...prev, ...filteredEntries];
+        });
+        setPopupCaData({ rowId, type, montant });
+        setOpenPopupCa(true);
+    };
+
+    const handleClosePopupCa = () => {
+        setOpenPopupCa(false);
+        setPopupCaData(null);
+        setRefreshListAxeSection();
+    };
 
     const apiRef = useGridApiRef();
 
@@ -85,7 +146,6 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
     const { auth } = useAuth();
     const decoded = auth?.accessToken ? jwtDecode(auth.accessToken) : undefined;
     const compteId = decoded.UserInfo.compteId || null;
-    const userId = decoded.UserInfo.userId || null;
 
     //Fichier importé
     const [file, setFile] = useState(type === 'ajout' ? null : rowsEdit[0]?.fichier);
@@ -110,10 +170,23 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
         }
     })
 
+    const handleRowModesModelChange = (newRowModesModel) => {
+        setRowModesModel(newRowModesModel);
+    };
+
     //supprimer un saisie
     const handleOpenDialogConfirmDeleteSaisie = (id) => {
         setOpenDialogDeleteSaisie(true);
         setSelectedIdToDelete(id);
+    }
+
+    const handleOpenDialogAddNewAccount = () => {
+        setOpenDialogAddNewAccount(true);
+    }
+
+    const handleCloseDialogAddNewAccount = () => {
+        setOpenDialogAddNewAccount(false);
+        setIsRefreshedPlanComptable(prev => !prev);
     }
 
     const isDatagridEditing = () => {
@@ -255,7 +328,6 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
             let dernierJour = '';
             let dernierLibelle = '';
             let dernierPiece = '';
-            let dernierCompte = '';
             let dernierNumfacture = '';
 
             for (let i = tableRows.length - 1; i >= 0; i--) {
@@ -269,10 +341,6 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
                     dernierLibelle = row.libelle;
                 }
 
-                if (row.compte !== null && row.compte !== '' && dernierCompte === '') {
-                    dernierCompte = row.compte;
-                }
-
                 if (row.piece !== null && row.piece !== '' && dernierPiece === '') {
                     dernierPiece = row.piece;
                 }
@@ -281,13 +349,12 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
                     dernierNumfacture = row.num_facture;
                 }
 
-                if (dernierJour !== '' && dernierLibelle !== '' && dernierPiece !== '' && dernierCompte !== '' && dernierNumfacture !== '') break;
+                if (dernierJour !== '' && dernierLibelle !== '' && dernierPiece !== '' && dernierNumfacture !== '') break;
             }
 
             const newRow = {
                 id: newId,
                 jour: dernierJour,
-                compte: dernierCompte,
                 piece: dernierPiece,
                 libelle: dernierLibelle,
                 num_facture: dernierNumfacture,
@@ -296,8 +363,14 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
             };
 
             setTableRows([...tableRows, newRow]);
+            setRowModesModel({ ...rowModesModel, [newId]: { mode: GridRowModes.Edit } });
+            apiRef.current.setCellFocus(newId, 'jour');
         }
     };
+
+    const handleClose = () => {
+        confirmationState(false);
+    }
 
     const columns = getSaisieColumnHeader({
         formSaisie,
@@ -310,18 +383,17 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
         tableRows,
         handleOpenDialogConfirmDeleteSaisie,
         isDatagridEditing,
-        ajouterNouvelleLigne
+        ajouterNouvelleLigne,
+        isCaActive,
+        handleOpenPopupCa
     });
-
-    const handleClose = () => {
-        confirmationState(false);
-    }
 
     //Supprimer la ligne pour ajout
     const handleDeleteRowAdd = (value) => {
         exitEditingToDatagrid();
         if (value) {
             setTableRows((prevRows) => prevRows.filter((row) => row.id !== selectedIdToDelete));
+            setListCaFinal(prev => prev.filter(item => item.id_ligne_ecriture !== selectedIdToDelete));
             setOpenDialogDeleteSaisie(false);
         } else {
             setOpenDialogDeleteSaisie(false);
@@ -332,6 +404,7 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
         exitEditingToDatagrid();
         if (value) {
             setTableRows((prevRows) => prevRows.filter((row) => row.id !== selectedIdToDelete));
+            setListCaFinal(prev => prev.filter(item => item.id_ligne_ecriture !== selectedIdToDelete));
             setOpenDialogDeleteSaisie(false);
             if (selectedIdToDelete > 0) {
                 setDeletedRowIds(prev => [...prev, selectedIdToDelete]);
@@ -391,16 +464,9 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
     //Afficher une erreur si aucune mois n'est selectionné
     const handleRowEditStart = (params, event) => {
         if (!formSaisie.values.valSelectMois) {
-            event.defaultMuiPrevented = true; // empêche l'édition
+            event.defaultMuiPrevented = true;
             toast.error("Veuillez d'abord sélectionner un mois");
         }
-    };
-
-    //Récupérer les données du ligne selectionné
-    const handleSelectionChange = (newSelectionModel) => {
-        const selectedId = newSelectionModel[0];
-        const row = tableRows.find((row) => row.id === selectedId);
-        setSelectedRow(row);
     };
 
     const exitEditingToDatagrid = () => {
@@ -416,9 +482,9 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
     };
 
     const addOrUpdateJournal = async () => {
+        const listCaFinalFiltered = listCaFinal.filter(val => val.debit !== 0 || val.credit !== 0);
         const rowsInvalides = [];
 
-        // Validation des lignes
         tableRows.forEach((row) => {
             const champsVides = [];
 
@@ -437,7 +503,6 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
             }
         });
 
-        // Gestion devise
         let id_devise = '';
         if (formSaisie.values.choixDevise !== 'MGA') {
             const devise = listeDevise.find((val) => val.code === formSaisie.values.currency);
@@ -446,14 +511,13 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
 
         setInvalidRows(rowsInvalides);
 
-        // Vérification des erreurs
         if (rowsInvalides.length > 0) {
             toast.error('Les champs en surbrillance sont obligatoires');
             return;
         }
 
         if (total !== 0) {
-            toast.error('Total débit doit être égal à total crédit');
+            toast.error('L\'écriture est déséquilibrée');
             return;
         }
 
@@ -467,6 +531,7 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
                 ...formSaisie.values,
                 file: undefined,
                 tableRows,
+                listCa: listCaFinalFiltered,
                 ...(type === 'modification' ? { conserverFichier, deletedIds: deletedRowIds } : {})
             };
 
@@ -537,13 +602,11 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
         let totalDebit = 0.0;
         let totalCredit = 0.0;
 
-        // Fonction de nettoyage de nombre
         const parseNumber = (val) => {
             const num = parseFloat(val);
             return isNaN(num) ? 0 : num;
         };
 
-        // 1. Calcul des totaux
         tableRows.forEach((row) => {
             const debitNum = parseNumber(row.debit);
             const creditNum = parseNumber(row.credit);
@@ -642,6 +705,11 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
 
     const handleCellKeyDown = (params, event) => {
         const api = apiRef.current;
+
+        if (params.field === 'actions') {
+            return;
+        }
+
         const allCols = api.getAllColumns().filter(c => c.editable);
         const sortedRowIds = api.getSortedRowIds();
         const currentColIndex = allCols.findIndex(c => c.field === params.field);
@@ -650,7 +718,6 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
         let nextColIndex = currentColIndex;
         let nextRowIndex = currentRowIndex;
 
-        // Navigation à droite / gauche
         if (event.key === 'Tab' && !event.shiftKey) {
             event.preventDefault();
             nextColIndex = currentColIndex + 1;
@@ -718,11 +785,8 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
 
     useEffect(() => {
         const handleClickOutside = (event) => {
-            // Si aucune cellule n'est sélectionnée, on ne fait rien
             if (!selectedCell.id && !selectedCell.field) return;
 
-            // Chercher si le clic est sur une cellule ou un élément lié au DataGrid
-            // Exemple simple : on vérifie si le clic est dans un élément avec classe 'MuiDataGrid-cell'
             let el = event.target;
             let clickedOnCell = false;
             while (el) {
@@ -744,7 +808,6 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
         };
     }, [selectedCell]);
 
-    //Algorithme MGA et Devises
     useEffect(() => {
         if (formSaisie.values.choixDevise === "MGA") {
             formSaisie.setFieldValue('currency', '');
@@ -771,391 +834,453 @@ const PopupSaisie = ({ confirmationState, fileId, selectedExerciceId, setRefresh
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    useEffect(() => {
+        setIsDisabledAddButton(isDatagridEditing());
+    }, [tableRows, apiRef.current?.state?.editRows]);
+
     return (
-        <BootstrapDialog
-            onClose={handleClose}
-            aria-labelledby="customized-dialog-title"
-            open={true}
-            // maxWidth="lg"
-            fullWidth={true}
-            fullScreen={true}
-        >
-            {openDialogDeleteSaisie ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer la ligne sélectionné ?"} confirmationState={handleDeleteRow} /> : null}
-
-            <DialogTitle
-                sx={{
-                    m: 0,
-                    py: 1.5,
-                    px: 2,
-                    bgcolor: "#f5f5f5",
-                    borderBottom: "1px solid #ddd",
-                }}
+        <>
+            {
+                openDialogDeleteSaisie ?
+                    <PopupConfirmDelete
+                        msg={"Voulez-vous vraiment supprimer la ligne sélectionné ?"}
+                        confirmationState={handleDeleteRow}
+                    />
+                    :
+                    null
+            }
+            {
+                openDialogAddNewAccount && (
+                    <PopupAddNewAccount
+                        id_dossier={fileId}
+                        id_compte={compteId}
+                        selectedRow={[]}
+                        open={openDialogAddNewAccount}
+                        onClose={handleCloseDialogAddNewAccount}
+                        stateAction={'ajout'}
+                    />
+                )
+            }
+            {
+                openPopupCa && (
+                    <PopupAjustCa
+                        open={openPopupCa}
+                        onClose={handleClosePopupCa}
+                        data={popupCaData}
+                        type={type}
+                        setListCaFinal={setListCaFinal}
+                        listCaFinal={listCaFinal}
+                        listCa={listCa}
+                    />
+                )
+            }
+            <BootstrapDialog
+                onClose={handleClose}
+                aria-labelledby="dialog-journal"
+                open={true}
+                fullWidth={true}
+                fullScreen={true}
             >
-                <Stack
-                    direction="row"
-                    alignItems="center"
-                    justifyContent="space-between"
+                <DialogTitle
+                    sx={{
+                        m: 0,
+                        py: 1.5,
+                        px: 2,
+                        bgcolor: "#f5f5f5",
+                        borderBottom: "1px solid #ddd",
+                    }}
                 >
-                    <Typography
-                        variant="h6"
-                        component="div"
-                        fontWeight="bold"
-                        color="text.primary"
+                    <Stack
+                        direction="row"
+                        alignItems="center"
+                        justifyContent="space-between"
                     >
-                        {
-                            type === "ajout"
-                                ? "Ajout d'une nouvelle saisie"
-                                : "Modification d'une saisie"
-                        }
-                    </Typography>
+                        <Typography
+                            variant="h6"
+                            component="div"
+                            fontWeight="bold"
+                            color="text.primary"
+                        >
+                            {
+                                type === "ajout"
+                                    ? "Ajout d'une nouvelle écriture "
+                                    : "Modification d'une écriture "
+                            }
+                            {`(CA ${isCaActive ? 'activé' : 'désactivé'})`}
+                        </Typography>
 
-                    <IconButton
-                        onClick={handleClose}
-                        style={{ color: 'red', textTransform: 'none', outline: 'none' }}
-                    >
-                        <CloseIcon />
-                    </IconButton>
-                </Stack>
-            </DialogTitle>
-            <DialogContent >
-                <TabContext value={"1"} >
-                    <TabPanel value="1" style={{ height: '85%' }}>
-                        <Stack width={"100%"} height={"100%"} spacing={6} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
-                            <Stack
-                                sx={{ width: '100%', p: 1 }}
-                                direction={'row'}
-                                justifyContent={'space-between'}
-                                alignItems={'center'}
-                                style={{
-                                    marginLeft: "0px",
-                                    // padding: 10,
-                                    backgroundColor: '#F4F9F9',
-                                    borderRadius: "5px"
-                                }}
-                            >
+                        <IconButton
+                            onClick={handleClose}
+                            style={{ color: 'red', textTransform: 'none', outline: 'none' }}
+                        >
+                            <CloseIcon />
+                        </IconButton>
+                    </Stack>
+                </DialogTitle>
+                <DialogContent >
+                    <TabContext value={"1"} >
+                        <TabPanel value="1" style={{ height: '85%' }}>
+                            <Stack width={"100%"} height={"100%"} spacing={6} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
                                 <Stack
-                                    direction="row"
-                                    flexWrap="wrap"
-                                    spacing={3}
-                                    alignItems="center"
-                                    justifyContent="flex-start"
-                                    sx={{ width: '100%' }}
+                                    sx={{ width: '100%', p: 1 }}
+                                    direction={'row'}
+                                    justifyContent={'space-between'}
+                                    alignItems={'center'}
+                                    style={{
+                                        marginLeft: "0px",
+                                        backgroundColor: '#F4F9F9',
+                                        borderRadius: "5px"
+                                    }}
                                 >
-                                    {/* Code Journal */}
-                                    <FormControl variant="standard" sx={{ width: 250 }}>
-                                        <InputLabel>Code journal</InputLabel>
-                                        <Select
-                                            value={formSaisie.values.valSelectCodeJnl}
-                                            onChange={formSaisie.handleChange}
-                                            name="valSelectCodeJnl"
-                                        >
-                                            {listeCodeJournaux.map((value, index) => (
-                                                <MenuItem sx={{ flex: 0.18 }} key={index} value={value.id}>
-                                                    {`${value.code} - ${value.libelle}`}
-                                                </MenuItem>
-                                            ))}
-                                        </Select>
-                                    </FormControl>
-
-                                    {/* Mois */}
-                                    <FormControl variant="standard" sx={{ width: 115 }}>
-                                        <InputLabel>Mois</InputLabel>
-                                        <Select
-                                            value={formSaisie.values.valSelectMois}
-                                            onChange={formSaisie.handleChange}
-                                            name="valSelectMois"
-                                        >
-                                            {[...Array(12).keys()].map(m => (
-                                                <MenuItem key={m + 1} value={m + 1}>
-                                                    {new Date(0, m).toLocaleString('fr-FR', { month: 'long' }).replace(/^./, c => c.toUpperCase())}
-                                                </MenuItem>
-                                            ))}
-                                        </Select>
-                                    </FormControl>
-
-                                    {/* Année */}
-                                    <FormControl variant="standard" sx={{ width: 90 }} style={{ marginRight: '50px' }} >
-                                        <InputLabel>Année</InputLabel>
-                                        <Select
-                                            value={formSaisie.values.valSelectAnnee}
-                                            onChange={formSaisie.handleChange}
-                                            name="valSelectAnnee"
-                                        >
-                                            {listeAnnee.map((year) => (
-                                                <MenuItem key={year} value={year}>
-                                                    {year}
-                                                </MenuItem>
-                                            ))}
-                                        </Select>
-                                    </FormControl>
-
-                                    {/* Choix devise */}
-                                    <RadioGroup
-                                        row
-                                        name="choixDevise"
-                                        value={formSaisie.values.choixDevise}
-                                        onChange={formSaisie.handleChange}
+                                    <Stack
+                                        direction="row"
+                                        flexWrap="wrap"
+                                        spacing={3}
+                                        alignItems="center"
+                                        justifyContent="flex-start"
+                                        sx={{ width: '100%' }}
                                     >
-                                        <FormControlLabel value="MGA" control={<Radio />} label="MGA" />
-                                        <FormControlLabel value="Devises" control={<Radio />} label="Autres" />
-                                    </RadioGroup>
+                                        {/* Code Journal */}
+                                        <FormControl variant="standard" sx={{ width: 250 }}>
+                                            <InputLabel>Code journal</InputLabel>
+                                            <Select
+                                                value={formSaisie.values.valSelectCodeJnl}
+                                                onChange={formSaisie.handleChange}
+                                                name="valSelectCodeJnl"
+                                            >
+                                                {listeCodeJournaux.map((value, index) => (
+                                                    <MenuItem sx={{ flex: 0.18 }} key={index} value={value.id}>
+                                                        {`${value.code} - ${value.libelle}`}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
 
-                                    {/* Taux de conversion */}
-                                    <Stack spacing={1.5} sx={{ width: 220 }}>
-                                        <InputJoy
-                                            placeholder="Taux"
-                                            type="text"
-                                            name="taux"
-                                            step="0.01"
-                                            value={taux}
-                                            onChange={(e) => {
-                                                let value = e.target.value;
-                                                if (typeof value === 'object' && value !== null) {
-                                                    value = value.floatValue ?? 0;
-                                                }
-                                                if (typeof value === 'number') {
-                                                    setTaux(value);
-                                                    formSaisie.setFieldValue('taux', value);
-                                                    return;
-                                                }
-                                                const parsedValue = String(value)
-                                                    .replace(/\s/g, '')
-                                                    .replace(',', '.');
+                                        {/* Mois */}
+                                        <FormControl variant="standard" sx={{ width: 115 }}>
+                                            <InputLabel>Mois</InputLabel>
+                                            <Select
+                                                value={formSaisie.values.valSelectMois}
+                                                onChange={formSaisie.handleChange}
+                                                name="valSelectMois"
+                                            >
+                                                {[...Array(12).keys()].map(m => (
+                                                    <MenuItem key={m + 1} value={m + 1}>
+                                                        {new Date(0, m).toLocaleString('fr-FR', { month: 'long' }).replace(/^./, c => c.toUpperCase())}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
 
-                                                setTaux(parsedValue);
-                                                formSaisie.setFieldValue('taux', parsedValue);
-                                                selectRef.current?.blur();
-                                            }}
+                                        {/* Année */}
+                                        <FormControl variant="standard" sx={{ width: 90 }} style={{ marginRight: '50px' }} >
+                                            <InputLabel>Année</InputLabel>
+                                            <Select
+                                                value={formSaisie.values.valSelectAnnee}
+                                                onChange={formSaisie.handleChange}
+                                                name="valSelectAnnee"
+                                            >
+                                                {listeAnnee.map((year) => (
+                                                    <MenuItem key={year} value={year}>
+                                                        {year}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
 
-                                            disabled={formSaisie.values.choixDevise === "MGA"}
-                                            slotProps={{
-                                                input: {
-                                                    component: FormatedInput,
-                                                    sx: {
-                                                        textAlign: 'right',
+                                        {/* Choix devise */}
+                                        <RadioGroup
+                                            row
+                                            name="choixDevise"
+                                            value={formSaisie.values.choixDevise}
+                                            onChange={formSaisie.handleChange}
+                                        >
+                                            <FormControlLabel value="MGA" control={<Radio />} label="MGA" />
+                                            <FormControlLabel value="Devises" control={<Radio />} label="Autres" />
+                                        </RadioGroup>
+
+                                        {/* Taux de conversion */}
+                                        <Stack spacing={1.5} sx={{ width: 220 }}>
+                                            <InputJoy
+                                                placeholder="Taux"
+                                                type="text"
+                                                name="taux"
+                                                step="0.01"
+                                                value={taux}
+                                                onChange={(e) => {
+                                                    let value = e.target.value;
+                                                    if (typeof value === 'object' && value !== null) {
+                                                        value = value.floatValue ?? 0;
+                                                    }
+                                                    if (typeof value === 'number') {
+                                                        setTaux(value);
+                                                        formSaisie.setFieldValue('taux', value);
+                                                        return;
+                                                    }
+                                                    const parsedValue = String(value)
+                                                        .replace(/\s/g, '')
+                                                        .replace(',', '.');
+
+                                                    setTaux(parsedValue);
+                                                    formSaisie.setFieldValue('taux', parsedValue);
+                                                    selectRef.current?.blur();
+                                                }}
+
+                                                disabled={formSaisie.values.choixDevise === "MGA"}
+                                                slotProps={{
+                                                    input: {
+                                                        component: FormatedInput,
+                                                        sx: {
+                                                            textAlign: 'right',
+                                                        },
                                                     },
+                                                }}
+                                                endDecorator={
+                                                    <>
+                                                        <Divider orientation="vertical" />
+                                                        <SelectJoy
+                                                            ref={selectRef}
+                                                            variant="plain"
+                                                            value={formSaisie.values.currency}
+                                                            onChange={(_, value) => formSaisie.setFieldValue('currency', value)}
+                                                            name="currency"
+                                                            slotProps={{
+                                                                button: {
+                                                                    sx: {
+                                                                        boxShadow: 'none',
+                                                                        outline: 'none',
+                                                                        border: 'none',
+                                                                        '&:focus': { outline: 'none' },
+                                                                        '&:focus-visible': { outline: 'none' },
+                                                                    },
+                                                                },
+                                                                listbox: {
+                                                                    variant: 'plain',
+                                                                    sx: {
+                                                                        zIndex: 2000,
+                                                                    },
+                                                                },
+                                                            }}
+                                                            sx={{
+                                                                mr: -1.5,
+                                                                border: 'none',
+                                                                outline: 'none',
+                                                                boxShadow: 'none',
+                                                                '--Select-focusedThickness': '0px',
+                                                                '--Select-indicator-thickness': '0px',
+                                                                '&:focus': { outline: 'none' },
+                                                                '&:focus-visible': { outline: 'none' },
+                                                            }}
+                                                        >
+                                                            {listeDevise.map((value, index) => (
+                                                                <OptionJoy key={index} value={value.code}>
+                                                                    {`${value.code}`}
+                                                                </OptionJoy>
+                                                            ))}
+                                                        </SelectJoy>
+                                                    </>
+                                                }
+                                                sx={{
+                                                    width: '100%',
+                                                    '& input[type=number]': { MozAppearance: 'textfield' },
+                                                    '& input[type=number]::-webkit-outer-spin-button': { WebkitAppearance: 'none', margin: 0 },
+                                                    '& input[type=number]::-webkit-inner-spin-button': { WebkitAppearance: 'none', margin: 0 },
+                                                }}
+                                            />
+                                        </Stack>
+                                    </Stack>
+
+                                    <Stack
+                                        direction="row"
+                                        alignItems={'center'}
+                                        sx={{ flex: 0.06 }}
+                                        spacing={0.5}
+                                    >
+                                        <Button
+                                            autoFocus
+                                            variant="contained"
+                                            style={{
+                                                height: "39px",
+                                                textTransform: 'none',
+                                                outline: 'none',
+                                                backgroundColor: initial.theme,
+                                                color: "white",
+                                                marginTop: '0px',
+                                            }}
+                                            onClick={addOrUpdateJournal}
+                                            disabled={
+                                                !formSaisie.values.valSelectCodeJnl
+                                                || !formSaisie.values.valSelectMois
+                                                || !formSaisie.values.valSelectAnnee
+                                                || tableRows.length === 0
+                                                || isDisabledAddButton
+                                            }
+                                        >
+                                            {type === 'ajout' ? 'Enregistrer' : 'Modifier'}
+                                        </Button>
+                                        <Tooltip title="Ajouter un nouveau compte">
+                                            <IconButton
+                                                onClick={handleOpenDialogAddNewAccount}
+                                                variant="contained"
+                                                style={{
+                                                    width: "39px", height: '39px',
+                                                    borderRadius: "5px", borderColor: "transparent",
+                                                    backgroundColor: '#4CAF50',
+                                                    textTransform: 'none', outline: 'none'
+                                                }}
+                                            >
+                                                <MdAccountBalance style={{ width: '25px', height: '25px', color: 'white' }} />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </Stack>
+                                </Stack>
+                                <Stack
+                                    width={"100%"}
+                                    style={{
+                                        marginLeft: "0px",
+                                        marginTop: "20px",
+                                    }}
+                                >
+                                    <Stack
+                                        width="100%"
+                                        maxHeight="900px"
+                                        minHeight="600px"
+                                        style={{
+                                            marginLeft: "0px",
+                                        }}
+                                    >
+                                        <DataGrid
+                                            apiRef={apiRef}
+                                            disableMultipleSelection={DataGridStyle.disableMultipleSelection}
+                                            disableColumnSelector={DataGridStyle.disableColumnSelector}
+                                            disableDensitySelector={DataGridStyle.disableDensitySelector}
+                                            disableRowSelectionOnClick
+                                            disableSelectionOnClick={true}
+                                            localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                                            slots={{
+                                                toolbar: QuickFilter,
+                                            }}
+                                            sx={{
+                                                ...DataGridStyle.sx,
+                                                '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+                                                    outline: 'none',
+                                                    border: 'none',
+                                                },
+                                                '& .MuiInputBase-root': {
+                                                    boxShadow: 'none',
+                                                    border: 'none',
+                                                },
+                                                '& .MuiOutlinedInput-notchedOutline': {
+                                                    border: 'none',
+                                                },
+                                                '& .cell-error': {
+                                                    backgroundColor: 'rgba(238, 109, 109, 0.3) ',
+                                                },
+                                                '& .cell-selected': {
+                                                    backgroundColor: '#e0f7fa',
                                                 },
                                             }}
-                                            endDecorator={
-                                                <>
-                                                    <Divider orientation="vertical" />
-                                                    <SelectJoy
-                                                        ref={selectRef}
-                                                        variant="plain"
-                                                        value={formSaisie.values.currency}
-                                                        onChange={(_, value) => formSaisie.setFieldValue('currency', value)}
-                                                        name="currency"
-                                                        slotProps={{
-                                                            button: {
-                                                                sx: {
-                                                                    boxShadow: 'none',
-                                                                    outline: 'none',
-                                                                    border: 'none',
-                                                                    '&:focus': { outline: 'none' },
-                                                                    '&:focus-visible': { outline: 'none' },
-                                                                },
-                                                            },
-                                                            listbox: {
-                                                                variant: 'plain',
-                                                                sx: {
-                                                                    zIndex: 2000,
-                                                                },
-                                                            },
-                                                        }}
-                                                        sx={{
-                                                            mr: -1.5,
-                                                            border: 'none',
-                                                            outline: 'none',
-                                                            boxShadow: 'none',
-                                                            '--Select-focusedThickness': '0px',
-                                                            '--Select-indicator-thickness': '0px',
-                                                            '&:focus': { outline: 'none' },
-                                                            '&:focus-visible': { outline: 'none' },
-                                                        }}
-                                                    >
-                                                        {listeDevise.map((value, index) => (
-                                                            <OptionJoy key={index} value={value.code}>
-                                                                {`${value.code}`}
-                                                            </OptionJoy>
-                                                        ))}
-                                                    </SelectJoy>
-                                                </>
-                                            }
-                                            sx={{
-                                                width: '100%',
-                                                '& input[type=number]': { MozAppearance: 'textfield' },
-                                                '& input[type=number]::-webkit-outer-spin-button': { WebkitAppearance: 'none', margin: 0 },
-                                                '& input[type=number]::-webkit-inner-spin-button': { WebkitAppearance: 'none', margin: 0 },
+                                            processRowUpdate={(newRow, oldRow) => {
+                                                const updatedRows = tableRows.map((row) =>
+                                                    row.id === oldRow.id ? { ...row, ...newRow } : row
+                                                );
+                                                setTableRows(updatedRows);
+                                                return newRow;
                                             }}
+                                            rowHeight={DataGridStyle.rowHeight}
+                                            columnHeaderHeight={DataGridStyle.columnHeaderHeight}
+                                            editMode='row'
+                                            columns={columns}
+                                            rows={tableRows}
+                                            initialState={{
+                                                pagination: {
+                                                    paginationModel: { page: 0, pageSize: 100 },
+                                                },
+                                            }}
+                                            experimentalFeatures={{ newEditingApi: true }}
+                                            pageSizeOptions={[5, 10, 20, 30, 50, 100]}
+                                            pagination={DataGridStyle.pagination}
+                                            columnVisibilityModel={{
+                                                id: false,
+                                            }}
+                                            onRowEditStart={handleRowEditStart}
+                                            onCellClick={handleCellClick}
+                                            onCellKeyDown={handleCellKeyDown}
+                                            getRowId={(row) => row.id}
+                                            rowModesModel={rowModesModel}
+                                            onRowModesModelChange={handleRowModesModelChange}
+                                        />
+                                    </Stack>
+                                    <Typography fontWeight="bold">
+                                        {
+                                            "Débit - Crédit : " + totalFormatted + " " +
+                                            (formSaisie.values.choixDevise === "MGA" ? formSaisie.values.choixDevise : formSaisie.values.currency === null ? '' : formSaisie.values.currency)
+                                        }
+                                    </Typography>
+                                    <Stack
+                                        style={{
+                                            marginBottom: '25px'
+                                        }}
+                                    >
+                                        <DropPDFUploader
+                                            mode={type}
+                                            file={file}
+                                            setFile={setFile}
                                         />
                                     </Stack>
                                 </Stack>
-
-                                <Stack>
-                                    <Button
-                                        autoFocus
-                                        sx={{ flex: 0.06 }}
-                                        variant="contained"
-                                        style={{
-                                            height: "39px",
-                                            textTransform: 'none',
-                                            outline: 'none',
-                                            backgroundColor: initial.theme,
-                                            color: "white",
-                                            marginTop: '0px',
-                                        }}
-                                        onClick={addOrUpdateJournal}
-                                        disabled={!formSaisie.values.valSelectCodeJnl || !formSaisie.values.valSelectMois || !formSaisie.values.valSelectAnnee || tableRows.length === 0 || isDatagridEditing()}
-                                    >
-                                        {type === 'ajout' ? 'Enregistrer' : 'Modifier'}
-                                    </Button>
-                                </Stack>
                             </Stack>
-                            <Stack
-                                width={"100%"}
-                                style={{
-                                    marginLeft: "0px",
-                                    marginTop: "20px",
-                                }}
-                            >
-                                <Stack
-                                    width="100%"
-                                    maxHeight="900px"
-                                    minHeight="600px"
-                                    style={{
-                                        marginLeft: "0px",
-                                    }}
-                                >
-                                    <DataGrid
-                                        apiRef={apiRef}
-                                        disableMultipleSelection={DataGridStyle.disableMultipleSelection}
-                                        disableColumnSelector={DataGridStyle.disableColumnSelector}
-                                        disableDensitySelector={DataGridStyle.disableDensitySelector}
-                                        disableRowSelectionOnClick
-                                        disableSelectionOnClick={true}
-                                        localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
-                                        slots={{
-                                            toolbar: QuickFilter,
-                                        }}
-                                        sx={{
-                                            ...DataGridStyle.sx,
-                                            '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
-                                                outline: 'none',
-                                                border: 'none',
-                                            },
-                                            '& .MuiInputBase-root': {
-                                                boxShadow: 'none',
-                                                border: 'none',
-                                            },
-                                            '& .MuiOutlinedInput-notchedOutline': {
-                                                border: 'none',
-                                            },
-                                            '& .cell-error': {
-                                                backgroundColor: 'rgba(238, 109, 109, 0.3) ',
-                                            },
-                                            '& .cell-selected': {
-                                                backgroundColor: '#e0f7fa',
-                                            },
-                                        }}
-                                        processRowUpdate={(newRow, oldRow) => {
-                                            const updatedRows = tableRows.map((row) =>
-                                                row.id === oldRow.id ? { ...row, ...newRow } : row
-                                            );
-                                            setTableRows(updatedRows);
-                                            return newRow;
-                                        }}
-                                        rowHeight={DataGridStyle.rowHeight}
-                                        columnHeaderHeight={DataGridStyle.columnHeaderHeight}
-                                        editMode='row'
-                                        columns={columns}
-                                        rows={tableRows}
-                                        initialState={{
-                                            pagination: {
-                                                paginationModel: { page: 0, pageSize: 100 },
-                                            },
-                                        }}
-                                        experimentalFeatures={{ newEditingApi: true }}
-                                        pageSizeOptions={[5, 10, 20, 30, 50, 100]}
-                                        pagination={DataGridStyle.pagination}
-                                        columnVisibilityModel={{
-                                            id: false,
-                                        }}
-                                        onRowSelectionModelChange={handleSelectionChange}
-                                        onRowEditStart={handleRowEditStart}
-                                        onCellClick={handleCellClick}
-                                        onCellKeyDown={handleCellKeyDown}
-                                        getRowId={(row) => row.id}
-                                    />
-                                </Stack>
-                                <Typography fontWeight="bold">
-                                    {
-                                        "Débit - Crédit : " + totalFormatted + " " +
-                                        (formSaisie.values.choixDevise === "MGA" ? formSaisie.values.choixDevise : formSaisie.values.currency === null ? '' : formSaisie.values.currency)
-                                    }
-                                </Typography>
-                                <Stack
-                                    style={{
-                                        marginBottom: '25px'
-                                    }}
-                                >
-                                    <DropPDFUploader
-                                        mode={type}
-                                        file={file}
-                                        setFile={setFile}
-                                    />
-                                </Stack>
-                            </Stack>
-                        </Stack>
-                    </TabPanel>
-                </TabContext>
-            </DialogContent>
+                        </TabPanel>
+                    </TabContext>
+                </DialogContent>
 
-            <DialogTitle
-                sx={{
-                    m: 0,
-                    py: 1.5,
-                    px: 2,
-                    bgcolor: "#F9FAFB",
-                    borderTop: "1px solid #ddd",
-                }}
-            >
-                <Box
+                <DialogTitle
                     sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        width: '100%',
+                        m: 0,
+                        py: 1.5,
                         px: 2,
+                        bgcolor: "#F9FAFB",
+                        borderTop: "1px solid #ddd",
                     }}
                 >
-                    <Box sx={{ flex: 0.4, display: 'flex', justifyContent: 'flex-start' }}>
-                        <Typography fontWeight="bold" variant="h6" color="text.primary">
-                            Total
-                        </Typography>
-                    </Box>
-                    <Box sx={{ flex: 0.8 }} />
-                    <Box sx={{ flex: 1.3 }} />
-                    <Box sx={{ flex: 2.7 }} />
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            width: '100%',
+                            px: 2,
+                        }}
+                    >
+                        <Box sx={{ flex: 0.4, display: 'flex', justifyContent: 'flex-start' }}>
+                            <Typography fontWeight="bold" variant="h6" color="text.primary">
+                                Total
+                            </Typography>
+                        </Box>
+                        <Box sx={{ flex: 0.8 }} />
+                        <Box sx={{ flex: 1.3 }} />
+                        <Box sx={{ flex: 2.7 }} />
 
-                    {
-                        (formSaisie.values.choixDevise === 'Devises' && (
-                            <Box sx={{ flex: 1.3 }} />
-                        ))
-                    }
+                        {
+                            (formSaisie.values.choixDevise === 'Devises' && (
+                                <Box sx={{ flex: 1.3 }} />
+                            ))
+                        }
 
-                    <Box sx={{ flex: 1.4, textAlign: 'right', pr: 1 }}>
-                        <Typography fontWeight="bold" variant="subtitle1" >
-                            {totalDebitFormatted}
-                        </Typography>
-                    </Box>
+                        <Box sx={{ flex: 1.4, textAlign: 'right', pr: 1 }}>
+                            <Typography fontWeight="bold" variant="subtitle1" color={'red'} >
+                                {totalDebitFormatted}
+                            </Typography>
+                        </Box>
 
-                    <Box sx={{ flex: 1.3, textAlign: 'right', pr: paddingRightTotal }}>
-                        <Typography fontWeight="bold" variant="subtitle1" >
-                            {totalCreditFormatted}
-                        </Typography>
+                        <Box sx={{ flex: 1.3, textAlign: 'right', pr: paddingRightTotal }}>
+                            <Typography fontWeight="bold" variant="subtitle1" color={'red'} >
+                                {totalCreditFormatted}
+                            </Typography>
+                        </Box>
                     </Box>
-                </Box>
-            </DialogTitle>
-        </BootstrapDialog>
+                </DialogTitle>
+            </BootstrapDialog>
+        </>
     )
 }
 

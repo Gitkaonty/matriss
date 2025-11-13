@@ -24,7 +24,6 @@ import PopupConfirmDelete from '../../popupConfirmDelete';
 import { init } from '../../../../../init';
 
 const DatagridTableDpComMappingDetail = ({ compteId, fileId, exerciceId, etatId, rubriqueId, nature, dComRubriqueData }) => {
-    console.log('rubriqueId : ', rubriqueId);
     let initial = init[0];
     const DataDetail = dComRubriqueData;
     const [compteRubriqueData, setCompteRubriqueData] = useState([]);
@@ -393,12 +392,6 @@ const DatagridTableDpComMappingDetail = ({ compteId, fileId, exerciceId, etatId,
         setSelectedRow([newRow.id]);
         setDisableAddRowBouton(true);
     }
-
-    //récupérer le numéro id le plus grand dans le tableau
-    const getMaxID = (data) => {
-        const Ids = data.map(item => item.id);
-        return Math.max(...Ids);
-    };
 
     const getListeCompteRubriqueAfterUpdating = () => {
         const choixPoste = nature;

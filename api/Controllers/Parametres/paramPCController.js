@@ -90,8 +90,7 @@ const AddCptToPc = async (req, res) => {
       commune
     } = req.body;
 
-    console.log(req.body);
-    
+    // return console.log(req.body);
 
     const DossierParam = await dossiers.findOne({
       where: {
@@ -116,7 +115,7 @@ const AddCptToPc = async (req, res) => {
 
         if (nature === 'General' || nature === 'Collectif') {
           baseauxiliaire = compte;
-          
+
 
           const findedID = await dossierPlanComptable.findOne({
             where:

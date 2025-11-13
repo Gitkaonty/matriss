@@ -1546,7 +1546,6 @@ exports.deleteAllISi = async (req, res) => {
     try {
         const { id_compte, id_dossier, id_exercice } = req.params;
         const { mois, annee } = req.query;
-        console.log(id_compte, id_dossier, id_exercice, mois, annee);
         if (!id_compte) {
             return res.status(400).json({ state: false, message: 'Id_compte non trouvé' });
         }

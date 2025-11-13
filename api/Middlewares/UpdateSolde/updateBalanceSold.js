@@ -1,10 +1,7 @@
-const bcrypt = require("bcrypt");
 const db = require("../../Models");
 require('dotenv').config();
-const Sequelize = require('sequelize');
 const { Op } = require('sequelize');
 
-const journals = db.journals;
 const codejournals = db.codejournals;
 const dossierPlanComptable = db.dossierplancomptable;
 const balances = db.balances;

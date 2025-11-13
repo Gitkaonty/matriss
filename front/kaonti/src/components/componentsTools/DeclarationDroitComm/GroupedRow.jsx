@@ -18,7 +18,6 @@ const GroupedRow = ({ group, columns, initial, verrouillage, handleRowModifClick
 
     return (
         <>
-            {/* Ligne principale du compte avec sous-total */}
             <TableRow hover>
                 <TableCell>
                     <Stack direction="row" alignItems="center" spacing={1}>
@@ -47,7 +46,6 @@ const GroupedRow = ({ group, columns, initial, verrouillage, handleRowModifClick
                 ))}
             </TableRow>
 
-            {/* Lignes détaillées */}
             <TableRow>
                 <TableCell style={{ padding: 0 }} colSpan={columns.length + 2}>
                     <Collapse in={open} timeout="auto" unmountOnExit>

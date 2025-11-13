@@ -195,8 +195,6 @@ const Login = () => {
                         textTransform: 'none',
                         outline: 'none',
                       }}
-                    // onMouseDown={handleMouseDownPassword}
-                    // onMouseDown={null}
                     >
                       {showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
@@ -204,24 +202,6 @@ const Login = () => {
                 }
               />
             </FormControl>
-
-            {/* <Stack alignItems="flex-end" width="100%" mt={-1}>
-                <Typography variant="caption">
-                  <Link
-                    href="#"
-                    sx={{
-                      textDecoration: 'none',
-                      color: 'rgba(0, 34, 107, 0.81)',
-                      '&:hover': {
-                        color: 'rgba(8, 55, 157, 0.81)',
-                        textDecoration: 'none',
-                      },
-                    }}
-                  >
-                    Mot de passe oublié ?
-                  </Link>
-                </Typography>
-              </Stack> */}
 
             <Button
               type="submit"

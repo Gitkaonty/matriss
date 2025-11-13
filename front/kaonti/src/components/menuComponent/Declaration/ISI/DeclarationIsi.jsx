@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Typography, Stack, Box, Tab, Button } from '@mui/material';
-import Tooltip from '@mui/material/Tooltip';
+import { Typography, Stack, Box, Tab } from '@mui/material';
 
 import { TabContext, TabList, TabPanel } from '@mui/lab';
 import InputLabel from '@mui/material/InputLabel';
@@ -16,8 +15,6 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import useAuth from '../../../../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
-
-import { AiTwotoneFileText } from 'react-icons/ai';
 
 import DatagridAnnexeDeclaration from '../../../componentsTools/DeclarationISI/DatagridComponents/Datagrid/DatagridAnnexeDeclaration';
 import DatagridDetailEcritureAssocie from '../../../componentsTools/DeclarationISI/DatagridComponents/Datagrid/DatagridDetailEcritureAssocie';
@@ -88,7 +85,6 @@ export default function DeclarationIsi() {
     const { auth } = useAuth();
     const decoded = auth?.accessToken ? jwtDecode(auth.accessToken) : undefined;
     const compteId = decoded.UserInfo.compteId || null;
-    const userId = decoded.UserInfo.userId || null;
 
     const GetInfosIdDossier = (id) => {
         axios.get(`/home/FileInfos/${id}`).then((response) => {

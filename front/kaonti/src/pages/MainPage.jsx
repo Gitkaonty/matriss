@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { styled, useTheme } from '@mui/material/styles';
 import Box from '@mui/material/Box';
@@ -8,7 +8,6 @@ import Toolbar from '@mui/material/Toolbar';
 import List from '@mui/material/List';
 import CssBaseline from '@mui/material/CssBaseline';
 import Typography from '@mui/material/Typography';
-import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -131,7 +130,6 @@ const ProfileImage = ({ name }) => {
   );
 };
 
-
 export default function HomePage() {
   //Récupérer les données de l'utilisateur
   const { auth } = useAuth();
@@ -141,7 +139,6 @@ export default function HomePage() {
   const decoded = auth?.accessToken
     ? jwtDecode(auth.accessToken)
     : undefined
-  const compteId = decoded.UserInfo.compteId || 0;
 
   const [activeMenu, setActiveMenu] = useState("");
 
@@ -288,7 +285,6 @@ export default function HomePage() {
 
   function handleSubmitMdpChangeFormik(formValues, onSubmittingProps) {
     try {
-      //console.log(formValues);
       onSubmittingProps.resetForm();
     } catch (error) {
       console.error(error);

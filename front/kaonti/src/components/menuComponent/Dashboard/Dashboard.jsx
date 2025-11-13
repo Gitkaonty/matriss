@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Typography, Stack } from '@mui/material';
-import StickyHeadTable from "../../../model/TableModel01";
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
-import { init } from '../../../../init';
 import PopupTestSelectedFile from '../../componentsTools/popupTestSelectedFile';
 import axios from '../../../../config/axios';
 import Box from '@mui/material/Box';
@@ -21,26 +19,28 @@ import LineChartComponent from '../../componentsTools/Dashboard/LineChartCompone
 import useAuth from '../../../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
 import toast from 'react-hot-toast';
-import { isNumber } from '@mui/x-data-grid/internals';
+import VirtualTableJournalAttente from '../../componentsTools/Dashboard/VirtualTableJournalAttente';
 
 const columns = [
-  {
-    id: 'date',
-    label: 'Date',
-    minWidth: 100,
-    width: 100
-  },
-  {
-    id: 'journal',
-    label: 'Jounal',
-    minWidth: 50
-  },
   {
     id: 'compte',
     label: 'Compte',
     minWidth: 120,
     align: 'left',
     format: (value) => value.toLocaleString('fr-FR'),
+  },
+  {
+    id: 'dateecriture',
+    label: 'Date',
+    minWidth: 100,
+    width: 100,
+    isDate: true,
+    format: (value) => value ? format(new Date(value), "dd/MM/yyyy") : "",
+  },
+  {
+    id: 'codejournal',
+    label: 'Jounal',
+    minWidth: 50,
   },
   {
     id: 'piece',
@@ -76,24 +76,7 @@ const columns = [
 const gridHeight = '70vh';
 const gridSpacing = 1;
 
-const rows = [
-  { id: 1, date: '01/01/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "PREL SANS LIBELLE", debit: 1500.41, credit: 0.00 },
-  { id: 2, date: '14/01/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "VIRT VERS AUTRES", debit: 780000.55, credit: 0.00 },
-  { id: 3, date: '27/07/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "VIRT ENCAISSEMENT", debit: 0.00, credit: 300000 },
-  { id: 4, date: '17/12/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "CHQ 04572147", debit: 1500.41, credit: 0.00 },
-  { id: 5, date: '14/01/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "VIRT VERS AUTRES", debit: 780000.55, credit: 0.00 },
-  { id: 6, date: '27/07/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "VIRT ENCAISSEMENT", debit: 0.00, credit: 300000 },
-  { id: 7, date: '17/12/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "CHQ 04572147", debit: 1500.41, credit: 0.00 },
-  { id: 8, date: '14/01/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "VIRT VERS AUTRES", debit: 780000.55, credit: 0.00 },
-  { id: 9, date: '27/07/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "VIRT ENCAISSEMENT", debit: 0.00, credit: 300000 },
-  { id: 10, date: '17/12/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "CHQ 04572147", debit: 1500.41, credit: 0.00 },
-  { id: 11, date: '14/01/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "VIRT VERS AUTRES", debit: 780000.55, credit: 0.00 },
-  { id: 12, date: '27/07/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "VIRT ENCAISSEMENT", debit: 0.00, credit: 300000 },
-  { id: 13, date: '17/12/2023', journal: 'BQ', compte: 471000, piece: 3287263, libelle: "CHQ 04572147", debit: 1500.41, credit: 0.00 }
-];
-
 export default function DashboardComponent() {
-  let initial = init[0];
   const [fileInfos, setFileInfos] = useState('');
   const [noFile, setNoFile] = useState(false);
   const navigate = useNavigate();
@@ -161,6 +144,8 @@ export default function DashboardComponent() {
   const [variationTresorerieCaisseN1, setVariationDTresorerieCaisseN1] = useState(0);
   const [evolutionTresorerieCaisseN, setEvolutionTresorerieCaisseN] = useState('');
   const [evolutionTresorerieCaisseN1, setEvolutionTresorerieCaisseN1] = useState('');
+
+  const [journalData, setJournalData] = useState([]);
 
   const GetListeDossier = (id) => {
     axios.get(`/home/FileInfos/${id}`).then((response) => {
@@ -242,7 +227,6 @@ export default function DashboardComponent() {
   const getAllInfo = () => {
     axios.get(`/dashboard/getAllInfo/${Number(compteId)}/${Number(fileId)}/${Number(selectedExerciceId)}`)
       .then((response) => {
-        console.log(response?.data);
         if (response?.data?.state) {
           setChiffresAffairesNGraph(response?.data?.chiffreAffaireN);
           setChiffresAffairesN1Graph(response?.data?.chiffreAffaireN1);
@@ -299,80 +283,24 @@ export default function DashboardComponent() {
         console.error(err);
         toast.error(err?.response?.data?.message || err?.message || "Erreur inconnue");
       });
+  }
 
+  const getListeJournalEnAttente = () => {
+    axios.get(`/dashboard/getListeJournalEnAttente/${Number(compteId)}/${Number(fileId)}/${Number(selectedExerciceId)}`)
+      .then((response) => {
+        if (response?.data) {
+          setJournalData(response?.data);
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+        toast.error(err?.response?.data?.message || err?.message || "Erreur inconnue");
+      });
   }
 
   const xAxis = [
     "Jan", "Fév", "Mar", "Avr", "Mai", "Juin",
     "Juil", "Août", "Sep", "Oct", "Nov", "Déc"
-  ];
-
-  const cards = [
-    {
-      text: 'Résultat',
-      type: 'total',
-      montant: '$5000',
-      backgroundColor: '#80f2c7',
-      resultatN,
-      resultatN1,
-    },
-    {
-      text: "Chiffre d'affaires",
-      type: 'comparaison',
-      pourcentage: '10',
-      variation: 'augmentation',
-      backgroundColor: '#80f2c7',
-      resultatN: resultatChiffreAffaireN,
-      resultatN1: resultatChiffreAffaireN1,
-      variationN: variationChiffreAffaireN,
-      variationN1: variationChiffreAffaireN1,
-      evolutionN: evolutionChiffreAffaireN,
-      evolutionN1: evolutionChiffreAffaireN1,
-    },
-    {
-      text: 'Dépenses (Achats)',
-      type: 'comparaison',
-      backgroundColor: '#e8775a',
-      resultatN: resultatDepenseAchatN,
-      resultatN1: resultatDepenseAchatN1,
-      variationN: variationDepenseAchatN,
-      variationN1: variationDepenseAchatN1,
-      evolutionN: evolutionDepenseAchatN,
-      evolutionN1: evolutionDepenseAchatN1,
-    },
-    {
-      text: 'Dépenses salariales',
-      type: 'comparaison',
-      backgroundColor: '#e8775a',
-      resultatN: resultatDepenseSalarialeN,
-      resultatN1: resultatDepenseSalarialeN1,
-      variationN: variationDepenseSalarialeN,
-      variationN1: variationDepenseSalarialeN1,
-      evolutionN: evolutionDepenseSalarialeN,
-      evolutionN1: evolutionDepenseSalarialeN1,
-    },
-    {
-      text: 'Trésoreries (Banques)',
-      type: 'comparaison',
-      backgroundColor: '#5a98e8',
-      resultatN: resultatTresorerieBanqueN,
-      resultatN1: resultatTresorerieBanqueN1,
-      variationN: variationTresorerieBanqueN,
-      variationN1: variationTresorerieBanqueN1,
-      evolutionN: evolutionTresorerieBanqueN,
-      evolutionN1: evolutionTresorerieBanqueN1,
-    },
-    {
-      text: 'Trésoreries (Caisses)',
-      type: 'comparaison',
-      backgroundColor: '#5a98e8',
-      resultatN: resultatTresorerieCaisseN,
-      resultatN1: resultatTresorerieCaisseN1,
-      variationN: variationTresorerieCaisseN,
-      variationN1: variationTresorerieCaisseN1,
-      evolutionN: evolutionTresorerieCaisseN,
-      evolutionN1: evolutionTresorerieCaisseN1,
-    },
   ];
 
   useEffect(() => {
@@ -400,6 +328,7 @@ export default function DashboardComponent() {
   useEffect(() => {
     if (compteId && fileId && selectedExerciceId) {
       getAllInfo();
+      getListeJournalEnAttente();
     }
   }, [compteId, fileId, selectedExerciceId]);
 
@@ -579,7 +508,7 @@ export default function DashboardComponent() {
                     text={'Résultat'}
                     type={'total'}
                     montant={'$5000'}
-                    backgroundColor={'#80f2c7'}
+                    backgroundColor={'#289c70'}
                     resultatN={resultatN}
                     resultatN1={resultatN1}
                   />
@@ -588,7 +517,7 @@ export default function DashboardComponent() {
                     type={'comparaison'}
                     pourcentage={'10'}
                     variation={'augmentation'}
-                    backgroundColor={'#80f2c7'}
+                    backgroundColor={'#289c70'}
                     resultatN={resultatChiffreAffaireN}
                     resultatN1={resultatChiffreAffaireN1}
                     variationN={variationChiffreAffaireN}
@@ -607,7 +536,7 @@ export default function DashboardComponent() {
                   <DashboardCard
                     text={'Dépenses (Achats)'}
                     type={'comparaison'}
-                    backgroundColor={'#e8775a'}
+                    backgroundColor={'#c95e42'}
                     resultatN={resultatDepenseAchatN}
                     resultatN1={resultatDepenseAchatN1}
                     variationN={variationDepenseAchatN}
@@ -618,7 +547,7 @@ export default function DashboardComponent() {
                   <DashboardCard
                     text={'Dépenses salariales'}
                     type={'comparaison'}
-                    backgroundColor={'#e8775a'}
+                    backgroundColor={'#c95e42'}
                     resultatN={resultatDepenseSalarialeN}
                     resultatN1={resultatDepenseSalarialeN1}
                     variationN={variationDepenseSalarialeN}
@@ -637,7 +566,7 @@ export default function DashboardComponent() {
                   <DashboardCard
                     text={'Trésoreries (Banques)'}
                     type={'comparaison'}
-                    backgroundColor={'#5a98e8'}
+                    backgroundColor={'#407dc9'}
                     resultatN={resultatTresorerieBanqueN}
                     resultatN1={resultatTresorerieBanqueN1}
                     variationN={variationTresorerieBanqueN}
@@ -648,7 +577,7 @@ export default function DashboardComponent() {
                   <DashboardCard
                     text={'Trésoreries (Caisse)'}
                     type={'comparaison'}
-                    backgroundColor={'#5a98e8'}
+                    backgroundColor={'#407dc9'}
                     resultatN={resultatTresorerieCaisseN}
                     resultatN1={resultatTresorerieCaisseN1}
                     variationN={variationTresorerieCaisseN}
@@ -661,7 +590,7 @@ export default function DashboardComponent() {
             </Stack>
 
             <Typography variant='h5' sx={{ color: "black" }} align='left'>Comptes en attente</Typography>
-            <StickyHeadTable tableHeader={columns} tableRow={rows} />
+            <VirtualTableJournalAttente tableHeader={columns} tableRow={journalData} />
           </Stack>
         </TabPanel>
       </TabContext>

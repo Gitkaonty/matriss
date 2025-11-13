@@ -1,4 +1,4 @@
-import { React, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Typography, Stack, TextField, FormControl, Tooltip, Box, Input } from '@mui/material';
 import Button from '@mui/material/Button';
 import { styled } from '@mui/material/styles';
@@ -54,7 +54,6 @@ const popupAjustRubriqueEvcpEtatFinancier = ({ actionState, row, column, setIsRe
                     ? 'RESULT'
                     : 'REPORT';
     const [listAjust, setListAjust] = useState([]);
-    const [totalNet, setTotalNet] = useState(0);
     const [totalAjustement, setTotalAjustement] = useState(0);
     const [stateUpdateTable, setStateUpdateTable] = useState({ tableName: '', state: false });
     const [headerLabel, setHeaderLabel] = useState('');
@@ -137,7 +136,6 @@ const popupAjustRubriqueEvcpEtatFinancier = ({ actionState, row, column, setIsRe
                             }}
                             type="text"
                             value={formDataFinal.motif}
-                            //onChange = {(e) => formData.setFieldValue('motif', e.target.value)}
                             onChange={handleChange}
                             label="motif"
                             name="motif"
@@ -183,7 +181,7 @@ const popupAjustRubriqueEvcpEtatFinancier = ({ actionState, row, column, setIsRe
                     }}
                 />
             ),
-            renderEditCell: (params) => {
+            renderEditCell: () => {
                 return (
                     <TextField
                         size="small"
@@ -266,7 +264,6 @@ const popupAjustRubriqueEvcpEtatFinancier = ({ actionState, row, column, setIsRe
     };
 
     const handleEditClick = (id) => () => {
-        //charger dans le formik les données de la ligne
         const selectedRowInfos = listAjust?.filter((item) => item.id === id[0]);
 
         setFormDataFinal((prev) => ({
@@ -292,7 +289,6 @@ const popupAjustRubriqueEvcpEtatFinancier = ({ actionState, row, column, setIsRe
             [id]: { mode: GridRowModes.View, ignoreModifications: true },
         });
 
-        //setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
         const newFormDataFinal = { ...formDataFinal, state: true };
         axios.post(`/administration/etatFinancier/addModifyAjustementExterne`, newFormDataFinal).then((response) => {
             const resData = response.data;
@@ -386,14 +382,12 @@ const popupAjustRubriqueEvcpEtatFinancier = ({ actionState, row, column, setIsRe
             setDisableModifyBouton(true);
             setDisableSaveBouton(true);
             setDisableCancelBouton(true);
-            //toast.error("sélectionnez une seule ligne pour pouvoir la modifier");
         } else {
             setDisableModifyBouton(false);
             setDisableSaveBouton(false);
             setDisableCancelBouton(false);
             if (!selectedRowId.includes(params.id)) {
                 setEditableRow(false);
-                //toast.error("sélectionnez une ligne pour pouvoir la modifier");
             } else {
                 setEditableRow(true);
             }
@@ -431,15 +425,6 @@ const popupAjustRubriqueEvcpEtatFinancier = ({ actionState, row, column, setIsRe
         setSelectedRow([newRow.id]);
         setDisableAddRowBouton(true);
     }
-
-    const getMaxID = (data) => {
-        if (data.length > 0) {
-            const Ids = data.map(item => item.id);
-            return Math.max(...Ids);
-        } else {
-            return 0;
-        }
-    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;

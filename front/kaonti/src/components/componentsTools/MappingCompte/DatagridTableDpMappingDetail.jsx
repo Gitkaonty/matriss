@@ -225,10 +225,9 @@ const DatagridTableDpMappingDetail = ({ compteId, fileId, exerciceId, etatId, ru
             align: 'center',
             headerClassName: 'HeaderbackColor',
             editable: editableRow,
-            renderEditCell: (params) => {
+            renderEditCell: () => {
                 return (
                     <Checkbox
-                        // value={formNewParam.values.active}
                         checked={formNewParam.values.active}
                         type="checkbox"
                         onChange={(e) => handleCheckboxChange(e.target.checked)}
@@ -447,12 +446,6 @@ const DatagridTableDpMappingDetail = ({ compteId, fileId, exerciceId, etatId, ru
         setSelectedRow([newRow.id]);
         setDisableAddRowBouton(true);
     }
-
-    //récupérer le numéro id le plus grand dans le tableau
-    const getMaxID = (data) => {
-        const Ids = data.map(item => item.id);
-        return Math.max(...Ids);
-    };
 
     const getListeCompteRubriqueAfterUpdating = () => {
         const choixPoste = nature;

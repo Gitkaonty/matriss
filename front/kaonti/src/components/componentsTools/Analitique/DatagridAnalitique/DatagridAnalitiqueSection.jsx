@@ -15,8 +15,6 @@ import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes } from '@mui/x-dat
 import QuickFilter from '../../../componentsTools/DatagridToolsStyle';
 import { TfiSave } from 'react-icons/tfi';
 
-import getSectionColumns from '../DatagridColumnsAnalitique/DatagridColumnSection.jsx';
-
 import { useFormik } from 'formik';
 import * as Yup from "yup";
 
@@ -369,7 +367,6 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
             });
 
             const dataToSend = { ...formNewParam.values, compteId: id_compte, fileId: id_dossier, axeId: selectedRowAxeId[0] };
-            console.log('dataToSend : ', dataToSend);
 
             axios.post(`/paramCa/addOrUpdateSections`, dataToSend).then((response) => {
                 const resData = response.data;
@@ -656,7 +653,6 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
                         slots={{ toolbar: QuickFilter }}
                         sx={{
                             ...DataGridStyle.sx,
-                            // paddingTop: '30px',
                             '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
                                 outline: 'none',
                                 border: 'none',

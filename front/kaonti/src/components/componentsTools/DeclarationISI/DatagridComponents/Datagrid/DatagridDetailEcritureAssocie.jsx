@@ -179,7 +179,6 @@ const DatagridDetailEcritureAssocie = ({
                 >
                     <Stack
                         width={"100%"}
-                        // height={'80%'}
                         style={{
                             marginLeft: "0px",
                             marginTop: "20px",

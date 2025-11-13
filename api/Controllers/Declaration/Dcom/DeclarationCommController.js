@@ -196,7 +196,6 @@ exports.deleteOneCommByType = async (req, res) => {
             })
         }
 
-        // return console.log(req.body);
         if (type === 'SVT' || type === 'ADR' || type === 'AC' || type === 'AI' || type === 'DEB') {
             const droitCommAData = droitcommas.findByPk(id);
             if (!droitCommAData) {
@@ -464,7 +463,6 @@ exports.updateDroitCommPlp = async (req, res) => {
 exports.importdroitCommA = async (req, res) => {
     try {
         const { data } = req.body;
-        console.log('data : ', data);
 
         if (!data || !Array.isArray(data)) {
             return res.status(400).json({ state: false, message: "Données manquantes ou invalides" });

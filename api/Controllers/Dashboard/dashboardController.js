@@ -1,5 +1,6 @@
 const db = require("../../Models");
 const { journals, exercices, dossierplancomptable: DossierPlan, codejournals } = db;
+const { Op } = require("sequelize");
 const recupExerciceN1 = require('../../Middlewares/Standard/recupExerciceN1');
 
 function getMonthsBetween(startDate, endDate) {
@@ -26,7 +27,7 @@ function calculateChiffreAffaire(data, months) {
         item => item.compte && item.compte.toString().startsWith('70')
     );
 
-    return months.map(({ month, year }) => {
+    const monthlyTotals = months.map(({ month, year }) => {
         const entries = mappedData.filter(entry => {
             const date = new Date(entry.dateecriture);
             return date.getMonth() === month && date.getFullYear() === year;
@@ -40,6 +41,14 @@ function calculateChiffreAffaire(data, months) {
 
         return round2(total);
     });
+
+    let runningTotal = 0;
+    const cumulativeTotals = monthlyTotals.map(total => {
+        runningTotal += total;
+        return round2(runningTotal);
+    });
+
+    return cumulativeTotals;
 }
 
 function calculateMargeBrute(data, months) {
@@ -47,7 +56,7 @@ function calculateMargeBrute(data, months) {
         item => item.compte && item.compte.toString().startsWith('60')
     );
 
-    return months.map(({ month, year }) => {
+    const monthlyTotals = months.map(({ month, year }) => {
         const entries = mappedData.filter(entry => {
             const date = new Date(entry.dateecriture);
             return date.getMonth() === month && date.getFullYear() === year;
@@ -61,6 +70,14 @@ function calculateMargeBrute(data, months) {
 
         return round2(total);
     });
+
+    let runningTotal = 0;
+    const cumulativeTotals = monthlyTotals.map(total => {
+        runningTotal += total;
+        return round2(runningTotal);
+    });
+
+    return cumulativeTotals;
 }
 
 function calculateTresorerieBanque(data, months) {
@@ -68,7 +85,7 @@ function calculateTresorerieBanque(data, months) {
         item => item.compte && item.compte.toString().startsWith('512')
     );
 
-    return months.map(({ month, year }) => {
+    const monthlyTotals = months.map(({ month, year }) => {
         const entries = mappedData.filter(entry => {
             const date = new Date(entry.dateecriture);
             return date.getMonth() === month && date.getFullYear() === year;
@@ -82,6 +99,14 @@ function calculateTresorerieBanque(data, months) {
 
         return round2(total);
     });
+
+    let runningTotal = 0;
+    const cumulativeTotals = monthlyTotals.map(total => {
+        runningTotal += total;
+        return round2(runningTotal);
+    });
+
+    return cumulativeTotals;
 }
 
 function calculateTresorerieCaisse(data, months) {
@@ -89,7 +114,7 @@ function calculateTresorerieCaisse(data, months) {
         item => item.compte && item.compte.toString().startsWith('53')
     );
 
-    return months.map(({ month, year }) => {
+    const monthlyTotals = months.map(({ month, year }) => {
         const entries = mappedData.filter(entry => {
             const date = new Date(entry.dateecriture);
             return date.getMonth() === month && date.getFullYear() === year;
@@ -103,6 +128,14 @@ function calculateTresorerieCaisse(data, months) {
 
         return round2(total);
     });
+
+    let runningTotal = 0;
+    const cumulativeTotals = monthlyTotals.map(total => {
+        runningTotal += total;
+        return round2(runningTotal);
+    });
+
+    return cumulativeTotals;
 }
 
 function calculateResultat(data) {
@@ -466,9 +499,7 @@ exports.getAllInfo = async (req, res) => {
 
             resultatN,
             resultatN1,
-
-            // moisN,
-            // moisN1,
+            
             state: true,
         });
     } catch (error) {
@@ -476,3 +507,52 @@ exports.getAllInfo = async (req, res) => {
         return res.status(500).json({ message: "Erreur serveur", state: false, error: error.message });
     }
 };
+
+exports.getListeJournalEnAttente = async (req, res) => {
+    try {
+        const { id_dossier, id_compte, id_exercice } = req.params;
+        if (!id_compte || !id_dossier || !id_exercice) {
+            return res.status(400).json({ state: false, message: 'Paramètres manquants' });
+        }
+
+        const journaleEnAttente = await journals.findAll({
+            wherer: {
+                id_dossier,
+                id_compte,
+                id_exercice,
+            },
+            include: [
+                {
+                    model: DossierPlan,
+                    attributes: ['compte'],
+                    where: {
+                        id_dossier,
+                        id_compte,
+                        compte: { [Op.like]: `47%` },
+                    },
+                    required: true
+                },
+                {
+                    model: codejournals,
+                    attributes: ['code']
+                }
+            ],
+            order: [['dateecriture', 'ASC']]
+        })
+
+        const journalMapped = journaleEnAttente.map((j) => {
+            const { dossierplancomptable, codejournal, ...rest } = j.toJSON();
+            return {
+                ...rest,
+                compte: dossierplancomptable?.compte,
+                codejournal: codejournal?.code
+            }
+        })
+
+        return res.status(200).json(journalMapped);
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Erreur serveur", state: false, error: error.message });
+    }
+}

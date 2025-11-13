@@ -122,7 +122,6 @@ const PopupAjustRubriqueDRFEbilan = ({ actionState, row, column, value }) => {
                             }}
                             type="text"
                             value={formDataFinal.motif}
-                            //onChange = {(e) => formData.setFieldValue('motif', e.target.value)}
                             onChange={handleChange}
                             label="motif"
                             name="motif"
@@ -206,19 +205,6 @@ const PopupAjustRubriqueDRFEbilan = ({ actionState, row, column, value }) => {
         },
     ]
 
-    //update formData par les informations reçues
-    // useEffect(() => {
-    //     setFormDataFinal((prev) => ({
-    //         ...prev,
-    //         compteId: row.id_compte,
-    //         fileId: row.id_dossier,
-    //         exerciceId: row.id_exercice,
-    //         rubriqueId: row.id_rubrique,
-    //         etatId: row.id_etat,
-    //         nature: nature,
-    //     }));
-    // },[row]);
-
     const getInfosAjust = (compteId, dossierId, exerciceId, etatId, rubriqueId, nature) => {
         axios.get(`declaration/ebilan/listeAjust`, {
             params: {
@@ -290,7 +276,6 @@ const PopupAjustRubriqueDRFEbilan = ({ actionState, row, column, value }) => {
             [id]: { mode: GridRowModes.View, ignoreModifications: true },
         });
 
-        //setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
         const newFormDataFinal = { ...formDataFinal, state: true };
         axios.post(`/declaration/ebilan/addModifyAjust`, newFormDataFinal).then((response) => {
             const resData = response.data;
@@ -382,14 +367,12 @@ const PopupAjustRubriqueDRFEbilan = ({ actionState, row, column, value }) => {
             setDisableModifyBouton(true);
             setDisableSaveBouton(true);
             setDisableCancelBouton(true);
-            //toast.error("sélectionnez une seule ligne pour pouvoir la modifier");
         } else {
             setDisableModifyBouton(false);
             setDisableSaveBouton(false);
             setDisableCancelBouton(false);
             if (!selectedRowId.includes(params.id)) {
                 setEditableRow(false);
-                //toast.error("sélectionnez une ligne pour pouvoir la modifier");
             } else {
                 setEditableRow(true);
             }
@@ -717,18 +700,6 @@ const PopupAjustRubriqueDRFEbilan = ({ actionState, row, column, value }) => {
 
                 </DialogContent>
                 <DialogActions>
-                    {/* <Button autoFocus
-                        variant='outlined'
-                        style={{backgroundColor:"transparent", 
-                            color:initial.theme, 
-                            width:"100px", 
-                            textTransform: 'none', 
-                            //outline: 'none',
-                        }}
-                        onClick={handleClose}
-                        >
-                            Annuler
-                    </Button> */}
                     <Button autoFocus
                         onClick={handleClose}
                         style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}

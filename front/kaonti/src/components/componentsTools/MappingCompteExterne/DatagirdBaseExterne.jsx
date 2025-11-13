@@ -17,8 +17,6 @@ import axios from '../../../../config/axios';
 import QuickFilter, { DataGridStyle } from '../DatagridToolsStyle';
 import PopupConfirmDelete from '../popupConfirmDelete';
 
-const initial = init[0];
-
 const listType = [
     { value: "RUBRIQUE", label: "Rubrique" },
     { value: "TITRE", label: "Titre" },
@@ -96,7 +94,7 @@ const DatagirdBaseExterne = ({ row_id, tableRow, compteId, fileId, exerciceId, i
             align: 'left',
             headerClassName: 'HeaderbackColor',
             editable: editableRow,
-            renderEditCell: (params) => {
+            renderEditCell: () => {
                 return (
                     <FormControl fullWidth style={{ height: '100%' }}>
                         <Input
@@ -127,7 +125,7 @@ const DatagirdBaseExterne = ({ row_id, tableRow, compteId, fileId, exerciceId, i
             align: 'left',
             headerClassName: 'HeaderbackColor',
             editable: editableRow,
-            renderEditCell: (params) => {
+            renderEditCell: () => {
                 return (
                     <FormControl fullWidth style={{ height: '100%' }}>
                         <Input
@@ -162,7 +160,7 @@ const DatagirdBaseExterne = ({ row_id, tableRow, compteId, fileId, exerciceId, i
                 const selectedType = listType?.find((option) => option.value === params.value);
                 return selectedType ? selectedType.label : params.label;
             },
-            renderEditCell: (params) => {
+            renderEditCell: () => {
                 return (
                     <FormControl fullWidth>
                         <Select
@@ -228,7 +226,6 @@ const DatagirdBaseExterne = ({ row_id, tableRow, compteId, fileId, exerciceId, i
             renderEditCell: (params) => {
                 return (
                     <Checkbox
-                        // value={formNewParam.values.active}
                         checked={formNewParam.values.active}
                         type="checkbox"
                         onChange={(e) => handleCheckboxChange(e.target.checked)}
@@ -272,12 +269,10 @@ const DatagirdBaseExterne = ({ row_id, tableRow, compteId, fileId, exerciceId, i
     };
 
     const handleEditClick = (id) => () => {
-        //réinitialiser les couleurs des champs
         setIdRubriqueValidationColor('transparent');
         setLibelleValidationColor('transparent');
         setTypeValidationColor('transparent');
         setOrdreValidationColor('transparent');
-        //charger dans le formik les données de la ligne
         const selectedRowInfos = tableRow?.filter((item) => item.id === id[0]);
 
         if (selectedRowInfos[0]?.par_default) {
@@ -380,7 +375,7 @@ const DatagirdBaseExterne = ({ row_id, tableRow, compteId, fileId, exerciceId, i
                 if (idToDelete < 0) {
                     setOpenDialogDeleteRow(false);
                     setTableRow(tableRow.filter((row) => row.id !== idToDelete));
-                    toast.success('Ligne supprimé avec succès')
+                    toast.success('Ligne supprimé avec succès');
                     return;
                 }
 
@@ -521,7 +516,7 @@ const DatagirdBaseExterne = ({ row_id, tableRow, compteId, fileId, exerciceId, i
 
                     <Stack width={"50%"} height={"30px"} spacing={2} alignItems={"left"} alignContent={"left"}
                         direction={"row"} justifyContent={"left"}>
-                        <Typography variant='h7' sx={{ color: "rgba(5,96,116,0.60)" }} align='left'>Liste des rubriques</Typography>
+                        <Typography variant='h7' sx={{ color: "rgba(5,96,116,0.60)" }} align='left'>Liste des rubriques extèrnes</Typography>
                     </Stack>
                 </Stack>
 

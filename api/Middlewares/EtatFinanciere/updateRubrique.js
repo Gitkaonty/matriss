@@ -7,7 +7,7 @@ const balances = db.balances;
 const compteRubriquesExternes = db.compteRubriquesExternes;
 const rubriquesExternes = db.rubriquesExternes;
 
-const updateRubrique = async (id_compte, id_dossier, id_exercice) => {
+const updateRubrique = async (id_compte, id_dossier, id_exercice, id_etat) => {
     try {
         const rubriqueExternesData = await rubriquesExternes.findAll({
             where: {
@@ -26,7 +26,8 @@ const updateRubrique = async (id_compte, id_dossier, id_exercice) => {
                 id_compte,
                 id_exercice,
                 active: true,
-                id_etat: { [Op.in]: rubriqueExternesData.map(r => r.id_etat) },
+                // id_etat: { [Op.in]: rubriqueExternesData.map(r => r.id_etat) },
+                id_etat,
                 id_rubrique: {
                     [Op.in]: rubriqueExternesData
                         .filter(r => ['RUBRIQUE', 'SOUS-RUBRIQUE'].includes(r.type))
@@ -42,10 +43,8 @@ const updateRubrique = async (id_compte, id_dossier, id_exercice) => {
             return c.id_etat === c.tableau && rubrique && ['RUBRIQUE', 'SOUS-RUBRIQUE'].includes(rubrique.type);
         });
 
-        // return compteRubriqueExterneDataFiltered;
-
         for (const compteRubrique of compteRubriqueExterneDataFiltered) {
-            const { id_rubrique, id_etat, compte, senscalcul, condition, nature, equation } = compteRubrique;
+            const { id_rubrique, id_etat, compte, senscalcul, condition, nature } = compteRubrique;
 
             let column = null;
             if (id_etat === 'BILAN_ACTIF' && nature === 'BRUT') column = 'rubriquebilanactifbrutexterne';
@@ -83,17 +82,17 @@ const updateRubrique = async (id_compte, id_dossier, id_exercice) => {
 
             for (const balance of balancesData) {
                 const { soldedebit, soldecredit } = balance;
+
                 let solde = 0;
 
                 if (senscalcul === "D-C") {
-                    solde = soldedebit - soldecredit;
-                    if (condition === "SiD" && solde <= 0) solde = 0;
-                    else if (condition === "SiC" && solde >= 0) solde = 0;
+                    solde = soldedebit;
                 } else if (senscalcul === "C-D") {
-                    solde = soldecredit - soldedebit;
-                    if (condition === "SiD" && solde >= 0) solde = 0;
-                    else if (condition === "SiC" && solde <= 0) solde = 0;
+                    solde = soldecredit;
                 }
+
+                if (condition === "SiD" && solde <= 0) solde = 0;
+                else if (condition === "SiC" && solde >= 0) solde = 0;
 
                 const rubriqueFinale = solde === 0 ? 0 : id_rubrique;
 

@@ -1,4 +1,3 @@
-const bcrypt = require("bcrypt");
 const db = require("../../Models");
 require('dotenv').config();
 const Sequelize = require('sequelize');
@@ -20,18 +19,11 @@ const compterubriques = db.compterubriques;
 const compterubriquematrices = db.compterubriquematrices;
 const situations = db.situations;
 
-const liassebhiapcs = db.liassebhiapcs;
-const liassedas = db.liassedas;
 const liassedps = db.liassedps;
 const liassedrfs = db.liassedrfs;
-const liasseeiafncs = db.liasseeiafncs;
 const liasseevcps = db.liasseevcps;
-const liassempautres = db.liassempautres;
-const liassemps = db.liassemps;
-const liassenotes = db.liassenotes;
 const liassesads = db.liassesads;
 const liassesdrs = db.liassesdrs;
-const liasseses = db.liasseses;
 
 const rubriquesExternes = db.rubriquesExternes;
 const compteRubriquesExternes = db.compteRubriquesExternes;
@@ -233,8 +225,8 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
       type: item.type,
       ordre: item.ordre,
       subtable: item.subtable,
-      par_default: item.par_default,
-      active: item.active,
+      par_default: true,
+      active: true,
     })
   })
 
@@ -251,8 +243,8 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
       senscalcul: item.senscalcul,
       condition: item.condition,
       equation: item.equation,
-      par_default: item.par_default,
-      active: item.active,
+      par_default: true,
+      active: true,
     })
   })
 

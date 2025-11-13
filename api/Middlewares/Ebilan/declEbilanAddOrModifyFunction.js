@@ -1,13 +1,8 @@
-const bcrypt = require("bcrypt");
 const db = require("../../Models");
 require('dotenv').config();
-const Sequelize = require('sequelize');
-const { Op } = require('sequelize');
 
 const rubriques = db.rubriques;
 const rubriquesmatrices = db.rubriquesmatrices;
-const compterubriques = db.compterubriques;
-const compterubriquematrices = db.compterubriquematrices;
 
 const liassebhiapcs = db.liassebhiapcs;
 const liassedas = db.liassedas;

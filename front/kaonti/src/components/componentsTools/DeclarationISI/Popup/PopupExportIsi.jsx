@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import {
     Dialog,
     DialogContent,
@@ -15,7 +15,6 @@ import {
 
 import CloseIcon from "@mui/icons-material/Close";
 import toast from "react-hot-toast";
-import { init } from "../../../../../init";
 
 import DatagridHistoriqueISI from "../DatagridComponents/Datagrid/DatagridHistoriqueISI";
 import DatagridColumnsHistoriqueISI from "../DatagridHeaders/DatagridColumnsHistoriqueISI";
@@ -27,7 +26,6 @@ import { TbFileTypeCsv } from "react-icons/tb";
 import axios from "../../../../../config/axios";
 import { URL } from "../../../../../config/axios";
 
-const initial = init[0];
 const DATAGRID_HEIGHT = "490px"
 
 const PopupExportIsi = ({ open, onClose, compteId, fileId, selectedExerciceId, valSelectMois, valSelectAnnee, historiqueIsi, handleRefresheHistorique, setHistoriqueIsi }) => {
@@ -81,13 +79,10 @@ const PopupExportIsi = ({ open, onClose, compteId, fileId, selectedExerciceId, v
         <Dialog
             open={open}
             onClose={onClose}
-            // maxWidth={alignment === 'PDF' || alignment === 'EXCEL' ? 'sm' : 'md'}
             PaperProps={{
                 sx: {
-                    // width: selectedHisto === 'PDF' || selectedHisto === 'EXCEL' ? 400 : 1000,
                     width: 1000,
                     maxWidth: '95%',
-                    // ...(selectedHisto !== 'PDF' && selectedHisto !== 'EXCEL' && { height: 650 }),
                     height: 685
                 },
             }}

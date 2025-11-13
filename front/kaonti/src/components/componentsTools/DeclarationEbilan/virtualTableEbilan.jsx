@@ -114,14 +114,20 @@ const VirtualTableEbilan = ({ refreshTable, columns, rows, noCollapsible, state,
     return total;
   };
 
-  const columnWidths = columns.reduce((acc, column) => {
-    acc[column.id] = column.minWidth;
-    return acc;
-  }, {});
-
   return (
     <Box sx={{ width: '100%', padding: 0, margin: 0 }}>
-      {openTableDetail ? <PopupAjustRubriqueEbilan actionState={handleRefreshTableAjust} row={detailRow} column={detailColumnHeader} value={detailValue} dataAjust={[]} /> : null}
+      {
+        openTableDetail ?
+          <PopupAjustRubriqueEbilan
+            actionState={handleRefreshTableAjust}
+            row={detailRow}
+            column={detailColumnHeader}
+            value={detailValue}
+            dataAjust={[]}
+          />
+          :
+          null
+      }
 
       <TableContainer component={Paper} sx={{ width: '100%', overflowX: 'auto' }}>
         <Table sx={{ width: '100%', border: '1px solid #ddd', }} aria-label="simple table">

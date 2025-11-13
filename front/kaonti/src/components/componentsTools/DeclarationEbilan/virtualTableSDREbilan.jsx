@@ -9,12 +9,10 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import { init } from '../../../../init';
-import { Box, Button, Chip, Collapse, IconButton, Typography } from '@mui/material';
+import { Box, Chip, Collapse, IconButton, Typography } from '@mui/material';
 import AddBoxIcon from '@mui/icons-material/AddBox';
 import IndeterminateCheckBoxIcon from '@mui/icons-material/IndeterminateCheckBox';
-import { CgDetailsMore } from "react-icons/cg";
 import { RiExchangeBoxFill } from "react-icons/ri";
-import toast from 'react-hot-toast';
 import PopupAjustRubriqueSDREbilan from '../FormulaireModifTableauEbilan/popupAjustRubriqueSDREbilan';
 import { FaRegPenToSquare } from "react-icons/fa6";
 
@@ -34,11 +32,6 @@ const VirtualTableSDRbilan = ({ refreshTable, columns, rows, noCollapsible, stat
       [rowKey]: !prev[rowKey],
     }));
   };
-
-  const handleRowClick = (row) => {
-    //console.log(row.id);
-  }
-
   //ajout de montant ajustement valeur d'une rubrique
   const handleCellClick = (row, column, value) => {
     if ((column === 'solde_imputable' || column === 'solde_non_imputable') && row.ordre > 8) {
@@ -62,16 +55,6 @@ const VirtualTableSDRbilan = ({ refreshTable, columns, rows, noCollapsible, stat
       setOpenTableDetail(false);
     }
   }
-
-  //calcul total
-  const totalColumn = (rows, columnId) => {
-    const total = rows.reduce((acc, item) => {
-      const Value = parseFloat(item[columnId]) || 0; // Convertir en nombre
-      return acc + Value;
-    }, 0);
-
-    return total;
-  };
 
   //calcul total
   const totalColumnAjust = (rows, columnId, nature) => {
@@ -114,11 +97,6 @@ const VirtualTableSDRbilan = ({ refreshTable, columns, rows, noCollapsible, stat
 
     return total;
   };
-
-  const columnWidths = columns.reduce((acc, column) => {
-    acc[column.id] = column.minWidth;
-    return acc;
-  }, {});
 
   return (
     <Box sx={{ width: '100%', padding: 0, margin: 0 }}>
@@ -208,7 +186,6 @@ const VirtualTableSDRbilan = ({ refreshTable, columns, rows, noCollapsible, stat
                 <React.Fragment key={rowKey}>
                   <TableRow
                     style={{ border: 'none', height: '20px', ...rowStyle }}
-                    onClick={() => handleRowClick(row)}
                   >
                     <TableCell
                       style={{
@@ -217,8 +194,6 @@ const VirtualTableSDRbilan = ({ refreshTable, columns, rows, noCollapsible, stat
                         width: 40,
                         paddingTop: '5px',
                         paddingBottom: '5px',
-                        // borderRight: '1px solid #ddd', 
-                        // borderLeft: '1px solid #ddd',
                         border: 'none',
                         fontSize: 15,
                         color: 'white'

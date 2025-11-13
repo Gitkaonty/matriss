@@ -9,12 +9,10 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import { init } from '../../../../init';
-import { Box, Button, Chip, Collapse, IconButton, Typography } from '@mui/material';
+import { Box, Chip, Collapse, IconButton, Typography } from '@mui/material';
 import AddBoxIcon from '@mui/icons-material/AddBox';
 import IndeterminateCheckBoxIcon from '@mui/icons-material/IndeterminateCheckBox';
-import { CgDetailsMore } from "react-icons/cg";
 import { RiExchangeBoxFill } from "react-icons/ri";
-import toast from 'react-hot-toast';
 import PopupAjustRubriqueEVCPEbilan from '../FormulaireModifTableauEbilan/popupAjustRubriqueEVCPEbilan';
 import { FaRegPenToSquare } from "react-icons/fa6";
 
@@ -35,10 +33,6 @@ const VirtualTableEVCPEbilan = ({ refreshTable, columns, rows, noCollapsible, st
     }));
   };
 
-  const handleRowClick = (row) => {
-    //console.log(row.id);
-  }
-
   //ajout de montant ajustement valeur d'une rubrique
   const handleCellClick = (row, column, value) => {
     if (row.nature !== 'TOTAL' && row.nature !== 'TITRE' && column !== "total_varcap") {
@@ -58,16 +52,6 @@ const VirtualTableEVCPEbilan = ({ refreshTable, columns, rows, noCollapsible, st
       setOpenTableDetail(false);
     }
   }
-
-  //calcul total
-  const totalColumn = (rows, columnId) => {
-    const total = rows.reduce((acc, item) => {
-      const Value = parseFloat(item[columnId]) || 0; // Convertir en nombre
-      return acc + Value;
-    }, 0);
-
-    return total;
-  };
 
   //calcul total
   const totalColumnAjust = (rows, columnId, nature) => {
@@ -103,11 +87,6 @@ const VirtualTableEVCPEbilan = ({ refreshTable, columns, rows, noCollapsible, st
 
     return total;
   };
-
-  const columnWidths = columns.reduce((acc, column) => {
-    acc[column.id] = column.minWidth;
-    return acc;
-  }, {});
 
   return (
     <Box sx={{ width: '100%', padding: 0, margin: 0 }}>
@@ -197,7 +176,6 @@ const VirtualTableEVCPEbilan = ({ refreshTable, columns, rows, noCollapsible, st
                 <React.Fragment key={rowKey}>
                   <TableRow
                     style={{ border: 'none', height: '20px', ...rowStyle }}
-                    onClick={() => handleRowClick(row)}
                   >
                     <TableCell
                       style={{

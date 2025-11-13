@@ -1,33 +1,10 @@
-const bcrypt = require("bcrypt");
 const db = require("../../Models");
 require('dotenv').config();
-const Sequelize = require('sequelize');
 const { Op } = require('sequelize');
 const recupExerciceN1 = require('../Standard/recupExerciceN1');
 
-const journals = db.journals;
-const codejournals = db.codejournals;
-const dossierPlanComptable = db.dossierplancomptable;
-const balances = db.balances;
-
-const liassebhiapcs = db.liassebhiapcs;
-const liassebilans = db.liassebilans;
-const liassecrfs = db.liassecrfs;
-const liassecrns = db.liassecrns;
-const liassedas = db.liassedas;
-const liassedps = db.liassedps;
 const liassedrfs = db.liassedrfs;
-const liasseeiafncs = db.liasseeiafncs;
 const liasseevcps = db.liasseevcps;
-const liassempautres = db.liassempautres;
-const liassemps = db.liassemps;
-const liassenotes = db.liassenotes;
-const liassesads = db.liassesads;
-const liassesdrs = db.liassesdrs;
-const liasseses = db.liasseses;
-const liassetftds = db.liassetftds;
-const liassetftis = db.liassetftis;
-const dossiers = db.dossiers;
 
 const rubriques = db.rubriques;
 const compterubriques = db.compterubriques;

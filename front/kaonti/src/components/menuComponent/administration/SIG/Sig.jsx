@@ -11,9 +11,6 @@ import Box from '@mui/material/Box';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
-import { GoAlert } from "react-icons/go";
-import { PiArticleThin } from "react-icons/pi";
-import Badge from '@mui/material-next/Badge';
 import { TbRefresh } from "react-icons/tb";
 import Tooltip from '@mui/material/Tooltip';
 
@@ -125,7 +122,6 @@ export default function Sig() {
     const { auth } = useAuth();
     const decoded = auth?.accessToken ? jwtDecode(auth.accessToken) : undefined;
     const compteId = decoded.UserInfo.compteId || null;
-    const userId = decoded.UserInfo.userId || null;
     const navigate = useNavigate();
 
     //Choix exercice
@@ -320,7 +316,6 @@ export default function Sig() {
 
     //récupérer les informations du dossier sélectionné
     useEffect(() => {
-        //tester si la page est renvoyer par useNavigate
         const navigationEntries = performance.getEntriesByType('navigation');
         let idFile = 0;
 
@@ -386,7 +381,7 @@ export default function Sig() {
                 </Box>
                 <TabPanel value="1" style={{ height: '100%' }}>
                     <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
-                        <Typography variant='h6' sx={{ color: "black" }} align='left'>Administration - Etats Financiers</Typography>
+                        <Typography variant='h6' sx={{ color: "black" }} align='left'>Administration - SIG</Typography>
 
                         <Stack width={"100%"} height={"80px"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "20px" }}>
                             <Stack
@@ -471,14 +466,6 @@ export default function Sig() {
                                     direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
                                     <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
                                         direction={"row"} justifyContent={"right"}>
-
-                                        <Tooltip title="Liste des articles associés au formulaire">
-                                            <IconButton style={{ textTransform: 'none', outline: 'none' }}>
-                                                <Badge badgeContent={12} color="success">
-                                                    <PiArticleThin style={{ width: '30px', height: '30px' }} />
-                                                </Badge>
-                                            </IconButton>
-                                        </Tooltip>
 
                                         <Tooltip title="Actualiser les calculs">
                                             <IconButton

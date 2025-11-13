@@ -1,6 +1,5 @@
 const db = require("../../../Models");
-const { Sequelize } = require("sequelize");
-
+const { Sequelize, Op } = require("sequelize");
 const rubriquesExternes = db.rubriquesExternes;
 const compteRubriquesExternes = db.compteRubriquesExternes;
 const compteRubriquesExternesMatrices = db.compteRubriquesExternesMatrices;
@@ -239,7 +238,7 @@ exports.addOrUpdateRubriqueExterne = async (req, res) => {
             if (isExistingRubrique) {
                 return res.status(200).json({
                     state: false,
-                    msg: `Cette combinaison de rubrique, compte, dossier et exercice existe déjà`
+                    msg: `Cette Rubrique existe déjà dans ${id_etat}`
                 });
             }
             const addRubriqueExterne = await rubriquesExternes.create({
@@ -429,12 +428,61 @@ exports.addOrUpdateCompteRubriqueExterne = async (req, res) => {
             msg: 'Une erreur est survenue au moment du traitement.',
         }
 
+        const rubriqueData = (await rubriquesExternes.findAll({
+            where: {
+                id_compte: compteId,
+                id_dossier: fileId,
+                id_exercice: exerciceId,
+                id_etat,
+                active: true
+            }
+        })).map(r => ({
+            ...r.toJSON(),
+            id: Number(r.id),
+            id_compte: Number(r.id_compte),
+            id_dossier: Number(r.id_dossier),
+            id_exercice: Number(r.id_exercice),
+        })).filter(r =>
+            ['RUBRIQUE', 'SOUS-RUBRIQUE', 'LIAISON', 'LIAISON VAR ACTIF', 'LIAISON VAR PASSIF'].includes(r.type)
+        );
+
+        const idRubriqueList = [...new Set(rubriqueData.map(val => val.id_rubrique))];
+
+        const compteRubriqueData = (await compteRubriquesExternes.findAll({
+            where: {
+                id_compte: compteId,
+                id_dossier: fileId,
+                id_exercice: exerciceId,
+                active: true,
+                id_rubrique: idRubriqueList,
+                compte: compte,
+                id_etat
+            }
+        })).map(r => ({
+            ...r.toJSON(),
+            id: Number(r.id),
+            id_compte: Number(r.id_compte),
+            id_dossier: Number(r.id_dossier),
+            id_exercice: Number(r.id_exercice),
+        }));
+
+        if (compteRubriqueData.length) {
+            resData.state = false;
+
+            const etats = [...new Set(compteRubriqueData.map(c => c.id_etat))].join(', ');
+            const rubriques = [...new Set(compteRubriqueData.map(c => c.id_rubrique))].join(', ');
+
+            resData.msg = `Cette compte existe déjà dans : ${etats} dans le rubrique : ${rubriques}`;
+            return res.json(resData);
+        }
+
         const testIfExist = await compteRubriquesExternes.findAll({
             where: {
                 id: idParam,
                 id_compte: compteId,
                 id_dossier: fileId,
-                id_exercice: exerciceId
+                id_exercice: exerciceId,
+                compte: compte,
             }
         });
 
@@ -505,7 +553,7 @@ exports.restaureDefaultParameter = async (req, res) => {
 
         let resData = {
             state: false,
-            msg: 'une erreur est survenue',
+            msg: 'Une erreur est survenue',
             fileInfos: []
         }
 
@@ -559,11 +607,10 @@ exports.updateDefaultParameter = async (req, res) => {
 
         let resData = {
             state: false,
-            msg: 'une erreur est survenue',
+            msg: 'Une erreur est survenue',
             fileInfos: []
         }
 
-        //supprimer les paramétrages en cours
         await compteRubriquesExternes.destroy({
             where:
             {
@@ -575,10 +622,9 @@ exports.updateDefaultParameter = async (req, res) => {
             }
         });
 
-        //récupérer la liste des paramétrages
         const listeCompteRubrique = await compteRubriquesExternesMatrices.findAll({
             where: {
-                id_etat
+                id_etat: id_etat === 'BILAN' ? { [Op.in]: ['BILAN_ACTIF', 'BILAN_PASSIF'] } : id_etat
             }
         });
 
@@ -590,12 +636,12 @@ exports.updateDefaultParameter = async (req, res) => {
                     id_exercice: id_exercice,
                     id_etat: item.id_etat,
                     id_rubrique: item.id_rubrique,
+                    tableau: item.tableau,
                     compte: item.compte,
                     nature: item.nature,
                     senscalcul: item.senscalcul,
                     condition: item.condition,
                     equation: item.equation,
-                    tableau: item.tableau,
                     par_default: true,
                     active: true,
                 });

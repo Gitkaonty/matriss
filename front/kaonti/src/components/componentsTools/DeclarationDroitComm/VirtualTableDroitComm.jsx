@@ -15,7 +15,7 @@ import { IoMdTrash } from "react-icons/io";
 import { ExpandMore, ExpandLess } from '@mui/icons-material';
 import { TiWarning } from "react-icons/ti";
 
-const VirtualTableDroitComm = ({ refreshTable, columns, nature, deleteState, modifyState, rows, verrouillage, noCollapsible, state }) => {
+const VirtualTableDroitComm = ({ columns, nature, deleteState, modifyState, rows, verrouillage }) => {
     const [openRows, setOpenRows] = useState({});
 
     const handleRowDeleteClick = (row, type) => {
@@ -34,7 +34,6 @@ const VirtualTableDroitComm = ({ refreshTable, columns, nature, deleteState, mod
     const totalColumn = (rows, columnId) => {
         return rows.reduce((total, row) => {
             const value = parseFloat(row[columnId]);
-            // const value = row[columnId];
 
             if (value != null && !isNaN(value)) {
                 total += value;
@@ -69,8 +68,6 @@ const VirtualTableDroitComm = ({ refreshTable, columns, nature, deleteState, mod
                     typeTier: row.typeTier,
                     nature: row.nature,
                     nature_autres: row.nature_autres,
-                    // createdAt: row.createdAt,
-                    // updatedAt: row.updatedAt,
                     lignes: [],
                     comptabilisees: parseFloat(row.comptabilisees) || 0,
                     versees: parseFloat(row.versees) || 0,

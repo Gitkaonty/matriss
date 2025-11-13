@@ -15,13 +15,6 @@ const formatAmount = (value) => {
     return Number(value) < 0 ? `- ${str}` : str;
 };
 
-const formatDate = (dateStr) => {
-    if (!dateStr) return '';
-    const [jour, mois, annee] = dateStr.split('-');
-
-    return `${annee}/${mois.padStart(2, '0')}/${jour.padStart(2, '0')}`;
-};
-
 const getRubriqueExterneData = async (id_compte, id_dossier, id_exercice, id_etat) => {
     return rubriquesExternes.findAll({
         where: {
@@ -575,6 +568,98 @@ const generateEvcpContent = async (id_compte, id_dossier, id_exercice) => {
     }
 }
 
+const generateSigContent = async (id_compte, id_dossier, id_exercice) => {
+    const sigData = await getRubriqueExterneData(id_compte, id_dossier, id_exercice, 'SIG');
+    const buildTable = (data) => {
+        const body = [];
+
+        body.push([
+            { text: 'Rubriques', style: 'tableHeader' },
+            { text: 'Montant net N', style: 'tableHeader', alignment: 'right' },
+            { text: '%(N)', style: 'tableHeader', alignment: 'center' },
+            { text: 'Montant net N-1', style: 'tableHeader', alignment: 'right' },
+            { text: '%(N-1)', style: 'tableHeader', alignment: 'center' },
+            { text: 'Variation N/N-1', style: 'tableHeader', alignment: 'right' },
+            { text: '%(Var)', style: 'tableHeader', alignment: 'center' },
+        ]);
+
+        data.forEach(row => {
+            const isTitre = row.type === 'TITRE';
+            const isTotal = row.type === 'TOTAL';
+            const isSousTotal = row.type === 'SOUS-TOTAL';
+            const bgColor = isTotal ? '#89A8B2' : isTitre ? '#f0f0f0' : isSousTotal ? '#9bc2cf' : null;
+
+            body.push([
+                {
+                    text: row.libelle || '',
+                    fillColor: bgColor,
+                    alignment: 'left',
+                    valign: 'middle',
+                    margin: [0, 2, 0, 2]
+                },
+                {
+                    text: isTitre ? "" : formatAmount(row.montantnet),
+                    fillColor: bgColor,
+                    alignment: 'right',
+                    valign: 'middle',
+                    margin: [0, 2, 0, 2]
+                },
+                {
+                    text: isTitre ? "" : row.pourcentagen || 0,
+                    fillColor: bgColor,
+                    alignment: 'center',
+                    valign: 'middle',
+                    margin: [0, 2, 0, 2]
+                },
+                {
+                    text: isTitre ? "" : formatAmount(row.montantnetn1),
+                    fillColor: bgColor,
+                    alignment: 'right',
+                    valign: 'middle',
+                    margin: [0, 2, 0, 2]
+                },
+                {
+                    text: isTitre ? "" : row.pourcentagen1 || 0,
+                    fillColor: bgColor,
+                    alignment: 'center',
+                    valign: 'middle',
+                    margin: [0, 2, 0, 2]
+                },
+                {
+                    text: isTitre ? "" : row.variation || 0,
+                    fillColor: bgColor,
+                    alignment: 'right',
+                    valign: 'middle',
+                    margin: [0, 2, 0, 2]
+                },
+                {
+                    text: isTitre ? "" : row.pourcentagevariation || 0,
+                    fillColor: bgColor,
+                    alignment: 'center',
+                    valign: 'middle',
+                    margin: [0, 2, 0, 2]
+                },
+            ]);
+        });
+
+        return [
+            {
+                table: {
+                    headerRows: 1,
+                    widths: ['37%', '15%', '6%', '15%', '6%', '15%', '6%'],
+                    body
+                },
+                layout: 'lightHorizontalLines'
+            }
+        ];
+    };
+
+    return {
+        buildTable,
+        sigData
+    }
+}
+
 module.exports = {
     generateBilanContent,
     generateBilanActifContent,
@@ -583,5 +668,6 @@ module.exports = {
     generateCrfContent,
     generateTftdContent,
     generateTftiContent,
-    generateEvcpContent
+    generateEvcpContent,
+    generateSigContent
 }

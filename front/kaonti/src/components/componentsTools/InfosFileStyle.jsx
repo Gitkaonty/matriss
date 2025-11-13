@@ -11,18 +11,12 @@ export const InfoFileStyle = (fileName) => {
 
         style={{
           width: "100%",
-          display: 'flex', // ou block, selon le rendu souhaité
+          display: 'flex',
           justifyContent: 'space-between',
           backgroundColor: '#67AE6E',
           color: 'white'
         }}
       />
-
-      {/* <Typography variant='h7'
-            align='left'
-          >
-              {fileName}
-          </Typography> */}
     </Stack>
   );
 }

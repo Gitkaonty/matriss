@@ -1,4 +1,4 @@
-import { React, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Typography, Stack, TextField, FormControl, Tooltip, Box, Input } from '@mui/material';
 import Button from '@mui/material/Button';
 import { styled } from '@mui/material/styles';
@@ -47,7 +47,6 @@ const popupAjustRubriqueSDREbilan = ({ actionState, row, column, value }) => {
     const [openDialogDeleteRow, setOpenDialogDeleteRow] = useState(false);
     const nature = column.toUpperCase();
     const [listAjust, setListAjust] = useState([]);
-    const [totalNet, setTotalNet] = useState(0);
     const [totalAjustement, setTotalAjustement] = useState(0);
     const [stateUpdateTable, setStateUpdateTable] = useState({ tableName: '', state: false });
     const [headerLabel, setHeaderLabel] = useState('');

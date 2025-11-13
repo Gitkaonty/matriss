@@ -1,8 +1,5 @@
-
-const bcrypt = require("bcrypt");
 const db = require("../../../Models");
 require('dotenv').config();
-const Sequelize = require('sequelize');
 const { Op } = require('sequelize');
 const functionAddOrModifyRow = require('../../../Middlewares/Ebilan/declEbilanAddOrModifyFunction');
 const declEbilanRefreshFunction = require('../../../Middlewares/Ebilan/declEbilanRefreshFunction');
@@ -16,12 +13,9 @@ const fonctionUpdateBalanceSold = require('../../../Middlewares/UpdateSolde/upda
 
 const { create } = require('xmlbuilder2');
 
-// const PDFDocument = require('pdfkit');
 const PdfPrinter = require('pdfmake');
 const { PDFDocument } = require('pdf-lib');
 const ExcelJS = require('exceljs');
-
-const path = require('path');
 
 const compterubriques = db.compterubriques;
 const etats = db.etats;
@@ -55,6 +49,7 @@ const generateTftiContent = declEbilanGeneratePDF.generateTftiContent;
 const generateEvcpContent = declEbilanGeneratePDF.generateEvcpContent;
 const generateDrfContent = declEbilanGeneratePDF.generateDrfContent;
 const generateBhiapcContent = declEbilanGeneratePDF.generateBhiapcContent;
+const generateMpContent = declEbilanGeneratePDF.generateMpContent;
 const generateDaContent = declEbilanGeneratePDF.generateDaContent;
 const generateDpContent = declEbilanGeneratePDF.generateDpContent;
 const generateEiafncContent = declEbilanGeneratePDF.generateEiafncContent;
@@ -67,6 +62,12 @@ const generateNeContent = declEbilanGeneratePDF.generateNeContent;
 const exportBilanToExcel = declEbilanGenerateExcel.exportBilanToExcel;
 const exportCrnToExcel = declEbilanGenerateExcel.exportCrnToExcel;
 const exportCrfToExcel = declEbilanGenerateExcel.exportCrfToExcel;
+const exportTftdToExcel = declEbilanGenerateExcel.exportTftdToExcel;
+const exportTftiToExcel = declEbilanGenerateExcel.exportTftiToExcel;
+const exportEvcpToExcel = declEbilanGenerateExcel.exportEvcpToExcel;
+const exportDrfToExcel = declEbilanGenerateExcel.exportDrfToExcel;
+const exportBhiapcToExcel = declEbilanGenerateExcel.exportBhiapcToExcel;
+const exportMpToExcel = declEbilanGenerateExcel.exportMpToExcel;
 const exportDaToExcel = declEbilanGenerateExcel.exportDaToExcel;
 const exportDpToExcel = declEbilanGenerateExcel.exportDpToExcel;
 const exportEiafncToExcel = declEbilanGenerateExcel.exportEiafncToExcel;
@@ -79,6 +80,24 @@ const exportNeToExcel = declEbilanGenerateExcel.exportNeToExcel;
 // Ligne fixe
 const exportActifToXml = declEbilanGenerateXml.exportActifToXml;
 const exportPassifToXml = declEbilanGenerateXml.exportPassifToXml;
+const exportCrnToXml = declEbilanGenerateXml.exportCrnToXml;
+const exportCrfToXml = declEbilanGenerateXml.exportCrfToXml;
+const exportTftdToXml = declEbilanGenerateXml.exportTftdToXml;
+const exportTftiToXml = declEbilanGenerateXml.exportTftiToXml;
+const exportEvcpToXml = declEbilanGenerateXml.exportEvcpToXml;
+const exportDrfToXml = declEbilanGenerateXml.exportDrfToXml;
+const exportBhiapcbToXml = declEbilanGenerateXml.exportBhiapcbToXml;
+const exportMpa2ToXml = declEbilanGenerateXml.exportMpa2ToXml;
+const exportMpb2ToXml = declEbilanGenerateXml.exportMpb2ToXml;
+const exportDaToXml = declEbilanGenerateXml.exportDaToXml;
+const exportDpa1ToXml = declEbilanGenerateXml.exportDpa1ToXml;
+const exportSdrToXml = declEbilanGenerateXml.exportSdrToXml;
+const exportSadToXml = declEbilanGenerateXml.exportSadToXml;
+
+// Ligne variable
+const exportCapToXml = declEbilanGenerateXml.exportCapToXml;
+const exportDbToXml = declEbilanGenerateXml.exportDbToXml;
+const exportBhiapcaToXml = declEbilanGenerateXml.exportBhiapcaToXml;
 const exportMpa1ToXml = declEbilanGenerateXml.exportMpa1ToXml;
 const exportMpb1ToXml = declEbilanGenerateXml.exportMpb1ToXml;
 const exportDa1ToXml = declEbilanGenerateXml.exportDa1ToXml;
@@ -1153,8 +1172,8 @@ const exportToPDF = async (req, res) => {
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitleExo: { fontSize: 9},
+          subTitle: { fontSize: 10, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9 },
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1169,8 +1188,8 @@ const exportToPDF = async (req, res) => {
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitleExo: { fontSize: 9},
+          subTitle: { fontSize: 10, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9 },
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1185,8 +1204,8 @@ const exportToPDF = async (req, res) => {
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitleExo: { fontSize: 9},
+          subTitle: { fontSize: 10, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9 },
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1201,8 +1220,8 @@ const exportToPDF = async (req, res) => {
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitleExo: { fontSize: 9},
+          subTitle: { fontSize: 10, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9 },
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1217,8 +1236,8 @@ const exportToPDF = async (req, res) => {
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitleExo: { fontSize: 9},
+          subTitle: { fontSize: 10, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9 },
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1235,8 +1254,8 @@ const exportToPDF = async (req, res) => {
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitleExo: { fontSize: 9},
+          subTitle: { fontSize: 10, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9 },
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1251,8 +1270,8 @@ const exportToPDF = async (req, res) => {
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitleExo: { fontSize: 9},
+          subTitle: { fontSize: 10, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9 },
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1267,8 +1286,8 @@ const exportToPDF = async (req, res) => {
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitleExo: { fontSize: 9},
+          subTitle: { fontSize: 10, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9 },
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1283,8 +1302,8 @@ const exportToPDF = async (req, res) => {
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitleExo: { fontSize: 9},
+          subTitle: { fontSize: 10, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9 },
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1300,8 +1319,8 @@ const exportToPDF = async (req, res) => {
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitleExo: { fontSize: 9},
+          subTitle: { fontSize: 10, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9 },
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1317,8 +1336,8 @@ const exportToPDF = async (req, res) => {
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitleExo: { fontSize: 9},
+          subTitle: { fontSize: 10, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9 },
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1334,8 +1353,8 @@ const exportToPDF = async (req, res) => {
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitleExo: { fontSize: 9},
+          subTitle: { fontSize: 10, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9 },
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1351,8 +1370,8 @@ const exportToPDF = async (req, res) => {
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitleExo: { fontSize: 9},
+          subTitle: { fontSize: 10, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9 },
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1368,8 +1387,8 @@ const exportToPDF = async (req, res) => {
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitleExo: { fontSize: 9},
+          subTitle: { fontSize: 10, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9 },
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1385,8 +1404,8 @@ const exportToPDF = async (req, res) => {
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitleExo: { fontSize: 9},
+          subTitle: { fontSize: 10, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9 },
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1402,8 +1421,8 @@ const exportToPDF = async (req, res) => {
         ],
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitleExo: { fontSize: 9},
+          subTitle: { fontSize: 10, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9 },
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -1618,8 +1637,8 @@ const exportAllToPDF = async (req, res) => {
         pageOrientation: landscape ? 'landscape' : 'portrait',
         styles: {
           title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitle: { fontSize: 10,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-          subTitleExo: { fontSize: 9},
+          subTitle: { fontSize: 10, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+          subTitleExo: { fontSize: 9 },
           tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
         },
         defaultStyle: { font: 'Helvetica', fontSize: 7 }
@@ -2232,7 +2251,7 @@ const exportAllToXml = async (req, res) => {
 const overview = async (req, res) => {
   try {
     const { compteId, dossierId, exerciceId } = req.params;
-    const codes = ['BILAN','CRN','CRF','TFTD','TFTI','EVCP','DRF','BHIAPC','MP','DA','DP','EIAFNC','SAD','SDR','SE'];
+    const codes = ['BILAN', 'CRN', 'CRF', 'TFTD', 'TFTI', 'EVCP', 'DRF', 'BHIAPC', 'MP', 'DA', 'DP', 'EIAFNC', 'SAD', 'SDR', 'SE'];
 
     const etatsRows = await etats.findAll({
       where: {

@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const upload = multer({ dest: 'uploads/' });
 
 const droitCommController = require('../../../Controllers/Declaration/Dcom/DeclarationCommController');
 
@@ -39,7 +38,6 @@ router.get('/getVerrouillageComm/:id_compte/:id_dossier/:id_exercice', droitComm
 router.post('/verrouillerTableComm', droitCommController.verrouillerTableComm);
 
 //Import droit comm de type a
-// router.post('/importdroitCommA', upload.single('csvFile'), droitCommController.importdroitCommA);
 router.post('/importdroitCommA', droitCommController.importdroitCommA);
 router.post('/importdroitCommB', droitCommController.importdroitCommB);
 

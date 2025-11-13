@@ -127,7 +127,7 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
             headerName: 'Compte',
             type: 'string',
             sortable: true,
-            width: 150,
+            flex: 3.3,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
@@ -143,7 +143,10 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
                             }}
                             type="text"
                             value={formNewParam.values.compte}
-                            onChange={(e) => handleChangeCompte(e.target.value)}
+                            onChange={(e) => {
+                                const value = e.target.value.replace(/\D/g, '');
+                                handleChangeCompte(value);
+                            }}
                             label="libelle"
                             disableUnderline={true}
                             disabled={disableDefaultFieldModif}
@@ -157,7 +160,7 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
             headerName: 'Sens calcul',
             type: 'singleSelect',
             sortable: true,
-            width: 150,
+            flex: 2,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
@@ -196,7 +199,7 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
             headerName: 'Condtion',
             type: 'singleSelect',
             sortable: true,
-            width: 120,
+            flex: 2,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
@@ -234,7 +237,7 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
             headerName: 'Equation',
             type: 'text',
             sortable: true,
-            width: 100,
+            flex: 2,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
@@ -270,11 +273,11 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
         },
         {
             field: 'active',
-            headerName: 'Activé',
+            headerName: 'Active',
             type: 'boolean',
             sortable: true,
-            width: 80,
-            headerAlign: 'left',
+            flex: 1.4,
+            headerAlign: 'center',
             align: 'center',
             headerClassName: 'HeaderbackColor',
             editable: editableRow,
@@ -294,8 +297,8 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
             headerName: 'Par défaut',
             type: 'boolean',
             sortable: true,
-            width: 90,
-            headerAlign: 'left',
+            flex: 1.5,
+            headerAlign: 'center',
             align: 'center',
             headerClassName: 'HeaderbackColor',
             editable: false
@@ -724,20 +727,6 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
                     checkboxSelection={DataGridStyle.checkboxSelection}
                     columnVisibilityModel={{
                         id: false,
-                    }}
-
-                    rows={compteRubriqueData}
-                    columns={columnHeader}
-                    rowModesModel={rowModesModel}
-                    onRowModesModelChange={handleRowModesModelChange}
-                    onRowEditStop={handleRowEditStop}
-                    processRowUpdate={processRowUpdate}
-                    rowSelectionModel={selectedRow}
-                    onRowClick={(e) => handleCellEditCommit(e.row)}
-                    onRowSelectionModelChange={ids => {
-                        setSelectedRow(ids);
-                        saveSelectedRow(ids);
-                        deselectRow(ids);
                     }}
                     onRowEditStart={(params, event) => {
                         if (!selectedRow.length || selectedRow[0] !== params.id) {

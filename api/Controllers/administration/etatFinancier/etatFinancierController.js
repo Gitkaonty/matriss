@@ -11,9 +11,11 @@ const etatFinancierGeneratePdf = require('../../../Middlewares/EtatFinanciere/ad
 const etatFinancierGenerateExcel = require('../../../Middlewares/EtatFinanciere/adminEtatFinancierGenerateExcel');
 
 const fonctionUpdateSoldeEtatFinancier = require('../../../Middlewares/EtatFinanciere/updateSoldeEtatFinancier');
+const fonctionCopyRubrique = require('../../../Middlewares/EtatFinanciere/copyRubriqueExterne');
 
 const updateSolde = fonctionUpdateSoldeEtatFinancier.updateSoldeEtatFinancier;
 const totalRubriqueExterneEVCP = fonctionUpdateSoldeEtatFinancier.totalRubriqueExterneEVCP;
+const copyRubriqueExterne = fonctionCopyRubrique.copyRubriqueExterne;
 
 const rubriquesExternes = db.rubriquesExternes;
 const dossierplancomptableModel = db.dossierplancomptable;
@@ -33,6 +35,7 @@ const generateCrfContent = etatFinancierGeneratePdf.generateCrfContent;
 const generateTftdContent = etatFinancierGeneratePdf.generateTftdContent;
 const generateTftiContent = etatFinancierGeneratePdf.generateTftiContent;
 const generateEvcpContent = etatFinancierGeneratePdf.generateEvcpContent;
+const generateSigContent = etatFinancierGeneratePdf.generateSigContent;
 
 const exportBilanToExcel = etatFinancierGenerateExcel.exportBilanToExcel;
 const exportCrnToExcel = etatFinancierGenerateExcel.exportCrnToExcel;
@@ -40,6 +43,7 @@ const exportCrfToExcel = etatFinancierGenerateExcel.exportCrfToExcel;
 const exportTftiToExcel = etatFinancierGenerateExcel.exportTftiToExcel;
 const exportTftdToExcel = etatFinancierGenerateExcel.exportTftdToExcel;
 const exportEvcpToExcel = etatFinancierGenerateExcel.exportEvcpToExcel;
+const exportSigToExcel = etatFinancierGenerateExcel.exportSigToExcel;
 
 const columnsMapping = {
     BILAN_ACTIF: [
@@ -60,6 +64,9 @@ const columnsMapping = {
     ],
     TFTI: [
         { col: 'rubriquetftiexterne', nature: 'BRUT' }
+    ],
+    SIG: [
+        { col: 'rubriquesig', nature: 'BRUT' }
     ]
 };
 
@@ -83,7 +90,7 @@ const generateTableauAuto = async (id_dossier, id_exercice, id_compte, id_etat) 
 
         try {
             await fonctionUpdateBalanceSold.updateSold(id_compte, id_dossier, id_exercice, [], true);
-            await fonctionUpdateRubriqueExterne.updateRubrique(id_compte, id_dossier, id_exercice);
+            await fonctionUpdateRubriqueExterne.updateRubrique(id_compte, id_dossier, id_exercice, id_etat);
 
         } catch (err) {
             throw new Error(`Erreur lors de la mise à jour des soldes ou des rubriques : ${err.message}`);
@@ -183,6 +190,11 @@ exports.getEtatFinancierGlobal = async (req, res) => {
 
         const allRubriques = [...rubriqueExterneData, ...rubriqueExterneEvcpData];
 
+        const rubriqueMap = new Map();
+        allRubriques.forEach(r => {
+            rubriqueMap.set(`${r.id_rubrique}_${r.id_etat}`, r);
+        });
+
         for (const r of allRubriques) {
             const mapping = columnsMapping[r.id_etat];
             if (!mapping) {
@@ -210,13 +222,22 @@ exports.getEtatFinancierGlobal = async (req, res) => {
 
                     const comptesValides = matches
                         .filter(b => Number(b.soldedebit) !== 0 || Number(b.soldecredit) !== 0)
-                        .map(b => ({
-                            compte: comptesMap[b.id_numcompte]?.compte || null,
-                            libelle: comptesMap[b.id_numcompte]?.libelle || null,
-                            soldedebit: Number(Number(b.soldedebit).toFixed(2)),
-                            soldecredit: Number(Number(b.soldecredit).toFixed(2)),
-                            nature
-                        }));
+                        .map(b => {
+                            const rubData = rubriqueMap.get(`${b[col]}_${r.id_etat}`);
+
+                            const equation = rubData?.equation?.trim().toUpperCase() === 'SOUSTRACTIF'
+                                ? 'SOUSTRACTIF'
+                                : 'ADDITIF';
+
+                            return {
+                                compte: comptesMap[b.id_numcompte]?.compte || null,
+                                libelle: comptesMap[b.id_numcompte]?.libelle || null,
+                                soldedebit: Number(Number(b.soldedebit).toFixed(2)),
+                                soldecredit: Number(Number(b.soldecredit).toFixed(2)),
+                                nature,
+                                equation
+                            };
+                        });
 
                     comptesTrouvés.push(...comptesValides);
                 }
@@ -269,27 +290,24 @@ exports.generateTableEtatFinancier = async (req, res) => {
             return res.status(400).json({ state: false, message: 'id_etat manquant' });
         }
 
-        let rubriqueData = [];
-
         if (id_etat === "BILAN") {
-            rubriqueData = await rubriquesExternes.findAll({
-                where: {
-                    id_dossier,
-                    id_exercice,
-                    id_compte,
-                    id_etat: { [Op.in]: ['BILAN_ACITF', 'BILAN_PASSIF'] }
-                }
-            })
+            await copyRubriqueExterne(id_dossier, id_exercice, id_compte, "BILAN_ACTIF");
+            await copyRubriqueExterne(id_dossier, id_exercice, id_compte, "BILAN_PASSIF");
         } else {
-            rubriqueData = await rubriquesExternes.findAll({
-                where: {
-                    id_dossier,
-                    id_exercice,
-                    id_compte,
-                    id_etat
-                }
-            })
+            await copyRubriqueExterne(id_dossier, id_exercice, id_compte, id_etat);
         }
+
+        const rubriqueData = await rubriquesExternes.findAll({
+            where:
+                id_etat === "BILAN"
+                    ? {
+                        id_dossier,
+                        id_exercice,
+                        id_compte,
+                        id_etat: { [Op.in]: ["BILAN_ACTIF", "BILAN_PASSIF"] },
+                    }
+                    : { id_dossier, id_exercice, id_compte, id_etat },
+        });
 
         if (!rubriqueData || rubriqueData.length === 0) {
             if (id_etat !== 'EVCP') {
@@ -321,16 +339,16 @@ exports.generateTableEtatFinancier = async (req, res) => {
                 state: true,
                 message:
                     id_etat === "BILAN"
-                        ? "Génération du BILAN ACTIF et PASSIF réussie"
-                        : `Génération de l'état ${id_etat} réussie`,
+                        ? "Génération du BILAN ACTIF et PASSIF automatique réussie"
+                        : `Génération du ${id_etat} automatique réussie`,
             });
         } else {
             return res.status(200).json({
                 state: false,
                 message:
                     id_etat === "BILAN"
-                        ? "Erreur lors de la génération du BILAN ACTIF ou PASSIF"
-                        : `Erreur lors de la génération de l'état ${id_etat}`,
+                        ? "Erreur lors de la génération automatique du BILAN ACTIF ou PASSIF"
+                        : `Erreur lors de la génération automatique du ${id_etat}`,
             });
         }
 
@@ -642,7 +660,26 @@ exports.exportEtatFinancierToPdf = async (req, res) => {
                 },
                 defaultStyle: { font: 'Helvetica', fontSize: 7 }
             };
-        } else {
+        } else if (id_etat === 'SIG') {
+            const { buildTable, sigData } = await generateSigContent(id_compte, id_dossier, id_exercice);
+            docDefinition = {
+                pageSize: 'A4',
+                pageOrientation: 'landscape',
+                content: [
+                    { text: 'Soldes intermédiaires de géstion', style: 'title' },
+                    infoBlock(dossier, compte, exercice),
+                    ...buildTable(sigData)
+                ],
+                styles: {
+                    title: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+                    subTitle: { fontSize: 10, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+                    tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] },
+                    subTitle1: { fontSize: 9 },
+                },
+                defaultStyle: { font: 'Helvetica', fontSize: 7 }
+            };
+        }
+        else {
             return res.status(400).json({ msg: "Type d'état invalide" });
         }
         const pdfDoc = printer.createPdfKitDocument(docDefinition);
@@ -681,6 +718,8 @@ exports.exportEtatFinancierToExcel = async (req, res) => {
             await exportTftdToExcel(id_compte, id_dossier, id_exercice, workbook, dossier?.dossier, compte?.nom, formatDate(exercice?.date_debut), formatDate(exercice?.date_fin));
         } else if (id_etat === 'EVCP') {
             await exportEvcpToExcel(id_compte, id_dossier, id_exercice, workbook, dossier?.dossier, compte?.nom, formatDate(exercice?.date_debut), formatDate(exercice?.date_fin));
+        } else if (id_etat === 'SIG') {
+            await exportSigToExcel(id_compte, id_dossier, id_exercice, workbook, dossier?.dossier, compte?.nom, formatDate(exercice?.date_debut), formatDate(exercice?.date_fin));
         }
         workbook.views = [
             { activeTab: 0 }

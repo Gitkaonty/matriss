@@ -1,30 +1,17 @@
-const bcrypt = require("bcrypt");
 const db = require("../../Models");
 require('dotenv').config();
-const Sequelize = require('sequelize');
 const { Op } = require('sequelize');
-const updateBalanceSold = require('../UpdateSolde/updateBalanceSold');
 const UpdateEbilanBalanceRubrique = require('../UpdateSolde/updateEbilanBalanceRubrique');
 const UpdateEbilanSoldeRubrique = require('../UpdateSolde/updateEbilanSoldeRubrique');
 const UpdateEbilanSoldeTotalRubrique = require('../UpdateSolde/updateEbilanSoldeTotalRubrique');
 
 const rubriques = db.rubriques;
 const rubriquesmatrices = db.rubriquesmatrices;
-const compterubriques = db.compterubriques;
-const compterubriquematrices = db.compterubriquematrices;
-
-const liassebhiapcs = db.liassebhiapcs;
-const liassedas = db.liassedas;
 const liassedps = db.liassedps;
 const liassedrfs = db.liassedrfs;
-const liasseeiafncs = db.liasseeiafncs;
 const liasseevcps = db.liasseevcps;
-const liassempautres = db.liassempautres;
-const liassemps = db.liassemps;
-const liassenotes = db.liassenotes;
 const liassesads = db.liassesads;
 const liassesdrs = db.liassesdrs;
-const liasseses = db.liasseses;
 
 const refreshBILAN = async (compteId, fileId, exerciceId, refreshTotal) => {
   try {
@@ -415,37 +402,6 @@ const refreshDRF = async (compteId, fileId, exerciceId, refreshTotal) => {
     }
 
     return { stateRefresh };
-  } catch (error) {
-    console.log(error);
-  }
-}
-
-const refreshBHIAPC = async (compteId, fileId, exerciceId, refreshTotal) => {
-  try {
-    // let stateRefresh = false;
-
-    // if(refreshTotal){
-    //   await liassebhiapcs.destroy({
-    //     where: 
-    //     {
-    //       id_compte: compteId,
-    //       id_dossier: fileId,
-    //       id_exercice: exerciceId,
-    //     }
-    //   });
-
-    //   //await UpdateEbilanBalanceRubrique.balanceColumnEVCP(compteId, fileId, exerciceId);
-    // }
-
-    // //const result = await updateBalanceSold.updateSold(compteId, fileId, exerciceId, [], true);
-    // const updateSoldeDRF = await UpdateEbilanSoldeRubrique.soldeRubriqueDRF(compteId, fileId, exerciceId);
-    // const updateSoldeTotalDRF = await UpdateEbilanSoldeTotalRubrique.totalRubriqueDRF(compteId, fileId, exerciceId);
-
-    // if(updateSoldeDRF && updateSoldeTotalDRF){
-    //   stateRefresh = true;
-    // }
-
-    // return { stateRefresh };
   } catch (error) {
     console.log(error);
   }

@@ -39,7 +39,6 @@ const VirtualTableModifiableEbilan = ({ columns, rows, deleteState, modifyState,
 
   const totalColumn = (rows, columnId) => {
     return rows.reduce((total, row) => {
-      //const value = parseFloat(row[columnId]);
       const value = row[columnId];
 
       if (value != null && !isNaN(value)) {

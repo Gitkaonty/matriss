@@ -1,4 +1,3 @@
-const db = require("../../Models");
 require('dotenv').config();
 const recupTableau = require('../../Middlewares/Ebilan/recupTableau');
 

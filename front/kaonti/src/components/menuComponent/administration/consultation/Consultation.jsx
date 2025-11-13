@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Autocomplete, Typography, Stack, Paper, Box, Tab, Badge, Button, Divider, TextField } from '@mui/material';
+import { Autocomplete, Typography, Stack, Box, Tab, Button, TextField, Tooltip } from '@mui/material';
 import RadioGroup from '@mui/material/RadioGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Radio from '@mui/material/Radio';
@@ -9,6 +9,7 @@ import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import { init } from '../../../../../init';
+import { LuView } from "react-icons/lu";
 
 import axios from '../../../../../config/axios';
 import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFile';
@@ -35,6 +36,7 @@ import { GrPrevious } from "react-icons/gr";
 import { GrNext } from "react-icons/gr";
 
 import PopupSaisie from '../../../componentsTools/Saisie/popupSaisie';
+import PopupInfoAnalytique from '../../../componentsTools/Saisie/PopupInfoAnalytique';
 
 export default function ConsultationComponent() {
     let initial = init[0];
@@ -45,15 +47,19 @@ export default function ConsultationComponent() {
     const [listeExercice, setListeExercice] = useState([]);
     const [listeSituation, setListeSituation] = useState([]);
     const [selectedExerciceId, setSelectedExerciceId] = useState(0);
-    const [selectedPeriodeChoiceId, setSelectedPeriodeChoiceId] = useState(0);
     const [selectedPeriodeId, setSelectedPeriodeId] = useState(0);
 
     const [openSaisiePopup, setOpenSaisiePopup] = useState(false);
+    const [openAnalytiquePopup, setOpenAnalytiquePopup] = useState(false);
+    const [idJournal, setIdJournal] = useState(null);
 
     const [selectedRows, setSelectedRows] = useState([]);
     const [rowSelectionModel, setRowSelectionModel] = useState([]);
 
     const [isRefresehed, setIsRefreshed] = useState(false);
+    const [refreshListAxeSection, setRefreshListAxeSection] = useState(false);
+    const [listCa, setListCa] = useState([]);
+    const [isCaActive, setIsCaActive] = useState(false);
 
     const { id } = useParams();
 
@@ -64,6 +70,8 @@ export default function ConsultationComponent() {
     const [listeCodeJournaux, setListeCodeJournaux] = useState([]);
     const [listeDevise, setListeDevise] = useState([]);
     const [listeAnnee, setListeAnnee] = useState([]);
+
+    const [isRefreshedPlanComptable, setIsRefreshedPlanComptable] = useState(false);
 
     const [filtrageCompte, setFiltrageCompte] = useState("0")
 
@@ -80,7 +88,6 @@ export default function ConsultationComponent() {
     const { auth } = useAuth();
     const decoded = auth?.accessToken ? jwtDecode(auth.accessToken) : undefined;
     const compteId = decoded.UserInfo.compteId || null;
-    const userId = decoded.UserInfo.userId || null;
 
     //récupération infos de connexion
     const navigate = useNavigate();
@@ -91,6 +98,7 @@ export default function ConsultationComponent() {
 
             if (resData.state) {
                 setFileInfos(resData.fileInfos[0]);
+                setIsCaActive(resData?.fileInfos[0]?.avecanalytique);
                 setNoFile(false);
             } else {
                 setFileInfos([]);
@@ -107,7 +115,6 @@ export default function ConsultationComponent() {
     //Choix exercice
     const handleChangeExercice = (exercice_id) => {
         setSelectedExerciceId(exercice_id);
-        setSelectedPeriodeChoiceId("0");
         setListeSituation(listeExercice?.filter((item) => item.id === exercice_id));
         setSelectedPeriodeId(exercice_id);
     }
@@ -128,7 +135,6 @@ export default function ConsultationComponent() {
                 setListeSituation(exerciceNId);
 
                 setSelectedExerciceId(exerciceNId[0].id);
-                setSelectedPeriodeChoiceId(0);
                 setSelectedPeriodeId(exerciceNId[0].id);
 
             } else {
@@ -138,27 +144,11 @@ export default function ConsultationComponent() {
         })
     }
 
-    //Récupérer la liste des situations
-    const GetListeSituation = (id) => {
-        axios.get(`/paramExercice/listeSituation/${id}`).then((response) => {
-            const resData = response.data;
-            if (resData.state) {
-                const list = resData.list;
-                setListeSituation(resData.list);
-                if (list.length > 0) {
-                    setSelectedPeriodeId(list[0].id);
-                }
-            } else {
-                setListeSituation([]);
-                toast.error("Une erreur est survenue lors de la récupération de la liste des situations");
-            }
-        })
-    }
-
     //Liste saisie
     const getListeSaisie = () => {
         axios.get(`/administration/traitementSaisie/getJournal/${compteId}/${id}/${selectedExerciceId}`).then((response) => {
             const resData = response.data;
+            console.log('resData : ', resData);
             setListSaisie(resData);
         })
     }
@@ -184,16 +174,22 @@ export default function ConsultationComponent() {
         })
     }
 
-    //Choix période
-    const handleChangePeriode = (choix) => {
-        setSelectedPeriodeChoiceId(choix);
+    //Liste des sections avec ses axes
+    const getListAxeSection = () => {
+        axios.get(`/paramCa/getListAxeSection/${Number(compteId)}/${Number(fileId)}`).then((response) => {
+            const resData = response.data;
+            setListCa(resData);
+        })
+    }
 
-        if (choix === 0) {
-            setListeSituation(listeExercice?.filter((item) => item.id === selectedExerciceId));
-            setSelectedPeriodeId(selectedExerciceId);
-        } else if (choix === 1) {
-            GetListeSituation(selectedExerciceId);
-        }
+    const handleOpenPopupShowAnalytique = (id) => {
+        setOpenAnalytiquePopup(true);
+        setIdJournal(id);
+    }
+
+    const handleClosePopupShowAnalytique = (id) => {
+        setOpenAnalytiquePopup(false);
+        setIdJournal(null);
     }
 
     //Header
@@ -290,11 +286,6 @@ export default function ConsultationComponent() {
             headerAlign: 'right',
             align: 'right',
             headerClassName: 'HeaderbackColor',
-            // valueGetter: (params) => {
-            //     const debit = Number(params.row.debit) || 0;
-            //     const credit = Number(params.row.credit) || 0;
-            //     return debit - credit;
-            // },
             renderCell: (params) => {
                 const solde = Number(params.value) || 0;
                 const formatted = solde.toLocaleString('fr-FR', {
@@ -303,8 +294,7 @@ export default function ConsultationComponent() {
                 });
                 return formatted.replace(/\u202f/g, ' ');
             },
-        }
-        , {
+        }, {
             field: 'lettrage',
             headerName: 'Lettrage',
             type: 'string',
@@ -314,26 +304,48 @@ export default function ConsultationComponent() {
             align: 'left',
             headerClassName: 'HeaderbackColor',
         },
-        // {
-        //     field: 'analytique',
-        //     headerName: 'Analytique',
-        //     type: 'string',
-        //     sortable: true,
-        //     flex: 1,
-        //     headerAlign: 'left',
-        //     align: 'left',
-        //     headerClassName: 'HeaderbackColor',
-        // }, {
-        //     field: 'comm',
-        //     headerName: 'Commentaires',
-        //     type: 'string',
-        //     sortable: true,
-        //     flex: 1,
-        //     headerAlign: 'left',
-        //     align: 'left',
-        //     headerClassName: 'HeaderbackColor',
-        // },
     ]
+
+    if (isCaActive) {
+        ConsultationColumnHeader.push({
+            field: 'repartition_analytique',
+            headerName: 'Analytique',
+            sortable: false,
+            width: 85,
+            headerAlign: 'center',
+            align: 'center',
+            headerClassName: 'HeaderbackColor',
+            renderCell: (params) => {
+                const compte = String(params.row?.compte || '');
+                const disabled = !/^(2|6|7)/.test(compte);
+
+                return (
+                    <Tooltip title={disabled ? "Non applicable pour ce compte" : "Voir les répartitions analytiques"}>
+                        <span>
+                            <Button
+                                sx={{
+                                    outline: 'none',
+                                    boxShadow: 'none',
+                                    minWidth: 0,
+                                    p: 0.5,
+                                    '&:focus': { outline: 'none', boxShadow: 'none' },
+                                    '&:focus-visible': { outline: 'none', boxShadow: 'none' },
+                                }}
+                                disabled={disabled}
+                                onClick={() => {
+                                    if (!disabled) {
+                                        handleOpenPopupShowAnalytique(params.row.id);
+                                    }
+                                }}
+                            >
+                                <LuView style={{ width: 85, height: 30 }} />
+                            </Button>
+                        </span>
+                    </Tooltip>
+                );
+            },
+        });
+    }
 
     const handleSearch = () => {
         if (!valSelectedCompte || valSelectedCompte === 'tout') {
@@ -349,8 +361,6 @@ export default function ConsultationComponent() {
         const compteSelect = (listePlanComptableInitiale || listePlanComptable).find(
             (item) => item.id === Number(valSelectedCompte)
         );
-
-        console.log("compteSelect : ", compteSelect);
 
         if (!compteSelect) {
             setFilteredList([]);
@@ -572,26 +582,12 @@ export default function ConsultationComponent() {
         })
     }
 
-    //Recupérer l'année min et max de l'éxercice
-    const getAnneesEntreDeuxDates = (dateDebut, dateFin) => {
-        const debut = new Date(dateDebut).getFullYear();
-        const fin = new Date(dateFin).getFullYear();
-        const annees = [];
-
-        for (let annee = debut; annee <= fin; annee++) {
-            annees.push(annee);
-        }
-
-        return annees;
-    };
-
     //Récupération la liste des exercices BY ID EXERCICE
     const getDateDebutFinExercice = () => {
-        axios.get(`/paramExercice/listeExerciceById/${selectedExerciceId}`).then((response) => {
+        axios.get(`/paramExercice/getListeAnnee/${Number(compteId)}/${Number(fileId)}`).then((response) => {
             const resData = response.data;
             if (resData.state) {
-                const annee = getAnneesEntreDeuxDates(resData.list.date_debut, resData.list.date_fin)
-                setListeAnnee(annee)
+                setListeAnnee(resData.list)
             } else {
                 setListeAnnee([])
             }
@@ -639,7 +635,7 @@ export default function ConsultationComponent() {
 
     useEffect(() => {
         getPc()
-    }, [id, compteId])
+    }, [id, compteId, isRefreshedPlanComptable])
 
     useEffect(() => {
         if (fileId && compteId) {
@@ -727,25 +723,44 @@ export default function ConsultationComponent() {
         }
     }, [selectedExerciceId])
 
+    useEffect(() => {
+        getListAxeSection();
+    }, [selectedPeriodeId, refreshListAxeSection])
+
     return (
-        // <Paper elevation={3} sx={{ margin: "5px", padding: "0px", width: "99%", height: "98%" }}>
         <Box >
             {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
-            {openSaisiePopup ?
-                <PopupSaisie
-                    confirmationState={handleCloseSaisieAddPopup}
-                    fileId={fileId}
-                    selectedExerciceId={selectedExerciceId}
-                    rowsEdit={selectedRows}
-                    setRefresh={() => setIsRefreshed(!isRefresehed)}
-                    setRowSelectionModel={() => setRowSelectionModel([])}
-                    type={'modification'}
-                    listeCodeJournaux={listeCodeJournaux}
-                    listePlanComptable={listePlanComptableInitiale}
-                    listeAnnee={listeAnnee}
-                    listeDevise={listeDevise}
-                    setSelectedRowsSaisie={() => setSelectedRows([])}
-                /> : null}
+            {
+                openSaisiePopup ?
+                    <PopupSaisie
+                        confirmationState={handleCloseSaisieAddPopup}
+                        fileId={fileId}
+                        selectedExerciceId={selectedExerciceId}
+                        rowsEdit={selectedRows}
+                        setRefresh={() => setIsRefreshed(!isRefresehed)}
+                        setRefreshListAxeSection={() => setRefreshListAxeSection(!refreshListAxeSection)}
+                        setRowSelectionModel={() => setRowSelectionModel([])}
+                        type={'modification'}
+                        listeCodeJournaux={listeCodeJournaux}
+                        listePlanComptable={listePlanComptableInitiale}
+                        listeAnnee={listeAnnee}
+                        listeDevise={listeDevise}
+                        setSelectedRowsSaisie={() => setSelectedRows([])}
+                        setIsRefreshedPlanComptable={setIsRefreshedPlanComptable}
+                        isCaActive={isCaActive}
+                        listCa={listCa}
+                        setListCa={setListCa}
+                    /> : null
+            }
+            {
+                openAnalytiquePopup && (
+                    <PopupInfoAnalytique
+                        onClose={handleClosePopupShowAnalytique}
+                        open={openAnalytiquePopup}
+                        id={idJournal}
+                    />
+                )
+            }
             <TabContext value={"1"} >
                 <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                     <TabList aria-label="lab API tabs example">
@@ -790,9 +805,7 @@ export default function ConsultationComponent() {
                                         disabled
                                         labelId="demo-simple-select-standard-label"
                                         id="demo-simple-select-standard"
-                                        // value={selectedPeriodeChoiceId}
                                         label={"periode"}
-                                        // onChange={(e) => handleChangePeriode(e.target.value)}
                                         sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
                                     >
                                         <MenuItem value={0}>Toutes</MenuItem>
@@ -914,7 +927,7 @@ export default function ConsultationComponent() {
                                         </Button>
                                         <Button
                                             disabled={
-                                                !selectedExerciceId || selectedExerciceId === 0 || 
+                                                !selectedExerciceId || selectedExerciceId === 0 ||
                                                 listePlanComptable.findIndex(item => item.id === valSelectedCompte) >= listePlanComptable.length - 1
                                             }
                                             sx={{
@@ -1012,7 +1025,6 @@ export default function ConsultationComponent() {
 
                         </Stack>
 
-                        {/* <TableConsultationModel headCells={headCells} rows={rows} /> */}
                         <Stack
                             width={"100%"}
                             // height={'80%'}

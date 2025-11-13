@@ -43,7 +43,7 @@ const LineChartComponent = ({ xAxis, dataN, dataN1, label }) => {
         labels: xAxis,
         datasets: [
             {
-                label: `${label} (N)`,
+                label: `N`,
                 data: dataNOnAllLabels,
                 borderColor: '#349beb',
                 backgroundColor: '#349beb',
@@ -60,17 +60,16 @@ const LineChartComponent = ({ xAxis, dataN, dataN1, label }) => {
                 },
             },
             ...(dataN1 ? [{
-                label: `${label} (N-1)`,
+                label: `N-1`,
                 data: dataN1OnAllLabels,
-                borderColor: '#6d645dff',
-                backgroundColor: '#6d645dff',
+                borderColor: '#de5f23',
+                backgroundColor: '#de5f23',
                 borderWidth: 2,
                 pointRadius: 4,
                 tension: 0.4,
-                borderDash: [5, 5],
                 datalabels: {
                     display: true,
-                    color: '#6d645dff',
+                    color: '#de5f23',
                     font: { weight: 'bold', size: 12 },
                     align: 'bottom',
                     formatter: (value) => formatValue(value),

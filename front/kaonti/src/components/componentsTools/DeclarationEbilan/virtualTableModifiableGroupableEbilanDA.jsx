@@ -9,16 +9,14 @@ import TableRow from '@mui/material/TableRow';
 import TableFooter from '@mui/material/TableFooter';
 import Paper from '@mui/material/Paper';
 import { init } from '../../../../init';
-import { Box, Button, Collapse, IconButton, Stack, Typography } from '@mui/material';
+import { Box, Collapse, IconButton, Stack, Typography } from '@mui/material';
 import { IoMdTrash } from "react-icons/io";
-import { TbPlaylistAdd } from "react-icons/tb";
 import { IoMdCreate } from "react-icons/io";
 import { format } from 'date-fns';
 import { ExpandMore, ExpandLess } from '@mui/icons-material';
 
 const VirtualTableModifiableGroupableEbilanDA = ({ columns, rows, deleteState, modifyState, state }) => {
   const initial = init[0];
-  const targetColumnId = 'rubriquesmatrix.libelle';
 
   const handleRowModifClick = (row) => {
     modifyState(row);
@@ -35,30 +33,6 @@ const VirtualTableModifiableGroupableEbilanDA = ({ columns, rows, deleteState, m
       ...prevExpanded,
       [groupName]: !prevExpanded[groupName], // Inverse l'état d'expansion
     }));
-  };
-
-  const columnWidths = columns.reduce((acc, column) => {
-    acc[column.id] = column.minWidth;
-    return acc;
-  }, {});
-
-  const soustotalGroup = (item, columnId) => {
-    return rows.reduce((totals, group) => {
-      // Vérifier si le groupe correspond à celui que nous recherchons (ex: "GOODWILL")
-      if (group.rubriques_poste === item) {
-        // Parcourir les items du groupe
-        group.items.forEach((item) => {
-          // Vérifier si 'augmentation' existe et est un nombre valide
-          const value = item[columnId];
-
-          // Si la valeur est définie et un nombre, on l'ajoute au total
-          if (value != null && !isNaN(value)) {
-            totals += value;
-          }
-        });
-      }
-      return totals;
-    }, 0);
   };
 
   const totalGroup = (columnId) => {
@@ -91,13 +65,6 @@ const VirtualTableModifiableGroupableEbilanDA = ({ columns, rows, deleteState, m
       return 0;  // a et b sont égaux
     });
   }, [rows]);
-
-  const stickyColumnStyle = {
-    position: 'sticky',
-    left: 200,
-    backgroundColor: '#fff', // Assurez-vous que le fond est blanc ou transparent
-    zIndex: 1, // Assurez-vous que la colonne est au-dessus des autres
-  };
 
   const colWidths = columns.map((c) => (typeof c.minWidth === "number" ? `${c.minWidth}px` : c.minWidth || "auto"));
 

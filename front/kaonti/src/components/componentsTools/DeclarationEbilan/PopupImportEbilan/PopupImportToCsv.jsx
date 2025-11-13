@@ -150,7 +150,6 @@ const PopupImportToCsv = ({ type, closePopup, id_compte, id_dossier, id_exercice
         } else if (type === "14") {
             // DP
         } else if (type === "15") {
-            console.log("EIAFNC");
             parseCsvFile({
                 file,
                 type: type,
@@ -196,7 +195,6 @@ const PopupImportToCsv = ({ type, closePopup, id_compte, id_dossier, id_exercice
                 closePopup
             });
         } else if (type === "19") {
-            console.log("NE");
         }
         setCsvFile(file);
         refreshTable(id_compte, id_dossier, id_exercice);
@@ -221,7 +219,6 @@ const PopupImportToCsv = ({ type, closePopup, id_compte, id_dossier, id_exercice
                 aria-labelledby="import-dialog-title"
                 open={true}
                 maxWidth='md'
-            // fullWidth
             >
                 <DialogTitle
                     id="import-dialog-title"

@@ -258,7 +258,7 @@ const VirtualTableEbilanEtatFinaciere = ({ refreshTable, columns, rows, noCollap
                           }}
                         >
                           {
-                            row.nature === "TITRE" ? "" :
+                            row.type === "TITRE" ? column.id === 'libelle' ? value : '' :
                               column.isNumber
                                 ? (row.ajusts && row.ajusts.length > 0 && totalColumnDetail(row.ajusts, column.id) !== 0)
                                   ? <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>

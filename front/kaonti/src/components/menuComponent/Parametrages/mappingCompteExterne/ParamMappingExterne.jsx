@@ -90,11 +90,7 @@ export default function ParamMappingExterne() {
   const [sigSelectedRubriqueId, setSigRubriqueId] = useState(0);
   const [sigRubriqueData, setSigRubriqueData] = useState([]);
 
-  const [showRestaurePopupDp, setShowRestaurePopupDp] = useState(false);
-  const [showUpdatePopupDp, setShowUpdatePopupDp] = useState(false);
-
-  const [showRestaurePopupBhiapc, setShowRestaurePopupBhiapc] = useState(false);
-  const [showUpdatePopupBhiapc, setShowUpdatePopupBhiapc] = useState(false);
+  const [isCompteRubriqueRefreshed, setIsCompteRubriqueRefreshed] = useState(false);
 
   const phrase1_1 = "Voulez-vous vraiment restaurer les paramétrages de calcul par les paramétrages par défaut pour le formulaire du ";
   const phrase1_2 = "? les autres paramétrages manuels seront désactivés.";
@@ -117,17 +113,10 @@ export default function ParamMappingExterne() {
   const msgRestaurePopupTfti = `${phrase1_1} TFTI ${phrase1_2}`;
   const msgUpdatePopupTfti = `${phrase2_1} TFTI ${phrase2_2}`;
 
-  const msgRestaurePopupDp = `${phrase1_1} DP ${phrase1_2}`;
-  const msgUpdatePopupDp = `${phrase2_1} DP ${phrase2_2}`;
-
-  const msgRestaurePopupBhiapc = `${phrase1_1} BHIAPC ${phrase1_2}`;
-  const msgUpdatePopupBhiapc = `${phrase2_1} BHIAPC ${phrase2_2}`;
-
   //récupération infos de connexion
   const { auth } = useAuth();
   const decoded = auth?.accessToken ? jwtDecode(auth.accessToken) : undefined;
   const compteId = decoded.UserInfo.compteId || null;
-  const userId = decoded.UserInfo.userId || null;
   const navigate = useNavigate();
 
   const GetInfosIdDossier = (id) => {
@@ -479,6 +468,7 @@ export default function ParamMappingExterne() {
         const resData = response.data;
         if (resData.state) {
           toast.success(resData.msg);
+          setIsCompteRubriqueRefreshed(prev => !prev);
         } else {
           toast.error(resData.msg);
         }
@@ -573,7 +563,7 @@ export default function ParamMappingExterne() {
       .then((response) => {
         const resData = response.data;
         if (resData.state) {
-          choixAffichageDetailCalcul(showBrut);
+          setIsCompteRubriqueRefreshed(prev => !prev);
           toast.success(resData.msg);
         } else {
           toast.error(resData.msg);
@@ -585,8 +575,6 @@ export default function ParamMappingExterne() {
     setShowRestaurePopupCrf(false);
     setShowRestaurePopupTftd(false);
     setShowRestaurePopupTfti(false);
-    setShowRestaurePopupDp(false);
-    setShowUpdatePopupBhiapc(false);
 
   }
 
@@ -661,7 +649,6 @@ export default function ParamMappingExterne() {
 
   //récupérer les informations du dossier sélectionné
   useEffect(() => {
-    //tester si la page est renvoyer par useNavigate
     const navigationEntries = performance.getEntriesByType('navigation');
     let idFile = 0;
 
@@ -810,6 +797,7 @@ export default function ParamMappingExterne() {
                       <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"center"} alignContent={"center"}
                         justifyContent={"stretch"}
                       >
+
                         <Stack width={"100%"} height={"35px"} spacing={0.5} alignItems={"right"} alignContent={"right"}
                           direction={"row"} justifyContent={"right"}
                         >
@@ -824,7 +812,6 @@ export default function ParamMappingExterne() {
                               }}
                             >
                               <VscRepoFetch style={{ width: '25px', height: '25px', color: 'white' }} />
-                              {/* <Typography style={{color: 'white'}}>Simuler</Typography> */}
                             </IconButton>
                           </Tooltip>
 
@@ -840,7 +827,6 @@ export default function ParamMappingExterne() {
                               }}
                             >
                               <LuArchiveRestore style={{ width: '25px', height: '25px', color: 'white' }} />
-                              {/* <Typography style={{color: 'white'}}>Restaurer</Typography> */}
                             </IconButton>
                           </Tooltip>
 
@@ -856,7 +842,6 @@ export default function ParamMappingExterne() {
                               }}
                             >
                               <GrUpdate style={{ width: '25px', height: '25px', color: 'white' }} />
-                              {/* <Typography style={{color: 'white'}}>Mettre à jour</Typography> */}
                             </IconButton>
                           </Tooltip>
 
@@ -906,7 +891,7 @@ export default function ParamMappingExterne() {
                             alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"0px"}
                             style={{ border: '2px solid rgba(5,96,116,0.60)' }} padding={"10px"}
                           >
-                            <DatagridDetailExterne compteId={compteId} fileId={fileId} exerciceId={selectedPeriodeId} id_etat={etatIdBILAN} rubriqueId={bilanSelectedRubriqueId} nature={showBrut} rubriqueData={bilanRubriqueData} typeRubrique={typeRubriqueBilan} />
+                            <DatagridDetailExterne compteId={compteId} fileId={fileId} exerciceId={selectedPeriodeId} id_etat={etatIdBILAN} rubriqueId={bilanSelectedRubriqueId} nature={showBrut} rubriqueData={bilanRubriqueData} typeRubrique={typeRubriqueBilan} isCompteRubriqueRefreshed={isCompteRubriqueRefreshed} setIsCompteRubriqueRefreshed={setIsCompteRubriqueRefreshed} />
                           </Stack>
                         </Stack>
                       </Stack>
@@ -979,7 +964,7 @@ export default function ParamMappingExterne() {
                             alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"0px"}
                             style={{ border: '2px solid rgba(5,96,116,0.60)' }} padding={"10px"}
                           >
-                            <DatagridDetailExterne compteId={compteId} fileId={fileId} exerciceId={selectedPeriodeId} id_etat={"CRN"} rubriqueId={crnSelectedRubriqueId} nature={showBrut} rubriqueData={crnRubriqueData} typeRubrique={typeRubriqueCrn} />
+                            <DatagridDetailExterne compteId={compteId} fileId={fileId} exerciceId={selectedPeriodeId} id_etat={"CRN"} rubriqueId={crnSelectedRubriqueId} nature={showBrut} rubriqueData={crnRubriqueData} typeRubrique={typeRubriqueCrn} isCompteRubriqueRefreshed={isCompteRubriqueRefreshed} setIsCompteRubriqueRefreshed={setIsCompteRubriqueRefreshed} />
                           </Stack>
                         </Stack>
 
@@ -1054,7 +1039,7 @@ export default function ParamMappingExterne() {
                             alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"0px"}
                             style={{ border: '2px solid rgba(5,96,116,0.60)' }} padding={"10px"}
                           >
-                            <DatagridDetailExterne compteId={compteId} fileId={fileId} exerciceId={selectedPeriodeId} id_etat={"CRF"} rubriqueId={crfSelectedRubriqueId} nature={showBrut} rubriqueData={crfRubriqueData} typeRubrique={typeRubriqueCrf} />
+                            <DatagridDetailExterne compteId={compteId} fileId={fileId} exerciceId={selectedPeriodeId} id_etat={"CRF"} rubriqueId={crfSelectedRubriqueId} nature={showBrut} rubriqueData={crfRubriqueData} typeRubrique={typeRubriqueCrf} isCompteRubriqueRefreshed={isCompteRubriqueRefreshed} setIsCompteRubriqueRefreshed={setIsCompteRubriqueRefreshed} />
                           </Stack>
                         </Stack>
                       </Stack>
@@ -1128,7 +1113,7 @@ export default function ParamMappingExterne() {
                             alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"0px"}
                             style={{ border: '2px solid rgba(5,96,116,0.60)' }} padding={"10px"}
                           >
-                            <DatagridDetailExterne compteId={compteId} fileId={fileId} exerciceId={selectedPeriodeId} id_etat={"TFTD"} rubriqueId={tftdSelectedRubriqueId} nature={showBrut} rubriqueData={tftdRubriqueData} typeRubrique={typeRubriqueTftd} />
+                            <DatagridDetailExterne compteId={compteId} fileId={fileId} exerciceId={selectedPeriodeId} id_etat={"TFTD"} rubriqueId={tftdSelectedRubriqueId} nature={showBrut} rubriqueData={tftdRubriqueData} typeRubrique={typeRubriqueTftd} isCompteRubriqueRefreshed={isCompteRubriqueRefreshed} setIsCompteRubriqueRefreshed={setIsCompteRubriqueRefreshed} />
                           </Stack>
                         </Stack>
 
@@ -1202,7 +1187,7 @@ export default function ParamMappingExterne() {
                             alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"0px"}
                             style={{ border: '2px solid rgba(5,96,116,0.60)' }} padding={"10px"}
                           >
-                            <DatagridDetailExterne compteId={compteId} fileId={fileId} exerciceId={selectedPeriodeId} id_etat={"TFTI"} rubriqueId={tftiSelectedRubriqueId} nature={showBrut} rubriqueData={tftiRubriqueData} typeRubrique={typeRubriqueTfti} />
+                            <DatagridDetailExterne compteId={compteId} fileId={fileId} exerciceId={selectedPeriodeId} id_etat={"TFTI"} rubriqueId={tftiSelectedRubriqueId} nature={showBrut} rubriqueData={tftiRubriqueData} typeRubrique={typeRubriqueTfti} isCompteRubriqueRefreshed={isCompteRubriqueRefreshed} setIsCompteRubriqueRefreshed={setIsCompteRubriqueRefreshed} />
                           </Stack>
                         </Stack>
                       </Stack>
@@ -1275,7 +1260,7 @@ export default function ParamMappingExterne() {
                             alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"0px"}
                             style={{ border: '2px solid rgba(5,96,116,0.60)' }} padding={"10px"}
                           >
-                            <DatagridDetailExterne compteId={compteId} fileId={fileId} exerciceId={selectedPeriodeId} id_etat={"SIG"} rubriqueId={sigSelectedRubriqueId} nature={showBrut} rubriqueData={sigRubriqueData} typeRubrique={typeRubriqueSig} />
+                            <DatagridDetailExterne compteId={compteId} fileId={fileId} exerciceId={selectedPeriodeId} id_etat={"SIG"} rubriqueId={sigSelectedRubriqueId} nature={showBrut} rubriqueData={sigRubriqueData} typeRubrique={typeRubriqueSig} isCompteRubriqueRefreshed={isCompteRubriqueRefreshed} setIsCompteRubriqueRefreshed={setIsCompteRubriqueRefreshed} />
                           </Stack>
                         </Stack>
                       </Stack>

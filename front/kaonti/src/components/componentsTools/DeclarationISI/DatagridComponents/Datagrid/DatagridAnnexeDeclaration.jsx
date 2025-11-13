@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { Button, IconButton, Stack, Tooltip } from '@mui/material';
+import { IconButton, Stack, Tooltip } from '@mui/material';
 
 import { MdOutlineAutoMode } from "react-icons/md";
-import { AiTwotoneFileText } from 'react-icons/ai';
 import { CiExport } from 'react-icons/ci';
 import { IoMdTrash } from "react-icons/io";
 
@@ -199,7 +198,7 @@ const DatagridAnnexe = ({
                                 backgroundColor: "transparent",
                                 textTransform: "none",
                                 outline: "none",
-                                marginRight : '1px'
+                                marginRight: '1px'
                             }}
                             onClick={handleOpenPopupExportIsi}
                         >

@@ -1,5 +1,3 @@
-import { React, useState, useEffect } from 'react';
-
 import { Typography, Stack, TextField, FormControl, Divider } from '@mui/material';
 import Button from '@mui/material/Button';
 import { styled } from '@mui/material/styles';
@@ -7,28 +5,14 @@ import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
-import InputLabel from '@mui/material/InputLabel';
-import Select from '@mui/material/Select';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
-import MenuItem from '@mui/material/MenuItem';
-import RadioGroup from '@mui/material/RadioGroup';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Radio from '@mui/material/Radio';
-import OptionJoy from '@mui/joy/Option';
-import SelectJoy from '@mui/joy/Select';
-import InputJoy from '@mui/joy/Input';
-import { Grid } from "@mui/material";
 
 import { init } from '../../../../../init';
-import { CiWarning } from "react-icons/ci";
-import { IoIosWarning } from "react-icons/io";
 import toast from 'react-hot-toast';
 import axios from '../../../../../config/axios';
 import InputAdornment from '@mui/material/InputAdornment';
-import { NumericFormat } from 'react-number-format';
 import { useFormik } from 'formik';
-import * as Yup from "yup";
 import FormatedInput from '../../FormatedInput';
 
 let initial = init[0];
@@ -87,7 +71,6 @@ const PopupPlpEdit = ({ confirmationState, rowToModify, setIsRefreshed }) => {
                 open={true}
                 maxWidth='sm'
                 fullWidth={true}
-            // fullScreen={true}
             >
                 <DialogTitle
                     id="customized-dialog-title"

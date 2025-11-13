@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Typography, Stack, Paper, Box, Tab, Badge, Button, FormControlLabel, RadioGroup, Radio } from '@mui/material';
+import { Typography, Stack, Box, Tab } from '@mui/material';
 import { TabContext, TabList, TabPanel } from '@mui/lab';
 
 import { init } from '../../../../../init';
@@ -32,7 +32,6 @@ export default function DeclarationCommComponent() {
     const { auth } = useAuth();
     const decoded = auth?.accessToken ? jwtDecode(auth.accessToken) : undefined;
     const compteId = decoded.UserInfo.compteId || null;
-    const userId = decoded.UserInfo.userId || null;
 
     // Info du dossier
     const GetInfosIdDossier = (id) => {

@@ -15,7 +15,6 @@ const ImportCard = ({ icon: Icon, label, iconStyle = {}, children, sx = {}, sxTy
             py: 1,
             color: initial.theme,
             borderRadius: 1,
-            // color: 'white',
             cursor: 'pointer',
             position: 'relative',
             overflow: 'hidden',

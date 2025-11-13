@@ -109,7 +109,6 @@ export const processMpRow = (row, rowIndex, anomalies) => {
     const tmp = Number(parseFloat(row.tmp?.replace(',', '.')).toFixed(2));
     if (isNaN(tmp)) anomaliesRow.push("tmp est obligatoire");
 
-    // Champs facultatifs mais valides si remplis
     const marche = row.marche ? row.marche.trim().toUpperCase() : null;
     if (marche && !["MP", "AUTRE"].includes(marche)) {
         anomaliesRow.push(`marche doit être "MP" ou "AUTRE"`);
@@ -176,7 +175,6 @@ export const processSeRow = (row, rowIndex, anomalies) => {
     const date_remboursement = row.date_remboursement ? formatDateToISO(row.date_remboursement) : null;
     if (row.date_remboursement && !date_remboursement) date_remboursement.push("date_remboursement invalide");
 
-    // Vérification des champs obligatoires
     if (!row.liste_emprunteur || row.liste_emprunteur.trim() === "") {
         anomaliesRow.push("liste_emprunteur est obligatoire");
     }
@@ -205,7 +203,6 @@ export const processSeRow = (row, rowIndex, anomalies) => {
 export const processDaRow = (row, rowIndex, anomalies) => {
     const anomaliesRow = [];
 
-    // Rubriques poste (optionnel mais validation si rempli)
     const rubriques_poste = row.rubriques_poste ? row.rubriques_poste.trim().toUpperCase() : "";
     if (rubriques_poste && !["IMMO_CORP", "GOODWILL", "IMMO_INCORP", "IMMO_FIN", "IMMO_ENCOURS"].includes(rubriques_poste)) {
         anomaliesRow.push(
@@ -232,7 +229,6 @@ export const processDaRow = (row, rowIndex, anomalies) => {
     const valeur_acquisition = Number(parseFloat(row.valeur_acquisition?.replace(',', '.')).toFixed(2));
     if (isNaN(valeur_acquisition)) anomaliesRow.push("valeur_acquisition doit être un nombre");
 
-    // Autres champs facultatifs mais valides si remplis
     const augmentation = row.augmentation !== undefined && row.augmentation !== ""
         ? Number(parseFloat(row.augmentation?.replace(',', '.')).toFixed(2))
         : 0;

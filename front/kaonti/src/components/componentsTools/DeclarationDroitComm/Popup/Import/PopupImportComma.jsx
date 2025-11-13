@@ -31,7 +31,6 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     },
 }));
 
-// Composant de télechargement et importation de fichier csv
 const ImportCard = ({ icon: Icon, label, iconStyle = {}, children, sx = {}, sxTypo = {}, onClick }) => (
     <Stack
         direction="row"
@@ -44,7 +43,6 @@ const ImportCard = ({ icon: Icon, label, iconStyle = {}, children, sx = {}, sxTy
             py: 1,
             color: initial.theme,
             borderRadius: 1,
-            // color: 'white',
             cursor: 'pointer',
             position: 'relative',
             overflow: 'hidden',
@@ -64,13 +62,11 @@ const PopupImportComma = ({ confirmationState, setIsRefreshed, nature, compteId,
     const [csvFile, setCsvFile] = useState(null);
     const [csvData, setCsvData] = useState([]);
 
-    // Fermer le modal
     const handleClose = () => {
         confirmationState(false);
         setIsRefreshed();
     };
 
-    // Modification des valeurs des cellules dans le Datagrid
     const handleRowUpdate = (newRow, oldRow) => {
         const { id, typeTier, ...rowWithoutId } = newRow;
 
@@ -82,7 +78,6 @@ const PopupImportComma = ({ confirmationState, setIsRefreshed, nature, compteId,
         return newRow;
     };
 
-    // Largeur pour les SVT, ADR, AC, AI, DEB, MV
     const customWidths1 = {
         nif: 150,
         nif_representaires: 150,
@@ -102,7 +97,6 @@ const PopupImportComma = ({ confirmationState, setIsRefreshed, nature, compteId,
         versees: 160
     };
 
-    // Largeur pour les MV, PSV
     const customWidths2 = {
         nif: 150,
         nif_representaires: 150,
@@ -125,7 +119,6 @@ const PopupImportComma = ({ confirmationState, setIsRefreshed, nature, compteId,
         tva: 100
     };
 
-    // Largeur pour le PL
     const customWidths3 = {
         nif: 150,
         nif_representaires: 150,
@@ -147,7 +140,6 @@ const PopupImportComma = ({ confirmationState, setIsRefreshed, nature, compteId,
         tva: 100
     };
 
-    // Largeur final
     const customWidths =
         nature === 'SVT' || nature === 'ADR' || nature === 'AC' || nature === 'AI' || nature === 'DEB'
             ? customWidths1 : nature === 'MV' || nature === 'PSV' ? customWidths2 : customWidths3

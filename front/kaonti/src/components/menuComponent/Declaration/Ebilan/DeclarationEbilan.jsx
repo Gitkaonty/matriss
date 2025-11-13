@@ -1172,9 +1172,6 @@ export default function DeclarationEbilan() {
     const [seData, setSeData] = useState([]);
     const [neData, setNeData] = useState([]);
 
-    const [typeDeleteBhiapc, setTypeDeleteBhiapc] = useState(null);
-    const [nifToDeleteBhiapc, setNifToDeleteBhiapc] = useState(null);
-
     const [showTableRefresh, setShowTableRefresh] = useState(false);
     const [tableToRefresh, setTableToRefresh] = useState('');
     const [msgRefresh, setMsgRefresh] = useState('');
@@ -1246,6 +1243,8 @@ export default function DeclarationEbilan() {
     const [nbrAnomalieSAD, setNbrAnomalieSAD] = useState(0);
     const [nbrAnomalieSDR, setNbrAnomalieSDR] = useState(0);
     const [nbrAnomalieSE, setNbrAnomalieSE] = useState(0);
+
+    const [isLoading, setIsLoading] = useState(false);
 
     const [openDialogGenerateAuto, setOpenDialogGenerateAuto] = useState(false);
     const [showPopupImportCsv, setShowPopupImportCsv] = useState(false);
@@ -2347,7 +2346,6 @@ export default function DeclarationEbilan() {
     const recupRubriqueGlobal = (compteId, fileId, exerciceId) => {
         axios.post(`/declaration/ebilan/listeRubriqueGlobal`, { compteId, fileId, exerciceId }).then((response) => {
             const resData = response.data;
-            console.log('resData : ', resData);
             if (resData.state) {
                 setBilanActifData(resData.bilanActif);
                 setBilanPassifData(resData.bilanPassif);
@@ -2526,6 +2524,7 @@ export default function DeclarationEbilan() {
     //Actualisation d'un tableau
     const ActivateTableCalcul = async (compteId, fileId, exerciceId, tableau, refreshTotal) => {
         try {
+            setIsLoading(true);
             const response = await axios.post(`/declaration/ebilan/activateCalcul`, { compteId, fileId, exerciceId, tableau, refreshTotal });
             const resData = response.data;
 
@@ -2737,6 +2736,8 @@ export default function DeclarationEbilan() {
             } else {
                 toast.error(resData.msg);
             }
+
+            setIsLoading(false);
 
             return resData; // optionnel
         } catch (error) {
@@ -3066,7 +3067,16 @@ export default function DeclarationEbilan() {
     return (
         <Box>
             {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
-            {showTableRefresh ? <PopupActionConfirm msg={msgRefresh} confirmationState={handleRefreshTable} /> : null}
+            {
+                showTableRefresh ?
+                    <PopupActionConfirm
+                        msg={msgRefresh}
+                        confirmationState={handleRefreshTable}
+                        isLoading={isLoading}
+                    />
+                    :
+                    null
+            }
             {confirmDeleteOneRow ? <PopupConfirmDelete msg={'Voulez-vous vraiement supprimer la ligne sélectionnée?'} confirmationState={deleteOneRow} /> : null}
             {confirmDeleteAllRow ? <PopupConfirmDelete msg={'Voulez-vous vraiement supprimer toutes les lignes du tableau?'} confirmationState={deleteAllRow} /> : null}
             {confirmShowAnomalie ? <PopupDetailAnomalie title={tableToRefresh} rows={listeAnomalie} confirmationState={closeDetailAnomalie} /> : null}

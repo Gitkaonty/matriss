@@ -310,7 +310,6 @@ export default function ParamCRM() {
         longueurcptstd: Yup.number().moreThan(1, 'Taper une longueur de compte supérieur à 1'),
         longueurcptaux: Yup.number().moreThan(1, 'Taper une longueur de compte supérieur à 1'),
         tauxir: Yup.number().moreThan(0, 'Taper votre taux IR'),
-        compteisi: Yup.number().moreThan(0, 'Taper le compte associé à ISI'),
     });
 
     const sendToHome = (value) => {
@@ -2617,7 +2616,6 @@ const handleEditClickDomBank = (id) => () => {
                                                                     width: '150px',
                                                                 }}
                                                             />
-                                                            <ErrorMessage name='compteisi' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
                                                         </Stack>
 
                                                         <Typography style={{ fontWeight: 'bold', fontSize: "18px", marginLeft: "0px", marginTop: "50px" }}>Taxe sur la valeur ajoutée (TVA)</Typography>

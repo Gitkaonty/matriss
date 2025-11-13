@@ -9,16 +9,14 @@ import TableRow from '@mui/material/TableRow';
 import TableFooter from '@mui/material/TableFooter';
 import Paper from '@mui/material/Paper';
 import { init } from '../../../../init';
-import { Box, Button, Collapse, IconButton, Stack, Typography } from '@mui/material';
+import { Box, Collapse, IconButton, Stack, Typography } from '@mui/material';
 import { IoMdTrash } from "react-icons/io";
-import { TbPlaylistAdd } from "react-icons/tb";
 import { IoMdCreate } from "react-icons/io";
 import { format } from 'date-fns';
 import { ExpandMore, ExpandLess } from '@mui/icons-material';
 
 const VirtualTableModifiableGroupableEbilanEIAFNC = ({ columns, rows, deleteState, modifyState, state }) => {
   const initial = init[0];
-  const targetColumnId = 'rubriquesmatrix.libelle';
 
   const handleRowModifClick = (row) => {
     modifyState(row);
@@ -36,32 +34,6 @@ const VirtualTableModifiableGroupableEbilanEIAFNC = ({ columns, rows, deleteStat
       [groupName]: !prevExpanded[groupName], // Inverse l'état d'expansion
     }));
   };
-
-  const columnWidths = columns.reduce((acc, column) => {
-    acc[column.id] = column.minWidth;
-    return acc;
-  }, {});
-
-  const soustotalGroup = (item, columnId) => {
-    return rows.reduce((totals, group) => {
-      // Vérifier si le groupe correspond à celui que nous recherchons (ex: "GOODWILL")
-      if (group.rubriques_poste === item) {
-        // Parcourir les items du groupe
-        group.items.forEach((item) => {
-          // Vérifier si 'augmentation' existe et est un nombre valide
-          const value = item[columnId];
-
-          // Si la valeur est définie et un nombre, on l'ajoute au total
-          if (value != null && !isNaN(value)) {
-            totals += value;
-          }
-        });
-      }
-      return totals;
-    }, 0);
-  };
-
-  console.log('rows : ', rows);
 
   const totalGroup = (columnId) => {
     return rows.reduce((totals, group) => {
@@ -302,34 +274,6 @@ const VirtualTableModifiableGroupableEbilanEIAFNC = ({ columns, rows, deleteStat
 
                             </TableRow>
                           ))}
-
-                          {/* <TableRow  >
-                            {columns.map((column) => {
-                              return (
-                                <TableCell
-                                  key={`subtotal-${column.id}`}
-                                  align={column.align || "left"}
-                                  sx={{
-                                    fontWeight: "bold",
-                                    fontSize: 15,
-                                    backgroundColor: column.id === "rubriques_poste" ? "transparent" : "#f0f0f0",
-                                    py: 0.6,
-                                  }}
-                                >
-                                  {
-                                    column.id === "rubriques_poste"
-                                      ? ""
-                                      : column.id === "num_compte"
-                                        ? "Sous Total"
-                                        : column.isnumber
-                                          ? soustotalGroup(group.rubriques_poste, column.id).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                                          : ""
-                                  }
-                                </TableCell>
-                              )
-                            })
-                            }
-                          </TableRow> */}
                         </TableBody>
                       </Table>
 

@@ -1,4 +1,4 @@
-import { React, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Typography, Stack, TextField, FormControl } from '@mui/material';
 import Button from '@mui/material/Button';
 import { styled } from '@mui/material/styles';
@@ -9,12 +9,7 @@ import DialogActions from '@mui/material/DialogActions';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
 import { init } from '../../../../init';
-import { CiWarning } from "react-icons/ci";
-import { IoIosWarning } from "react-icons/io";
-import toast from 'react-hot-toast';
-import axios from '../../../../config/axios';
 import InputAdornment from '@mui/material/InputAdornment';
-import { NumericFormat } from 'react-number-format';
 import { useFormik } from 'formik';
 import * as Yup from "yup";
 import FormatedInput from '../FormatedInput';
@@ -49,8 +44,6 @@ const PopupModifBHIAPC = ({ choix, confirmationState, data }) => {
         nif: Yup.string().required("Veuillez entrer le nif"),
         raisonsociale: Yup.string().required("Veuillez entrer une raison sociale"),
         adresse: Yup.string().required("Veuillez entrer une adresse"),
-        // montantcharge: Yup.number().positive("Veuillez entrer un montant positive").required("Veuillez entrer le montant chargé"),
-        // montantbeneficiaire: Yup.number().positive("Veuillez entrer un montant positive").required("Veuillez entrer le montant bénéficiaire"),
     })
 
     const formData = useFormik({

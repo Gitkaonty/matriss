@@ -33,9 +33,6 @@ const DashboardCard = ({
                     transformStyle: 'preserve-3d',
                     borderRadius: 2,
                     boxShadow: 3,
-                    // '&:hover': {
-                    //     transform: 'rotateY(180deg)',
-                    // },
                     transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
                 }}
             >
@@ -49,16 +46,11 @@ const DashboardCard = ({
                         width: '100%',
                         height: '100%',
                         backfaceVisibility: 'hidden',
-                        backgroundColor: backgroundColor,
+                        backgroundColor: `${backgroundColor}33`,
                         borderRadius: 2,
                         p: 3,
                         transition: 'all 0.3s ease-in-out',
-                        cursor: 'pointer',
                         boxShadow: 2,
-                        '&:hover': {
-                            transform: 'scale(1.01)',
-                            boxShadow: 3,
-                        },
                     }}
                 >
                     {/* Icône flip */}
@@ -105,7 +97,7 @@ const DashboardCard = ({
                         width: '100%',
                         height: '100%',
                         backfaceVisibility: 'hidden',
-                        backgroundColor: backgroundColor,
+                        backgroundColor: `${backgroundColor}33`,
                         borderRadius: 2,
                         p: 3,
                         transform: 'rotateY(180deg)',
@@ -121,7 +113,7 @@ const DashboardCard = ({
                             '&:hover': {
                                 transform: 'scale(1.2)',
                             },
-                        }}
+                        }} s
                         onClick={() => setFlipped(false)}
                     >
                         <HiOutlineSwitchHorizontal size={20} />
@@ -134,7 +126,7 @@ const DashboardCard = ({
                         variation={variationN1}
                         evolution={evolutionN1}
                         exercice={'Exercice précédent'}
-                        color={'#6d645dff'}
+                        color={'#292724ff'}
                     />
                 </Stack>
             </Box>

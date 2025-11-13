@@ -93,7 +93,6 @@ const DropPDFUploader = ({ file, setFile, mode }) => {
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} alignItems="start">
                     <Paper
                         elevation={dragActive ? 6 : 2}
-                        // onDrop={handleDrop}
                         onDragOver={handleDrag}
                         onDragEnter={handleDrag}
                         onDragLeave={handleDrag}

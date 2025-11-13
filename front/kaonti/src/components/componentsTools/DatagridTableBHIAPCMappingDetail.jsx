@@ -1,4 +1,3 @@
-import React from 'react';
 import { useState, useEffect } from 'react';
 import {
     Typography, Stack, FormControl,
@@ -32,8 +31,6 @@ export const DatagridBHIAPCdetail = ({ compteId, fileId, exerciceId, etatId, rub
     const [editableRow, setEditableRow] = useState(true);
     const [compteValidationColor, setCompteValidationColor] = useState('transparent');
     const [sensCalculValidationColor, setSensCalculValidationColor] = useState('transparent');
-    const [conditionValidationColor, setConditionValidationColor] = useState('transparent');
-    const [equationValidationColor, setEquationValidationColor] = useState('transparent');
 
     const [selectedRow, setSelectedRow] = useState([]);
 
@@ -63,17 +60,6 @@ export const DatagridBHIAPCdetail = ({ compteId, fileId, exerciceId, etatId, rub
     const sensCalcul = [
         { value: 'D-C', label: 'Débit - Crédit' },
         { value: 'C-D', label: 'Crédit - Débit' },
-    ];
-
-    const condition = [
-        { value: 'SOLDE', label: 'Solde' },
-        { value: 'SiD', label: 'Si débiteur' },
-        { value: 'SiC', label: 'Si créditeur' },
-    ];
-
-    const equation = [
-        { value: 'ADDITIF', label: 'Additif' },
-        { value: 'SOUSTRACTIF', label: 'Soustractif' },
     ];
 
     //formulaire pour la sauvegarde
@@ -112,14 +98,6 @@ export const DatagridBHIAPCdetail = ({ compteId, fileId, exerciceId, etatId, rub
 
     const handleChangeSensCalcul = (value) => {
         formNewParam.setFieldValue('senscalcul', value);
-    }
-
-    const handleChangeCondition = (value) => {
-        formNewParam.setFieldValue('condition', value);
-    }
-
-    const handleChangeEquation = (value) => {
-        formNewParam.setFieldValue('equation', value);
     }
 
     const columnHeader = [
@@ -253,8 +231,6 @@ export const DatagridBHIAPCdetail = ({ compteId, fileId, exerciceId, etatId, rub
         //réinitialiser les couleurs des champs
         setCompteValidationColor('transparent');
         setSensCalculValidationColor('transparent');
-        setConditionValidationColor('transparent');
-        setEquationValidationColor('transparent');
         //charger dans le formik les données de la ligne
         const selectedRowInfos = compteRubriqueData?.filter((item) => item.id === id[0]);
 
@@ -286,13 +262,9 @@ export const DatagridBHIAPCdetail = ({ compteId, fileId, exerciceId, etatId, rub
     const handleSaveClick = (id) => () => {
         let saveBoolCompte = false;
         let saveBoolSensCalcul = false;
-        let saveBoolCondition = false;
-        let saveBoolEquation = false;
 
         setCompteValidationColor('transparent');
         setSensCalculValidationColor('transparent');
-        setConditionValidationColor('transparent');
-        setEquationValidationColor('transparent');
 
         if (formNewParam.values.compte === '') {
             setCompteValidationColor('#F6D6D6');
@@ -308,22 +280,6 @@ export const DatagridBHIAPCdetail = ({ compteId, fileId, exerciceId, etatId, rub
         } else {
             setSensCalculValidationColor('transparent');
             saveBoolSensCalcul = true;
-        }
-
-        if (formNewParam.values.condition === '') {
-            setConditionValidationColor('#F6D6D6');
-            saveBoolCondition = false;
-        } else {
-            setConditionValidationColor('transparent');
-            saveBoolCondition = true;
-        }
-
-        if (formNewParam.values.equation === '') {
-            setEquationValidationColor('#F6D6D6');
-            saveBoolEquation = false;
-        } else {
-            setEquationValidationColor('transparent');
-            saveBoolEquation = true;
         }
 
         if (saveBoolCompte && saveBoolSensCalcul) {
