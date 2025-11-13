@@ -725,20 +725,7 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
                     columnVisibilityModel={{
                         id: false,
                     }}
-
-                    rows={compteRubriqueData}
-                    columns={columnHeader}
-                    rowModesModel={rowModesModel}
-                    onRowModesModelChange={handleRowModesModelChange}
-                    onRowEditStop={handleRowEditStop}
-                    processRowUpdate={processRowUpdate}
                     rowSelectionModel={selectedRow}
-                    onRowClick={(e) => handleCellEditCommit(e.row)}
-                    onRowSelectionModelChange={ids => {
-                        setSelectedRow(ids);
-                        saveSelectedRow(ids);
-                        deselectRow(ids);
-                    }}
                     onRowEditStart={(params, event) => {
                         if (!selectedRow.length || selectedRow[0] !== params.id) {
                             event.defaultMuiPrevented = true;

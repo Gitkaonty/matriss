@@ -2233,7 +2233,7 @@ export default function DeclarationIRSAComponent() {
 
       {openConfirmGenerateIrsa && (
         <PopupActionConfirm
-          msg={"Voulez-vous vraiment générer les lignes IRSA à partir des fiches de paie de la période sélectionnée ?"}
+          msg={"Voulez-vous vraiment générer la déclaration IRSA à partir des fiches de paie de la période sélectionnée ?"}
           confirmationState={(val) => {
             setOpenConfirmGenerateIrsa(false);
             if (val === true) {

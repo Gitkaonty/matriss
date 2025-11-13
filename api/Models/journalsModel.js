@@ -147,6 +147,16 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.BOOLEAN,
             allowNull: true,
             defaultValue: false
+        },
+        rapprocher: {
+            type: DataTypes.BOOLEAN,
+            allowNull: true,
+            defaultValue: false
+        },
+        date_rapprochement: {
+            type: DataTypes.DATEONLY,
+            allowNull: true,
+            defaultValue: null
         }
     }, { timestamps: true },)
     return journals

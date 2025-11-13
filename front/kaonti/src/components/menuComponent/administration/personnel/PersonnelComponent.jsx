@@ -239,6 +239,10 @@ export default function PersonnelComponent() {
             headerName: 'Fonction',
             flex: 3,
             editable: editableRow,
+            renderCell: (params) => {
+                const found = fonctions.find(f => f.id === params.value);
+                return found ? found.nom : '';
+            },
             renderEditCell: (params) => {
                 const handleSelectChange = (e) => {
                     const value = e.target.value;

@@ -123,6 +123,7 @@ db.paiements = require('./paiementModel')(sequelize, DataTypes);
 //
 
 //
+db.rapprochements = require('./rapprochementsModel')(sequelize, DataTypes);
 db.rubriquesExternes = require('./rubriquesExternesModel')(sequelize, DataTypes);
 db.compteRubriquesExternes = require('./compteRubriqueExterneModel')(sequelize, DataTypes);
 db.rubriqueExternesEvcp = require('./rubriqueExternesEvcpModel')(sequelize, DataTypes);

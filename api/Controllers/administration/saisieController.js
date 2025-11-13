@@ -4,6 +4,8 @@ const devises = db.devises;
 const journals = db.journals;
 const dossierplancomptable = db.dossierplancomptable;
 const codejournals = db.codejournals;
+const rapprochements = db.rapprochements;
+const { Op } = require('sequelize');
 
 const fs = require('fs');
 const path = require('path');
@@ -13,6 +15,280 @@ const basePath = path.join(__dirname, '..', '..', 'public', 'ScanEcriture');
 function pluralize(count, word) {
     return count > 1 ? word + 's' : word;
 }
+
+// --- Rapprochements: PC 512 éligibles par exercice ---
+exports.listEligiblePc512 = async (req, res) => {
+    try {
+        const fileId = Number(req.query?.fileId);
+        const compteId = Number(req.query?.compteId);
+        if (!fileId || !compteId) {
+            return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
+        }
+        // Lister tous les comptes 512 du plan comptable du dossier et du compte (pas de filtre exercice)
+        const sql = `
+            SELECT pc.*
+            FROM dossierplancomptables pc
+            WHERE pc.id_dossier = :fileId
+              AND pc.id_compte = :compteId
+              AND pc.compte LIKE '512%'
+            ORDER BY pc.compte ASC
+        `;
+        const rows = await db.sequelize.query(sql, {
+            replacements: { fileId, compteId },
+            type: db.Sequelize.QueryTypes.SELECT,
+        });
+        return res.json({ state: true, list: rows || [] });
+    } catch (err) {
+        console.error('[RAPPRO][PCS] error:', err);
+        return res.status(500).json({ state: false, msg: 'Erreur serveur' });
+    }
+};
+
+// --- Ecritures: marquer/démarquer comme rapprochée en masse ---
+exports.updateEcrituresRapprochement = async (req, res) => {
+    try {
+        const { ids, fileId, compteId, exerciceId, rapprocher, dateRapprochement } = req.body || {};
+        if (!Array.isArray(ids) || ids.length === 0 || !fileId || !compteId || !exerciceId || typeof rapprocher !== 'boolean') {
+            return res.status(400).json({ state: false, msg: 'Paramètres manquants ou invalides' });
+        }
+        const payload = {
+            rapprocher: !!rapprocher,
+            // store as 'YYYY-MM-DD' to avoid TZ shift
+            date_rapprochement: !!rapprocher ? (dateRapprochement ? String(dateRapprochement).substring(0,10) : null) : null,
+            modifierpar: Number(compteId) || 0,
+        };
+        if (rapprocher && !payload.date_rapprochement) {
+            return res.status(400).json({ state: false, msg: 'dateRapprochement requis quand rapprocher = true' });
+        }
+        const [affected] = await journals.update(payload, {
+            where: {
+                id: ids,
+                id_compte: Number(compteId),
+                id_dossier: Number(fileId),
+                id_exercice: Number(exerciceId),
+            }
+        });
+        return res.json({ state: true, updated: affected });
+    } catch (err) {
+        console.error('[RAPPRO][MARK] error:', err);
+        return res.status(500).json({ state: false, msg: 'Erreur serveur' });
+    }
+};
+
+// --- Rapprochements: calcul des soldes pour une ligne sélectionnée ---
+exports.computeSoldesRapprochement = async (req, res) => {
+    try {
+        const fileId = Number(req.query?.fileId);
+        const compteId = Number(req.query?.compteId);
+        const exerciceId = Number(req.query?.exerciceId);
+        const pcId = Number(req.query?.pcId);
+        const endDateParam = req.query?.endDate; // requis pour la ligne sélectionnée
+        const soldeBancaireParam = req.query?.soldeBancaire; // optionnel
+        if (!fileId || !compteId || !exerciceId || !pcId || !endDateParam) {
+            return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
+        }
+        const exo = await db.exercices.findByPk(exerciceId);
+        if (!exo) return res.status(404).json({ state: false, msg: 'Exercice introuvable' });
+        const dateDebut = exo.date_debut ? String(exo.date_debut).substring(0,10) : null;
+        const dateFin = endDateParam ? String(endDateParam).substring(0,10) : null;
+        if (!dateDebut || !dateFin) return res.status(400).json({ state: false, msg: 'Dates invalides' });
+
+        const sqlAggBase = `
+            FROM journals j
+            JOIN codejournals cj ON cj.id = j.id_journal
+            JOIN dossierplancomptables pc ON pc.id = :pcId
+            JOIN dossierplancomptables c ON c.id = j.id_numcpt
+            WHERE j.id_compte = :compteId
+              AND j.id_dossier = :fileId
+              AND j.id_exercice = :exerciceId
+              AND cj.compteassocie = pc.compte
+              AND j.dateecriture BETWEEN :dateDebut AND :dateFin
+              AND c.compte <> pc.compte
+        `;
+
+        const sqlAll = `SELECT COALESCE(SUM(j.credit),0) AS sum_credit, COALESCE(SUM(j.debit),0) AS sum_debit ${sqlAggBase}`;
+        const sqlRapp = `SELECT COALESCE(SUM(j.credit),0) AS sum_credit, COALESCE(SUM(j.debit),0) AS sum_debit ${sqlAggBase} AND (CASE WHEN j.rapprocher THEN 1 ELSE 0 END) = 1`;
+
+        const [totAll] = await db.sequelize.query(sqlAll, {
+            replacements: { fileId, compteId, exerciceId, pcId, dateDebut, dateFin },
+            type: db.Sequelize.QueryTypes.SELECT,
+        });
+        const [totRapp] = await db.sequelize.query(sqlRapp, {
+            replacements: { fileId, compteId, exerciceId, pcId, dateDebut, dateFin },
+            type: db.Sequelize.QueryTypes.SELECT,
+        });
+
+        const totalAll = (Number(totAll.sum_credit) || 0) - (Number(totAll.sum_debit) || 0);
+        const totalRapp = (Number(totRapp.sum_credit) || 0) - (Number(totRapp.sum_debit) || 0);
+
+        const solde_comptable = totalAll;
+        // si aucune écriture rapprochée, solde_non_rapproché = solde_comptable, sinon on exclut celles rapprochées
+        const hasRapp = Math.abs(totalRapp) > 0;
+        const solde_non_rapproche = hasRapp ? (totalAll - totalRapp) : totalAll;
+
+        const solde_bancaire = soldeBancaireParam !== undefined && soldeBancaireParam !== null ? Number(soldeBancaireParam) : null;
+        const ecart = typeof solde_bancaire === 'number' && !isNaN(solde_bancaire)
+            ? (solde_comptable - solde_bancaire - solde_non_rapproche)
+            : null;
+
+        return res.json({ state: true, solde_comptable, solde_non_rapproche, solde_bancaire, ecart });
+    } catch (err) {
+        console.error('[RAPPRO][COMPUTE] error:', err);
+        return res.status(500).json({ state: false, msg: 'Erreur serveur' });
+    }
+};
+
+// --- Rapprochements: liste des rapprochements pour un PC ---
+exports.listRapprochements = async (req, res) => {
+    try {
+        const fileId = Number(req.query?.fileId);
+        const compteId = Number(req.query?.compteId);
+        const exerciceId = Number(req.query?.exerciceId);
+        const pcId = Number(req.query?.pcId);
+        if (!fileId || !compteId || !exerciceId || !pcId) {
+            return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
+        }
+        const rows = await rapprochements.findAll({
+            where: {
+                id_dossier: fileId,
+                id_compte: compteId,
+                id_exercice: exerciceId,
+                pc_id: pcId,
+            },
+            order: [['date_debut', 'ASC'], ['id', 'ASC']]
+        });
+        return res.json({ state: true, list: rows || [] });
+    } catch (err) {
+        console.error('[RAPPRO][LIST] error:', err);
+        return res.status(500).json({ state: false, msg: 'Erreur serveur' });
+    }
+};
+
+// --- Rapprochements: créer ---
+exports.createRapprochement = async (req, res) => {
+    try {
+        const {
+            fileId, compteId, exerciceId, pcId,
+            date_debut, date_fin,
+            solde_comptable = 0, solde_bancaire = 0, solde_non_rapproche = 0,
+        } = req.body || {};
+        if (!fileId || !compteId || !exerciceId || !pcId) {
+            return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
+        }
+        const row = await rapprochements.create({
+            id_dossier: Number(fileId),
+            id_compte: Number(compteId),
+            id_exercice: Number(exerciceId),
+            pc_id: Number(pcId),
+            // Store as provided date-only strings to avoid timezone issues
+            date_debut: date_debut ? String(date_debut).substring(0,10) : null,
+            date_fin: date_fin ? String(date_fin).substring(0,10) : null,
+            solde_comptable: Number(solde_comptable) || 0,
+            solde_bancaire: Number(solde_bancaire) || 0,
+            solde_non_rapproche: Number(solde_non_rapproche) || 0,
+        });
+        return res.json({ state: true, id: row.id });
+    } catch (err) {
+        console.error('[RAPPRO][CREATE] error:', err);
+        return res.status(500).json({ state: false, msg: 'Erreur serveur' });
+    }
+};
+
+// --- Rapprochements: modifier ---
+exports.updateRapprochement = async (req, res) => {
+    try {
+        const id = Number(req.params?.id);
+        const {
+            fileId, compteId, exerciceId, pcId,
+            date_debut, date_fin,
+            solde_comptable = 0, solde_bancaire = 0, solde_non_rapproche = 0,
+        } = req.body || {};
+        if (!id || !fileId || !compteId || !exerciceId || !pcId) {
+            return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
+        }
+        const [affected] = await rapprochements.update({
+            date_debut: date_debut ? String(date_debut).substring(0,10) : null,
+            date_fin: date_fin ? String(date_fin).substring(0,10) : null,
+            solde_comptable: Number(solde_comptable) || 0,
+            solde_bancaire: Number(solde_bancaire) || 0,
+            solde_non_rapproche: Number(solde_non_rapproche) || 0,
+        }, {
+            where: {
+                id,
+                id_dossier: Number(fileId),
+                id_compte: Number(compteId),
+                id_exercice: Number(exerciceId),
+                pc_id: Number(pcId),
+            }
+        });
+        if (affected === 0) return res.status(404).json({ state: false, msg: 'Introuvable' });
+        return res.json({ state: true, id });
+    } catch (err) {
+        console.error('[RAPPRO][UPDATE] error:', err);
+        return res.status(500).json({ state: false, msg: 'Erreur serveur' });
+    }
+};
+
+// --- Rapprochements: supprimer ---
+exports.deleteRapprochement = async (req, res) => {
+    try {
+        const id = Number(req.params?.id);
+        const fileId = Number(req.query?.fileId);
+        const compteId = Number(req.query?.compteId);
+        const exerciceId = Number(req.query?.exerciceId);
+        if (!id || !fileId || !compteId || !exerciceId) {
+            return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
+        }
+        const affected = await rapprochements.destroy({ where: { id, id_dossier: fileId, id_compte: compteId, id_exercice: exerciceId } });
+        if (!affected) return res.status(404).json({ state: false, msg: 'Introuvable' });
+        return res.json({ state: true, id });
+    } catch (err) {
+        console.error('[RAPPRO][DELETE] error:', err);
+        return res.status(500).json({ state: false, msg: 'Erreur serveur' });
+    }
+};
+
+// --- Ecritures pour rapprochement: liste des écritures filtrées ---
+exports.listEcrituresForRapprochement = async (req, res) => {
+    try {
+        const fileId = Number(req.query?.fileId);
+        const compteId = Number(req.query?.compteId);
+        const exerciceId = Number(req.query?.exerciceId);
+        const pcId = Number(req.query?.pcId);
+        const endDateParam = req.query?.endDate; // optionnel, sinon on prend fin d'exercice
+        if (!fileId || !compteId || !exerciceId || !pcId) {
+            return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
+        }
+        // Récupérer début/fin d'exercice
+        const exo = await db.exercices.findByPk(exerciceId);
+        if (!exo) return res.status(404).json({ state: false, msg: 'Exercice introuvable' });
+        const dateDebut = exo.date_debut;
+        const dateFin = endDateParam ? new Date(endDateParam) : exo.date_fin;
+        // SQL: journaux du code journal associé au compte 512 sélectionné, dates incluses, et compte different du 512 sélectionné
+        const sql = `
+            SELECT j.*, c.compte AS compte_ecriture, cj.code AS code_journal
+            FROM journals j
+            JOIN codejournals cj ON cj.id = j.id_journal
+            JOIN dossierplancomptables pc ON pc.id = :pcId
+            JOIN dossierplancomptables c ON c.id = j.id_numcpt
+            WHERE j.id_compte = :compteId
+              AND j.id_dossier = :fileId
+              AND j.id_exercice = :exerciceId
+              AND cj.compteassocie = pc.compte
+              AND j.dateecriture BETWEEN :dateDebut AND :dateFin
+              AND c.compte <> pc.compte
+            ORDER BY j.dateecriture ASC, j.id ASC
+        `;
+        const rows = await db.sequelize.query(sql, {
+            replacements: { fileId, compteId, exerciceId, pcId, dateDebut, dateFin },
+            type: db.Sequelize.QueryTypes.SELECT,
+        });
+        return res.json({ state: true, list: rows || [] });
+    } catch (err) {
+        console.error('[RAPPRO][ECRITURES] error:', err);
+        return res.status(500).json({ state: false, msg: 'Erreur serveur' });
+    }
+};
 
 exports.getAllDevises = async (req, res) => {
     try {
