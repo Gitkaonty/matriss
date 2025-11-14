@@ -232,15 +232,26 @@ const safeVariation = (a, b) => {
 const getEvolution = (currentVar, previousVar) => {
     if (currentVar === previousVar) return 'stable';
 
+    const currentAbs = Math.abs(currentVar);
+    const previousAbs = Math.abs(previousVar);
+
     if (currentVar >= 0 && previousVar >= 0) {
         return currentVar > previousVar ? 'augmentation' : 'diminution';
     }
 
-    if (currentVar < 0 && previousVar <= 0) {
-        return Math.abs(currentVar) > Math.abs(previousVar) ? 'augmentation' : 'diminution';
+    if (currentVar <= 0 && previousVar <= 0) {
+        return currentAbs < previousAbs ? 'augmentation' : 'diminution';
     }
 
-    return currentVar > previousVar ? 'augmentation' : 'diminution';
+    if (currentVar < 0 && previousVar >= 0) {
+        return 'diminution';
+    }
+
+    if (currentVar >= 0 && previousVar < 0) {
+        return 'augmentation';
+    }
+
+    return 'stable';
 };
 
 const getJournalData = async (id_compte, id_dossier, id_exercice) => {
@@ -275,7 +286,6 @@ exports.getAllInfo = async (req, res) => {
         }
 
         const moisN = getMonthsBetween(exerciceNData?.date_debut, exerciceNData?.date_fin);
-        console.log('moisN : ', moisN);
 
         const journalData = await journals.findAll({
             where: { id_compte, id_dossier, id_exercice },
@@ -313,7 +323,15 @@ exports.getAllInfo = async (req, res) => {
             tresorerieBanqueN1 = [],
             tresorerieCaisseN1 = [],
             moisN1 = [],
+
             resultatN1 = 0,
+            resultatN2 = 0,
+            resultatN3 = 0,
+            variationResultatN = 0,
+            variationResultatN1 = 0,
+            variationResultatN2 = 0,
+            evolutionResultatN = '',
+            evolutionResultatN1 = '',
 
             resultatChiffreAffaireN1 = 0,
             resultatChiffreAffaireN2 = 0,
@@ -394,6 +412,7 @@ exports.getAllInfo = async (req, res) => {
 
             const mappedDataN2 = await getJournalData(id_compte, id_dossier, id_exerciceN2);
 
+            resultatN2 = calculateResultat(mappedDataN2);
             resultatChiffreAffaireN2 = calculateResultatChiffreAffaire(mappedDataN2);
             resultatDepenseAchatN2 = calculateResultatDepensesAchats(mappedDataN2);
             resultatDepenseSalarialeN2 = calculateResultatDepensesSalariales(mappedDataN2);
@@ -405,12 +424,21 @@ exports.getAllInfo = async (req, res) => {
 
             const mappedDataN3 = await getJournalData(id_compte, id_dossier, id_exerciceN3);
 
+            resultatN3 = calculateResultat(mappedDataN3);
             resultatChiffreAffaireN3 = calculateResultatChiffreAffaire(mappedDataN3);
             resultatDepenseAchatN3 = calculateResultatDepensesAchats(mappedDataN3);
             resultatDepenseSalarialeN3 = calculateResultatDepensesSalariales(mappedDataN3);
             resultatTresorerieBanqueN3 = calculateResultatTresoreriesBanques(mappedDataN3);
             resultatTresorerieCaisseN3 = calculateResultatTresoreriesCaisses(mappedDataN3);
         }
+
+        // Resultat
+        variationResultatN = safeVariation(resultatN, resultatN1);
+        variationResultatN1 = safeVariation(resultatN1, resultatN2);
+        variationResultatN2 = safeVariation(resultatN2, resultatN3);
+
+        evolutionResultatN = getEvolution(variationResultatN, variationResultatN1);
+        evolutionResultatN1 = getEvolution(variationResultatN1, variationResultatN2);
 
         // Chiffre d'affaires
         variationChiffreAffaireN = safeVariation(resultatChiffreAffaireN, resultatChiffreAffaireN1);
@@ -500,6 +528,10 @@ exports.getAllInfo = async (req, res) => {
 
             resultatN,
             resultatN1,
+            variationResultatN,
+            variationResultatN1,
+            evolutionResultatN,
+            evolutionResultatN1,
 
             state: true,
         });

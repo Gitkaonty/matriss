@@ -1,8 +1,9 @@
 const db = require("../../Models");
 require('dotenv').config();
 const { Op } = require('sequelize');
-const balances = db.balances;
 
+const dossierPlanComptable = db.dossierplancomptable;
+const balances = db.balances;
 const rubriques = db.rubriques;
 const compterubriques = db.compterubriques;
 

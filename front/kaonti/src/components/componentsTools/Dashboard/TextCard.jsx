@@ -35,47 +35,27 @@ const TextCard = ({
 
     return (
         <>
-            {
-                type === 'total' && (
-                    <>
-                        <Typography variant="h6" fontWeight={750}>
-                            {text}
-                        </Typography>
-                        <Typography fontSize={'18px'} textAlign={'right'} sx={{ width: '100%' }} fontWeight={800}>
-                            {formatMontant(montant)}
-                        </Typography>
-                        <Typography fontSize={'18px'} color={'#292724ff'} textAlign={'right'} sx={{ width: '100%' }} fontWeight={800}>
-                            {formatMontant(montantN1)}
-                        </Typography>
-                    </>
-                )
-            }
-
-            {type !== 'total' && (
-                <>
-                    <Typography variant="h6" color={color} fontWeight={750}>
-                        {text}
-                    </Typography>
-                    <Typography fontSize={'18px'} color={color} textAlign={'right'} sx={{ width: '100%' }} fontWeight={800}>
-                        {formatMontant(montant)}
-                    </Typography>
-                    <Stack
-                        direction="row"
-                        alignItems="end"
-                        justifyContent="flex-end"
-                        sx={{ width: '100%' }}
-                        spacing={1}
-                    >
-                        <IconVariation />
-                        <Typography variant="h5" color={color} fontWeight={600}>
-                            {formatePourcentage(variation, evolution)}
-                        </Typography>
-                    </Stack>
-                    <Typography fontSize={'18px'} color={color} fontWeight={600}>
-                        {exercice}
-                    </Typography>
-                </>
-            )}
+            <Typography variant="h6" color={color} fontWeight={750}>
+                {text}
+            </Typography>
+            <Typography fontSize={'18px'} color={color} textAlign={'right'} sx={{ width: '100%' }} fontWeight={500}>
+                {formatMontant(montant)}
+            </Typography>
+            <Stack
+                direction="row"
+                alignItems="end"
+                justifyContent="flex-end"
+                sx={{ width: '100%' }}
+                spacing={1}
+            >
+                <IconVariation />
+                <Typography variant="h5" color={color} fontWeight={500}>
+                    {formatePourcentage(variation, evolution)}
+                </Typography>
+            </Stack>
+            <Typography fontSize={'18px'} color={color} fontWeight={600}>
+                {exercice}
+            </Typography>
         </>
     )
 }

@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { useState } from 'react';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -12,8 +12,8 @@ import { init } from '../../../../init';
 let initial = init[0];
 
 export default function VirtualTableJournalAttente({ tableHeader, tableRow }) {
-  const [page, setPage] = React.useState(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState(10);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -71,7 +71,7 @@ export default function VirtualTableJournalAttente({ tableHeader, tableRow }) {
                         <TableCell
                           key={column.id}
                           align={column.align}
-                          sx={{ paddingY: 1.5 }}
+                          sx={{ paddingY: 1 }}
                         >
                           {
                             column.format
@@ -122,14 +122,14 @@ export default function VirtualTableJournalAttente({ tableHeader, tableRow }) {
       </TableContainer>
       <TablePagination
         style={{ height: "20%" }}
-        rowsPerPageOptions={[10, 25, 100]}
+        rowsPerPageOptions={[10, 25, 50, 100, 500, 1000]}
         component="div"
         count={tableRow.length}
         rowsPerPage={rowsPerPage}
         page={page}
         onPageChange={handleChangePage}
         onRowsPerPageChange={handleChangeRowsPerPage}
-        labelRowsPerPage="Lignes par page :"
+        labelRowsPerPage="Lignes par page : "
         labelDisplayedRows={({ from, to, count }) =>
           `${from}–${to} sur ${count !== -1 ? count : `plus de ${to}`}`
         }

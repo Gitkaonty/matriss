@@ -31,8 +31,8 @@ const DashboardCard = ({
                     textAlign: 'center',
                     transition: 'transform 0.5s',
                     transformStyle: 'preserve-3d',
-                    borderRadius: 2,
-                    boxShadow: 3,
+                    borderRadius: 0,
+                    boxShadow: 0,
                     transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
                 }}
             >
@@ -47,32 +47,28 @@ const DashboardCard = ({
                         height: '100%',
                         backfaceVisibility: 'hidden',
                         backgroundColor: `${backgroundColor}33`,
-                        borderRadius: 2,
+                        borderRadius: 0,
                         p: 3,
                         transition: 'all 0.3s ease-in-out',
-                        boxShadow: 2,
+                        boxShadow: 1,
                     }}
                 >
                     {/* Icône flip */}
-                    {
-                        type !== 'total' && (
-                            <Stack
-                                sx={{
-                                    position: 'absolute',
-                                    top: 15,
-                                    right: 15,
-                                    cursor: 'pointer',
-                                    transition: 'transform 0.2s ease-in-out',
-                                    '&:hover': {
-                                        transform: 'scale(1.2)',
-                                    },
-                                }}
-                                onClick={() => setFlipped(true)}
-                            >
-                                <HiOutlineSwitchHorizontal size={20} />
-                            </Stack>
-                        )
-                    }
+                    <Stack
+                        sx={{
+                            position: 'absolute',
+                            top: 15,
+                            right: 15,
+                            cursor: 'pointer',
+                            transition: 'transform 0.2s ease-in-out',
+                            '&:hover': {
+                                transform: 'scale(1.2)',
+                            },
+                        }}
+                        onClick={() => setFlipped(true)}
+                    >
+                        <HiOutlineSwitchHorizontal size={20} />
+                    </Stack>
 
                     {/* Contenu */}
                     <TextCard
@@ -97,8 +93,8 @@ const DashboardCard = ({
                         width: '100%',
                         height: '100%',
                         backfaceVisibility: 'hidden',
-                        backgroundColor: `${backgroundColor}33`,
-                        borderRadius: 2,
+                        backgroundColor: `${backgroundColor}25`,
+                        borderRadius: 0,
                         p: 3,
                         transform: 'rotateY(180deg)',
                     }}

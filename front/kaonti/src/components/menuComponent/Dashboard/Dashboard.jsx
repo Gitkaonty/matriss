@@ -109,6 +109,10 @@ export default function DashboardComponent() {
 
   const [resultatN, setResultatN] = useState(0);
   const [resultatN1, setResultatN1] = useState(0);
+  const [variationResultatN, setVariationResultatN] = useState(0);
+  const [variationResultatN1, setVariationResultatN1] = useState(0);
+  const [evolutionResultatN, setEvolutionResultatN] = useState('');
+  const [evolutionResultatN1, setEvolutionResultatN1] = useState('');
 
   const [resultatChiffreAffaireN, setResultatChiffreAffaireN] = useState(0);
   const [resultatChiffreAffaireN1, setResultatChiffreAffaireN1] = useState(0);
@@ -242,6 +246,10 @@ export default function DashboardComponent() {
 
           setResultatN(response?.data?.resultatN);
           setResultatN1(response?.data?.resultatN1);
+          setVariationResultatN(response?.data?.variationResultatN);
+          setVariationResultatN1(response?.data?.variationResultatN1);
+          setEvolutionResultatN(response?.data?.evolutionResultatN);
+          setEvolutionResultatN1(response?.data?.evolutionResultatN1);
 
           setResultatChiffreAffaireN(response?.data?.resultatChiffreAffaireN);
           setResultatChiffreAffaireN1(response?.data?.resultatChiffreAffaireN1);
@@ -304,7 +312,6 @@ export default function DashboardComponent() {
   ];
 
   useEffect(() => {
-    //tester si la page est renvoyer par useNavigate
     const navigationEntries = performance.getEntriesByType('navigation');
     let idFile = 0;
     if (navigationEntries.length > 0) {
@@ -432,8 +439,8 @@ export default function DashboardComponent() {
                 style={{
                   backgroundColor: '#f4f6f7ff',
                 }}
-                boxShadow={3}
-                borderRadius={2}
+                boxShadow={1}
+                borderRadius={0}
                 width={'65%'}
                 height={gridHeight}
               >
@@ -511,12 +518,15 @@ export default function DashboardComponent() {
                     backgroundColor={'#289c70'}
                     resultatN={resultatN}
                     resultatN1={resultatN1}
+                    variationN={variationResultatN}
+                    variationN1={variationResultatN1}
+                    evolutionN={evolutionResultatN}
+                    evolutionN1={evolutionResultatN1}
                   />
                   <DashboardCard
                     text={'Chiffre d\'affaires'}
                     type={'comparaison'}
                     pourcentage={'10'}
-                    variation={'augmentation'}
                     backgroundColor={'#289c70'}
                     resultatN={resultatChiffreAffaireN}
                     resultatN1={resultatChiffreAffaireN1}

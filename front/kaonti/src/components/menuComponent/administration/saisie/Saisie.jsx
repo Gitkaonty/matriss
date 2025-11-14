@@ -526,14 +526,29 @@ export default function SaisieComponent() {
         })
     }
 
+    //Recupérer l'année min et max de l'éxercice
+    const getAnneesEntreDeuxDates = (dateDebut, dateFin) => {
+        const debut = new Date(dateDebut).getFullYear();
+        const fin = new Date(dateFin).getFullYear();
+        const annees = [];
+
+        for (let annee = debut; annee <= fin; annee++) {
+            annees.push(annee);
+        }
+
+        return annees;
+    };
+
     //Récupération la liste des exercices BY ID EXERCICE
     const getDateDebutFinExercice = () => {
-        axios.get(`/paramExercice/getListeAnnee/${Number(compteId)}/${Number(fileId)}`).then((response) => {
+        axios.get(`/paramExercice/listeExerciceById/${Number(selectedExerciceId)}`).then((response) => {
             const resData = response.data;
             if (resData.state) {
-                setListeAnnee(resData.list)
+                const annee = getAnneesEntreDeuxDates(resData.list.date_debut, resData.list.date_fin)
+                setListeAnnee(annee)
             } else {
                 setListeAnnee([])
+                toast.error("une erreur est survenue lors de la récupération de la liste des exercices");
             }
         })
     }

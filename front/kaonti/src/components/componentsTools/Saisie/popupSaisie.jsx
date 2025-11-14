@@ -906,7 +906,6 @@ const PopupSaisie = ({
                                     ? "Ajout d'une nouvelle écriture "
                                     : "Modification d'une écriture "
                             }
-                            {`(CA ${isCaActive ? 'activé' : 'désactivé'})`}
                         </Typography>
 
                         <IconButton
