@@ -34,11 +34,6 @@ const LineChartComponent = ({ xAxis, dataN, dataN1, label }) => {
     const dataNOnAllLabels = xAxis.map((lbl, idx) => dataN[idx] ?? null);
     const dataN1OnAllLabels = xAxis.map((lbl, idx) => dataN1?.[idx] ?? null);
 
-    const allData = [...dataNOnAllLabels, ...(dataN1OnAllLabels || [])].filter(v => v != null);
-
-    const maxValue = allData.length ? Math.max(...allData) : 0;
-    const minValue = allData.length ? Math.min(...allData) : 0;
-
     const chartData = {
         labels: xAxis,
         datasets: [
@@ -48,15 +43,13 @@ const LineChartComponent = ({ xAxis, dataN, dataN1, label }) => {
                 borderColor: '#349beb',
                 backgroundColor: '#349beb',
                 borderWidth: 2,
-                pointRadius: 4,
+                pointRadius: 10,
                 tension: 0.4,
+                pointHoverRadius: 10,
+                pointBackgroundColor: 'transparent',
+                pointBorderColor: 'transparent',
                 datalabels: {
-                    display: true,
-                    color: '#349beb',
-                    font: { weight: 'bold', size: 12 },
-                    align: 'top',
-                    formatter: (value) => formatValue(value),
-                    offset: -30,
+                    display: false,
                 },
             },
             ...(dataN1 ? [{
@@ -65,15 +58,13 @@ const LineChartComponent = ({ xAxis, dataN, dataN1, label }) => {
                 borderColor: '#de5f23',
                 backgroundColor: '#de5f23',
                 borderWidth: 2,
-                pointRadius: 4,
+                pointRadius: 10,
+                pointHoverRadius: 10,
+                pointBackgroundColor: 'transparent',
+                pointBorderColor: 'transparent',
                 tension: 0.4,
                 datalabels: {
-                    display: true,
-                    color: '#de5f23',
-                    font: { weight: 'bold', size: 12 },
-                    align: 'bottom',
-                    formatter: (value) => formatValue(value),
-                    offset: -30,
+                    display: false,
                 },
             }] : [])
         ],
@@ -98,8 +89,6 @@ const LineChartComponent = ({ xAxis, dataN, dataN1, label }) => {
                 grid: {
                     display: true
                 },
-                suggestedMin: minValue === 0 ? -20000 : minValue * 1.1,
-                suggestedMax: maxValue === 0 ? 20000 : maxValue * 1.1,
             },
             x: { grid: { display: true } },
         },
