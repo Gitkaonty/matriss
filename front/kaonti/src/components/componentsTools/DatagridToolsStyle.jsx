@@ -61,7 +61,7 @@ export const DataGridStyle = {
       display: 'none',
     },
     '& .MuiDataGrid-columnHeaderCheckbox': {
-      justifyContent: 'left', // Centre le contenu de la checkbox
+      justifyContent: 'left',
       marginLeft: '0px'
     },
     '& .MuiDataGrid-footerContainer': {
@@ -72,6 +72,3 @@ export const DataGridStyle = {
   checkboxSelection: true,
   pagination: true
 };
-
-//export default {QuickFilter, DataGridStyle};
-

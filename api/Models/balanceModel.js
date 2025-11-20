@@ -191,6 +191,33 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: true,
             defaultValue: 0
         },
+        mvtdebitanalytique: {
+            type: DataTypes.DOUBLE,
+            unique: false,
+            allowNull: true,
+            defaultValue: 0
+        },
+        mvtcreditanalytique: {
+            type: DataTypes.DOUBLE,
+            allowNull: true,
+            defaultValue: 0
+        },
+        soldedebitanalytique: {
+            type: DataTypes.DOUBLE,
+            allowNull: true,
+            defaultValue: 0
+        },
+        soldecreditanalytique: {
+            type: DataTypes.DOUBLE,
+            allowNull: true,
+            defaultValue: 0
+        },
+        valeuranalytique: {
+            type: DataTypes.DOUBLE,
+            unique: false,
+            allowNull: false,
+            defaultValue: 0
+        },
     }, { timestamps: true },)
 
     balances.associate = (models) => {

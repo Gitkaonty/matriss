@@ -72,6 +72,7 @@ export default function ImportJournal() {
 
     const [traitementJournalWaiting, setTraitementJournalWaiting] = useState(false);
     const [traitementJournalMsg, setTraitementJournalMsg] = useState('');
+    const [longeurCompteStd, setLongeurCompteStd] = useState(0);
 
     const [totalDebit, setTotalDebit] = useState("0,00");
     const [totalCredit, setTotalCredit] = useState("0,00");
@@ -112,6 +113,7 @@ export default function ImportJournal() {
 
             if (resData.state) {
                 setFileInfos(resData.fileInfos[0]);
+                setLongeurCompteStd(resData.fileInfos[0]?.longcomptestd);
                 setNoFile(false);
             } else {
                 setFileInfos([]);
@@ -119,6 +121,8 @@ export default function ImportJournal() {
             }
         })
     }
+
+    console.log('longeurCompteStd : ', longeurCompteStd);
 
     const sendToHome = (value) => {
         setNoFile(!value);
@@ -770,6 +774,13 @@ export default function ImportJournal() {
         return missingCode;
     };
 
+    const padCompte = (val) => {
+        if (val === null || val === undefined) return null;
+        const s = String(val).trim();
+        if (s === "" || s === "0") return null;
+        return s.padEnd(longeurCompteStd, "0").slice(0, longeurCompteStd);
+    };
+
     //charger le fichier à partir de FileDialog
     const handleFileSelect = (event) => {
         const file = event.target.files[0];
@@ -795,18 +806,46 @@ export default function ImportJournal() {
                         const listeUniqueCodeJnlInitial = [...new Set(result.data.map(item => item.JournalCode))];
                         const listeUniqueCodeJnl = listeUniqueCodeJnlInitial.filter(item => item !== '');
 
-                        const listeUniqueCompteInitial = [...new Set([
-                            ...result.data.map(item => item.CompteNum),
-                            ...result.data.map(item => item.CompAuxNum),
-                        ])
+                        const listeUniqueCompteInitial = [
+                            ...new Set(
+                                result.data.flatMap(item => [
+                                    padCompte(item.CompteNum),
+                                    padCompte(item.CompAuxNum)
+                                ]).filter(Boolean)
+                            )
                         ];
+
                         const listeUniqueCompte = listeUniqueCompteInitial.filter(item => item !== '');
 
+                        const compteNonValideStd = result.data.some(item => {
+                            return item.CompteNum && item.CompteNum.length !== longeurCompteStd;
+                        });
+
+                        if (compteNonValideStd) {
+                            msg.push('Attention, la longueur des comptes dans le fichier FEC est différente de la longueur des comptes dans le paramétrage CRM du dossier.');
+                            nbrAnom = nbrAnom + 1;
+                            setNbrAnomalie(nbrAnom);
+                            setCouleurBoutonAnomalie(couleurAnom);
+                        }
+
                         //stocker en 2 variables les comptes généraux et comptesaux pour la création
-                        const listeUniqueCompteGenInitial = [...new Set(result.data.map(item => item.CompteNum))];
+                        const listeUniqueCompteGenInitial = [...new Set(
+                            result.data
+                                .map(item => item.CompteNum)
+                                .filter(val => val && val !== 0)
+                                .map(val => val.toString().padEnd(longeurCompteStd, "0").slice(0, longeurCompteStd))
+                        )
+                        ];
                         const listeUniqueCompteGen = listeUniqueCompteGenInitial.filter(item => item !== '');
 
-                        const listeUniqueCompteAuxInitial = [...new Set(result.data.map(item => item.CompAuxNum))];
+                        const listeUniqueCompteAuxInitial = [
+                            ...new Set(
+                                result.data
+                                    .map(item => item.CompAuxNum)
+                                    .filter(val => val && val !== 0)
+                                    .map(val => val.toString().padEnd(longeurCompteStd, "0").slice(0, longeurCompteStd))
+                            )
+                        ];
                         const listeUniqueCompteAux = listeUniqueCompteAuxInitial.filter(item => item !== '');
 
                         const ListeCodeJnlParams = [...new Set(codeJournal.map(item => item.code))];
@@ -872,7 +911,7 @@ export default function ImportJournal() {
                         if (fileTypeCSV) {
                             DataWithId = result.data.map((row, index) => ({ ...row, id: index, CompteLib: '', CompAuxLib: '' }));
                         } else {
-                            DataWithId = result.data.map((row, index) => ({ ...row, id: index }));
+                            DataWithId = result.data;
                         }
 
                         // Déterminer la période de l'exercice sélectionné
@@ -928,8 +967,40 @@ export default function ImportJournal() {
                         calculTotal(finalData);
                         formikImport.setFieldValue('journalData', finalData);
 
-                        const cptToCreateGen = DataWithId.filter(item => compteNotInParamsGen.includes(item.CompteNum));
-                        const cptToCreateAux = DataWithId.filter(item => compteNotInParamsAux.includes(item.CompAuxNum));
+                        const mapGen = new Map();
+
+                        DataWithId.forEach(item => {
+                            const compte = item.CompteNum?.toString()
+                                .padEnd(longeurCompteStd, "0")
+                                .slice(0, longeurCompteStd);
+
+                            if (compteNotInParamsGen.includes(compte) && !mapGen.has(compte)) {
+                                mapGen.set(compte, {
+                                    CompteNum: compte,
+                                    CompteLib: item.CompteLib
+                                });
+                            }
+                        });
+
+                        const cptToCreateGen = [...mapGen.values()];
+
+                        const mapAux = new Map();
+
+                        DataWithId.forEach(item => {
+                            const compte = item.CompAuxNum?.toString()
+                                .padEnd(longeurCompteStd, "0")
+                                .slice(0, longeurCompteStd);
+
+                            if (compteNotInParamsAux.includes(compte) && !mapAux.has(compte)) {
+                                mapAux.set(compte, {
+                                    CompteNum: compte,
+                                    CompteLib: item.CompAuxLib
+                                });
+                            }
+                        });
+
+                        const cptToCreateAux = [...mapAux.values()];
+
                         setCompteToCreateGen(cptToCreateGen);
                         setCompteToCreateAux(cptToCreateAux);
 
@@ -979,6 +1050,8 @@ export default function ImportJournal() {
 
     //création des comptes qui n'existe pas encore avant import journal
     const createCompteNotExisting = async () => {
+        console.log("compteToCreateGen : ", compteToCreateGen);
+        console.log("compteToCreateAux : ", compteToCreateAux);
         const response = await axios.post(`/administration/importJournal/createNotExistingCompte`, { compteId, fileId, compteToCreateGen, compteToCreateAux });
         const resData = response.data;
         return resData.list;
@@ -1000,7 +1073,7 @@ export default function ImportJournal() {
             if (Array.isArray(UpdatedCodeJournal) && Array.isArray(UpdatedPlanComptable)) {
                 setTraitementJournalMsg('Importation du journal en cours...');
                 setTraitementJournalWaiting(true);
-                axios.post(`/administration/importJournal/importJournal`, { compteId, userId, fileId, selectedPeriodeId, fileTypeCSV, valSelectCptDispatch, journalData })
+                axios.post(`/administration/importJournal/importJournal`, { compteId, userId, fileId, selectedPeriodeId, fileTypeCSV, valSelectCptDispatch, journalData, longeurCompteStd })
                     .then((response) => {
                         const resData = response.data;
                         if (resData.state) {

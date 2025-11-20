@@ -98,15 +98,15 @@ const createNotExistingCompte = async (req, res) => {
     //création des comptes auxiliaires
     if (compteToCreateAux.length > 0) {
       await compteToCreateAux.map(item => {
-              const baseauxID = dossierPlanComptable.findOne({
-        where:
-        {
-          id_compte: compteId,
-          id_dossier: fileId,
-          compte: item.CompteNum
-        }
-      });
-      
+        const baseauxID = dossierPlanComptable.findOne({
+          where:
+          {
+            id_compte: compteId,
+            id_dossier: fileId,
+            compte: item.CompteNum
+          }
+        });
+
         dossierPlanComptable.create({
           id_compte: compteId,
           id_dossier: fileId,
@@ -170,7 +170,7 @@ function parseDate(str) {
 
 const importJournal = async (req, res) => {
   try {
-    const { compteId, userId, fileId, selectedPeriodeId, fileTypeCSV, valSelectCptDispatch, journalData } = req.body;
+    const { compteId, userId, fileId, selectedPeriodeId, fileTypeCSV, valSelectCptDispatch, journalData, longeurCompteStd } = req.body;
     // return res.json({ state: true, msg: 'OK' });
 
     let resData = {
@@ -234,13 +234,18 @@ const importJournal = async (req, res) => {
         for (let item of lines) {
           try {
             // Récupération des IDs
+            const CompteNum = item.CompteNum
+              .toString()
+              .padEnd(longeurCompteStd, "0")
+              .slice(0, longeurCompteStd);
+
             const idCodeJournal = await codejournals.findOne({
               where: { id_compte: compteId, id_dossier: fileId, code: item.JournalCode },
             });
             const codeJournalId = idCodeJournal?.id || 0;
 
             const idCompte = await dossierPlanComptable.findOne({
-              where: { id_compte: compteId, id_dossier: fileId, compte: item.CompteNum },
+              where: { id_compte: compteId, id_dossier: fileId, compte: CompteNum },
             });
             const compteNumId = idCompte?.id || 0;
             const IdCompAuxNum = idCompte?.baseaux_id || compteNumId;
@@ -309,7 +314,7 @@ const importJournal = async (req, res) => {
   } catch (error) {
     //let importSuccess = importSuccess * 0;
     let resData = { state: false, msg: '', details: null };
-    console.log(error); 
+    console.log(error);
   }
 }
 

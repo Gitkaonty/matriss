@@ -159,7 +159,7 @@ const PopupInfoAnalytique = ({ id, onClose, open }) => {
                             marginLeft: "0px",
                             marginTop : "20px"
                         }}
-                        height={"800px"}>
+                        height={"510px"}>
                         <DataGrid
                             disableMultipleSelection={DataGridStyle.disableMultipleSelection}
                             disableColumnSelector={DataGridStyle.disableColumnSelector}

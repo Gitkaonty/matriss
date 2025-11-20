@@ -199,6 +199,34 @@ module.exports = {
                 allowNull: true,
                 defaultValue: 0
             },
+
+            mvtdebitanalytique: {
+                type: Sequelize.DOUBLE,
+                unique: false,
+                allowNull: true,
+                defaultValue: 0
+            },
+            mvtcreditanalytique: {
+                type: Sequelize.DOUBLE,
+                allowNull: true,
+                defaultValue: 0
+            },
+            soldedebitanalytique: {
+                type: Sequelize.DOUBLE,
+                allowNull: true,
+                defaultValue: 0
+            },
+            soldecreditanalytique: {
+                type: Sequelize.DOUBLE,
+                allowNull: true,
+                defaultValue: 0
+            },
+            valeuranalytique: {
+                type: Sequelize.DOUBLE,
+                unique: false,
+                allowNull: true,
+                defaultValue: 0
+            },
         }, { timestamps: true },)
     },
 

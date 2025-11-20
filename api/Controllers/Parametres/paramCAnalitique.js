@@ -73,7 +73,7 @@ exports.getSectionsByAxeIds = async (req, res) => {
         const { id_compte, id_dossier } = req.params;
         const { selectedRowAxeId } = req.body;
 
-        if (!id_compte || !id_dossier || !selectedRowAxeId || !Array.isArray(selectedRowAxeId)) {
+        if (!id_compte || !id_dossier || !selectedRowAxeId) {
             return res.status(400).json({
                 state: false,
                 message: "Paramètres manquants ou invalides"

@@ -46,7 +46,11 @@ router.get('/immobilisations/pcs', saisieController.listImmobilisationsPc2); // 
 router.get('/rapprochements/export/pdf', exportRapprochementsController.exportPdf); // query: fileId, compteId, exerciceId, pcId, rapproId
 router.get('/rapprochements/export/excel', exportRapprochementsController.exportExcel); // query: fileId, compteId, exerciceId, pcId, rapproId
 
+// Récupération de journal avec 10 lignes d'écriture
 router.get('/getJournal/:id_compte/:id_dossier/:id_exercice', saisieController.getJournal);
+
+// Récupération de journal filtré
+router.post('/getJournalFiltered', saisieController.getJournalFiltered);
 
 router.post('/addLettrage', saisieController.addLettrage);
 

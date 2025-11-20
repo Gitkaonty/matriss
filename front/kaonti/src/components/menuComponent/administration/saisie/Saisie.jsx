@@ -217,7 +217,7 @@ export default function SaisieComponent() {
                 const rawDate = params.value;
                 const dateObj = new Date(rawDate);
 
-                if (isNaN(dateObj.getTime())) return ""; // sécurité si mauvaise date
+                if (isNaN(dateObj.getTime())) return "";
 
                 const day = String(dateObj.getDate()).padStart(2, '0');
                 const month = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -381,49 +381,19 @@ export default function SaisieComponent() {
             return toast.error('Veuillez sélectionner les filtres');
         }
 
-        const filtered = listSaisie.filter((item) => {
-            const matchJournal = journal
-                ? item.journal?.toString().toLowerCase().includes(journal.toString().toLowerCase())
-                : true;
-
-            const matchCompte = compte && compte.compte
-                ? item.compte?.toLowerCase().includes(compte.compte.toLowerCase())
-                : true;
-
-            const matchPiece = piece
-                ? item.piece?.toLowerCase().includes(piece.toLowerCase())
-                : true;
-
-            const matchLibelle = libelle
-                ? item.libelle?.toLowerCase().includes(libelle.toLowerCase())
-                : true;
-
-            const matchDate = (() => {
-                if (!debut && !fin) return true;
-
-                const itemDate = new Date(item.dateecriture);
-                const startDate = debut ? new Date(debut) : null;
-                const endDate = fin ? new Date(fin) : null;
-
-                if (startDate && endDate) {
-                    return itemDate >= startDate && itemDate <= endDate;
-                } else if (startDate) {
-                    return itemDate >= startDate;
-                } else if (endDate) {
-                    return itemDate <= endDate;
-                }
-                return true;
-            })();
-
-            return matchJournal && matchCompte && matchPiece && matchLibelle && matchDate;
-        });
-
-        const idsEcriture = [...new Set(filtered.map(item => item.id_ecriture))];
-
-        const finalFilteredList = listSaisie.filter(item => idsEcriture.includes(item.id_ecriture));
-
-        toast.success('Filtre appliqué');
-        setFilteredList(finalFilteredList);
+        axios.post('/administration/traitementSaisie/getJournalFiltered', {
+            ...formSaisieRecherche.values,
+            id_dossier: Number(fileId),
+            id_compte: Number(compteId),
+            id_exercice: Number(selectedExerciceId)
+        }).then((response) => {
+            if (response?.data?.state) {
+                toast.success('Filtre appliqué');
+                setFilteredList(response?.data?.list);
+            } else {
+                setFilteredList([]);
+            }
+        })
     };
 
     //Réinitialiser le filtre
@@ -445,7 +415,7 @@ export default function SaisieComponent() {
     // Calcul débit et crédit
     const tableRows = filteredList ?? listSaisie;
     const totalDebitNotParsed = tableRows.reduce((total, row) => {
-        const debit = parseFloat(row.debit) || 0; // conversion sécurisée
+        const debit = parseFloat(row.debit) || 0;
         return total + debit;
     }, 0);
 
@@ -847,7 +817,7 @@ export default function SaisieComponent() {
                                             }}
                                         >
                                             {listeCodeJournaux.map((value, index) => (
-                                                <MenuItem key={index} value={value.code}>
+                                                <MenuItem sx={{ width: '100%' }} key={index} value={value.code}>
                                                     {`${value.code} - ${value.libelle}`}
                                                 </MenuItem>
                                             ))}

@@ -176,8 +176,6 @@ const updateSold = async (compte_id, dossier_id, exercice_id, listecompte, allCo
                 });
 
             stateUpdate = true;
-        } else {
-
         }
         return stateUpdate;
     } catch (error) {
