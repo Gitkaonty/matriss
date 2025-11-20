@@ -307,7 +307,7 @@ const importJournal = async (req, res) => {
 
     return res.json(resData);
   } catch (error) {
-    let importSuccess = importSuccess * 0;
+    //let importSuccess = importSuccess * 0;
     let resData = { state: false, msg: '', details: null };
     console.log(error); 
   }

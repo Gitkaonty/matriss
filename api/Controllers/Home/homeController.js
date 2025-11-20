@@ -190,7 +190,7 @@ const createNewFile = async (req, res) => {
         where: { id_modeleplancomptable: plancomptable }
       });
 
-      if (modelePc.length > 0) {
+      if (modelePc.length > 0 && plancomptable !== 0) {
         //console.log("🔁 Début de la copie du plan comptable. Total lignes :", modelePc.length);
 
         for (const [index, item] of modelePc.entries()) {

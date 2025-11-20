@@ -14,20 +14,16 @@ const soldeRubriqueBilan = async (compte_id, dossier_id, exercice_id) => {
         await db.sequelize.query(`
             UPDATE rubriques SET
             montantbrut = (SELECT COALESCE(SUM(soldedebit-soldecredit),0) FROM balances WHERE balances.rubriquebilanbrut = rubriques.id_rubrique
+            AND balances.rubriquebilanamort = 0
             AND balances.id_compte = :compte_id AND balances.id_dossier = :dossier_id AND balances.id_exercice = :exercice_id
             AND NOT balances.nature = 'Collectif' AND balances.senscalculbilan = 'D-C')
 
-            + (SELECT COALESCE(SUM(soldecredit-soldedebit),0) FROM balances WHERE balances.rubriquebilanbrut = rubriques.id_rubrique
-            AND balances.id_compte = :compte_id AND balances.id_dossier = :dossier_id AND balances.id_exercice = :exercice_id
-            AND NOT balances.nature = 'Collectif' AND balances.senscalculbilan = 'C-D')
             + (SELECT COALESCE(SUM(montant),0) FROM ajustements WHERE ajustements.id_rubrique = rubriques.id_rubrique
             AND ajustements.id_compte = :compte_id AND ajustements.id_dossier = :dossier_id AND ajustements.id_exercice = :exercice_id
             AND ajustements.id_etat = 'BILAN' AND ajustements.nature = 'BRUT')
             ,
-            montantamort = (SELECT COALESCE(SUM(soldedebit-soldecredit),0) FROM balances WHERE balances.rubriquebilanamort = rubriques.id_rubrique
-            AND balances.id_compte = :compte_id AND balances.id_dossier = :dossier_id AND balances.id_exercice = :exercice_id
-            AND NOT balances.nature = 'Collectif' AND balances.senscalculbilan = 'D-C')
-            + (SELECT COALESCE(SUM(soldecredit-soldedebit),0) FROM balances WHERE balances.rubriquebilanamort = rubriques.id_rubrique
+            montantamort = 
+            (SELECT COALESCE(SUM(soldecredit-soldedebit),0) FROM balances WHERE balances.rubriquebilanamort = rubriques.id_rubrique
             AND balances.id_compte = :compte_id AND balances.id_dossier = :dossier_id AND balances.id_exercice = :exercice_id
             AND NOT balances.nature = 'Collectif' AND balances.senscalculbilan = 'C-D')
 
@@ -36,7 +32,28 @@ const soldeRubriqueBilan = async (compte_id, dossier_id, exercice_id) => {
             AND ajustements.id_etat = 'BILAN' AND ajustements.nature = 'AMORT')
          
             WHERE rubriques.id_compte = :compte_id AND rubriques.id_dossier = :dossier_id AND rubriques.id_exercice = :exercice_id
-            AND rubriques.id_etat = 'BILAN' AND NOT rubriques.nature IN('TOTAL','TITRE')
+            AND rubriques.id_etat = 'BILAN' AND NOT rubriques.nature IN('TOTAL','TITRE') and subtable = 1
+        `,
+            {
+                replacements: { compte_id, dossier_id, exercice_id },
+                type: db.Sequelize.QueryTypes.UPDATE
+            }
+        );
+
+        //mettre à jour les montants pour chaque rubrique - PASSIF
+        await db.sequelize.query(`
+            UPDATE rubriques SET
+            montantbrut = (SELECT COALESCE(SUM(soldecredit-soldedebit),0) FROM balances WHERE balances.rubriquebilanbrut = rubriques.id_rubrique
+            AND balances.rubriquebilanamort = 0
+            AND balances.id_compte = :compte_id AND balances.id_dossier = :dossier_id AND balances.id_exercice = :exercice_id
+            AND NOT balances.nature = 'Collectif' AND balances.senscalculbilan = 'C-D')
+
+            + (SELECT COALESCE(SUM(montant),0) FROM ajustements WHERE ajustements.id_rubrique = rubriques.id_rubrique
+            AND ajustements.id_compte = :compte_id AND ajustements.id_dossier = :dossier_id AND ajustements.id_exercice = :exercice_id
+            AND ajustements.id_etat = 'BILAN' AND ajustements.nature = 'BRUT')
+            
+            WHERE rubriques.id_compte = :compte_id AND rubriques.id_dossier = :dossier_id AND rubriques.id_exercice = :exercice_id
+            AND rubriques.id_etat = 'BILAN' AND NOT rubriques.nature IN('TOTAL','TITRE') and subtable = 2
         `,
             {
                 replacements: { compte_id, dossier_id, exercice_id },
