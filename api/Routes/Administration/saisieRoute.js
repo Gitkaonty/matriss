@@ -1,5 +1,6 @@
 const express = require('express');
 const saisieController = require('../../Controllers/administration/saisieController');
+const exportRapprochementsController = require('../../Controllers/administration/exportRapprochementsController');
 const path = require('path');
 
 const router = express.Router();
@@ -37,6 +38,13 @@ router.get('/rapprochements/soldes', saisieController.computeSoldesRapprochement
 router.post('/rapprochements', saisieController.createRapprochement);
 router.put('/rapprochements/:id', saisieController.updateRapprochement);
 router.delete('/rapprochements/:id', saisieController.deleteRapprochement);
+
+// Immobilisations: liste des comptes de classe 2 (hors 28, 29)
+router.get('/immobilisations/pcs', saisieController.listImmobilisationsPc2); // expects query: fileId, compteId
+
+// Rapprochements exports
+router.get('/rapprochements/export/pdf', exportRapprochementsController.exportPdf); // query: fileId, compteId, exerciceId, pcId, rapproId
+router.get('/rapprochements/export/excel', exportRapprochementsController.exportExcel); // query: fileId, compteId, exerciceId, pcId, rapproId
 
 router.get('/getJournal/:id_compte/:id_dossier/:id_exercice', saisieController.getJournal);
 

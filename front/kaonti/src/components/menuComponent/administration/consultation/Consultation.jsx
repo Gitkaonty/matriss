@@ -362,13 +362,15 @@ export default function ConsultationComponent() {
             (item) => item.id === Number(valSelectedCompte)
         );
 
-        if (!compteSelect) {
+        if (!compteSelect || compteSelect.compte == null) {
             setFilteredList([]);
             return;
         }
 
+        const compteSelectStr = compteSelect.compte.toString();
+
         const filtered = listSaisie.filter((item) =>
-            item.compte?.toString().includes(compteSelect.compte.toString())
+            item.compte?.toString().includes(compteSelectStr)
         );
 
         setFilteredList(filtered);

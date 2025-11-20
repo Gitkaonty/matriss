@@ -31,6 +31,13 @@ const traitementList = [
         path: "/tab/administration/rapprochements",
         urldynamic: true
     },
+    {
+        text: 'Immobilisations',
+        name: "immobilisations",
+        path: "/tab/administration/immobilisations",
+        urldynamic: true
+    },
+    
 ];
 
 const importList = [
