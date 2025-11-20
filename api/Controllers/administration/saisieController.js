@@ -5,8 +5,9 @@ const journals = db.journals;
 const dossierplancomptable = db.dossierplancomptable;
 const codejournals = db.codejournals;
 const rapprochements = db.rapprochements;
-const { Op } = require('sequelize');
 const analytiques = db.analytiques;
+
+const { Op } = require("sequelize");
 
 const fs = require('fs');
 const path = require('path');
@@ -54,7 +55,7 @@ exports.updateEcrituresRapprochement = async (req, res) => {
         const payload = {
             rapprocher: !!rapprocher,
             // store as 'YYYY-MM-DD' to avoid TZ shift
-            date_rapprochement: !!rapprocher ? (dateRapprochement ? String(dateRapprochement).substring(0,10) : null) : null,
+            date_rapprochement: !!rapprocher ? (dateRapprochement ? String(dateRapprochement).substring(0, 10) : null) : null,
             modifierpar: Number(compteId) || 0,
         };
         if (rapprocher && !payload.date_rapprochement) {
@@ -89,8 +90,8 @@ exports.computeSoldesRapprochement = async (req, res) => {
         }
         const exo = await db.exercices.findByPk(exerciceId);
         if (!exo) return res.status(404).json({ state: false, msg: 'Exercice introuvable' });
-        const dateDebut = exo.date_debut ? String(exo.date_debut).substring(0,10) : null;
-        const dateFin = endDateParam ? String(endDateParam).substring(0,10) : null;
+        const dateDebut = exo.date_debut ? String(exo.date_debut).substring(0, 10) : null;
+        const dateFin = endDateParam ? String(endDateParam).substring(0, 10) : null;
         if (!dateDebut || !dateFin) return res.status(400).json({ state: false, msg: 'Dates invalides' });
 
         const sqlAggBase = `
@@ -181,8 +182,8 @@ exports.createRapprochement = async (req, res) => {
             id_exercice: Number(exerciceId),
             pc_id: Number(pcId),
             // Store as provided date-only strings to avoid timezone issues
-            date_debut: date_debut ? String(date_debut).substring(0,10) : null,
-            date_fin: date_fin ? String(date_fin).substring(0,10) : null,
+            date_debut: date_debut ? String(date_debut).substring(0, 10) : null,
+            date_fin: date_fin ? String(date_fin).substring(0, 10) : null,
             solde_comptable: Number(solde_comptable) || 0,
             solde_bancaire: Number(solde_bancaire) || 0,
             solde_non_rapproche: Number(solde_non_rapproche) || 0,
@@ -207,8 +208,8 @@ exports.updateRapprochement = async (req, res) => {
             return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
         }
         const [affected] = await rapprochements.update({
-            date_debut: date_debut ? String(date_debut).substring(0,10) : null,
-            date_fin: date_fin ? String(date_fin).substring(0,10) : null,
+            date_debut: date_debut ? String(date_debut).substring(0, 10) : null,
+            date_fin: date_fin ? String(date_fin).substring(0, 10) : null,
             solde_comptable: Number(solde_comptable) || 0,
             solde_bancaire: Number(solde_bancaire) || 0,
             solde_non_rapproche: Number(solde_non_rapproche) || 0,
@@ -656,33 +657,37 @@ exports.modificationJournal = async (req, res) => {
 exports.getJournal = async (req, res) => {
     try {
         const { id_compte, id_dossier, id_exercice } = req.params;
-        if (!id_dossier) {
-            return res.status(400).json({ state: false, message: 'Id_dossier non trouvé' })
-        }
-        if (!id_exercice) {
-            return res.status(400).json({ state: false, message: 'Id_exercice non trouvé' })
-        }
+
+        if (!id_dossier) return res.status(400).json({ state: false, message: 'Id_dossier non trouvé' });
+        if (!id_exercice) return res.status(400).json({ state: false, message: 'Id_exercice non trouvé' });
+
+        const firstTenIds = await journals.findAll({
+            attributes: ['id_ecriture', 'createdAt'],
+            where: { id_compte, id_dossier, id_exercice },
+            order: [['createdAt', 'DESC']],
+            raw: true
+        });
+
+        const uniqueEcritures = [...new Set(firstTenIds.map(val => val.id_ecriture))];
+
+        const id_ecritures = uniqueEcritures.slice(0, 10);
+
         const journalData = await journals.findAll({
             where: {
                 id_compte,
                 id_dossier,
-                id_exercice
+                id_exercice,
+                id_ecriture: id_ecritures
             },
             include: [
-                {
-                    model: dossierplancomptable,
-                    attributes: ['compte']
-                },
-                {
-                    model: codejournals,
-                    attributes: ['code']
-                }
+                { model: dossierplancomptable, attributes: ['compte'] },
+                { model: codejournals, attributes: ['code'] }
             ],
             order: [
-                ['id_ecriture', 'ASC'],
-                ['id', 'DESC'],
-                [dossierplancomptable, 'compte', 'ASC'],
-                ['dateecriture', 'ASC']
+                // ['id_ecriture', 'ASC'],
+                // ['dateecriture', 'ASC'],
+                // ['id', 'ASC']
+                ['createdAt', 'DESC']
             ]
         });
 
@@ -701,6 +706,86 @@ exports.getJournal = async (req, res) => {
         return res.status(500).json({ message: "Erreur serveur", error: error.message });
     }
 }
+
+exports.getJournalFiltered = async (req, res) => {
+    try {
+        const { id_compte, id_dossier, id_exercice, journal, compte, piece, libelle, debut, fin } = req.body;
+        const id_numcpt = compte?.id;
+
+        if (!id_dossier) return res.status(400).json({ state: false, message: 'Id_dossier non trouvé' });
+        if (!id_exercice) return res.status(400).json({ state: false, message: 'Id_exercice non trouvé' });
+
+        const whereClause = {
+            id_compte,
+            id_dossier,
+            id_exercice
+        };
+
+        if (piece) whereClause.piece = { [Op.iLike]: `%${piece}%` };
+        if (libelle) whereClause.libelle = { [Op.iLike]: `%${libelle}%` };
+        if (debut && fin) whereClause.dateecriture = { [Op.between]: [debut, fin] };
+        else if (debut) whereClause.dateecriture = { [Op.gte]: debut };
+        else if (fin) whereClause.dateecriture = { [Op.lte]: fin };
+
+        const journalData = await journals.findAll({
+            where: whereClause,
+            order: [['createdAt', 'DESC']],
+            include: [
+                {
+                    model: dossierplancomptable,
+                    attributes: ['compte', 'id'],
+                    where:
+                    {
+                        ...(compte ? { id: id_numcpt } : {}),
+                    }
+                },
+                {
+                    model: codejournals,
+                    attributes: ['code'],
+                    where:
+                    {
+                        ...(journal ? { code: journal } : {}),
+                    }
+                }
+            ]
+        });
+
+        const id_ecritures = [...new Set(journalData.map(val => val.id_ecriture))];
+
+        const journalFinal = await journals.findAll({
+            where: {
+                id_ecriture: id_ecritures,
+                id_compte,
+                id_dossier,
+                id_exercice
+            },
+            include: [
+                { model: dossierplancomptable, attributes: ['compte'] },
+                { model: codejournals, attributes: ['code'] }
+            ],
+            order: [
+                // ['id_ecriture', 'ASC'],
+                // ['dateecriture', 'ASC'],
+                // ['id', 'ASC']
+                ['createdAt', 'DESC']
+            ]
+        })
+
+        const mappedData = journalFinal.map(journal => {
+            const { dossierplancomptable, codejournal, ...rest } = journal.toJSON();
+            return {
+                ...rest,
+                compte: dossierplancomptable?.compte || null,
+                journal: codejournal?.code || null
+            };
+        });
+
+        return res.json({ state: true, list: mappedData });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ state: false, msg: 'Erreur serveur', error: error.message });
+    }
+};
 
 function nextLettrage(current) {
     if (!current) return 'A';

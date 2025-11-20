@@ -139,6 +139,10 @@ db.etatsEtatFinancier = require('./etatsEtatFinancierModel')(sequelize, DataType
 db.etatsEtatFinancierMatrice = require('./etatsEtatFinancierMatriceModel')(sequelize, DataTypes);
 //
 
+//
+db.balanceAnalytiques = require('./balanceAnalytiqueModel')(sequelize, DataTypes);
+//
+
 const Devise = require('./deviseModel')(sequelize, DataTypes);
 db.Devise = Devise;
 db.Devise.belongsTo(db.userscomptes, { foreignKey: 'id_compte' });
@@ -276,8 +280,27 @@ db.caAxes.hasMany(db.analytiques, { foreignKey: 'id_axe', sourceKey: 'id' });
 db.analytiques.belongsTo(db.caSections, { foreignKey: 'id_section', targetKey: 'id', as: 'section' });
 db.caSections.hasMany(db.analytiques, { foreignKey: 'id_section', sourceKey: 'id' });
 
-db.analytiques.belongsTo(db.journals, { foreignKey: 'id_ligne_ecriture', targetKey: 'id' });
+db.analytiques.belongsTo(db.journals, { foreignKey: 'id_ligne_ecriture', targetKey: 'id', as: 'journals' });
 db.journals.hasMany(db.analytiques, { foreignKey: 'id_ligne_ecriture', sourceKey: 'id' });
+
+// Balance analytique
+db.userscomptes.hasMany(db.balanceAnalytiques, { foreignKey: 'id_compte', sourceKey: 'id' });
+db.balanceAnalytiques.belongsTo(db.userscomptes, { foreignKey: 'id_compte', targetKey: 'id' });
+
+db.dossiers.hasMany(db.balanceAnalytiques, { foreignKey: 'id_dossier', sourceKey: 'id' });
+db.balanceAnalytiques.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id' });
+
+db.exercices.hasMany(db.balanceAnalytiques, { foreignKey: 'id_exercice', sourceKey: 'id' });
+db.balanceAnalytiques.belongsTo(db.exercices, { foreignKey: 'id_exercice', targetKey: 'id' });
+
+db.dossierplancomptable.hasMany(db.balanceAnalytiques, { foreignKey: 'id_numcpt', sourceKey: 'id', as: 'balanceanalytique' });
+db.balanceAnalytiques.belongsTo(db.dossierplancomptable, { foreignKey: 'id_numcpt', targetKey: 'id', as: 'compteLibelle' });
+
+db.balanceAnalytiques.belongsTo(db.caAxes, { foreignKey: 'id_axe', targetKey: 'id' });
+db.caAxes.hasMany(db.balanceAnalytiques, { foreignKey: 'id_axe', sourceKey: 'id' });
+
+db.balanceAnalytiques.belongsTo(db.caSections, { foreignKey: 'id_section', targetKey: 'id' });
+db.caSections.hasMany(db.balanceAnalytiques, { foreignKey: 'id_section', sourceKey: 'id' });
 
 // Reset Token
 db.users.hasMany(db.resetToken, { foreignKey: 'user_id', sourceKey: 'id' });

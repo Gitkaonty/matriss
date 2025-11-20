@@ -1,11 +1,9 @@
 import { React, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Typography, Stack, Paper, Box, Tab, Tooltip, IconButton, FormHelperText, Button, Badge, Divider, Switch } from '@mui/material';
+import { Typography, Stack, Paper, Box, Tab, Tooltip, IconButton, FormHelperText, Button, Badge, Divider, Switch, Checkbox, Autocomplete, TextField } from '@mui/material';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import RadioGroup from '@mui/material/RadioGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
-import Radio from '@mui/material/Radio';
 import InputLabel from '@mui/material/InputLabel';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
@@ -27,6 +25,12 @@ import { ListItemIcon, ListItemText } from '@mui/material';
 import { FaFilePdf, FaFileExcel } from 'react-icons/fa';
 import { CiExport } from "react-icons/ci";
 
+import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
+import CheckBoxIcon from '@mui/icons-material/CheckBox';
+
+const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
+const checkedIcon = <CheckBoxIcon fontSize="small" />;
+
 export default function ExportBalance() {
     //Valeur du listbox choix exercice ou situation-----------------------------------------------------
     const [checked, setChecked] = useState(false);
@@ -45,7 +49,16 @@ export default function ExportBalance() {
     const [listeExercice, setListeExercice] = useState([]);
     const [listeSituation, setListeSituation] = useState([]);
 
+    const [axesData, setAxesData] = useState([]);
+    const [sectionsData, setSectionsData] = useState([]);
+
+    const [selectedAxeId, setSelectedAxeId] = useState(0);
+    const [selectedSectionsId, setSelectedSectionsId] = useState([]);
+
+    const [type, setType] = useState(0);
+
     const [balance, setBalance] = useState([]);
+    const [balanceCa, setBalanceCa] = useState([]);
 
     const [traitementJournalWaiting, setTraitementJournalWaiting] = useState(false);
     const [traitementJournalMsg, setTraitementJournalMsg] = useState('');
@@ -100,8 +113,6 @@ export default function ExportBalance() {
         }
     }, [checked, unsoldedCompte, movmentedCpt, compteId, fileId, selectedPeriodeId, handleCloseExportMenu]);
 
-    
-
     //récupérer les informations du dossier sélectionné
     useEffect(() => {
         //tester si la page est renvoyer par useNavigate
@@ -144,54 +155,55 @@ export default function ExportBalance() {
         navigate('/tab/home');
     }
 
-    const columns = useMemo(() => [
-        {
-            id: 'compteLibelle.compte',
-            label: 'compte',
-            minWidth: 150,
-            align: 'left',
-            isnumber: false
-        },
-        {
-            id: 'compteLibelle.libelle',
-            label: 'Libellé',
-            minWidth: 400,
-            align: 'left',
-            isnumber: false
-        },
-        {
-            id: 'mvtdebit',
-            label: 'Mouvement débit',
-            minWidth: 200,
-            align: 'right',
-            format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-            isnumber: true
-        },
-        {
-            id: 'mvtcredit',
-            label: 'Mouvement crédit',
-            minWidth: 200,
-            align: 'right',
-            format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-            isnumber: true
-        },
-        {
-            id: 'soldedebit',
-            label: 'Solde débit',
-            minWidth: 200,
-            align: 'right',
-            format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-            isnumber: true
-        },
-        {
-            id: 'soldecredit',
-            label: 'Solde crédit',
-            minWidth: 200,
-            align: 'right',
-            format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-            isnumber: true
-        },
-    ], []);
+    const columns =
+        [
+            {
+                id: 'compteLibelle.compte',
+                label: 'Compte',
+                minWidth: 150,
+                align: 'left',
+                isnumber: false
+            },
+            {
+                id: 'compteLibelle.libelle',
+                label: 'Libellé',
+                minWidth: 400,
+                align: 'left',
+                isnumber: false
+            },
+            {
+                id: type === 3 ? 'mvtdebitanalytique' : 'mvtdebit',
+                label: 'Mouvement débit',
+                minWidth: 200,
+                align: 'right',
+                format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                isnumber: true
+            },
+            {
+                id: type === 3 ? 'mvtcreditanalytique' : 'mvtcredit',
+                label: 'Mouvement crédit',
+                minWidth: 200,
+                align: 'right',
+                format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                isnumber: true
+            },
+            {
+                id: type === 3 ? 'soldedebitanalytique' : 'soldedebit',
+                label: 'Solde débit',
+                minWidth: 200,
+                align: 'right',
+                format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                isnumber: true
+            },
+            {
+                id: type === 3 ? 'soldecreditanalytique' : 'soldecredit',
+                label: 'Solde crédit',
+                minWidth: 200,
+                align: 'right',
+                format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                isnumber: true
+            }
+        ]
 
     //Récupérer la liste des exercices
     const GetListeExercice = (id) => {
@@ -255,19 +267,35 @@ export default function ExportBalance() {
     }
 
     //Récupération de la balance
-    const recupBalance = (centraliser, unSolded, movmentedCpt, compteId, fileId, exerciceId) => {
-        axios.post(`/administration/exportBalance/recupBalance`, { centraliser, unSolded, movmentedCpt, compteId, fileId, exerciceId }).then((response) => {
-            const resData = response.data;
-            if (resData.state) {
-                setBalance(resData.list);
-            } else {
-                if (resData?.msg && !String(resData.msg).includes('Paramètres manquants')) {
-                    toast.error(resData.msg);
+    const recupBalance = (centraliser, unSolded, movmentedCpt, compteId, fileId, exerciceId, type, id_axes, id_sections) => {
+        const id_sectionMapped = id_sections.map(val => Number(val.id));
+        if (type === 3) {
+            axios.post(`/administration/exportBalance/recupBalanceCa`, { centraliser, unSolded, movmentedCpt, compteId, fileId, exerciceId, type, id_axes, id_sections: id_sectionMapped }).then((response) => {
+                const resData = response.data;
+                if (resData.state) {
+                    setBalanceCa(resData.list);
+                } else {
+                    if (resData?.msg && !String(resData.msg).includes('Paramètres manquants')) {
+                        toast.error(resData.msg);
+                    }
                 }
-            }
-            setTraitementJournalWaiting(false);
-            setTraitementJournalMsg('');
-        });
+                setTraitementJournalWaiting(false);
+                setTraitementJournalMsg('');
+            });
+        } else {
+            axios.post(`/administration/exportBalance/recupBalance`, { centraliser, unSolded, movmentedCpt, compteId, fileId, exerciceId, type }).then((response) => {
+                const resData = response.data;
+                if (resData.state) {
+                    setBalance(resData.list);
+                } else {
+                    if (resData?.msg && !String(resData.msg).includes('Paramètres manquants')) {
+                        toast.error(resData.msg);
+                    }
+                }
+                setTraitementJournalWaiting(false);
+                setTraitementJournalMsg('');
+            });
+        }
     }
 
     useEffect(() => {
@@ -276,7 +304,7 @@ export default function ExportBalance() {
         setTraitementJournalWaiting(true);
         setTraitementJournalMsg('Chargement de la balance...');
         balanceFetchTimer.current = setTimeout(() => {
-            recupBalance(checked, unsoldedCompte, movmentedCpt, compteId, fileId, selectedPeriodeId);
+            recupBalance(checked, unsoldedCompte, movmentedCpt, compteId, fileId, selectedPeriodeId, type, selectedAxeId, selectedSectionsId);
         }, 200);
         return () => {
             if (balanceFetchTimer.current) clearTimeout(balanceFetchTimer.current);
@@ -313,10 +341,7 @@ export default function ExportBalance() {
     //choix compte soldé ou non 
     const handleChangeUnsoldedCompte = (event) => {
         const isChecked = event.target.checked;
-        // console.log("Nouvel état du switch:", isChecked);
-        // toast.success(`État du switch : ${isChecked}`);
         setUnsoldedCompte(isChecked);
-        // recupBalance(checked, isChecked, movmentedCpt, compteId, fileId, selectedExerciceId);
     };
 
     //choix compte mouvementés seulement
@@ -324,6 +349,59 @@ export default function ExportBalance() {
         const isChecked = event.target.checked;
         setMovmentedCpt(isChecked);
     };
+
+    const handleChangeType = (e) => {
+        setType(e.target.value);
+    }
+
+    const handleChangeAxe = (e) => {
+        setSelectedAxeId(e.target.value);
+        setSelectedSectionsId([]);
+    }
+
+    const handleGetAxes = () => {
+        axios.get(`/paramCa/getAxes/${Number(compteId)}/${Number(fileId)}`)
+            .then((response) => {
+                if (response?.data?.state) {
+                    setAxesData(response?.data?.data);
+                    setSelectedAxeId(response?.data?.data[0]?.id)
+                } else {
+                    toast.error(response?.data?.message);
+                }
+            })
+    }
+
+    const handleGetSections = () => {
+        axios.post(`/paramCa/getSectionsByAxeIds/${Number(compteId)}/${Number(fileId)}`, {
+            selectedRowAxeId: Number(selectedAxeId)
+        })
+            .then((response) => {
+                if (response?.data?.state) {
+                    setSectionsData(response?.data?.data)
+                } else {
+                    toast.error(response?.data?.message);
+                }
+            })
+    }
+
+    const handleApply = () => {
+        setTraitementJournalWaiting(true);
+        setTraitementJournalMsg('Chargement du filtre...');
+
+        setTimeout(() => {
+            recupBalance(checked, unsoldedCompte, movmentedCpt, compteId, fileId, selectedPeriodeId, type, selectedAxeId, selectedSectionsId);
+        }, [500])
+    };
+
+    useEffect(() => {
+        handleGetAxes();
+    }, [selectedExerciceId])
+
+    useEffect(() => {
+        if (selectedAxeId) {
+            handleGetSections();
+        }
+    }, [selectedAxeId])
 
     return (
         <Box>
@@ -358,6 +436,9 @@ export default function ExportBalance() {
                                         label={"valSelect"}
                                         onChange={(e) => handleChangeExercice(e.target.value)}
                                         sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                        MenuProps={{
+                                            disableScrollLock: true
+                                        }}
                                     >
                                         {listeExercice.map((option) => (
                                             <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
@@ -376,6 +457,9 @@ export default function ExportBalance() {
                                         label={"valSelect"}
                                         onChange={(e) => handleChangePeriode(e.target.value)}
                                         sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                        MenuProps={{
+                                            disableScrollLock: true
+                                        }}
                                     >
                                         <MenuItem value={0}>Toutes</MenuItem>
                                         <MenuItem value={1}>Situations</MenuItem>
@@ -391,6 +475,9 @@ export default function ExportBalance() {
                                         label={"valSelect"}
                                         onChange={(e) => handleChangeDateIntervalle(e.target.value)}
                                         sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                        MenuProps={{
+                                            disableScrollLock: true
+                                        }}
                                     >
                                         {listeSituation?.map((option) => (
                                             <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
@@ -399,6 +486,132 @@ export default function ExportBalance() {
                                     </Select>
                                 </FormControl>
 
+                            </Stack>
+
+                            <Stack
+                                width={"100%"}
+                                spacing={4}
+                                alignContent={"center"}
+                                direction={"row"}
+                                style={{ marginLeft: "0px", marginTop: "0px", backgroundColor: '#F4F9F9', borderRadius: "5px" }}
+                                alignItems="center"
+                                justifyContent="space-between"
+                                sx={{ p: 0.5 }}
+                            >
+                                <Stack direction="row" alignItems="center" spacing={4}>
+                                    <FormControl variant="standard" sx={{ minWidth: 150 }}>
+                                        <InputLabel id="demo-simple-select-standard-label">Type</InputLabel>
+                                        <Select
+                                            labelId="demo-simple-select-standard-label"
+                                            id="demo-simple-select-standard"
+                                            value={type}
+                                            label={"valSelect"}
+                                            onChange={handleChangeType}
+                                            sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                            MenuProps={{
+                                                disableScrollLock: true
+                                            }}
+                                        >
+                                            <MenuItem value={0}>Générale</MenuItem>
+                                            <MenuItem value={1}>Fournisseurs</MenuItem>
+                                            <MenuItem value={2}>Clients</MenuItem>
+                                            <MenuItem value={3}>Analytique</MenuItem>
+                                        </Select>
+                                    </FormControl>
+
+                                    {
+                                        type === 3 && (
+                                            <>
+                                                <FormControl variant="standard" sx={{ minWidth: 150 }}>
+                                                    <InputLabel>Axe</InputLabel>
+                                                    <Select
+                                                        value={selectedAxeId}
+                                                        onChange={handleChangeAxe}
+                                                        sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                                        MenuProps={{
+                                                            disableScrollLock: true
+                                                        }}
+                                                    >
+                                                        {
+                                                            axesData.map(val => {
+                                                                return (
+                                                                    <MenuItem key={val.id} value={val.id}>{val.code}</MenuItem>
+                                                                )
+                                                            })
+                                                        }
+                                                    </Select>
+                                                </FormControl>
+                                                <FormControl variant="standard" sx={{ width: 750 }}>
+                                                    <Autocomplete
+                                                        multiple
+                                                        id="checkboxes-tags-demo"
+                                                        options={sectionsData}
+                                                        disableCloseOnSelect
+                                                        getOptionLabel={(option) => option.section}
+                                                        onChange={(_event, newValue) => setSelectedSectionsId(newValue)}
+                                                        value={selectedSectionsId}
+                                                        renderOption={(props, option, { selected }) => {
+                                                            const { key, ...optionProps } = props;
+                                                            return (
+                                                                <li
+                                                                    key={key}
+                                                                    {...optionProps}
+                                                                    style={{
+                                                                        paddingTop: 2,
+                                                                        paddingBottom: 2,
+                                                                        paddingLeft: 4,
+                                                                        paddingRight: 4,
+                                                                        fontSize: "0.8rem",
+                                                                        display: "flex",
+                                                                        alignItems: "center"
+                                                                    }}
+                                                                >
+                                                                    <Checkbox
+                                                                        icon={icon}
+                                                                        checkedIcon={checkedIcon}
+                                                                        style={{ marginRight: 8 }}
+                                                                        checked={selected}
+                                                                    />
+                                                                    {option.section}
+                                                                </li>
+                                                            );
+                                                        }}
+                                                        renderInput={(params) => (
+                                                            <TextField
+                                                                {...params}
+                                                                variant="standard"
+                                                                label="Section"
+                                                            />
+                                                        )}
+                                                    />
+
+                                                </FormControl>
+                                            </>
+                                        )
+                                    }
+                                </Stack>
+                                <Button
+                                    variant="outlined"
+                                    onClick={handleApply}
+                                    sx={{
+                                        height: 40,
+                                        textTransform: 'none',
+                                        outline: 'none',
+                                        '&:focus': {
+                                            outline: 'none',
+                                        },
+                                        '&.Mui-focusVisible': {
+                                            outline: 'none',
+                                            boxShadow: 'none',
+                                        },
+                                        '&:focus-visible': {
+                                            outline: 'none',
+                                            boxShadow: 'none',
+                                        }
+                                    }}
+                                >
+                                    Appliquer
+                                </Button>
                             </Stack>
 
                             <Stack width={"100%"} height={"60px"} spacing={2} alignItems={"center"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
@@ -444,7 +657,7 @@ export default function ExportBalance() {
 
                             <Stack width={"100%"} height={'50vh'} >
                                 {useMemo(() => (
-                                    <VirtualTableModifiableExport columns={columns} rows={balance} state={true} />
+                                    <VirtualTableModifiableExport type={type} columns={columns} rows={balance} state={true} loading={traitementJournalWaiting} rowsCa={balanceCa} />
                                 ), [columns, balance])}
                             </Stack>
                         </Stack>
@@ -471,17 +684,17 @@ export default function ExportBalance() {
                 transformOrigin={{ vertical: 'top', horizontal: 'left' }}
             >
                 <MenuItem onClick={() => doExport('pdf')}>
-                <ListItemIcon>
-                    <FaFilePdf size={20} color="#D32F2F" />
-                </ListItemIcon>
-                <ListItemText primary="Exporter en PDF" />
+                    <ListItemIcon>
+                        <FaFilePdf size={20} color="#D32F2F" />
+                    </ListItemIcon>
+                    <ListItemText primary="Exporter en PDF" />
                 </MenuItem>
 
                 <MenuItem onClick={() => doExport('excel')}>
-                <ListItemIcon>
-                    <FaFileExcel size={20} color="#2E7D32" />
-                </ListItemIcon>
-                <ListItemText primary="Exporter en Excel" />
+                    <ListItemIcon>
+                        <FaFileExcel size={20} color="#2E7D32" />
+                    </ListItemIcon>
+                    <ListItemText primary="Exporter en Excel" />
                 </MenuItem>
             </Menu>
         </Box>

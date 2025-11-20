@@ -96,18 +96,17 @@ const VirtualTableEbilan = ({ refreshTable, columns, rows, noCollapsible, state,
 
   //calcul total
   const totalColumnDetail = (rows, columnId) => {
-
     let data = [];
     if (columnId === 'montantbrut') {
       data = rows.filter(item => item.nature === 'BRUT');
     } else if (columnId === 'montantamort') {
       data = rows.filter(item => item.nature === 'AMORT');
     } else if (columnId === 'montantnet') {
-      data = rows.filter(item => item.nature === 'BRUT' && item.id_etat !== 'BILAN');
+      data = rows.filter(item => item.nature === 'BRUT' && item.id_etat === 'BILAN');
     }
 
     const total = data.reduce((acc, item) => {
-      const Value = parseFloat(item["montant"]) || 0; // Convertir en nombre
+      const Value = parseFloat(item["montant"]) || 0;
       return acc + Value;
     }, 0);
 
@@ -255,111 +254,42 @@ const VirtualTableEbilan = ({ refreshTable, columns, rows, noCollapsible, state,
 
                     {columns.map((column, idx) => {
                       const value = row[column.id];
-
-                      if (column.id === targetColumnId) {
-                        return (
-                          <TableCell
-                            key={column.id}
-                            align={column.align}
-                            style={{
-                              paddingTop: '5px',
-                              paddingBottom: '5px',
-                              // borderRight: '1px solid #ddd', borderLeft: '1px solid #ddd' ,
-                              fontSize: 15,
-                              ...cellStyle,
-                            }}
-                          >
-                            {column.isNumber
-                              ? column.format(value)
-                              : value}
-                          </TableCell>
-                        );
-                      } else if (column.id !== targetColumnId && row.niveau === 0) {
-                        return (
-                          <TableCell
-                            key={column.id}
-                            align={column.align}
-                            style={{
-                              paddingTop: '5px',
-                              paddingBottom: '5px',
-                              fontWeight: row.niveau === 1 ? 'bold' : 'normal',
-                              // borderRight: '1px solid #ddd', borderLeft: '1px solid #ddd' ,
-                              fontSize: 15,
-                            }}
-                          >
-
-                          </TableCell>
-                        );
-                      } else if (column.id !== targetColumnId && row.niveau === 1 && row.id_etat === 'TFTD') {
-                        return (
-                          <TableCell
-                            key={column.id}
-                            align={column.align}
-                            style={{
-                              paddingTop: '5px',
-                              paddingBottom: '5px',
-                              fontWeight: row.niveau === 1 ? 'bold' : 'normal',
-                              // borderRight: '1px solid #ddd', borderLeft: '1px solid #ddd' ,
-                              fontSize: 15,
-                            }}
-                          >
-
-                          </TableCell>
-                        );
-                      } else if (column.id !== targetColumnId && row.niveau === 1 && row.id_etat === 'TFTI') {
-                        return (
-                          <TableCell
-                            key={column.id}
-                            align={column.align}
-                            style={{
-                              paddingTop: '5px',
-                              paddingBottom: '5px',
-                              fontWeight: row.niveau === 1 ? 'bold' : 'normal',
-                              // borderRight: '1px solid #ddd', borderLeft: '1px solid #ddd' ,
-                              fontSize: 15,
-                            }}
-                          >
-
-                          </TableCell>
-                        );
-                      } else {
-                        return (
-                          <TableCell
-                            key={column.id}
-                            align={column.align}
-                            style={{
-                              paddingTop: '5px',
-                              paddingBottom: '5px',
-                              fontWeight: row.niveau === 1 ? 'bold' : 'normal',
-                              // borderRight: '1px solid #ddd', borderLeft: '1px solid #ddd' ,
-                              fontSize: 15,
-                              cursor: 'pointer'
-                            }}
-                            onClick={() => {
-                              if (!state) {
-                                handleCellClick(row, column.id, value);
-                              }
-                            }}
-                          >
-                            {column.isNumber
-                              ? (row.ajusts && row.ajusts.length > 0 && totalColumnDetail(row.ajusts, column.id) !== 0)
-                                ? <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-                                  {
-                                    column.id === 'montantbrut' || column.id === 'montantamort' || column.id === 'montantnet'
-                                      ? <FaRegPenToSquare style={{ color: '#f44336', width: 20, heigth: 20 }} />
-                                      : null
-                                  }
-                                  <div style={{ width: '95%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-                                    {column.format(value)}
-                                  </div>
-
-                                </div>
-                                : column.format(value)
-                              : value
+                      return (
+                        <TableCell
+                          key={column.id}
+                          align={column.align}
+                          style={{
+                            paddingTop: '5px',
+                            paddingBottom: '5px',
+                            fontWeight: row.niveau === 1 ? 'bold' : 'normal',
+                            // borderRight: '1px solid #ddd', borderLeft: '1px solid #ddd' ,
+                            fontSize: 15,
+                            cursor: 'pointer'
+                          }}
+                          onClick={() => {
+                            if (!state) {
+                              handleCellClick(row, column.id, value);
                             }
-                          </TableCell>
-                        );
-                      }
+                          }}
+                        >
+                          {column.isNumber
+                            ? (row.ajusts && row.ajusts.length > 0 && totalColumnDetail(row.ajusts, column.id) !== 0)
+                              ? <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                                {
+                                  column.id === 'montantbrut' || column.id === 'montantamort' || column.id === 'montantnet'
+                                    ? <FaRegPenToSquare style={{ color: '#f44336', width: 20, heigth: 20 }} />
+                                    : null
+                                }
+                                <div style={{ width: '95%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                                  {column.format(value)}
+                                </div>
+
+                              </div>
+                              : column.format(value)
+                            : value
+                          }
+                        </TableCell>
+                      );
                     })}
                   </TableRow>
 

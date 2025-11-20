@@ -38,7 +38,11 @@ router.post('/rapprochements', saisieController.createRapprochement);
 router.put('/rapprochements/:id', saisieController.updateRapprochement);
 router.delete('/rapprochements/:id', saisieController.deleteRapprochement);
 
+// Récupération de journal avec 10 lignes d'écriture
 router.get('/getJournal/:id_compte/:id_dossier/:id_exercice', saisieController.getJournal);
+
+// Récupération de journal filtré
+router.post('/getJournalFiltered', saisieController.getJournalFiltered);
 
 router.post('/addLettrage', saisieController.addLettrage);
 
