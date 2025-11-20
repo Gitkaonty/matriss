@@ -42,6 +42,7 @@ import DeclarationIsi from './components/menuComponent/Declaration/ISI/Declarati
 import ExportJournal from './components/menuComponent/administration/export/ExportJournal';
 import ExportGrandLivre from './components/menuComponent/administration/export/ExportGrandLivre';
 import RapprochementsBancaires from './components/menuComponent/administration/rapprochements/RapprochementsBancaires';
+import Immobilisations from './components/menuComponent/administration/immobilisations/Immobilisations';
 import ParamMappingExterne from './components/menuComponent/Parametrages/mappingCompteExterne/ParamMappingExterne';
 import EtatFinancier from './components/menuComponent/administration/etatFinancier/EtatFinancier';
 import Sig from './components/menuComponent/administration/SIG/Sig';
@@ -76,15 +77,14 @@ export default function App() {
                 <Route path='/tab/administration/consultation/:id' element={<ConsultationComponent />} />
                 <Route path='/tab/administration/importBalance/:id' element={<ImportBalance />} />
                 <Route path='/tab/administration/importJournal/:id' element={<ImportJournal />} />
-                {/* <Route path='/tab/administration/importModelePlanComptable' element={<ImportModelePlanComptable />} /> */}
                 <Route path='/tab/administration/importAnnexeDeclarationEbilan/:id' element={<ImportAnnexeComponent />} />
                 <Route path='/tab/administration/importAnnexeDeclarationFiscale' element={<ImportAnnexeDeclarationFiscaleComponent />} />
                 <Route path='/tab/administration/exportBalance/:id' element={<ExportBalance />} />
                 <Route path='/tab/administration/personnel/:id' element={<PersonnelComponent />} />
                 <Route path='/tab/administration/exportJournal/:id' element={<ExportJournal />} />
                 <Route path='/tab/administration/exportGrandLivre/:id' element={<ExportGrandLivre />} />
-                {/* <Route path='/tab/administration/rapprochements/:id' element={<RapprochementsBancaires />} /> */}
                 <Route path='/tab/administration/rapprochements/:id' element={<RapprochementsBancaires />} />
+                <Route path='/tab/administration/immobilisations/:id' element={<Immobilisations />} />
                 <Route path='/tab/administration/etatFinacier/:id' element={<EtatFinancier />} />
                 <Route path='/tab/administration/sig/:id' element={<Sig />} />
 

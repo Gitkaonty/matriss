@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Typography, Stack, Box, Tab, Button, TextField,Tooltip, IconButton } from '@mui/material';
+import { Typography, Stack, Box, Tab, Button, TextField, Tooltip, IconButton } from '@mui/material';
 import Checkbox from '@mui/material/Checkbox';
 import { CheckCircle, Close } from '@mui/icons-material';
+import { FaFilePdf } from "react-icons/fa6";
+import { BsFillFileEarmarkExcelFill } from "react-icons/bs";
 import { TabContext, TabList, TabPanel } from '@mui/lab';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
@@ -25,53 +27,55 @@ import { TfiSave } from 'react-icons/tfi';
 import { VscClose } from 'react-icons/vsc';
 import { IoMdTrash } from 'react-icons/io';
 
-  // Comparator to keep total row at the bottom regardless of sort
-  const keepTotalBottomComparator = (v1, v2, cellParams1, cellParams2) => {
-    const r1 = cellParams1?.row;
-    const r2 = cellParams2?.row;
-    const isTot1 = !!r1?.isTotal;
-    const isTot2 = !!r2?.isTotal;
-    if (isTot1 && !isTot2) return 1; // total after normal rows
-    if (!isTot1 && isTot2) return -1;
-    // fallback compare (string or number)
-    if (typeof v1 === 'number' && typeof v2 === 'number') return v1 - v2;
-    const s1 = v1 == null ? '' : String(v1);
-    const s2 = v2 == null ? '' : String(v2);
-    return s1.localeCompare(s2);
-  };
+// Comparator to keep total row at the bottom regardless of sort
+const keepTotalBottomComparator = (v1, v2, cellParams1, cellParams2) => {
+  const r1 = cellParams1?.row;
+  const r2 = cellParams2?.row;
+  const isTot1 = !!r1?.isTotal;
+  const isTot2 = !!r2?.isTotal;
+  if (isTot1 && !isTot2) return 1; // total after normal rows
+  if (!isTot1 && isTot2) return -1;
+  // fallback compare (string or number)
+  if (typeof v1 === 'number' && typeof v2 === 'number') return v1 - v2;
+  const s1 = v1 == null ? '' : String(v1);
+  const s2 = v2 == null ? '' : String(v2);
+  return s1.localeCompare(s2);
+};
 
-  // Add days to a DATEONLY string (YYYY-MM-DD) in UTC to avoid timezone shifts
-  const addDaysDateOnly = (dateStr, days) => {
-    if (!dateStr) return '';
-    const s = String(dateStr).substring(0, 10);
-    const [y, m, d] = s.split('-').map(Number);
-    if (!y || !m || !d) return s;
-    const dt = new Date(Date.UTC(y, m - 1, d));
-    dt.setUTCDate(dt.getUTCDate() + days);
-    const yyyy = dt.getUTCFullYear();
-    const mm = String(dt.getUTCMonth() + 1).padStart(2, '0');
-    const dd = String(dt.getUTCDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
-  };
+// ---- Export helpers moved inside component ----
 
-  // Format helpers (display only)
-  const formatFrDate = (s) => {
-    if (!s) return '';
-    const d = String(s).substring(0,10);
-    const [y,m,dd] = d.split('-');
-    if (!y || !m || !dd) return d;
-    return `${dd}/${m}/${y}`;
-  };
+// Add days to a DATEONLY string (YYYY-MM-DD) in UTC to avoid timezone shifts
+const addDaysDateOnly = (dateStr, days) => {
+  if (!dateStr) return '';
+  const s = String(dateStr).substring(0, 10);
+  const [y, m, d] = s.split('-').map(Number);
+  if (!y || !m || !d) return s;
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + days);
+  const yyyy = dt.getUTCFullYear();
+  const mm = String(dt.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(dt.getUTCDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
 
-  const formatMoneyFr = (n) => {
-    const num = Number(n);
-    if (!isFinite(num)) return n ?? '';
-    try {
-      return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
-    } catch {
-      return String(num.toFixed?.(2) ?? num);
-    }
-  };
+// Format helpers (display only)
+const formatFrDate = (s) => {
+  if (!s) return '';
+  const d = String(s).substring(0, 10);
+  const [y, m, dd] = d.split('-');
+  if (!y || !m || !dd) return d;
+  return `${dd}/${m}/${y}`;
+};
+
+const formatMoneyFr = (n) => {
+  const num = Number(n);
+  if (!isFinite(num)) return n ?? '';
+  try {
+    return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+  } catch {
+    return String(num.toFixed?.(2) ?? num);
+  }
+};
 
 function RapprochementsBancaires() {
   let initial = init[0];
@@ -123,6 +127,93 @@ function RapprochementsBancaires() {
   // delete dialog state
   const [openDialogDeleteRappro, setOpenDialogDeleteRappro] = useState(false);
   const [idToDelete, setIdToDelete] = useState(null);
+
+  // ---- Export helpers (inside component scope) ----
+  const downloadBlob = (blob, filename) => {
+    try {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch { }
+  };
+
+  const exportRapproPDF = async (row) => {
+    try {
+      if (!row) { toast.error('Aucune ligne'); return; }
+      if (!row.id || isNaN(Number(row.id))) { toast('Sauvegardez la ligne avant export', { icon: 'ℹ️' }); return; }
+      const pcId = (pcSelected && pcSelected.id) ? pcSelected.id : row?.pc_id;
+      if (!pcId) { toast.error('Sélectionner un compte 512'); return; }
+      // sécuriser fileId et exerciceId (file depuis state ou sessionStorage)
+      const storedFile = sessionStorage.getItem('fileId');
+      const fid = fileId && !isNaN(Number(fileId)) ? Number(fileId) : (storedFile ? Number(storedFile) || 0 : 0);
+      const exoId = selectedExerciceId && !isNaN(Number(selectedExerciceId)) ? Number(selectedExerciceId) : 0;
+      if (!fid) { toast.error('Dossier introuvable pour export'); return; }
+      if (!exoId) { toast.error('Sélectionner un exercice'); return; }
+      const params = { fileId: fid, compteId, exerciceId: exoId, pcId, rapproId: row.id };
+      // console.log('[RAPPRO][EXPORT][PARAMS]', params);
+      const res = await axios.get('/administration/traitementSaisie/rapprochements/export/pdf', { params, responseType: 'blob' });
+      downloadBlob(res.data, `Rapprochement_${row.id}.pdf`);
+      toast.success('Export PDF généré');
+    } catch (e) {
+      try { console.error('[RAPPRO][EXPORT][PDF][FRONT]', e); } catch { }
+      try {
+        const resp = e?.response;
+        if (resp && resp.data instanceof Blob) {
+          const text = await resp.data.text();
+          try {
+            const js = JSON.parse(text);
+            toast.error(js?.msg || 'Export PDF échoué');
+            return;
+          } catch {
+            toast.error(text || 'Export PDF échoué');
+            return;
+          }
+        }
+      } catch { }
+      toast.error(e?.response?.data?.msg || 'Export PDF échoué');
+    }
+  };
+
+  const exportRapproExcel = async (row) => {
+    try {
+      if (!row) { toast.error('Aucune ligne'); return; }
+      if (!row.id || isNaN(Number(row.id))) { toast('Sauvegardez la ligne avant export', { icon: 'ℹ️' }); return; }
+      const pcId = (pcSelected && pcSelected.id) ? pcSelected.id : row?.pc_id;
+      if (!pcId) { toast.error('Sélectionner un compte 512'); return; }
+      const storedFile = sessionStorage.getItem('fileId');
+      const fid = fileId && !isNaN(Number(fileId)) ? Number(fileId) : (storedFile ? Number(storedFile) || 0 : 0);
+      const exoId = selectedExerciceId && !isNaN(Number(selectedExerciceId)) ? Number(selectedExerciceId) : 0;
+      if (!fid) { toast.error('Dossier introuvable pour export'); return; }
+      if (!exoId) { toast.error('Sélectionner un exercice'); return; }
+      const params = { fileId: fid, compteId, exerciceId: exoId, pcId, rapproId: row.id };
+      // console.log('[RAPPRO][EXPORT][PARAMS]', params);
+      const res = await axios.get('/administration/traitementSaisie/rapprochements/export/excel', { params, responseType: 'blob' });
+      downloadBlob(res.data, `Rapprochement_${row.id}.xlsx`);
+      toast.success('Export Excel généré');
+    } catch (e) {
+      try { console.error('[RAPPRO][EXPORT][EXCEL][FRONT]', e); } catch { }
+      try {
+        const resp = e?.response;
+        if (resp && resp.data instanceof Blob) {
+          const text = await resp.data.text();
+          try {
+            const js = JSON.parse(text);
+            toast.error(js?.msg || 'Export Excel échoué');
+            return;
+          } catch {
+            toast.error(text || 'Export Excel échoué');
+            return;
+          }
+        }
+      } catch { }
+      toast.error(e?.response?.data?.msg || 'Export Excel échoué');
+    }
+  };
 
   // Toolbar intégrée au DataGrid de droite (au-dessus du header)
   const RapproToolbar = () => (
@@ -233,7 +324,7 @@ function RapprochementsBancaires() {
         const { data: pcs } = await axios.get('/administration/traitementSaisie/rapprochements/pcs', { params: { fileId: fid, compteId }, timeout: 60000 });
         if (pcs?.state) {
           const list = Array.isArray(pcs.list) ? pcs.list : (pcs.list ? [pcs.list] : []);
-          try { console.log('[RAPPRO][PCS][FILTERED]', { fileId: fid, compteId, count: list.length, list }); } catch {}
+          try { console.log('[RAPPRO][PCS][FILTERED]', { fileId: fid, compteId, count: list.length, list }); } catch { }
           // Affichage strict: si vide, on montre vide
           setPc512Rows(list);
           if (list.length === 0) {
@@ -246,7 +337,7 @@ function RapprochementsBancaires() {
       setPc512Rows([]);
     } catch (e) {
       setPc512Rows([]);
-      try { console.error('[RAPPRO][PCS][ERROR]', e?.response?.status, e?.response?.data || e); } catch {}
+      try { console.error('[RAPPRO][PCS][ERROR]', e?.response?.status, e?.response?.data || e); } catch { }
       toast.error('Erreur serveur lors du chargement du plan comptable');
     }
   };
@@ -259,7 +350,7 @@ function RapprochementsBancaires() {
       if (!sel || !sel.date_fin) { toast.error('Sélectionner une ligne de rapprochement avec date fin'); return; }
       const ids = Array.isArray(ecrituresSelectionModel) ? ecrituresSelectionModel : [];
       if (ids.length === 0) { toast('Sélectionner des écritures', { icon: 'ℹ️' }); return; }
-      const dateRapprochement = String(sel.date_fin).substring(0,10);
+      const dateRapprochement = String(sel.date_fin).substring(0, 10);
       await axios.post('/administration/traitementSaisie/rapprochements/ecritures/mark', {
         ids, fileId, compteId, exerciceId: selectedExerciceId, rapprocher: !!mark, dateRapprochement
       });
@@ -281,7 +372,7 @@ function RapprochementsBancaires() {
         compteId,
         exerciceId: selectedExerciceId,
         pcId: pcSelected.id,
-        endDate: String(sel.date_fin).substring(0,10),
+        endDate: String(sel.date_fin).substring(0, 10),
         soldeBancaire: sel.solde_bancaire ?? null,
       };
       const { data } = await axios.get('/administration/traitementSaisie/rapprochements/soldes', { params });
@@ -294,7 +385,6 @@ function RapprochementsBancaires() {
         setRapproRows(prev => prev.map(r => r.id === sel.id ? updated : r));
       }
     } catch (e) {
-      // ignore toast flood here
     }
   };
 
@@ -303,7 +393,7 @@ function RapprochementsBancaires() {
       if (!pcSelected || !fileId || !compteId || !selectedExerciceId) { setEcrituresRows([]); return; }
       const selectedR = rapproRows.find(r => r.id === rapproSelectionModel[0]);
       if (!selectedR || !selectedR.date_fin) { setEcrituresRows([]); return; }
-      const norm = (s) => (s ? String(s).substring(0,10) : null);
+      const norm = (s) => (s ? String(s).substring(0, 10) : null);
       const endDate = pendingDateFin[selectedR.id] ? norm(pendingDateFin[selectedR.id]) : norm(selectedR.date_fin);
       const params = { fileId, compteId, exerciceId: selectedExerciceId, pcId: pcSelected.id, endDate };
       const { data } = await axios.get('/administration/traitementSaisie/rapprochements/ecritures', { params, timeout: 60000 });
@@ -387,24 +477,24 @@ function RapprochementsBancaires() {
     if (!pcSelected) return toast.error('Sélectionner un compte 512');
     // Date début par défaut
     let defaultDateDebut = '';
-    try { console.debug('[RAPPRO][ADD][START]', { forceExoStart: force, rowsCount: rapproRows.length, selectedId: rapproSelectionModel[0], pendingDateFin }); } catch {}
+    try { console.debug('[RAPPRO][ADD][START]', { forceExoStart: force, rowsCount: rapproRows.length, selectedId: rapproSelectionModel[0], pendingDateFin }); } catch { }
     if (!force && rapproRows.length > 0) {
       // Continuité stricte: prioriser la date_fin de la ligne sélectionnée (même non sauvegardée)
       const selectedId = rapproSelectionModel[0];
       const selectedRow = rapproRows.find(r => r.id === selectedId);
-      const selEnd = pendingDateFin[selectedId] || (selectedRow?.date_fin ? String(selectedRow.date_fin).substring(0,10) : null);
+      const selEnd = pendingDateFin[selectedId] || (selectedRow?.date_fin ? String(selectedRow.date_fin).substring(0, 10) : null);
       // Sinon, chercher la dernière date_fin parmi toutes les lignes existantes ou en cours d'édition
       const ends = rapproRows
         .map(r => {
           const rid = r.id;
           const pend = pendingDateFin[rid];
-          return pend ? String(pend).substring(0,10) : (r?.date_fin ? String(r.date_fin).substring(0,10) : null);
+          return pend ? String(pend).substring(0, 10) : (r?.date_fin ? String(r.date_fin).substring(0, 10) : null);
         })
         .filter(Boolean);
       if (ends.length > 0) {
         const base = selEnd || ends.reduce((a, b) => (a > b ? a : b));
         const lastEnd = base;
-        try { console.debug('[RAPPRO][ADD][COMPUTE]', { selEnd, ends, base, lastEnd }); } catch {}
+        try { console.debug('[RAPPRO][ADD][COMPUTE]', { selEnd, ends, base, lastEnd }); } catch { }
         defaultDateDebut = addDaysDateOnly(lastEnd, 1);
       } else {
         // Pas de date_fin encore saisie: laisser vide et informer l'utilisateur
@@ -421,7 +511,7 @@ function RapprochementsBancaires() {
         defaultDateDebut = defaultDateDebut || '';
       }
     }
-    try { console.debug('[RAPPRO][ADD][RESULT]', { defaultDateDebut }); } catch {}
+    try { console.debug('[RAPPRO][ADD][RESULT]', { defaultDateDebut }); } catch { }
     const idTemp = `new-${Date.now()}`;
     const newRow = {
       id: idTemp,
@@ -442,7 +532,7 @@ function RapprochementsBancaires() {
     try {
       await recomputeAndUpdateSoldes();
       await loadEcritures();
-    } catch {}
+    } catch { }
   };
 
   const handleEdit = () => {
@@ -467,9 +557,9 @@ function RapprochementsBancaires() {
       // Récupérer la ligne à supprimer et vérifier contrainte: on ne supprime que la dernière ligne (la plus récente)
       const rowToDelete = rapproRows.find(r => r.id === idSel);
       if (!rowToDelete) return toast.error('Ligne introuvable');
-      const finDel = rowToDelete?.date_fin ? String(rowToDelete.date_fin).substring(0,10) : null;
+      const finDel = rowToDelete?.date_fin ? String(rowToDelete.date_fin).substring(0, 10) : null;
       const hasLater = rapproRows.some(r => {
-        const f = r?.date_fin ? String(r.date_fin).substring(0,10) : null;
+        const f = r?.date_fin ? String(r.date_fin).substring(0, 10) : null;
         return r.id !== idSel && f && finDel && f > finDel;
       });
       if (hasLater) {
@@ -487,7 +577,7 @@ function RapprochementsBancaires() {
           const listParams = { fileId, compteId, exerciceId: selectedExerciceId, pcId: pcSelected.id, endDate: finDel };
           const { data } = await axios.get('/administration/traitementSaisie/rapprochements/ecritures', { params: listParams, timeout: 60000 });
           const list = Array.isArray(data?.list) ? data.list : (data?.list ? [data.list] : []);
-          const idsToUnmark = list.filter(it => !!it.rapprocher && String(it.date_rapprochement).substring(0,10) === finDel).map(it => it.id);
+          const idsToUnmark = list.filter(it => !!it.rapprocher && String(it.date_rapprochement).substring(0, 10) === finDel).map(it => it.id);
           if (idsToUnmark.length > 0) {
             await axios.post('/administration/traitementSaisie/rapprochements/ecritures/mark', {
               ids: idsToUnmark,
@@ -571,13 +661,13 @@ function RapprochementsBancaires() {
 
   const rapproColumns = useMemo(() => ([
     {
-      field: 'date_debut', headerName: 'Date début', width: 150, editable: false,
+      field: 'date_debut', headerName: 'Date début', width: 100, editable: false,
       valueGetter: (p) => p.row.date_debut ? String(p.row.date_debut).substring(0, 10) : '',
       renderCell: (params) => formatFrDate(params.value),
       getCellClassName: () => 'nonClickable',
     },
     {
-      field: 'date_fin', headerName: 'Date fin', width: 150, editable: true,
+      field: 'date_fin', headerName: 'Date fin', width: 100, editable: true,
       valueGetter: (p) => p.row.date_fin ? String(p.row.date_fin).substring(0, 10) : '',
       renderCell: (params) => formatFrDate(params.value),
       renderEditCell: (params) => (
@@ -595,11 +685,13 @@ function RapprochementsBancaires() {
         />
       )
     },
-    { field: 'solde_comptable', headerName: 'Solde comptable', width: 160, flex: 1, editable: false, type: 'number', headerAlign: 'right', align: 'right',
+    {
+      field: 'solde_comptable', headerName: 'Solde comptable', width: 100, flex: 1, editable: false, type: 'number', headerAlign: 'right', align: 'right',
       renderCell: (p) => formatMoneyFr(p.value),
       getCellClassName: () => 'nonClickable',
     },
-    { field: 'solde_bancaire', headerName: 'Solde bancaire', width: 160, flex: 1, editable: true, type: 'number', headerAlign: 'right', align: 'right',
+    {
+      field: 'solde_bancaire', headerName: 'Solde bancaire', width: 100, flex: 1, editable: true, type: 'number', headerAlign: 'right', align: 'right',
       renderCell: (p) => (
         <Stack direction="row" spacing={0.5} alignItems="center" justifyContent="flex-end" sx={{ width: '100%' }}>
           <Box component="span" sx={{ textAlign: 'right', flexGrow: 1 }}>{formatMoneyFr(p.value)}</Box>
@@ -637,11 +729,13 @@ function RapprochementsBancaires() {
         />
       )
     },
-    { field: 'solde_non_rapproche', headerName: 'Solde lignes non rapprochées', width: 220, flex: 1, editable: false, type: 'number', headerAlign: 'right', align: 'right',
+    {
+      field: 'solde_non_rapproche', headerName: 'Solde lignes non rapprochées', width: 220, flex: 1, editable: false, type: 'number', headerAlign: 'right', align: 'right',
       renderCell: (p) => formatMoneyFr(p.value),
       getCellClassName: () => 'nonClickable',
     },
-    { field: 'ecart', headerName: 'Écart', width: 130, flex: 1, headerAlign: 'right', align: 'right',
+    {
+      field: 'ecart', headerName: 'Écart', width: 130, flex: 1, headerAlign: 'right', align: 'right',
       valueGetter: (p) => computeEcart(p.row),
       getCellClassName: () => 'nonClickable',
       renderCell: (p) => {
@@ -653,6 +747,47 @@ function RapprochementsBancaires() {
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', px: 1, py: 0.25, borderRadius: '999px', bgcolor: bg, color: 'white', fontWeight: 600, width: '100%', boxSizing: 'border-box' }}>
             {formatMoneyFr(val)}
           </Box>
+        );
+      }
+    },
+    {
+      field: 'export_actions', headerName: 'Export', width: 120, sortable: false, filterable: false, align: 'center', headerAlign: 'center',
+      renderCell: (p) => {
+        const hasPc = (pcSelected && pcSelected.id) || p.row?.pc_id;
+        const isPersisted = p.row?.id && !isNaN(Number(p.row.id));
+        const disabled = !hasPc || !isPersisted;
+        const tip = disabled
+          ? (!hasPc ? 'Sélectionner un compte 512' : 'Sauvegardez la ligne avant export')
+          : 'Exporter';
+        return (
+          <Stack direction="row" spacing={0.5} alignItems="center" justifyContent="center" sx={{ width: '100%' }}>
+            <Tooltip title={tip}>
+              <span>
+                <IconButton
+                  size="medium"
+                  disabled={disabled}
+                  onClick={(e) => { e.stopPropagation(); exportRapproPDF(p.row); }}
+                >
+                  <FaFilePdf
+                    style={{ color: disabled ? '#9e9e9e' : '#ce4141', fontSize: 22 }} // <-- ici style au lieu de sx
+                  />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title={tip}>
+              <span>
+                <IconButton
+                  size="medium"
+                  disabled={disabled}
+                  onClick={(e) => { e.stopPropagation(); exportRapproExcel(p.row); }}
+                >
+                  <BsFillFileEarmarkExcelFill
+                    style={{ color: disabled ? '#9e9e9e' : '#2e7d32', fontSize: 22 }}  // vert foncé
+                  />
+                </IconButton>
+              </span>
+            </Tooltip>
+          </Stack >
         );
       }
     },
@@ -702,7 +837,6 @@ function RapprochementsBancaires() {
     setRowModesModel(newModel);
   };
 
-
   const GetListeSituation = (id) => {
     axios.get(`/paramExercice/listeSituation/${id}`).then((response) => {
       const resData = response.data;
@@ -739,15 +873,26 @@ function RapprochementsBancaires() {
     if (navigationEntries.length > 0) {
       const navigationType = navigationEntries[0].type;
       if (navigationType === 'reload') {
-        const idDossier = sessionStorage.getItem("fileId");
-        setFileId(idDossier);
-        idFile = idDossier;
+        const stored = sessionStorage.getItem('fileId');
+        if (stored) {
+          idFile = Number(stored) || 0;
+        } else if (id) {
+          idFile = Number(id) || 0;
+          if (idFile) sessionStorage.setItem('fileId', String(idFile));
+        }
       } else {
-        sessionStorage.setItem('fileId', id);
-        setFileId(id);
-        idFile = id;
+        if (id) {
+          idFile = Number(id) || 0;
+          if (idFile) sessionStorage.setItem('fileId', String(idFile));
+        }
       }
     }
+    if (!idFile) {
+      setNoFile(true);
+      toast.error('Dossier introuvable pour le rapprochement');
+      return;
+    }
+    setFileId(idFile);
     GetInfosIdDossier(idFile);
     GetListeExercice(idFile);
   }, []);
@@ -854,9 +999,9 @@ function RapprochementsBancaires() {
                     MenuProps={{ disableScrollLock: true }}
                   >
                     {listeExercice.map((option) => {
-                      const d1 = option?.date_debut ? String(option.date_debut).substring(0,10) : '';
-                      const d2 = option?.date_fin ? String(option.date_fin).substring(0,10) : '';
-                      const toFr = (s) => s ? `${s.substring(8,10)}/${s.substring(5,7)}/${s.substring(0,4)}` : '';
+                      const d1 = option?.date_debut ? String(option.date_debut).substring(0, 10) : '';
+                      const d2 = option?.date_fin ? String(option.date_fin).substring(0, 10) : '';
+                      const toFr = (s) => s ? `${s.substring(8, 10)}/${s.substring(5, 7)}/${s.substring(0, 4)}` : '';
                       return (
                         <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {toFr(d1)} - {toFr(d2)}</MenuItem>
                       );
@@ -887,9 +1032,9 @@ function RapprochementsBancaires() {
                     MenuProps={{ disableScrollLock: true }}
                   >
                     {listeSituation?.map((option) => {
-                      const d1 = option?.date_debut ? String(option.date_debut).substring(0,10) : '';
-                      const d2 = option?.date_fin ? String(option.date_fin).substring(0,10) : '';
-                      const toFr = (s) => s ? `${s.substring(8,10)}/${s.substring(5,7)}/${s.substring(0,4)}` : '';
+                      const d1 = option?.date_debut ? String(option.date_debut).substring(0, 10) : '';
+                      const d2 = option?.date_fin ? String(option.date_fin).substring(0, 10) : '';
+                      const toFr = (s) => s ? `${s.substring(8, 10)}/${s.substring(5, 7)}/${s.substring(0, 4)}` : '';
                       return (
                         <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {toFr(d1)} - {toFr(d2)}</MenuItem>
                       );
@@ -929,7 +1074,7 @@ function RapprochementsBancaires() {
                   }}
                   rowSelectionModel={pcSelectionModel}
                 />
-               
+
               </Box>
 
               <Box sx={{ flex: 2, height: '60vh', display: 'flex', flexDirection: 'column' }}>
@@ -989,14 +1134,15 @@ function RapprochementsBancaires() {
               <DataGrid
                 rows={ecrituresRows}
                 columns={[
-                  { field: 'dateecriture', headerName: 'Date écriture', width: 140, valueGetter: (p) => p.row.dateecriture ? String(p.row.dateecriture).substring(0,10) : '', renderCell: (p) => formatFrDate(p.value), sortComparator: keepTotalBottomComparator },
+                  { field: 'dateecriture', headerName: 'Date écriture', width: 140, valueGetter: (p) => p.row.dateecriture ? String(p.row.dateecriture).substring(0, 10) : '', renderCell: (p) => formatFrDate(p.value), sortComparator: keepTotalBottomComparator },
                   { field: 'code_journal', headerName: 'Code journal', width: 140, sortComparator: keepTotalBottomComparator },
                   { field: 'compte_ecriture', headerName: 'Compte', width: 140, sortComparator: keepTotalBottomComparator },
                   { field: 'libelle', headerName: 'Libellé', flex: 1, renderCell: (p) => p.row.isTotal ? <strong>{p.value}</strong> : p.value, sortComparator: keepTotalBottomComparator },
                   { field: 'piece', headerName: 'Pièce', width: 140, sortComparator: keepTotalBottomComparator },
                   { field: 'debit', headerName: 'Débit', width: 120, type: 'number', headerAlign: 'right', align: 'right', renderCell: (p) => p.row.isTotal ? <strong>{formatMoneyFr(p.value)}</strong> : formatMoneyFr(p.value), sortComparator: keepTotalBottomComparator },
                   { field: 'credit', headerName: 'Crédit', width: 120, type: 'number', headerAlign: 'right', align: 'right', renderCell: (p) => p.row.isTotal ? <strong>{formatMoneyFr(p.value)}</strong> : formatMoneyFr(p.value), sortComparator: keepTotalBottomComparator },
-                  { field: 'rapprocher', headerName: 'Rapproché', width: 120, sortable: true, sortComparator: keepTotalBottomComparator,
+                  {
+                    field: 'rapprocher', headerName: 'Rapproché', width: 120, sortable: true, sortComparator: keepTotalBottomComparator,
                     renderCell: (p) => (
                       p.row.isTotal ? null : (
                         <Checkbox
@@ -1008,11 +1154,11 @@ function RapprochementsBancaires() {
                       )
                     )
                   },
-                  { field: 'date_rapprochement', headerName: 'Date rappro.', width: 140, valueGetter: (p) => p.row.date_rapprochement ? String(p.row.date_rapprochement).substring(0,10) : '', renderCell: (p) => formatFrDate(p.value), sortComparator: keepTotalBottomComparator },
+                  { field: 'date_rapprochement', headerName: 'Date rappro.', width: 140, valueGetter: (p) => p.row.date_rapprochement ? String(p.row.date_rapprochement).substring(0, 10) : '', renderCell: (p) => formatFrDate(p.value), sortComparator: keepTotalBottomComparator },
                 ]}
                 disableColumnMenu
                 density="compact"
-                pageSizeOptions={[10,25,50]}
+                pageSizeOptions={[10, 25, 50]}
                 autoHeight
                 sx={{
                   flex: 1,
@@ -1028,7 +1174,7 @@ function RapprochementsBancaires() {
                       <Stack direction="row" spacing={3} alignItems="center">
                         <Typography variant="body2">Débit: <strong>{formatMoneyFr(ecrituresTotals.debit)}</strong></Typography>
                         <Typography variant="body2">Crédit: <strong>{formatMoneyFr(ecrituresTotals.credit)}</strong></Typography>
-                        <Typography variant="body2">Solde: <strong>{formatMoneyFr((Number(ecrituresTotals.debit)||0) - (Number(ecrituresTotals.credit)||0))}</strong></Typography>
+                        <Typography variant="body2">Solde: <strong>{formatMoneyFr((Number(ecrituresTotals.debit) || 0) - (Number(ecrituresTotals.credit) || 0))}</strong></Typography>
                       </Stack>
                       <Stack direction="row" spacing={1} alignItems="center">
                         <Button

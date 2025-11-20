@@ -97,17 +97,17 @@ module.exports = (sequelize, DataTypes) => {
         pourcentagen: {
             type: DataTypes.DOUBLE,
             allowNull: true,
-            defaultValue: 0
+            defaultValue: []
         },
         pourcentagen1: {
             type: DataTypes.DOUBLE,
             allowNull: true,
-            defaultValue: 0
+            defaultValue: []
         },
         pourcentagevariation: {
             type: DataTypes.DOUBLE,
             allowNull: true,
-            defaultValue: 0
+            defaultValue: []
         }
     }, { timestamps: true },)
     return rubriquesExternes;
