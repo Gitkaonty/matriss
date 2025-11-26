@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Typography, Stack, IconButton } from '@mui/material';
+import { Typography, Stack, IconButton, Checkbox, Autocomplete, TextField } from '@mui/material';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
@@ -32,12 +32,16 @@ import axios, { URL } from '../../../../../config/axios';
 import { CiLock } from "react-icons/ci";
 import { CiUnlock } from "react-icons/ci";
 
-import VirtualTableEbilanEtatFinacier from '../../../componentsTools/EtatFinancier/virtualTableEbilanEtatFinancier';
+import ExportEtatFinancierAnalytiqueButton from '../../../componentsTools/EtatFinancierAnalytique/ExportEtatFinancierAnalytiqueButton/ExportEtatFinancierAnalytiqueButton';
+import ExportEtatFinancierAnalytiqueButtonAll from '../../../componentsTools/EtatFinancierAnalytique/ExportEtatFinancierAnalytiqueButton/ExportEtatFinancierAnalytiqueButtonAll';
 
-import ExportEtatFinancierButton from '../../../componentsTools/EtatFinancier/ButtonEtatFinancierExport/ExportEtatFinancierButton/ExportEtatFinancierButton';
-import ExportEtatFinancierButtonAll from '../../../componentsTools/EtatFinancier/ButtonEtatFinancierExport/ExportEtatFinancierButton/ExportEtatFinancierButtonAll';
+import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
+import CheckBoxIcon from '@mui/icons-material/CheckBox';
+import VirtualTableEbilanEtatFinaciereAnalytique from '../../../componentsTools/EtatFinancierAnalytique/virtualTableEbilanEtatFinancierAnalytique';
+import VirtualTableEvcpEtatFinancierAnalytique from '../../../componentsTools/EtatFinancierAnalytique/virtualTableEvcpEtatFinancierAnalytique';
 
-import VirtualTableEvcpEtatFinancier from '../../../componentsTools/EtatFinancier/virtualTableEvcpEtatFinancier';
+const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
+const checkedIcon = <CheckBoxIcon fontSize="small" />;
 
 //colonne bilan
 const BilanActifColumn = [
@@ -237,13 +241,23 @@ const evcpColumn = [
     },
 ];
 
-export default function EtatFinancier() {
+export default function EtatFinancierAnalytique() {
     //Valeur du listbox choix exercice ou situation-----------------------------------------------------
-    let tabFinancier = ""
-    if (typeof window !== undefined) {
-        tabFinancier = localStorage.getItem('tabFinancier');
+    let tabFinancierAnalytique = "";
+    let axeId = 0;
+    if (typeof window !== "undefined") {
+        tabFinancierAnalytique = localStorage.getItem('tabFinancierAnalytique');
+        axeId = localStorage.getItem('axeId');
     }
-    const [value, setValue] = useState(tabFinancier || "1");
+
+    const [value, setValue] = useState(tabFinancierAnalytique || "1");
+
+    const [axesData, setAxesData] = useState([]);
+    const [sectionsData, setSectionsData] = useState([]);
+    const [isCaActive, setIsCaActive] = useState(false);
+
+    const [selectedAxeId, setSelectedAxeId] = useState(0);
+    const [selectedSectionsId, setSelectedSectionsId] = useState([]);
 
     let initial = init[0];
     const [fileInfos, setFileInfos] = useState('');
@@ -300,7 +314,7 @@ export default function EtatFinancier() {
         setListeSituation(listeExercice?.filter((item) => item.id === exercice_id));
         setSelectedPeriodeId(exercice_id);
 
-        getVerouillageEtatFinancier(compteId, fileId, exercice_id);
+        getVerouillageEtatFinancierAnalytique(compteId, fileId, exercice_id);
     }
 
     //Choix période
@@ -311,7 +325,7 @@ export default function EtatFinancier() {
             setListeSituation(listeExercice?.filter((item) => item.id === selectedExerciceId));
             setSelectedPeriodeId(selectedExerciceId);
 
-            getVerouillageEtatFinancier(compteId, fileId, selectedExerciceId);
+            getVerouillageEtatFinancierAnalytique(compteId, fileId, selectedExerciceId);
         } else if (choix === 1) {
             GetListeSituation(selectedExerciceId);
         }
@@ -319,7 +333,7 @@ export default function EtatFinancier() {
 
     const handleChangeTAB = (event, newValue) => {
         setValue(newValue);
-        localStorage.setItem('tabFinancier', newValue);
+        localStorage.setItem('tabFinancierAnalytique', newValue);
     };
 
     const handleOpenDialogConfirmRefresh = () => {
@@ -334,12 +348,15 @@ export default function EtatFinancier() {
     const handleRefreshTable = async (value) => {
         if (value) {
             setIsLoading(true);
+            const id_sectionMapped = selectedSectionsId.map(val => Number(val.id));
             try {
-                await axios.post('/administration/etatFinancier/generateTableEtatFinancier', {
+                await axios.post('/administration/etatFinancierAnalytique/generateTableEtatFinancierAnalytique', {
                     id_compte: Number(compteId),
                     id_dossier: Number(fileId),
                     id_exercice: Number(selectedExerciceId),
-                    id_etat: tableToRefresh
+                    id_etat: tableToRefresh,
+                    id_axe: selectedAxeId,
+                    id_sections: id_sectionMapped
                 }).then((response) => {
                     const resData = response?.data;
                     if (resData.state) {
@@ -386,7 +403,7 @@ export default function EtatFinancier() {
 
     //verouiller ou non le tableau de BILAN
     const lockTableBILAN = () => {
-        lockEtatFinancier(compteId, fileId, selectedPeriodeId, 'BILAN', verrBilan);
+        lockEtatFinancierAnalytique(compteId, fileId, selectedPeriodeId, 'BILAN', verrBilan);
         setVerrBilan(!verrBilan);
     }
 
@@ -403,7 +420,7 @@ export default function EtatFinancier() {
 
     //verouiller ou non le tableau de CRN
     const lockTableCRN = () => {
-        lockEtatFinancier(compteId, fileId, selectedPeriodeId, 'CRN', verrCrn);
+        lockEtatFinancierAnalytique(compteId, fileId, selectedPeriodeId, 'CRN', verrCrn);
         setVerrCrn(!verrCrn);
     }
 
@@ -420,7 +437,7 @@ export default function EtatFinancier() {
 
     //verouiller ou non le tableau de CRF
     const lockTableCRF = () => {
-        lockEtatFinancier(compteId, fileId, selectedPeriodeId, 'CRF', verrCrf);
+        lockEtatFinancierAnalytique(compteId, fileId, selectedPeriodeId, 'CRF', verrCrf);
         setVerrCrf(!verrCrf);
     }
 
@@ -437,7 +454,7 @@ export default function EtatFinancier() {
 
     //verouiller ou non le tableau de TFTD
     const lockTableTFTD = () => {
-        lockEtatFinancier(compteId, fileId, selectedPeriodeId, 'TFTD', verrTftd);
+        lockEtatFinancierAnalytique(compteId, fileId, selectedPeriodeId, 'TFTD', verrTftd);
         setVerrTftd(!verrTftd);
     }
 
@@ -454,7 +471,7 @@ export default function EtatFinancier() {
 
     //verouiller ou non le tableau de TFTI
     const lockTableTFTI = () => {
-        lockEtatFinancier(compteId, fileId, selectedPeriodeId, 'TFTI', verrTfti);
+        lockEtatFinancierAnalytique(compteId, fileId, selectedPeriodeId, 'TFTI', verrTfti);
         setVerrTfti(!verrTfti);
     }
 
@@ -471,14 +488,8 @@ export default function EtatFinancier() {
 
     //verouiller ou non le tableau EVCP
     const lockTableEVCP = () => {
-        lockEtatFinancier(compteId, fileId, selectedPeriodeId, 'EVCP', verrEvcp);
+        lockEtatFinancierAnalytique(compteId, fileId, selectedPeriodeId, 'EVCP', verrEvcp);
         setVerrEvcp(!verrEvcp);
-    }
-
-    const closeDetailAnomalie = (value) => {
-        if (value) {
-            setConfirmShowAnomalie(false);
-        }
     }
 
     const GetInfosIdDossier = (id) => {
@@ -487,6 +498,7 @@ export default function EtatFinancier() {
 
             if (resData.state) {
                 setFileInfos(resData.fileInfos[0]);
+                setIsCaActive(resData?.fileInfos[0]?.avecanalytique);
                 setNoFile(false);
             } else {
                 setFileInfos([]);
@@ -515,7 +527,7 @@ export default function EtatFinancier() {
                 setSelectedPeriodeChoiceId(0);
                 setSelectedPeriodeId(exerciceNId[0].id);
 
-                getVerouillageEtatFinancier(compteId, id, exerciceNId[0].id);
+                getVerouillageEtatFinancierAnalytique(compteId, id, exerciceNId[0].id);
             } else {
                 setListeExercice([]);
                 toast.error("une erreur est survenue lors de la récupération de la liste des exercices");
@@ -524,8 +536,8 @@ export default function EtatFinancier() {
     }
 
     //get information de vérouillage ou non des tableaus
-    const getVerouillageEtatFinancier = (compteId, fileId, exerciceId) => {
-        axios.post(`/administration/etatFinancier/getVerouillageEtatFinancier`, { compteId, fileId, exerciceId }).then((response) => {
+    const getVerouillageEtatFinancierAnalytique = (compteId, fileId, exerciceId) => {
+        axios.post(`/administration/etatFinancierAnalytique/getVerouillageEtatFinancierAnalytique`, { compteId, fileId, exerciceId }).then((response) => {
             const resData = response.data;
             if (resData.state) {
                 setVerrBilan(resData.liste.find((item) => item.code === 'BILAN')?.valide);
@@ -541,12 +553,12 @@ export default function EtatFinancier() {
     }
 
     //get information de vérouillage ou non des tableaus
-    const lockEtatFinancier = (compteId, fileId, exerciceId, tableau, stateVerr) => {
+    const lockEtatFinancierAnalytique = (compteId, fileId, exerciceId, tableau, stateVerr) => {
         const verr = !stateVerr;
-        axios.post(`/administration/etatFinancier/lockEtatFinancier`, { compteId, fileId, exerciceId, tableau, verr }).then((response) => {
+        axios.post(`/administration/etatFinancierAnalytique/lockEtatFinancierAnalytique`, { compteId, fileId, exerciceId, tableau, verr }).then((response) => {
             const resData = response.data;
             if (resData.state) {
-                getVerouillageEtatFinancier(compteId, fileId, selectedPeriodeId);
+                getVerouillageEtatFinancierAnalytique(compteId, fileId, selectedPeriodeId);
             } else {
                 toast.error(resData.msg);
             }
@@ -570,8 +582,12 @@ export default function EtatFinancier() {
         })
     }
 
-    const getEtatFinancierGlobal = () => {
-        axios.get(`/administration/etatFinancier/getEtatFinancierGlobal/${compteId}/${fileId}/${selectedExerciceId}`)
+    const getEtatFinancierAnalytiqueGlobal = () => {
+        const id_sectionMapped = selectedSectionsId.map(val => Number(val.id));
+        axios.post(`/administration/etatFinancierAnalytique/getEtatFinancierAnalytiqueGlobal/${compteId}/${fileId}/${selectedExerciceId}`, {
+            id_axe: axeId,
+            id_sections: id_sectionMapped
+        })
             .then((response) => {
                 if (response?.data?.state) {
                     const resData = response?.data;
@@ -607,12 +623,12 @@ export default function EtatFinancier() {
 
         if (type === "PDF") {
             window.open(
-                `${URL}/administration/etatFinancier/exportEtatFinancierToPdf/${compteId}/${fileId}/${selectedExerciceId}/${libelle}`,
+                `${URL}/administration/etatFinancierAnalytique/exportEtatFinancierAnalytiqueToPdf/${compteId}/${fileId}/${selectedExerciceId}/${libelle}`,
                 "_blank"
             );
         } else {
             const link = document.createElement('a');
-            link.href = `${URL}/administration/etatFinancier/exportEtatFinancierToExcel/${compteId}/${fileId}/${selectedExerciceId}/${libelle}`;
+            link.href = `${URL}/administration/etatFinancierAnalytique/exportEtatFinancierAnalytiqueToExcel/${compteId}/${fileId}/${selectedExerciceId}/${libelle}`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -623,19 +639,60 @@ export default function EtatFinancier() {
     const exportAllFile = (type) => {
         if (type === 'PDF') {
             window.open(
-                `${URL}/administration/etatFinancier/exportAllEtatFinancierToPdf/${compteId}/${fileId}/${selectedExerciceId}`,
+                `${URL}/administration/etatFinancierAnalytique/exportAllEtatFinancierAnalytiqueToPdf/${compteId}/${fileId}/${selectedExerciceId}`,
                 "_blank"
             );
         } else if (type === 'EXCEL') {
             const link = document.createElement('a');
-            link.href = `${URL}/administration/etatFinancier/exportAllEtatFinancierToExcel/${compteId}/${fileId}/${selectedExerciceId}`;
+            link.href = `${URL}/administration/etatFinancierAnalytique/exportAllEtatFinancierAnalytiqueToExcel/${compteId}/${fileId}/${selectedExerciceId}`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         }
     }
 
-    //récupérer les informations du dossier sélectionné
+    const handleChangeAxe = (e) => {
+        setSelectedAxeId(e.target.value);
+        localStorage.setItem('axeId', e.target.value);
+        localStorage.removeItem('sectionIds');
+        setSelectedSectionsId([]);
+    }
+
+    const handleGetAxes = () => {
+        axios.get(`/paramCa/getAxes/${Number(compteId)}/${Number(fileId)}`)
+            .then((response) => {
+                if (response?.data?.state) {
+                    setAxesData(response?.data?.data);
+                    setSelectedAxeId(axeId || response?.data?.data[0]?.id)
+                } else {
+                    toast.error(response?.data?.message);
+                }
+            })
+    }
+
+    const handleGetSections = () => {
+        axios.post(`/paramCa/getSectionsByAxeIds/${Number(compteId)}/${Number(fileId)}`, {
+            selectedRowAxeId: Number(selectedAxeId)
+        })
+            .then((response) => {
+                if (response?.data?.state) {
+                    setSectionsData(response?.data?.data)
+                } else {
+                    toast.error(response?.data?.message);
+                }
+            })
+    }
+
+    useEffect(() => {
+        handleGetAxes();
+    }, [selectedExerciceId])
+
+    useEffect(() => {
+        if (selectedAxeId) {
+            handleGetSections();
+        }
+    }, [selectedAxeId])
+
     useEffect(() => {
         //tester si la page est renvoyer par useNavigate
         const navigationEntries = performance.getEntriesByType('navigation');
@@ -659,10 +716,25 @@ export default function EtatFinancier() {
     }, []);
 
     useEffect(() => {
-        if (fileId && compteId && selectedExerciceId) {
-            getEtatFinancierGlobal();
+        if (fileId && compteId && selectedExerciceId && selectedAxeId && selectedSectionsId) {
+            getEtatFinancierAnalytiqueGlobal();
         }
-    }, [fileId, compteId, selectedExerciceId, isRefreshed])
+    }, [fileId, compteId, selectedExerciceId, selectedAxeId, selectedSectionsId, isRefreshed])
+
+    useEffect(() => {
+        if (!sectionsData.length) return;
+
+        const raw = localStorage.getItem("sectionIds");
+        if (!raw) return;
+
+        const saved = JSON.parse(raw);
+
+        const matched = sectionsData.filter(sec =>
+            saved.some(s => s.id === sec.id)
+        );
+
+        setSelectedSectionsId(matched);
+    }, [sectionsData]);
 
     return (
         <Box>
@@ -703,7 +775,7 @@ export default function EtatFinancier() {
                 </Box>
                 <TabPanel value="1" style={{ height: '100%' }}>
                     <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
-                        <Typography variant='h6' sx={{ color: "black" }} align='left'>Administration - Etats Financiers</Typography>
+                        <Typography variant='h6' sx={{ color: "black" }} align='left'>Administration - Etats Financiers Analytique</Typography>
 
                         <Stack width={"100%"} height={"80px"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "20px" }}>
                             <Stack
@@ -768,12 +840,120 @@ export default function EtatFinancier() {
                                 </FormControl>
                             </Stack>
                             {
-                                <ExportEtatFinancierButtonAll
+                                <ExportEtatFinancierAnalytiqueButtonAll
                                     exportAllToPdf={() => exportAllFile("PDF")}
                                     exportAllToExcel={() => exportAllFile("EXCEL")}
                                 />
                             }
 
+                        </Stack>
+
+                        <Stack
+                            width={"100%"}
+                            spacing={4}
+                            alignContent={"center"}
+                            direction={"row"}
+                            style={{ marginLeft: "0px", marginTop: "0px", backgroundColor: '#F4F9F9', borderRadius: "5px" }}
+                            alignItems="center"
+                            justifyContent="space-between"
+                            sx={{ p: 0.5 }}
+                        >
+                            <Stack direction="row" alignItems="center" spacing={4}>
+                                <FormControl variant="standard" sx={{ minWidth: 150 }}>
+                                    <InputLabel>Axe</InputLabel>
+                                    <Select
+                                        value={selectedAxeId}
+                                        onChange={handleChangeAxe}
+                                        sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                        MenuProps={{
+                                            disableScrollLock: true
+                                        }}
+                                    >
+                                        {
+                                            axesData.map(val => {
+                                                return (
+                                                    <MenuItem key={val.id} value={val.id}>{val.code}</MenuItem>
+                                                )
+                                            })
+                                        }
+                                    </Select>
+                                </FormControl>
+                                <FormControl variant="standard" sx={{ width: 1000 }}>
+                                    <Autocomplete
+                                        multiple
+                                        id="checkboxes-tags-demo"
+                                        options={sectionsData}
+                                        disableCloseOnSelect
+                                        getOptionLabel={(option) => option.section}
+                                        onChange={(_event, newValue) => {
+                                            setSelectedSectionsId(newValue);
+                                            localStorage.setItem('sectionIds', JSON.stringify(newValue));
+                                        }}
+                                        value={selectedSectionsId}
+                                        renderOption={(props, option, { selected }) => {
+                                            const { key, ...optionProps } = props;
+                                            return (
+                                                <li
+                                                    key={key}
+                                                    {...optionProps}
+                                                    style={{
+                                                        paddingTop: 2,
+                                                        paddingBottom: 2,
+                                                        paddingLeft: 4,
+                                                        paddingRight: 4,
+                                                        fontSize: "0.8rem",
+                                                        display: "flex",
+                                                        alignItems: "center"
+                                                    }}
+                                                >
+                                                    <Checkbox
+                                                        icon={icon}
+                                                        checkedIcon={checkedIcon}
+                                                        style={{ marginRight: 8 }}
+                                                        checked={selected}
+                                                    />
+                                                    {option.section}
+                                                </li>
+                                            );
+                                        }}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                variant="standard"
+                                                label="Section"
+                                            />
+                                        )}
+                                    />
+                                </FormControl>
+                            </Stack>
+                            {/* <Stack
+                                direction={'row'}
+                                spacing={0.5}
+                            >
+                                <Button
+                                    variant="outlined"
+                                    onClick={getEtatFinancierAnalytiqueGlobal}
+                                    disabled={!isCaActive}
+                                    sx={{
+                                        height: 40,
+                                        textTransform: 'none',
+                                        outline: 'none',
+                                        '&:focus': {
+                                            outline: 'none',
+                                        },
+                                        '&.Mui-focusVisible': {
+                                            outline: 'none',
+                                            boxShadow: 'none',
+                                        },
+                                        '&:focus-visible': {
+                                            outline: 'none',
+                                            boxShadow: 'none',
+                                        }
+                                    }}
+                                >
+                                    Afficher
+                                </Button>
+                            </Stack> */}
                         </Stack>
 
                         <Box sx={{ width: '100%', typography: 'body1' }}>
@@ -841,11 +1021,13 @@ export default function EtatFinancier() {
                                                             display: verrBilan ? 'none' : 'inline-flex',
                                                         }}
                                                     >
-                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        <TbRefresh
+                                                            style={{ width: '25px', height: '25px', color: 'white' }}
+                                                        />
                                                     </IconButton>
                                                 </Tooltip>
 
-                                                <ExportEtatFinancierButton
+                                                <ExportEtatFinancierAnalytiqueButton
                                                     exportToExcel={() => exportFile("EXCEL")}
                                                     exportToPdf={() => exportFile("PDF")}
                                                     value={value}
@@ -877,11 +1059,13 @@ export default function EtatFinancier() {
                                                 alignItems={"start"}
                                                 style={{ overflow: "auto" }}
                                             >
-                                                <VirtualTableEbilanEtatFinacier
+                                                <VirtualTableEbilanEtatFinaciereAnalytique
                                                     columns={BilanActifColumn}
                                                     rows={bilanActifData}
                                                     state={verrBilan}
                                                     setIsRefreshed={() => setIsRefreshed(prev => !prev)}
+                                                    id_axe={selectedAxeId}
+                                                    id_sections={selectedSectionsId.map(val => val.id)}
                                                 />
                                             </Stack>
                                             : null
@@ -892,11 +1076,13 @@ export default function EtatFinancier() {
                                                 alignItems={"start"}
                                                 style={{ overflow: "auto" }}
                                             >
-                                                <VirtualTableEbilanEtatFinacier
+                                                <VirtualTableEbilanEtatFinaciereAnalytique
                                                     columns={BilanPassifColumn}
                                                     rows={bilanPassifData}
                                                     state={verrBilan}
                                                     setIsRefreshed={() => setIsRefreshed(prev => !prev)}
+                                                    id_axe={selectedAxeId}
+                                                    id_sections={selectedSectionsId.map(val => val.id)}
                                                 />
                                             </Stack>
                                             : null
@@ -941,7 +1127,7 @@ export default function EtatFinancier() {
                                                     </IconButton>
                                                 </Tooltip>
 
-                                                <ExportEtatFinancierButton
+                                                <ExportEtatFinancierAnalytiqueButton
                                                     exportToExcel={() => exportFile("EXCEL")}
                                                     exportToPdf={() => exportFile("PDF")}
                                                     value={value}
@@ -972,11 +1158,13 @@ export default function EtatFinancier() {
                                             alignItems={"start"}
                                             style={{ overflow: "auto" }}
                                         >
-                                            <VirtualTableEbilanEtatFinacier
+                                            <VirtualTableEbilanEtatFinaciereAnalytique
                                                 columns={crnColumn}
                                                 rows={crnData}
                                                 state={verrCrn}
                                                 setIsRefreshed={() => setIsRefreshed(prev => !prev)}
+                                                id_axe={selectedAxeId}
+                                                id_sections={selectedSectionsId.map(val => val.id)}
                                             />
                                         </Stack>
 
@@ -1019,7 +1207,7 @@ export default function EtatFinancier() {
                                                     </IconButton>
                                                 </Tooltip>
 
-                                                <ExportEtatFinancierButton
+                                                <ExportEtatFinancierAnalytiqueButton
                                                     exportToExcel={() => exportFile("EXCEL")}
                                                     exportToPdf={() => exportFile("PDF")}
                                                     value={value}
@@ -1050,11 +1238,13 @@ export default function EtatFinancier() {
                                             alignItems={"start"}
                                             style={{ overflow: "auto" }}
                                         >
-                                            <VirtualTableEbilanEtatFinacier
+                                            <VirtualTableEbilanEtatFinaciereAnalytique
                                                 columns={crnColumn}
                                                 rows={crfData}
                                                 state={verrCrf}
                                                 setIsRefreshed={() => setIsRefreshed(prev => !prev)}
+                                                id_axe={selectedAxeId}
+                                                id_sections={selectedSectionsId.map(val => val.id)}
                                             />
                                         </Stack>
 
@@ -1097,7 +1287,7 @@ export default function EtatFinancier() {
                                                     </IconButton>
                                                 </Tooltip>
 
-                                                <ExportEtatFinancierButton
+                                                <ExportEtatFinancierAnalytiqueButton
                                                     exportToExcel={() => exportFile("EXCEL")}
                                                     exportToPdf={() => exportFile("PDF")}
                                                     value={value}
@@ -1128,11 +1318,13 @@ export default function EtatFinancier() {
                                             alignItems={"start"}
                                             style={{ overflow: "auto" }}
                                         >
-                                            <VirtualTableEbilanEtatFinacier
+                                            <VirtualTableEbilanEtatFinaciereAnalytique
                                                 columns={tftdColumn}
                                                 rows={tftdData}
                                                 state={verrTftd}
                                                 setIsRefreshed={() => setIsRefreshed(prev => !prev)}
+                                                id_axe={selectedAxeId}
+                                                id_sections={selectedSectionsId.map(val => val.id)}
                                             />
                                         </Stack>
 
@@ -1175,7 +1367,7 @@ export default function EtatFinancier() {
                                                     </IconButton>
                                                 </Tooltip>
 
-                                                <ExportEtatFinancierButton
+                                                <ExportEtatFinancierAnalytiqueButton
                                                     exportToExcel={() => exportFile("EXCEL")}
                                                     exportToPdf={() => exportFile("PDF")}
                                                     value={value}
@@ -1206,11 +1398,13 @@ export default function EtatFinancier() {
                                             alignItems={"start"}
                                             style={{ overflow: "auto" }}
                                         >
-                                            <VirtualTableEbilanEtatFinacier
+                                            <VirtualTableEbilanEtatFinaciereAnalytique
                                                 columns={crnColumn}
                                                 rows={tftiData}
                                                 state={verrTfti}
                                                 setIsRefreshed={() => setIsRefreshed(prev => !prev)}
+                                                id_axe={selectedAxeId}
+                                                id_sections={selectedSectionsId.map(val => val.id)}
                                             />
                                         </Stack>
 
@@ -1254,7 +1448,7 @@ export default function EtatFinancier() {
                                                     </IconButton>
                                                 </Tooltip>
 
-                                                <ExportEtatFinancierButton
+                                                <ExportEtatFinancierAnalytiqueButton
                                                     exportToExcel={() => exportFile("EXCEL")}
                                                     exportToPdf={() => exportFile("PDF")}
                                                     value={value}
@@ -1285,11 +1479,13 @@ export default function EtatFinancier() {
                                             alignItems={"start"}
                                             style={{ overflow: "auto" }}
                                         >
-                                            <VirtualTableEvcpEtatFinancier
+                                            <VirtualTableEvcpEtatFinancierAnalytique
                                                 columns={evcpColumn}
                                                 rows={evcpData}
                                                 state={verrEvcp}
                                                 setIsRefreshed={() => setIsRefreshed(prev => !prev)}
+                                                id_axe={selectedAxeId}
+                                                id_sections={selectedSectionsId.map(val => val.id)}
                                             />
                                         </Stack>
 

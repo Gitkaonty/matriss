@@ -1,5 +1,5 @@
 module.exports = (sequelize, DataTypes) => {
-    const etatsetatfinancier = sequelize.define("etatsetatfinanciers", {
+    const etatsetatfinancierAnalytique = sequelize.define("etatsetatfinancieranalytiques", {
         id: {
             type: DataTypes.BIGINT,
             allowNull: false,
@@ -60,5 +60,5 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: false
         },
     }, { timestamps: true },)
-    return etatsetatfinancier;
+    return etatsetatfinancierAnalytique;
 }

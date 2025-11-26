@@ -4,14 +4,12 @@ const { Op } = require('sequelize');
 
 const dossierplancomptable = db.dossierplancomptable;
 const balances = db.balances;
-const balanceAnalytiques = db.balanceAnalytiques;
 const dossiers = db.dossiers;
 const exercices = db.exercices;
 const userscomptes = db.userscomptes;
-const caAxes = db.caAxes;
+const balanceAnalytiques = db.balanceAnalytiques;
 const caSections = db.caSections;
-const analytiques = db.analytiques;
-const journals = db.journals;
+const caAxes = db.caAxes;
 
 const PdfPrinter = require('pdfmake');
 const ExcelJS = require('exceljs');
@@ -19,8 +17,7 @@ const { generateBalanceContent } = require('../../Middlewares/Balance/BalanceGen
 const { exportBalanceTableExcel } = require('../../Middlewares/Balance/BalanceGenerateExcel');
 
 const fonctionUpdateSoldAnalytique = require('../../Middlewares/UpdateSolde/updateBalanceAnalytique');
-const updateSoldAnalytique = fonctionUpdateSoldAnalytique.updateSoldAnalytique;
-const addCompteBilanToBalanceAnalytique = fonctionUpdateSoldAnalytique.addCompteBilanToBalanceAnalytique;
+const updateSoldAnalytiqueGlobal = fonctionUpdateSoldAnalytique.updateSoldAnalytiqueGlobal;
 
 balances.belongsTo(dossierplancomptable, { as: 'compteLibelle', foreignKey: 'id_numcompte', targetKey: 'id' });
 balances.belongsTo(dossierplancomptable, { as: 'compteCentralisation', foreignKey: 'id_numcomptecentr', targetKey: 'id' });
@@ -103,12 +100,7 @@ const recupBalance = async (req, res) => {
 const recupBalanceCa = async (req, res) => {
     const { fileId, exerciceId, compteId, id_axes, id_sections, centraliser, unSolded, movmentedCpt } = req.body;
 
-    await updateSoldAnalytique(compteId, fileId, exerciceId);
-
-    if (!compteId) return res.json({ state: false, message: 'Compte non trouvé' });
-    if (!fileId) return res.json({ state: false, message: 'Dossier non trouvé' });
-    if (!exerciceId) return res.json({ state: false, message: 'Exercice non trouvé' });
-    if (!id_axes) return res.json({ state: false, message: 'Axe non trouvé' });
+    await updateSoldAnalytiqueGlobal(compteId, fileId, exerciceId, id_axes, id_sections);
 
     const sectionData = await caSections.findAll({
         where: {
@@ -120,7 +112,64 @@ const recupBalanceCa = async (req, res) => {
 
     const sectionsIds = !id_sections || id_sections.length === 0 ? mappedSectionsIds : id_sections;
 
-    await addCompteBilanToBalanceAnalytique(compteId, fileId, exerciceId, id_axes, sectionsIds);
+    const balanceAnalytique = await balanceAnalytiques.findAll({
+        where: {
+            id_dossier: Number(fileId),
+            id_exercice: Number(exerciceId),
+            id_compte: Number(compteId),
+            id_axe: id_axes,
+            id_section: { [Op.in]: sectionsIds },
+            valeuranalytique: { [Op.gt]: unSolded ? 0 : -1 },
+            [Op.or]: [
+                { mvtdebitanalytique: { [Op.gt]: movmentedCpt ? 0 : -1 } },
+                { mvtcreditanalytique: { [Op.gt]: movmentedCpt ? 0 : -1 } }
+            ]
+        },
+        include: [
+            { model: caAxes },
+            { model: caSections },
+            {
+                model: dossierplancomptable,
+                as: 'compteLibelle',
+                attributes: [
+                    ['compte', 'compte'],
+                    ['libelle', 'libelle'],
+                    ['nature', 'nature'],
+                    ['baseaux', 'baseaux']
+                ],
+                required: true,
+                where: {
+                    id_dossier: Number(fileId),
+                    id_compte: Number(compteId),
+                    nature: { [Op.ne]: centraliser ? 'Aux' : 'Collectif' },
+                }
+            },
+        ]
+    })
+
+    const balanceAnalytiqueMapped = balanceAnalytique.map(val => {
+        const codeAxe = val.caax ? val.caax.code : null;
+        const section = val.casection ? val.casection.section : null;
+
+        const compte = val.compteLibelle ? val.compteLibelle.compte : null;
+
+        const libelle = `${codeAxe ?? ""} : ${section ?? ""}`;
+
+        return {
+            'compteLibelle.libelle': libelle,
+            'compteLibelle.compte': compte,
+            mvtdebitanalytique: val.mvtdebitanalytique,
+            mvtcreditanalytique: val.mvtcreditanalytique,
+            soldedebitanalytique: val.soldedebitanalytique,
+            soldecreditanalytique: val.soldecreditanalytique,
+            valeuranalytique: val.valeuranalytique
+        }
+    })
+
+    return res.json({
+        state: true,
+        list: balanceAnalytiqueMapped
+    });
 };
 
 module.exports = {

@@ -88,6 +88,41 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue: 0
         },
+        rubriquebilanactifbrutanalytique: {
+            type: DataTypes.STRING(255),
+            allowNull: true,
+            defaultValue: 0
+        },
+        rubriquebilanactifamortanalytique: {
+            type: DataTypes.STRING(255),
+            allowNull: true,
+            defaultValue: 0
+        },
+        rubriquebilanpassifbrutanalytique: {
+            type: DataTypes.STRING(255),
+            allowNull: true,
+            defaultValue: 0
+        },
+        rubriquecrnanalytique: {
+            type: DataTypes.STRING(255),
+            allowNull: true,
+            defaultValue: 0
+        },
+        rubriquecrfanalytique: {
+            type: DataTypes.STRING(255),
+            allowNull: true,
+            defaultValue: 0
+        },
+        rubriquetftdanalytique: {
+            type: DataTypes.STRING(255),
+            allowNull: true,
+            defaultValue: 0
+        },
+        rubriquetftianalytique: {
+            type: DataTypes.STRING(255),
+            allowNull: true,
+            defaultValue: 0
+        },
     }, { timestamps: true },)
     return balanceanalytiques
 }

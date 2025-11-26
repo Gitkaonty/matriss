@@ -34,6 +34,28 @@ const LineChartComponent = ({ xAxis, dataN, dataN1, label }) => {
     const dataNOnAllLabels = xAxis.map((lbl, idx) => dataN[idx] ?? null);
     const dataN1OnAllLabels = xAxis.map((lbl, idx) => dataN1?.[idx] ?? null);
 
+    const shadowPlugin = {
+        id: 'shadowPlugin',
+        beforeDatasetDraw(chart, args) {
+            const { ctx } = chart;
+            const datasetIndex = args.index;
+            const dataset = chart.data.datasets[datasetIndex];
+
+            if (!dataset) return;
+
+            const color = dataset.borderColor || 'rgba(0,0,0,0.5)';
+
+            ctx.save();
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 20;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 10;
+        },
+        afterDatasetDraw(chart, args) {
+            chart.ctx.restore();
+        }
+    };
+
     const chartData = {
         labels: xAxis,
         datasets: [
@@ -96,7 +118,7 @@ const LineChartComponent = ({ xAxis, dataN, dataN1, label }) => {
 
     return (
         <Stack flex={1} height={'100%'} alignItems="center" direction="column">
-            <Line data={chartData} options={options} />
+            <Line data={chartData} options={options} plugins={[shadowPlugin]} />
         </Stack>
     );
 };

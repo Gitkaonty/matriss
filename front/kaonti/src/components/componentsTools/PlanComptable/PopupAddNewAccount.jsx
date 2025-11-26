@@ -1081,7 +1081,7 @@ const PopupAddNewAccount = ({
                                                                             </Stack>
                                                                         </Stack>
 
-                                                                        <Stack direction={'row'} alignContent={'stard'}
+                                                                        <Stack direction={'row'} alignContent={'start'}
                                                                             alignItems={'start'} spacing={6.5}
                                                                             style={{ backgroundColor: 'transparent', width: '800px', marginTop: '10px' }}
                                                                         >

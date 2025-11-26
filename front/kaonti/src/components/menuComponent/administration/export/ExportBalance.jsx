@@ -1,6 +1,6 @@
-import { React, useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Typography, Stack, Paper, Box, Tab, Tooltip, IconButton, FormHelperText, Button, Badge, Divider, Switch, Checkbox, Autocomplete, TextField } from '@mui/material';
+import { Typography, Stack, Box, Tab, IconButton, Button, Switch, Checkbox, Autocomplete, TextField } from '@mui/material';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -11,7 +11,6 @@ import useAuth from '../../../../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
 import axios from '../../../../../config/axios';
 import toast from 'react-hot-toast';
-import { init } from '../../../../../init';
 import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFile';
 import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
 import { TabContext, TabPanel } from '@mui/lab';
@@ -33,11 +32,15 @@ const checkedIcon = <CheckBoxIcon fontSize="small" />;
 
 export default function ExportBalance() {
     //Valeur du listbox choix exercice ou situation-----------------------------------------------------
+    let axeId = 0;
+    if (typeof window !== "undefined") {
+        axeId = localStorage.getItem('axeId');
+    }
+
     const [checked, setChecked] = useState(false);
     const [unsoldedCompte, setUnsoldedCompte] = useState(false);
     const [movmentedCpt, setMovmentedCpt] = useState(false);
 
-    let initial = init[0];
     const [fileInfos, setFileInfos] = useState('');
     const [fileId, setFileId] = useState(0);
     const { id } = useParams();
@@ -51,6 +54,7 @@ export default function ExportBalance() {
 
     const [axesData, setAxesData] = useState([]);
     const [sectionsData, setSectionsData] = useState([]);
+    const [isCaActive, setIsCaActive] = useState(false);
 
     const [selectedAxeId, setSelectedAxeId] = useState(0);
     const [selectedSectionsId, setSelectedSectionsId] = useState([]);
@@ -115,7 +119,6 @@ export default function ExportBalance() {
 
     //récupérer les informations du dossier sélectionné
     useEffect(() => {
-        //tester si la page est renvoyer par useNavigate
         const navigationEntries = performance.getEntriesByType('navigation');
         let idFile = 0;
 
@@ -142,6 +145,7 @@ export default function ExportBalance() {
 
             if (resData.state) {
                 setFileInfos(resData.fileInfos[0]);
+                setIsCaActive(resData?.fileInfos[0]?.avecanalytique);
                 setNoFile(false);
             } else {
                 setFileInfos([]);
@@ -219,7 +223,6 @@ export default function ExportBalance() {
                 setSelectedExerciceId(exerciceNId[0].id);
                 setSelectedPeriodeChoiceId(0);
                 setSelectedPeriodeId(exerciceNId[0].id);
-                // Laisser useEffect déclencher le chargement (évite double appels)
             } else {
                 setListeExercice([]);
                 toast.error("une erreur est survenue lors de la récupération de la liste des exercices");
@@ -335,7 +338,6 @@ export default function ExportBalance() {
     const handleChange = (event) => {
         const isChecked = event.target.checked;
         setChecked(isChecked);
-        // Laisser useEffect déclencher le chargement (évite double appels)
     };
 
     //choix compte soldé ou non 
@@ -357,6 +359,8 @@ export default function ExportBalance() {
     const handleChangeAxe = (e) => {
         setSelectedAxeId(e.target.value);
         setSelectedSectionsId([]);
+        localStorage.setItem('axeId', e.target.value);
+        localStorage.removeItem('sectionIds');
     }
 
     const handleGetAxes = () => {
@@ -364,7 +368,7 @@ export default function ExportBalance() {
             .then((response) => {
                 if (response?.data?.state) {
                     setAxesData(response?.data?.data);
-                    setSelectedAxeId(response?.data?.data[0]?.id)
+                    setSelectedAxeId(axeId || response?.data?.data[0]?.id)
                 } else {
                     toast.error(response?.data?.message);
                 }
@@ -402,6 +406,22 @@ export default function ExportBalance() {
             handleGetSections();
         }
     }, [selectedAxeId])
+
+    useEffect(() => {
+        if (!sectionsData.length) return;
+
+        const raw = localStorage.getItem("sectionIds");
+        if (!raw) return;
+
+        const saved = JSON.parse(raw);
+
+        const matched = sectionsData.filter(sec =>
+            saved.some(s => s.id === sec.id)
+        );
+
+        setSelectedSectionsId(matched);
+    }, [sectionsData]);
+
 
     return (
         <Box>
@@ -515,7 +535,7 @@ export default function ExportBalance() {
                                             <MenuItem value={0}>Générale</MenuItem>
                                             <MenuItem value={1}>Fournisseurs</MenuItem>
                                             <MenuItem value={2}>Clients</MenuItem>
-                                            <MenuItem value={3}>Analytique</MenuItem>
+                                            {isCaActive && (<MenuItem value={3}>Analytique</MenuItem>)}
                                         </Select>
                                     </FormControl>
 
@@ -548,7 +568,10 @@ export default function ExportBalance() {
                                                         options={sectionsData}
                                                         disableCloseOnSelect
                                                         getOptionLabel={(option) => option.section}
-                                                        onChange={(_event, newValue) => setSelectedSectionsId(newValue)}
+                                                        onChange={(_event, newValue) => {
+                                                            setSelectedSectionsId(newValue);
+                                                            localStorage.setItem('sectionIds', JSON.stringify(newValue));
+                                                        }}
                                                         value={selectedSectionsId}
                                                         renderOption={(props, option, { selected }) => {
                                                             const { key, ...optionProps } = props;
@@ -590,28 +613,33 @@ export default function ExportBalance() {
                                         )
                                     }
                                 </Stack>
-                                <Button
-                                    variant="outlined"
-                                    onClick={handleApply}
-                                    sx={{
-                                        height: 40,
-                                        textTransform: 'none',
-                                        outline: 'none',
-                                        '&:focus': {
-                                            outline: 'none',
-                                        },
-                                        '&.Mui-focusVisible': {
-                                            outline: 'none',
-                                            boxShadow: 'none',
-                                        },
-                                        '&:focus-visible': {
-                                            outline: 'none',
-                                            boxShadow: 'none',
-                                        }
-                                    }}
+                                <Stack
+                                    direction={'row'}
+                                    spacing={0.5}
                                 >
-                                    Appliquer
-                                </Button>
+                                    <Button
+                                        variant="outlined"
+                                        onClick={handleApply}
+                                        sx={{
+                                            height: 40,
+                                            textTransform: 'none',
+                                            outline: 'none',
+                                            '&:focus': {
+                                                outline: 'none',
+                                            },
+                                            '&.Mui-focusVisible': {
+                                                outline: 'none',
+                                                boxShadow: 'none',
+                                            },
+                                            '&:focus-visible': {
+                                                outline: 'none',
+                                                boxShadow: 'none',
+                                            }
+                                        }}
+                                    >
+                                        Appliquer
+                                    </Button>
+                                </Stack>
                             </Stack>
 
                             <Stack width={"100%"} height={"60px"} spacing={2} alignItems={"center"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
@@ -655,7 +683,7 @@ export default function ExportBalance() {
                                 : null
                             }
 
-                            <Stack width={"100%"} height={'50vh'} >
+                            <Stack width={"100%"} height={'600px'} >
                                 {useMemo(() => (
                                     <VirtualTableModifiableExport type={type} columns={columns} rows={balance} state={true} loading={traitementJournalWaiting} rowsCa={balanceCa} />
                                 ), [columns, balance])}

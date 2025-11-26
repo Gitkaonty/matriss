@@ -37,7 +37,7 @@ const traitementList = [
         path: "/tab/administration/immobilisations",
         urldynamic: true
     },
-    
+
 ];
 
 const importList = [
@@ -101,6 +101,12 @@ const exportList = [
         text: 'Etats financiers',
         name: "etatfinancière",
         path: "/tab/administration/etatFinacier",
+        urldynamic: true
+    },
+    {
+        text: 'Etats financiers analytique',
+        name: "etatfinancièreAnalytique",
+        path: "/tab/administration/etatFinacierAnalytique",
         urldynamic: true
     },
     {

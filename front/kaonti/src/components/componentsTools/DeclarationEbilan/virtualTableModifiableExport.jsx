@@ -11,8 +11,6 @@ import IndeterminateCheckBoxIcon from '@mui/icons-material/IndeterminateCheckBox
 import AddBoxIcon from '@mui/icons-material/AddBox';
 
 const VirtualTableModifiableExport = ({ columns, rows, type, rowsCa }) => {
-
-  console.log('rows : ', rows);
   const rowsBalance = type === 3 ? rowsCa : rows;
   const initial = init[0];
   const [openRowsCa, setOpenRowsCa] = useState({});
@@ -238,7 +236,7 @@ const VirtualTableModifiableExport = ({ columns, rows, type, rowsCa }) => {
 
                 return (
                   <TableRow hover
-                    role="checkbox" tabIndex={-1} key={row.code}
+                    role="checkbox" tabIndex={-1} key={row.id}
                     style={{ height: '20px' }}
 
                   >
