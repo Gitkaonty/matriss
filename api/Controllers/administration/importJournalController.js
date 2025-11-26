@@ -66,97 +66,79 @@ const createNotExistingCodeJournal = async (req, res) => {
 const createNotExistingCompte = async (req, res) => {
   try {
     const { compteId, fileId, compteToCreateGen, compteToCreateAux } = req.body;
-
-    let resData = {
-      state: false,
-      msg: '',
-      list: []
-    }
-
-    let validGen = false;
-    let validAux = false;
-
-    //création des comptes généraux
+ 
+    let resData = { state: false, msg: '', list: [] };
+ 
     if (compteToCreateGen.length > 0) {
-      await compteToCreateGen.map(item => {
-        dossierPlanComptable.create({
-          id_compte: compteId,
-          id_dossier: fileId,
-          compte: item.CompteNum,
-          libelle: item.CompteLib,
-          nature: "General",
-          typetier: "general",
-          baseaux: item.CompteNum,
-          pays: 'Madagascar'
-        });
-      })
-      validGen = true;
-    } else {
-      validAux = true;
-    }
-
-    //création des comptes auxiliaires
-    if (compteToCreateAux.length > 0) {
-      await compteToCreateAux.map(item => {
-        const baseauxID = dossierPlanComptable.findOne({
-          where:
-          {
+      await Promise.all(
+        compteToCreateGen.map(item =>
+          dossierPlanComptable.create({
             id_compte: compteId,
             id_dossier: fileId,
-            compte: item.CompteNum
-          }
-        });
-
-        dossierPlanComptable.create({
-          id_compte: compteId,
-          id_dossier: fileId,
-          compte: item.CompAuxNum,
-          libelle: item.CompAuxLib,
-          nature: "Aux",
-          typetier: "sans-nif",
-          pays: 'Madagascar',
-          baseaux: baseauxID.id || 0
-        });
-      })
-      validAux = true;
-    } else {
-      validAux = true;
+            compte: item.CompteNum,
+            libelle: item.CompteLib,
+            nature: "General",
+            typetier: "general",
+            baseaux: item.CompteNum,
+            pays: 'Madagascar'
+          })
+        )
+      );
     }
-
-    await db.sequelize.query(`
-      UPDATE dossierPlanComptables SET
-      baseaux_id = id
-      WHERE compte = baseaux AND id_compte = :compteId AND id_dossier = :fileId
-    `,
+ 
+    if (compteToCreateAux.length > 0) {
+      await Promise.all(
+        compteToCreateAux.map(async item => {
+ 
+          const baseauxID = await dossierPlanComptable.findOne({
+            where: {
+              id_compte: compteId,
+              id_dossier: fileId,
+              compte: item.CompteNum
+            }
+          });
+ 
+          return dossierPlanComptable.create({
+            id_compte: compteId,
+            id_dossier: fileId,
+            compte: item.CompAuxNum,
+            libelle: item.CompAuxLib,
+            nature: "Aux",
+            typetier: "sans-nif",
+            pays: 'Madagascar',
+            baseaux: baseauxID?.id || 0
+          });
+        })
+      );
+    }
+ 
+    await db.sequelize.query(
+      `UPDATE dossierplancomptables
+       SET baseaux_id = id
+       WHERE compte = baseaux
+       AND id_compte = :compteId
+       AND id_dossier = :fileId`,
       {
         replacements: { compteId, fileId },
         type: db.Sequelize.QueryTypes.UPDATE
       }
     );
-
-    //récuperer la liste à jour des codes journaux
+ 
     const updatedList = await dossierPlanComptable.findAll({
-      where:
-      {
-        id_compte: compteId,
-        id_dossier: fileId
-      },
-      raw: true,
+      where: { id_compte: compteId, id_dossier: fileId },
+      raw: true
     });
-
-    if (validAux && validGen) {
-      resData.state = true;
-      resData.list = updatedList;
-    } else {
-      resData.state = false;
-      resData.list = updatedList;
-    }
-
+ 
+    resData.state = true;
+    resData.list = updatedList;
+ 
     return res.json(resData);
+ 
   } catch (error) {
-    console.log(error);
+    console.log("Erreur createNotExistingCompte :", error);
+    return res.status(500).json({ state: false, error: error.message });
   }
-}
+};
 
 function parseDate(str) {
   if (!str) return null;
