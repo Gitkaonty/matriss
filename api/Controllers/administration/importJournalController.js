@@ -127,8 +127,6 @@ const createNotExistingCompte = async (req, res) => {
     const updatedList = await dossierPlanComptable.findAll({
       where: { id_compte: compteId, id_dossier: fileId },
       raw: true
-      where: { id_compte: compteId, id_dossier: fileId },
-      raw: true
     });
  
     resData.state = true;
@@ -139,10 +137,7 @@ const createNotExistingCompte = async (req, res) => {
   } catch (error) {
     console.log("Erreur createNotExistingCompte :", error);
     return res.status(500).json({ state: false, error: error.message });
-    console.log("Erreur createNotExistingCompte :", error);
-    return res.status(500).json({ state: false, error: error.message });
   }
-};
 };
 
 function parseDate(str) {
