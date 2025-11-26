@@ -29,11 +29,15 @@ const rubriquesExternes = db.rubriquesExternes;
 const compteRubriquesExternes = db.compteRubriquesExternes;
 const rubriqueExternesEvcp = db.rubriqueExternesEvcp;
 
+const rubriquesExternesAnalytiques = db.rubriquesExternesAnalytiques;
+const rubriqueExternesEvcpAnalytiques = db.rubriqueExternesEvcpAnalytiques;
+
 const compteRubriquesExternesMatrices = db.compteRubriquesExternesMatrices;
 const rubriquesExternesMatrices = db.rubriquesExternesMatrices;
 
 const etatsEtatFinancier = db.etatsEtatFinancier;
 const etatsEtatFinancierMatrice = db.etatsEtatFinancierMatrice;
+const etatsEtatFinancierAnalytique = db.etatsEtatFinancierAnalitiques;
 
 // Unified Formulaire TVA
 const formulaireTvaAnnexes = db.formulaireTvaAnnexes;
@@ -114,7 +118,7 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
   const listeCompteRubrique = await compterubriquematrices.findAll({});
   const listeRubriqueExterne = await rubriquesExternesMatrices.findAll({});
   const listeCompteRubriqueExterne = await compteRubriquesExternesMatrices.findAll({});
-  const listeEtatFinancier = await etatsEtatFinancierMatrice.findAll({});
+  const listeEtatsEtatFinancier = await etatsEtatFinancierMatrice.findAll({});
   // const listeEtatCentresFiscales = await etatsCentresFiscalesmatrices.findAll({});
 
   const createdExerciceInfosData = await exercice.findOne({
@@ -228,6 +232,19 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
       par_default: true,
       active: true,
     })
+    await rubriquesExternesAnalytiques.create({
+      id_compte: id_compte,
+      id_dossier: id_dossier,
+      id_exercice: createExercice.id,
+      id_etat: item.id_etat,
+      id_rubrique: item.id_rubrique,
+      libelle: item.libelle,
+      type: item.type,
+      ordre: item.ordre,
+      subtable: item.subtable,
+      par_default: true,
+      active: true,
+    })
   })
 
   listeCompteRubriqueExterne.map(async (item) => {
@@ -248,8 +265,16 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
     })
   })
 
-  listeEtatFinancier.map(async (item) => {
+  listeEtatsEtatFinancier.map(async (item) => {
     await etatsEtatFinancier.create({
+      id_compte: id_compte,
+      id_dossier: id_dossier,
+      id_exercice: createExercice.id,
+      code: item.code,
+      nom: item.nom,
+      ordre: item.ordre,
+    })
+    await etatsEtatFinancierAnalytique.create({
       id_compte: id_compte,
       id_dossier: id_dossier,
       id_exercice: createExercice.id,
@@ -318,6 +343,18 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
         niveau: item.niveau,
       });
       await rubriqueExternesEvcp.create({
+        id_compte: id_compte,
+        id_dossier: id_dossier,
+        id_exercice: createExercice.id,
+        id_etat: item.id_etat,
+        id_rubrique: item.id_rubrique,
+        note: item.note,
+        nature: item.nature,
+        ordre: item.ordre,
+        niveau: item.niveau,
+        libelle: item.libelle,
+      })
+      await rubriqueExternesEvcpAnalytiques.create({
         id_compte: id_compte,
         id_dossier: id_dossier,
         id_exercice: createExercice.id,

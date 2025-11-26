@@ -1,5 +1,12 @@
 module.exports = (sequelize, DataTypes) => {
-    const rubriquesExternes = sequelize.define("rubriquesexternes", {
+    const rubriquesexternesevcpanalytiques = sequelize.define("rubriquesexternesevcpanalytiques", {
+        id: {
+            type: DataTypes.BIGINT,
+            allowNull: false,
+            unique: true,
+            autoIncrement: true,
+            primaryKey: true
+        },
         id_compte: {
             type: DataTypes.BIGINT,
             allowNull: false,
@@ -33,6 +40,16 @@ module.exports = (sequelize, DataTypes) => {
         id_rubrique: {
             type: DataTypes.STRING(50),
             allowNull: false,
+            defaultValue: 0,
+            references:
+            {
+                model: 'rubriquesmatrices',
+                key: 'id_rubrique'
+            }
+        },
+        libelle: {
+            type: DataTypes.STRING(250),
+            allowNull: false,
             defaultValue: 0
         },
         id_etat: {
@@ -40,75 +57,58 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue: 0
         },
-        libelle: {
-            type: DataTypes.STRING(250),
+        note: {
+            type: DataTypes.STRING(25),
+            allowNull: true,
+        },
+        capitalsocial: {
+            type: DataTypes.DOUBLE,
             allowNull: false,
             defaultValue: 0
         },
-        type: {
-            type: DataTypes.STRING(50),
+        primereserve: {
+            type: DataTypes.DOUBLE,
             allowNull: false,
             defaultValue: 0
+        },
+        ecartdevaluation: {
+            type: DataTypes.DOUBLE,
+            allowNull: false,
+            defaultValue: 0
+        },
+        resultat: {
+            type: DataTypes.DOUBLE,
+            allowNull: false,
+            defaultValue: 0
+        },
+        report_anouveau: {
+            type: DataTypes.DOUBLE,
+            allowNull: false,
+            defaultValue: 0
+        },
+        total_varcap: {
+            type: DataTypes.DOUBLE,
+            allowNull: false,
+            defaultValue: 0
+        },
+        sensrubrique: {
+            type: DataTypes.STRING(10),
+            allowNull: true,
         },
         ordre: {
             type: DataTypes.INTEGER,
             allowNull: false,
+            defaultValue: 0
         },
-        subtable: {
+        niveau: {
             type: DataTypes.INTEGER,
             allowNull: false,
             defaultValue: 0
         },
-        par_default: {
-            type: DataTypes.BOOLEAN,
-            allowNull: false,
-            defaultValue: true
-        },
-        active: {
-            type: DataTypes.BOOLEAN,
-            allowNull: false,
-            defaultValue: true
-        },
-        montantbrut: {
-            type: DataTypes.DOUBLE,
+        nature: {
+            type: DataTypes.STRING(15),
             allowNull: true,
-            defaultValue: 0
         },
-        montantamort: {
-            type: DataTypes.DOUBLE,
-            allowNull: true,
-            defaultValue: 0
-        },
-        montantnet: {
-            type: DataTypes.DOUBLE,
-            allowNull: true,
-            defaultValue: 0
-        },
-        montantnetn1: {
-            type: DataTypes.DOUBLE,
-            allowNull: true,
-            defaultValue: 0
-        },
-        variation: {
-            type: DataTypes.DOUBLE,
-            allowNull: true,
-            defaultValue: 0
-        },
-        pourcentagen: {
-            type: DataTypes.DOUBLE,
-            allowNull: true,
-            defaultValue: 0
-        },
-        pourcentagen1: {
-            type: DataTypes.DOUBLE,
-            allowNull: true,
-            defaultValue: 0
-        },
-        pourcentagevariation: {
-            type: DataTypes.DOUBLE,
-            allowNull: true,
-            defaultValue: 0
-        }
     }, { timestamps: true },)
-    return rubriquesExternes;
+    return rubriquesexternesevcpanalytiques;
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Stack, Box, FormControl, Input } from '@mui/material';
+import { Stack, Box, FormControl, Input, TextField } from '@mui/material';
 import { IconButton, Tooltip, Checkbox } from '@mui/material';
 
 import { IoMdTrash } from "react-icons/io";
@@ -19,6 +19,7 @@ import { useFormik } from 'formik';
 import * as Yup from "yup";
 
 import PopupConfirmDelete from '../../popupConfirmDelete';
+import FormatedInput from '../../FormatedInput';
 
 const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, isCaActive }) => {
     let initial = init[0];
@@ -192,7 +193,7 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
         {
             field: 'pourcentage',
             headerName: 'Pourcentage',
-            type: 'number',
+            type: 'string',
             flex: 0.4,
             sortable: true,
             headerAlign: 'left',
@@ -200,29 +201,40 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
             headerClassName: 'HeaderbackColor',
             editable: editableRow,
             renderEditCell: (params) => {
+                let localValue = params.formattedValue ?? '';
+                const handleChange = (event) => {
+                    const rawValue = event.target.value ?? '';
+                    localValue = rawValue;
+
+                    const cleaned = rawValue.toString().replace(/\s/g, '').replace(',', '.');
+                    const numericValue = Number(cleaned);
+                    if (!isNaN(numericValue) && numericValue >= 0 && numericValue <= 100) {
+                        formNewParam.setFieldValue('pourcentage', numericValue);
+                    }
+                };
                 return (
-                    <FormControl fullWidth style={{ height: '100%' }}>
-                        <Input
-                            type={'number'}
-                            min={0}
-                            max={100}
-                            style={{
-                                height: '100%', alignItems: 'center',
-                                outline: 'none',
-                                backgroundColor: pourcentageValidationColor
-                            }}
-                            value={formNewParam.values.pourcentage}
-                            onChange={(e) => handleChangePourcentage(e.target.value)}
-                            label="pourcentage"
-                            disableUnderline={true}
-                            disabled={disableDefaultFieldModif}
-                        />
-                    </FormControl>
+                    <TextField
+                        size="small"
+                        fullWidth
+                        value={params.value ?? ''}
+                        onChange={handleChange}
+                        InputProps={{
+                            inputComponent: FormatedInput,
+                        }}
+                    />
                 );
             },
             renderCell: (params) => {
-                return params.value + '%'
-            }
+                const raw = params.value;
+                const value = raw === undefined || raw === '' ? 0 : Number(raw);
+
+                const formatted = value.toLocaleString('fr-FR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                });
+
+                return `${formatted.replace(/\u202f/g, ' ')}%`;
+            },
         },
         {
             field: 'par_defaut',

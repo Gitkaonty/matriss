@@ -137,7 +137,7 @@ const calculateRubrique = async (id_dossier, id_compte, id_exercice, id_etat) =>
                                 id_exercice,
                                 id_compte,
                                 id_etat: compteRubrique.tableau,
-                                id_rubrique: compteRubrique.id_rubrique
+                                id_rubrique: compteRubrique.compte
                             }
                         });
 
@@ -639,14 +639,12 @@ const updateSoldeEtatFinancier = async (id_dossier, id_compte, id_exercice, id_e
 
 const totalRubriqueExterneEVCP = async (id_compte, id_dossier, id_exercice) => {
     try {
-        //récuperer les informations sur l'exercice N-1
         const {
             id_exerciceN1,
         } = await recupExerciceN1(id_compte, id_dossier, id_exercice);
 
         const exercice_idN1 = id_exerciceN1 ? id_exerciceN1 : 0;
 
-        //mettre à jour les lignes totaux
         const listRubriqueTotal = (await rubriquesexternesevcps.findAll({
             where:
             {
@@ -668,7 +666,6 @@ const totalRubriqueExterneEVCP = async (id_compte, id_dossier, id_exercice) => {
             return rub;
         });
 
-        //copie du résultat
         await db.sequelize.query(`
             UPDATE rubriquesexternesevcps as tabA SET
 

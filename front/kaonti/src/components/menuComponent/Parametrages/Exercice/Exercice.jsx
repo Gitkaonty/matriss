@@ -73,6 +73,9 @@ export default function ParamExerciceComponent() {
     const [exerciceToDeleteId, setExerciceToDeleteId] = useState(0);
     const [exerciceToDeleteRang, setExerciceToDeleteRang] = useState(null);
 
+    const [loadingCreateNextExercice, setLoadingCreateNextExercice] = useState(false);
+    const [loadingCreatePreviousExercice, setLoadingPreviousExercice] = useState(false);
+
     //récupération des informations de connexion
     const { auth } = useAuth();
     const decoded = auth?.accessToken ? jwtDecode(auth.accessToken) : undefined;
@@ -276,10 +279,6 @@ export default function ParamExerciceComponent() {
             }
             return errors;
         },
-
-        onSubmit: (values) => {
-
-        },
     });
 
     const createFirstExercice = () => {
@@ -295,36 +294,58 @@ export default function ParamExerciceComponent() {
         });
     }
 
-    //création de l'exercice suivant
-    const createNextExercice = (value) => {
+    //création de l'exercie suivant
+    const createNextExercice = async (value) => {
         if (value) {
-            axios.post(`/paramExercice/createNextExercice`, { compteId, fileId }).then((response) => {
-                const resData = response.data;
-                if (resData.state) {
-                    GetListeExercice(fileId);
-                    toast.success("La création de l'exercice suivant a été effectuée avec succès");
-                } else {
-                    toast.error(resData.msg);
-                }
-            });
+            setLoadingCreateNextExercice(true);
+            try {
+                await axios.post(`/paramExercice/createNextExercice`, { compteId, fileId }).then((response) => {
+                    const resData = response.data;
+                    if (resData.state) {
+                        GetListeExercice(fileId);
+                        setOpenActionConfirm(false);
+                        toast.success("La création de l'exercice suivant a été effectuée avec succès");
+                    } else {
+                        toast.error(resData.msg);
+                    }
+                });
+            } catch (error) {
+                const errMsg = error.response?.data?.message || error.message || "Erreur inconnue";
+                toast.error(errMsg);
+            } finally {
+                setOpenActionConfirm(false);
+            }
+        } else {
+            setOpenActionConfirm(false);
         }
-        setOpenActionConfirm(false);
+        setLoadingCreateNextExercice(false);
     }
 
     //création de l'exercice précédent
-    const createPreviewExercice = (value) => {
+    const createPreviewExercice = async (value) => {
         if (value) {
-            axios.post(`/paramExercice/createPreviewExercice`, { compteId, fileId }).then((response) => {
-                const resData = response.data;
-                if (resData.state) {
-                    GetListeExercice(fileId);
-                    toast.success("La création de l'exercice précédent a été effectuée avec succès");
-                } else {
-                    toast.error(resData.msg);
-                }
-            });
+            setLoadingPreviousExercice(true);
+            try {
+                await axios.post(`/paramExercice/createPreviewExercice`, { compteId, fileId }).then((response) => {
+                    const resData = response.data;
+                    if (resData.state) {
+                        GetListeExercice(fileId);
+                        setOpenActionConfirmPrev(false);
+                        toast.success("La création de l'exercice précédent a été effectuée avec succès");
+                    } else {
+                        toast.error(resData.msg);
+                    }
+                });
+            } catch (error) {
+                const errMsg = error.response?.data?.message || error.message || "Erreur inconnue";
+                toast.error(errMsg);
+            } finally {
+                setOpenActionConfirmPrev(false);
+            }
+        } else {
+            setOpenActionConfirmPrev(false);
         }
-        setOpenActionConfirmPrev(false);
+        setLoadingPreviousExercice(false);
     }
 
     //Vérrouiller un exercice
@@ -459,8 +480,8 @@ export default function ParamExerciceComponent() {
         <Box>
             {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
 
-            {openActionConfirm ? <PopupActionConfirm msg={"Voulez-vous vraiment continuer la création de l'exercice suivant ?"} confirmationState={createNextExercice} /> : null}
-            {openActionConfirmPrev ? <PopupActionConfirm msg={"Voulez-vous vraiment continuer la création de l'exercice précédent ?"} confirmationState={createPreviewExercice} /> : null}
+            {openActionConfirm ? <PopupActionConfirm msg={"Voulez-vous vraiment continuer la création de l'exercice suivant ?"} confirmationState={createNextExercice} isLoading={loadingCreateNextExercice} /> : null}
+            {openActionConfirmPrev ? <PopupActionConfirm msg={"Voulez-vous vraiment continuer la création de l'exercice précédent ?"} confirmationState={createPreviewExercice} isLoading={loadingCreatePreviousExercice} /> : null}
             {openActionConfirmVerrExercice ? <PopupActionConfirm msg={msgVerrExercice} confirmationState={verrouillerExercice} /> : null}
             {openActionConfirmDeverrExercice ? <PopupActionConfirm msg={msgDeverrExercice} confirmationState={deverrouillerExercice} /> : null}
             {openActionConfirmDeleteExercice ? <PopupActionConfirm msg={msgDeleteExercice} confirmationState={deleteExercice} /> : null}

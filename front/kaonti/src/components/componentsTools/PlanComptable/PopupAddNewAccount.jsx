@@ -63,7 +63,7 @@ const PopupAddNewAccount = ({
     selectedRow,
     open,
     onClose,
-    stateAction
+    stateAction,
 }) => {
     const [typeCptGeneral, setTypeCptGeneral] = useState(true);
     const [formulaireTier, setFormulaireTier] = useState('general');
@@ -205,25 +205,25 @@ const PopupAddNewAccount = ({
             }),
         province: Yup.string()
             .when(['nature', 'typeTier'], {
-                is: (nature, typeTier) => nature === 'General' || nature === 'Collectif' || typeTier === 'etranger',
+                is: (nature, typeTier) => typeTier === 'etranger' || typeTier === 'general',
                 then: () => Yup.string().notRequired(),
                 otherwise: () => Yup.string().required("Veuillez sélectionner une province"),
             }),
         region: Yup.string()
             .when(['nature', 'typeTier'], {
-                is: (nature, typeTier) => nature === 'General' || nature === 'Collectif' || typeTier === 'etranger',
+                is: (nature, typeTier) => typeTier === 'etranger' || typeTier === 'general',
                 then: () => Yup.string().notRequired(),
                 otherwise: () => Yup.string().required("Veuillez sélectionner une région"),
             }),
         district: Yup.string()
             .when(['nature', 'typeTier'], {
-                is: (nature, typeTier) => nature === 'General' || nature === 'Collectif' || typeTier === 'etranger',
+                is: (nature, typeTier) => typeTier === 'etranger' || typeTier === 'general',
                 then: () => Yup.string().notRequired(),
                 otherwise: () => Yup.string().required("Veuillez sélectionner un district"),
             }),
         commune: Yup.string()
             .when(['nature', 'typeTier'], {
-                is: (nature, typeTier) => nature === 'General' || nature === 'Collectif' || typeTier === 'etranger',
+                is: (nature, typeTier) => typeTier === 'etranger' || typeTier === 'general',
                 then: () => Yup.string().notRequired(),
                 otherwise: () => Yup.string().required("Veuillez sélectionner une commune"),
             }),
@@ -1081,7 +1081,7 @@ const PopupAddNewAccount = ({
                                                                             </Stack>
                                                                         </Stack>
 
-                                                                        <Stack direction={'row'} alignContent={'stard'}
+                                                                        <Stack direction={'row'} alignContent={'start'}
                                                                             alignItems={'start'} spacing={6.5}
                                                                             style={{ backgroundColor: 'transparent', width: '800px', marginTop: '10px' }}
                                                                         >

@@ -1,11 +1,11 @@
 const db = require("../../Models");
 
-const rubriquesExternes = db.rubriquesExternes;
+const rubriquesExternesAnalytiques = db.rubriquesExternesAnalytiques;
 const rubriquesExternesMatrices = db.rubriquesExternesMatrices;
 const rubriquesmatrices = db.rubriquesmatrices;
-const rubriqueExternesEvcp = db.rubriqueExternesEvcp;
+const rubriqueExternesEvcpAnalytiques = db.rubriqueExternesEvcpAnalytiques;
 
-const copyRubriqueExterne = async (id_dossier, id_exercice, id_compte, id_etat) => {
+const copyRubriqueExterneAnalytique = async (id_dossier, id_exercice, id_compte, id_etat) => {
     const listeRubriqueEVCP = await rubriquesmatrices.findAll({
         where:
         {
@@ -18,15 +18,16 @@ const copyRubriqueExterne = async (id_dossier, id_exercice, id_compte, id_etat) 
     });
 
     if (id_etat === 'EVCP') {
+        await rubriqueExternesEvcpAnalytiques.destroy({
+            where: {
+                id_dossier,
+                id_exercice,
+                id_compte
+            }
+        })
+
         listeRubriqueEVCP.map(async (item) => {
-            await rubriqueExternesEvcp.destroy({
-                where: {
-                    id_dossier,
-                    id_compte,
-                    id_exercice
-                }
-            })
-            await rubriqueExternesEvcp.create({
+            await rubriqueExternesEvcpAnalytiques.create({
                 id_compte,
                 id_dossier,
                 id_exercice,
@@ -42,7 +43,7 @@ const copyRubriqueExterne = async (id_dossier, id_exercice, id_compte, id_etat) 
     } else {
         if (rubriqueMatriceList.length > 0) {
 
-            await rubriquesExternes.destroy({
+            await rubriquesExternesAnalytiques.destroy({
                 where: {
                     id_dossier,
                     id_compte,
@@ -65,11 +66,11 @@ const copyRubriqueExterne = async (id_dossier, id_exercice, id_compte, id_etat) 
                 active: true,
             }));
 
-            await rubriquesExternes.bulkCreate(dataToInsert);
+            await rubriquesExternesAnalytiques.bulkCreate(dataToInsert);
         }
     }
 };
 
 module.exports = {
-    copyRubriqueExterne
+    copyRubriqueExterneAnalytique
 }

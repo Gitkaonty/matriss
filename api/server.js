@@ -80,14 +80,24 @@ app.use('/dashboard', require('./Routes/Dashboard/dashboardRoutes'));
 // MENU ADMINISTRATION
 //----------------------------------------------------------------------------------------------------------------
 app.use('/administration/ImportJournal', require('./Routes/Administration/importJournalRoute'));
+
 app.use('/administration/ImportBalance', require('./Routes/Administration/importBalanceRoute'));
+
 app.use('/administration/ImportModelePc', require('./Routes/Administration/importModelePCRoute'));
+
 app.use('/administration/personnel', require('./Routes/Administration/personnels/personnelRoute'));
+
 app.use('/administration/etatFinancier', require('./Routes/Administration/etatFinancier/etatFinancierRoute'));
+
+app.use('/administration/etatFinancierAnalytique',require('./Routes/Administration/etatFinancierAnalytique/etatFinancierAnalytiqueRoute'));
+
 //export
 app.use('/administration/exportBalance', require('./Routes/Administration/exportBalanceRoute'));
+
 app.use('/administration/exportJournal', require('./Routes/Administration/exportJournalRoute'));
+
 app.use('/administration/exportGrandLivre', require('./Routes/Administration/exportGrandLivreRoute'));
+
 //saisie
 app.use('/administration/traitementSaisie', require('./Routes/Administration/saisieRoute'));
 

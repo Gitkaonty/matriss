@@ -1,5 +1,5 @@
 module.exports = (sequelize, DataTypes) => {
-    const rubriquesExternes = sequelize.define("rubriquesexternes", {
+    const rubriquesExternesAnalytique = sequelize.define("rubriquesexternesanalytiques", {
         id_compte: {
             type: DataTypes.BIGINT,
             allowNull: false,
@@ -110,5 +110,5 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: 0
         }
     }, { timestamps: true },)
-    return rubriquesExternes;
+    return rubriquesExternesAnalytique;
 }

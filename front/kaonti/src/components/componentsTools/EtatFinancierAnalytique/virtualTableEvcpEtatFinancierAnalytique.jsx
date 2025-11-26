@@ -14,12 +14,12 @@ import IndeterminateCheckBoxIcon from '@mui/icons-material/IndeterminateCheckBox
 import { RiExchangeBoxFill } from "react-icons/ri";
 import { FaRegPenToSquare } from "react-icons/fa6";
 import { init } from '../../../../init';
-import PopupAjustRubriqueEvcpEtatFinancier from './popup/popupAjustRubriqueEvcpEtatFinancier';
+import PopupAjustRubriqueEvcpEtatFinancierAnalytique from './popup/popupAjustRubriqueEvcpEtatFinancierAnalytique';
 
-const virtualTableEvcpEtatFinancier = ({ columns, rows, noCollapsible, state, setIsRefreshed }) => {
+const virtualTableEvcpEtatFinancierAnalytique = ({ columns, rows, noCollapsible, state, setIsRefreshed, id_axe, id_sections }) => {
   const initial = init[0];
   const targetColumnId = 'libelle';
-  const [openRows, setOpenRows] = React.useState({});
+  const [openRows, setOpenRows] = useState({});
   const [openTableDetail, setOpenTableDetail] = useState(false);
   const [detailRow, setDetailRow] = useState([]);
   const [detailColumnHeader, setDetailColumnHeader] = useState();
@@ -45,7 +45,6 @@ const virtualTableEvcpEtatFinancier = ({ columns, rows, noCollapsible, state, se
 
   //traitement des données après action dans le popup ajustement
   const handleRefreshTableAjust = (value) => {
-    // refreshTable(value);
     if (value) {
       setOpenTableDetail(false);
     } else {
@@ -80,7 +79,7 @@ const virtualTableEvcpEtatFinancier = ({ columns, rows, noCollapsible, state, se
     }
 
     const total = data.reduce((acc, item) => {
-      const Value = parseFloat(item["montant"]) || 0; // Convertir en nombre
+      const Value = parseFloat(item["montant"]) || 0;
       return acc + Value;
     }, 0);
 
@@ -89,7 +88,7 @@ const virtualTableEvcpEtatFinancier = ({ columns, rows, noCollapsible, state, se
 
   return (
     <Box sx={{ width: '100%', padding: 0, margin: 0 }}>
-      {openTableDetail ? <PopupAjustRubriqueEvcpEtatFinancier actionState={handleRefreshTableAjust} row={detailRow} column={detailColumnHeader} value={detailValue} dataAjust={[]} setIsRefreshed={setIsRefreshed} /> : null}
+      {openTableDetail ? <PopupAjustRubriqueEvcpEtatFinancierAnalytique actionState={handleRefreshTableAjust} row={detailRow} column={detailColumnHeader} value={detailValue} dataAjust={[]} setIsRefreshed={setIsRefreshed} id_axe={id_axe} id_sections={id_sections} /> : null}
       <TableContainer component={Paper} sx={{ width: '100%', overflowX: 'auto' }}>
         <Table sx={{ width: '100%', border: '1px solid #ddd', }} aria-label="simple table">
           <TableHead
@@ -147,27 +146,27 @@ const virtualTableEvcpEtatFinancier = ({ columns, rows, noCollapsible, state, se
 
               switch (row.niveau) {
                 case 0:
-                  rowStyle = { fontWeight: 'bold', backgroundColor: '#f0f0f0' }; // Pour les titres sans total
+                  rowStyle = { fontWeight: 'bold', backgroundColor: '#f0f0f0' };
                   cellStyle = { fontWeight: 'bold' };
                   break;
                 case 1:
-                  rowStyle = { fontWeight: 'bold', backgroundColor: '#f0f0f0' }; // Pour les titres avec total
+                  rowStyle = { fontWeight: 'bold', backgroundColor: '#f0f0f0' };
                   cellStyle = { fontWeight: 'bold' };
                   break;
                 case 2:
-                  rowStyle = { fontWeight: 'normal', color: 'black' }; // Pour les rubriques normales
+                  rowStyle = { fontWeight: 'normal', color: 'black' };
                   cellStyle = {};
                   break;
                 case 3:
-                  rowStyle = { fontStyle: 'italic', color: 'black' }; // Pour le sous groupe d'une rubrique
+                  rowStyle = { fontStyle: 'italic', color: 'black' };
                   cellStyle = { paddingLeft: '50px' };
                   break;
                 case 4:
-                  rowStyle = { fontWeight: 'normal', color: 'white', backgroundColor: '#89A8B2' }; // pour les lignes totaux
+                  rowStyle = { fontWeight: 'normal', color: 'white', backgroundColor: '#89A8B2' };
                   cellStyle = {};
                   break;
                 default:
-                  rowStyle = { fontWeight: 'normal', color: 'black' }; // Valeur par défaut pour d'autres niveaux
+                  rowStyle = { fontWeight: 'normal', color: 'black' };
                   cellStyle = {};
               }
 
@@ -446,4 +445,4 @@ const virtualTableEvcpEtatFinancier = ({ columns, rows, noCollapsible, state, se
   );
 }
 
-export default virtualTableEvcpEtatFinancier;
+export default virtualTableEvcpEtatFinancierAnalytique;

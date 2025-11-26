@@ -7,6 +7,10 @@ const analytiques = db.analytiques;
 const journals = db.journals;
 const dossierplancomptableModel = db.dossierplancomptable;
 const balances = db.balances;
+const caSections = db.caSections;
+
+const fonctionUpdateSold = require('../../Middlewares/UpdateSolde/updateBalanceSold');
+const updateSold = fonctionUpdateSold.updateSold;
 
 const updateSoldAnalytique = async (compte_id, dossier_id, exercice_id) => {
     try {
@@ -40,8 +44,8 @@ const updateSoldAnalytique = async (compte_id, dossier_id, exercice_id) => {
         if (lignes.length === 0) return;
 
         const payload = lignes.map(line => {
-            const mvtdebitanalytique = line.debit || 0;
-            const mvtcreditanalytique = line.credit || 0;
+            const mvtdebitanalytique = Number(line.debit) || 0;
+            const mvtcreditanalytique = Number(line.credit) || 0;
 
             let soldedebitanalytique = mvtdebitanalytique - mvtcreditanalytique;
             let soldecreditanalytique = mvtcreditanalytique - mvtdebitanalytique;
@@ -75,22 +79,8 @@ const updateSoldAnalytique = async (compte_id, dossier_id, exercice_id) => {
     }
 }
 
-const getJournalWithCompteFilter = async (id_ecriture, compteWhere) => {
-    return await journals.findAll({
-        where: { id_ecriture },
-        include: [
-            {
-                model: dossierplancomptableModel,
-                attributes: ['compte'],
-                where: compteWhere
-            }
-        ],
-    });
-};
-
-const addCompteBilanToBalanceAnalytique = async (id_compte, id_dossier, id_exercice, id_axe, id_section) => {
+const addCompteBilanToBalanceAnalytiqueOneAxe = async (id_compte, id_dossier, id_exercice, id_axe, id_section) => {
     try {
-        console.log('id_section : ', id_section);
         const analytiqueData = await analytiques.findAll({
             where: {
                 id_dossier,
@@ -101,15 +91,17 @@ const addCompteBilanToBalanceAnalytique = async (id_compte, id_dossier, id_exerc
             },
             attributes: ['id_ligne_ecriture']
         })
+
         const id_journals = [...new Set(analytiqueData.map(val => val.id_ligne_ecriture))];
+
         const journalData = await journals.findAll({
             where: {
                 id: { [Op.in]: id_journals }
             },
-            attributes: ['id_ecriture']
+            attributes: ['id_ecriture', 'id']
         })
 
-        const id_ecritures = [...new Set(journalData.map(val => val.id_ecriture))]
+        const id_ecritures = [...new Set(journalData.map(val => val.id_ecriture))];
 
         for (const id_ecriture of id_ecritures) {
 
@@ -118,86 +110,346 @@ const addCompteBilanToBalanceAnalytique = async (id_compte, id_dossier, id_exerc
                 .map(val => val.id);
 
             const journal_6_7 = await journals.findAll({
-                where: {
-                    id_ecriture
-                },
-                include: [
-                    {
-                        model: dossierplancomptableModel,
-                        attributes: ['compte'],
-                        where: {
-                            [Op.or]: [
-                                { compte: { [Op.like]: '6%' } },
-                                { compte: { [Op.like]: '7%' } }
-                            ]
-                        }
+                where: { id_ecriture },
+                include: [{
+                    model: dossierplancomptableModel,
+                    attributes: ['compte'],
+                    where: {
+                        compte: { [Op.regexp]: '^(6|7)' }
                     }
-                ],
+                }],
+                attributes: ['debit', 'credit'],
             });
 
-            const journal_not_2 = await journals.findAll({
-                where: {
-                    id_ecriture
-                },
-                include: [
-                    {
-                        model: dossierplancomptableModel,
-                        attributes: ['compte'],
-                        where: {
-                            compte: { [Op.notLike]: '2%' }
-                        }
-                    }
-                ],
-                attributes: ['id_numcpt'],
+            const journal_in_1_5 = await journals.findAll({
+                where: { id_ecriture },
+                include: [{
+                    model: dossierplancomptableModel,
+                    attributes: ['compte'],
+                    where: { compte: { [Op.regexp]: '^(1|2|3|4|5)' } }
+                }],
+                attributes: ['id_numcpt', 'debit', 'credit', 'id'],
             });
 
-            const total_debit_credit = journal_6_7.reduce((sum, l) => sum + ((l.credit || 0) + (l.debit || 0)), 0);
+            const total_debit_credit_6_7 = journal_6_7.reduce((sum, l) => sum + ((Number(l.credit) || 0) + (Number(l.debit) || 0)), 0);
 
-            const id_numcpt_not_2 = [...new Set(journal_not_2.map(val => Number(val.id_numcpt)))];
+            const amountByCompte = journal_in_1_5.reduce((map, row) => {
+                const idNum = Number(row.id_numcpt);
+                const amt = (Number(row.debit) || 0) + (Number(row.credit) || 0);
+                map[idNum] = (map[idNum] || 0) + amt;
+                return map;
+            }, {});
 
-            for (const section of id_section) {
-                for (const compte of id_numcpt_not_2) {
-                    const assinedBalance = await balances.findOne({
+            const id_numcpt_in_1_5 = [...new Set(journal_in_1_5.map(val => Number(val.id_numcpt)))];
+
+            for (const all_section of id_section) {
+                const sectionsInAnalytique = await analytiques.findAll({
+                    where: {
+                        id_ligne_ecriture: { [Op.in]: id_journal },
+                        id_section: all_section,
+                        id_compte,
+                        id_dossier,
+                        id_exercice,
+                    },
+                    attributes: ['debit', 'credit'],
+                });
+
+                const total_section = sectionsInAnalytique.reduce((sum, l) => sum + ((Number(l.credit) || 0) + (Number(l.debit) || 0)), 0);
+
+                const coef = total_debit_credit_6_7 > 0 ? total_section / total_debit_credit_6_7 : 0;
+
+                for (const compte_in_1_5 of id_numcpt_in_1_5) {
+                    const assinedBalance_in_1_5 = await balances.findOne({
                         where: {
-                            id_numcompte: compte,
+                            id_numcompte: compte_in_1_5,
                             id_dossier,
-                            id_dossier,
-                            id_exercice
-                        }
-                    })
-
-                    const sectionsInAnalytique = await analytiques.findAll({
-                        where: {
-                            id_ligne_ecriture: id_journal,
-                            id_section: section,
                             id_compte,
-                            id_dossier,
-                            id_exercice,
-                        }
-                    })
+                            id_exercice
+                        },
+                        attributes: ['mvtdebit', 'mvtcredit', 'soldedebit', 'soldecredit', 'valeur', 'id'],
+                    });
 
-                    if (!assinedBalance) {
-                        throw new error('Compte non trouvé dans la balance');
+                    if (!assinedBalance_in_1_5) {
+                        throw new Error('Compte non trouvé dans la balance');
                     }
 
-                    const mvtdebit = Number(assinedBalance.mvtdebit).toFixed(2);
-                    const mvtcredit = Number(assinedBalance.mvtcredit).toFixed(2);
-                    const soldedebit = Number(assinedBalance.soldedebit).toFixed(2);
-                    const soldecredit = Number(assinedBalance.soldecredit).toFixed(2);
-                    const valeur = Number(assinedBalance.valeur).toFixed(2);
+                    const mvtdebit = Number(assinedBalance_in_1_5.mvtdebit) || 0;
+                    const mvtcredit = Number(assinedBalance_in_1_5.mvtcredit) || 0;
+                    const soldedebit = Number(assinedBalance_in_1_5.soldedebit) || 0;
+                    const soldecredit = Number(assinedBalance_in_1_5.soldecredit) || 0;
+                    const valeur = Number(assinedBalance_in_1_5.valeur) || 0;
+
+                    const amountCompteInEcriture = amountByCompte[compte_in_1_5] || 0;
+
+                    await balanceanalytiques.create({
+                        id_compte,
+                        id_dossier,
+                        id_exercice,
+                        id_numcpt: compte_in_1_5,
+                        id_axe: id_axe,
+                        id_section: all_section,
+                        mvtdebitanalytique: (coef * mvtdebit * amountCompteInEcriture),
+                        mvtcreditanalytique: (coef * mvtcredit * amountCompteInEcriture),
+                        soldedebitanalytique: (coef * soldedebit * amountCompteInEcriture),
+                        soldecreditanalytique: (coef * soldecredit * amountCompteInEcriture),
+                        valeuranalytique: (coef * valeur * amountCompteInEcriture),
+                    })
                 }
             }
-
-            console.log('total_debit_credit : ', total_debit_credit);
-            console.log('id_numcpt_not_2 : ', id_numcpt_not_2);
         }
     } catch (error) {
-        console.error("Erreur dans addCompteBilanToBalanceAnalytique :", error.message);
+        console.error("Erreur dans addCompteBilanToBalanceAnalytiqueOneAxe :", error.message);
         console.log(error);
     }
 }
 
+const addCompteBilanToBalanceAnalytiqueManyAxes = async (id_compte, id_dossier, id_exercice, id_axes, id_section) => {
+    try {
+        const analytiqueData = await analytiques.findAll({
+            where: {
+                id_dossier,
+                id_exercice,
+                id_compte,
+                id_axe: { [Op.in]: id_axes },
+                id_section: { [Op.in]: id_section }
+            },
+            attributes: ['id_ligne_ecriture']
+        })
+
+        const id_journals = [...new Set(analytiqueData.map(val => val.id_ligne_ecriture))];
+
+        const journalData = await journals.findAll({
+            where: {
+                id: { [Op.in]: id_journals }
+            },
+            attributes: ['id_ecriture', 'id']
+        })
+
+        const id_ecritures = [...new Set(journalData.map(val => val.id_ecriture))];
+
+        const compteToCreate = [];
+
+        for (const id_ecriture of id_ecritures) {
+
+            const id_journal = journalData
+                .filter(val => val.id_ecriture === id_ecriture)
+                .map(val => val.id);
+
+            const journal_6_7 = await journals.findAll({
+                where: { id_ecriture },
+                include: [{
+                    model: dossierplancomptableModel,
+                    attributes: ['compte'],
+                    where: {
+                        compte: { [Op.regexp]: '^(6|7)' }
+                    }
+                }],
+                attributes: ['debit', 'credit'],
+            });
+
+            const journal_in_1_5 = await journals.findAll({
+                where: { id_ecriture },
+                include: [{
+                    model: dossierplancomptableModel,
+                    attributes: ['compte'],
+                    where: { compte: { [Op.regexp]: '^(1|2|3|4|5)' } }
+                }],
+                attributes: ['id_numcpt', 'debit', 'credit'],
+            });
+
+            const total_debit_credit_6_7 = journal_6_7.reduce((sum, l) =>
+                sum + ((Number(l.credit) || 0) + (Number(l.debit) || 0))
+                , 0);
+
+            const amountCompteIn_1_5 = journal_in_1_5.reduce((map, row) => {
+                const idNum = Number(row.id_numcpt);
+                const amt = (Number(row.debit) || 0) + (Number(row.credit) || 0);
+                map[idNum] = (map[idNum] || 0) + amt;
+                return map;
+            }, {});
+
+            const id_numcpt_in_1_5 = [...new Set(journal_in_1_5.map(val => Number(val.id_numcpt)))];
+
+            for (const all_axe of id_axes) {
+                for (const all_section of id_section) {
+                    for (const compte_in_1_5 of id_numcpt_in_1_5) {
+
+                        const sectionsInAnalytique = await analytiques.findAll({
+                            where: {
+                                id_ligne_ecriture: { [Op.in]: id_journal },
+                                id_section: all_section,
+                                id_compte,
+                                id_dossier,
+                                id_exercice,
+                            },
+                            attributes: ['debit', 'credit'],
+                        });
+
+                        const total_section = sectionsInAnalytique.reduce((sum, l) =>
+                            sum + ((Number(l.credit) || 0) + (Number(l.debit) || 0))
+                            , 0);
+
+                        const coef = total_debit_credit_6_7 > 0 ? total_section / total_debit_credit_6_7 : 0;
+
+                        const assinedBalance_in_1_5 = await balances.findOne({
+                            where: {
+                                id_numcompte: compte_in_1_5,
+                                id_dossier,
+                                id_compte,
+                                id_exercice
+                            },
+                            attributes: ['mvtdebit', 'mvtcredit', 'soldedebit', 'soldecredit', 'valeur', 'id'],
+                        });
+
+                        if (!assinedBalance_in_1_5) {
+                            throw new Error('Compte non trouvé dans la balance');
+                        }
+
+                        const mvtdebit = Number(assinedBalance_in_1_5.mvtdebit) || 0;
+                        const mvtcredit = Number(assinedBalance_in_1_5.mvtcredit) || 0;
+                        const soldedebit = Number(assinedBalance_in_1_5.soldedebit) || 0;
+                        const soldecredit = Number(assinedBalance_in_1_5.soldecredit) || 0;
+                        const valeur = Number(assinedBalance_in_1_5.valeur) || 0;
+
+                        const amountCompteInEcriture = amountCompteIn_1_5[compte_in_1_5] || 0;
+
+                        // const val = {
+                        //     id_compte,
+                        //     id_dossier,
+                        //     id_exercice,
+                        //     id_numcpt: compte_in_1_5,
+                        //     id_axe: all_axe,
+                        //     id_section: all_section,
+                        //     mvtdebitanalytique: +(coef * mvtdebit * amountCompteInEcriture),
+                        //     mvtcreditanalytique: +(coef * mvtcredit * amountCompteInEcriture),
+                        //     soldedebitanalytique: +(coef * soldedebit * amountCompteInEcriture),
+                        //     soldecreditanalytique: +(coef * soldecredit * amountCompteInEcriture),
+                        //     valeuranalytique: +(coef * valeur * amountCompteInEcriture),
+                        // };
+
+                        // compteToCreate.push(val);
+
+                        await balanceanalytiques.create({
+                            id_compte,
+                            id_dossier,
+                            id_exercice,
+                            id_numcpt: compte_in_1_5,
+                            id_axe: all_axe,
+                            id_section: all_section,
+                            mvtdebitanalytique: +(coef * mvtdebit * amountCompteInEcriture),
+                            mvtcreditanalytique: +(coef * mvtcredit * amountCompteInEcriture),
+                            soldedebitanalytique: +(coef * soldedebit * amountCompteInEcriture),
+                            soldecreditanalytique: +(coef * soldecredit * amountCompteInEcriture),
+                            valeuranalytique: +(coef * valeur * amountCompteInEcriture),
+                        })
+                    }
+                }
+            }
+        }
+        // return compteToCreate;
+    } catch (error) {
+        console.error("Erreur dans addCompteBilanToBalanceAnalytiqueManyAxes :", error.message);
+        console.log(error);
+    }
+};
+
+const createAnalytiqueIfNotExist = async (id_compte, id_dossier, id_exercice) => {
+    const journal_in_6_7 = await journals.findAll({
+        where: { id_dossier, id_exercice, id_compte },
+        include: [{
+            model: dossierplancomptableModel,
+            attributes: ['compte'],
+            where: { compte: { [Op.regexp]: '^(6|7)' } }
+        }],
+        attributes: ['id_numcpt', 'debit', 'credit', 'id_ecriture'],
+    });
+
+    const sections = await caSections.findAll({
+        where: { id_compte, id_dossier },
+        attributes: ['id_axe', 'id', 'pourcentage']
+    });
+
+    const id_ecritures = [...new Set(journal_in_6_7.map(val => val.id_ecriture))];
+
+    for (const id_ecriture of id_ecritures) {
+
+        const journalEcriture = await journals.findAll({
+            where: { id_ecriture, id_dossier, id_exercice, id_compte },
+            attributes: ['id', 'debit', 'credit'],
+            include: [{
+                model: dossierplancomptableModel,
+                where: { compte: { [Op.regexp]: '^(6|7)' } }
+            }],
+        });
+
+        if (journalEcriture.length === 0) {
+            continue;
+        }
+
+        for (const journalLine of journalEcriture) {
+
+            const analytique = await analytiques.findOne({
+                where: { id_ligne_ecriture: journalLine.id }
+            });
+
+            if (!analytique) {
+                for (const section of sections) {
+
+                    const debitAnalytique =
+                        section.pourcentage > 0
+                            ? (journalLine.debit * section.pourcentage) / 100
+                            : 0;
+
+                    const creditAnalytique =
+                        section.pourcentage > 0
+                            ? (journalLine.credit * section.pourcentage) / 100
+                            : 0;
+
+                    await analytiques.create({
+                        id_compte,
+                        id_exercice,
+                        id_dossier,
+                        id_axe: section.id_axe,
+                        id_section: section.id,
+                        id_ligne_ecriture: journalLine.id,
+                        pourcentage: section.pourcentage,
+                        debit: debitAnalytique,
+                        credit: creditAnalytique
+                    });
+                }
+            }
+        }
+    }
+};
+
+const updateSoldAnalytiqueGlobal = async (id_compte, id_dossier, id_exercice, id_axes, id_sections) => {
+    await createAnalytiqueIfNotExist(id_compte, id_dossier, id_exercice);
+    await updateSold(id_compte, id_dossier, id_exercice, [], true);
+    await updateSoldAnalytique(id_compte, id_dossier, id_exercice);
+
+    const analytiqueData = await analytiques.findAll({
+        where: {
+            id_dossier,
+            id_compte,
+            id_exercice
+        }
+    })
+
+    if (!analytiqueData) return
+
+    const mappedAxesIds = [...new Set(analytiqueData.map(val => Number(val.id_axe)))];
+    const mappedSectionsIds = [...new Set(analytiqueData.map(val => Number(val.id_section)))];
+
+    const axesIds = !id_axes || id_axes.length === 0 ? mappedAxesIds : id_axes;
+    const sectionsIds = !id_sections || id_sections.length === 0 ? mappedSectionsIds : id_sections;
+
+    await addCompteBilanToBalanceAnalytiqueOneAxe(id_compte, id_dossier, id_exercice, id_axes, sectionsIds);
+    // await addCompteBilanToBalanceAnalytiqueManyAxes(id_compte, id_dossier, id_exercice, mappedAxesIds, mappedSectionsIds);
+}
+
 module.exports = {
     updateSoldAnalytique,
-    addCompteBilanToBalanceAnalytique
+    addCompteBilanToBalanceAnalytiqueOneAxe,
+    addCompteBilanToBalanceAnalytiqueManyAxes,
+    updateSoldAnalytiqueGlobal
 };

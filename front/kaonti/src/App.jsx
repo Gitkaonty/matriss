@@ -46,6 +46,7 @@ import Immobilisations from './components/menuComponent/administration/immobilis
 import ParamMappingExterne from './components/menuComponent/Parametrages/mappingCompteExterne/ParamMappingExterne';
 import EtatFinancier from './components/menuComponent/administration/etatFinancier/EtatFinancier';
 import Sig from './components/menuComponent/administration/SIG/Sig';
+import EtatFinancierAnalytique from './components/menuComponent/administration/etatFinancierAnalytique/EtatFinancierAnalytique';
 
 const ROLES = {
   'SuperAdmin': 3355,
@@ -86,6 +87,7 @@ export default function App() {
                 <Route path='/tab/administration/rapprochements/:id' element={<RapprochementsBancaires />} />
                 <Route path='/tab/administration/immobilisations/:id' element={<Immobilisations />} />
                 <Route path='/tab/administration/etatFinacier/:id' element={<EtatFinancier />} />
+                <Route path='/tab/administration/etatFinacierAnalytique/:id' element={<EtatFinancierAnalytique />} />
                 <Route path='/tab/administration/sig/:id' element={<Sig />} />
 
                 <Route path='/tab/revision/revisionAnomalieEbilan' element={<RevisionAnomalieEbilanComponent />} />

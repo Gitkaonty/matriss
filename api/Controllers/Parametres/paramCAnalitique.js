@@ -131,17 +131,16 @@ exports.addOrUpdateAxes = async (req, res) => {
             });
         }
 
-        // Vérifier si un autre axe utilise déjà le même code dans ce compte/dossier
-        const duplicateWhere = {
-            id_compte,
-            id_dossier,
-            code,
-        };
-        if (!isNaN(rowId) && rowId > 0) {
-            duplicateWhere.id = { [Sequelize.Op.ne]: rowId };
-        }
+        const duplicate = await caAxes.findOne({
+            where: {
+                id_dossier,
+                code,
+                id: { [Sequelize.Op.ne]: rowId || 0 }
+            }
+        });
 
-        const duplicate = await caAxes.findOne({ where: duplicateWhere });
+        console.log('duplicate : ', duplicate);
+
         if (duplicate) {
             return res.json({ state: false, msg: 'Ce code Axe existe déjà dans ce dossier.' });
         }
@@ -187,9 +186,6 @@ exports.addOrUpdateAxes = async (req, res) => {
         return res.json(resData);
 
     } catch (error) {
-        if (error.name === 'SequelizeUniqueConstraintError') {
-            return res.json({ state: false, msg: 'Ce code Axe existe déjà dans ce dossier.' });
-        }
         return res.status(500).json({
             state: false,
             message: "Erreur serveur",
@@ -218,11 +214,12 @@ exports.addOrUpdateSections = async (req, res) => {
         const id_dossier = parseInt(fileId);
         const id_axe = parseInt(axeId);
         const pourcentageFormated = parseFloat(pourcentage).toFixed(2);
+        const newPourcentage = parseFloat(pourcentage);
 
         if (isNaN(id_compte) || isNaN(id_dossier)) {
             return res.status(400).json({
                 state: false,
-                message: "id_compte ou id_dossier invalide"
+                message: "Compte ou dossier invalide"
             });
         }
 
@@ -234,6 +231,29 @@ exports.addOrUpdateSections = async (req, res) => {
                 id_axe
             }
         })
+
+        const pourcentageData = await caSections.findAll({
+            where: {
+                id_compte,
+                id_dossier,
+                id_axe
+            },
+            attributes: ['pourcentage', 'id']
+        })
+
+        const totalPourcentage = pourcentageData.reduce((sum, row) => {
+            if (id && row.id === Number(id)) return sum;
+            return sum + (row.pourcentage || 0);
+        }, 0);
+
+        const cumulPourcentage = totalPourcentage + newPourcentage;
+
+        if (cumulPourcentage > 100) {
+            resData.state = false;
+            const valueToDisplay = cumulPourcentage - 100;
+            resData.msg = `La valeur du pourcentage est augmenté de ${valueToDisplay}%`;
+            return res.json(resData);
+        }
 
         if (testIfExist.length === 0) {
             const sectionAdded = await caSections.create({

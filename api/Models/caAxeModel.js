@@ -31,13 +31,13 @@ module.exports = (sequelize, DataTypes) => {
     }, {
         tableName: "caaxes",
         timestamps: true,
-        indexes: [
-            {
-                unique: true,
-                fields: ['code', 'id_dossier', 'id_compte'],
-                name: 'unique_caaxe_per_dossier'
-            }
-        ]
+        // indexes: [
+        //     {
+        //         unique: true,
+        //         fields: ['code', 'id_dossier', 'id_compte'],
+        //         name: 'unique_caaxe_per_dossier'
+        //     }
+        // ]
     });
     return caAxes;
 };

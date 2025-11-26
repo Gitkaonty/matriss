@@ -14,6 +14,7 @@ const updateRubrique = async (id_compte, id_dossier, id_exercice, id_etat) => {
                 id_dossier,
                 id_compte,
                 id_exercice,
+                id_etat,
                 active: true
             }
         });

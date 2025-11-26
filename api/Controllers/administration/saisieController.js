@@ -766,21 +766,37 @@ exports.modificationJournal = async (req, res) => {
 
                 await journals.update(journalData, { where: { id: row.id } });
                 modification++;
+                const relevantCa = listCa?.filter(item => item.id_ligne_ecriture === journalData.id_temporaire) || [];
 
-                const relevantCa = listCa?.filter(item => item.id_ligne_ecriture === row.id) || [];
                 for (const item of relevantCa) {
-                    await analytiques.update(
-                        {
-                            debit: item.debit || 0, credit: item.credit || 0, pourcentage: item.pourcentage || 0
-                        },
-                        {
-                            where: {
-                                id_ligne_ecriture: row.id,
-                                id_axe: item.id_axe,
-                                id_section: item.id_section
-                            }
+
+                    const exist = await analytiques.findOne({
+                        where: {
+                            id_ligne_ecriture: row.id,
+                            id_axe: item.id_axe,
+                            id_section: item.id_section
                         }
-                    );
+                    });
+
+                    if (exist) {
+                        await exist.update({
+                            debit: Number(item.debit).toFixed(2) || 0,
+                            credit: Number(item.credit).toFixed(2) || 0,
+                            pourcentage: Number(item.pourcentage).toFixed(2) || 0
+                        });
+                    } else {
+                        await analytiques.create({
+                            id_compte,
+                            id_dossier,
+                            id_exercice,
+                            id_ligne_ecriture: row.id,
+                            id_axe: item.id_axe,
+                            id_section: item.id_section,
+                            debit: Number(item.debit).toFixed(2) || 0,
+                            credit: Number(item.credit).toFixed(2) || 0,
+                            pourcentage: Number(item.pourcentage).toFixed(2) || 0
+                        });
+                    }
                 }
             }
             else {
@@ -790,7 +806,7 @@ exports.modificationJournal = async (req, res) => {
 
                 const journalId = createdJournal.id;
 
-                const relevantCa = listCa?.filter(item => item.id_ligne_ecriture === row.id_temporaire) || [];
+                const relevantCa = listCa?.filter(item => item.id_ligne_ecriture === journalData.id_temporaire) || [];
 
                 if (relevantCa.length > 0) {
                     const listCaRows = relevantCa.map(item => ({
@@ -800,9 +816,9 @@ exports.modificationJournal = async (req, res) => {
                         id_ligne_ecriture: journalId,
                         id_axe: item.id_axe,
                         id_section: item.id_section,
-                        debit: item.debit || 0,
-                        credit: item.credit || 0,
-                        pourcentage: item.pourcentage || 0
+                        debit: Number(item.debit).toFixed(2) || 0,
+                        credit: Number(item.credit).toFixed(2) || 0,
+                        pourcentage: Number(item.pourcentage).toFixed(2) || 0
 
                     }));
 

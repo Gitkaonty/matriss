@@ -1,12 +1,5 @@
 module.exports = (sequelize, DataTypes) => {
-    const etatsetatfinancier = sequelize.define("etatsetatfinanciers", {
-        id: {
-            type: DataTypes.BIGINT,
-            allowNull: false,
-            unique: true,
-            autoIncrement: true,
-            primaryKey: true
-        },
+    const ajustementexternesanalytiques = sequelize.define("ajustementexternesanalytiques", {
         id_compte: {
             type: DataTypes.BIGINT,
             allowNull: false,
@@ -37,28 +30,33 @@ module.exports = (sequelize, DataTypes) => {
             onUpdate: 'CASCADE',
             onDelete: 'CASCADE'
         },
-        code: {
-            type: DataTypes.STRING(15),
+        id_etat: {
+            type: DataTypes.STRING(25),
             unique: false,
-            allowNull: false
+            allowNull: true
         },
-        nom: {
-            type: DataTypes.STRING(250),
+        id_rubrique: {
+            type: DataTypes.STRING(50),
+            allowNull: false,
+            defaultValue: 0
+        },
+        nature: {
+            type: DataTypes.STRING(25),
             unique: false,
-            allowNull: false
+            allowNull: true
         },
-        ordre: {
-            type: DataTypes.INTEGER,
+        motif: {
+            type: DataTypes.STRING(50),
+            allowNull: true
+        },
+        montant: {
+            type: DataTypes.DOUBLE,
             unique: false,
             allowNull: false,
             defaultValue: 0
         },
-        valide: {
-            type: DataTypes.BOOLEAN,
-            unique: false,
-            allowNull: false,
-            defaultValue: false
-        },
+
     }, { timestamps: true },)
-    return etatsetatfinancier;
+
+    return ajustementexternesanalytiques
 }

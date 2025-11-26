@@ -13,18 +13,16 @@ import AddBoxIcon from '@mui/icons-material/AddBox';
 import IndeterminateCheckBoxIcon from '@mui/icons-material/IndeterminateCheckBox';
 import { CgDetailsMore } from "react-icons/cg";
 import { RiExchangeBoxFill } from "react-icons/ri";
-import PopupAjustRubriqueEbilanEtatFinancier from './popup/popupAjustRubriqueEbilanEtatFinancier';
 import { FaRegPenToSquare } from "react-icons/fa6";
 import { init } from '../../../../init';
+import PopupAjustRubriqueEbilanEtatFinancierAnalytique from './popup/popupAjustRubriqueEbilanEtatFinancierAnalytique';
 
-const VirtualTableEbilanEtatFinaciere = ({ refreshTable, columns, rows, noCollapsible, state, setIsRefreshed, type }) => {
+const VirtualTableEbilanEtatFinaciereAnalytique = ({ refreshTable, columns, rows, noCollapsible, state, setIsRefreshed, type, id_axe, id_sections }) => {
   const initial = init[0];
-  const targetColumnId = 'libelle';
-  const [openRows, setOpenRows] = React.useState({});
+  const [openRows, setOpenRows] = useState({});
   const [openTableDetail, setOpenTableDetail] = useState(false);
   const [detailRow, setDetailRow] = useState([]);
   const [detailColumnHeader, setDetailColumnHeader] = useState();
-  const [detailValue, setDetailValue] = useState();
 
   const toggleRow = (rowKey) => {
     setOpenRows((prev) => ({
@@ -52,7 +50,6 @@ const VirtualTableEbilanEtatFinaciere = ({ refreshTable, columns, rows, noCollap
     if (isClickable) {
       setDetailRow(row || []);
       setDetailColumnHeader(column);
-      setDetailValue(value);
       setOpenTableDetail(true);
     }
   };
@@ -110,7 +107,7 @@ const VirtualTableEbilanEtatFinaciere = ({ refreshTable, columns, rows, noCollap
 
   return (
     <Box sx={{ width: '100%', padding: 0, margin: 0 }}>
-      {openTableDetail ? <PopupAjustRubriqueEbilanEtatFinancier actionState={handleRefreshTableAjust} row={detailRow} column={detailColumnHeader} setIsRefreshed={setIsRefreshed} /> : null}
+      {openTableDetail ? <PopupAjustRubriqueEbilanEtatFinancierAnalytique actionState={handleRefreshTableAjust} row={detailRow} column={detailColumnHeader} setIsRefreshed={setIsRefreshed} id_axe={id_axe} id_sections={id_sections} /> : null}
 
       <TableContainer component={Paper} sx={{ width: '100%', overflowX: 'auto' }}>
         <Table sx={{ width: '100%', border: '1px solid #ddd', }} aria-label="simple table">
@@ -167,6 +164,34 @@ const VirtualTableEbilanEtatFinaciere = ({ refreshTable, columns, rows, noCollap
               let cellStyle = {};
               const rowKey = row.id;
               const isOpen = openRows[rowKey] || false;
+
+              const groupedByCompteAndSection = row.infosCompte.reduce((acc, item) => {
+                const key = `${item.compte}__${item.libelleAxeSection}`;
+
+                if (!acc[key]) {
+                  acc[key] = {
+                    compte: item.compte,
+                    libelleAxeSection: item.libelleAxeSection,
+                    libelle: item.libelle,
+                    soldedebitanalytique: 0,
+                    soldecreditanalytique: 0,
+                  };
+                }
+
+                acc[key].soldedebitanalytique += Number(item.soldedebitanalytique) || 0;
+                acc[key].soldecreditanalytique += Number(item.soldecreditanalytique) || 0;
+
+                return acc;
+              }, {});
+
+              let mergedRows = Object.values(groupedByCompteAndSection);
+
+              mergedRows.sort((a, b) => {
+                if (a.compte !== b.compte) {
+                  return a.compte - b.compte;
+                }
+                return a.libelleAxeSection.localeCompare(b.libelleAxeSection);
+              });
 
               switch (row.type) {
                 case "RUBRIQUE":
@@ -326,6 +351,11 @@ const VirtualTableEbilanEtatFinaciere = ({ refreshTable, columns, rows, noCollap
                                       N° Compte
                                     </Typography>
                                   </TableCell>
+                                  <TableCell style={{ width: 150, border: 'none' }}>
+                                    <Typography style={{ fontWeight: 'bold' }}>
+                                      Axe:Section
+                                    </Typography>
+                                  </TableCell>
                                   <TableCell style={{ width: 450, border: 'none' }}>
                                     <Typography style={{ fontWeight: 'bold' }}>
                                       Libellé
@@ -344,7 +374,8 @@ const VirtualTableEbilanEtatFinaciere = ({ refreshTable, columns, rows, noCollap
                                 </TableRow>
                               </TableHead>
                               <TableBody>
-                                {row.infosCompte.map((detail, index) => (
+                                {/* {row.infosCompte.map((detail, index) => ( */}
+                                {mergedRows.map((detail, index) => (
                                   <TableRow
                                     key={index}
                                     style={{
@@ -352,15 +383,17 @@ const VirtualTableEbilanEtatFinaciere = ({ refreshTable, columns, rows, noCollap
                                     }}
                                   >
                                     <TableCell style={{ border: 'none' }}>{detail.compte}</TableCell>
+                                    <TableCell style={{ border: 'none' }}>{detail.libelleAxeSection}</TableCell>
                                     <TableCell style={{ border: 'none' }}>{detail.libelle}</TableCell>
                                     <TableCell style={{ border: 'none' }} align={"right"}>
-                                      {detail.soldedebit.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                      {detail.soldedebitanalytique.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </TableCell>
                                     <TableCell style={{ border: 'none' }} align={"right"}>
-                                      {detail.soldecredit.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                      {detail.soldecreditanalytique.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </TableCell>
                                   </TableRow>
-                                ))}
+                                ))
+                                }
                               </TableBody>
 
                               <TableFooter
@@ -377,6 +410,7 @@ const VirtualTableEbilanEtatFinaciere = ({ refreshTable, columns, rows, noCollap
                                       Total
                                     </Typography>
                                   </TableCell>
+                                  <TableCell style={{ width: 150, border: 'none' }} />
                                   <TableCell style={{ width: 450, border: 'none' }}>
 
                                   </TableCell>
@@ -386,7 +420,7 @@ const VirtualTableEbilanEtatFinaciere = ({ refreshTable, columns, rows, noCollap
                                     }}
                                   >
                                     {
-                                      totalColumn(row.infosCompte, "soldedebit").toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                      totalColumn(row.infosCompte, "soldedebitanalytique").toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                                     }
                                   </TableCell>
                                   <TableCell align='right'
@@ -395,7 +429,7 @@ const VirtualTableEbilanEtatFinaciere = ({ refreshTable, columns, rows, noCollap
                                     }}
                                   >
                                     {
-                                      totalColumn(row.infosCompte, "soldecredit").toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                      totalColumn(row.infosCompte, "soldecreditanalytique").toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                                     }
                                   </TableCell>
                                 </TableRow>
@@ -580,9 +614,9 @@ const VirtualTableEbilanEtatFinaciere = ({ refreshTable, columns, rows, noCollap
           </TableBody>
         </Table>
       </TableContainer>
-    </Box>
+    </Box >
 
   );
 }
 
-export default VirtualTableEbilanEtatFinaciere;
+export default VirtualTableEbilanEtatFinaciereAnalytique;

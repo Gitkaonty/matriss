@@ -53,6 +53,7 @@ export default function ParamPlanComptable() {
 
     const [openDialogAddNewAccount, setOpenDialogAddNewAccount] = useState(false);
     const [typeAction, setTypeAction] = useState('');
+    const [isRefresh, setisRefresh] = useState(false);
 
     const handleOpenDialogAddNewAccount = (type) => {
         setTypeAction(type);
@@ -61,6 +62,7 @@ export default function ParamPlanComptable() {
 
     const handleCloseDialogAddNewAccount = () => {
         setOpenDialogAddNewAccount(false);
+        setisRefresh(prev => !prev);
     }
 
     const columnHeaderDetail = [
@@ -641,7 +643,7 @@ export default function ParamPlanComptable() {
 
     useEffect(() => {
         showPc();
-    }, [fileId, compte]);
+    }, [fileId, compte, isRefresh]);
 
     return (
         <Box>
