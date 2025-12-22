@@ -5,7 +5,7 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import Paper from '@mui/material/Paper';
+import Paper from '@mui/material/Paper';  
 import { init } from '../../../../init';
 import { Stack, IconButton } from '@mui/material';
 import { IoMdCreate, IoMdTrash } from 'react-icons/io';
@@ -15,6 +15,24 @@ import { TiWarning } from "react-icons/ti";
 
 export default function VirtualTableTVA({ columns, rows, onDeleteRow }) {
   const initial = init[0];
+  const formatNumberFrs = (n) => {
+    if (n === null || n === undefined || n === '') return '';
+    const num = Number(n);
+    if (!isFinite(num)) return String(n);
+    const parts = num.toFixed(2).split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return parts.join('.');
+  };
+
+  const formatDateDMY = (val) => {
+    if (!val) return '';
+    const d = (val instanceof Date) ? val : new Date(String(val));
+    if (!(d instanceof Date) || isNaN(d.getTime())) return String(val);
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+  };
   return (
     <TableContainer component={Paper}>
       <Table sx={{ minWidth: 650 }} size="small">
@@ -42,6 +60,26 @@ export default function VirtualTableTVA({ columns, rows, onDeleteRow }) {
                   try {
                     content = column.format(value, row);
                   } catch {}
+                } else {
+                  // Default automatic formatting for numbers/dates when no custom formatter provided
+                  try {
+                    // numbers
+                    if (typeof value === 'number') {
+                      content = formatNumberFrs(value);
+                    } else if (value && typeof value === 'string') {
+                      // ISO date-like strings -> format DD/MM/YYYY
+                      if (/^\d{4}-\d{2}-\d{2}/.test(value)) {
+                        content = formatDateDMY(value);
+                      } else if (/^(debit|credit|montant|amount|prix|vnc|solde|total)/i.test(String(column.id || '')) && !isNaN(Number(value))) {
+                        // numeric-ish columns with numeric content
+                        content = formatNumberFrs(Number(value));
+                      }
+                    } else if (value instanceof Date) {
+                      content = formatDateDMY(value);
+                    }
+                  } catch (e) {
+                    // ignore formatting errors
+                  }
                 }
                 if (column.id === 'action') {
                   content = (

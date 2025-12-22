@@ -20,6 +20,7 @@ const DatagridDetailSelectionLigne = ({ DATAGRID_HEIGHT = '500px', valSelectMois
   const [selectedDetailRows, setSelectedDetailRows] = useState([]);
   const [listSaisie, setListSaisie] = useState([]);
   const [listePlanComptable, setListePlanComptable] = useState([]);
+  const [listeComptesTvaParam, setListeComptesTvaParam] = useState([]);
   const [filteredList, setFilteredList] = useState(null);
 
   const [listSaiseSansIsi, setListSaisieSansIsi] = useState([]);
@@ -56,19 +57,170 @@ const DatagridDetailSelectionLigne = ({ DATAGRID_HEIGHT = '500px', valSelectMois
       })
       .then(response => {
         const resData = response.data;
-        setListSaisie(resData?.list);
+        let rows = Array.isArray(resData?.list) ? resData.list : [];
+
+        // Tri par défaut par date d'écriture croissante
+        rows = [...rows].sort((a, b) => {
+          const da = a.dateecriture ? new Date(a.dateecriture) : null;
+          const db = b.dateecriture ? new Date(b.dateecriture) : null;
+          if (!da && !db) return 0;
+          if (!da) return 1;
+          if (!db) return -1;
+          return da - db;
+        });
+      try { console.debug('[TVA][DETAIL] filteredPc after join =', filteredPc.length); } catch {}
+
+        setListSaisie(rows);
       });
   };
 
-  const getPc = () => {
-    axios.get(`/declaration/tva/recupPcClasseSix/${compteId}/${fileId}`).then(response => {
-      const resData = response.data;
-      if (resData.state) {
-        setListePlanComptable(resData.liste);
-      } else {
-        toast.error(resData.msg);
+  const getPc = async () => {
+    if (!fileId) return;
+    try {
+      let pcRes = null;
+      const paramReq = axios.get(`/paramTva/listeParamTva/${fileId}`);
+      if (compteId) {
+        pcRes = await axios.get(`/declaration/tva/recupPcClasseSix/${compteId}/${fileId}`);
       }
-    });
+      const paramRes = await paramReq;
+
+      let listePc = [];
+      if (pcRes) {
+        const pcData = pcRes.data;
+        if (!pcData?.state) {
+          toast.error(pcData?.msg || 'Erreur lors du chargement du plan comptable');
+        } else {
+          listePc = Array.isArray(pcData.liste) ? pcData.liste : (pcData.liste ? [pcData.liste] : []);
+        }
+      }
+
+      try { console.debug('[TVA][DETAIL] listePc count =', listePc.length, 'sample =', listePc[0]); } catch {}
+
+      const paramRaw = paramRes?.data?.list || [];
+      const paramList = Array.isArray(paramRaw) ? paramRaw : (paramRaw ? [paramRaw] : []);
+      setListeComptesTvaParam(paramList);
+      try { console.debug('[TVA][DETAIL] paramList count =', paramList.length, 'sample =', paramList[0]); } catch {}
+
+      // Helper: normaliser un numéro de compte (garde les chiffres uniquement)
+      const norm = (v) => {
+        const s = (v ?? '').toString().trim();
+        const onlyDigits = s.replace(/\D+/g, '');
+        return onlyDigits || s; // si pas de chiffres, garder tel quel
+      };
+
+      // Ne garder que les comptes qui ont un code TVA paramétré.
+      // On se base sur le numéro de compte (champ "compte") pour faire la jointure,
+      // car les IDs internes peuvent être différents entre le plan comptable et le paramétrage TVA.
+      const comptesAvecTva = new Set(
+        paramList
+          .map(r => norm(
+            r.compte
+            || r.cptcompta
+            || r["dossierplancomptable.compte"]
+            || r.num_compte
+            || r.numero_compte
+            || r.cpt
+          ))
+          .filter(c => c && c !== '')
+      );
+
+      // Ajouter les comptes liés éventuels déclarés dans le paramétrage
+      for (const r of paramList) {
+        const maybeArrays = [r.comptes_lies, r.comptesLies, r.linked_accounts, r.comptes_associes];
+        for (const arr of maybeArrays) {
+          if (Array.isArray(arr)) {
+            for (const v of arr) {
+              const c = norm(v);
+              if (c) comptesAvecTva.add(c);
+            }
+          }
+        }
+        const maybeScalars = [r.compte_lie, r.compteLie, r.associe_compte];
+        for (const v of maybeScalars) {
+          const c = norm(v);
+          if (c) comptesAvecTva.add(c);
+        }
+        const maybeCsv = r.comptes_lies_str || r.comptesLiesStr;
+        if (typeof maybeCsv === 'string') {
+          for (const part of maybeCsv.split(',')) {
+            const c = norm(part);
+            if (c) comptesAvecTva.add(c);
+          }
+        }
+      }
+
+      let filteredPc = listePc.filter(pc => {
+        const cNorm = norm(pc.compte);
+        if (!cNorm) return false;
+        if (comptesAvecTva.has(cNorm)) return true;
+        // fallback: startsWith si param utilise comptes racines
+        for (const ref of comptesAvecTva) {
+          if (cNorm.startsWith(ref) || ref.startsWith(cNorm)) return true;
+        }
+        // fallback: par id si disponible
+        const idMatch = paramList.some(r => Number(r.id_cptcompta) === Number(pc.id));
+        return idMatch;
+      });
+
+      // Dédupliquer au cas où
+      const seen = new Set();
+      filteredPc = filteredPc.filter(pc => {
+        const key = String(pc.id) + '|' + norm(pc.compte);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+      if (filteredPc.length === 0 && paramList.length > 0) {
+        // Fallback: construire des options depuis les paramètres TVA
+        const fallbackOpts = [];
+        const seenKey = new Set();
+        for (const p of paramList) {
+          const acc = (p["dossierplancomptable.compte"] || p.compte || p.cptcompta || '').toString().trim();
+          if (!acc) continue;
+          const idCpt = Number(p.id_cptcompta);
+          const key = (Number.isFinite(idCpt) && idCpt > 0) ? `id-${idCpt}` : `acc-${acc}`;
+          if (seenKey.has(key)) continue;
+          seenKey.add(key);
+          const label = (p["dossierplancomptable.libelle"] || p.libelle || p["listecodetva.libelle"] || p.codedescription || '').toString();
+          fallbackOpts.push({ id: Number.isFinite(idCpt) && idCpt > 0 ? idCpt : `param-${acc}`, compte: acc, libelle: label });
+          // inclure aussi les comptes liés éventuels
+          const linked = [];
+          if (Array.isArray(p.comptes_lies)) linked.push(...p.comptes_lies);
+          if (Array.isArray(p.comptesLies)) linked.push(...p.comptesLies);
+          const csv = p.comptes_lies_str || p.comptesLiesStr;
+          if (typeof csv === 'string') linked.push(...csv.split(','));
+          for (const v of linked) {
+            const acc2 = (v || '').toString().trim();
+            if (!acc2) continue;
+            const key2 = `acc-${acc2}`;
+            if (seenKey.has(key2)) continue;
+            seenKey.add(key2);
+            fallbackOpts.push({ id: `param-${acc2}`, compte: acc2, libelle: label });
+          }
+        }
+        try { console.debug('[TVA][DETAIL] fallbackOpts count =', fallbackOpts.length, 'sample =', fallbackOpts[0]); } catch {}
+        if (fallbackOpts.length > 0) {
+          setListePlanComptable(fallbackOpts);
+        } else {
+          // Fallback #2: filtrer les comptes du PC qui ressemblent à des comptes TVA (ex: 445*)
+          const tvaLike = listePc.filter(pc => {
+            const c = (pc.compte || '').toString();
+            const lib = (pc.libelle || '').toString().toUpperCase();
+            return c.startsWith('445') || lib.includes('TVA');
+          });
+          try { console.debug('[TVA][DETAIL] tvaLike from PC =', tvaLike.length); } catch {}
+          setListePlanComptable(tvaLike);
+        }
+      } else {
+        setListePlanComptable(filteredPc);
+      }
+    } catch (e) {
+      console.error('[TVA] getPc (plan comptable + param TVA) error', e);
+      toast.error('Erreur lors du chargement des comptes TVA');
+      setListePlanComptable([]);
+      setListeComptesTvaParam([]);
+    }
   };
 
   const handlePrevious = () => {
@@ -88,130 +240,45 @@ const DatagridDetailSelectionLigne = ({ DATAGRID_HEIGHT = '500px', valSelectMois
   };
 
   const handleSearch = () => {
-    if (!valSelectedCompte || valSelectedCompte === 'tout') {
-      setFilteredList([]);
-      return;
+    // Base : soit toutes les lignes, soit filtrées par compte sélectionné
+    let base = listSaisie || [];
+
+    if (valSelectedCompte && valSelectedCompte !== 'tout') {
+      const compteSelect = listePlanComptable.find(item => item.id === Number(valSelectedCompte));
+      if (!compteSelect) {
+        setFilteredList([]);
+        return;
+      }
+      base = base.filter(item => item.compte?.toString().includes(compteSelect.compte.toString()));
     }
 
-    const compteSelect = listePlanComptable.find(item => item.id === Number(valSelectedCompte));
-    if (!compteSelect) {
-      setFilteredList([]);
-      return;
-    }
+    // Filtre supplémentaire selon le mois sélectionné et decltva === false
+    const moisSelect = Number(valSelectMois);
+    const anneeSelect = Number(valSelectAnnee);
 
-    const filtered = listSaisie.filter(item => item.compte?.toString().includes(compteSelect.compte.toString()));
+    const endOfSelectedMonth = new Date(anneeSelect, moisSelect, 0); // dernier jour du mois sélectionné
+
+    const filtered = base.filter(item => {
+      // 1) Lignes déjà déclarées :
+      //    -> visibles UNIQUEMENT dans le mois/année où elles ont été déclarées
+      if (item.decltva === true) {
+        const moisDecl = Number(item.decltvamois);
+        const anneeDecl = Number(item.decltvaannee);
+        return moisDecl === moisSelect && anneeDecl === anneeSelect;
+      }
+
+      // 2) Lignes non déclarées :
+      //    -> visibles pour tous les mois dont la date d'écriture est <= fin du mois sélectionné
+      if (!item.dateecriture) return false;
+      const d = new Date(item.dateecriture);
+      if (Number.isNaN(d.getTime())) return false;
+
+      return d <= endOfSelectedMonth;
+    });
 
     setFilteredList(filtered);
   };
 
-  // const updateAnneeMois = type => {
-  //   if (type === 'Ajouter') {
-  //     axios
-  //       .put(`/declaration/tva/ajoutMoisAnnee`, {
-  //         selectedDetailRows,
-  //         decltvamois: Number(valSelectMois),
-  //         decltvaannee: Number(valSelectAnnee),
-  //       })
-  //       .then(response => {
-  //         const data = response?.data;
-
-  //         if (!data) return toast.error('Aucune réponse du serveur');
-
-  //         if (data.state) {
-  //           if (data.message === 'Compte TVA non trouvé à chacune des lignes') {
-  //             toast.error(data.message);
-  //           } else {
-  //             toast.success(data.message);
-  //             setSelectedDetailRows([]);
-  //           }
-
-  //           setIsEcritureAssocieRefreshed(prev => !prev);
-  //         } else {
-  //           toast.error(data.message || 'Erreur inconnue');
-  //         }
-  //       })
-  //       .catch(err => {
-  //         console.error(err);
-  //         toast.error('Erreur lors de la requête');
-  //       });
-  //   } else {
-  //     axios.put(`/declaration/tva/suppressionMoisAnnee`, {
-  //       id_compte: Number(compteId),
-  //       id_exercice: Number(selectedExerciceId),
-  //       id_dossier: Number(fileId),
-  //       selectedDetailRows: selectedDetailRows,
-  //       decltva: false,
-  //       decltvamois: valSelectMois,
-  //       decltvaannee: valSelectAnnee,
-  //   }).then((response) => {
-  //       if (response?.data?.state) {
-  //           toast.success(response?.data?.message);
-  //           setSelectedDetailRows([]);
-  //           setIsDetailSelectionRefreshed(prev => !prev);
-  //           setIsDetailEcritureRefreshed(prev => !prev);
-  //       } else {
-  //           toast.error(response?.data?.message);
-  //       }
-  //       });
-  //   }
-  // };
- 
-    // Modification du moi et année dans journal
-  // const updateAnneeMois = (type) => {
-  //       if (type === 'Ajouter') {
-  //           axios.put(`/declaration/isi/ajoutMoisAnnee`, {
-  //               id_compte: Number(compteId),
-  //               id_exercice: Number(selectedExerciceId),
-  //               id_dossier: Number(fileId),
-  //               selectedDetailRows,
-  //               declisimois: valSelectMois,
-  //               declisiannee: valSelectAnnee,
-  //               declisi: true,
-  //               compteisi
-  //           }).then((response) => {
-  //               const data = response?.data;
- 
-  //               if (!data) return toast.error("Aucune réponse du serveur");
- 
-  //               if (data.state) {
-  //                   if (data.message === 'Compte ISI non trouvé à chacune des lignes') {
-  //                       toast.error(data.message);
-  //                   } else {
-  //                       toast.success(data.message);
-  //                       setSelectedDetailRows([]);
-  //                   }
- 
-  //                   setIsDetailSelectionRefreshed(prev => !prev);
-  //                   setIsDetailEcritureRefreshed(prev => !prev);
- 
-  //               } else {
-  //                   toast.error(data.message || "Erreur inconnue");
-  //               }
-  //           }).catch(err => {
-  //               console.error(err);
-  //               toast.error("Erreur lors de la requête");
-  //           });
-  //       } else {
-  //           axios.put(`/declaration/isi/suppressionMoisAnnee`, {
-  //               id_compte: Number(compteId),
-  //               id_exercice: Number(selectedExerciceId),
-  //               id_dossier: Number(fileId),
-  //               selectedDetailRows: selectedDetailRows,
-  //               declisimois: valSelectMois,
-  //               declisiannee: valSelectAnnee,
-  //               declisi: false
-  //           }).then((response) => {
-  //               if (response?.data?.state) {
-  //                   toast.success(response?.data?.message);
-  //                   setSelectedDetailRows([]);
-  //                   setIsDetailSelectionRefreshed(prev => !prev);
-  //                   setIsDetailEcritureRefreshed(prev => !prev);
-  //               } else {
-  //                   toast.error(response?.data?.message);
-  //               }
-  //           })
-  //       }
-  // }
   const updateAnneeMois = (type) => {
     if (type === 'Ajouter') {
         axios.put(`/declaration/tva/ajoutMoisAnnee`, {

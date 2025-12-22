@@ -156,6 +156,8 @@ export default function AddNewFile({ confirmationState }) {
         listeAssocies: [],
         listeFiliales: [],
         listeDomBank: [],
+        // Immobilisation
+        immo_amort_base_jours: '365',
     };
 
     const formInfosNewFileValidationSchema = Yup.object({
@@ -2037,6 +2039,21 @@ export default function AddNewFile({ confirmationState }) {
                                                     />
                                                     <label htmlFor="avecanalytique" style={{ fontSize: 15, color: 'black' }}>Avec analytique</label>
                                                     <ErrorMessage name='avecanalytique' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                </Stack>
+
+                                                {/* Immobilisation */}
+                                                <Typography style={{ fontWeight: 'bold', fontSize: "18px", marginLeft: "0px", marginTop: "20px" }}>Immobilisation</Typography>
+                                                <Stack spacing={1} sx={{ mt: 1 }}>
+                                                    <Stack direction="row" spacing={4} alignItems="center">
+                                                        <Typography style={{ fontSize: "14px", marginLeft: 0 }}>Base de calcul de l'amort (en jours)</Typography>
+                                                        <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                            <Field type="radio" name="immo_amort_base_jours" value="365" /> 365 jours
+                                                        </label>
+                                                        <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                            <Field type="radio" name="immo_amort_base_jours" value="360" /> 360 jours
+                                                        </label>
+                                                    </Stack>
+                                                    <ErrorMessage name='immo_amort_base_jours' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
                                                 </Stack>
                                             </Stack>
                                         </TabPanel>

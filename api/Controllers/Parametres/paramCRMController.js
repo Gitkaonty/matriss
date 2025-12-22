@@ -105,7 +105,8 @@ const modifyingInfos = async (req, res) => {
       valeurpart,
       listeAssocies,
       listeFiliales,
-      compteisi
+      compteisi,
+      immo_amort_base_jours
     } = req.body;
 
     const modify = await dossiers.update(
@@ -138,7 +139,8 @@ const modifyingInfos = async (req, res) => {
         valeurpart: valeurpart || 0,
         id_plancomptable: plancomptable,
         rcs: rcs,
-        compteisi: compteisi
+        compteisi: compteisi,
+        immo_amort_base_jours: Number(immo_amort_base_jours) || 365
       },
       {
         where: { id: idDossier }
@@ -210,7 +212,6 @@ const getListeFiliale = async (req, res) => {
       resData.state = false;
       resData.msg = 'Une erreur est survenue lors de la création du nouveau dossier';
     }
-
     return res.json(resData);
   } catch (error) {
     console.log(error);

@@ -481,26 +481,27 @@ export default function PersonnelComponent() {
     }
 
     const fetchPersonnels = () => {
-        axios.get(`/administration/personnel/${Number(compteId)}/${Number(id)}`)
-            .then(res => {
-                const data = Array.isArray(res.data.list) ? res.data.list.map((item, idx) => ({
-                    id: item.id || idx + 1,
-                    matricule: item.matricule,
-                    nom: item.nom,
-                    prenom: item.prenom,
-                    id_fonction: item.id_fonction,
-                    id_classe: item.id_classe,
-                    date_entree: item.date_entree,
-                    date_sortie: item.date_sortie,
-                    actif: item.actif,
-                    numero_cnaps: item.numero_cnaps,
-                    cin_ou_carte_resident: item.cin_ou_carte_resident,
-                    nombre_enfants_charge: item.nombre_enfants_charge
-                })) : [];
-                setRows(data);
-            })
-            .catch(() => setRows([]));
-    };
+  axios.get(`/administration/personnel/${Number(compteId)}/${Number(id)}`)
+    .then(res => {
+      const data = Array.isArray(res.data.list) ? res.data.list.map((item, idx) => ({
+        id: item.id || idx + 1,
+        matricule: item.matricule,
+        nom: item.nom,
+        prenom: item.prenom,
+        id_fonction: item.id_fonction,
+        id_classe: item.id_classe,
+        date_entree: item.date_entree,
+        date_sortie: item.date_sortie,
+        actif: item.actif,
+        numero_cnaps: item.numero_cnaps,
+        cin_ou_carte_resident: item.cin_ou_carte_resident,
+        nombre_enfants_charge: item.nombre_enfants_charge
+      })) : [];
+      console.log('PERSONNELS APRES FETCH', data);
+      setRows(data);
+    })
+    .catch(() => setRows([]));
+};
 
     useEffect(() => {
         fetchPersonnels();
@@ -535,8 +536,21 @@ export default function PersonnelComponent() {
     }
 
     // Edition
-    const handleEditClick = (id) => () => {
-        const selectedRowInfos = rows.find(r => r.id === id[0]);
+    const handleEditClick = (ids) => () => {
+        // ids est normalement selectedRowId (un tableau d'IDs)
+        if (!Array.isArray(ids) || ids.length !== 1) {
+            toast.error("Veuillez sélectionner une seule ligne à modifier.");
+            return;
+        }
+
+        const rowId = ids[0];
+        const selectedRowInfos = rows.find(r => r.id === rowId);
+
+        if (!selectedRowInfos) {
+            toast.error("Ligne sélectionnée introuvable.");
+            return;
+        }
+
         // setEditRow(row);
         // setNewRow(null);
         formNewParam.setFieldValue('idParam', selectedRowInfos.id ?? null);
@@ -554,7 +568,7 @@ export default function PersonnelComponent() {
         formNewParam.setFieldValue('date_sortie', selectedRowInfos.date_sortie ?? '');
         formNewParam.setFieldValue('actif', selectedRowInfos.actif ?? false);
 
-        setRowModesModel({ ...rowModesModel, [id[0]]: { mode: GridRowModes.Edit } });
+        setRowModesModel({ ...rowModesModel, [rowId]: { mode: GridRowModes.Edit } });
         setDisableSaveBouton(false);
     };
 
@@ -588,10 +602,28 @@ export default function PersonnelComponent() {
         setDisableSaveBouton(false);
         setSubmitAttempt(false);
 
-        const newId = -Date.now();
-        formNewParam.setFieldValue("idParam", newId);
+        // id temporaire pour la grille (string), et id numérique séparé pour le backend
+        const rowId = `new-${Date.now()}`;
+        const backendId = -Date.now();
+        formNewParam.setValues({
+            idParam: backendId,
+            compteId: compteId,
+            fileId: fileId,
+            matricule: '',
+            nom: '',
+            prenom: '',
+            id_fonction: '',
+            id_classe: '',
+            numero_cnaps: '',
+            cin_ou_carte_resident: '',
+            nombre_enfants_charge: '',
+            date_entree: '',
+            date_sortie: '',
+            actif: true,
+        });
+
         const newPersonnel = {
-            id: newId,
+            id: rowId,
             matricule: '',
             nom: '',
             prenom: '',
@@ -608,13 +640,19 @@ export default function PersonnelComponent() {
         };
 
         setRows([...rows, newPersonnel]);
-        setSelectedRowId([newId]);
-        setSelectedRow([newId]);
+        setSelectedRowId([rowId]);
+        setSelectedRow([rowId]);
+        // mettre la nouvelle ligne directement en mode édition
+        setRowModesModel((old) => ({
+            ...old,
+            [rowId]: { mode: GridRowModes.Edit }
+        }));
         setDisableAddRowBouton(true);
     }
 
     // Sauvegarde
     const handleSaveClick = (id) => () => {
+        const rowId = Array.isArray(id) ? id[0] : id;
         // Required fields validation
         const req = ['matricule','nom','prenom','id_fonction','id_classe'];
         const missing = req.filter(k => {
@@ -625,34 +663,92 @@ export default function PersonnelComponent() {
             setSubmitAttempt(true);
             toast.error('Veuillez renseigner tous les champs obligatoires');
             // keep row in edit mode
-            setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
+            setRowModesModel({ ...rowModesModel, [rowId]: { mode: GridRowModes.Edit } });
+            return;
+        }
+
+        // Validation minimale des identifiants dossier/compte attendus par le backend
+        if (!compteId || !fileId) {
+            toast.error("Compte ou dossier non défini (compteId/fileId manquant)");
+            console.error('[PERSONNEL][SAVE] compteId ou fileId manquant', { compteId, fileId, formValues: formNewParam.values });
+            setRowModesModel({ ...rowModesModel, [rowId]: { mode: GridRowModes.Edit } });
             return;
         }
 
         const dataToSend = { ...formNewParam.values, fileId, compteId };
-        axios.post(`/administration/personnel`, dataToSend).then((response) => {
-            const resData = response.data;
-            if (resData.state) {
-                setDisableAddRowBouton(false);
-                setDisableSaveBouton(true);
-                formNewParam.resetForm();
-                setSubmitAttempt(false);
-                toast.success(resData.msg);
-                fetchPersonnels();
-                // switch to view mode after successful save
-                setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
-            } else {
-                toast.error(resData.msg);
-            }
-        })
+        console.log('[PERSONNEL][SAVE] payload envoyé à /administration/personnel :', dataToSend);
+
+        axios.post(`/administration/personnel`, dataToSend)
+            .then((response) => {
+                const resData = response.data;
+                if (resData.state) {
+                    // Mise à jour optimiste de la ligne modifiée dans le DataGrid
+                    setRows(prev => prev.map(r => (
+                        r.id === rowId
+                            ? {
+                                ...r,
+                                matricule: formNewParam.values.matricule,
+                                nom: formNewParam.values.nom,
+                                prenom: formNewParam.values.prenom,
+                                id_fonction: formNewParam.values.id_fonction,
+                                id_classe: formNewParam.values.id_classe,
+                                date_entree: formNewParam.values.date_entree,
+                                date_sortie: formNewParam.values.date_sortie,
+                                actif: formNewParam.values.actif,
+                                numero_cnaps: formNewParam.values.numero_cnaps,
+                                cin_ou_carte_resident: formNewParam.values.cin_ou_carte_resident,
+                                nombre_enfants_charge: formNewParam.values.nombre_enfants_charge,
+                              }
+                            : r
+                    )));
+
+                    setDisableAddRowBouton(false);
+                    setDisableSaveBouton(true);
+                    formNewParam.resetForm();
+                    setSubmitAttempt(false);
+                    toast.success(resData.msg);
+                    // après sauvegarde, on nettoie les états locaux et on recharge depuis le backend
+                    setSelectedRow([]);
+                    setSelectedRowId([]);
+                    setRowModesModel({});
+                    fetchPersonnels();
+                } else {
+                    toast.error(resData.msg || 'Erreur lors de la sauvegarde du personnel');
+                }
+            })
+            .catch((error) => {
+                const backendMsg = error?.response?.data?.message || error?.response?.data?.msg;
+                if (backendMsg) {
+                    toast.error(backendMsg);
+                } else {
+                    toast.error('Erreur serveur lors de la sauvegarde du personnel');
+                }
+                console.error('[PERSONNEL][SAVE] Erreur Axios:', error?.response?.data || error);
+                // garder la ligne en mode édition pour correction
+                setRowModesModel({ ...rowModesModel, [rowId]: { mode: GridRowModes.Edit } });
+            });
     };
 
     // Annulation
     const handleCancelClick = (id) => () => {
-        setRowModesModel({
-            ...rowModesModel,
-            [id]: { mode: GridRowModes.View, ignoreModifications: true },
-        });
+        const rowId = Array.isArray(id) ? id[0] : id;
+
+        // si c'est une ligne temporaire (id string "new-...") on la retire complètement
+        if (typeof rowId === 'string' && rowId.startsWith('new-')) {
+            setRows(prev => prev.filter(r => r.id !== rowId));
+            setSelectedRow([]);
+            setSelectedRowId([]);
+            setRowModesModel((old) => {
+                const copy = { ...old };
+                delete copy[rowId];
+                return copy;
+            });
+        } else {
+            setRowModesModel({
+                ...rowModesModel,
+                [rowId]: { mode: GridRowModes.View, ignoreModifications: true },
+            });
+        }
         setDisableAddRowBouton(false);
     };
 

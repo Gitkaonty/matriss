@@ -12,6 +12,7 @@ import FormatedInput from './FormatedInput';
 import axios from '../../../config/axios';
 import toast from 'react-hot-toast';
 import Autocomplete from '@mui/material/Autocomplete';
+import { init } from '../../../init';
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialogContent-root': {
@@ -23,6 +24,8 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
 }));
 
 const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null, onAddIrsa, onEditIrsa, id_compte, id_dossier, id_exercice }) => {
+
+    const initial = init[0];
     console.log(mois, annee);
     const [nbrEnfant, setNbrEnfant] = useState(0);
     const [personnels, setPersonnels] = useState([]);
@@ -311,35 +314,21 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                         <Box display="flex" flexWrap="wrap" gap={2} mb={1} alignItems="flex-end">
                             <FormControl size="small" sx={{ flexBasis: 410, flexGrow: 0 }}>
                                 {personnels.length === 0 ? (
-                                    <Box
-                                        display="flex"
-                                        alignItems="center"
-                                        justifyContent="center"
+                                    <TextField
+                                        size="small"
+                                        label="Matricule"
+                                        variant="standard"
+                                        value="Aucune"
+                                        disabled
                                         sx={{
-                                            height: 38,   // même hauteur que TextField
                                             width: 400,
-                                            borderBottom: '1px solid rgba(0, 0, 0, 0.42)', // 👉 imite la ligne du TextField standard
-                                          }}
-                                    >
-                                        <span style={{ marginRight: 8 }}>Chargement des matricules...</span>
-                                        <span
-                                            className="MuiCircularProgress-root MuiCircularProgress-colorPrimary"
-                                            style={{
-                                                width: 20,
-                                                height: 20,
-                                                variant: 'standard',
-                                                display: 'inline-block',
-                                                verticalAlign: 'middle',
-                                                border: '2px solid #1976d2',
-                                                borderRadius: '50%',
-                                                borderTop: '2px solid transparent',
-                                                animation: 'spin 0.8s linear infinite',
-                                            }}
-                                        />
-                                        <style>
-                                            {`@keyframes spin { 100% { transform: rotate(360deg); } }`}
-                                        </style>
-                                    </Box>
+                                            '& .MuiInputBase-root': { fontSize: '13px' },
+                                            '& .MuiInputLabel-root': { color: '#1976d2', fontSize: '13px' },
+                                        }}
+                                        InputLabelProps={{
+                                            shrink: true,
+                                        }}
+                                    />
                                 ) : (
                                     <Autocomplete
                                         options={[...personnels].sort((a, b) => String(a.matricule || '').localeCompare(String(b.matricule || '')))}
@@ -429,8 +418,6 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                     shrink: true,
                                 }}
                             />
-
-
                         </Box>
 
                         {/* Groupe 2 */}
@@ -1033,13 +1020,23 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                 </Box>
             </DialogContent>
             <DialogActions sx={{ p: 2, backgroundColor: '#f5f5f5' }}>
-            <Button onClick={handleClose} variant="outlined" sx={{ minWidth: 100 }}>
+            <Button 
+            onClick={handleClose} 
+            variant='outlined'
+                        style={{
+                            backgroundColor: "transparent",
+                            color: initial.theme,
+                            width: "100px",
+                            textTransform: 'none',
+                            //outline: 'none',
+                        }}
+            >
                 Annuler
             </Button>
 
-            <Button
-                variant="contained"
-                sx={{ minWidth: 100 }}
+            <Button autoFocus
+                type="submit"
+                style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
                 onClick={() => {
                     const allTouched = Object.keys(formDataFormik.values).reduce((acc, key) => {
                       acc[key] = true;
@@ -1049,7 +1046,7 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                     formDataFormik.handleSubmit();
                   }}
             >
-                Valider
+                Enregistrer
             </Button>
             </DialogActions>
         </BootstrapDialog>

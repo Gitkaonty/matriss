@@ -42,6 +42,23 @@ router.delete('/rapprochements/:id', saisieController.deleteRapprochement);
 // Immobilisations: liste des comptes de classe 2 (hors 28, 29)
 router.get('/immobilisations/pcs', saisieController.listImmobilisationsPc2); // expects query: fileId, compteId
 
+// Immobilisations: détails (details_immo)
+// GET list for a selected PC (pcId is the plan comptable id), filtered by fileId, compteId, exerciceId
+router.get('/immobilisations/details', saisieController.listDetailsImmo);
+// CREATE a detail row
+router.post('/immobilisations/details', saisieController.createDetailsImmo);
+// UPDATE a detail row by id
+router.put('/immobilisations/details/:id', saisieController.updateDetailsImmo);
+// DELETE a detail row by id
+router.delete('/immobilisations/details/:id', saisieController.deleteDetailsImmo);
+
+// Immobilisations: lignes d'amortissement par immobilisation
+router.get('/immobilisations/details/lignes', saisieController.listDetailsImmoLignes);
+router.get('/immobilisations/details/lineaire/preview', saisieController.previewImmoLineaire);
+router.get('/immobilisations/details/degresif/preview', saisieController.previewImmoDegressif);
+router.post('/immobilisations/details/lineaire/save', saisieController.saveImmoLineaire);
+// router.post('/immobilisations/details/degresif/save', saisieController.saveImmoDegressif);
+
 // Rapprochements exports
 router.get('/rapprochements/export/pdf', exportRapprochementsController.exportPdf); // query: fileId, compteId, exerciceId, pcId, rapproId
 router.get('/rapprochements/export/excel', exportRapprochementsController.exportExcel); // query: fileId, compteId, exerciceId, pcId, rapproId

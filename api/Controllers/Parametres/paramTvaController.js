@@ -472,141 +472,183 @@ const updateJournalsDeclFlag = async (req, res) => {
 
 const getJournalsSelectionLigne = async (req, res) => {
   try {
-      const { id_compte, id_dossier, id_exercice } = req.params;
-      const { mois, annee } = req.query;
+    const { id_compte, id_dossier, id_exercice } = req.params;
+    const { mois, annee } = req.query;
 
-      if (!id_compte) {
-          return res.status(400).json({ state: false, message: 'Id_compte non trouvé' });
-      }
-      if (!id_dossier) {
-          return res.status(400).json({ state: false, message: 'Id_dossier non trouvé' });
-      }
-      if (!id_exercice) {
-          return res.status(400).json({ state: false, message: 'Id_exercice non trouvé' });
-      }
+    if (!id_compte) {
+      return res.status(400).json({ state: false, message: 'Id_compte non trouvé' });
+    }
+    if (!id_dossier) {
+      return res.status(400).json({ state: false, message: 'Id_dossier non trouvé' });
+    }
+    if (!id_exercice) {
+      return res.status(400).json({ state: false, message: 'Id_exercice non trouvé' });
+    }
 
-      const journalData = await Journals.findAll({
-          where: {
-              id_compte,
-              id_dossier,
-              id_exercice,
-              [Op.or]: [
-                  { decltva: false },
-                  {
-                      [Op.and]: [
-                          { decltva: true },
-                          { decltvamois: mois },
-                          { decltvaannee: annee }
-                      ]
-                  }
-              ]
+    const journalData = await Journals.findAll({
+      where: {
+        id_compte,
+        id_dossier,
+        id_exercice,
+        [Op.or]: [
+          { decltva: false },
+          {
+            [Op.and]: [
+              { decltva: true },
+              { decltvamois: mois },
+              { decltvaannee: annee },
+            ],
           },
-          include: [
-              {
-                  model: dossierplancomptables,
-                  attributes: ['compte'],
-                  required: true
-              },
-              {
-                  model: codejournals,
-                  attributes: ['code','type','nif','stat','adresse','libelle']
-              }
-          ],
-          order: [['dateecriture', 'DESC']]
-      });
+        ],
+      },
+      include: [
+        {
+          model: dossierplancomptables,
+          attributes: ['compte'],
+          required: true,
+        },
+        {
+          model: codejournals,
+          attributes: ['code', 'type', 'nif', 'stat', 'adresse', 'libelle'],
+          required: false,
+        },
+      ],
+      order: [['dateecriture', 'ASC']],
+    });
 
-      const mappedData = await Promise.all(
-          journalData.map(async (journal) => {
-              const { dossierplancomptable, codejournal, ...rest } = journal.toJSON();
-              const compte_centralise = await dossierplancomptables.findByPk(journal.id_numcptcentralise);
-              return {
-                  ...rest,
-                  compte: dossierplancomptable?.compte || null,
-                  journal: codejournal?.code || null,
-                  compte_cetralise: compte_centralise?.compte || null
-              };
-          }));
+    const mappedData = await Promise.all(
+      journalData.map(async (journal) => {
+        const { dossierplancomptable, codejournal, ...rest } = journal.toJSON();
+        const compte_centralise = await dossierplancomptables.findByPk(journal.id_numcptcentralise);
+        return {
+          ...rest,
+          compte: dossierplancomptable?.compte || null,
+          journal: codejournal?.code || null,
+          journal_type: codejournal?.type || null,
+          journal_nif: codejournal?.nif || null,
+          journal_stat: codejournal?.stat || null,
+          journal_adresse: codejournal?.adresse || null,
+          journal_libelle: codejournal?.libelle || null,
+          compte_cetralise: compte_centralise?.compte || null,
+        };
+      })
+    );
 
-      return res.json({
-          list: mappedData,
-          state: true,
-          message: "Récupéré avec succès"
-      });
+    return res.json({
+      list: mappedData,
+      state: true,
+      message: 'Récupéré avec succès',
+    });
   } catch (error) {
-      console.error(error);
-      return res.status(500).json({ message: "Erreur serveur", state: false, error: error.message });
+    console.error(error);
+    return res.status(500).json({ message: 'Erreur serveur', state: false, error: error.message });
   }
 };
 
+// GET /declaration/tva/ecritureassociee/:id_compte/:id_dossier/:id_exercice
+// Retourne les lignes TVA (4456/4457/4458) pour la période + infos tiers (classe 4 hors 445) sur la même écriture
 const getJournalsDeclTvaClasseTva = async (req, res) => {
   try {
-      const { id_compte, id_dossier, id_exercice } = req.params;
-      const { mois, annee} = req.query;
+    const { id_compte, id_dossier, id_exercice } = req.params;
+    const { mois, annee } = req.query;
 
-      if (!id_compte) {
-          return res.status(400).json({ state: false, message: 'Id_compte non trouvé' });
-      }
-      if (!id_dossier) {
-          return res.status(400).json({ state: false, message: 'Id_dossier non trouvé' });
-      }
-      if (!id_exercice) {
-          return res.status(400).json({ state: false, message: 'Id_exercice non trouvé' });
-      }
-      if (!mois) {
-          return res.status(400).json({ state: false, message: 'Mois manquante' });
-      }
-      if (!annee) {
-          return res.status(400).json({ state: false, message: 'Année manquante' });
-      }
+    if (!id_compte) {
+      return res.status(400).json({ state: false, message: 'Id_compte non trouvé' });
+    }
+    if (!id_dossier) {
+      return res.status(400).json({ state: false, message: 'Id_dossier non trouvé' });
+    }
+    if (!id_exercice) {
+      return res.status(400).json({ state: false, message: 'Id_exercice non trouvé' });
+    }
+    if (!mois) {
+      return res.status(400).json({ state: false, message: 'Mois manquante' });
+    }
+    if (!annee) {
+      return res.status(400).json({ state: false, message: 'Année manquante' });
+    }
 
-      const journalData = await Journals.findAll({
+    const journalData = await Journals.findAll({
+      where: {
+        id_compte,
+        id_dossier,
+        id_exercice,
+        decltvamois: mois,
+        decltvaannee: annee,
+        decltva: true,
+      },
+      include: [
+        {
+          model: dossierplancomptables,
+          attributes: ['compte'],
+          required: true,
           where: {
-              id_compte,
-              id_dossier,
-              id_exercice,
-              decltvamois: mois,
-              decltvaannee: annee,
-              decltva: true,
+            [Op.or]: [
+              { compte: { [Op.like]: '4456%' } },
+              { compte: { [Op.like]: '4457%' } },
+              { compte: { [Op.like]: '4458%' } },
+            ],
+          },
+        },
+        { model: codejournals, attributes: ['code'], required: false },
+      ],
+      order: [['dateecriture', 'ASC']],
+    });
+
+    const mappedData = await Promise.all(
+      journalData.map(async (journal) => {
+        const { dossierplancomptable, codejournal, ...rest } = journal.toJSON();
+        const compte_centralise = await dossierplancomptables.findByPk(journal.id_numcptcentralise);
+
+        const tiersLine = await Journals.findOne({
+          where: {
+            id_compte,
+            id_dossier,
+            id_exercice,
+            id_ecriture: journal.id_ecriture,
           },
           include: [
-              {
-                  model: dossierplancomptables,
-                  attributes: ['compte'],
-                  required: true,
-                  where: {
-                    [Op.or]: [
-                      // { compte: { [Op.like]: '4455%' } },
-                      { compte: { [Op.like]: '4456%' } },
-                      { compte: { [Op.like]: '4457%' } },
-                      { compte: { [Op.like]: '4458%' } }
-                    ]
-                  }
+            {
+              model: dossierplancomptables,
+              required: true,
+              attributes: ['compte', 'libelle', 'nif', 'statistique', 'adresse', 'adressesansnif', 'adresseetranger'],
+              where: {
+                [Op.and]: [
+                  { compte: { [Op.like]: '4%' } },
+                  { compte: { [Op.notLike]: '445%' } },
+                ],
               },
-              { model: codejournals, attributes: ['code'] }
+            },
           ],
-          order: [['dateecriture', 'ASC']]
-      });
+          order: [['id', 'ASC']],
+        });
 
-      const mappedData = await Promise.all(
-          journalData.map(async (journal) => {
-              const { dossierplancomptable, codejournal, ...rest } = journal.toJSON();
-              const compte_centralise = await dossierplancomptables.findByPk(journal.id_numcptcentralise);
-              return {
-                  ...rest,
-                  compte: dossierplancomptable?.compte || null,
-                  journal: codejournal?.code || null,
-                  compte_cetralise: compte_centralise?.compte || null
-              };
-          }));
+        const tiersPc = tiersLine?.dossierplancomptable ? tiersLine.dossierplancomptable : null;
+        const tiersAdresse = tiersPc?.adresse || tiersPc?.adressesansnif || tiersPc?.adresseetranger || null;
 
-      return res.json({
-          list: mappedData,
-          state: true,
-          message: "Récupéré avec succès"
-      });
+        return {
+          ...rest,
+          compte: dossierplancomptable?.compte || null,
+          journal: codejournal?.code || null,
+          compte_cetralise: compte_centralise?.compte || null,
+          tiers_compte: tiersPc?.compte || null,
+          tiers_libelle: tiersPc?.libelle || null,
+          tiers_id_numcpt: tiersLine?.id_numcpt || null,
+          tiers_nif: tiersPc?.nif || null,
+          tiers_stat: tiersPc?.statistique || null,
+          tiers_adresse: tiersAdresse,
+        };
+      })
+    );
+
+    return res.json({
+      list: mappedData,
+      state: true,
+      message: 'Récupéré avec succès',
+    });
   } catch (error) {
-      console.error(error);
-      return res.status(500).json({ message: "Erreur serveur", state: false, error: error.message });
+    console.error(error);
+    return res.status(500).json({ message: 'Erreur serveur', state: false, error: error.message });
   }
 };
 
@@ -779,17 +821,20 @@ const generateAnnexeDeclarationAuto = async (req, res) => {
                   attributes: ['compte'],
                   required: true,
               },
-              { 
+              {
                 model: codejournals,
-                attributes: ['code', 'type', 'nif', 'stat', 'adresse', 'libelle'],
+                attributes: ['code', 'type', 'nif', 'stat', 'adresse', 'libelle', 'taux_tva'],
                 required: false
               }
           ],
           order: [['dateecriture', 'ASC']]
       });
-// return res.json(journalData)
-      // Récupérer toutes les lignes de ces écritures (même si non déclarées) pour inclure 512
-      const idsEcritures = Array.from(new Set(journalData.map(j => j.id_ecriture)));
+
+      const idsEcritures = Array.from(new Set((journalData || []).map(j => j.id_ecriture)));
+      if (idsEcritures.length === 0) {
+        return res.json({ state: true, message: 'Aucune TVA à générer', data: [] });
+      }
+
       const allJournals = await Journals.findAll({
           where: {
               id_ecriture: idsEcritures,
@@ -800,16 +845,16 @@ const generateAnnexeDeclarationAuto = async (req, res) => {
           include: [
               {
                   model: dossierplancomptables,
-                  attributes: ['compte'],
+                  attributes: ['compte', 'libelle'],
                   required: true,
               },
               {
                   model: codejournals,
-                  attributes: ['code', 'type', 'nif', 'stat', 'adresse', 'libelle'],
+                  attributes: ['code', 'type', 'nif', 'stat', 'adresse', 'libelle', 'taux_tva'],
                   required: false
               }
           ],
-          order: [['dateecriture', 'ASC']]
+          order: [['dateecriture', 'ASC'], ['id', 'ASC']]
       });
 
       const mappedData = await Promise.all(
@@ -819,13 +864,14 @@ const generateAnnexeDeclarationAuto = async (req, res) => {
               return {
                 ...rest,
                 compte: dossierplancomptable?.compte || null,
+                libelle_compte: dossierplancomptable?.libelle || null,
                 journal: codejournal?.code || null,
                 journal_type: codejournal?.type || null,
-                // Infos du journal (BANQUE)
                 journal_nif: codejournal?.nif || null,
                 journal_stat: (codejournal?.stat ?? codejournal?.statistique) || null,
                 journal_adresse: codejournal?.adresse || null,
                 journal_libelle: codejournal?.libelle || null,
+                journal_taux_tva: codejournal?.taux_tva ?? null,
                 compte_cetralise: compte_centralise?.compte || null
               };
           })
@@ -834,23 +880,23 @@ const generateAnnexeDeclarationAuto = async (req, res) => {
       const groupedData = Object.values(
           mappedData.reduce((acc, item) => {
               const compteStr = item.compte?.toString() || "";
-              if (!(compteStr.startsWith("401") || compteStr.startsWith("411") || compteStr.startsWith("4456") || compteStr.startsWith("4457") || compteStr.startsWith("512") || compteStr.startsWith("53"))) {
+              if (!(compteStr.startsWith("401") || compteStr.startsWith("411") || compteStr.startsWith("445") || compteStr.startsWith("512") || compteStr.startsWith("53"))) {
                 return acc;
-            }
+              }
 
               if (!acc[item.id_ecriture]) {
                   acc[item.id_ecriture] = {
                       id_ecriture: item.id_ecriture,
                       num_facture: item.num_facture,
                       dateecriture: item.dateecriture,
+                      libelle: item.libelle,
                       journal: item.journal,
                       journal_type: item.journal_type,
-                      // Infos journal
                       journal_nif: item.journal_nif || null,
                       journal_stat: item.journal_stat || null,
                       journal_adresse: item.journal_adresse || null,
                       journal_libelle: item.journal_libelle || null,
-
+                      journal_taux_tva: item.journal_taux_tva ?? null,
                       lignes: []
                   };
               }
@@ -858,6 +904,7 @@ const generateAnnexeDeclarationAuto = async (req, res) => {
               acc[item.id_ecriture].lignes.push({
                   compte: item.compte,
                   libelle: item.libelle,
+                  libelle_compte: item.libelle_compte,
                   debit: item.debit,
                   credit: item.credit,
                   id_numcpt: item.id_numcpt,
@@ -866,272 +913,13 @@ const generateAnnexeDeclarationAuto = async (req, res) => {
               });
 
               return acc;
-          }, {}
-          )
-      )
-
-      console.log('[ANNEXE][GEN] start', { compte: id_compte, dossier: id_dossier, exo: id_exercice, mois, annee });
-      console.log('[ANNEXE][GEN] groupedData', { groups: groupedData.length });
-      // return res.json(groupedData)
-
-      const result = await Promise.all(
-          groupedData.map(async (group) => {
-
-            let dossierplanComptableData = null;
-            
-              
-            const ligne401 = group.lignes.find(l => l.compte?.startsWith("401"));
-            const ligne4456 = group.lignes.find(l => l.compte?.startsWith("4456"));
-            const ligne4457 = group.lignes.find(l => l.compte?.startsWith("4457"));
-            const ligne411 = group.lignes.find(l => l.compte?.startsWith("411"));
-            // 512: détecter soit par compte 512, soit par journal BANQUE/BQ
-            let ligne512 = group.lignes.find(l => l.compte.startsWith('512'));
-            // if (!ligne512) {
-            //   // si le groupe est de type BANQUE ou que certaines lignes portent journal 'BQ'
-            //   if (group.journal_type === 'BANQUE') {
-            //     // fallback: choisir la ligne avec le plus grand montant absolu comme proxy de flux bancaire
-            //     ligne512 = [...group.lignes].sort((a, b) => (Math.abs((b.debit||0)-(b.credit||0)) - Math.abs((a.debit||0)-(a.credit||0))))[0] || null;
-            //   } else {
-            //     const candidateBQ = group.lignes.find(l => l.journal === 'BQ');
-            //     if (candidateBQ) ligne512 = candidateBQ;
-            //   }
-            // }
-            const ligne53 = group.lignes.find(l => l.compte?.startsWith("53"));
-            
-                          // >>> AJOUTE TON LOG ICI <<<
-              const abs = (x) => Math.abs(Number(x || 0));
-              console.log('[ANNEXE][GROUP]', {
-                id_ecriture: group.id_ecriture,
-                journal: group.journal,
-                journal_type: group.journal_type,
-                lignes: group.lignes?.length || 0,
-                has512: Boolean(ligne512),
-                compte_512: ligne512?.compte || null,
-                m512: ligne512 ? (Number(ligne512.debit||0) - Number(ligne512.credit||0)) : null,
-                hasTVA4456: Boolean(ligne4456),
-                hasTVA4457: Boolean(ligne4457),
-              });
-            // Priorité: utiliser la ligne TVA (4456 ou 4457) pour id_numcpt
-            const ligneTVA = ligne4456 || ligne4457;
-            if (ligneTVA) {
-              dossierplanComptableData = await dossierplancomptables.findByPk(ligneTVA.id_numcpt);
-            } else if (ligne401) {
-              dossierplanComptableData = await dossierplancomptables.findByPk(ligne401.id_numcpt);
-            } else if (ligne411) {
-              dossierplanComptableData = await dossierplancomptables.findByPk(ligne411.id_numcpt);
-            } else if (ligne512) {
-              dossierplanComptableData = await dossierplancomptables.findByPk(ligne512.id_numcpt);
-            } else if (ligne53) {
-              dossierplanComptableData = await dossierplancomptables.findByPk(ligne53.id_numcpt);
-            }
-
-           // BANQUE si type BANQUE OU présence de 512
-            const isBanque = (group.journal_type === 'BANQUE') || Boolean(ligne512);
-
-            // Sources par défaut depuis le plan comptable
-            const src_nif_default = dossierplanComptableData?.nif || '';
-            const src_stat_default = dossierplanComptableData?.statistique || '';
-            const src_adresse_default = dossierplanComptableData?.adresse || '';
-
-            // ACHAT/VENTE: raison sociale = libelle du plan comptable (TVA si dispo)
-            // Si libelle du PC est vide, fallback sur le libellé de l’écriture pour ne pas laisser “ - ”
-            const pc_libelle = dossierplanComptableData?.libelle || '';
-            const src_rs_default = pc_libelle || group.libelle || '';
-
-            // Si BANQUE: privilégier les infos venant du journal (codejournals)
-            const src_nif = isBanque ? (group.journal_nif ?? src_nif_default) : src_nif_default;
-            const src_stat = isBanque ? (group.journal_stat ?? src_stat_default) : src_stat_default;
-            const src_adresse = isBanque ? (group.journal_adresse ?? src_adresse_default) : src_adresse_default;
-
-            // Raison sociale:
-            // - BANQUE: libellé du journal (nom de la banque)
-            // - Autres (ACHAT/VENTE): libellé du PC, sinon fallback libellé d’écriture
-            const src_rs = isBanque
-              ? ((group.journal_libelle || src_rs_default) || ' - ')
-              : (src_rs_default || ' - ');
-
- 
-              if (!isBanque) {
-                console.log('[TVA][DEBUG PC]', {
-                  id_ecriture: group.id_ecriture,
-                  pc_id: dossierplanComptableData?.id,
-                  pc_compte: dossierplanComptableData?.compte,
-                  pc_libelle: dossierplanComptableData?.libelle,
-                  group_libelle: group.libelle
-                });
-              }
-
-
-              let montant_ttc = 0;
-              let montant_ht = 0;
-              let montant_tva = 0;
-              // Debug logs
-              console.log("=== DEBUG GROUP ===");
-              console.log("group.journal:", group.journal);
-              console.log("group.journal_type:", group.journal_type);
-              console.log("group.num_facture:", group.num_facture);
-              console.log("ligne4456:", group.lignes.find(l => l.compte?.startsWith("4456")));
-              console.log("ligne401:", group.lignes.find(l => l.compte?.startsWith("401")));
-              console.log("ligne4457:", group.lignes.find(l => l.compte?.startsWith("4457")));
-              console.log("ligne411:", group.lignes.find(l => l.compte?.startsWith("411")));
-              console.log("ligne512:", group.lignes.find(l => l.compte?.startsWith("512")));
-              console.log("ligne53:", group.lignes.find(l => l.compte?.startsWith("53")));
- 
-
-              // Logique ACHAT (type ACHAT ou code AC/HA) + 4456 + 401
-              if (
-                group.journal_type === "ACHAT"
-              ) {
-
-                if (ligne401 && ligne4456) {
-                  montant_ttc = (Number(ligne401?.credit) || 0) - (Number(ligne401?.debit) || 0);
-                  montant_tva = (Number(ligne4456?.debit) || 0) - (Number(ligne4456?.credit) || 0);
-                  montant_ht = montant_ttc - montant_tva;
-                }
-                if (ligne411 && ligne4457) {
-                  montant_ttc = (Number(ligne411?.debit) || 0) - (Number(ligne411?.credit) || 0);
-                  montant_tva = (Number(ligne4457?.credit) || 0) - (Number(ligne4457?.debit) || 0);
-                  montant_ht = montant_ttc - montant_tva;
-                }
-
-              }
-
-              // Logique VENTE (type VENTE ou code VTE) + 4457 + 411
-              if (
-                group.journal_type === "VENTE"
-              ) {
-                const ligne411 = group.lignes.find(l => l.compte?.startsWith("411"));
-                const ligne4457 = group.lignes.find(l => l.compte?.startsWith("4457"));
-                if (ligne411 && ligne4457) {
-                  montant_ttc = (Number(ligne411?.debit) || 0) - (Number(ligne411?.credit) || 0);
-                  montant_tva = (Number(ligne4457?.credit) || 0) - (Number(ligne4457?.debit) || 0);
-                  montant_ht = montant_ttc - montant_tva;
-                }
-                if (ligne401 && ligne4456) {
-                  montant_ttc = (Number(ligne401?.credit) || 0) - (Number(ligne401?.debit) || 0);
-                  montant_tva = (Number(ligne4456?.debit) || 0) - (Number(ligne4456?.credit) || 0);
-                  montant_ht = montant_ttc - montant_tva;
-                }
-              }
-
-              if(
-                group.journal_type === "BANQUE"
-              ){
-                const ligne512 = group.lignes.find(l => l.compte?.startsWith("512"));
-                const ligne4456 = group.lignes.find(l => l.compte?.startsWith("4456"));
-                if(ligne512 && ligne4456){
-                  montant_ttc = (Number(ligne512?.credit) || 0) - (Number(ligne512?.debit) || 0);
-                  montant_tva = (Number(ligne4456?.debit) || 0) - (Number(ligne4456?.credit) || 0);
-                  montant_ht = montant_ttc - montant_tva;
-                  console.log("BANQUE", montant_ttc, montant_tva, montant_ht)
-                }
-              }
-              if(
-                group.journal_type === "CAISSE"
-              ){
-                const ligne53 = group.lignes.find(l => l.compte?.startsWith("53"));
-                const ligne4456 = group.lignes.find(l => l.compte?.startsWith("4456"));
-                const ligne4457 = group.lignes.find(l => l.compte?.startsWith("4457"));
-                if(ligne53 && ligne4456){
-                  // montant_ttc = (Number(ligne53?.credit) || 0) - (Number(ligne53?.debit) || 0);
-                  montant_tva = (Number(ligne4456?.debit) || 0) - (Number(ligne4456?.credit) || 0);
-                  // montant_ht = montant_ttc - montant_tva;
-                  console.log("CAISSE", montant_ttc, montant_tva, montant_ht)
-                }
-                if(ligne53 && ligne4457){
-                  // montant_ttc = (Number(ligne53?.credit) || 0) - (Number(ligne53?.debit) || 0);
-                  montant_tva = (Number(ligne4457?.credit) || 0) - (Number(ligne4457?.debit) || 0);
-                  // montant_ht = montant_ttc - montant_tva;
-                  console.log("CAISSE", montant_ttc, montant_tva, montant_ht)
-                }
-              }
-
-              // Déterminer Collecte (C) ou Déductible (D) selon le compte TVA
-              const is4456 = group.lignes.some(l => l.compte?.startsWith("4456"));
-              const is4457 = group.lignes.some(l => l.compte?.startsWith("4457"));
-              const collecteDeductible = is4456 ? 'D' : (is4457 ? 'C' : null);
-
-              // Déterminer Local/Etranger à partir de typetier
-              const typeTierValue = (dossierplanComptableData?.typetier || '').toString().trim().toLowerCase();
-              const localEtranger = typeTierValue === 'etranger' ? 'E' : 'L';
-
-              // Déterminer s'il y a des anomalies (nif ou stat vide/null)
-              const nif = dossierplanComptableData?.nif || '';
-              const stat = dossierplanComptableData?.statistique || '';
-              const anomalies = !nif || !stat || nif.trim() === '' || stat.trim() === '';
-
-              return {
-                  id_compte: id_compte,
-                  id_dossier: id_dossier,
-                  id_exercice: id_exercice,
-                  // Propager l'ID du compte TVA (4456/4457) si dispo
-                  id_numcpt: (ligneTVA?.id_numcpt) || dossierplanComptableData?.id || null,
-                  id_ecriture: group.id_ecriture,
-                  collecte_deductible: collecteDeductible,
-                  local_etranger: localEtranger,
-                  nif: src_nif || ' - ',
-                  raison_sociale: src_rs || ' - ',
-                  stat: src_stat || ' - ',
-                  adresse: src_adresse || ' - ',
-                  montant_ht: montant_ht,
-                  montant_tva: montant_tva,
-                  montant_ttc: montant_ttc,
-                  reference_facture: group.num_facture || ' - ',
-                  date_facture: group.dateecriture,
-                  nature: dossierplanComptableData?.nature || ' - ',
-                  libelle_operation: group.libelle || ' - ',
-                  date_paiement: group.dateecriture,
-                  mois: mois,
-                  annee: annee,
-                  observation: group.observation || ' - ',
-                  n_dau: group.n_dau || ' - ',
-                  ligne_formulaire: group.ligne_formulaire || ' - ',
-                  anomalies: anomalies,
-                  commentaire: null, // À remplir plus tard
-                  code_tva: null, // À remplir plus tard
-                  // Informations 512 (banque) pour faciliter l'analyse côté UI/exports
-                  compte_512: ligne512?.compte || null,
-                  montant_512: ligne512 ? ((Number(ligne512.debit || 0)) - (Number(ligne512.credit || 0))) : null,
-                  // Debug info temporaire
-                  debug: {
-                    journal: group.journal,
-                    journal_type: group.journal_type,
-                    montant_ttc: montant_ttc,
-                    montant_ht: montant_ht,
-                    montant_tva: montant_tva,
-                    condition_achat: Boolean(
-                      (group.journal_type === "ACHAT") &&
-                      group.lignes.some(l => l.compte?.startsWith("401")) &&
-                      group.lignes.some(l => l.compte?.startsWith("4456"))
-
-
-                    ),
-                    condition_vente: Boolean(
-                      (group.journal_type === "VENTE") &&
-                      group.lignes.some(l => l.compte?.startsWith("411")) &&
-                      group.lignes.some(l => l.compte?.startsWith("4457"))
-                    ),
-                    condition_banque: Boolean(
-                      (group.journal_type === "BANQUE") &&
-                      group.lignes.some(l => l.compte?.startsWith("512")) &&
-                      group.lignes.some(l => l.compte?.startsWith("4456"))
-                    ),
-                    condition_caisse: Boolean(
-                      (group.journal_type === "CAISSE") &&
-                      group.lignes.some(l => l.compte?.startsWith("53")) &&
-                      group.lignes.some(l => l.compte?.startsWith("4456"))
-                    ),
-                  }
-            };
-          })
+          }, {})
       );
 
-      // Avant insert, compléter code_tva et commentaire pour persister en base
-      // Précharger mapping paramtva (id_cptcompta -> type) et listecodetva (id -> code)
       const paramRows = await paramtvas.findAll({ where: { id_dossier } });
       const codeRows = await listecodetvas.findAll();
       const mapCompteToType = new Map((paramRows || []).map(p => [Number(p.id_cptcompta), Number(p.type)]));
-      const mapTypeToCode = new Map((codeRows || []).map(c => [Number(c.id), c.code]));
+      const mapTypeToCodeNature = new Map((codeRows || []).map(c => [Number(c.id), { code: c.code, nature: c.nature }]));
 
       const isEmpty = (v) => {
         const s = String(v ?? '').trim();
@@ -1140,123 +928,272 @@ const generateAnnexeDeclarationAuto = async (req, res) => {
         return low === 'n/a' || low === 'na' || low === 'null' || low === 'undefined' || low === '-';
       };
 
-      result.forEach((row) => {
-        // code_tva
-        if (!row.code_tva && row.id_numcpt) {
-          const typeId = mapCompteToType.get(Number(row.id_numcpt));
-          if (typeId) {
-            const code = mapTypeToCode.get(Number(typeId));
-            if (code) row.code_tva = code;
-          }
-        }
-        // commentaire + anomalies
-        const notes = [];
-        if (isEmpty(row.nif)) notes.push('NIF vide');
-        if (isEmpty(row.stat)) notes.push('STAT vide');
-        if (isEmpty(row.raison_sociale)) notes.push('Raison sociale vide');
-        if (isEmpty(row.adresse)) notes.push('Adresse vide');
-        if (isEmpty(row.reference_facture)) notes.push('Référence facture vide');
-        if (isEmpty(row.date_facture)) notes.push('Date facture vide');
-        if (!row.code_tva) notes.push('Code TVA introuvable pour le compte');
-        row.commentaire = notes.join(', ');
-        row.anomalies = notes.length > 0;
-      });
+      const safeNum = (v) => {
+        const n = Number(v);
+        return Number.isFinite(n) ? n : 0;
+      };
+      const net = (l) => safeNum(l?.debit) - safeNum(l?.credit);
 
-      // return res.json(result)
+      const computed = await Promise.all(
+        groupedData.map(async (group) => {
+          const lignes = Array.isArray(group.lignes) ? group.lignes : [];
+
+          const ligne401 = lignes.find(l => (l.compte || '').toString().startsWith('401'));
+          const ligne411 = lignes.find(l => (l.compte || '').toString().startsWith('411'));
+          const ligne512 = lignes.find(l => (l.compte || '').toString().startsWith('512'));
+          const ligne53 = lignes.find(l => (l.compte || '').toString().startsWith('53'));
+
+          const lignesTiers = lignes.filter(l => {
+            const c = (l.compte || '').toString();
+            return c.startsWith('4') && !c.startsWith('445');
+          });
+          const ligneTiers = ligne411 || ligne401 || lignesTiers[0] || null;
+          let dossierplanComptableTiers = null;
+          if (ligneTiers?.id_numcpt) {
+            dossierplanComptableTiers = await dossierplancomptables.findByPk(ligneTiers.id_numcpt);
+          }
+
+          const ligneTVA = lignes.find(l => (l.compte || '').toString().startsWith('4456'))
+            || lignes.find(l => (l.compte || '').toString().startsWith('4457'))
+            || lignes.find(l => (l.compte || '').toString().startsWith('4458'))
+            || null;
+
+          let dossierplanComptableData = null;
+          if (ligneTVA?.id_numcpt) {
+            dossierplanComptableData = await dossierplancomptables.findByPk(ligneTVA.id_numcpt);
+          } else if (ligne401?.id_numcpt) {
+            dossierplanComptableData = await dossierplancomptables.findByPk(ligne401.id_numcpt);
+          } else if (ligne411?.id_numcpt) {
+            dossierplanComptableData = await dossierplancomptables.findByPk(ligne411.id_numcpt);
+          } else if (ligne512?.id_numcpt) {
+            dossierplanComptableData = await dossierplancomptables.findByPk(ligne512.id_numcpt);
+          } else if (ligne53?.id_numcpt) {
+            dossierplanComptableData = await dossierplancomptables.findByPk(ligne53.id_numcpt);
+          }
+
+          const notesAlgo = [];
+
+          let montant_ttc = 0;
+          let montant_ht = 0;
+          const montant_tva_d_minus_c = ligneTVA ? net(ligneTVA) : 0;
+          const montant_tva_c_minus_d = ligneTVA ? (safeNum(ligneTVA.credit) - safeNum(ligneTVA.debit)) : 0;
+          let montant_tva = montant_tva_d_minus_c;
+
+          const tvaTypeId = ligneTVA?.id_numcpt ? mapCompteToType.get(Number(ligneTVA.id_numcpt)) : undefined;
+          const tvaMeta = tvaTypeId ? mapTypeToCodeNature.get(Number(tvaTypeId)) : null;
+          const code_tva = tvaMeta?.code || null;
+          const nature_code_tva = (tvaMeta?.nature || '').toString().trim().toUpperCase();
+          const isDeductibleCode = nature_code_tva === 'DED';
+          const isCollecteeCode = nature_code_tva === 'CA' || nature_code_tva === 'COL' || nature_code_tva === 'COLLECTEE';
+
+          const journalTypeUpper = String(group.journal_type || '').toUpperCase();
+
+          if (isDeductibleCode) {
+            if (journalTypeUpper === 'ACHAT') {
+              if (ligne401) {
+                montant_ttc = safeNum(ligne401.credit) - safeNum(ligne401.debit);
+                montant_ht = montant_ttc - montant_tva;
+              } else {
+                montant_ht = 0;
+                notesAlgo.push('ligne non associée à un tier');
+              }
+            } else if (['VENTE', 'CAISSE', 'OD', 'ANOUVEAU'].includes(journalTypeUpper)) {
+              montant_ht = 0;
+              notesAlgo.push('ligne non associée à un tier');
+            } else if (journalTypeUpper === 'BANQUE') {
+              const tauxTVA = safeNum(group.journal_taux_tva);
+              if (!tauxTVA) {
+                montant_ht = 0;
+                notesAlgo.push('taux de TVA non paramétré dans le tableau code journal pour les codes journaux de type BANQUE');
+              } else {
+                montant_ht = montant_tva / tauxTVA;
+              }
+            }
+          } else if (isCollecteeCode) {
+            montant_tva = montant_tva_c_minus_d;
+            if (journalTypeUpper === 'VENTE') {
+              if (ligne411) {
+                montant_ttc = safeNum(ligne411.debit) - safeNum(ligne411.credit);
+                montant_ht = montant_ttc - montant_tva;
+              } else {
+                montant_ht = 0;
+                notesAlgo.push('ligne non associée à un tier');
+              }
+            } else if (['ACHAT', 'CAISSE', 'OD', 'ANOUVEAU', 'BANQUE'].includes(journalTypeUpper)) {
+              montant_ht = 0;
+              notesAlgo.push('ligne non associée à un tier');
+            }
+          } else {
+            // Nature non reconnue: conserver un comportement neutre
+            montant_tva = montant_tva_d_minus_c;
+          }
+
+          const is4456 = lignes.some(l => (l.compte || '').toString().startsWith('4456'));
+          const is4457 = lignes.some(l => (l.compte || '').toString().startsWith('4457'));
+          const collecteDeductible = is4456 ? 'D' : (is4457 ? 'C' : null);
+
+          const typeTierValue = (dossierplanComptableData?.typetier || '').toString().trim().toLowerCase();
+          const localEtranger = typeTierValue === 'etranger' ? 'E' : 'L';
+
+          const isBanque = journalTypeUpper === 'BANQUE' || Boolean(ligne512);
+          const tier_nif = dossierplanComptableTiers?.nif || '';
+          const tier_stat = dossierplanComptableTiers?.statistique || '';
+          const tier_adresse = dossierplanComptableTiers?.adresse || dossierplanComptableTiers?.adressesansnif || dossierplanComptableTiers?.adresseetranger || '';
+          const tier_rs = dossierplanComptableTiers?.libelle || '';
+
+          const tva_nif = dossierplanComptableData?.nif || '';
+          const tva_stat = dossierplanComptableData?.statistique || '';
+          const tva_adresse = dossierplanComptableData?.adresse || dossierplanComptableData?.adressesansnif || dossierplanComptableData?.adresseetranger || '';
+          const tva_rs = (dossierplanComptableData?.libelle || '') || (group.libelle || '');
+
+          const src_nif = isBanque ? (group.journal_nif ?? tier_nif ?? tva_nif) : (tier_nif || tva_nif);
+          const src_stat = isBanque ? (group.journal_stat ?? tier_stat ?? tva_stat) : (tier_stat || tva_stat);
+          const src_adresse = isBanque ? (group.journal_adresse ?? tier_adresse ?? tva_adresse) : (tier_adresse || tva_adresse);
+          const isAllowedRsType = ['ACHAT', 'VENTE', 'BANQUE'].includes(journalTypeUpper);
+          const src_rs = isAllowedRsType
+            ? (isBanque ? ((group.journal_libelle || tier_rs || tva_rs) || ' - ') : ((tier_rs || tva_rs) || ' - '))
+            : '';
+
+          const baseMissing = [];
+          if (isEmpty(src_nif)) baseMissing.push('NIF vide');
+          if (isEmpty(src_stat)) baseMissing.push('STAT vide');
+          if (isAllowedRsType && isEmpty(src_rs)) baseMissing.push('Raison sociale vide');
+          if (isEmpty(src_adresse)) baseMissing.push('Adresse vide');
+          if (isEmpty(group.num_facture)) baseMissing.push('Référence facture vide');
+          if (!group.dateecriture) baseMissing.push('Date facture vide');
+          if (!code_tva) baseMissing.push('Code TVA introuvable pour le compte');
+
+          const commentaire = [...notesAlgo, ...baseMissing].filter(Boolean).join(', ');
+          const anomalies = (notesAlgo.length + baseMissing.length) > 0;
+
+          const row = {
+              id_compte: id_compte,
+              id_dossier: id_dossier,
+              id_exercice: id_exercice,
+              id_numcpt: (ligneTVA?.id_numcpt) || dossierplanComptableData?.id || null,
+              id_ecriture: group.id_ecriture,
+
+              collecte_deductible: collecteDeductible,
+              local_etranger: localEtranger,
+              nif: src_nif || ' - ',
+              raison_sociale: isAllowedRsType ? (src_rs || ' - ') : '',
+              stat: src_stat || ' - ',
+              adresse: src_adresse || ' - ',
+              montant_ht: montant_ht,
+              montant_tva: montant_tva,
+              montant_ttc: montant_ttc,
+              reference_facture: group.num_facture || ' - ',
+              date_facture: group.dateecriture,
+              nature: dossierplanComptableData?.nature || ' - ',
+              libelle_operation: '',
+              date_paiement: group.dateecriture,
+              mois: mois,
+              annee: annee,
+              observation: group.observation || ' - ',
+              n_dau: group.n_dau || ' - ',
+              ligne_formulaire: group.ligne_formulaire || ' - ',
+              anomalies: anomalies,
+              commentaire: commentaire || null,
+              code_tva: code_tva,
+              compte_512: ligne512?.compte || null,
+              montant_512: ligne512 ? net(ligne512) : null,
+          };
+
+          const tierDebug = {
+            id_ecriture: group.id_ecriture,
+            journal_type: journalTypeUpper,
+            tiers_compte: ligneTiers?.compte || null,
+            tiers_libelle_ligne: ligneTiers?.libelle_compte || ligneTiers?.libelle || null,
+            tiers_id_numcpt: ligneTiers?.id_numcpt || null,
+            tiers_libelle_pc: dossierplanComptableTiers?.libelle ?? null,
+            tiers_nif: dossierplanComptableTiers?.nif ?? null,
+            tiers_stat: dossierplanComptableTiers?.statistique ?? null,
+            tiers_adresse: (dossierplanComptableTiers?.adresse ?? dossierplanComptableTiers?.adressesansnif ?? dossierplanComptableTiers?.adresseetranger) ?? null,
+            tiers_typetier: dossierplanComptableTiers?.typetier ?? null,
+            tiers_pc: dossierplanComptableTiers ? dossierplanComptableTiers.toJSON() : null,
+            tva_compte: ligneTVA?.compte || null,
+            tva_id_numcpt: ligneTVA?.id_numcpt || null,
+            montant_tva: montant_tva,
+            montant_ht: montant_ht,
+            montant_ttc: montant_ttc,
+            anomalies: anomalies,
+            commentaire: commentaire || null,
+          };
+
+          return { row, tierDebug };
+        })
+      );
+
+      const result = computed.map(x => x.row);
+      const tierDebugRows = computed.map(x => x.tierDebug);
+
+      console.log('[ANNEXE][GEN] tiers info (debug)');
+      console.table(
+        tierDebugRows.map(r => ({
+          id_ecriture: r.id_ecriture,
+          journal_type: r.journal_type,
+          tiers_compte: r.tiers_compte,
+          tiers_libelle: r.tiers_libelle_pc || r.tiers_libelle_ligne,
+          tiers_id_numcpt: r.tiers_id_numcpt,
+          tiers_nif: r.tiers_nif,
+          tiers_stat: r.tiers_stat,
+          tiers_adresse: r.tiers_adresse,
+          tva_compte: r.tva_compte,
+          tva_id_numcpt: r.tva_id_numcpt,
+          montant_tva: r.montant_tva,
+          montant_ht: r.montant_ht,
+          montant_ttc: r.montant_ttc,
+          anomalies: r.anomalies,
+        }))
+      );
+      // Si tu veux tout voir (objet complet), décommente la ligne ci-dessous
+      // console.dir(tierDebugRows, { depth: null });
 
       const idsToInsert = result.map(r => r.id_ecriture);
-
-      // Vérifier les ID existants avant l'insert
       const existingIds = new Set(
           (await tva_annexes.findAll({
               where: { id_ecriture: idsToInsert },
+
               attributes: ['id_ecriture']
           })).map(r => r.id_ecriture)
       );
 
-      console.log('[ANNEXE][GEN] result size', result.length);
-      console.table(
-        result.slice(0, 10).map(r => ({
-          id_ecriture: r.id_ecriture,
-          compte_512: r.compte_512,
-          montant_512: r.montant_512,
-          montant_tva: r.montant_tva,
-          code_tva: r.code_tva,
-          anomalies: r.anomalies
-        }))
-      );
       const isiRows = await tva_annexes.bulkCreate(result, {
           updateOnDuplicate: [
-              'montant_ht', 'montant_tva', 'montant_ttc', 'reference_facture', 'date_facture', 'nature', 'libelle_operation', 'date_paiement', 'observation', 'n_dau', 'ligne_formulaire', 'anomalies', 'commentaire', 'code_tva'
+              'montant_ht', 'montant_tva', 'montant_ttc', 'reference_facture', 'date_facture', 'nature', 'libelle_operation', 'date_paiement', 'observation', 'n_dau', 'ligne_formulaire', 'anomalies', 'commentaire', 'code_tva', 'nif', 'stat', 'adresse', 'raison_sociale'
           ],
           returning: true
       });
 
       const created = isiRows.filter(r => !existingIds.has(r.id_ecriture)).length;
       const updated = isiRows.length - created;
-
       let message = '';
-
       if (created === 0 && updated === 0) {
-          message = "Aucune TVA à générer";
+          message = 'Aucune TVA à générer';
       } else if (created > 0 && updated === 0) {
-          message = `${created} TVA ${pluralize(created, "créée")} avec succès`;
+          message = `${created} TVA ${pluralize(created, 'créée')} avec succès`;
       } else if (updated > 0 && created === 0) {
-          message = `${updated} TVA ${pluralize(updated, "modifiée")} avec succès`;
+          message = `${updated} TVA ${pluralize(updated, 'modifiée')} avec succès`;
       } else {
-          message = `${created} TVA ${pluralize(created, "créée")} et ${updated} TVA ${pluralize(updated, "modifiée")} avec succès`;
+          message = `${created} TVA ${pluralize(created, 'créée')} et ${updated} TVA ${pluralize(updated, 'modifiée')} avec succès`;
       }
 
-              res.json({
-            state: true,
-            message,
-            data: isiRows
-        });
-
-      // const existingIds = (await isis.findAll({
-      //     where: {
-      //         id_ecriture: result.map(r => r.id_ecriture)
-      //     },
-      //     attributes: ['id_ecriture']
-      // })).map(r => r.id_ecriture);
-
-      // const toCreate = result.filter(r => !existingIds.includes(r.id_ecriture));
-      // const toUpdate = result.filter(r => existingIds.includes(r.id_ecriture));
-
-      // await isis.bulkCreate(toCreate);
-
-      // for (const row of toUpdate) {
-      //     await isis.update(
-      //         {
-      //             nom: row.nom,
-      //             province: row.province,
-      //             region: row.region,
-      //             district: row.district,
-      //             commune: row.commune,
-      //             fokontany: row.fokontany,
-      //             cin: row.cin,
-      //             montant_isi: row.montant_isi,
-      //             montant_transaction: row.montant_transaction,
-      //             anomalie: row.anomalie
-      //         },
-      //         { where: { id_ecriture: row.id_ecriture } }
-      //     );
-      // }
-
-      // res.json({ state: true, created: toCreate.length, updated: toUpdate.length });
-
-      // return res.json({ groupedData, result });
-      console.log('[ANNEXE][GEN] created/updated', { created, updated, total: isiRows.length });
+      return res.json({
+          state: true,
+          message,
+          data: isiRows
+      });
 
   } catch (error) {
       console.error(error);
-      return res.status(500).json({ message: "Erreur serveur", state: false, error: error.message });
+      return res.status(500).json({ message: 'Erreur serveur', state: false, error: error.message });
   }
 }
 
 const generateTvaAutoDetail = async (req, res) => {
   try {
       const { id_dossier, id_compte, id_exercice, decltvaannee, decltvamois } = req.body;
+
       if (!id_dossier || !id_compte || !id_exercice || !decltvaannee || !decltvamois) {
           return res.status(400).json({ state: false, message: 'Données manquantes' });
       }

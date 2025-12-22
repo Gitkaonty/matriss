@@ -98,12 +98,18 @@ const exportIrsaTableExcel = async (id_compte, id_dossier, id_exercice, mois, an
     sousTitre.height = 70;
 
 
-    // Header row (row 4)
+    // Header row (row 4) : texte à gauche, montants à droite, dates à gauche
     const headerRow = sheetIrsa.getRow(4);
-    headerRow.eachCell(cell => {
+    headerRow.eachCell((cell, colNumber) => {
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A5276' } };
         cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        if ([1, 2, 3, 4, 5, 6, 7, 21, 22].includes(colNumber)) {
+            // Colonnes texte / dates / mois / année
+            cell.alignment = { horizontal: 'left', vertical: 'middle' };
+        } else {
+            // Colonnes de montants
+            cell.alignment = { horizontal: 'right', vertical: 'middle' };
+        }
     });
 
     // Fonction formatage date
@@ -157,12 +163,17 @@ const exportIrsaTableExcel = async (id_compte, id_dossier, id_exercice, mois, an
             totals[i] += dataRow.getCell(i + 8).value || 0;
         }
 
-        // Format des montants
-        for (let i = 8; i <= 20; i++) {
-            const cell = dataRow.getCell(i);
-            cell.numFmt = '#,##0.00';
-            cell.alignment = { horizontal: 'right', vertical: 'middle' };
-        }
+        // Alignement des cellules : texte/dates à gauche, montants à droite
+        dataRow.eachCell((cell, colNumber) => {
+            if (colNumber >= 8 && colNumber <= 20) {
+                // Colonnes montants
+                cell.numFmt = '#,##0.00';
+                cell.alignment = { horizontal: 'right', vertical: 'middle' };
+            } else {
+                // Colonnes texte / dates / mois / année
+                cell.alignment = { horizontal: 'left', vertical: 'middle' };
+            }
+        });
     });
 
     // Ligne Total

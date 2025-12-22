@@ -70,7 +70,17 @@ exports.create = async (req, res) => {
       msg: 'Une erreur est survenue au moment du traitement.',
     }
 
-    if (!nom || !prenom || !id_fonction || !id_classe || !date_entree || !date_sortie) {
+    const normalizeDate = (value) => {
+      if (!value || value === 'Invalid date') return null;
+      const d = new Date(value);
+      if (isNaN(d.getTime())) return null;
+      return value;
+    };
+
+    const dateEntreeNorm = normalizeDate(date_entree);
+    const dateSortieNorm = normalizeDate(date_sortie);
+
+    if (!nom || !prenom || !id_fonction || !id_classe || !dateEntreeNorm) {
       return res.json({ state: false, msg: 'Champs obligatoires manquants' });
     }
 
@@ -102,8 +112,8 @@ exports.create = async (req, res) => {
         matricule,
         id_fonction,
         id_classe,
-        date_entree,
-        date_sortie,
+        date_entree: dateEntreeNorm,
+        date_sortie: dateSortieNorm,
         actif,
         numero_cnaps,
         cin_ou_carte_resident,
@@ -152,8 +162,19 @@ exports.update = async (req, res) => {
   try {
     const id = req.params.id;
     const { nom, prenom, matricule, id_fonction, id_classe, date_entree, date_sortie, actif, numero_cnaps, cin_ou_carte_resident, nombre_enfants_charge } = req.body;
+
+    const normalizeDate = (value) => {
+      if (!value || value === 'Invalid date') return null;
+      const d = new Date(value);
+      if (isNaN(d.getTime())) return null;
+      return value;
+    };
+
+    const dateEntreeNorm = normalizeDate(date_entree);
+    const dateSortieNorm = normalizeDate(date_sortie);
+
     const [nbUpdated] = await Personnel.update(
-      { nom, prenom, matricule, id_fonction, id_classe, date_entree, date_sortie, actif, numero_cnaps, cin_ou_carte_resident, nombre_enfants_charge },
+      { nom, prenom, matricule, id_fonction, id_classe, date_entree: dateEntreeNorm, date_sortie: dateSortieNorm, actif, numero_cnaps, cin_ou_carte_resident, nombre_enfants_charge },
       { where: { id } }
     );
     if (nbUpdated) {

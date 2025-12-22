@@ -193,6 +193,11 @@ module.exports = (sequelize, DataTypes) => {
         compteisi: {
             type: DataTypes.STRING(30),
             allowNull: true
+        },
+        immo_amort_base_jours: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 365
         }
     }, { timestamps: true },)
     return dossiers

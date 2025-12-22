@@ -562,7 +562,16 @@ export default function ParamPlanComptable() {
                     listePc = listePc.filter((row) => row.compte === compte);
                 }
 
-                setPc(listePc);
+                // Déduplication par numéro de compte pour éviter les doublons visuels
+                const unique = Object.values(
+                    (Array.isArray(listePc) ? listePc : []).reduce((acc, r) => {
+                        const k = String(r.compte || '');
+                        if (!acc[k]) acc[k] = r;
+                        return acc;
+                    }, {})
+                );
+
+                setPc(unique);
             } else {
                 toast.error(resData.msg);
             }
@@ -795,7 +804,6 @@ export default function ParamPlanComptable() {
                                 }}
                             />
                         </Stack>
-
                     </Stack>
                 </TabPanel>
             </TabContext>

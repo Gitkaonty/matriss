@@ -3,8 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Typography, Stack, Box, Tab, Button, TextField, Tooltip, IconButton } from '@mui/material';
 import Checkbox from '@mui/material/Checkbox';
 import { CheckCircle, Close } from '@mui/icons-material';
-import { FaFilePdf } from "react-icons/fa6";
-import { BsFillFileEarmarkExcelFill } from "react-icons/bs";
 import { TabContext, TabList, TabPanel } from '@mui/lab';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
@@ -12,7 +10,7 @@ import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import { DataGrid, GridRowModes } from '@mui/x-data-grid';
 import { init } from '../../../../../init';
-import axios from '../../../../../config/axios';
+import axios, { URL as API_BASE_URL } from '../../../../../config/axios';
 import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFile';
 import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
 import PopupConfirmDelete from '../../../componentsTools/popupConfirmDelete';
@@ -22,7 +20,7 @@ import useAuth from '../../../../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
 
 import { TbPlaylistAdd } from 'react-icons/tb';
-import { FaRegPenToSquare } from 'react-icons/fa6';
+import { FaRegPenToSquare, FaFilePdf, FaFileExcel } from 'react-icons/fa6';
 import { TfiSave } from 'react-icons/tfi';
 import { VscClose } from 'react-icons/vsc';
 import { IoMdTrash } from 'react-icons/io';
@@ -41,8 +39,6 @@ const keepTotalBottomComparator = (v1, v2, cellParams1, cellParams2) => {
   const s2 = v2 == null ? '' : String(v2);
   return s1.localeCompare(s2);
 };
-
-// ---- Export helpers moved inside component ----
 
 // Add days to a DATEONLY string (YYYY-MM-DD) in UTC to avoid timezone shifts
 const addDaysDateOnly = (dateStr, days) => {
@@ -128,96 +124,9 @@ function RapprochementsBancaires() {
   const [openDialogDeleteRappro, setOpenDialogDeleteRappro] = useState(false);
   const [idToDelete, setIdToDelete] = useState(null);
 
-  // ---- Export helpers (inside component scope) ----
-  const downloadBlob = (blob, filename) => {
-    try {
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-    } catch { }
-  };
-
-  const exportRapproPDF = async (row) => {
-    try {
-      if (!row) { toast.error('Aucune ligne'); return; }
-      if (!row.id || isNaN(Number(row.id))) { toast('Sauvegardez la ligne avant export', { icon: 'ℹ️' }); return; }
-      const pcId = (pcSelected && pcSelected.id) ? pcSelected.id : row?.pc_id;
-      if (!pcId) { toast.error('Sélectionner un compte 512'); return; }
-      // sécuriser fileId et exerciceId (file depuis state ou sessionStorage)
-      const storedFile = sessionStorage.getItem('fileId');
-      const fid = fileId && !isNaN(Number(fileId)) ? Number(fileId) : (storedFile ? Number(storedFile) || 0 : 0);
-      const exoId = selectedExerciceId && !isNaN(Number(selectedExerciceId)) ? Number(selectedExerciceId) : 0;
-      if (!fid) { toast.error('Dossier introuvable pour export'); return; }
-      if (!exoId) { toast.error('Sélectionner un exercice'); return; }
-      const params = { fileId: fid, compteId, exerciceId: exoId, pcId, rapproId: row.id };
-      // console.log('[RAPPRO][EXPORT][PARAMS]', params);
-      const res = await axios.get('/administration/traitementSaisie/rapprochements/export/pdf', { params, responseType: 'blob' });
-      downloadBlob(res.data, `Rapprochement_${row.id}.pdf`);
-      toast.success('Export PDF généré');
-    } catch (e) {
-      try { console.error('[RAPPRO][EXPORT][PDF][FRONT]', e); } catch { }
-      try {
-        const resp = e?.response;
-        if (resp && resp.data instanceof Blob) {
-          const text = await resp.data.text();
-          try {
-            const js = JSON.parse(text);
-            toast.error(js?.msg || 'Export PDF échoué');
-            return;
-          } catch {
-            toast.error(text || 'Export PDF échoué');
-            return;
-          }
-        }
-      } catch { }
-      toast.error(e?.response?.data?.msg || 'Export PDF échoué');
-    }
-  };
-
-  const exportRapproExcel = async (row) => {
-    try {
-      if (!row) { toast.error('Aucune ligne'); return; }
-      if (!row.id || isNaN(Number(row.id))) { toast('Sauvegardez la ligne avant export', { icon: 'ℹ️' }); return; }
-      const pcId = (pcSelected && pcSelected.id) ? pcSelected.id : row?.pc_id;
-      if (!pcId) { toast.error('Sélectionner un compte 512'); return; }
-      const storedFile = sessionStorage.getItem('fileId');
-      const fid = fileId && !isNaN(Number(fileId)) ? Number(fileId) : (storedFile ? Number(storedFile) || 0 : 0);
-      const exoId = selectedExerciceId && !isNaN(Number(selectedExerciceId)) ? Number(selectedExerciceId) : 0;
-      if (!fid) { toast.error('Dossier introuvable pour export'); return; }
-      if (!exoId) { toast.error('Sélectionner un exercice'); return; }
-      const params = { fileId: fid, compteId, exerciceId: exoId, pcId, rapproId: row.id };
-      // console.log('[RAPPRO][EXPORT][PARAMS]', params);
-      const res = await axios.get('/administration/traitementSaisie/rapprochements/export/excel', { params, responseType: 'blob' });
-      downloadBlob(res.data, `Rapprochement_${row.id}.xlsx`);
-      toast.success('Export Excel généré');
-    } catch (e) {
-      try { console.error('[RAPPRO][EXPORT][EXCEL][FRONT]', e); } catch { }
-      try {
-        const resp = e?.response;
-        if (resp && resp.data instanceof Blob) {
-          const text = await resp.data.text();
-          try {
-            const js = JSON.parse(text);
-            toast.error(js?.msg || 'Export Excel échoué');
-            return;
-          } catch {
-            toast.error(text || 'Export Excel échoué');
-            return;
-          }
-        }
-      } catch { }
-      toast.error(e?.response?.data?.msg || 'Export Excel échoué');
-    }
-  };
-
   // Toolbar intégrée au DataGrid de droite (au-dessus du header)
   const RapproToolbar = () => (
-    <Stack direction={"row"} spacing={0.5} alignItems={"center"} justifyContent={"flex-end"} sx={{ px: 1, py: 0.5 }}>
+    <Stack direction={"row"} spacing={0.5} alignItems={"center"} justifyContent={"flex-end"} sx={{ px: 0.5, py: 0.5 }}>
       <Tooltip title="Ajouter une ligne">
         <span>
           <IconButton
@@ -372,10 +281,13 @@ function RapprochementsBancaires() {
         compteId,
         exerciceId: selectedExerciceId,
         pcId: pcSelected.id,
+        rapproId: sel.id,
         endDate: String(sel.date_fin).substring(0, 10),
         soldeBancaire: sel.solde_bancaire ?? null,
       };
+      try { console.debug('[RAPPRO][FRONT][SOLDES][REQUEST]', params); } catch { }
       const { data } = await axios.get('/administration/traitementSaisie/rapprochements/soldes', { params });
+      try { console.debug('[RAPPRO][FRONT][SOLDES][RESPONSE]', data); } catch { }
       if (data?.state) {
         const updated = {
           ...sel,
@@ -385,6 +297,7 @@ function RapprochementsBancaires() {
         setRapproRows(prev => prev.map(r => r.id === sel.id ? updated : r));
       }
     } catch (e) {
+      // ignore toast flood here
     }
   };
 
@@ -443,7 +356,11 @@ function RapprochementsBancaires() {
     const sc = Number(rc?.solde_comptable) || 0;
     const sb = Number(rc?.solde_bancaire) || 0;
     const snr = Number(rc?.solde_non_rapproche) || 0;
-    return sc - sb - snr;
+    const raw = sc - sb - snr;
+    // Tolérance aux très petites erreurs de flottant (ex: -2.7e-7)
+    const epsilon = 0.005; // 0,5 centime
+    if (!Number.isFinite(raw)) return 0;
+    return Math.abs(raw) < epsilon ? 0 : raw;
   };
 
   const loadRapprochements = async (pcRow) => {
@@ -667,13 +584,14 @@ function RapprochementsBancaires() {
       getCellClassName: () => 'nonClickable',
     },
     {
-      field: 'date_fin', headerName: 'Date fin', width: 100, editable: true,
+      field: 'date_fin', headerName: 'Date fin', width: 150, editable: true,
       valueGetter: (p) => p.row.date_fin ? String(p.row.date_fin).substring(0, 10) : '',
       renderCell: (params) => formatFrDate(params.value),
       renderEditCell: (params) => (
         <TextField
           type="date"
           size="small"
+          fullWidth
           value={params.value ? String(params.value).substring(0, 10) : ''}
           onChange={(e) => {
             const val = e.target.value;
@@ -686,12 +604,12 @@ function RapprochementsBancaires() {
       )
     },
     {
-      field: 'solde_comptable', headerName: 'Solde comptable', width: 100, flex: 1, editable: false, type: 'number', headerAlign: 'right', align: 'right',
+      field: 'solde_comptable', headerName: 'Solde comptable', width: 160, flex: 1, editable: false, type: 'number', headerAlign: 'right', align: 'right',
       renderCell: (p) => formatMoneyFr(p.value),
       getCellClassName: () => 'nonClickable',
     },
     {
-      field: 'solde_bancaire', headerName: 'Solde bancaire', width: 100, flex: 1, editable: true, type: 'number', headerAlign: 'right', align: 'right',
+      field: 'solde_bancaire', headerName: 'Solde bancaire', width: 160, flex: 1, editable: true, type: 'number', headerAlign: 'right', align: 'right',
       renderCell: (p) => (
         <Stack direction="row" spacing={0.5} alignItems="center" justifyContent="flex-end" sx={{ width: '100%' }}>
           <Box component="span" sx={{ textAlign: 'right', flexGrow: 1 }}>{formatMoneyFr(p.value)}</Box>
@@ -741,7 +659,7 @@ function RapprochementsBancaires() {
       renderCell: (p) => {
         const raw = Number(p?.value);
         const val = Number.isFinite(raw) ? raw : 0;
-        const isZero = val === 0;
+        const isZero = Math.abs(val) < 0.005; // même tolérance que computeEcart
         const bg = isZero ? 'success.light' : 'error.light';
         return (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', px: 1, py: 0.25, borderRadius: '999px', bgcolor: bg, color: 'white', fontWeight: 600, width: '100%', boxSizing: 'border-box' }}>
@@ -751,43 +669,54 @@ function RapprochementsBancaires() {
       }
     },
     {
-      field: 'export_actions', headerName: 'Export', width: 120, sortable: false, filterable: false, align: 'center', headerAlign: 'center',
-      renderCell: (p) => {
-        const hasPc = (pcSelected && pcSelected.id) || p.row?.pc_id;
-        const isPersisted = p.row?.id && !isNaN(Number(p.row.id));
-        const disabled = !hasPc || !isPersisted;
-        const tip = disabled
-          ? (!hasPc ? 'Sélectionner un compte 512' : 'Sauvegardez la ligne avant export')
-          : 'Exporter';
+      field: 'export', headerName: 'Export', width: 70, sortable: false, filterable: false,
+      renderCell: (params) => {
+        const row = params?.row || {};
+        const isNew = !row.id || String(row.id).startsWith('new-');
+        const disabled = isNew;
+        const buildUrl = (type) => {
+          const query = new URLSearchParams({
+            fileId: fileId || '',
+            compteId: compteId || '',
+            exerciceId: selectedExerciceId || '',
+            pcId: row.pc_id || '',
+            rapproId: row.id || '',
+          }).toString();
+          return `${API_BASE_URL}/administration/traitementSaisie/rapprochements/export/${type}?${query}`;
+        };
         return (
           <Stack direction="row" spacing={0.5} alignItems="center" justifyContent="center" sx={{ width: '100%' }}>
-            <Tooltip title={tip}>
+            <Tooltip title="Exporter en PDF">
               <span>
                 <IconButton
-                  size="medium"
+                  size="small"
                   disabled={disabled}
-                  onClick={(e) => { e.stopPropagation(); exportRapproPDF(p.row); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (disabled) return;
+                    window.open(buildUrl('pdf'), '_blank');
+                  }}
                 >
-                  <FaFilePdf
-                    style={{ color: disabled ? '#9e9e9e' : '#ce4141', fontSize: 22 }} // <-- ici style au lieu de sx
-                  />
+                  <FaFilePdf style={{ width: 18, height: 18, color: '#d32f2f' }} />
                 </IconButton>
               </span>
             </Tooltip>
-            <Tooltip title={tip}>
+            <Tooltip title="Exporter en Excel">
               <span>
                 <IconButton
-                  size="medium"
+                  size="small"
                   disabled={disabled}
-                  onClick={(e) => { e.stopPropagation(); exportRapproExcel(p.row); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (disabled) return;
+                    window.open(buildUrl('excel'), '_blank');
+                  }}
                 >
-                  <BsFillFileEarmarkExcelFill
-                    style={{ color: disabled ? '#9e9e9e' : '#2e7d32', fontSize: 22 }}  // vert foncé
-                  />
+                  <FaFileExcel style={{ width: 18, height: 18, color: '#2e7d32' }} />
                 </IconButton>
               </span>
             </Tooltip>
-          </Stack >
+          </Stack>
         );
       }
     },
@@ -837,6 +766,7 @@ function RapprochementsBancaires() {
     setRowModesModel(newModel);
   };
 
+
   const GetListeSituation = (id) => {
     axios.get(`/paramExercice/listeSituation/${id}`).then((response) => {
       const resData = response.data;
@@ -873,26 +803,15 @@ function RapprochementsBancaires() {
     if (navigationEntries.length > 0) {
       const navigationType = navigationEntries[0].type;
       if (navigationType === 'reload') {
-        const stored = sessionStorage.getItem('fileId');
-        if (stored) {
-          idFile = Number(stored) || 0;
-        } else if (id) {
-          idFile = Number(id) || 0;
-          if (idFile) sessionStorage.setItem('fileId', String(idFile));
-        }
+        const idDossier = sessionStorage.getItem("fileId");
+        setFileId(idDossier);
+        idFile = idDossier;
       } else {
-        if (id) {
-          idFile = Number(id) || 0;
-          if (idFile) sessionStorage.setItem('fileId', String(idFile));
-        }
+        sessionStorage.setItem('fileId', id);
+        setFileId(id);
+        idFile = id;
       }
     }
-    if (!idFile) {
-      setNoFile(true);
-      toast.error('Dossier introuvable pour le rapprochement');
-      return;
-    }
-    setFileId(idFile);
     GetInfosIdDossier(idFile);
     GetListeExercice(idFile);
   }, []);
@@ -1044,9 +963,21 @@ function RapprochementsBancaires() {
               </Stack>
             </Stack>
 
-            <Stack direction="row" spacing={2} alignItems="flex-start" sx={{ width: '100%' }}>
-              <Box sx={{ flex: 1, height: '60vh', display: 'flex', flexDirection: 'column' }}>
-                <Typography variant="subtitle1" sx={{ mb: 1 }}>Liste des comptes</Typography>
+            <Stack direction="row" spacing={2} alignItems="stretch" sx={{ width: '100%', height: '60vh' }}>
+
+              {/* --- COLONNE GAUCHE : LISTE DES COMPTES --- */}
+              <Box sx={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column' }}>
+
+                {/* HEADER ALIGNÉ */}
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  sx={{ mb: 0, minHeight: 48 }}
+                >
+                  <Typography variant="subtitle1">Liste des comptes</Typography>
+                </Stack>
+
                 <DataGrid
                   rows={pc512Rows}
                   columns={pcColumns}
@@ -1077,11 +1008,20 @@ function RapprochementsBancaires() {
 
               </Box>
 
-              <Box sx={{ flex: 2, height: '60vh', display: 'flex', flexDirection: 'column' }}>
-                <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: -1 }}>
+              {/* --- COLONNE DROITE : RAPPROCHEMENTS --- */}
+              <Box sx={{ flex: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
+
+                {/* HEADER ALIGNÉ */}
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  sx={{ mb: 0, minHeight: 48 }}
+                >
                   <Typography variant="subtitle1">Rapprochements</Typography>
                   <RapproToolbar />
                 </Stack>
+
                 <DataGrid
                   rows={rapproRows.map(r => {
                     const sb = (pendingSoldeBancaire[r.id] != null ? Number(pendingSoldeBancaire[r.id]) : r.solde_bancaire);
@@ -1119,15 +1059,15 @@ function RapprochementsBancaires() {
                   editMode="row"
                   rowModesModel={rowModesModel}
                   onRowModesModelChange={handleRowModesModelChange}
-                  isCellEditable={(params) => {
-                    // Autorise uniquement la modification de la date de fin et du solde bancaire
-                    return params.field === 'date_fin' || params.field === 'solde_bancaire';
-                  }}
+                  isCellEditable={(params) => params.field === 'date_fin' || params.field === 'solde_bancaire'}
                   processRowUpdate={processRowUpdate}
                   experimentalFeatures={{ newEditingApi: true }}
                 />
+
               </Box>
+
             </Stack>
+
 
             <Box sx={{ mt: 10 }}>
               <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>Ecritures</Typography>

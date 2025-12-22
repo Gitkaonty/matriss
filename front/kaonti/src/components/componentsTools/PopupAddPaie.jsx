@@ -16,6 +16,7 @@ import Accordion from '@mui/material/Accordion';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import { MdExpandCircleDown } from "react-icons/md";
+import { init } from '../../../init';
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialogContent-root': {
@@ -31,7 +32,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
     const [nbrEnfant, setNbrEnfant] = useState(0);
     const [personnels, setPersonnels] = useState([]);
     const handleClose = () => confirmationState(false);
-
+    const initial = init[0];
     useEffect(() => {
         axios.get(`/administration/personnel/${id_compte}/${id_dossier}`)
             .then(res => {
@@ -89,41 +90,41 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
             mois: mois,
             annee: annee,
         },
-            // Valeurs par défaut (au cas où)
-            salaireBase: '0.00',
-            prime: '0.00',
-            heuresSupp: '0.00',
-            indemnites: '0.00',
-            remunerationFerieDimanche: '0.00',
-            salaireBrutNumeraire: '0.00',
-            assurance: '0.00',
-            carburant: '0.00',
-            entretienReparation: '0.00',
-            totalDepensesVehicule: '0.00',
-            totalAvantageNatureVehicule: '0.00',
-            loyerMensuel: '0.00',
-            remunerationFixe25: '0.00',
-            avantageNatureLoyer: '0.00',
-            depenseTelephone: '0.00',
-            avantageNatureTelephone: '0.00',
-            autresAvantagesNature: '0.00',
-            totalAvantageNature: '0.00',
-            salaireBrut20: '0.00',
-            totalSalaireBrut: '0.00',
-            cnapsEmployeur: '0.00',
-            ostieEmployeur: '0.00',
-            baseImposable: '0.00',
-            irsaBrut: '0.00',
-            nombre_enfants_charge: nbrEnfant,
-            deductionEnfants: nbrEnfant * 2000,
-            irsaNet: '0.00',
-            salaireNet: '0.00',
+        // Valeurs par défaut (au cas où)
+        salaireBase: '0.00',
+        prime: '0.00',
+        heuresSupp: '0.00',
+        indemnites: '0.00',
+        remunerationFerieDimanche: '0.00',
+        salaireBrutNumeraire: '0.00',
+        assurance: '0.00',
+        carburant: '0.00',
+        entretienReparation: '0.00',
+        totalDepensesVehicule: '0.00',
+        totalAvantageNatureVehicule: '0.00',
+        loyerMensuel: '0.00',
+        remunerationFixe25: '0.00',
+        avantageNatureLoyer: '0.00',
+        depenseTelephone: '0.00',
+        avantageNatureTelephone: '0.00',
+        autresAvantagesNature: '0.00',
+        totalAvantageNature: '0.00',
+        salaireBrut20: '0.00',
+        totalSalaireBrut: '0.00',
+        cnapsEmployeur: '0.00',
+        ostieEmployeur: '0.00',
+        baseImposable: '0.00',
+        irsaBrut: '0.00',
+        nombre_enfants_charge: nbrEnfant,
+        deductionEnfants: nbrEnfant * 2000,
+        irsaNet: '0.00',
+        salaireNet: '0.00',
         validationSchema: Yup.object({
             matricule: Yup.string().required("Veuillez sélectionner un personnel."),
             salaireBase: Yup.string()
                 .required('Salaire obligatoire')
                 .test('non-zero', 'Veuillez entrer un salaire de base', v => parseFloat(v || '0') > 0),
-                       // heuresSupp: Yup.string()
+            // heuresSupp: Yup.string()
         }),
         onSubmit: (values) => {
             handleSubmitForm();
@@ -200,37 +201,37 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
 
     const gerNombreEnfant = async (id) => {
         try {
-          const res = await axios.get(`/administration/personnel/${id}`);
-          let nbEnfants = 0;
-          if (res.data?.state && typeof res.data.data?.nombre_enfants_charge === 'number') {
-            nbEnfants = res.data.data.nombre_enfants_charge;
-          }
-      
-          setNbrEnfant(nbEnfants);
-      
-          // Ne mettre à jour que si c’est différent
-          if (formik.values.nombre_enfants_charge !== nbEnfants) {
-            formik.setFieldValue('nombre_enfants_charge', nbEnfants, false);
-          }
-          const reduction = nbEnfants * 2000;
-          if (formik.values.reductionChargeFamille !== reduction) {
-            formik.setFieldValue('reductionChargeFamille', reduction, false);
-          }
+            const res = await axios.get(`/administration/personnel/${id}`);
+            let nbEnfants = 0;
+            if (res.data?.state && typeof res.data.data?.nombre_enfants_charge === 'number') {
+                nbEnfants = res.data.data.nombre_enfants_charge;
+            }
+
+            setNbrEnfant(nbEnfants);
+
+            // Ne mettre à jour que si c’est différent
+            if (formik.values.nombre_enfants_charge !== nbEnfants) {
+                formik.setFieldValue('nombre_enfants_charge', nbEnfants, false);
+            }
+            const reduction = nbEnfants * 2000;
+            if (formik.values.reductionChargeFamille !== reduction) {
+                formik.setFieldValue('reductionChargeFamille', reduction, false);
+            }
         } catch (err) {
-          console.error('Erreur lors de la récupération du nombre d’enfants', err);
+            console.error('Erreur lors de la récupération du nombre d’enfants', err);
         }
-      };
-      
+    };
+
 
     // Reset matricule si la sélection n'existe plus dans la liste (robuste, comme IRSA)
     useEffect(() => {
-      if (
-        personnels.length > 0 &&
-        formik.values.matricule &&
-        !personnels.find(p => String(p.matricule || '').trim() === String(formik.values.matricule || '').trim())
-      ) {
-        formik.setFieldValue('matricule', '');
-      }
+        if (
+            personnels.length > 0 &&
+            formik.values.matricule &&
+            !personnels.find(p => String(p.matricule || '').trim() === String(formik.values.matricule || '').trim())
+        ) {
+            formik.setFieldValue('matricule', '');
+        }
     }, [personnels, formik.values.matricule]);
 
     // Calcul automatique du salaire brut numéraire 
@@ -255,7 +256,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
         const avanceQuinzaineAutres = parseFloat(formik.values.avanceQuinzaineAutres) || 0;
         const avancesSpeciales = parseFloat(formik.values.avancesSpeciales) || 0;
         const allocationFamiliale = parseFloat(formik.values.allocationFamiliale) || 0;
- 
+
         const salaireBrutNumeraire = base + prime + supp + indemnites + remunerationFerieDimanche;
         const remunerationFixe25 = salaireBrutNumeraire * 0.25;
         const salaireBrut20 = salaireBrutNumeraire * 0.2;
@@ -281,12 +282,12 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
 
         const montantPlafond = 2101440;
         const partPatronalCnaps = ((salaireBrutNumeraire + totalAvantageNature) < montantPlafond)
-            ?(salaireBrutNumeraire + totalAvantageNature) * 0.13
-            :montantPlafond * 0.13;
-            
+            ? (salaireBrutNumeraire + totalAvantageNature) * 0.13
+            : montantPlafond * 0.13;
+
         const partPatronalOstie = ((salaireBrutNumeraire + totalAvantageNature) < montantPlafond)
             ? totalSalaireBrut * 0.05
-            :montantPlafond * 0.05;
+            : montantPlafond * 0.05;
 
         const cnapsEmployeur = totalSalaireBrut * 0.01;
         const ostieEmployeur = totalSalaireBrut * 0.01;
@@ -294,13 +295,13 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
 
         let calcul = 0;
         if (baseImposable <= 400000) {
-          calcul = (baseImposable - 350000) * 0.05;
+            calcul = (baseImposable - 350000) * 0.05;
         } else if (baseImposable <= 500000) {
-          calcul = 2500 + (baseImposable - 400000) * 0.10;
+            calcul = 2500 + (baseImposable - 400000) * 0.10;
         } else if (baseImposable <= 600000) {
-          calcul = 12500 + (baseImposable - 500000) * 0.15;
+            calcul = 12500 + (baseImposable - 500000) * 0.15;
         } else if (baseImposable > 600000) {
-          calcul = 27500 + (baseImposable - 600000) * 0.20;
+            calcul = 27500 + (baseImposable - 600000) * 0.20;
         }
 
         const impotDuCalc = calcul <= 3000 ? 3000 : calcul;
@@ -366,9 +367,9 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
             formik.setFieldValue('partPatronalOstie', partPatronalOstie.toFixed(2));
         }
     }, [
-        formik.values.salaireBase, formik.values.prime, formik.values.heuresSupp, formik.values.indemnites, 
-        formik.values.remunerationFerieDimanche, formik.values.assurance,formik.values.carburant, formik.values.entretienReparation,
-        formik.values.loyerMensuel, formik.values.depenseTelephone, formik.values.autresAvantagesNature, 
+        formik.values.salaireBase, formik.values.prime, formik.values.heuresSupp, formik.values.indemnites,
+        formik.values.remunerationFerieDimanche, formik.values.assurance, formik.values.carburant, formik.values.entretienReparation,
+        formik.values.loyerMensuel, formik.values.depenseTelephone, formik.values.autresAvantagesNature,
         formik.values.avanceQuinzaineAutres, formik.values.avancesSpeciales, formik.values.allocationFamiliale,
         nbrEnfant
     ]);
@@ -383,255 +384,160 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
             <DialogTitle sx={{ m: 0, p: 2, backgroundColor: 'transparent', color: 'black' }}>
                 <Typography variant="h6">Saisie fiche de paie</Typography>
             </DialogTitle>
-            
+
             <DialogContent dividers>
 
                 {/* Groupe 1 : Informations du personnel */}
-                <Typography sx={{ fontWeight: 'normal', fontSize: '15px', mb: 1.5}}>Informations du personnel</Typography>
+                <Typography sx={{ fontWeight: 'normal', fontSize: '15px', mb: 1.5 }}>Informations du personnel</Typography>
                 <Box display="flex" flexWrap="wrap" gap={2} mb={1} alignItems="flex-end">
-                            <FormControl size="small" sx={{ flexBasis: 410, flexGrow: 0 }}>
-                                {personnels.length === 0 ? (
-                                    <Box
-                                        display="flex"
-                                        alignItems="center"
-                                        justifyContent="center"
-                                        sx={{
-                                            height: 38,   // même hauteur que TextField
-                                            width: 400,
-                                            borderBottom: '1px solid rgba(0, 0, 0, 0.42)', // imite la ligne du TextField standard
-                                        }}
-                                    >
-                                        <span style={{ marginRight: 8 }}>Chargement des matricules...</span>
-                                    <span
-                                        className="MuiCircularProgress-root MuiCircularProgress-colorPrimary"
-                                        style={{
-                                        width: 20,
-                                        height: 20,
-                                        display: 'inline-block',
-                                        verticalAlign: 'middle',
-                                        border: '2px solid #1976d2',
-                                        borderRadius: '50%',
-                                        borderTop: '2px solid transparent',
-                                        animation: 'spin 0.8s linear infinite',
-                                        }}
-                                    />
-                                    <style>
-                                        {`@keyframes spin { 100% { transform: rotate(360deg); } }`}
-                                    </style>
-                                    </Box>
-                                     ) : (
-                                    <Autocomplete
-                                    options={[...personnels].sort((a, b) => String(a.matricule || '').localeCompare(String(b.matricule || '')))}
-                                    getOptionLabel={(option) =>
-                                        option && typeof option === 'object'
-                                        ? `${option.matricule || ''} - ${option.nom || ''} ${option.prenom || ''}`
-                                        : ''
-                                    }
-                                    value={
-                                        personnels.find(
-                                        (p) => String(p.matricule || '').trim() === String(formik.values.matricule || '').trim()
-                                        ) || null
-                                    }
-                                    onChange={(e, newValue) => {
-                                        const matricule = newValue ? String(newValue.matricule || '') : '';
-                                        formik.setFieldValue('matricule', matricule);
-                                        if (newValue && newValue.id) {
-                                          setTimeout(() => {
-                                            gerNombreEnfant(newValue.id);
-                                          }, 0);
-                                        }
-                                      }}                                      
-                                    disabled={personnels.length === 0 || (row && row.id)}
-                                    renderInput={(params) => (
-                                        <TextField
-                                            {...params}
-                                            size="small"
-                                            label="Matricule"
-                                            variant="standard"
-                                            sx={{
-                                                '& .MuiInputBase-root': { fontSize: '13px' },
-                                                '& .MuiInputLabel-root': { color: '#1976d2', fontSize: '13px' },
-                                            }}
-                                            error={
-                                                formik.touched.matricule &&
-                                                Boolean(formik.errors.matricule)
-                                            }
-                                            helperText={
-                                                formik.touched.matricule &&
-                                                formik.errors.matricule
-                                            }
-                                            InputLabelProps={{
-                                                shrink: true,
-                                            }}
-                                            InputProps={{
-                                                ...params.InputProps,
-                                                sx: {
-                                                    '& input': {
-                                                        padding: '2px 0',
-                                                    },
-                                                },
-                                            }}
-                                        />
-                                    )}
-                                    />
-                                )}
-                            </FormControl>
+                    <FormControl size="small" sx={{ flexBasis: 410, flexGrow: 0 }}>
+                        {personnels.length === 0 ? (
                             <TextField
-                                label="Salaire de base"
-                                name="salaireBase"
-                                value={formik.values.salaireBase}
-                                onChange={formik.handleChange}
                                 size="small"
+                                label="Matricule"
                                 variant="standard"
+                                value="Aucune"
+                                disabled
                                 sx={{
-                                    marginBottom: '0px',
-                                    textAlign: 'right',
-                                    justifyContent: 'right',
-                                    justifyItems: 'right',
-                                    backgroundColor: 'transparent',
-                                    width: 200
+                                    width: 400,
+                                    '& .MuiInputBase-root': { fontSize: '13px' },
+                                    '& .MuiInputLabel-root': { color: '#1976d2', fontSize: '13px' },
                                 }}
                                 InputLabelProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        marginTop: '-3px',
-                                        color: '#1976d2',
-                                    },
+                                    shrink: true,
                                 }}
-                                InputProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        padding: '2px 4px',
-                                        height: '30px'
-                                    },
-                                    inputComponent: FormatedInput,
-                                    endAdornment: <InputAdornment position="end">
-                                        <span style={{ fontSize: '13px' }}>Ar</span>
-                                    </InputAdornment>,
-                                    sx: {
-                                        '& input': {
-                                            textAlign: 'right',
-                                        },
-                                    },
-                                }}
-                                error={formik.touched.salaireBase && Boolean(formik.errors.salaireBase)} helperText={formik.touched.salaireBase && formik.errors.salaireBase}
                             />
+                        ) : (
+                            <Autocomplete
+                                options={[...personnels].sort((a, b) => String(a.matricule || '').localeCompare(String(b.matricule || '')))}
+                                getOptionLabel={(option) =>
+                                    option && typeof option === 'object'
+                                        ? `${option.matricule || ''} - ${option.nom || ''} ${option.prenom || ''}`
+                                        : ''
+                                }
+                                value={
+                                    personnels.find(
+                                        (p) => String(p.matricule || '').trim() === String(formik.values.matricule || '').trim()
+                                    ) || null
+                                }
+                                onChange={(e, newValue) => {
+                                    const matricule = newValue ? String(newValue.matricule || '') : '';
+                                    formik.setFieldValue('matricule', matricule);
+                                    if (newValue && newValue.id) {
+                                        setTimeout(() => {
+                                            gerNombreEnfant(newValue.id);
+                                        }, 0);
+                                    }
+                                }}
+                                disabled={personnels.length === 0 || (row && row.id)}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        size="small"
+                                        label="Matricule"
+                                        variant="standard"
+                                        sx={{
+                                            '& .MuiInputBase-root': { fontSize: '13px' },
+                                            '& .MuiInputLabel-root': { color: '#1976d2', fontSize: '13px' },
+                                        }}
+                                        error={
+                                            formik.touched.matricule &&
+                                            Boolean(formik.errors.matricule)
+                                        }
+                                        helperText={
+                                            formik.touched.matricule &&
+                                            formik.errors.matricule
+                                        }
+                                        InputLabelProps={{
+                                            shrink: true,
+                                        }}
+                                        InputProps={{
+                                            ...params.InputProps,
+                                            sx: {
+                                                '& input': {
+                                                    padding: '2px 0',
+                                                },
+                                            },
+                                        }}
+                                    />
+                                )}
+                            />
+                        )}
+                    </FormControl>
+                    <TextField
+                        label="Salaire de base"
+                        name="salaireBase"
+                        value={formik.values.salaireBase}
+                        onChange={formik.handleChange}
+                        size="small"
+                        variant="standard"
+                        sx={{
+                            marginBottom: '0px',
+                            textAlign: 'right',
+                            justifyContent: 'right',
+                            justifyItems: 'right',
+                            backgroundColor: 'transparent',
+                            width: 200
+                        }}
+                        InputLabelProps={{
+                            style: {
+                                fontSize: '13px',
+                                marginTop: '-3px',
+                                color: '#1976d2',
+                            },
+                        }}
+                        InputProps={{
+                            style: {
+                                fontSize: '13px',
+                                padding: '2px 4px',
+                                height: '30px'
+                            },
+                            inputComponent: FormatedInput,
+                            endAdornment: <InputAdornment position="end">
+                                <span style={{ fontSize: '13px' }}>Ar</span>
+                            </InputAdornment>,
+                            sx: {
+                                '& input': {
+                                    textAlign: 'right',
+                                },
+                            },
+                        }}
+                        error={formik.touched.salaireBase && Boolean(formik.errors.salaireBase)} helperText={formik.touched.salaireBase && formik.errors.salaireBase}
+                    />
                 </Box>
 
                 {/* Groupe 2 : Rémunérations fixes */}
                 <Accordion
-                defaultExpanded
-                elevation={0}
-                sx={{
-                    width: '100%',
-                    border: 'none',
-                    boxShadow: 'none',
-                    marginBottom: 1,
-                    '&::before': {
-                    display: 'none', // Supprime la ligne grise
-                    }
-                }}
+                    defaultExpanded
+                    elevation={0}
+                    sx={{
+                        width: '100%',
+                        border: 'none',
+                        boxShadow: 'none',
+                        marginBottom: 1,
+                        '&::before': {
+                            display: 'none', // Supprime la ligne grise
+                        }
+                    }}
                 >
                     <AccordionSummary
-                    expandIcon={<MdExpandCircleDown style={{ width: '25px', height: '25px', color: '#1976d2' }} />}
-                    aria-controls="panel2-content"
-                    id="panel2-header"
-                    style={{ flexDirection: 'row-reverse' }}
-                >
-                    <Typography style={{ fontWeight: 'normal', fontSize: '20px', marginLeft: '10px' }}>Avantages en numéraire</Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                <Box display="flex" flexDirection="row" gap={1.5} flexWrap="wrap" style={{ marginLeft: '50px' }}>
-                   
-                    <TextField 
-                    label="Prime" 
-                    name="prime" 
-                    value={formik.values.prime} 
-                    onChange={formik.handleChange} 
-                    size="small"
-                    variant="standard"
-                    sx={{
-                        marginBottom: '0px',
-                        textAlign: 'right',
-                        justifyContent: 'right',
-                        justifyItems: 'right',
-                        backgroundColor: 'transparent',
-                        width: 200
-                    }}
-                    InputLabelProps={{
-                        style: {
-                            fontSize: '13px',
-                            marginTop: '-3px',
-                            color: '#1976d2',
-                        },
-                    }}
-                    InputProps={{
-                        style: {
-                            fontSize: '13px',
-                            padding: '2px 4px',
-                            height: '30px'
-                        },
-                        inputComponent: FormatedInput,
-                        endAdornment: <InputAdornment position="end">
-                            <span style={{ fontSize: '13px' }}>Ar</span>
-                        </InputAdornment>,
-                        sx: {
-                            '& input': {
-                                textAlign: 'right', // Alignement du texte dans le champ à droite
-                            },
-                        },
-                    }}
-                        error={formik.touched.prime && Boolean(formik.errors.prime)} helperText={formik.touched.prime && formik.errors.prime}
-                    />
-                     
-                     <TextField 
-                    label="Indemnités" 
-                    name="indemnites" 
-                    value={formik.values.indemnites} 
-                    onChange={formik.handleChange} 
-                    size="small"
-                    variant="standard"
-                    sx={{
-                        marginBottom: '0px',
-                        textAlign: 'right',
-                        justifyContent: 'right',
-                        justifyItems: 'right',
-                        backgroundColor: 'transparent',
-                        width: 200
-                    }}
-                    InputLabelProps={{
-                        style: {
-                            fontSize: '13px',
-                            marginTop: '-3px',
-                            color: '#1976d2',
-                        },
-                    }}
-                    InputProps={{
-                        style: {
-                            fontSize: '13px',
-                            padding: '2px 4px',
-                            height: '30px'
-                        },
-                        inputComponent: FormatedInput,
-                        endAdornment: <InputAdornment position="end">
-                            <span style={{ fontSize: '13px' }}>Ar</span>
-                        </InputAdornment>,
-                        sx: {
-                            '& input': {
-                                textAlign: 'right', // Alignement du texte dans le champ à droite
-                            },
-                        },
-                    }}
-                        error={formik.touched.indemnites && Boolean(formik.errors.indemnites)} helperText={formik.touched.indemnites && formik.errors.indemnites}
-                    />
-                     
-                    <TextField 
-                    label="Heures Supp." 
-                    name="heuresSupp" 
-                    value={formik.values.heuresSupp} 
-                    onChange={formik.handleChange} 
-                    size="small"
-                    variant="standard"
+                        expandIcon={<MdExpandCircleDown style={{ width: '25px', height: '25px', color: '#1976d2' }} />}
+                        aria-controls="panel2-content"
+                        id="panel2-header"
+                        style={{ flexDirection: 'row-reverse' }}
+                    >
+                        <Typography style={{ fontWeight: 'normal', fontSize: '20px', marginLeft: '10px' }}>Avantages en numéraire</Typography>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                        <Box display="flex" flexDirection="row" gap={1.5} flexWrap="wrap" style={{ marginLeft: '50px' }}>
+
+                            <TextField
+                                label="Prime"
+                                name="prime"
+                                value={formik.values.prime}
+                                onChange={formik.handleChange}
+                                size="small"
+                                variant="standard"
                                 sx={{
                                     marginBottom: '0px',
                                     textAlign: 'right',
@@ -663,190 +569,272 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                                         },
                                     },
                                 }}
-                        error={formik.touched.heuresSupp && Boolean(formik.errors.heuresSupp)} helperText={formik.touched.heuresSupp && formik.errors.heuresSupp}
-                    />
-                   
-                    <TextField 
-                    label="Rémunération Férié/Dim." 
-                    name="remunerationFerieDimanche" 
-                    value={formik.values.remunerationFerieDimanche} 
-                    onChange={formik.handleChange} 
-                    size="small"
-                    variant="standard"
-                    sx={{
-                        marginBottom: '0px',
-                        textAlign: 'right',
-                        justifyContent: 'right',
-                        justifyItems: 'right',
-                        backgroundColor: 'transparent',
-                        width: 200
-                    }}
-                    InputLabelProps={{
-                        style: {
-                            fontSize: '13px',
-                            marginTop: '-3px',
-                            color: '#1976d2',
-                        },
-                    }}
-                    InputProps={{
-                        style: {
-                            fontSize: '13px',
-                            padding: '2px 4px',
-                            height: '30px'
-                        },
-                        inputComponent: FormatedInput,
-                        endAdornment: <InputAdornment position="end">
-                            <span style={{ fontSize: '13px' }}>Ar</span>
-                        </InputAdornment>,
-                        sx: {
-                            '& input': {
-                                textAlign: 'right', // Alignement du texte dans le champ à droite
-                            },
-                        },
-                    }}
-                        error={formik.touched.remunerationFerieDimanche && Boolean(formik.errors.remunerationFerieDimanche)} helperText={formik.touched.remunerationFerieDimanche && formik.errors.remunerationFerieDimanche}
-                    />
-                   
-                </Box>
-                </AccordionDetails>
+                                error={formik.touched.prime && Boolean(formik.errors.prime)} helperText={formik.touched.prime && formik.errors.prime}
+                            />
+
+                            <TextField
+                                label="Indemnités"
+                                name="indemnites"
+                                value={formik.values.indemnites}
+                                onChange={formik.handleChange}
+                                size="small"
+                                variant="standard"
+                                sx={{
+                                    marginBottom: '0px',
+                                    textAlign: 'right',
+                                    justifyContent: 'right',
+                                    justifyItems: 'right',
+                                    backgroundColor: 'transparent',
+                                    width: 200
+                                }}
+                                InputLabelProps={{
+                                    style: {
+                                        fontSize: '13px',
+                                        marginTop: '-3px',
+                                        color: '#1976d2',
+                                    },
+                                }}
+                                InputProps={{
+                                    style: {
+                                        fontSize: '13px',
+                                        padding: '2px 4px',
+                                        height: '30px'
+                                    },
+                                    inputComponent: FormatedInput,
+                                    endAdornment: <InputAdornment position="end">
+                                        <span style={{ fontSize: '13px' }}>Ar</span>
+                                    </InputAdornment>,
+                                    sx: {
+                                        '& input': {
+                                            textAlign: 'right', // Alignement du texte dans le champ à droite
+                                        },
+                                    },
+                                }}
+                                error={formik.touched.indemnites && Boolean(formik.errors.indemnites)} helperText={formik.touched.indemnites && formik.errors.indemnites}
+                            />
+
+                            <TextField
+                                label="Heures Supp."
+                                name="heuresSupp"
+                                value={formik.values.heuresSupp}
+                                onChange={formik.handleChange}
+                                size="small"
+                                variant="standard"
+                                sx={{
+                                    marginBottom: '0px',
+                                    textAlign: 'right',
+                                    justifyContent: 'right',
+                                    justifyItems: 'right',
+                                    backgroundColor: 'transparent',
+                                    width: 200
+                                }}
+                                InputLabelProps={{
+                                    style: {
+                                        fontSize: '13px',
+                                        marginTop: '-3px',
+                                        color: '#1976d2',
+                                    },
+                                }}
+                                InputProps={{
+                                    style: {
+                                        fontSize: '13px',
+                                        padding: '2px 4px',
+                                        height: '30px'
+                                    },
+                                    inputComponent: FormatedInput,
+                                    endAdornment: <InputAdornment position="end">
+                                        <span style={{ fontSize: '13px' }}>Ar</span>
+                                    </InputAdornment>,
+                                    sx: {
+                                        '& input': {
+                                            textAlign: 'right', // Alignement du texte dans le champ à droite
+                                        },
+                                    },
+                                }}
+                                error={formik.touched.heuresSupp && Boolean(formik.errors.heuresSupp)} helperText={formik.touched.heuresSupp && formik.errors.heuresSupp}
+                            />
+
+                            <TextField
+                                label="Rémunération Férié/Dim."
+                                name="remunerationFerieDimanche"
+                                value={formik.values.remunerationFerieDimanche}
+                                onChange={formik.handleChange}
+                                size="small"
+                                variant="standard"
+                                sx={{
+                                    marginBottom: '0px',
+                                    textAlign: 'right',
+                                    justifyContent: 'right',
+                                    justifyItems: 'right',
+                                    backgroundColor: 'transparent',
+                                    width: 200
+                                }}
+                                InputLabelProps={{
+                                    style: {
+                                        fontSize: '13px',
+                                        marginTop: '-3px',
+                                        color: '#1976d2',
+                                    },
+                                }}
+                                InputProps={{
+                                    style: {
+                                        fontSize: '13px',
+                                        padding: '2px 4px',
+                                        height: '30px'
+                                    },
+                                    inputComponent: FormatedInput,
+                                    endAdornment: <InputAdornment position="end">
+                                        <span style={{ fontSize: '13px' }}>Ar</span>
+                                    </InputAdornment>,
+                                    sx: {
+                                        '& input': {
+                                            textAlign: 'right', // Alignement du texte dans le champ à droite
+                                        },
+                                    },
+                                }}
+                                error={formik.touched.remunerationFerieDimanche && Boolean(formik.errors.remunerationFerieDimanche)} helperText={formik.touched.remunerationFerieDimanche && formik.errors.remunerationFerieDimanche}
+                            />
+
+                        </Box>
+                    </AccordionDetails>
                 </Accordion>
 
                 <Typography
                     variant="subtitle1"
                     sx={{ fontWeight: 'normal', fontSize: '15px', mb: 1.5, marginLeft: '50px' }}
-                    >
+                >
                     Salaires
-                    </Typography>
+                </Typography>
 
-                    <Box
+                <Box
                     display="flex"
                     flexDirection="row"
                     gap={1.5}
                     flexWrap="wrap"
                     sx={{ ml: '62px', mt: 0 }}
-                    >
+                >
 
-                    <TextField 
-                    label="Salaire Brut Numéraire" 
-                    name="salaireBrutNumeraire" 
-                    value={formik.values.salaireBrutNumeraire} 
-                    onChange={() => { }} 
-                    size="small" 
-                    variant="standard"
-                    disabled
-                    sx={{
-                        marginBottom: '12px',
-                        textAlign: 'right',
-                        justifyContent: 'right',
-                        justifyItems: 'right',
-                        backgroundColor: '#F4F9F9',
-                        width: 200
-                    }}
-                    InputLabelProps={{
-                        style: {
-                            fontSize: '13px',
-                            marginTop: '-3px',
-                            color: '#1976d2',
-                        },
-                    }}
-                    InputProps={{
-                        style: {
-                            fontSize: '13px',
-                            padding: '2px 4px',
-                            height: '30px'
-                        },
-                        inputComponent: FormatedInput,
-                        endAdornment: <InputAdornment position="end">
-                            <span style={{ fontSize: '13px' }}>Ar</span>
-                        </InputAdornment>,
-                        sx: {
-                            '& input': {
-                                textAlign: 'right', // Alignement du texte dans le champ à droite
+                    <TextField
+                        label="Salaire Brut Numéraire"
+                        name="salaireBrutNumeraire"
+                        value={formik.values.salaireBrutNumeraire}
+                        onChange={() => { }}
+                        size="small"
+                        variant="standard"
+                        disabled
+                        sx={{
+                            marginBottom: '12px',
+                            textAlign: 'right',
+                            justifyContent: 'right',
+                            justifyItems: 'right',
+                            backgroundColor: '#F4F9F9',
+                            width: 200
+                        }}
+                        InputLabelProps={{
+                            style: {
+                                fontSize: '13px',
+                                marginTop: '-3px',
+                                color: '#1976d2',
                             },
-                        },
-                    }}
+                        }}
+                        InputProps={{
+                            style: {
+                                fontSize: '13px',
+                                padding: '2px 4px',
+                                height: '30px'
+                            },
+                            inputComponent: FormatedInput,
+                            endAdornment: <InputAdornment position="end">
+                                <span style={{ fontSize: '13px' }}>Ar</span>
+                            </InputAdornment>,
+                            sx: {
+                                '& input': {
+                                    textAlign: 'right', // Alignement du texte dans le champ à droite
+                                },
+                            },
+                        }}
                         error={formik.touched.salaireBrutNumeraire && Boolean(formik.errors.salaireBrutNumeraire)} helperText={formik.touched.salaireBrutNumeraire && formik.errors.salaireBrutNumeraire}
                     />
-                    <TextField 
-                    label="Rémunération Fixe 25%" 
-                    name="remunerationFixe25" 
-                    value={formik.values.remunerationFixe25} 
-                    onChange={() => { }} 
-                    size="small"
-                    variant="standard"
-                    disabled
-                    sx={{
-                        marginBottom: '10px',
-                        textAlign: 'right',
-                        justifyContent: 'right',
-                        justifyItems: 'right',
-                        backgroundColor: '#F4F9F9',
-                        width: 200
-                    }}
-                    InputLabelProps={{
-                        style: {
-                            fontSize: '13px',
-                            marginTop: '-3px',
-                            color: '#1976d2',
-                        },
-                    }}
-                    InputProps={{
-                        style: {
-                            fontSize: '13px',
-                            padding: '2px 4px',
-                            height: '30px'
-                        },
-                        inputComponent: FormatedInput,
-                        endAdornment: <InputAdornment position="end">
-                            <span style={{ fontSize: '13px' }}>Ar</span>
-                        </InputAdornment>,
-                        sx: {
-                            '& input': {
-                                textAlign: 'right', // Alignement du texte dans le champ à droite
+                    <TextField
+                        label="Rémunération Fixe 25%"
+                        name="remunerationFixe25"
+                        value={formik.values.remunerationFixe25}
+                        onChange={() => { }}
+                        size="small"
+                        variant="standard"
+                        disabled
+                        sx={{
+                            marginBottom: '10px',
+                            textAlign: 'right',
+                            justifyContent: 'right',
+                            justifyItems: 'right',
+                            backgroundColor: '#F4F9F9',
+                            width: 200
+                        }}
+                        InputLabelProps={{
+                            style: {
+                                fontSize: '13px',
+                                marginTop: '-3px',
+                                color: '#1976d2',
                             },
-                        },
-                    }}
+                        }}
+                        InputProps={{
+                            style: {
+                                fontSize: '13px',
+                                padding: '2px 4px',
+                                height: '30px'
+                            },
+                            inputComponent: FormatedInput,
+                            endAdornment: <InputAdornment position="end">
+                                <span style={{ fontSize: '13px' }}>Ar</span>
+                            </InputAdornment>,
+                            sx: {
+                                '& input': {
+                                    textAlign: 'right', // Alignement du texte dans le champ à droite
+                                },
+                            },
+                        }}
                         error={formik.touched.remunerationFixe25 && Boolean(formik.errors.remunerationFixe25)} helperText={formik.touched.remunerationFixe25 && formik.errors.remunerationFixe25}
                     />
-                    <TextField 
-                    label="Salaire Brut 20%" 
-                    name="salaireBrut20" 
-                    value={formik.values.salaireBrut20} 
-                    onChange={() => { }} 
-                    size="small"
-                    variant="standard"
-                    disabled
-                    sx={{
-                        marginBottom: '10px',
-                        textAlign: 'right',
-                        justifyContent: 'right',
-                        justifyItems: 'right',
-                        backgroundColor: '#F4F9F9',
-                        width: 200
-                    }}
-                    InputLabelProps={{
-                        style: {
-                            fontSize: '13px',
-                            marginTop: '-3px',
-                            color: '#1976d2',
-                        },
-                    }}
-                    InputProps={{
-                        style: {
-                            fontSize: '13px',
-                            padding: '2px 4px',
-                            height: '30px'
-                        },
-                        inputComponent: FormatedInput,
-                        endAdornment: <InputAdornment position="end">
-                            <span style={{ fontSize: '13px' }}>Ar</span>
-                        </InputAdornment>,
-                        sx: {
-                            '& input': {
-                                textAlign: 'right', // Alignement du texte dans le champ à droite
+                    <TextField
+                        label="Salaire Brut 20%"
+                        name="salaireBrut20"
+                        value={formik.values.salaireBrut20}
+                        onChange={() => { }}
+                        size="small"
+                        variant="standard"
+                        disabled
+                        sx={{
+                            marginBottom: '10px',
+                            textAlign: 'right',
+                            justifyContent: 'right',
+                            justifyItems: 'right',
+                            backgroundColor: '#F4F9F9',
+                            width: 200
+                        }}
+                        InputLabelProps={{
+                            style: {
+                                fontSize: '13px',
+                                marginTop: '-3px',
+                                color: '#1976d2',
                             },
-                        },
-                    }}
+                        }}
+                        InputProps={{
+                            style: {
+                                fontSize: '13px',
+                                padding: '2px 4px',
+                                height: '30px'
+                            },
+                            inputComponent: FormatedInput,
+                            endAdornment: <InputAdornment position="end">
+                                <span style={{ fontSize: '13px' }}>Ar</span>
+                            </InputAdornment>,
+                            sx: {
+                                '& input': {
+                                    textAlign: 'right', // Alignement du texte dans le champ à droite
+                                },
+                            },
+                        }}
                         error={formik.touched.remunerationFixe25 && Boolean(formik.errors.remunerationFixe25)} helperText={formik.touched.remunerationFixe25 && formik.errors.remunerationFixe25}
                     />
                 </Box>
@@ -860,633 +848,446 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                         border: 'none',
                         boxShadow: 'none',
                         '&::before': {
-                        display: 'none',
+                            display: 'none',
                         },
                         mb: 1,
                     }}
-                    >
-                <AccordionSummary
-                    expandIcon={<MdExpandCircleDown style={{ width: '25px', height: '25px', color: '#1976d2' }} />}
-                    aria-controls="panel2-content"
-                    id="panel2-header"
-                    style={{ flexDirection: 'row-reverse' }}
                 >
-                    <Typography style={{ fontWeight: 'normal', fontSize: '20px', marginLeft: '10px' }}>Avantages en nature</Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                    <Box display="flex" flexDirection="row" gap={1.5} flexWrap="wrap" style={{ marginLeft: '50px' }}>
-                        <TextField 
-                            label="Assurance" 
-                            name="assurance" 
-                            value={formik.values.assurance} 
-                            onChange={formik.handleChange} 
-                            size="small"
-                            variant="standard"
-                            sx={{
-                                marginBottom: '0px',
-                                textAlign: 'right',
-                                justifyContent: 'right',
-                                justifyItems: 'right',
-                                backgroundColor: 'transparent',
-                                width: 200
-                            }}
-                            InputLabelProps={{
-                                style: {
-                                    fontSize: '13px',
-                                    marginTop: '-3px',
-                                    color: '#1976d2',
-                                },
-                            }}
-                            InputProps={{
-                                style: {
-                                    fontSize: '13px',
-                                    padding: '2px 4px',
-                                    height: '30px'
-                                },
-                                inputComponent: FormatedInput,
-                                endAdornment: <InputAdornment position="end">
-                                    <span style={{ fontSize: '13px' }}>Ar</span>
-                                </InputAdornment>,
-                                sx: {
-                                    '& input': {
-                                        textAlign: 'right', // Alignement du texte dans le champ à droite
+                    <AccordionSummary
+                        expandIcon={<MdExpandCircleDown style={{ width: '25px', height: '25px', color: '#1976d2' }} />}
+                        aria-controls="panel2-content"
+                        id="panel2-header"
+                        style={{ flexDirection: 'row-reverse' }}
+                    >
+                        <Typography style={{ fontWeight: 'normal', fontSize: '20px', marginLeft: '10px' }}>Avantages en nature</Typography>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                        <Box display="flex" flexDirection="row" gap={1.5} flexWrap="wrap" style={{ marginLeft: '50px' }}>
+                            <TextField
+                                label="Assurance"
+                                name="assurance"
+                                value={formik.values.assurance}
+                                onChange={formik.handleChange}
+                                size="small"
+                                variant="standard"
+                                sx={{
+                                    marginBottom: '0px',
+                                    textAlign: 'right',
+                                    justifyContent: 'right',
+                                    justifyItems: 'right',
+                                    backgroundColor: 'transparent',
+                                    width: 200
+                                }}
+                                InputLabelProps={{
+                                    style: {
+                                        fontSize: '13px',
+                                        marginTop: '-3px',
+                                        color: '#1976d2',
                                     },
-                                },
-                            }}
-                        error={formik.touched.assurance && Boolean(formik.errors.assurance)} helperText={formik.touched.assurance && formik.errors.assurance}
-                     />
+                                }}
+                                InputProps={{
+                                    style: {
+                                        fontSize: '13px',
+                                        padding: '2px 4px',
+                                        height: '30px'
+                                    },
+                                    inputComponent: FormatedInput,
+                                    endAdornment: <InputAdornment position="end">
+                                        <span style={{ fontSize: '13px' }}>Ar</span>
+                                    </InputAdornment>,
+                                    sx: {
+                                        '& input': {
+                                            textAlign: 'right', // Alignement du texte dans le champ à droite
+                                        },
+                                    },
+                                }}
+                                error={formik.touched.assurance && Boolean(formik.errors.assurance)} helperText={formik.touched.assurance && formik.errors.assurance}
+                            />
 
-                     <TextField 
-                    label="Carburant" 
-                    name="carburant" 
-                    value={formik.values.carburant} 
-                    onChange={formik.handleChange} 
-                    size="small"
-                    variant="standard"
-                    sx={{
-                        marginBottom: '0px',
-                        textAlign: 'right',
-                        justifyContent: 'right',
-                        justifyItems: 'right',
-                        backgroundColor: 'transparent',
-                        width: 200
-                    }}
-                    InputLabelProps={{
-                        style: {
-                            fontSize: '13px',
-                            marginTop: '-3px',
-                            color: '#1976d2',
-                        },
-                    }}
-                    InputProps={{
-                        style: {
-                            fontSize: '13px',
-                            padding: '2px 4px',
-                            height: '30px'
-                        },
-                        inputComponent: FormatedInput,
-                        endAdornment: <InputAdornment position="end">
-                            <span style={{ fontSize: '13px' }}>Ar</span>
-                        </InputAdornment>,
-                        sx: {
-                            '& input': {
-                                textAlign: 'right', // Alignement du texte dans le champ à droite
-                            },
-                        },
-                    }}
-                        error={formik.touched.carburant && Boolean(formik.errors.carburant)} helperText={formik.touched.carburant && formik.errors.carburant}
-                    />
+                            <TextField
+                                label="Carburant"
+                                name="carburant"
+                                value={formik.values.carburant}
+                                onChange={formik.handleChange}
+                                size="small"
+                                variant="standard"
+                                sx={{
+                                    marginBottom: '0px',
+                                    textAlign: 'right',
+                                    justifyContent: 'right',
+                                    justifyItems: 'right',
+                                    backgroundColor: 'transparent',
+                                    width: 200
+                                }}
+                                InputLabelProps={{
+                                    style: {
+                                        fontSize: '13px',
+                                        marginTop: '-3px',
+                                        color: '#1976d2',
+                                    },
+                                }}
+                                InputProps={{
+                                    style: {
+                                        fontSize: '13px',
+                                        padding: '2px 4px',
+                                        height: '30px'
+                                    },
+                                    inputComponent: FormatedInput,
+                                    endAdornment: <InputAdornment position="end">
+                                        <span style={{ fontSize: '13px' }}>Ar</span>
+                                    </InputAdornment>,
+                                    sx: {
+                                        '& input': {
+                                            textAlign: 'right', // Alignement du texte dans le champ à droite
+                                        },
+                                    },
+                                }}
+                                error={formik.touched.carburant && Boolean(formik.errors.carburant)} helperText={formik.touched.carburant && formik.errors.carburant}
+                            />
 
-                <TextField 
-                    label="Entretien/Réparation" 
-                    name="entretienReparation" 
-                    value={formik.values.entretienReparation} 
-                    onChange={formik.handleChange} 
-                    size="small"
-                    variant="standard"
-                    sx={{
-                        marginBottom: '0px',
-                        textAlign: 'right',
-                        justifyContent: 'right',
-                        justifyItems: 'right',
-                        backgroundColor: 'transparent',
-                        width: 200
-                    }}
-                    InputLabelProps={{
-                        style: {
-                            fontSize: '13px',
-                            marginTop: '-3px',
-                            color: '#1976d2',
-                        },
-                    }}
-                    InputProps={{
-                        style: {
-                            fontSize: '13px',
-                            padding: '2px 4px',
-                            height: '30px'
-                        },
-                        inputComponent: FormatedInput,
-                        endAdornment: <InputAdornment position="end">
-                            <span style={{ fontSize: '13px' }}>Ar</span>
-                        </InputAdornment>,
-                        sx: {
-                            '& input': {
-                                textAlign: 'right', // Alignement du texte dans le champ à droite
-                            },
-                        },
-                    }}
-                        error={formik.touched.entretienReparation && Boolean(formik.errors.entretienReparation)} helperText={formik.touched.entretienReparation && formik.errors.entretienReparation}
-                    />   
-                    <TextField 
-                    label="Total Dépenses Véhicule" 
-                    name="totalDepensesVehicule" 
-                    value={formik.values.totalDepensesVehicule} 
-                    onChange={() => { }} 
-                    size="small"
-                    variant="standard"
-                    disabled
-                    sx={{
-                        marginBottom: '0px',
-                        textAlign: 'right',
-                        justifyContent: 'right',
-                        justifyItems: 'right',
-                        backgroundColor: '#F4F9F9',
-                        width: 200
-                    }}
-                    InputLabelProps={{
-                        style: {
-                            fontSize: '13px',
-                            marginTop: '-3px',
-                            color: '#1976d2',
-                        },
-                    }}
-                    InputProps={{
-                        style: {
-                            fontSize: '13px',
-                            padding: '2px 4px',
-                            height: '30px'
-                        },
-                        inputComponent: FormatedInput,
-                        endAdornment: <InputAdornment position="end">
-                            <span style={{ fontSize: '13px' }}>Ar</span>
-                        </InputAdornment>,
-                        sx: {
-                            '& input': {
-                                textAlign: 'right', // Alignement du texte dans le champ à droite
-                            },
-                        },
-                    }}
-                        error={formik.touched.totalDepensesVehicule && Boolean(formik.errors.totalDepensesVehicule)} helperText={formik.touched.totalDepensesVehicule && formik.errors.totalDepensesVehicule}
-                    />
+                            <TextField
+                                label="Entretien/Réparation"
+                                name="entretienReparation"
+                                value={formik.values.entretienReparation}
+                                onChange={formik.handleChange}
+                                size="small"
+                                variant="standard"
+                                sx={{
+                                    marginBottom: '0px',
+                                    textAlign: 'right',
+                                    justifyContent: 'right',
+                                    justifyItems: 'right',
+                                    backgroundColor: 'transparent',
+                                    width: 200
+                                }}
+                                InputLabelProps={{
+                                    style: {
+                                        fontSize: '13px',
+                                        marginTop: '-3px',
+                                        color: '#1976d2',
+                                    },
+                                }}
+                                InputProps={{
+                                    style: {
+                                        fontSize: '13px',
+                                        padding: '2px 4px',
+                                        height: '30px'
+                                    },
+                                    inputComponent: FormatedInput,
+                                    endAdornment: <InputAdornment position="end">
+                                        <span style={{ fontSize: '13px' }}>Ar</span>
+                                    </InputAdornment>,
+                                    sx: {
+                                        '& input': {
+                                            textAlign: 'right', // Alignement du texte dans le champ à droite
+                                        },
+                                    },
+                                }}
+                                error={formik.touched.entretienReparation && Boolean(formik.errors.entretienReparation)} helperText={formik.touched.entretienReparation && formik.errors.entretienReparation}
+                            />
+                            <TextField
+                                label="Total Dépenses Véhicule"
+                                name="totalDepensesVehicule"
+                                value={formik.values.totalDepensesVehicule}
+                                onChange={() => { }}
+                                size="small"
+                                variant="standard"
+                                disabled
+                                sx={{
+                                    marginBottom: '0px',
+                                    textAlign: 'right',
+                                    justifyContent: 'right',
+                                    justifyItems: 'right',
+                                    backgroundColor: '#F4F9F9',
+                                    width: 200
+                                }}
+                                InputLabelProps={{
+                                    style: {
+                                        fontSize: '13px',
+                                        marginTop: '-3px',
+                                        color: '#1976d2',
+                                    },
+                                }}
+                                InputProps={{
+                                    style: {
+                                        fontSize: '13px',
+                                        padding: '2px 4px',
+                                        height: '30px'
+                                    },
+                                    inputComponent: FormatedInput,
+                                    endAdornment: <InputAdornment position="end">
+                                        <span style={{ fontSize: '13px' }}>Ar</span>
+                                    </InputAdornment>,
+                                    sx: {
+                                        '& input': {
+                                            textAlign: 'right', // Alignement du texte dans le champ à droite
+                                        },
+                                    },
+                                }}
+                                error={formik.touched.totalDepensesVehicule && Boolean(formik.errors.totalDepensesVehicule)} helperText={formik.touched.totalDepensesVehicule && formik.errors.totalDepensesVehicule}
+                            />
 
-                    <TextField 
-                    label="Total Avantage Nature Véhicule" 
-                    name="totalAvantageNatureVehicule" 
-                    value={formik.values.totalAvantageNatureVehicule} 
-                    onChange={() => { }} 
-                    size="small"
-                    variant="standard"
-                    disabled
-                    sx={{
-                        marginBottom: '0px',
-                        textAlign: 'right',
-                        justifyContent: 'right',
-                        justifyItems: 'right',
-                        backgroundColor: '#F4F9F9',
-                        width: 200
-                    }}
-                    InputLabelProps={{
-                        style: {
-                            fontSize: '13px',
-                            marginTop: '-3px',
-                            color: '#1976d2',
-                        },
-                    }}
-                    InputProps={{
-                        style: {
-                            fontSize: '13px',
-                            padding: '2px 4px',
-                            height: '30px'
-                        },
-                        inputComponent: FormatedInput,
-                        endAdornment: <InputAdornment position="end">
-                            <span style={{ fontSize: '13px' }}>Ar</span>
-                        </InputAdornment>,
-                        sx: {
-                            '& input': {
-                                textAlign: 'right', // Alignement du texte dans le champ à droite
-                            },
-                        },
-                    }}
-                        error={formik.touched.totalAvantageNatureVehicule && Boolean(formik.errors.totalAvantageNatureVehicule)} helperText={formik.touched.totalAvantageNatureVehicule && formik.errors.totalAvantageNatureVehicule}
-                    />   
-                     <Stack direction="column" spacing={2}>
-                     <TextField 
-                    label="Loyer Mensuel" 
-                    name="loyerMensuel" 
-                    value={formik.values.loyerMensuel} 
-                    onChange={formik.handleChange} 
-                    size="small"
-                    variant="standard"
-                    sx={{
-                        marginBottom: '0px',
-                        textAlign: 'right',
-                        justifyContent: 'right',
-                        justifyItems: 'right',
-                        backgroundColor: 'transparent',
-                        width: 200
-                    }}
-                    InputLabelProps={{
-                        style: {
-                            fontSize: '13px',
-                            marginTop: '-3px',
-                            color: '#1976d2',
-                        },
-                    }}
-                    InputProps={{
-                        style: {
-                            fontSize: '13px',
-                            padding: '2px 4px',
-                            height: '30px'
-                        },
-                        inputComponent: FormatedInput,
-                        endAdornment: <InputAdornment position="end">
-                            <span style={{ fontSize: '13px' }}>Ar</span>
-                        </InputAdornment>,
-                        sx: {
-                            '& input': {
-                                textAlign: 'right', // Alignement du texte dans le champ à droite
-                            },
-                        },
-                    }}
-                        error={formik.touched.loyerMensuel && Boolean(formik.errors.loyerMensuel)} helperText={formik.touched.loyerMensuel && formik.errors.loyerMensuel}
-                    />     
+                            <TextField
+                                label="Total Avantage Nature Véhicule"
+                                name="totalAvantageNatureVehicule"
+                                value={formik.values.totalAvantageNatureVehicule}
+                                onChange={() => { }}
+                                size="small"
+                                variant="standard"
+                                disabled
+                                sx={{
+                                    marginBottom: '0px',
+                                    textAlign: 'right',
+                                    justifyContent: 'right',
+                                    justifyItems: 'right',
+                                    backgroundColor: '#F4F9F9',
+                                    width: 200
+                                }}
+                                InputLabelProps={{
+                                    style: {
+                                        fontSize: '13px',
+                                        marginTop: '-3px',
+                                        color: '#1976d2',
+                                    },
+                                }}
+                                InputProps={{
+                                    style: {
+                                        fontSize: '13px',
+                                        padding: '2px 4px',
+                                        height: '30px'
+                                    },
+                                    inputComponent: FormatedInput,
+                                    endAdornment: <InputAdornment position="end">
+                                        <span style={{ fontSize: '13px' }}>Ar</span>
+                                    </InputAdornment>,
+                                    sx: {
+                                        '& input': {
+                                            textAlign: 'right', // Alignement du texte dans le champ à droite
+                                        },
+                                    },
+                                }}
+                                error={formik.touched.totalAvantageNatureVehicule && Boolean(formik.errors.totalAvantageNatureVehicule)} helperText={formik.touched.totalAvantageNatureVehicule && formik.errors.totalAvantageNatureVehicule}
+                            />
+                            <Stack direction="column" spacing={2}>
+                                <TextField
+                                    label="Loyer Mensuel"
+                                    name="loyerMensuel"
+                                    value={formik.values.loyerMensuel}
+                                    onChange={formik.handleChange}
+                                    size="small"
+                                    variant="standard"
+                                    sx={{
+                                        marginBottom: '0px',
+                                        textAlign: 'right',
+                                        justifyContent: 'right',
+                                        justifyItems: 'right',
+                                        backgroundColor: 'transparent',
+                                        width: 200
+                                    }}
+                                    InputLabelProps={{
+                                        style: {
+                                            fontSize: '13px',
+                                            marginTop: '-3px',
+                                            color: '#1976d2',
+                                        },
+                                    }}
+                                    InputProps={{
+                                        style: {
+                                            fontSize: '13px',
+                                            padding: '2px 4px',
+                                            height: '30px'
+                                        },
+                                        inputComponent: FormatedInput,
+                                        endAdornment: <InputAdornment position="end">
+                                            <span style={{ fontSize: '13px' }}>Ar</span>
+                                        </InputAdornment>,
+                                        sx: {
+                                            '& input': {
+                                                textAlign: 'right', // Alignement du texte dans le champ à droite
+                                            },
+                                        },
+                                    }}
+                                    error={formik.touched.loyerMensuel && Boolean(formik.errors.loyerMensuel)} helperText={formik.touched.loyerMensuel && formik.errors.loyerMensuel}
+                                />
 
-                    
-                    <TextField 
-                    label="Dépense Téléphone" 
-                    name="depenseTelephone" 
-                    value={formik.values.depenseTelephone} 
-                    onChange={formik.handleChange} 
-                    size="small"
-                    variant="standard"
-                    sx={{
-                        marginBottom: '0px',
-                        textAlign: 'right',
-                        justifyContent: 'right',
-                        justifyItems: 'right',
-                        backgroundColor: 'transparent',
-                        width: 200
-                    }}
-                    InputLabelProps={{
-                        style: {
-                            fontSize: '13px',
-                            marginTop: '-3px',
-                            color: '#1976d2',
-                        },
-                    }}
-                    InputProps={{
-                        style: {
-                            fontSize: '13px',
-                            padding: '2px 4px',
-                            height: '30px'
-                        },
-                        inputComponent: FormatedInput,
-                        endAdornment: <InputAdornment position="end">
-                            <span style={{ fontSize: '13px' }}>Ar</span>
-                        </InputAdornment>,
-                        sx: {
-                            '& input': {
-                                textAlign: 'right', // Alignement du texte dans le champ à droite
-                            },
-                        },
-                    }}
-                        error={formik.touched.depenseTelephone && Boolean(formik.errors.depenseTelephone)} helperText={formik.touched.depenseTelephone && formik.errors.depenseTelephone}
-                    />
-                     </Stack>
-                     
-                     <Stack direction="column" spacing={2}>
-                     <TextField 
-                    label="Avantage Nature Loyer" 
-                    name="avantageNatureLoyer" 
-                    value={formik.values.avantageNatureLoyer} 
-                    onChange={formik.handleChange} 
-                    size="small"
-                    variant="standard"
-                    disabled
-                    sx={{
-                        marginBottom: '0px',
-                        textAlign: 'right',
-                        justifyContent: 'right',
-                        justifyItems: 'right',
-                        backgroundColor: '#F4F9F9',
-                        width: 200
-                    }}
-                    InputLabelProps={{
-                        style: {
-                            fontSize: '13px',
-                            marginTop: '-3px',
-                            color: '#1976d2',
-                        },
-                    }}
-                    InputProps={{
-                        style: {
-                            fontSize: '13px',
-                            padding: '2px 4px',
-                            height: '30px'
-                        },
-                        inputComponent: FormatedInput,
-                        endAdornment: <InputAdornment position="end">
-                            <span style={{ fontSize: '13px' }}>Ar</span>
-                        </InputAdornment>,
-                        sx: {
-                            '& input': {
-                                textAlign: 'right', // Alignement du texte dans le champ à droite
-                            },
-                        },
-                    }}
-                        error={formik.touched.avantageNatureLoyer && Boolean(formik.errors.avantageNatureLoyer)} helperText={formik.touched.avantageNatureLoyer && formik.errors.avantageNatureLoyer}
-                    />  
 
-                     <TextField 
-                    label="Avantage Nature Téléphone" 
-                    name="avantageNatureTelephone" 
-                    value={formik.values.avantageNatureTelephone} 
-                    onChange={() => { }} 
-                    size="small"
-                    variant="standard"
-                    disabled
-                    sx={{
-                        marginBottom: '0px',
-                        textAlign: 'right',
-                        justifyContent: 'right',
-                        justifyItems: 'right',
-                        backgroundColor: '#F4F9F9',
-                        width: 200
-                    }}
-                    InputLabelProps={{
-                        style: {
-                            fontSize: '13px',
-                            marginTop: '-3px',
-                            color: '#1976d2',
-                        },
-                    }}
-                    InputProps={{
-                        style: {
-                            fontSize: '13px',
-                            padding: '2px 4px',
-                            height: '30px'
-                        },
-                        inputComponent: FormatedInput,
-                        endAdornment: <InputAdornment position="end">
-                            <span style={{ fontSize: '13px' }}>Ar</span>
-                        </InputAdornment>,
-                        sx: {
-                            '& input': {
-                                textAlign: 'right', // Alignement du texte dans le champ à droite
-                            },
-                        },
-                    }}
-                        error={formik.touched.avantageNatureTelephone && Boolean(formik.errors.avantageNatureTelephone)} helperText={formik.touched.avantageNatureTelephone && formik.errors.avantageNatureTelephone}
-                    />
-                    </Stack>
-</Box>
+                                <TextField
+                                    label="Dépense Téléphone"
+                                    name="depenseTelephone"
+                                    value={formik.values.depenseTelephone}
+                                    onChange={formik.handleChange}
+                                    size="small"
+                                    variant="standard"
+                                    sx={{
+                                        marginBottom: '0px',
+                                        textAlign: 'right',
+                                        justifyContent: 'right',
+                                        justifyItems: 'right',
+                                        backgroundColor: 'transparent',
+                                        width: 200
+                                    }}
+                                    InputLabelProps={{
+                                        style: {
+                                            fontSize: '13px',
+                                            marginTop: '-3px',
+                                            color: '#1976d2',
+                                        },
+                                    }}
+                                    InputProps={{
+                                        style: {
+                                            fontSize: '13px',
+                                            padding: '2px 4px',
+                                            height: '30px'
+                                        },
+                                        inputComponent: FormatedInput,
+                                        endAdornment: <InputAdornment position="end">
+                                            <span style={{ fontSize: '13px' }}>Ar</span>
+                                        </InputAdornment>,
+                                        sx: {
+                                            '& input': {
+                                                textAlign: 'right', // Alignement du texte dans le champ à droite
+                                            },
+                                        },
+                                    }}
+                                    error={formik.touched.depenseTelephone && Boolean(formik.errors.depenseTelephone)} helperText={formik.touched.depenseTelephone && formik.errors.depenseTelephone}
+                                />
+                            </Stack>
 
-<Box display="flex" flexDirection="row" gap={2} flexWrap="wrap" style={{ marginLeft: '50px', marginTop: '16px' }} >
-                    <TextField 
-                    label="Autres Avantages Nature" 
-                    name="autresAvantagesNature" 
-                    value={formik.values.autresAvantagesNature} 
-                    onChange={formik.handleChange}
-                    size="small"
-                    variant="standard"
-                    sx={{
-                        marginBottom: '0px',
-                        textAlign: 'right',
-                        justifyContent: 'right',
-                        justifyItems: 'right',
-                        backgroundColor: 'transparent',
-                        width: 200
-                    }}
-                    InputLabelProps={{
-                        style: {
-                            fontSize: '13px',
-                            marginTop: '-3px',
-                            color: '#1976d2',
-                        },
-                    }}
-                    InputProps={{
-                        style: {
-                            fontSize: '13px',
-                            padding: '2px 4px',
-                            height: '30px'
-                        },
-                        inputComponent: FormatedInput,
-                        endAdornment: <InputAdornment position="end">
-                            <span style={{ fontSize: '13px' }}>Ar</span>
-                        </InputAdornment>,
-                        sx: {
-                            '& input': {
-                                textAlign: 'right', // Alignement du texte dans le champ à droite
-                            },
-                        },
-                    }}
-                        error={formik.touched.totalAvantageNature && Boolean(formik.errors.totalAvantageNature)} helperText={formik.touched.totalAvantageNature && formik.errors.totalAvantageNature}
-                    />
+                            <Stack direction="column" spacing={2}>
+                                <TextField
+                                    label="Avantage Nature Loyer"
+                                    name="avantageNatureLoyer"
+                                    value={formik.values.avantageNatureLoyer}
+                                    onChange={formik.handleChange}
+                                    size="small"
+                                    variant="standard"
+                                    disabled
+                                    sx={{
+                                        marginBottom: '0px',
+                                        textAlign: 'right',
+                                        justifyContent: 'right',
+                                        justifyItems: 'right',
+                                        backgroundColor: '#F4F9F9',
+                                        width: 200
+                                    }}
+                                    InputLabelProps={{
+                                        style: {
+                                            fontSize: '13px',
+                                            marginTop: '-3px',
+                                            color: '#1976d2',
+                                        },
+                                    }}
+                                    InputProps={{
+                                        style: {
+                                            fontSize: '13px',
+                                            padding: '2px 4px',
+                                            height: '30px'
+                                        },
+                                        inputComponent: FormatedInput,
+                                        endAdornment: <InputAdornment position="end">
+                                            <span style={{ fontSize: '13px' }}>Ar</span>
+                                        </InputAdornment>,
+                                        sx: {
+                                            '& input': {
+                                                textAlign: 'right', // Alignement du texte dans le champ à droite
+                                            },
+                                        },
+                                    }}
+                                    error={formik.touched.avantageNatureLoyer && Boolean(formik.errors.avantageNatureLoyer)} helperText={formik.touched.avantageNatureLoyer && formik.errors.avantageNatureLoyer}
+                                />
 
-                    <TextField 
-                    label="Total Avantage Nature" 
-                    name="totalAvantageNature" 
-                    value={formik.values.totalAvantageNature} 
-                    onChange={() => { }}
-                    disabled 
-                    size="small"
-                    variant="standard"
-                    sx={{
-                        marginBottom: '0px',
-                        textAlign: 'right',
-                        justifyContent: 'right',
-                        justifyItems: 'right',
-                        backgroundColor: '#F4F9F9',
-                        width: 200
-                    }}
-                    InputLabelProps={{
-                        style: {
-                            fontSize: '13px',
-                            marginTop: '-3px',
-                            color: '#1976d2',
-                        },
-                    }}
-                    InputProps={{
-                        style: {
-                            fontSize: '13px',
-                            padding: '2px 4px',
-                            height: '30px'
-                        },
-                        inputComponent: FormatedInput,
-                        endAdornment: <InputAdornment position="end">
-                            <span style={{ fontSize: '13px' }}>Ar</span>
-                        </InputAdornment>,
-                        sx: {
-                            '& input': {
-                                textAlign: 'right', // Alignement du texte dans le champ à droite
-                            },
-                        },
-                    }}
-                        error={formik.touched.totalAvantageNature && Boolean(formik.errors.totalAvantageNature)} helperText={formik.touched.totalAvantageNature && formik.errors.totalAvantageNature}
-                    />
-                    </Box>
-               
-                </AccordionDetails>
-                </Accordion>
+                                <TextField
+                                    label="Avantage Nature Téléphone"
+                                    name="avantageNatureTelephone"
+                                    value={formik.values.avantageNatureTelephone}
+                                    onChange={() => { }}
+                                    size="small"
+                                    variant="standard"
+                                    disabled
+                                    sx={{
+                                        marginBottom: '0px',
+                                        textAlign: 'right',
+                                        justifyContent: 'right',
+                                        justifyItems: 'right',
+                                        backgroundColor: '#F4F9F9',
+                                        width: 200
+                                    }}
+                                    InputLabelProps={{
+                                        style: {
+                                            fontSize: '13px',
+                                            marginTop: '-3px',
+                                            color: '#1976d2',
+                                        },
+                                    }}
+                                    InputProps={{
+                                        style: {
+                                            fontSize: '13px',
+                                            padding: '2px 4px',
+                                            height: '30px'
+                                        },
+                                        inputComponent: FormatedInput,
+                                        endAdornment: <InputAdornment position="end">
+                                            <span style={{ fontSize: '13px' }}>Ar</span>
+                                        </InputAdornment>,
+                                        sx: {
+                                            '& input': {
+                                                textAlign: 'right', // Alignement du texte dans le champ à droite
+                                            },
+                                        },
+                                    }}
+                                    error={formik.touched.avantageNatureTelephone && Boolean(formik.errors.avantageNatureTelephone)} helperText={formik.touched.avantageNatureTelephone && formik.errors.avantageNatureTelephone}
+                                />
+                            </Stack>
+                        </Box>
 
-                <Typography variant="subtitle1" sx={{fontWeight: 'normal', fontSize: '15px', mb: 1.5, marginLeft: '50px' }}>Total salaire Brut</Typography>
-                <Box display="flex" flexDirection="row" gap={1.5} flexWrap="wrap" marginLeft="62px">
-                <TextField 
-                    label="Total salaire" 
-                    name="totalSalaireBrut" 
-                    value={formik.values.totalSalaireBrut} 
-                    onChange={() => { }} 
-                    disabled
-                    size="small"
-                    variant="standard"
-                    sx={{
-                        marginBottom: '0px',
-                        textAlign: 'right',
-                        justifyContent: 'right',
-                        justifyItems: 'right',
-                        backgroundColor: '#F4F9F9',
-                        width: 200
-                    }}
-                    InputLabelProps={{
-                        style: {
-                            fontSize: '13px',
-                            marginTop: '-3px',
-                            color: '#1976d2',
-                        },
-                    }}
-                    InputProps={{
-                        style: {
-                            fontSize: '13px',
-                            padding: '2px 4px',
-                            height: '30px'
-                        },
-                        inputComponent: FormatedInput,
-                        endAdornment: <InputAdornment position="end">
-                            <span style={{ fontSize: '13px' }}>Ar</span>
-                        </InputAdornment>,
-                        sx: {
-                            '& input': {
-                                textAlign: 'right', // Alignement du texte dans le champ à droite
-                            },
-                        },
-                    }}
-                        error={formik.touched.cnapsEmployeur && Boolean(formik.errors.cnapsEmployeur)} helperText={formik.touched.cnapsEmployeur && formik.errors.cnapsEmployeur}
-                    />
-                </Box>
-                <Box sx={{ mt: 1}} />
-                {/* Groupe 6 : Cotisations et base imposable */}
-                <Typography variant="subtitle1" sx={{ fontWeight: 'normal', fontSize: '15px', mb: 1, marginLeft: '50px' }}>Cotisations – part salarié</Typography>
-<Box display="flex" flexWrap="wrap" gap={2} mb={1} alignItems="center" style={{ marginLeft: '50px' }}>
+                        <Box display="flex" flexDirection="row" gap={2} flexWrap="wrap" style={{ marginLeft: '50px', marginTop: '16px' }} >
+                            <TextField
+                                label="Autres Avantages Nature"
+                                name="autresAvantagesNature"
+                                value={formik.values.autresAvantagesNature}
+                                onChange={formik.handleChange}
+                                size="small"
+                                variant="standard"
+                                sx={{
+                                    marginBottom: '0px',
+                                    textAlign: 'right',
+                                    justifyContent: 'right',
+                                    justifyItems: 'right',
+                                    backgroundColor: 'transparent',
+                                    width: 200
+                                }}
+                                InputLabelProps={{
+                                    style: {
+                                        fontSize: '13px',
+                                        marginTop: '-3px',
+                                        color: '#1976d2',
+                                    },
+                                }}
+                                InputProps={{
+                                    style: {
+                                        fontSize: '13px',
+                                        padding: '2px 4px',
+                                        height: '30px'
+                                    },
+                                    inputComponent: FormatedInput,
+                                    endAdornment: <InputAdornment position="end">
+                                        <span style={{ fontSize: '13px' }}>Ar</span>
+                                    </InputAdornment>,
+                                    sx: {
+                                        '& input': {
+                                            textAlign: 'right', // Alignement du texte dans le champ à droite
+                                        },
+                                    },
+                                }}
+                                error={formik.touched.totalAvantageNature && Boolean(formik.errors.totalAvantageNature)} helperText={formik.touched.totalAvantageNature && formik.errors.totalAvantageNature}
+                            />
 
-</Box>
-{/* Séparateur visuel avant synthèse paie */}
-{/* <Box sx={{ marginTop: '32px' }} /> */}
-<Box
-  display="flex"
-  flexDirection="row"
-  gap={1.5}
-  flexWrap="wrap"
-  sx={{ ml: '62px', mt: 0 }}  // Pas de marge au-dessus
->
-                    <TextField 
-                    label="CNAPS Employeur" 
-                    name="cnapsEmployeur" 
-                    value={formik.values.cnapsEmployeur} 
-                    onChange={() => { }} 
-                    disabled
-                    size="small"
-                    variant="standard"
-                    sx={{
-                        marginBottom: '0px',
-                        textAlign: 'right',
-                        justifyContent: 'right',
-                        justifyItems: 'right',
-                        backgroundColor: '#F4F9F9',
-                        width: 200
-                    }}
-                    InputLabelProps={{
-                        style: {
-                            fontSize: '13px',
-                            marginTop: '-3px',
-                            color: '#1976d2',
-                        },
-                    }}
-                    InputProps={{
-                        style: {
-                            fontSize: '13px',
-                            padding: '2px 4px',
-                            height: '30px'
-                        },
-                        inputComponent: FormatedInput,
-                        endAdornment: <InputAdornment position="end">
-                            <span style={{ fontSize: '13px' }}>Ar</span>
-                        </InputAdornment>,
-                        sx: {
-                            '& input': {
-                                textAlign: 'right', // Alignement du texte dans le champ à droite
-                            },
-                        },
-                    }}
-                        error={formik.touched.cnapsEmployeur && Boolean(formik.errors.cnapsEmployeur)} helperText={formik.touched.cnapsEmployeur && formik.errors.cnapsEmployeur}
-                    />
-                    <TextField 
-                    label="OSTIE Employeur" 
-                    name="ostieEmployeur" 
-                    value={formik.values.ostieEmployeur} 
-                    onChange={() => { }} 
-                    disabled    
-                    size="small"
-                    variant="standard"
-                    sx={{
-                        marginBottom: '0px',
-                        textAlign: 'right',
-                        justifyContent: 'right',
-                        justifyItems: 'right',
-                        backgroundColor: '#F4F9F9',
-                        width: 200
-                    }}
-                    InputLabelProps={{
-                        style: {
-                            fontSize: '13px',
-                            marginTop: '-3px',
-                            color: '#1976d2',
-                        },
-                    }}
-                    InputProps={{
-                        style: {
-                            fontSize: '13px',
-                            padding: '2px 4px',
-                            height: '30px'
-                        },
-                        inputComponent: FormatedInput,
-                        endAdornment: <InputAdornment position="end">
-                            <span style={{ fontSize: '13px' }}>Ar</span>
-                        </InputAdornment>,
-                        sx: {
-                            '& input': {
-                                textAlign: 'right', // Alignement du texte dans le champ à droite
-                            },
-                        },
-                    }}
-                        error={formik.touched.ostieEmployeur && Boolean(formik.errors.ostieEmployeur)} helperText={formik.touched.ostieEmployeur && formik.errors.ostieEmployeur}
-                    />
-                     <TextField 
-                    label="Base Imposable" 
-                    name="baseImposable" 
-                    value={formik.values.baseImposable} 
-                    onChange={() => { }} 
-                    disabled
+                            <TextField
+                                label="Total Avantage Nature"
+                                name="totalAvantageNature"
+                                value={formik.values.totalAvantageNature}
+                                onChange={() => { }}
+                                disabled
                                 size="small"
                                 variant="standard"
                                 sx={{
@@ -1520,6 +1321,193 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                                         },
                                     },
                                 }}
+                                error={formik.touched.totalAvantageNature && Boolean(formik.errors.totalAvantageNature)} helperText={formik.touched.totalAvantageNature && formik.errors.totalAvantageNature}
+                            />
+                        </Box>
+
+                    </AccordionDetails>
+                </Accordion>
+
+                <Typography variant="subtitle1" sx={{ fontWeight: 'normal', fontSize: '15px', mb: 1.5, marginLeft: '50px' }}>Total salaire Brut</Typography>
+                <Box display="flex" flexDirection="row" gap={1.5} flexWrap="wrap" marginLeft="62px">
+                    <TextField
+                        label="Total salaire"
+                        name="totalSalaireBrut"
+                        value={formik.values.totalSalaireBrut}
+                        onChange={() => { }}
+                        disabled
+                        size="small"
+                        variant="standard"
+                        sx={{
+                            marginBottom: '0px',
+                            textAlign: 'right',
+                            justifyContent: 'right',
+                            justifyItems: 'right',
+                            backgroundColor: '#F4F9F9',
+                            width: 200
+                        }}
+                        InputLabelProps={{
+                            style: {
+                                fontSize: '13px',
+                                marginTop: '-3px',
+                                color: '#1976d2',
+                            },
+                        }}
+                        InputProps={{
+                            style: {
+                                fontSize: '13px',
+                                padding: '2px 4px',
+                                height: '30px'
+                            },
+                            inputComponent: FormatedInput,
+                            endAdornment: <InputAdornment position="end">
+                                <span style={{ fontSize: '13px' }}>Ar</span>
+                            </InputAdornment>,
+                            sx: {
+                                '& input': {
+                                    textAlign: 'right', // Alignement du texte dans le champ à droite
+                                },
+                            },
+                        }}
+                        error={formik.touched.cnapsEmployeur && Boolean(formik.errors.cnapsEmployeur)} helperText={formik.touched.cnapsEmployeur && formik.errors.cnapsEmployeur}
+                    />
+                </Box>
+                <Box sx={{ mt: 1 }} />
+                {/* Groupe 6 : Cotisations et base imposable */}
+                <Typography variant="subtitle1" sx={{ fontWeight: 'normal', fontSize: '15px', mb: 1, marginLeft: '50px' }}>Cotisations – part salarié</Typography>
+                <Box display="flex" flexWrap="wrap" gap={2} mb={1} alignItems="center" style={{ marginLeft: '50px' }}>
+
+                </Box>
+                {/* Séparateur visuel avant synthèse paie */}
+                {/* <Box sx={{ marginTop: '32px' }} /> */}
+                <Box
+                    display="flex"
+                    flexDirection="row"
+                    gap={1.5}
+                    flexWrap="wrap"
+                    sx={{ ml: '62px', mt: 0 }}  // Pas de marge au-dessus
+                >
+                    <TextField
+                        label="CNAPS Employeur"
+                        name="cnapsEmployeur"
+                        value={formik.values.cnapsEmployeur}
+                        onChange={() => { }}
+                        disabled
+                        size="small"
+                        variant="standard"
+                        sx={{
+                            marginBottom: '0px',
+                            textAlign: 'right',
+                            justifyContent: 'right',
+                            justifyItems: 'right',
+                            backgroundColor: '#F4F9F9',
+                            width: 200
+                        }}
+                        InputLabelProps={{
+                            style: {
+                                fontSize: '13px',
+                                marginTop: '-3px',
+                                color: '#1976d2',
+                            },
+                        }}
+                        InputProps={{
+                            style: {
+                                fontSize: '13px',
+                                padding: '2px 4px',
+                                height: '30px'
+                            },
+                            inputComponent: FormatedInput,
+                            endAdornment: <InputAdornment position="end">
+                                <span style={{ fontSize: '13px' }}>Ar</span>
+                            </InputAdornment>,
+                            sx: {
+                                '& input': {
+                                    textAlign: 'right', // Alignement du texte dans le champ à droite
+                                },
+                            },
+                        }}
+                        error={formik.touched.cnapsEmployeur && Boolean(formik.errors.cnapsEmployeur)} helperText={formik.touched.cnapsEmployeur && formik.errors.cnapsEmployeur}
+                    />
+                    <TextField
+                        label="OSTIE Employeur"
+                        name="ostieEmployeur"
+                        value={formik.values.ostieEmployeur}
+                        onChange={() => { }}
+                        disabled
+                        size="small"
+                        variant="standard"
+                        sx={{
+                            marginBottom: '0px',
+                            textAlign: 'right',
+                            justifyContent: 'right',
+                            justifyItems: 'right',
+                            backgroundColor: '#F4F9F9',
+                            width: 200
+                        }}
+                        InputLabelProps={{
+                            style: {
+                                fontSize: '13px',
+                                marginTop: '-3px',
+                                color: '#1976d2',
+                            },
+                        }}
+                        InputProps={{
+                            style: {
+                                fontSize: '13px',
+                                padding: '2px 4px',
+                                height: '30px'
+                            },
+                            inputComponent: FormatedInput,
+                            endAdornment: <InputAdornment position="end">
+                                <span style={{ fontSize: '13px' }}>Ar</span>
+                            </InputAdornment>,
+                            sx: {
+                                '& input': {
+                                    textAlign: 'right', // Alignement du texte dans le champ à droite
+                                },
+                            },
+                        }}
+                        error={formik.touched.ostieEmployeur && Boolean(formik.errors.ostieEmployeur)} helperText={formik.touched.ostieEmployeur && formik.errors.ostieEmployeur}
+                    />
+                    <TextField
+                        label="Base Imposable"
+                        name="baseImposable"
+                        value={formik.values.baseImposable}
+                        onChange={() => { }}
+                        disabled
+                        size="small"
+                        variant="standard"
+                        sx={{
+                            marginBottom: '0px',
+                            textAlign: 'right',
+                            justifyContent: 'right',
+                            justifyItems: 'right',
+                            backgroundColor: '#F4F9F9',
+                            width: 200
+                        }}
+                        InputLabelProps={{
+                            style: {
+                                fontSize: '13px',
+                                marginTop: '-3px',
+                                color: '#1976d2',
+                            },
+                        }}
+                        InputProps={{
+                            style: {
+                                fontSize: '13px',
+                                padding: '2px 4px',
+                                height: '30px'
+                            },
+                            inputComponent: FormatedInput,
+                            endAdornment: <InputAdornment position="end">
+                                <span style={{ fontSize: '13px' }}>Ar</span>
+                            </InputAdornment>,
+                            sx: {
+                                '& input': {
+                                    textAlign: 'right', // Alignement du texte dans le champ à droite
+                                },
+                            },
+                        }}
                         error={formik.touched.baseImposable && Boolean(formik.errors.baseImposable)} helperText={formik.touched.baseImposable && formik.errors.baseImposable}
                     />
                 </Box>
@@ -1534,11 +1522,11 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                         border: 'none',
                         boxShadow: 'none',
                         '&::before': {
-                        display: 'none',
+                            display: 'none',
                         },
                         mb: 1,
                     }}
-                    >
+                >
                     <AccordionSummary
                         expandIcon={<MdExpandCircleDown style={{ width: '25px', height: '25px', color: '#1976d2' }} />}
                         aria-controls="panelSynthese-content"
@@ -1548,230 +1536,238 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
                         <Typography style={{ fontWeight: 'normal', fontSize: '20px', marginLeft: '10px' }}>Synthèse paie</Typography>
                     </AccordionSummary>
                     <AccordionDetails>
-                    <Box display="flex" flexDirection="row" gap={2} flexWrap="wrap" style={{ marginLeft: '50px', marginBottom: '12px' }}>
-                    <TextField 
-                        label="IRSA Brut" 
-                        name="irsaBrut" 
-                        value={formik.values.irsaBrut} 
-                        onChange={() => { }} 
-                        disabled
-                        size="small"
-                        variant="standard"
-                        sx={{ marginBottom: '0px', width: 200, backgroundColor: '#F4F9F9' }}
-                        InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
-                        InputProps={{
-                            style: { fontSize: '13px', padding: '2px 4px', height: '30px' },
-                            inputComponent: FormatedInput,
-                            endAdornment: <InputAdornment position="end"><span style={{ fontSize: '13px' }}>Ar</span></InputAdornment>,
-                            sx: { '& input': { textAlign: 'right' } },
-                        }}
-                        error={formik.touched.irsaBrut && Boolean(formik.errors.irsaBrut)} helperText={formik.touched.irsaBrut && formik.errors.irsaBrut}
-                    />
-                    <TextField 
-                        label="IRSA Net" 
-                        name="irsaNet" 
-                        value={formik.values.irsaNet} 
-                        onChange={() => { }} 
-                        disabled
-                        size="small"
-                        variant="standard"
-                        sx={{ marginBottom: '0px', width: 200, backgroundColor: '#F4F9F9' }}
-                        InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
-                        InputProps={{
-                            style: { fontSize: '13px', padding: '2px 4px', height: '30px' },
-                            inputComponent: FormatedInput,
-                            endAdornment: <InputAdornment position="end"><span style={{ fontSize: '13px' }}>Ar</span></InputAdornment>,
-                            sx: { '& input': { textAlign: 'right' } },
-                        }}
-                        error={formik.touched.irsaNet && Boolean(formik.errors.irsaNet)} helperText={formik.touched.irsaNet && formik.errors.irsaNet}
-                    />
-                    <TextField 
-                        label="Déduction famille" 
-                        name="deductionEnfants" 
-                        value={formik.values.deductionEnfants} 
-                        onChange={() => { }} 
-                        disabled
-                        size="small"
-                        variant="standard"
-                        sx={{ marginBottom: '0px', width: 200, backgroundColor: '#F4F9F9' }}
-                        InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
-                        InputProps={{
-                            style: { fontSize: '13px', padding: '2px 4px', height: '30px' },
-                            inputComponent: FormatedInput,
-                            endAdornment: <InputAdornment position="end"><span style={{ fontSize: '13px' }}>Ar</span></InputAdornment>,
-                            sx: { '& input': { textAlign: 'right' } },
-                        }}
-                        error={formik.touched.deductionEnfants && Boolean(formik.errors.deductionEnfants)} helperText={formik.touched.deductionEnfants && formik.errors.deductionEnfants}
-                    />
-                    <TextField 
-                        label="Salaire Net" 
-                        name="salaireNet" 
-                        value={formik.values.salaireNet} 
-                        onChange={() => { }} 
-                        disabled
-                        size="small"
-                        variant="standard"
-                        sx={{ marginBottom: '0px', width: 200, backgroundColor: '#F4F9F9' }}
-                        InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
-                        InputProps={{
-                            style: { fontSize: '13px', padding: '2px 4px', height: '30px' },
-                            inputComponent: FormatedInput,
-                            endAdornment: <InputAdornment position="end"><span style={{ fontSize: '13px' }}>Ar</span></InputAdornment>,
-                            sx: { '& input': { textAlign: 'right' } },
-                        }}
-                        error={formik.touched.salaireNet && Boolean(formik.errors.salaireNet)} helperText={formik.touched.salaireNet && formik.errors.salaireNet}
-                    />
-                </Box>
-                <Box display="flex" flexDirection="row" gap={2} flexWrap="wrap" style={{ marginLeft: '50px', marginBottom: '12px' }}>
-                    <TextField 
-                        label="Avance Quizaine/Autres" 
-                        name="avanceQuinzaineAutres" 
-                        value={formik.values.avanceQuinzaineAutres} 
-                        onChange={formik.handleChange} 
-                        size="small"
-                        variant="standard"
-                        sx={{ marginBottom: '0px', width: 200 }}
-                        InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
-                        InputProps={{
-                            style: { fontSize: '13px', padding: '2px 4px', height: '30px' },
-                            inputComponent: FormatedInput,
-                            endAdornment: <InputAdornment position="end"><span style={{ fontSize: '13px' }}>Ar</span></InputAdornment>,
-                            sx: { '& input': { textAlign: 'right' } },
-                        }}
-                        error={formik.touched.avanceQuinzaineAutres && Boolean(formik.errors.avanceQuinzaineAutres)} helperText={formik.touched.avanceQuinzaineAutres && formik.errors.avanceQuinzaineAutres}
-                    />
-                    <TextField 
-                        label="Avances Spéciales" 
-                        name="avancesSpeciales" 
-                        value={formik.values.avancesSpeciales} 
-                        onChange={formik.handleChange} 
-                        size="small"
-                        variant="standard"
-                        sx={{ marginBottom: '0px', width: 200 }}
-                        InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
-                        InputProps={{
-                            style: { fontSize: '13px', padding: '2px 4px', height: '30px' },
-                            inputComponent: FormatedInput,
-                            endAdornment: <InputAdornment position="end"><span style={{ fontSize: '13px' }}>Ar</span></InputAdornment>,
-                            sx: { '& input': { textAlign: 'right' } },
-                        }}
-                        error={formik.touched.avancesSpeciales && Boolean(formik.errors.avancesSpeciales)} helperText={formik.touched.avancesSpeciales && formik.errors.avancesSpeciales}
-                    />
-                    <TextField 
-                        label="Allocation Familiale" 
-                        name="allocationFamiliale" 
-                        value={formik.values.allocationFamiliale} 
-                        onChange={formik.handleChange} 
-                        size="small"
-                        variant="standard"
-                        sx={{ marginBottom: '0px', width: 200 }}
-                        InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
-                        InputProps={{
-                            style: { fontSize: '13px', padding: '2px 4px', height: '30px' },
-                            inputComponent: FormatedInput,
-                            endAdornment: <InputAdornment position="end"><span style={{ fontSize: '13px' }}>Ar</span></InputAdornment>,
-                            sx: { '& input': { textAlign: 'right' } },
-                        }}
-                        error={formik.touched.allocationFamiliale && Boolean(formik.errors.allocationFamiliale)} helperText={formik.touched.allocationFamiliale && formik.errors.allocationFamiliale}
-                    />
-                    <TextField 
-                        label="Net à Payer (Ar)" 
-                        name="netAPayerAriary" 
-                        value={formik.values.netAPayerAriary} 
-                        onChange={() => { }} 
-                        disabled
-                        size="small"
-                        variant="standard"
-                        sx={{ marginBottom: '0px', width: 200, backgroundColor: '#F4F9F9' }}
-                        InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
-                        InputProps={{
-                            style: { fontSize: '13px', padding: '2px 4px', height: '30px' },
-                            inputComponent: FormatedInput,
-                            endAdornment: <InputAdornment position="end"><span style={{ fontSize: '13px' }}>Ar</span></InputAdornment>,
-                            sx: { '& input': { textAlign: 'right' } },
-                        }}
-                        error={formik.touched.netAPayerAriary && Boolean(formik.errors.netAPayerAriary)} helperText={formik.touched.netAPayerAriary && formik.errors.netAPayerAriary}
-                    />
-                </Box>
-                </AccordionDetails>
+                        <Box display="flex" flexDirection="row" gap={2} flexWrap="wrap" style={{ marginLeft: '50px', marginBottom: '12px' }}>
+                            <TextField
+                                label="IRSA Brut"
+                                name="irsaBrut"
+                                value={formik.values.irsaBrut}
+                                onChange={() => { }}
+                                disabled
+                                size="small"
+                                variant="standard"
+                                sx={{ marginBottom: '0px', width: 200, backgroundColor: '#F4F9F9' }}
+                                InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
+                                InputProps={{
+                                    style: { fontSize: '13px', padding: '2px 4px', height: '30px' },
+                                    inputComponent: FormatedInput,
+                                    endAdornment: <InputAdornment position="end"><span style={{ fontSize: '13px' }}>Ar</span></InputAdornment>,
+                                    sx: { '& input': { textAlign: 'right' } },
+                                }}
+                                error={formik.touched.irsaBrut && Boolean(formik.errors.irsaBrut)} helperText={formik.touched.irsaBrut && formik.errors.irsaBrut}
+                            />
+                            <TextField
+                                label="IRSA Net"
+                                name="irsaNet"
+                                value={formik.values.irsaNet}
+                                onChange={() => { }}
+                                disabled
+                                size="small"
+                                variant="standard"
+                                sx={{ marginBottom: '0px', width: 200, backgroundColor: '#F4F9F9' }}
+                                InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
+                                InputProps={{
+                                    style: { fontSize: '13px', padding: '2px 4px', height: '30px' },
+                                    inputComponent: FormatedInput,
+                                    endAdornment: <InputAdornment position="end"><span style={{ fontSize: '13px' }}>Ar</span></InputAdornment>,
+                                    sx: { '& input': { textAlign: 'right' } },
+                                }}
+                                error={formik.touched.irsaNet && Boolean(formik.errors.irsaNet)} helperText={formik.touched.irsaNet && formik.errors.irsaNet}
+                            />
+                            <TextField
+                                label="Déduction famille"
+                                name="deductionEnfants"
+                                value={formik.values.deductionEnfants}
+                                onChange={() => { }}
+                                disabled
+                                size="small"
+                                variant="standard"
+                                sx={{ marginBottom: '0px', width: 200, backgroundColor: '#F4F9F9' }}
+                                InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
+                                InputProps={{
+                                    style: { fontSize: '13px', padding: '2px 4px', height: '30px' },
+                                    inputComponent: FormatedInput,
+                                    endAdornment: <InputAdornment position="end"><span style={{ fontSize: '13px' }}>Ar</span></InputAdornment>,
+                                    sx: { '& input': { textAlign: 'right' } },
+                                }}
+                                error={formik.touched.deductionEnfants && Boolean(formik.errors.deductionEnfants)} helperText={formik.touched.deductionEnfants && formik.errors.deductionEnfants}
+                            />
+                            <TextField
+                                label="Salaire Net"
+                                name="salaireNet"
+                                value={formik.values.salaireNet}
+                                onChange={() => { }}
+                                disabled
+                                size="small"
+                                variant="standard"
+                                sx={{ marginBottom: '0px', width: 200, backgroundColor: '#F4F9F9' }}
+                                InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
+                                InputProps={{
+                                    style: { fontSize: '13px', padding: '2px 4px', height: '30px' },
+                                    inputComponent: FormatedInput,
+                                    endAdornment: <InputAdornment position="end"><span style={{ fontSize: '13px' }}>Ar</span></InputAdornment>,
+                                    sx: { '& input': { textAlign: 'right' } },
+                                }}
+                                error={formik.touched.salaireNet && Boolean(formik.errors.salaireNet)} helperText={formik.touched.salaireNet && formik.errors.salaireNet}
+                            />
+                        </Box>
+                        <Box display="flex" flexDirection="row" gap={2} flexWrap="wrap" style={{ marginLeft: '50px', marginBottom: '12px' }}>
+                            <TextField
+                                label="Avance Quizaine/Autres"
+                                name="avanceQuinzaineAutres"
+                                value={formik.values.avanceQuinzaineAutres}
+                                onChange={formik.handleChange}
+                                size="small"
+                                variant="standard"
+                                sx={{ marginBottom: '0px', width: 200 }}
+                                InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
+                                InputProps={{
+                                    style: { fontSize: '13px', padding: '2px 4px', height: '30px' },
+                                    inputComponent: FormatedInput,
+                                    endAdornment: <InputAdornment position="end"><span style={{ fontSize: '13px' }}>Ar</span></InputAdornment>,
+                                    sx: { '& input': { textAlign: 'right' } },
+                                }}
+                                error={formik.touched.avanceQuinzaineAutres && Boolean(formik.errors.avanceQuinzaineAutres)} helperText={formik.touched.avanceQuinzaineAutres && formik.errors.avanceQuinzaineAutres}
+                            />
+                            <TextField
+                                label="Avances Spéciales"
+                                name="avancesSpeciales"
+                                value={formik.values.avancesSpeciales}
+                                onChange={formik.handleChange}
+                                size="small"
+                                variant="standard"
+                                sx={{ marginBottom: '0px', width: 200 }}
+                                InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
+                                InputProps={{
+                                    style: { fontSize: '13px', padding: '2px 4px', height: '30px' },
+                                    inputComponent: FormatedInput,
+                                    endAdornment: <InputAdornment position="end"><span style={{ fontSize: '13px' }}>Ar</span></InputAdornment>,
+                                    sx: { '& input': { textAlign: 'right' } },
+                                }}
+                                error={formik.touched.avancesSpeciales && Boolean(formik.errors.avancesSpeciales)} helperText={formik.touched.avancesSpeciales && formik.errors.avancesSpeciales}
+                            />
+                            <TextField
+                                label="Allocation Familiale"
+                                name="allocationFamiliale"
+                                value={formik.values.allocationFamiliale}
+                                onChange={formik.handleChange}
+                                size="small"
+                                variant="standard"
+                                sx={{ marginBottom: '0px', width: 200 }}
+                                InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
+                                InputProps={{
+                                    style: { fontSize: '13px', padding: '2px 4px', height: '30px' },
+                                    inputComponent: FormatedInput,
+                                    endAdornment: <InputAdornment position="end"><span style={{ fontSize: '13px' }}>Ar</span></InputAdornment>,
+                                    sx: { '& input': { textAlign: 'right' } },
+                                }}
+                                error={formik.touched.allocationFamiliale && Boolean(formik.errors.allocationFamiliale)} helperText={formik.touched.allocationFamiliale && formik.errors.allocationFamiliale}
+                            />
+                            <TextField
+                                label="Net à Payer (Ar)"
+                                name="netAPayerAriary"
+                                value={formik.values.netAPayerAriary}
+                                onChange={() => { }}
+                                disabled
+                                size="small"
+                                variant="standard"
+                                sx={{ marginBottom: '0px', width: 200, backgroundColor: '#F4F9F9' }}
+                                InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
+                                InputProps={{
+                                    style: { fontSize: '13px', padding: '2px 4px', height: '30px' },
+                                    inputComponent: FormatedInput,
+                                    endAdornment: <InputAdornment position="end"><span style={{ fontSize: '13px' }}>Ar</span></InputAdornment>,
+                                    sx: { '& input': { textAlign: 'right' } },
+                                }}
+                                error={formik.touched.netAPayerAriary && Boolean(formik.errors.netAPayerAriary)} helperText={formik.touched.netAPayerAriary && formik.errors.netAPayerAriary}
+                            />
+                        </Box>
+                    </AccordionDetails>
                 </Accordion>
 
-                                <Typography
-                                    variant="subtitle1"
-                                    sx={{ fontWeight: 'normal', fontSize: '15px', mb: 1.5, marginLeft: '50px' }}
-                                    >
-                                    Part Patronale
-                                    </Typography>
+                <Typography
+                    variant="subtitle1"
+                    sx={{ fontWeight: 'normal', fontSize: '15px', mb: 1.5, marginLeft: '50px' }}
+                >
+                    Part Patronale
+                </Typography>
 
-                                    <Box
-                                    display="flex"
-                                    flexDirection="row"
-                                    gap={1.5}
-                                    flexWrap="wrap"
-                                    sx={{ ml: '62px', mt: 0 }}
-                                    > 
-                                    <TextField 
-                                    label="Part Patronal Cnaps" 
-                                    name="partPatronalCnaps" 
-                                    value={formik.values.partPatronalCnaps} 
-                                    onChange={() => { }} 
-                                    disabled
-                                    size="small"
-                                    variant="standard"
-                                    sx={{ marginBottom: '0px', width: 200, backgroundColor: '#F4F9F9' }}
-                                    InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
-                                    InputProps={{
-                                        style: { fontSize: '13px', padding: '2px 4px', height: '30px' },
-                                        inputComponent: FormatedInput,
-                                        endAdornment: <InputAdornment position="end"><span style={{ fontSize: '13px' }}>Ar</span></InputAdornment>,
-                                        sx: { '& input': { textAlign: 'right' } },
-                                    }}
-                                    error={formik.touched.partPatronalCnaps && Boolean(formik.errors.partPatronalCnaps)} helperText={formik.touched.partPatronalCnaps && formik.errors.partPatronalCnaps}
-                                />
-                                <TextField 
-                                    label="Part Patronal Ostie" 
-                                    name="partPatronalOstie" 
-                                    value={formik.values.partPatronalOstie} 
-                                    onChange={() => { }} 
-                                    disabled
-                                    size="small"
-                                    variant="standard"
-                                    sx={{ marginBottom: '0px', width: 200, backgroundColor: '#F4F9F9' }}
-                                    InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
-                                    InputProps={{
-                                        style: { fontSize: '13px', padding: '2px 4px', height: '30px' },
-                                        inputComponent: FormatedInput,
-                                        endAdornment: <InputAdornment position="end"><span style={{ fontSize: '13px' }}>Ar</span></InputAdornment>,
-                                        sx: { '& input': { textAlign: 'right' } },
-                                    }}
-                                    error={formik.touched.partPatronalOstie && Boolean(formik.errors.partPatronalOstie)} helperText={formik.touched.partPatronalOstie && formik.errors.partPatronalOstie}
-                                />
-                            </Box>
-         
+                <Box
+                    display="flex"
+                    flexDirection="row"
+                    gap={1.5}
+                    flexWrap="wrap"
+                    sx={{ ml: '62px', mt: 0 }}
+                >
+                    <TextField
+                        label="Part Patronal Cnaps"
+                        name="partPatronalCnaps"
+                        value={formik.values.partPatronalCnaps}
+                        onChange={() => { }}
+                        disabled
+                        size="small"
+                        variant="standard"
+                        sx={{ marginBottom: '0px', width: 200, backgroundColor: '#F4F9F9' }}
+                        InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
+                        InputProps={{
+                            style: { fontSize: '13px', padding: '2px 4px', height: '30px' },
+                            inputComponent: FormatedInput,
+                            endAdornment: <InputAdornment position="end"><span style={{ fontSize: '13px' }}>Ar</span></InputAdornment>,
+                            sx: { '& input': { textAlign: 'right' } },
+                        }}
+                        error={formik.touched.partPatronalCnaps && Boolean(formik.errors.partPatronalCnaps)} helperText={formik.touched.partPatronalCnaps && formik.errors.partPatronalCnaps}
+                    />
+                    <TextField
+                        label="Part Patronal Ostie"
+                        name="partPatronalOstie"
+                        value={formik.values.partPatronalOstie}
+                        onChange={() => { }}
+                        disabled
+                        size="small"
+                        variant="standard"
+                        sx={{ marginBottom: '0px', width: 200, backgroundColor: '#F4F9F9' }}
+                        InputLabelProps={{ style: { fontSize: '13px', color: '#1976d2' } }}
+                        InputProps={{
+                            style: { fontSize: '13px', padding: '2px 4px', height: '30px' },
+                            inputComponent: FormatedInput,
+                            endAdornment: <InputAdornment position="end"><span style={{ fontSize: '13px' }}>Ar</span></InputAdornment>,
+                            sx: { '& input': { textAlign: 'right' } },
+                        }}
+                        error={formik.touched.partPatronalOstie && Boolean(formik.errors.partPatronalOstie)} helperText={formik.touched.partPatronalOstie && formik.errors.partPatronalOstie}
+                    />
+                </Box>
+            </DialogContent>
+            <DialogActions sx={{ p: 2, backgroundColor: '#f5f5f5' }}>
+                <Button autoFocus
+                    onClick={handleClose}
+                    variant="outlined"
+                    style={{
+                        backgroundColor: "transparent",
+                        color: initial.theme,
+                        width: "100px",
+                        textTransform: 'none',
+                        //outline: 'none',
+                    }}
+                >
+                    Annuler
+                </Button>
 
-        </DialogContent>
-        <DialogActions sx={{ p: 2, backgroundColor: '#f5f5f5' }}>
-        <Button onClick={handleClose} variant="outlined" sx={{ minWidth: 100 }}>
-            Annuler
-        </Button>
+                <Button autoFocus
+                    type="submit"
+                    style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
+                    onClick={() => {
+                        const allTouched = Object.keys(formik.values).reduce((acc, key) => {
+                            acc[key] = true;
+                            return acc;
+                        }, {});
+                        formik.setTouched(allTouched, true);
+                        formik.handleSubmit();
+                    }}
+                >
+                    Enregistrer
+                </Button>
+            </DialogActions>
 
-        <Button
-            variant="contained"
-            sx={{ minWidth: 100 }}
-            onClick={() => {
-            const allTouched = Object.keys(formik.values).reduce((acc, key) => {
-                acc[key] = true;
-                return acc;
-            }, {});
-            formik.setTouched(allTouched, true);
-            formik.handleSubmit();
-            }}
-        >
-            Valider
-        </Button>
-        </DialogActions>
-
-    </BootstrapDialog>
+        </BootstrapDialog>
     );
 }
 

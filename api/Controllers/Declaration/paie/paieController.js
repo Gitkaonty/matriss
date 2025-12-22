@@ -5,7 +5,7 @@ const { paies: Paie, personnels: Personnel, fonctions: Fonction, classifications
 exports.exportPaieTemplate = (req, res) => {
   // Mettre à jour cette liste selon les colonnes attendues à l'import côté backend
   const columns = [
-    'matricule','mois', 'annee', 'salaireBase', 'prime', 'heuresSup', 'indemnites', 'remunerationFerieDimanche',
+    'matricule', 'salaireBase', 'prime', 'heuresSup', 'indemnites', 'remunerationFerieDimanche',
     'assurance', 'carburant', 'entretienReparation', 'loyerMensuel', 'depenseTelephone', 'autresAvantagesNature',
     'avanceQuinzaineAutres', 'avancesSpeciales', 'allocationFamiliale'
   ];
