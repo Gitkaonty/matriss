@@ -61,7 +61,7 @@ const addOrmodifyRowBHIAPC = async (compteId, fileId, exerciceId, formData) => {
           // anomalie: !formData.nif || !formData.libelle || !formData.adresse
         },
         {
-          where: { nif: formData.nif, id_dossier: fileId, id_compte: compteId, id_exercice: exerciceId }
+          where: { nif: testIfExist[0].nif, id_compte: compteId, id_dossier: fileId, id_exercice: exerciceId }
         }
       );
 

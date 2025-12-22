@@ -17,7 +17,7 @@ import { FaRegPenToSquare } from "react-icons/fa6";
 import { init } from '../../../../init';
 import PopupAjustRubriqueEbilanEtatFinancierAnalytique from './popup/popupAjustRubriqueEbilanEtatFinancierAnalytique';
 
-const VirtualTableEbilanEtatFinaciereAnalytique = ({ refreshTable, columns, rows, noCollapsible, state, setIsRefreshed, type, id_axe, id_sections }) => {
+const VirtualTableEbilanEtatFinaciereAnalytique = ({ refreshTable, columns, rows, noCollapsible, state, setIsRefreshed, type, id_axe, id_sections, canModify, canAdd, canDelete, canView }) => {
   const initial = init[0];
   const [openRows, setOpenRows] = useState({});
   const [openTableDetail, setOpenTableDetail] = useState(false);
@@ -106,425 +106,365 @@ const VirtualTableEbilanEtatFinaciereAnalytique = ({ refreshTable, columns, rows
   };
 
   return (
-    <Box sx={{ width: '100%', padding: 0, margin: 0 }}>
-      {openTableDetail ? <PopupAjustRubriqueEbilanEtatFinancierAnalytique actionState={handleRefreshTableAjust} row={detailRow} column={detailColumnHeader} setIsRefreshed={setIsRefreshed} id_axe={id_axe} id_sections={id_sections} /> : null}
+    <>
+      {
+        (openTableDetail && canView)
+          ?
+          <PopupAjustRubriqueEbilanEtatFinancierAnalytique
+            actionState={handleRefreshTableAjust}
+            row={detailRow}
+            column={detailColumnHeader}
+            setIsRefreshed={setIsRefreshed}
+            id_axe={id_axe}
+            id_sections={id_sections}
+            canView={canView}
+            canAdd={canAdd}
+            canDelete={canDelete}
+            canModify={canModify}
+          />
+          :
+          null
+      }
+      <Box sx={{ width: '100%', padding: 0, margin: 0 }}>
 
-      <TableContainer component={Paper} sx={{ width: '100%', overflowX: 'auto' }}>
-        <Table sx={{ width: '100%', border: '1px solid #ddd', }} aria-label="simple table">
-          <TableHead
-            style={{
-              backgroundColor: initial.theme,
-              position: 'sticky',
-              top: 0,
-              zIndex: 1,
-            }}
-          >
-            <TableRow>
-              <TableCell
-                key={0}
-                align={"center"}
-                style={{
-                  maxWidth: 10,
-                  paddingTop: '0px',
-                  paddingBottom: '0px',
-                  borderRight: '1px solid #ddd',
-                  borderLeft: '1px solid #ddd',
-                  fontSize: 15,
-                  color: 'white'
-                }}
-              >
-
-              </TableCell>
-
-              {columns.map((column) => (
+        <TableContainer component={Paper} sx={{ width: '100%', overflowX: 'auto' }}>
+          <Table sx={{ width: '100%', border: '1px solid #ddd', }} aria-label="simple table">
+            <TableHead
+              style={{
+                backgroundColor: initial.theme,
+                position: 'sticky',
+                top: 0,
+                zIndex: 1,
+              }}
+            >
+              <TableRow>
                 <TableCell
-                  key={column.id}
-                  align={column.align}
+                  key={0}
+                  align={"center"}
                   style={{
-                    fontWeight: 'bold',
-                    top: 5,
-                    minWidth: column.minWidth,
-                    paddingTop: '5px',
-                    paddingBottom: '5px',
+                    maxWidth: 10,
+                    paddingTop: '0px',
+                    paddingBottom: '0px',
                     borderRight: '1px solid #ddd',
                     borderLeft: '1px solid #ddd',
                     fontSize: 15,
                     color: 'white'
                   }}
                 >
-                  {column.label}
+
                 </TableCell>
-              ))}
 
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {rows.map((row) => {
-              let rowStyle = {};
-              let cellStyle = {};
-              const rowKey = row.id;
-              const isOpen = openRows[rowKey] || false;
-
-              const groupedByCompteAndSection = row.infosCompte.reduce((acc, item) => {
-                const key = `${item.compte}__${item.libelleAxeSection}`;
-
-                if (!acc[key]) {
-                  acc[key] = {
-                    compte: item.compte,
-                    libelleAxeSection: item.libelleAxeSection,
-                    libelle: item.libelle,
-                    soldedebitanalytique: 0,
-                    soldecreditanalytique: 0,
-                  };
-                }
-
-                acc[key].soldedebitanalytique += Number(item.soldedebitanalytique) || 0;
-                acc[key].soldecreditanalytique += Number(item.soldecreditanalytique) || 0;
-
-                return acc;
-              }, {});
-
-              let mergedRows = Object.values(groupedByCompteAndSection);
-
-              mergedRows.sort((a, b) => {
-                if (a.compte !== b.compte) {
-                  return a.compte - b.compte;
-                }
-                return a.libelleAxeSection.localeCompare(b.libelleAxeSection);
-              });
-
-              switch (row.type) {
-                case "RUBRIQUE":
-                  rowStyle = { fontWeight: 'normal', color: 'black' };
-                  cellStyle = {};
-                  break;
-                case "TITRE":
-                  rowStyle = { fontWeight: 'bold', backgroundColor: '#f0f0f0' };
-                  cellStyle = { fontWeight: 'bold' };
-                  break;
-                case "SOUS-RUBRIQUE":
-                  rowStyle = { fontStyle: 'italic', color: 'black' };
-                  cellStyle = { paddingLeft: '50px' };
-                  break;
-                case "SOUS-TOTAL":
-                  rowStyle = { fontWeight: 'normal', color: 'white', backgroundColor: '#baced3ff' };
-                  cellStyle = {};
-                  break;
-                case "TOTAL":
-                  rowStyle = { fontWeight: 'normal', color: 'white', backgroundColor: '#89A8B2' };
-                  cellStyle = {};
-                  break;
-                default:
-                  rowStyle = { fontWeight: 'normal', color: 'black' };
-                  cellStyle = {};
-              }
-
-              return (
-                <React.Fragment key={rowKey}>
-                  <TableRow
-                    style={{ border: 'none', height: '20px', ...rowStyle }}
-                  // onClick={() => handleRowClick(row)}
-                  >
-                    <TableCell
-                      style={{
-                        fontWeight: 'bold',
-                        top: 5,
-                        width: 40,
-                        paddingTop: '5px',
-                        paddingBottom: '5px',
-                        // borderRight: '1px solid #ddd', 
-                        // borderLeft: '1px solid #ddd',
-                        border: 'none',
-                        fontSize: 15,
-                        color: 'white'
-                      }}
-                    >
-                      {
-                        (row.type === "TITRE" || row.type === "TOTAL SOUS-RUBRIQUES" || row.type === 'TOTAL' || row.type === "SOUS-TOTAL")
-                          ? null
-                          : noCollapsible
-                            ? null
-                            : <IconButton
-                              style={{
-                                height: '20px', width: '20px',
-                                textTransform: 'none', outline: 'none'
-                              }}
-                              size="small"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleRow(rowKey);
-                              }}
-                            >
-
-                              {isOpen ? <IndeterminateCheckBoxIcon color='primary' /> : <AddBoxIcon color='primary' />}
-                            </IconButton>
-                      }
-                    </TableCell>
-
-                    {columns.map((column, idx) => {
-                      const value = row[column.id] || 0;
-
-                      return (
-
-                        <TableCell
-                          key={column.id}
-                          align={column.align}
-                          style={{
-                            paddingTop: '5px',
-                            paddingBottom: '5px',
-                            fontWeight: row.type === "TITRE" ? 'bold' : 'normal',
-                            fontSize: 15,
-                            cursor: `${(row.type === "TOTAL" || row.type === "TITRE" || row.type === 'TOTAL SOUS-RUBRIQUES' || row.type === 'SOUS-TOTAL' || column.id === "libelle" || column.id === "montantnetn1" || column.id === "variation" || (row.id_etat === "BILAN_ACTIF" && column.id === "montantnet")) || state ? "" : "pointer"}`
-                          }}
-                          onClick={() => {
-                            if (!state) {
-                              handleCellClick(row, column.id, value);
-                            }
-                          }}
-                        >
-                          {
-                            row.type === "TITRE" ? column.id === 'libelle' ? value : '' :
-                              column.isNumber
-                                ? (row.ajusts && row.ajusts.length > 0 && totalColumnDetail(row.ajusts, column.id) !== 0)
-                                  ? <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-                                    {
-                                      column.id === 'montantbrut' || column.id === 'montantamort' || column.id === 'montantnet' || columns.id === "montantnetn1"
-                                        ? <FaRegPenToSquare style={{ color: '#f44336', width: 20, heigth: 20 }} />
-                                        : null
-                                    }
-                                    <div style={{ width: '95%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-                                      {column.format(value)}
-                                    </div>
-
-                                  </div>
-                                  : column.format(value)
-                                : value
-                          }
-                        </TableCell>
-                      )
-                    })}
-                  </TableRow>
-
-                  {/* LIGNE COLLAPSIBLE */}
-                  <TableRow
+                {columns.map((column) => (
+                  <TableCell
+                    key={column.id}
+                    align={column.align}
                     style={{
                       fontWeight: 'bold',
                       top: 5,
-                      marginTop: 20,
-                      padding: 0,
+                      minWidth: column.minWidth,
+                      paddingTop: '5px',
+                      paddingBottom: '5px',
                       borderRight: '1px solid #ddd',
                       borderLeft: '1px solid #ddd',
                       fontSize: 15,
-                      color: 'white',
+                      color: 'white'
                     }}
                   >
-                    <TableCell
-                      colSpan={columns.length}
-                      style={{ paddingBottom: 0, paddingTop: 0, border: 'none' }}
+                    {column.label}
+                  </TableCell>
+                ))}
+
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {rows.map((row) => {
+                let rowStyle = {};
+                let cellStyle = {};
+                const rowKey = row.id;
+                const isOpen = openRows[rowKey] || false;
+
+                const groupedByCompteAndSection = row.infosCompte.reduce((acc, item) => {
+                  const key = `${item.compte}__${item.libelleAxeSection}`;
+
+                  if (!acc[key]) {
+                    acc[key] = {
+                      compte: item.compte,
+                      libelleAxeSection: item.libelleAxeSection,
+                      libelle: item.libelle,
+                      soldedebitanalytique: 0,
+                      soldecreditanalytique: 0,
+                    };
+                  }
+
+                  acc[key].soldedebitanalytique += Number(item.soldedebitanalytique) || 0;
+                  acc[key].soldecreditanalytique += Number(item.soldecreditanalytique) || 0;
+
+                  return acc;
+                }, {});
+
+                let mergedRows = Object.values(groupedByCompteAndSection);
+
+                mergedRows.sort((a, b) => {
+                  if (a.compte !== b.compte) {
+                    return a.compte - b.compte;
+                  }
+                  return a.libelleAxeSection.localeCompare(b.libelleAxeSection);
+                });
+
+                switch (row.type) {
+                  case "RUBRIQUE":
+                    rowStyle = { fontWeight: 'normal', color: 'black' };
+                    cellStyle = {};
+                    break;
+                  case "TITRE":
+                    rowStyle = { fontWeight: 'bold', backgroundColor: '#f0f0f0' };
+                    cellStyle = { fontWeight: 'bold' };
+                    break;
+                  case "SOUS-RUBRIQUE":
+                    rowStyle = { fontStyle: 'italic', color: 'black' };
+                    cellStyle = { paddingLeft: '50px' };
+                    break;
+                  case "SOUS-TOTAL":
+                    rowStyle = { fontWeight: 'normal', color: 'white', backgroundColor: '#baced3ff' };
+                    cellStyle = {};
+                    break;
+                  case "TOTAL":
+                    rowStyle = { fontWeight: 'normal', color: 'white', backgroundColor: '#89A8B2' };
+                    cellStyle = {};
+                    break;
+                  default:
+                    rowStyle = { fontWeight: 'normal', color: 'black' };
+                    cellStyle = {};
+                }
+
+                return (
+                  <React.Fragment key={rowKey}>
+                    <TableRow
+                      style={{ border: 'none', height: '20px', ...rowStyle }}
+                    // onClick={() => handleRowClick(row)}
                     >
-                      <Collapse
-                        in={!!isOpen} timeout="auto" unmountOnExit
+                      <TableCell
+                        style={{
+                          fontWeight: 'bold',
+                          top: 5,
+                          width: 40,
+                          paddingTop: '5px',
+                          paddingBottom: '5px',
+                          // borderRight: '1px solid #ddd', 
+                          // borderLeft: '1px solid #ddd',
+                          border: 'none',
+                          fontSize: 15,
+                          color: 'white'
+                        }}
                       >
-                        <Box
-                          margin={1}
-                          sx={{ marginLeft: 10, marginTop: 5 }}
-                        >
-                          <Chip
-                            icon={<CgDetailsMore style={{ color: 'white', width: 20, height: 20, marginLeft: 10 }} />}
-                            label={"Détails :"}
-
-                            style={{
-                              width: 175,
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              backgroundColor: '#67AE6E',
-                              color: 'white'
-                            }}
-                          />
-
-                          {(row.infosCompte && row.infosCompte.length > 0) ? (
-                            <Table size="small" aria-label="details">
-                              <TableHead>
-                                <TableRow style={{ border: 'none' }}>
-                                  <TableCell style={{ width: 150, border: 'none' }}>
-                                    <Typography style={{ fontWeight: 'bold' }}>
-                                      N° Compte
-                                    </Typography>
-                                  </TableCell>
-                                  <TableCell style={{ width: 150, border: 'none' }}>
-                                    <Typography style={{ fontWeight: 'bold' }}>
-                                      Axe:Section
-                                    </Typography>
-                                  </TableCell>
-                                  <TableCell style={{ width: 450, border: 'none' }}>
-                                    <Typography style={{ fontWeight: 'bold' }}>
-                                      Libellé
-                                    </Typography>
-                                  </TableCell>
-                                  <TableCell align={"right"} style={{ width: 200, border: 'none' }}>
-                                    <Typography style={{ fontWeight: 'bold' }}>
-                                      Solde débit
-                                    </Typography>
-                                  </TableCell>
-                                  <TableCell align={"right"} style={{ width: 200, border: 'none' }}>
-                                    <Typography style={{ fontWeight: 'bold' }}>
-                                      Solde crédit
-                                    </Typography>
-                                  </TableCell>
-                                </TableRow>
-                              </TableHead>
-                              <TableBody>
-                                {/* {row.infosCompte.map((detail, index) => ( */}
-                                {mergedRows.map((detail, index) => (
-                                  <TableRow
-                                    key={index}
-                                    style={{
-                                      backgroundColor: index % 2 === 0 ? '#ffffff' : '#f5f5f5',
-                                    }}
-                                  >
-                                    <TableCell style={{ border: 'none' }}>{detail.compte}</TableCell>
-                                    <TableCell style={{ border: 'none' }}>{detail.libelleAxeSection}</TableCell>
-                                    <TableCell style={{ border: 'none' }}>{detail.libelle}</TableCell>
-                                    <TableCell style={{ border: 'none' }} align={"right"}>
-                                      {detail.soldedebitanalytique.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </TableCell>
-                                    <TableCell style={{ border: 'none' }} align={"right"}>
-                                      {detail.soldecreditanalytique.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </TableCell>
-                                  </TableRow>
-                                ))
-                                }
-                              </TableBody>
-
-                              <TableFooter
+                        {
+                          (row.type === "TITRE" || row.type === "TOTAL SOUS-RUBRIQUES" || row.type === 'TOTAL' || row.type === "SOUS-TOTAL")
+                            ? null
+                            : noCollapsible
+                              ? null
+                              : <IconButton
                                 style={{
-                                  backgroundColor: '#E4EFE7',
-                                  position: 'sticky',
-                                  bottom: 0,
-                                  zIndex: 1,
+                                  height: '20px', width: '20px',
+                                  textTransform: 'none', outline: 'none'
+                                }}
+                                size="small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleRow(rowKey);
                                 }}
                               >
-                                <TableRow style={{ border: 'none' }}>
-                                  <TableCell style={{ width: 150, border: 'none' }}>
-                                    <Typography style={{ fontWeight: 'bold' }}>
-                                      Total
-                                    </Typography>
-                                  </TableCell>
-                                  <TableCell style={{ width: 150, border: 'none' }} />
-                                  <TableCell style={{ width: 450, border: 'none' }}>
 
-                                  </TableCell>
-                                  <TableCell align='right'
-                                    style={{
-                                      width: 200, border: 'none', fontSize: 14, fontWeight: 'bold'
-                                    }}
-                                  >
-                                    {
-                                      totalColumn(row.infosCompte, "soldedebitanalytique").toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                                    }
-                                  </TableCell>
-                                  <TableCell align='right'
-                                    style={{
-                                      width: 200, border: 'none', fontSize: 14, fontWeight: 'bold'
-                                    }}
-                                  >
-                                    {
-                                      totalColumn(row.infosCompte, "soldecreditanalytique").toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                                    }
-                                  </TableCell>
-                                </TableRow>
-                              </TableFooter>
-                            </Table>
-                          ) : (
-                            <Typography variant="body2" style={{ fontStyle: 'italic' }}>Aucun détail</Typography>
-                          )}
-                        </Box>
+                                {isOpen ? <IndeterminateCheckBoxIcon color='primary' /> : <AddBoxIcon color='primary' />}
+                              </IconButton>
+                        }
+                      </TableCell>
 
-                        <Box margin={1}
-                          sx={{ marginLeft: 10, marginTop: 5, marginBottom: 5 }}
-                        >
-                          <Chip
-                            icon={<RiExchangeBoxFill style={{ color: 'white', width: 20, height: 20, marginLeft: 10 }} />}
-                            label={row.subtable === 1 ? "Ajustements brut :" : "Ajustements:"}
+                      {columns.map((column, idx) => {
+                        const value = row[column.id] || 0;
 
+                        return (
+
+                          <TableCell
+                            key={column.id}
+                            align={column.align}
                             style={{
-                              width: 175,
-                              display: 'flex', // ou block, selon le rendu souhaité
-                              justifyContent: 'space-between',
-                              backgroundColor: '#67AE6E',
-                              color: 'white'
+                              paddingTop: '5px',
+                              paddingBottom: '5px',
+                              fontWeight: row.type === "TITRE" ? 'bold' : 'normal',
+                              fontSize: 15,
+                              cursor: `${(row.type === "TOTAL" || row.type === "TITRE" || row.type === 'TOTAL SOUS-RUBRIQUES' || row.type === 'SOUS-TOTAL' || column.id === "libelle" || column.id === "montantnetn1" || column.id === "variation" || (row.id_etat === "BILAN_ACTIF" && column.id === "montantnet")) || state || !canModify ? "" : "pointer"}`,
+                              ...(column.id !== 'variation' ? cellStyle : {})
                             }}
-                          />
+                            onClick={() => {
+                              if (state || !canModify) return;
+                              handleCellClick(row, column.id, value);
+                            }}
+                          >
+                            {
+                              row.type === "TITRE" ? column.id === 'libelle' ? value : '' :
+                                column.isNumber
+                                  ? (row.ajusts && row.ajusts.length > 0 && totalColumnDetail(row.ajusts, column.id) !== 0)
+                                    ? <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                                      {
+                                        column.id === 'montantbrut' || column.id === 'montantamort' || column.id === 'montantnet' || columns.id === "montantnetn1"
+                                          ? <FaRegPenToSquare style={{ color: '#f44336', width: 20, heigth: 20 }} />
+                                          : null
+                                      }
+                                      <div style={{ width: '95%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                                        {column.format(value)}
+                                      </div>
 
-                          {(row.ajusts && row.ajusts.filter(item => item.nature === 'BRUT').length > 0) ? (
-                            <Table size="small" aria-label="details">
-                              <TableHead>
-                                <TableRow style={{ border: 'none' }}>
-                                  <TableCell style={{ width: 375, border: 'none' }}>
-                                    <Typography style={{ fontWeight: 'bold' }}>
-                                      Motif
-                                    </Typography>
-                                  </TableCell>
-                                  <TableCell align='right' style={{ width: 200, border: 'none' }}>
-                                    <Typography style={{ fontWeight: 'bold' }}>
-                                      Montant
-                                    </Typography>
-                                  </TableCell>
-                                </TableRow>
-                              </TableHead>
-                              <TableBody>
-                                {row.ajusts.filter(item => item.nature === 'BRUT').map((ajust, index) => (
-                                  <TableRow
-                                    key={index}
-                                    style={{
-                                      backgroundColor: index % 2 === 0 ? '#ffffff' : '#f5f5f5',
-                                    }}
-                                  >
-                                    <TableCell style={{ border: 'none' }}>{ajust.motif}</TableCell>
-                                    {/* <TableCell style={{border:'none'}}>{ajust.nature}</TableCell> */}
-                                    <TableCell style={{ border: 'none' }} align={"right"}>{ajust.montant.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
+                                    </div>
+                                    : column.format(value)
+                                  : value
+                            }
+                          </TableCell>
+                        )
+                      })}
+                    </TableRow>
 
-                              <TableFooter
-                                style={{
-                                  backgroundColor: '#E4EFE7',
-                                  position: 'sticky',
-                                  bottom: 0,
-                                  zIndex: 1,
-                                }}
-                              >
-                                <TableRow style={{ border: 'none' }}>
-                                  <TableCell style={{ width: 850, border: 'none' }}>
-                                    <Typography style={{ fontWeight: 'bold' }}>
-                                      Total
-                                    </Typography>
-                                  </TableCell>
-                                  <TableCell align='right'
-                                    style={{
-                                      width: 200, border: 'none', fontSize: 14, fontWeight: 'bold'
-                                    }}
-                                  >
-                                    {
-                                      totalColumnAjust(row.ajusts, "montant", 'BRUT').toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                                    }
-                                  </TableCell>
-                                </TableRow>
-                              </TableFooter>
-                            </Table>
-                          ) : (
-                            <Typography variant="body2" style={{ fontStyle: 'italic' }}>Aucun ajustement manuel effectué</Typography>
-                          )}
-                        </Box>
-
-                        {row.subtable === 1
-                          ? <Box margin={1}
-                            sx={{ marginLeft: 10, marginTop: 2, marginBottom: 5 }}
+                    {/* LIGNE COLLAPSIBLE */}
+                    <TableRow
+                      style={{
+                        fontWeight: 'bold',
+                        top: 5,
+                        marginTop: 20,
+                        padding: 0,
+                        borderRight: '1px solid #ddd',
+                        borderLeft: '1px solid #ddd',
+                        fontSize: 15,
+                        color: 'white',
+                      }}
+                    >
+                      <TableCell
+                        colSpan={columns.length}
+                        style={{ paddingBottom: 0, paddingTop: 0, border: 'none' }}
+                      >
+                        <Collapse
+                          in={!!isOpen} timeout="auto" unmountOnExit
+                        >
+                          <Box
+                            margin={1}
+                            sx={{ marginLeft: 10, marginTop: 5 }}
                           >
                             <Chip
-                              icon={<RiExchangeBoxFill style={{ color: 'white', width: 25, height: 20, marginLeft: 10 }} />}
-                              label={"Ajustements Amort :"}
+                              icon={<CgDetailsMore style={{ color: 'white', width: 20, height: 20, marginLeft: 10 }} />}
+                              label={"Détails :"}
+
+                              style={{
+                                width: 175,
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                backgroundColor: '#67AE6E',
+                                color: 'white'
+                              }}
+                            />
+
+                            {(row.infosCompte && row.infosCompte.length > 0) ? (
+                              <Table size="small" aria-label="details">
+                                <TableHead>
+                                  <TableRow style={{ border: 'none' }}>
+                                    <TableCell style={{ width: 150, border: 'none' }}>
+                                      <Typography style={{ fontWeight: 'bold' }}>
+                                        N° Compte
+                                      </Typography>
+                                    </TableCell>
+                                    <TableCell style={{ width: 150, border: 'none' }}>
+                                      <Typography style={{ fontWeight: 'bold' }}>
+                                        Axe:Section
+                                      </Typography>
+                                    </TableCell>
+                                    <TableCell style={{ width: 450, border: 'none' }}>
+                                      <Typography style={{ fontWeight: 'bold' }}>
+                                        Libellé
+                                      </Typography>
+                                    </TableCell>
+                                    <TableCell align={"right"} style={{ width: 200, border: 'none' }}>
+                                      <Typography style={{ fontWeight: 'bold' }}>
+                                        Solde débit
+                                      </Typography>
+                                    </TableCell>
+                                    <TableCell align={"right"} style={{ width: 200, border: 'none' }}>
+                                      <Typography style={{ fontWeight: 'bold' }}>
+                                        Solde crédit
+                                      </Typography>
+                                    </TableCell>
+                                  </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                  {/* {mergedRows.map((detail, index) => ( */}
+                                  {row.infosCompte.map((detail, index) => (
+
+                                    <TableRow
+                                      key={index}
+                                      style={{
+                                        backgroundColor: index % 2 === 0 ? '#ffffff' : '#f5f5f5',
+                                      }}
+                                    >
+                                      <TableCell style={{ border: 'none' }}>{detail.compte}</TableCell>
+                                      <TableCell style={{ border: 'none' }}>{detail.libelleAxeSection}</TableCell>
+                                      <TableCell style={{ border: 'none' }}>{detail.libelle}</TableCell>
+                                      <TableCell style={{ border: 'none' }} align={"right"}>
+                                        {detail.soldedebitanalytique.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                      </TableCell>
+                                      <TableCell style={{ border: 'none' }} align={"right"}>
+                                        {detail.soldecreditanalytique.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                      </TableCell>
+                                    </TableRow>
+                                  ))
+                                  }
+                                </TableBody>
+
+                                <TableFooter
+                                  style={{
+                                    backgroundColor: '#E4EFE7',
+                                    position: 'sticky',
+                                    bottom: 0,
+                                    zIndex: 1,
+                                  }}
+                                >
+                                  <TableRow style={{ border: 'none' }}>
+                                    <TableCell style={{ width: 150, border: 'none' }}>
+                                      <Typography style={{ fontWeight: 'bold' }}>
+                                        Total
+                                      </Typography>
+                                    </TableCell>
+                                    <TableCell style={{ width: 150, border: 'none' }} />
+                                    <TableCell style={{ width: 450, border: 'none' }}>
+
+                                    </TableCell>
+                                    <TableCell align='right'
+                                      style={{
+                                        width: 200, border: 'none', fontSize: 14, fontWeight: 'bold'
+                                      }}
+                                    >
+                                      {
+                                        totalColumn(row.infosCompte, "soldedebitanalytique").toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                      }
+                                    </TableCell>
+                                    <TableCell align='right'
+                                      style={{
+                                        width: 200, border: 'none', fontSize: 14, fontWeight: 'bold'
+                                      }}
+                                    >
+                                      {
+                                        totalColumn(row.infosCompte, "soldecreditanalytique").toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                      }
+                                    </TableCell>
+                                  </TableRow>
+                                </TableFooter>
+                              </Table>
+                            ) : (
+                              <Typography variant="body2" style={{ fontStyle: 'italic' }}>Aucun détail</Typography>
+                            )}
+                          </Box>
+
+                          <Box margin={1}
+                            sx={{ marginLeft: 10, marginTop: 5, marginBottom: 5 }}
+                          >
+                            <Chip
+                              icon={<RiExchangeBoxFill style={{ color: 'white', width: 20, height: 20, marginLeft: 10 }} />}
+                              label={row.subtable === 1 ? "Ajustements brut :" : "Ajustements:"}
 
                               style={{
                                 width: 175,
@@ -535,7 +475,7 @@ const VirtualTableEbilanEtatFinaciereAnalytique = ({ refreshTable, columns, rows
                               }}
                             />
 
-                            {(row.ajusts && row.ajusts.filter(item => item.nature === 'AMORT').length > 0) ? (
+                            {(row.ajusts && row.ajusts.filter(item => item.nature === 'BRUT').length > 0) ? (
                               <Table size="small" aria-label="details">
                                 <TableHead>
                                   <TableRow style={{ border: 'none' }}>
@@ -544,11 +484,6 @@ const VirtualTableEbilanEtatFinaciereAnalytique = ({ refreshTable, columns, rows
                                         Motif
                                       </Typography>
                                     </TableCell>
-                                    {/* <TableCell style={{width: 75, border:'none'}}>
-                                            <Typography style={{fontWeight:'bold'}}>
-                                              nature
-                                            </Typography>
-                                          </TableCell> */}
                                     <TableCell align='right' style={{ width: 200, border: 'none' }}>
                                       <Typography style={{ fontWeight: 'bold' }}>
                                         Montant
@@ -557,7 +492,7 @@ const VirtualTableEbilanEtatFinaciereAnalytique = ({ refreshTable, columns, rows
                                   </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                  {row.ajusts.filter(item => item.nature === 'AMORT').map((ajust, index) => (
+                                  {row.ajusts.filter(item => item.nature === 'BRUT').map((ajust, index) => (
                                     <TableRow
                                       key={index}
                                       style={{
@@ -591,7 +526,7 @@ const VirtualTableEbilanEtatFinaciereAnalytique = ({ refreshTable, columns, rows
                                       }}
                                     >
                                       {
-                                        totalColumnAjust(row.ajusts, "montant", 'AMORT').toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                        totalColumnAjust(row.ajusts, "montant", 'BRUT').toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                                       }
                                     </TableCell>
                                   </TableRow>
@@ -601,21 +536,105 @@ const VirtualTableEbilanEtatFinaciereAnalytique = ({ refreshTable, columns, rows
                               <Typography variant="body2" style={{ fontStyle: 'italic' }}>Aucun ajustement manuel effectué</Typography>
                             )}
                           </Box>
-                          : null
-                        }
 
-                      </Collapse>
-                    </TableCell>
-                  </TableRow>
+                          {row.subtable === 1
+                            ? <Box margin={1}
+                              sx={{ marginLeft: 10, marginTop: 2, marginBottom: 5 }}
+                            >
+                              <Chip
+                                icon={<RiExchangeBoxFill style={{ color: 'white', width: 25, height: 20, marginLeft: 10 }} />}
+                                label={"Ajustements Amort :"}
 
-                </React.Fragment>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Box >
+                                style={{
+                                  width: 175,
+                                  display: 'flex', // ou block, selon le rendu souhaité
+                                  justifyContent: 'space-between',
+                                  backgroundColor: '#67AE6E',
+                                  color: 'white'
+                                }}
+                              />
 
+                              {(row.ajusts && row.ajusts.filter(item => item.nature === 'AMORT').length > 0) ? (
+                                <Table size="small" aria-label="details">
+                                  <TableHead>
+                                    <TableRow style={{ border: 'none' }}>
+                                      <TableCell style={{ width: 375, border: 'none' }}>
+                                        <Typography style={{ fontWeight: 'bold' }}>
+                                          Motif
+                                        </Typography>
+                                      </TableCell>
+                                      {/* <TableCell style={{width: 75, border:'none'}}>
+                                            <Typography style={{fontWeight:'bold'}}>
+                                              nature
+                                            </Typography>
+                                          </TableCell> */}
+                                      <TableCell align='right' style={{ width: 200, border: 'none' }}>
+                                        <Typography style={{ fontWeight: 'bold' }}>
+                                          Montant
+                                        </Typography>
+                                      </TableCell>
+                                    </TableRow>
+                                  </TableHead>
+                                  <TableBody>
+                                    {row.ajusts.filter(item => item.nature === 'AMORT').map((ajust, index) => (
+                                      <TableRow
+                                        key={index}
+                                        style={{
+                                          backgroundColor: index % 2 === 0 ? '#ffffff' : '#f5f5f5',
+                                        }}
+                                      >
+                                        <TableCell style={{ border: 'none' }}>{ajust.motif}</TableCell>
+                                        {/* <TableCell style={{border:'none'}}>{ajust.nature}</TableCell> */}
+                                        <TableCell style={{ border: 'none' }} align={"right"}>{ajust.montant.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+
+                                  <TableFooter
+                                    style={{
+                                      backgroundColor: '#E4EFE7',
+                                      position: 'sticky',
+                                      bottom: 0,
+                                      zIndex: 1,
+                                    }}
+                                  >
+                                    <TableRow style={{ border: 'none' }}>
+                                      <TableCell style={{ width: 850, border: 'none' }}>
+                                        <Typography style={{ fontWeight: 'bold' }}>
+                                          Total
+                                        </Typography>
+                                      </TableCell>
+                                      <TableCell align='right'
+                                        style={{
+                                          width: 200, border: 'none', fontSize: 14, fontWeight: 'bold'
+                                        }}
+                                      >
+                                        {
+                                          totalColumnAjust(row.ajusts, "montant", 'AMORT').toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                        }
+                                      </TableCell>
+                                    </TableRow>
+                                  </TableFooter>
+                                </Table>
+                              ) : (
+                                <Typography variant="body2" style={{ fontStyle: 'italic' }}>Aucun ajustement manuel effectué</Typography>
+                              )}
+                            </Box>
+                            : null
+                          }
+
+                        </Collapse>
+                      </TableCell>
+                    </TableRow>
+
+                  </React.Fragment>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box >
+    </>
   );
 }
 

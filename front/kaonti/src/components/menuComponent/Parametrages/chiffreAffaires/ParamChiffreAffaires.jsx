@@ -12,9 +12,8 @@ import { FaRegPenToSquare } from "react-icons/fa6";
 import { VscClose } from "react-icons/vsc";
 import { TfiSave } from "react-icons/tfi";
 import { IoMdTrash } from "react-icons/io";
-import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes } from '@mui/x-data-grid';
+import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes, useGridApiRef } from '@mui/x-data-grid';
 import QuickFilter from '../../../componentsTools/DatagridToolsStyle';
-import TableParamCodeJournalModel from '../../../../model/TableParamCodeJournalModel';
 import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
 import { init } from '../../../../../init';
 import { DataGridStyle } from '../../../componentsTools/DatagridToolsStyle';
@@ -27,8 +26,14 @@ import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFil
 import { jwtDecode } from "jwt-decode";
 
 import { useFormik, Field, Formik, Form, ErrorMessage } from 'formik';
+import usePermission from '../../../../hooks/usePermission';
+import useAxiosPrivate from '../../../../../config/axiosPrivate';
 
 export default function ParamChiffreAffairesComponent() {
+    const { canAdd, canModify, canDelete, canView } = usePermission();
+    const apiRef = useGridApiRef();
+    const axiosPrivate = useAxiosPrivate();
+
     const initial = init[0];
     const { id } = useParams();
     const [fileId, setFileId] = useState(0);
@@ -420,7 +425,7 @@ export default function ParamChiffreAffairesComponent() {
 
         if (saveBoolCode && saveBoolCompte) {
             setRowModesModel(prev => ({ ...prev, [id]: { mode: GridRowModes.View } }));
-            axios.post(`/paramTva/paramTvaAdd`, formikNewParamTva.values).then((response) => {
+            axiosPrivate.post(`/paramTva/paramTvaAdd`, formikNewParamTva.values).then((response) => {
                 const resData = response.data;
                 if (resData.state) {
                     setDisableAddRowBouton(false);
@@ -454,7 +459,7 @@ export default function ParamChiffreAffairesComponent() {
                     setParamTva(paramTva.filter((row) => row.id !== idToDelete));
                     return;
                 }
-                axios.post(`/paramTva/paramTvaDelete`, { fileId, compteId, idToDelete }).then((response) => {
+                axiosPrivate.post(`/paramTva/paramTvaDelete`, { fileId, compteId, idToDelete }).then((response) => {
                     const resData = response.data;
                     if (resData.state) {
                         setDisableAddRowBouton(false);
@@ -567,101 +572,181 @@ export default function ParamChiffreAffairesComponent() {
         setSelectedRowId(ids);
     }
 
+    const handleCellKeyDown = (params, event) => {
+        const api = apiRef.current;
+
+        const allCols = api.getAllColumns().filter(c => c.editable);
+        const sortedRowIds = api.getSortedRowIds();
+        const currentColIndex = allCols.findIndex(c => c.field === params.field);
+        const currentRowIndex = sortedRowIds.indexOf(params.id);
+
+        let nextColIndex = currentColIndex;
+        let nextRowIndex = currentRowIndex;
+
+        if (event.key === 'Tab' && !event.shiftKey) {
+            event.preventDefault();
+            nextColIndex = currentColIndex + 1;
+            if (nextColIndex >= allCols.length) {
+                nextColIndex = 0;
+                nextRowIndex = currentRowIndex + 1;
+            }
+        } else if (event.key === 'Tab' && event.shiftKey) {
+            event.preventDefault();
+            nextColIndex = currentColIndex - 1;
+            if (nextColIndex < 0) {
+                nextColIndex = allCols.length - 1;
+                nextRowIndex = currentRowIndex - 1;
+            }
+        } else if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            nextColIndex = currentColIndex + 1;
+            if (nextColIndex >= allCols.length) nextColIndex = allCols.length - 1;
+        } else if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            nextColIndex = currentColIndex - 1;
+            if (nextColIndex < 0) nextColIndex = 0;
+        }
+
+        const nextRowId = sortedRowIds[nextRowIndex];
+        const targetCol = allCols[nextColIndex];
+
+        if (!nextRowId || !targetCol) return;
+
+        try {
+            api.stopCellEditMode({ id: params.id, field: params.field });
+        } catch (err) {
+            console.warn('Erreur stopCellEditMode ignorée:', err);
+        }
+
+        setTimeout(() => {
+            const cellInput = document.querySelector(
+                `[data-id="${nextRowId}"] [data-field="${targetCol.field}"] input, 
+             [data-id="${nextRowId}"] [data-field="${targetCol.field}"] textarea`
+            );
+            if (cellInput) cellInput.focus();
+        }, 50);
+    };
+
     return (
-        <Box>
-            {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
-            {openDialogDeleteRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer le code journal sélectionné ?"} confirmationState={deleteRow} /> : null}
+        <>
+            {
+                noFile
+                    ?
+                    <PopupTestSelectedFile
+                        confirmationState={sendToHome}
+                    />
+                    :
+                    null
+            }
+            {
+                (openDialogDeleteRow && canDelete)
+                    ?
+                    <PopupConfirmDelete
+                        msg={"Voulez-vous vraiment supprimer le code journal sélectionné ?"}
+                        confirmationState={deleteRow}
+                    />
+                    :
+                    null
+            }
+            <Box>
 
-            <TabContext value={"1"}>
-                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                    <TabList aria-label="lab API tabs example">
-                        <Tab label={InfoFileStyle(fileInfos?.dossier)} value="1" style={{ textTransform: 'none', outline: 'none', border: 'none', margin: -5 }} />
-                    </TabList>
-                </Box>
-                <TabPanel value="1">
-                    <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages : Chiffre d'affaires</Typography>
+                <TabContext value={"1"}>
+                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                        <TabList aria-label="lab API tabs example">
+                            <Tab label={InfoFileStyle(fileInfos?.dossier)} value="1" style={{ textTransform: 'none', outline: 'none', border: 'none', margin: -5 }} />
+                        </TabList>
+                    </Box>
+                    <TabPanel value="1">
+                        <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages : Chiffre d'affaires</Typography>
 
-                    <Stack width={"100%"} spacing={1} alignItems={"center"} direction={"column"} style={{ marginTop: "20px" }}>
+                        <Stack width={"100%"} spacing={1} alignItems={"center"} direction={"column"} style={{ marginTop: "20px" }}>
 
-                        <Stack width={"100%"} spacing={0.5} direction={"row"} justifyContent={"right"}>
-                            <Tooltip title="Ajouter une ligne">
-                                <IconButton disabled={disableAddRowBouton} onClick={handleOpenDialogAddNewAssocie} style={{ width: "35px", height: '35px', borderRadius: "2px", backgroundColor: initial.theme }}>
-                                    <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                                </IconButton>
-                            </Tooltip>
-
-                            <Tooltip title="Modifier la ligne sélectionnée">
-                                <IconButton disabled={disableModifyBouton} onClick={handleEditClick(selectedRowId)} style={{ width: "35px", height: '35px', borderRadius: "2px", backgroundColor: initial.theme }}>
-                                    <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
-                                </IconButton>
-                            </Tooltip>
-
-                            <Tooltip title="Sauvegarder les modifications">
-                                <span>
-                                    <IconButton disabled={disableSaveBouton} onClick={handleSaveClick(selectedRowId)} style={{ width: "35px", height: '35px', borderRadius: "2px", backgroundColor: initial.theme }}>
-                                        <TfiSave style={{ width: '50px', height: '50px', color: 'white' }} />
+                            <Stack width={"100%"} spacing={0.5} direction={"row"} justifyContent={"right"}>
+                                <Tooltip title="Ajouter une ligne">
+                                    <IconButton disabled={!canAdd || disableAddRowBouton} onClick={handleOpenDialogAddNewAssocie} style={{ width: "35px", height: '35px', borderRadius: "2px", backgroundColor: initial.theme }}>
+                                        <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
                                     </IconButton>
-                                </span>
-                            </Tooltip>
+                                </Tooltip>
 
-                            <Tooltip title="Annuler les modifications">
-                                <span>
-                                    <IconButton disabled={disableCancelBouton} onClick={handleCancelClick(selectedRowId)} style={{ width: "35px", height: '35px', borderRadius: "2px", backgroundColor: initial.button_delete_color }}>
-                                        <VscClose style={{ width: '50px', height: '50px', color: 'white' }} />
+                                <Tooltip title="Modifier la ligne sélectionnée">
+                                    <IconButton disabled={(!canModify && selectedRowId > 0) || disableModifyBouton} onClick={handleEditClick(selectedRowId)} style={{ width: "35px", height: '35px', borderRadius: "2px", backgroundColor: initial.theme }}>
+                                        <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
                                     </IconButton>
-                                </span>
-                            </Tooltip>
+                                </Tooltip>
 
-                            <Tooltip title="Supprimer la ligne sélectionné">
-                                <span>
-                                    <IconButton disabled={disableDeleteBouton} onClick={handleOpenDialogConfirmDeleteAssocieRow} style={{ width: "35px", height: '35px', borderRadius: "2px", backgroundColor: initial.button_delete_color }}>
-                                        <IoMdTrash style={{ width: '50px', height: '50px', color: 'white' }} />
-                                    </IconButton>
-                                </span>
-                            </Tooltip>
-                        </Stack>
+                                <Tooltip title="Sauvegarder les modifications">
+                                    <span>
+                                        <IconButton disabled={(!canAdd && !canModify) || disableSaveBouton} onClick={handleSaveClick(selectedRowId)} style={{ width: "35px", height: '35px', borderRadius: "2px", backgroundColor: initial.theme }}>
+                                            <TfiSave style={{ width: '50px', height: '50px', color: 'white' }} />
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
 
-                        <Stack width={"100%"} minHeight={'600px'}>
-                            <DataGrid
-                                disableMultipleSelection={DataGridStyle.disableMultipleSelection}
-                                disableColumnSelector={DataGridStyle.disableColumnSelector}
-                                disableDensitySelector={DataGridStyle.disableDensitySelector}
-                                disableRowSelectionOnClick
-                                disableSelectionOnClick={true}
-                                localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
-                                slots={{ toolbar: QuickFilter }}
-                                sx={DataGridStyle.sx}
-                                rowHeight={DataGridStyle.rowHeight}
-                                columnHeaderHeight={DataGridStyle.columnHeaderHeight}
-                                editMode='row'
-                                columns={paramTvaColumnHeader}
-                                rows={displayRows}
-                                onRowClick={(e) => handleCellEditCommit({ id: e.row.id })}
+                                <Tooltip title="Annuler les modifications">
+                                    <span>
+                                        <IconButton disabled={disableCancelBouton} onClick={handleCancelClick(selectedRowId)} style={{ width: "35px", height: '35px', borderRadius: "2px", backgroundColor: initial.button_delete_color }}>
+                                            <VscClose style={{ width: '50px', height: '50px', color: 'white' }} />
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
 
-                                 onRowSelectionModelChange={ids => {
-                                    const single = Array.isArray(ids) && ids.length ? [ids[ids.length - 1]] : [];
-                                    setSelectedRow(single);
-                                    saveSelectedRow(single);
-                                    deselectRow(single);
-                                }}
-                                rowModesModel={rowModesModel}
-                                onRowModesModelChange={handleRowModesModelChange}
-                                onRowEditStop={handleRowEditStop}
-                                processRowUpdate={processRowUpdate}
-                                initialState={{ pagination: { paginationModel: { page: 0, pageSize: 100 } } }}
-                                experimentalFeatures={{ newEditingApi: true }}
-                                pageSizeOptions={[50, 100]}
-                                pagination={DataGridStyle.pagination}
-                                checkboxSelection={DataGridStyle.checkboxSelection}
-                                columnVisibilityModel={{ id: false }}
-                                rowSelectionModel={selectedRow}
-                                onRowEditStart={(params, event) => {
-                                    if (!selectedRow.length || selectedRow[0] !== params.id) {
-                                        event.defaultMuiPrevented = true;
-                                    } else {
-                                        event.stopPropagation();
+                                <Tooltip title="Supprimer la ligne sélectionné">
+                                    <span>
+                                        <IconButton disabled={!canDelete || disableDeleteBouton} onClick={handleOpenDialogConfirmDeleteAssocieRow} style={{ width: "35px", height: '35px', borderRadius: "2px", backgroundColor: initial.button_delete_color }}>
+                                            <IoMdTrash style={{ width: '50px', height: '50px', color: 'white' }} />
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
+                            </Stack>
+
+                            <Stack width={"100%"} minHeight={'600px'}>
+                                <DataGrid
+                                    apiRef={apiRef}
+                                    disableMultipleSelection={DataGridStyle.disableMultipleSelection}
+                                    disableColumnSelector={DataGridStyle.disableColumnSelector}
+                                    disableDensitySelector={DataGridStyle.disableDensitySelector}
+                                    disableRowSelectionOnClick
+                                    disableSelectionOnClick={true}
+                                    localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                                    slots={{ toolbar: QuickFilter }}
+                                    sx={DataGridStyle.sx}
+                                    rowHeight={DataGridStyle.rowHeight}
+                                    columnHeaderHeight={DataGridStyle.columnHeaderHeight}
+                                    editMode='row'
+                                    columns={paramTvaColumnHeader}
+                                    rows={canView ? displayRows : []}
+                                    onRowClick={(e) => handleCellEditCommit({ id: e.row.id })}
+
+                                    onRowSelectionModelChange={ids => {
+                                        const single = Array.isArray(ids) && ids.length ? [ids[ids.length - 1]] : [];
+                                        setSelectedRow(single);
+                                        saveSelectedRow(single);
+                                        deselectRow(single);
+                                    }}
+                                    rowModesModel={rowModesModel}
+                                    onRowModesModelChange={handleRowModesModelChange}
+                                    onRowEditStop={handleRowEditStop}
+                                    processRowUpdate={processRowUpdate}
+                                    initialState={{ pagination: { paginationModel: { page: 0, pageSize: 100 } } }}
+                                    experimentalFeatures={{ newEditingApi: true }}
+                                    pageSizeOptions={[50, 100]}
+                                    pagination={DataGridStyle.pagination}
+                                    checkboxSelection={DataGridStyle.checkboxSelection}
+                                    columnVisibilityModel={{ id: false }}
+                                    rowSelectionModel={selectedRow}
+                                    onRowEditStart={(params, event) => {
                                         const rowId = params.id;
                                         const rowData = params.row;
+
+                                        const isNewRow = rowId < 0;
+
+                                        if (!canModify && !isNewRow) {
+                                            event.defaultMuiPrevented = true;
+                                            return;
+                                        }
+
+                                        event.stopPropagation();
+
                                         const compte = rowData['dossierplancomptable.compte'];
                                         const libelle = rowData['dossierplancomptable.libelle'];
                                         const description = rowData['listecodetva.libelle'];
@@ -690,13 +775,14 @@ export default function ParamChiffreAffairesComponent() {
                                         }));
 
                                         setDisableSaveBouton(false);
-                                    }
-                                }}
-                            />
+                                    }}
+                                    onCellKeyDown={handleCellKeyDown}
+                                />
+                            </Stack>
                         </Stack>
-                    </Stack>
-                </TabPanel>
-            </TabContext>
-        </Box>
+                    </TabPanel>
+                </TabContext>
+            </Box>
+        </>
     );
 }

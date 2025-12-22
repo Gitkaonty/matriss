@@ -8,6 +8,7 @@ const journals = db.journals;
 const dossierplancomptableModel = db.dossierplancomptable;
 const balances = db.balances;
 const caSections = db.caSections;
+const codejournals = db.codejournals;
 
 const fonctionUpdateSold = require('../../Middlewares/UpdateSolde/updateBalanceSold');
 const updateSold = fonctionUpdateSold.updateSold;
@@ -43,9 +44,27 @@ const updateSoldAnalytique = async (compte_id, dossier_id, exercice_id) => {
 
         if (lignes.length === 0) return;
 
-        const payload = lignes.map(line => {
-            const mvtdebitanalytique = Number(line.debit) || 0;
-            const mvtcreditanalytique = Number(line.credit) || 0;
+        const grouped = lignes.reduce((acc, line) => {
+            const key = `${line.journals.id_numcpt}-${line.id_axe}-${line.id_section}`;
+
+            if (!acc[key]) {
+                acc[key] = {
+                    id_numcpt: line.journals.id_numcpt,
+                    id_axe: line.id_axe,
+                    id_section: line.id_section,
+                    mvtdebitanalytique: 0,
+                    mvtcreditanalytique: 0
+                };
+            }
+
+            acc[key].mvtdebitanalytique += Number(line.debit) || 0;
+            acc[key].mvtcreditanalytique += Number(line.credit) || 0;
+
+            return acc;
+        }, {});
+
+        const payload = Object.values(grouped).map(group => {
+            const { mvtdebitanalytique, mvtcreditanalytique } = group;
 
             let soldedebitanalytique = mvtdebitanalytique - mvtcreditanalytique;
             let soldecreditanalytique = mvtcreditanalytique - mvtdebitanalytique;
@@ -59,9 +78,9 @@ const updateSoldAnalytique = async (compte_id, dossier_id, exercice_id) => {
                 id_compte: compte_id,
                 id_dossier: dossier_id,
                 id_exercice: exercice_id,
-                id_numcpt: line.journals.id_numcpt,
-                id_axe: line.id_axe,
-                id_section: line.id_section,
+                id_numcpt: group.id_numcpt,
+                id_axe: group.id_axe,
+                id_section: group.id_section,
                 mvtdebitanalytique,
                 mvtcreditanalytique,
                 soldedebitanalytique,
@@ -77,7 +96,7 @@ const updateSoldAnalytique = async (compte_id, dossier_id, exercice_id) => {
         console.error("Erreur dans updateSold :", error.message);
         console.log(error);
     }
-}
+};
 
 const addCompteBilanToBalanceAnalytiqueOneAxe = async (id_compte, id_dossier, id_exercice, id_axe, id_section) => {
     try {
@@ -123,15 +142,43 @@ const addCompteBilanToBalanceAnalytiqueOneAxe = async (id_compte, id_dossier, id
 
             const journal_in_1_5 = await journals.findAll({
                 where: { id_ecriture },
-                include: [{
-                    model: dossierplancomptableModel,
-                    attributes: ['compte'],
-                    where: { compte: { [Op.regexp]: '^(1|2|3|4|5)' } }
-                }],
+                include: [
+                    {
+                        model: dossierplancomptableModel,
+                        attributes: ['compte'],
+                        where: { compte: { [Op.regexp]: '^(1|2|3|4|5)' } }
+                    },
+                    {
+                        model: codejournals,
+                        attributes: ['code']
+                    }
+                ],
+                attributes: ['id_numcpt', 'debit', 'credit', 'id'],
+            });
+
+            const journal_treso_in_1_5 = await journals.findAll({
+                where: { id_ecriture },
+                include: [
+                    {
+                        model: dossierplancomptableModel,
+                        attributes: ['compte'],
+                        where: { compte: { [Op.regexp]: '^(1|2|3|4|5)' } }
+                    },
+                    {
+                        model: codejournals,
+                        attributes: ['type'],
+                        where: { type: { [Op.in]: ['BANQUE', 'CAISSE'] } }
+                    }
+                ],
                 attributes: ['id_numcpt', 'debit', 'credit', 'id'],
             });
 
             const total_debit_credit_6_7 = journal_6_7.reduce((sum, l) => sum + ((Number(l.credit) || 0) + (Number(l.debit) || 0)), 0);
+
+            const total_treso_debit = journal_treso_in_1_5.reduce((sum, row) => sum + (Number(row.debit) || 0), 0);
+            const total_treso_credit = journal_treso_in_1_5.reduce((sum, row) => sum + (Number(row.credit) || 0), 0);
+
+            const montant_treso = total_treso_debit - total_treso_credit;
 
             const amountByCompte = journal_in_1_5.reduce((map, row) => {
                 const idNum = Number(row.id_numcpt);
@@ -157,6 +204,10 @@ const addCompteBilanToBalanceAnalytiqueOneAxe = async (id_compte, id_dossier, id
                 const total_section = sectionsInAnalytique.reduce((sum, l) => sum + ((Number(l.credit) || 0) + (Number(l.debit) || 0)), 0);
 
                 const coef = total_debit_credit_6_7 > 0 ? total_section / total_debit_credit_6_7 : 0;
+                const montant_treso_analytique = coef * montant_treso;
+
+                const soldedebittresoanalytique = montant_treso_analytique > 0 ? montant_treso_analytique : 0;
+                const soldecredittresoanalytique = montant_treso_analytique < 0 ? Math.abs(montant_treso_analytique) : 0;
 
                 for (const compte_in_1_5 of id_numcpt_in_1_5) {
                     const assinedBalance_in_1_5 = await balances.findOne({
@@ -181,19 +232,48 @@ const addCompteBilanToBalanceAnalytiqueOneAxe = async (id_compte, id_dossier, id
 
                     const amountCompteInEcriture = amountByCompte[compte_in_1_5] || 0;
 
-                    await balanceanalytiques.create({
-                        id_compte,
-                        id_dossier,
-                        id_exercice,
-                        id_numcpt: compte_in_1_5,
-                        id_axe: id_axe,
-                        id_section: all_section,
+                    const existing = await balanceanalytiques.findOne({
+                        where: {
+                            id_compte,
+                            id_dossier,
+                            id_exercice,
+                            id_numcpt: compte_in_1_5,
+                            id_axe: id_axe,
+                            id_section: all_section
+                        }
+                    });
+
+                    const newValues = {
                         mvtdebitanalytique: (coef * mvtdebit * amountCompteInEcriture),
                         mvtcreditanalytique: (coef * mvtcredit * amountCompteInEcriture),
                         soldedebitanalytique: (coef * soldedebit * amountCompteInEcriture),
                         soldecreditanalytique: (coef * soldecredit * amountCompteInEcriture),
-                        valeuranalytique: (coef * valeur * amountCompteInEcriture),
-                    })
+                        soldedebittresoanalytique,
+                        soldecredittresoanalytique,
+                        valeuranalytique: (coef * valeur * amountCompteInEcriture)
+                    };
+
+                    if (existing) {
+                        await existing.update({
+                            mvtdebitanalytique: existing.mvtdebitanalytique + newValues.mvtdebitanalytique,
+                            mvtcreditanalytique: existing.mvtcreditanalytique + newValues.mvtcreditanalytique,
+                            soldedebitanalytique: existing.soldedebitanalytique + newValues.soldedebitanalytique,
+                            soldecreditanalytique: existing.soldecreditanalytique + newValues.soldecreditanalytique,
+                            valeuranalytique: existing.valeuranalytique + newValues.valeuranalytique,
+                            soldedebittresoanalytique: existing.soldedebittresoanalytique + newValues.soldedebittresoanalytique,
+                            soldecredittresoanalytique: existing.soldecredittresoanalytique + newValues.soldecredittresoanalytique,
+                        });
+                    } else {
+                        await balanceanalytiques.create({
+                            id_compte,
+                            id_dossier,
+                            id_exercice,
+                            id_numcpt: compte_in_1_5,
+                            id_axe: id_axe,
+                            id_section: all_section,
+                            ...newValues
+                        });
+                    }
                 }
             }
         }

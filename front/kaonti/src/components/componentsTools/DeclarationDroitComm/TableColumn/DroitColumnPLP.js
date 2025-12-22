@@ -23,7 +23,7 @@ const droitCommColumnPLP = [
     {
         id: 'commercant_quantite',
         label: 'Quantité-Commercant',
-        minWidth: 180,
+        minWidth: 100,
         align: 'right',
         showSum: false
     },

@@ -1,18 +1,11 @@
 import { React, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Typography, Stack, Paper, IconButton, FormLabel, FormControl, Select, Input, FormHelperText } from '@mui/material';
-import Button from '@mui/material/Button';
-import { IoAddSharp } from "react-icons/io5";
-import { GoX } from "react-icons/go";
+import { Typography, Stack, Paper, IconButton, FormLabel, FormControl, Select, Input, FormHelperText, Button } from '@mui/material';
 import { HiLockClosed, HiPencilSquare } from "react-icons/hi2";
 import Tooltip from '@mui/material/Tooltip';
-import TableParamExerciceModel from '../../../../model/TableParamExerciceModel';
-import ArrowBackIosNew from '@mui/icons-material/ArrowBackIosNew';
-import ArrowForwardIos from '@mui/icons-material/ArrowForwardIos';
 import { DataGridStyle } from '../../../componentsTools/DatagridToolsStyle';
 import { DataGrid, frFR } from '@mui/x-data-grid';
 import QuickFilter from '../../../componentsTools/DatagridToolsStyle';
-import { FaCircle } from "react-icons/fa";
 import { init } from '../../../../../init';
 import axios from '../../../../../config/axios';
 import Box from '@mui/material/Box';
@@ -22,7 +15,6 @@ import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
 import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
 import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFile';
-import { TbPlaylistAdd } from 'react-icons/tb';
 import { BsChevronLeft, BsChevronRight } from "react-icons/bs";
 import { IoMdTrash } from 'react-icons/io';
 import Dialog from '@mui/material/Dialog';
@@ -39,6 +31,8 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import PopupActionConfirm from '../../../componentsTools/popupActionConfirm';
 import { BsFillUnlockFill } from "react-icons/bs";
+import usePermission from '../../../../hooks/usePermission';
+import useAxiosPrivate from '../../../../../config/axiosPrivate';
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialogContent-root': {
@@ -50,6 +44,9 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
 }));
 
 export default function ParamExerciceComponent() {
+    const { canAdd, canModify, canDelete, canView } = usePermission();
+    const axiosPrivate = useAxiosPrivate();
+
     const initial = init[0];
     const navigate = useNavigate();
     //récupération information du dossier sélectionné
@@ -187,7 +184,9 @@ export default function ParamExerciceComponent() {
     }
 
     useEffect(() => {
-        GetListeExercice(fileId);
+        if (canView) {
+            GetListeExercice(fileId);
+        }
     }, [fileId]);
 
     //Création du premier exercice dans le tableau
@@ -282,7 +281,7 @@ export default function ParamExerciceComponent() {
     });
 
     const createFirstExercice = () => {
-        axios.post(`/paramExercice/createFirstExercice`, firstExerciceForm.values).then((response) => {
+        axiosPrivate.post(`/paramExercice/createFirstExercice`, firstExerciceForm.values).then((response) => {
             const resData = response.data;
             if (resData.state) {
                 GetListeExercice(fileId);
@@ -299,7 +298,7 @@ export default function ParamExerciceComponent() {
         if (value) {
             setLoadingCreateNextExercice(true);
             try {
-                await axios.post(`/paramExercice/createNextExercice`, { compteId, fileId }).then((response) => {
+                await axiosPrivate.post(`/paramExercice/createNextExercice`, { compteId, fileId }).then((response) => {
                     const resData = response.data;
                     if (resData.state) {
                         GetListeExercice(fileId);
@@ -326,7 +325,7 @@ export default function ParamExerciceComponent() {
         if (value) {
             setLoadingPreviousExercice(true);
             try {
-                await axios.post(`/paramExercice/createPreviewExercice`, { compteId, fileId }).then((response) => {
+                await axiosPrivate.post(`/paramExercice/createPreviewExercice`, { compteId, fileId }).then((response) => {
                     const resData = response.data;
                     if (resData.state) {
                         GetListeExercice(fileId);
@@ -463,7 +462,7 @@ export default function ParamExerciceComponent() {
         if (value) {
             const id_exerciceToDelete = exerciceToDeleteId;
             const rang = exerciceToDeleteRang;
-            axios.post(`/paramExercice/deleteExercice`, { id_exerciceToDelete, fileId, rang }).then((response) => {
+            axiosPrivate.post(`/paramExercice/deleteExercice`, { id_exerciceToDelete, fileId, rang }).then((response) => {
                 const resData = response.data;
                 if (resData.state) {
                     GetListeExercice(fileId);
@@ -633,6 +632,7 @@ export default function ParamExerciceComponent() {
 
                                 <Tooltip title="Ajouter l'exercice précédent">
                                     <IconButton
+                                        disabled={!canAdd}
                                         onClick={handleCreateNextExercicePrev}
                                         variant="contained"
                                         style={{
@@ -648,6 +648,7 @@ export default function ParamExerciceComponent() {
 
                                 <Tooltip title="Ajouter l'exercice suivant">
                                     <IconButton
+                                        disabled={!canAdd}
                                         onClick={handleCreateNextExercice}
                                         variant="contained"
                                         style={{
@@ -694,6 +695,7 @@ export default function ParamExerciceComponent() {
                                 <Tooltip title="Supprimer un exercice">
                                     <span>
                                         <IconButton
+                                            disabled={!canDelete || selectedExerciceRow.length === 0}
                                             onClick={handleDeleteExercice}
                                             variant="contained"
                                             style={{

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Typography, Stack, Box, Tab, IconButton, Button, Switch, Checkbox, Autocomplete, TextField } from '@mui/material';
+import { Typography, Stack, Box, Tab, IconButton, Button, Switch, Checkbox, Autocomplete, TextField, Tooltip } from '@mui/material';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -23,14 +23,19 @@ import VirtualTableModifiableExport from '../../../componentsTools/DeclarationEb
 import { ListItemIcon, ListItemText } from '@mui/material';
 import { FaFilePdf, FaFileExcel } from 'react-icons/fa';
 import { CiExport } from "react-icons/ci";
+import { MdFilterAlt } from "react-icons/md";
+import { IoMdRefreshCircle } from "react-icons/io";
 
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
+
+import usePermission from '../../../../hooks/usePermission';
 
 const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
 const checkedIcon = <CheckBoxIcon fontSize="small" />;
 
 export default function ExportBalance() {
+    const { canAdd, canModify, canDelete, canView } = usePermission();
     //Valeur du listbox choix exercice ou situation-----------------------------------------------------
     let axeId = 0;
     if (typeof window !== "undefined") {
@@ -55,6 +60,7 @@ export default function ExportBalance() {
     const [axesData, setAxesData] = useState([]);
     const [sectionsData, setSectionsData] = useState([]);
     const [isCaActive, setIsCaActive] = useState(false);
+    const [isRefreshed, setIsRefreshed] = useState(false);
 
     const [selectedAxeId, setSelectedAxeId] = useState(0);
     const [selectedSectionsId, setSelectedSectionsId] = useState([]);
@@ -276,7 +282,7 @@ export default function ExportBalance() {
             axios.post(`/administration/exportBalance/recupBalanceCa`, { centraliser, unSolded, movmentedCpt, compteId, fileId, exerciceId, type, id_axes, id_sections: id_sectionMapped }).then((response) => {
                 const resData = response.data;
                 if (resData.state) {
-                    setBalanceCa(resData.list);
+                    canView ? setBalanceCa(resData.list) : setBalanceCa([]);
                 } else {
                     if (resData?.msg && !String(resData.msg).includes('Paramètres manquants')) {
                         toast.error(resData.msg);
@@ -289,7 +295,7 @@ export default function ExportBalance() {
             axios.post(`/administration/exportBalance/recupBalance`, { centraliser, unSolded, movmentedCpt, compteId, fileId, exerciceId, type }).then((response) => {
                 const resData = response.data;
                 if (resData.state) {
-                    setBalance(resData.list);
+                    canView ? setBalance(resData.list) : setBalance([]);
                 } else {
                     if (resData?.msg && !String(resData.msg).includes('Paramètres manquants')) {
                         toast.error(resData.msg);
@@ -300,6 +306,36 @@ export default function ExportBalance() {
             });
         }
     }
+
+    const actualizeBalance = async () => {
+        try {
+            setTraitementJournalWaiting(true);
+            setTraitementJournalMsg('Actualisation en cours...');
+
+            const id_sectionMapped = selectedSectionsId.map(val => Number(val.id));
+
+            const response = await axios.post('/administration/exportBalance/actualizeBalance', {
+                id_compte: Number(compteId),
+                id_exercice: Number(selectedExerciceId),
+                id_dossier: Number(fileId),
+                type,
+                id_axe: Number(selectedAxeId),
+                id_sections: id_sectionMapped
+            });
+
+            if (response?.data?.state) {
+                toast.success(response?.data?.message);
+            } else {
+                toast.error(response?.data?.message || response?.data?.msg);
+            }
+        } catch (err) {
+            toast.error("Erreur lors de l'actualisation");
+            console.error(err);
+        } finally {
+            setTraitementJournalWaiting(false);
+            setTraitementJournalMsg('');
+        }
+    };
 
     useEffect(() => {
         if (!compteId || !fileId || !selectedPeriodeId) return;
@@ -522,6 +558,7 @@ export default function ExportBalance() {
                                     <FormControl variant="standard" sx={{ minWidth: 150 }}>
                                         <InputLabel id="demo-simple-select-standard-label">Type</InputLabel>
                                         <Select
+                                            disabled={!canView}
                                             labelId="demo-simple-select-standard-label"
                                             id="demo-simple-select-standard"
                                             value={type}
@@ -617,46 +654,84 @@ export default function ExportBalance() {
                                     direction={'row'}
                                     spacing={0.5}
                                 >
-                                    <Button
-                                        variant="outlined"
-                                        onClick={handleApply}
-                                        sx={{
-                                            height: 40,
-                                            textTransform: 'none',
-                                            outline: 'none',
-                                            '&:focus': {
-                                                outline: 'none',
-                                            },
-                                            '&.Mui-focusVisible': {
-                                                outline: 'none',
-                                                boxShadow: 'none',
-                                            },
-                                            '&:focus-visible': {
-                                                outline: 'none',
-                                                boxShadow: 'none',
-                                            }
-                                        }}
-                                    >
-                                        Appliquer
-                                    </Button>
+                                    <div>
+                                        <Tooltip
+                                            title={`Actualiser la balance ${type === 3 ? 'analytique' : 'générale'}`}
+                                        >
+                                            <Button
+                                                disabled={!canView}
+                                                variant="outlined"
+                                                onClick={actualizeBalance}
+                                                sx={{
+                                                    height: 40,
+                                                    textTransform: 'none',
+                                                    outline: 'none',
+                                                    '&:focus': {
+                                                        outline: 'none',
+                                                    },
+                                                    '&.Mui-focusVisible': {
+                                                        outline: 'none',
+                                                        boxShadow: 'none',
+                                                    },
+                                                    '&:focus-visible': {
+                                                        outline: 'none',
+                                                        boxShadow: 'none',
+                                                    }
+                                                }}
+                                                startIcon={<IoMdRefreshCircle size={25} />}
+                                            >
+                                                Actualiser
+                                            </Button>
+                                        </Tooltip>
+                                    </div>
+                                    <div>
+                                        <Tooltip
+                                            title={`Fitrer la balance ${type === 3 ? 'analytique' : 'générale'}`}
+                                        >
+                                            <Button
+                                                disabled={!canView}
+                                                variant="outlined"
+                                                onClick={handleApply}
+                                                sx={{
+                                                    height: 40,
+                                                    textTransform: 'none',
+                                                    outline: 'none',
+                                                    '&:focus': {
+                                                        outline: 'none',
+                                                    },
+                                                    '&.Mui-focusVisible': {
+                                                        outline: 'none',
+                                                        boxShadow: 'none',
+                                                    },
+                                                    '&:focus-visible': {
+                                                        outline: 'none',
+                                                        boxShadow: 'none',
+                                                    }
+                                                }}
+                                                startIcon={<MdFilterAlt size={20} />}
+                                            >
+                                                Appliquer
+                                            </Button>
+                                        </Tooltip>
+                                    </div>
                                 </Stack>
                             </Stack>
 
                             <Stack width={"100%"} height={"60px"} spacing={2} alignItems={"center"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
                                 <FormControlLabel
-                                    control={<Switch checked={checked} onChange={handleChange} name="centralisation" />}
+                                    control={<Switch checked={checked} disabled={!canView} onChange={handleChange} name="centralisation" />}
                                     label="Centraliser la balance"
                                     style={{ width: "15%" }}
                                 />
 
                                 <FormControlLabel
-                                    control={<Switch checked={unsoldedCompte} onChange={handleChangeUnsoldedCompte} name="unSoldedCompte" />}
+                                    control={<Switch checked={unsoldedCompte} disabled={!canView} onChange={handleChangeUnsoldedCompte} name="unSoldedCompte" />}
                                     label="Seulement les comptes non soldés"
                                     style={{ width: "22%" }}
                                 />
 
                                 <FormControlLabel
-                                    control={<Switch checked={movmentedCpt} onChange={handleChangeMovmentedCpt} name="movmentedCpt" />}
+                                    control={<Switch checked={movmentedCpt} disabled={!canView} onChange={handleChangeMovmentedCpt} name="movmentedCpt" />}
                                     label="Seulement les comptes mouvementés"
                                     style={{ width: "56%" }}
                                 />

@@ -13,10 +13,12 @@ import { GrNext } from 'react-icons/gr';
 import { IoMdRemoveCircleOutline } from 'react-icons/io';
 import { FaRegCheckCircle } from 'react-icons/fa';
 import toast from 'react-hot-toast';
+import useAxiosPrivate from '../../../../../config/axiosPrivate.js';
 
 const initial = init[0];
 
-const DatagridDetailSelectionLigne = ({ DATAGRID_HEIGHT = '500px', valSelectMois, valSelectAnnee, compteId, selectedExerciceId, fileId }) => {
+const DatagridDetailSelectionLigne = ({ DATAGRID_HEIGHT = '500px', valSelectMois, valSelectAnnee, compteId, selectedExerciceId, fileId, canModify, canAdd, canDelete, canView }) => {
+  const axiosPrivate = useAxiosPrivate();
   const [selectedDetailRows, setSelectedDetailRows] = useState([]);
   const [listSaisie, setListSaisie] = useState([]);
   const [listePlanComptable, setListePlanComptable] = useState([]);
@@ -281,7 +283,7 @@ const DatagridDetailSelectionLigne = ({ DATAGRID_HEIGHT = '500px', valSelectMois
 
   const updateAnneeMois = (type) => {
     if (type === 'Ajouter') {
-        axios.put(`/declaration/tva/ajoutMoisAnnee`, {
+        axiosPrivate.put(`/declaration/tva/ajoutMoisAnnee`, {
             id_compte: Number(compteId),
             id_exercice: Number(selectedExerciceId),
             id_dossier: Number(fileId),
@@ -329,7 +331,7 @@ const DatagridDetailSelectionLigne = ({ DATAGRID_HEIGHT = '500px', valSelectMois
             toast.error("Erreur lors de la requête");
         });
     } else {
-        axios.put(`/declaration/tva/supprimerMoisAnnee`, {
+        axiosPrivate.put(`/declaration/tva/supprimerMoisAnnee`, {
             id_compte: Number(compteId),
             id_exercice: Number(selectedExerciceId),
             id_dossier: Number(fileId),
@@ -373,34 +375,42 @@ const DatagridDetailSelectionLigne = ({ DATAGRID_HEIGHT = '500px', valSelectMois
   };
 
   useEffect(() => {
-    getJournalsSelectionLigne();
+    if(canView){
+      getJournalsSelectionLigne();
+    }
   }, [compteId, fileId, selectedExerciceId, valSelectMois, valSelectAnnee]);
 
   useEffect(() => {
-    if (isEcritureAssocieRefreshed) {
+    if (isEcritureAssocieRefreshed && canView) {
       getJournalsSelectionLigne();
     }
   }, [isEcritureAssocieRefreshed]);
 
   useEffect(() => {
-    getPc();
+   if(canView){
+     getPc();
+   }
   }, [fileId, compteId]);
 
   useEffect(() => {
-    handleSearch();
+    if(canView){
+      handleSearch();
+    }
   }, [valSelectedCompte, listSaisie]);
 
   useEffect(() => {
-    const handleKeyDown = e => {
-      if (e.ctrlKey && e.key === 'ArrowRight') {
-        handleNext();
-      } else if (e.ctrlKey && e.key === 'ArrowLeft') {
-        handlePrevious();
-      }
-    };
+    if (canView) {
+      const handleKeyDown = e => {
+        if (e.ctrlKey && e.key === 'ArrowRight') {
+          handleNext();
+        } else if (e.ctrlKey && e.key === 'ArrowLeft') {
+          handlePrevious();
+        }
+      };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
   }, [listePlanComptable, valSelectedCompte, isEcritureAssocieRefreshed]);
 
   useEffect(() => {
@@ -487,7 +497,7 @@ const DatagridDetailSelectionLigne = ({ DATAGRID_HEIGHT = '500px', valSelectMois
               <span>
                 <Button
                   variant="contained"
-                  disabled={selectedDetailRows.length === 0 || hasDecltvaTrue}
+                  disabled={!canAdd||selectedDetailRows.length === 0 || hasDecltvaTrue}
                   style={{ textTransform: 'none', outline: 'none', backgroundColor: initial.theme, color: 'white', height: '39px' }}
                   onClick={() => updateAnneeMois('Ajouter')}
                   startIcon={<FaRegCheckCircle size={20} />}
@@ -501,7 +511,7 @@ const DatagridDetailSelectionLigne = ({ DATAGRID_HEIGHT = '500px', valSelectMois
                             <span>
                                 <Button
                                     variant="contained"
-                                    disabled={selectedDetailRows.length === 0 || hasDecltvaFalse}
+                  disabled={!canDelete || selectedDetailRows.length === 0 || hasDecltvaFalse}
                                     style={{
                                         textTransform: 'none',
                                         outline: 'none',

@@ -26,6 +26,7 @@ const exercices = db.exercices;
 const userscomptes = db.userscomptes;
 const journals = db.journals;
 const dossierplancomptable = db.dossierplancomptable;
+const codejournals = db.codejournals;
 
 const rubriques = db.rubriques;
 const rubriquesmatrices = db.rubriquesmatrices;
@@ -1144,7 +1145,6 @@ const exportToPDF = async (req, res) => {
 
     const dossier = await dossiers.findByPk(id_dossier);
     const exercice = await exercices.findByPk(id_exercice);
-    const compte = await userscomptes.findByPk(id_compte);
 
     const fonts = {
       Helvetica: {
@@ -1822,7 +1822,7 @@ const generateBhiapcAuto = async (req, res) => {
         id_dossier,
         id_exercice,
       }
-    })
+    });
 
     const rubriqueCompteBhiapc = await compterubriques.findAll({
       where: {
@@ -1834,143 +1834,238 @@ const generateBhiapcAuto = async (req, res) => {
         id_rubrique: 1,
         active: true
       }
-    })
+    });
 
     if (!rubriqueCompteBhiapc || rubriqueCompteBhiapc.length === 0) {
       return res.status(400).json({ state: false, message: 'Aucune compte trouvé' });
     }
 
     const comptes = rubriqueCompteBhiapc.map(val => val.compte);
-
     const uniqueComptes = [...new Set(comptes)];
+    // const processedEcritures = new Set();
 
-    // return res.json(uniqueComptes);
+    for (const comptesRubriqueBhiapc of uniqueComptes) {
 
-    const journalData = await journals.findAll({
-      where: {
-        id_compte,
-        id_dossier,
-        id_exercice,
-      },
-      include: [
-        {
-          model: dossierplancomptable,
-          attributes: ['compte'],
-          required: uniqueComptes ? true : false,
-          where: uniqueComptes
-            ? { compte: { [Op.like]: `${uniqueComptes}%` } }
-            : undefined
+      const journalData = await journals.findAll({
+        where: {
+          id_compte,
+          id_dossier,
+          id_exercice,
         },
-      ],
-      order: [['dateecriture', 'ASC']]
-    })
-
-    const mappedAllJournalsData = await Promise.all(
-      journalData.map(async (journal) => {
-        const { dossierplancomptable, ...rest } = journal.toJSON();
-        return {
-          ...rest,
-          compte: dossierplancomptable?.compte || null,
-        };
-      })
-    );
-
-    const groupedData = Object.values(
-      mappedAllJournalsData.reduce((acc, item) => {
-        const compteStr = item.compte?.toString() || "";
-
-        if (!acc[item.id_ecriture]) {
-          acc[item.id_ecriture] = {
-            id_ecriture: item.id_ecriture,
-            lignes: [],
-          };
-        }
-
-        // Ajouter toutes les lignes si c'est 401 ou compte unique
-        if (compteStr.startsWith("401") || uniqueComptes.some(c => compteStr.startsWith(c))) {
-          acc[item.id_ecriture].lignes.push({
-            compte: item.compte,
-            libelle: item.libelle,
-            debit: item.debit,
-            credit: item.credit,
-            id_numcpt: item.id_numcpt,
-            dateecriture: item.dateecriture,
-          });
-        }
-
-        return acc;
-      }, {})
-    )
-      .filter(ecriture => {
-        const has401 = ecriture.lignes.some(l => l.compte.startsWith("401"));
-        const hasUniqueCompte = ecriture.lignes.some(l =>
-          uniqueComptes.some(c => l.compte.startsWith(c))
-        );
-        return has401 && hasUniqueCompte;
+        include: [
+          {
+            model: dossierplancomptable,
+            attributes: ['compte'],
+            required: true,
+            where: { compte: { [Op.like]: `${comptesRubriqueBhiapc}%` } }
+          },
+          {
+            model: codejournals,
+            attributes: ['code', 'type', 'nif', 'adresse', 'libelle']
+          }
+        ],
+        order: [['dateecriture', 'ASC']]
       });
 
-    // return res.json(groupedData);
+      const journalEcriture = [...new Set(journalData.map(val => val.id_ecriture))];
 
-    const filteredGroupedData = groupedData.filter(ecriture =>
-      ecriture.lignes.some(l => l.compte.startsWith("401"))
-    );
+      for (const id_ecriture of journalEcriture) {
 
-    // return res.json(filteredGroupedData);
+        // if (processedEcritures.has(id_ecriture)) {
+        //   continue;
+        // }
+        // processedEcritures.add(id_ecriture);
 
-    const result = await Promise.all(
-      filteredGroupedData.map(async (group) => {
+        const journalCode = await journals.findAll({
+          where: { id_ecriture },
+          include: [
+            {
+              model: dossierplancomptable,
+              attributes: ['compte', 'id', 'typetier', 'cin', 'autrepieceid', 'statistique', 'adresse', 'nif', 'nifrepresentant', 'libelle', 'adresseetranger']
+            },
+            {
+              model: codejournals,
+              attributes: ['code', 'type', 'nif', 'adresse', 'libelle']
+            }
+          ],
+        });
 
-        const montant_charge = group.lignes
-          .filter(l => l.compte.startsWith('401'))
-          .reduce((sum, l) => sum + ((l.debit || 0) - (l.credit || 0)), 0);
+        const journalCodeMappedData = await Promise.all(
+          journalCode.map(async (entry) => {
+            const j = entry.toJSON();
+            const dpc = j.dossierplancomptable;
+            const cj = j.codejournal;
 
-        const ligne401 = group.lignes.find(l => l.compte.startsWith("401"));
+            const compte_centralise = await dossierplancomptable.findByPk(entry.id_numcptcentralise);
 
-        const dossierplanComptableData = ligne401
-          ? await dossierplancomptable.findByPk(ligne401.id_numcpt)
-          : null;
+            return {
+              ...j,
+              compte: dpc?.compte || null,
+              journal: cj?.code || null,
+              typeCodeJournal: cj?.type || null,
+              compte_centralise: compte_centralise?.compte || null,
+              nifCodeJournal: cj?.nif || null,
+              adresseCodeJournal: cj?.adresse || null,
+              libelleCodeJournal: cj?.libelle || null
+            };
+          })
+        );
 
-        return {
-          id_compte: id_compte,
-          id_dossier: id_dossier,
-          id_exercice: id_exercice,
-          // id_numcpt: dossierplanComptableData?.id || null,
-          nif: dossierplanComptableData?.nif || null,
-          raison_sociale: dossierplanComptableData?.libelle || null,
-          adresse: dossierplanComptableData?.adresse || null,
-          montant_charge: montant_charge,
-          montant_beneficiaire: montant_charge,
-          nature: 'MANUEL',
-          id_etat: 'MANUEL',
-          compte: dossierplanComptableData.compte,
-          anomalie: !dossierplanComptableData?.nif || !dossierplanComptableData?.libelle || !dossierplanComptableData?.adresse
-        };
-      })
-    );
+        if (journalCodeMappedData.length > 0) {
+          const codeJournalType = journalCodeMappedData[0].typeCodeJournal;
 
-    // return res.json(result);
+          if (codeJournalType) {
 
-    const finalResult = combineByCompte(result);
-    const finalResultLength = finalResult.length;
+            switch (codeJournalType) {
 
-    // return res.json(finalResult);
+              case 'ACHAT': {
+                const journalAchats = journalCodeMappedData.filter(
+                  item => item.compte_centralise && item.compte_centralise.toString().startsWith('401')
+                );
 
-    if (result.length === 0) {
-      return res.status(400).json({ state: false, message: "Aucune donnée à créer" });
+                if (!journalAchats.length) break;
+
+                for (const journalAchatData of journalAchats) {
+                  const dossierPlanComptableData =
+                    await dossierplancomptable.findByPk(journalAchatData.id_numcpt);
+
+                  if (!dossierPlanComptableData) continue;
+
+                  const valeurDC =
+                    (journalAchatData.debit || 0) - (journalAchatData.credit || 0);
+
+                  switch (dossierPlanComptableData.typetier) {
+                    case 'avec-nif':
+                      await liassebhiapcs.create({
+                        id_compte,
+                        id_dossier,
+                        id_exercice,
+                        nif: dossierPlanComptableData.nif,
+                        raison_sociale: dossierPlanComptableData.statistique,
+                        adresse: dossierPlanComptableData.adresse,
+                        montant_charge: valeurDC,
+                        id_etat: 'BHIAPC',
+                        montatant_beneficiaire: valeurDC
+                      });
+                      break;
+
+                    case 'etranger':
+                      await liassebhiapcs.create({
+                        id_compte,
+                        id_dossier,
+                        id_exercice,
+                        nif: dossierPlanComptableData.nifrepresentant,
+                        raison_sociale: dossierPlanComptableData.libelle,
+                        adresse: dossierPlanComptableData.adresseetranger,
+                        montant_charge: valeurDC,
+                        id_etat: 'BHIAPC',
+                        montatant_beneficiaire: valeurDC
+                      });
+                      break;
+
+                    case 'sans-nif':
+                      await liassebhiapcs.create({
+                        id_compte,
+                        id_dossier,
+                        id_exercice,
+                        raison_sociale: dossierPlanComptableData.cin || dossierPlanComptableData.autrepieceid,
+                        adresse: dossierPlanComptableData.adresse,
+                        montant_charge: valeurDC,
+                        id_etat: 'BHIAPC',
+                        montatant_beneficiaire: valeurDC
+                      });
+                      break;
+
+                    case 'general':
+                      await liassebhiapcs.create({
+                        id_compte,
+                        id_dossier,
+                        id_exercice,
+                        nif: dossierPlanComptableData.nif,
+                        raison_sociale: dossierPlanComptableData.cin || dossierPlanComptableData.libelle,
+                        adresse: dossierPlanComptableData.adresse,
+                        montant_charge: valeurDC,
+                        id_etat: 'BHIAPC',
+                        montatant_beneficiaire: valeurDC
+                      });
+                      break;
+                  }
+                }
+                break;
+              }
+
+              case 'OD':
+              case 'CAISSE':
+              case 'A_NOUVEAU':
+              case 'VENTE': {
+                const journalOthersData = journalCodeMappedData.filter(
+                  item => item.compte && item.compte.toString().startsWith(compteData.compte)
+                )
+                if (!journalOthersData.length) break;
+                for (const journalOthers of journalOthersData) {
+
+                  const valeurDC =
+                    (journalOthers.debit || 0) - (journalOthers.credit || 0);
+
+                  await liassebhiapcs.create({
+                    id_compte,
+                    id_dossier,
+                    id_exercice,
+                    montant_charge: valeurDC,
+                    montatant_beneficiaire: valeurDC,
+                    id_etat: 'BHIAPC',
+                    // nif: '-',
+                    // adresse: 'test',
+                    // raison_sociale: 'test'
+                  });
+                }
+                break;
+              }
+
+              case 'BANQUE': {
+                const journalBanqueData = journalCodeMappedData.filter(
+                  item => item.compte &&
+                    (item.compte.toString().startsWith('66') ||
+                      item.compte.toString().startsWith('622'))
+                );
+                if (!journalBanqueData.length) break;
+
+                for (const j of journalBanqueData) {
+
+                  const valeurDC = (j.debit || 0) - (j.credit || 0);
+
+                  await liassebhiapcs.create({
+                    id_compte,
+                    id_dossier,
+                    id_exercice,
+                    nif: j.nifCodeJournal,
+                    raison_sociale: j.libelleCodeJournal,
+                    adresse: j.adresseCodeJournal,
+                    montant_charge: valeurDC,
+                    id_etat: 'BHIAPC',
+                    montatant_beneficiaire: valeurDC
+                  });
+                }
+
+                break;
+              }
+
+            }
+          }
+        }
+      }
     }
-
-    await liassebhiapcs.bulkCreate(result);
 
     return res.status(200).json({
       state: true,
-      message: `${finalResultLength} BHIAPC ${pluralize(finalResultLength, "crée")} avec succès`,
+      message: `BHIAPC généré avec succès`,
     });
 
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Erreur serveur", state: false, error: error.message });
   }
-}
+};
 
 // Fonction de calcul
 const calculateSolde = (sens, data) => {
@@ -2152,7 +2247,7 @@ const generateDpAuto = async (req, res) => {
 
     return res.status(200).json({
       state: true,
-      message: `${rubriqueCount} DP ${pluralize(rubriqueCount, 'modifiés')} avec succès`
+      message: `${rubriqueCount} DP ${pluralize(rubriqueCount, 'modifié')} avec succès`
     });
 
   } catch (error) {

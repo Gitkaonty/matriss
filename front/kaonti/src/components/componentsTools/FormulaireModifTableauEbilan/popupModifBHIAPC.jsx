@@ -30,6 +30,7 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
 }));
 
 const PopupModifBHIAPC = ({ choix, confirmationState, data }) => {
+    const disabledFormMontant = data.id < 0 ? false : true;
     const [formDataFinal, setFormDataFinal] = useState({
         state: false,
         id: -1,
@@ -240,7 +241,7 @@ const PopupModifBHIAPC = ({ choix, confirmationState, data }) => {
                         <Stack flexDirection={'row'} justifyContent={'space-between'}>
                             <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '47%' }}>
                                 <TextField
-                                    disabled
+                                    disabled={disabledFormMontant}
                                     size="small"
                                     label="Montant charge"
                                     name="montantcharge"
@@ -283,7 +284,7 @@ const PopupModifBHIAPC = ({ choix, confirmationState, data }) => {
 
                             <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '47%' }}>
                                 <TextField
-                                    disabled
+                                    disabled={disabledFormMontant}
                                     size="small"
                                     label="Montant bénéficiaire"
                                     name="montantbeneficiaire"
@@ -319,7 +320,6 @@ const PopupModifBHIAPC = ({ choix, confirmationState, data }) => {
                                 />
                             </FormControl>
                         </Stack>
-
                     </Stack>
                 </DialogContent>
                 <DialogActions>

@@ -23,6 +23,10 @@ const {
   exportFormulaireExcel,
   exportFormulairePdf,
 } = require('../../../Controllers/Declaration/tva/tvaControllers');
+
+const verifyJWT = require('../../../Middlewares/verifyJWT');
+const verifyPermission = require('../../../Middlewares/verifyPermission');
+
 const { listAnomalies, replaceAnomalies, updateAnomalie, updateAnomalieByKey, clearAnomalies } = require('../../../Controllers/Declaration/tva/anomaliesFormulaireController');
 
 ///////////////////////// Annexes
@@ -95,10 +99,10 @@ router.get('/selectionLigne/:id_compte/:id_dossier/:id_exercice', paramTvaContro
 router.get('/ecritureassociee/:id_compte/:id_dossier/:id_exercice', paramTvaController.getJournalsDeclTvaClasseTva);
 
 // mettre à jour en masse mois/année de déclaration sur des écritures
-router.put('/ajoutMoisAnnee', paramTvaController.ajoutMoisAnnee);
+router.put('/ajoutMoisAnnee',verifyJWT, verifyPermission('ADD'), paramTvaController.ajoutMoisAnnee);
 
 // supprimer en masse mois/année de déclaration sur des écritures
-router.put('/supprimerMoisAnnee', paramTvaController.suppressionMoisAnnee);
+router.put('/supprimerMoisAnnee',verifyJWT, verifyPermission('DELETE'), paramTvaController.suppressionMoisAnnee);
 
 // mettre à jour le flag booléen decltva en masse
 router.put('/declflag', paramTvaController.updateJournalsDeclFlag);
@@ -107,10 +111,10 @@ router.put('/declflag', paramTvaController.updateJournalsDeclFlag);
 router.get('/recupPcClasseSix/:id_compte/:id_dossier', paramTvaController.recupPcClasseSix);
 
 // générer une annexe de déclaration automatiquement
-router.post('/generateAnnexeDeclarationAuto', paramTvaController.generateAnnexeDeclarationAuto);
+router.post('/generateAnnexeDeclarationAuto', verifyJWT, verifyPermission('ADD'),paramTvaController.generateAnnexeDeclarationAuto);
 
 // réinitialiser la déclaration TVA en masse
-router.put('/reinitializeTva', paramTvaController.reinitializeTva);
+router.put('/reinitializeTva',verifyJWT, verifyPermission('DELETE'), paramTvaController.reinitializeTva);
 
 // Export Excel Annexes TVA
 router.get('/export-excel-tableau/:id_compte/:id_dossier/:id_exercice/:mois/:annee', exportTvaTableExcel);
@@ -126,7 +130,7 @@ router.get('/formulaire/export-excel/:id_dossier/:id_compte/:id_exercice', expor
 router.get('/formulaire/export-pdf/:id_dossier/:id_compte/:id_exercice', exportFormulairePdf);
 
 // Générer les détails automatiquement
-router.post('/generateTvaAutoDetail', paramTvaController.generateTvaAutoDetail);
+router.post('/generateTvaAutoDetail',verifyJWT, verifyPermission('ADD'), paramTvaController.generateTvaAutoDetail);
 
 // Récupérer les écritures associées (déjà marquées decltva=true) pour une période
 router.get('/getDetailEcritureAssocie/:id_compte/:id_dossier/:id_exercice', paramTvaController.getDetailEcritureAssocie);

@@ -12,10 +12,12 @@ import { MdOutlineAutoMode } from 'react-icons/md';
 import { MdReplay } from 'react-icons/md';
 import toast from 'react-hot-toast';
 import PopupConfirmDelete from '../../popupConfirmDelete.jsx';
+import useAxiosPrivate from '../../../../../config/axiosPrivate.js';
 
 const initial = init[0];
 
-const DatagridDetailEcritureAssociee = ({ DATAGRID_HEIGHT = '500px', valSelectMois, valSelectAnnee, compteId, selectedExerciceId, fileId }) => {
+const DatagridDetailEcritureAssociee = ({ DATAGRID_HEIGHT = '500px', valSelectMois, valSelectAnnee, compteId, selectedExerciceId, fileId, canModify, canAdd, canDelete, canView  }) => {
+  const axiosPrivate = useAxiosPrivate();
   const [selectedDetailRows, setSelectedDetailRows] = useState([]);
   const [listSaisie, setListSaisie] = useState([]);
   const [isListSaisieRefreshed, setIsListSaisieRefreshed] = useState(false);
@@ -26,7 +28,7 @@ const DatagridDetailEcritureAssociee = ({ DATAGRID_HEIGHT = '500px', valSelectMo
 
   const reinitializeTva = value => {
     if (value) {
-      axios
+      axiosPrivate
         .put(`/declaration/tva/reinitializeTva`, {
           id_compte: compteId,
           id_exercice: selectedExerciceId,
@@ -73,7 +75,7 @@ const DatagridDetailEcritureAssociee = ({ DATAGRID_HEIGHT = '500px', valSelectMo
         decltvaannee: y,
         decltvamois: m,
       };
-      const { data } = await axios.post('/declaration/tva/generateTvaAutoDetail', payload, { timeout: 120000 });
+      const { data } = await axiosPrivate.post('/declaration/tva/generateTvaAutoDetail', payload, { timeout: 120000 });
       if (data?.state) {
         const n = Number(data?.count ?? 0);
         toast.success(`${n} écriture${n>1?'s':''} générée${n>1?'s':''} avec succès`);
@@ -109,11 +111,13 @@ const DatagridDetailEcritureAssociee = ({ DATAGRID_HEIGHT = '500px', valSelectMo
   };
 
   useEffect(() => {
-    getJournalsSelectionLigne();
+    if(canView){
+      getJournalsSelectionLigne();
+    }
   }, [compteId, fileId, selectedExerciceId, valSelectMois, valSelectAnnee]);
 
   useEffect(() => {
-    if (isListSaisieRefreshed) {
+    if (isListSaisieRefreshed && canView) {
       getJournalsSelectionLigne();
       setIsListSaisieRefreshed(false);
     }
@@ -121,7 +125,7 @@ const DatagridDetailEcritureAssociee = ({ DATAGRID_HEIGHT = '500px', valSelectMo
 
   return (
     <>
-      {openDialogReinitialize ? (
+      {openDialogReinitialize && canDelete ? (
         <PopupConfirmDelete
           msg={`Voulez-vous vraiment réinitaliser le mois et l'année de toutes ces lignes ?`}
           confirmationState={reinitializeTva}
@@ -146,7 +150,7 @@ const DatagridDetailEcritureAssociee = ({ DATAGRID_HEIGHT = '500px', valSelectMo
                 style={{ textTransform: 'none', outline: 'none', backgroundColor: initial.theme, color: 'white', height: '39px' }}
                 startIcon={<MdReplay size={20} />}
                 onClick={handleOpenDialogConfirmReinitialize}
-                disabled={listSaisie.length === 0}
+                disabled={!canDelete || listSaisie.length === 0}
               >
                 Réinitialiser
               </Button>
@@ -157,7 +161,7 @@ const DatagridDetailEcritureAssociee = ({ DATAGRID_HEIGHT = '500px', valSelectMo
               <Button
                 variant="contained"
                 style={{ textTransform: 'none', outline: 'none', backgroundColor: '#3bbc24ff', color: 'white', height: '39px' }}
-                disabled={genLoading || !valSelectMois || !valSelectAnnee}
+                disabled={!canAdd || genLoading || !valSelectMois || !valSelectAnnee}
                 onClick={handleGenerateAuto}
                 startIcon={<MdOutlineAutoMode size={20} />}
               >

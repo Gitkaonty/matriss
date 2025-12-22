@@ -19,6 +19,9 @@ const { exportBalanceTableExcel } = require('../../Middlewares/Balance/BalanceGe
 const fonctionUpdateSoldAnalytique = require('../../Middlewares/UpdateSolde/updateBalanceAnalytique');
 const updateSoldAnalytiqueGlobal = fonctionUpdateSoldAnalytique.updateSoldAnalytiqueGlobal;
 
+const fonctionUpdateSoldGenerale = require('../../Middlewares/UpdateSolde/updateBalanceSold');
+const updateSold = fonctionUpdateSoldGenerale.updateSold;
+
 balances.belongsTo(dossierplancomptable, { as: 'compteLibelle', foreignKey: 'id_numcompte', targetKey: 'id' });
 balances.belongsTo(dossierplancomptable, { as: 'compteCentralisation', foreignKey: 'id_numcomptecentr', targetKey: 'id' });
 
@@ -80,7 +83,7 @@ const recupBalance = async (req, res) => {
             ],
             raw: true,
             order: [
-                [{ model: dossierplancomptable, as: 'compteLibelle' }, 'libelle', 'ASC']
+                [{ model: dossierplancomptable, as: 'compteLibelle' }, 'compte', 'ASC']
             ]
         });
 
@@ -100,7 +103,7 @@ const recupBalance = async (req, res) => {
 const recupBalanceCa = async (req, res) => {
     const { fileId, exerciceId, compteId, id_axes, id_sections, centraliser, unSolded, movmentedCpt } = req.body;
 
-    await updateSoldAnalytiqueGlobal(compteId, fileId, exerciceId, id_axes, id_sections);
+    // await updateSoldAnalytiqueGlobal(compteId, fileId, exerciceId, id_axes, id_sections);
 
     const sectionData = await caSections.findAll({
         where: {
@@ -144,6 +147,9 @@ const recupBalanceCa = async (req, res) => {
                     nature: { [Op.ne]: centraliser ? 'Aux' : 'Collectif' },
                 }
             },
+        ],
+        order: [
+            [{ model: dossierplancomptable, as: 'compteLibelle' }, 'compte', 'ASC']
         ]
     })
 
@@ -171,6 +177,22 @@ const recupBalanceCa = async (req, res) => {
         list: balanceAnalytiqueMapped
     });
 };
+
+const actualizeBalance = async (req, res) => {
+    try {
+        const { id_compte, id_dossier, id_exercice, type, id_axe, id_sections } = req.body;
+        if (type === 3) {
+            await updateSoldAnalytiqueGlobal(id_compte, id_dossier, id_exercice, id_axe, id_sections);
+            return res.json({ state: true, message: 'Balance analytique actualisé avec succès' });
+        } else {
+            await updateSold(id_compte, id_dossier, id_exercice, [], true);
+            return res.json({ state: true, message: 'Balance générale actualisé avec succès' });
+        }
+    } catch (error) {
+        console.log(error);
+        return res.json({ state: false, message: "Erreur interne" });
+    }
+}
 
 module.exports = {
     recupBalance,
@@ -279,5 +301,6 @@ module.exports = {
             return res.status(500).json({ state: false, msg: 'Erreur serveur', error: error.message });
         }
     },
-    recupBalanceCa
+    recupBalanceCa,
+    actualizeBalance
 }

@@ -221,7 +221,7 @@ exports.getEtatFinancierAnalytiqueGlobal = async (req, res) => {
                     );
 
                     const comptesValides = matches
-                        .filter(b => Number(b.soldedebitanalytique) !== 0 || Number(b.soldecreditanalytique) !== 0)
+                        .filter(b => r.id_etat === 'TFTD' ? Number(b.soldedebittresoanalytique) !== 0 || Number(b.soldecredittresoanalytique) !== 0 : Number(b.soldedebitanalytique) !== 0 || Number(b.soldecreditanalytique) !== 0)
                         .map(b => {
                             const rubData = rubriqueMap.get(`${b[col]}_${r.id_etat}`);
                             const codeAxe = b.caax ? b.caax.code : null;
@@ -236,8 +236,8 @@ exports.getEtatFinancierAnalytiqueGlobal = async (req, res) => {
                             return {
                                 compte: comptesMap[b.id_numcpt]?.compte || null,
                                 libelle: comptesMap[b.id_numcpt]?.libelle || null,
-                                soldedebitanalytique: Number(Number(b.soldedebitanalytique)),
-                                soldecreditanalytique: Number(Number(b.soldecreditanalytique)),
+                                soldedebitanalytique: r.id_etat === 'TFTD' ? Number(Number(b.soldedebittresoanalytique)) : Number(Number(b.soldedebitanalytique)),
+                                soldecreditanalytique: r.id_etat === 'TFTD' ? Number(Number(b.soldecredittresoanalytique)) : Number(Number(b.soldecreditanalytique)),
                                 nature,
                                 equation,
                                 libelleAxeSection: libelle
@@ -524,6 +524,12 @@ exports.deleteAjustementExterneAnalytique = async (req, res) => {
             state: false,
             msg: 'Une erreur est survenue lors du traitement.',
             liste: [],
+        }
+
+        if (!id_axe || !id_sections) {
+            resData.state = false;
+            resData.msg = "Axe ou section non trouvé";
+            return res.json(resData);
         }
 
         const ajustementDataBeforeDelete = await ajustemenExternesAnalytiques.findByPk(id);

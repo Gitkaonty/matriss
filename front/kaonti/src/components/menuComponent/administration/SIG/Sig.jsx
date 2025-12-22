@@ -32,6 +32,8 @@ import VirtualTableEbilanEtatFinacier from '../../../componentsTools/EtatFinanci
 
 import ExportEtatFinancierButton from '../../../componentsTools/EtatFinancier/ButtonEtatFinancierExport/ExportEtatFinancierButton/ExportEtatFinancierButton';
 
+import usePermission from '../../../../hooks/usePermission';
+
 const sigColumn = [
     {
         id: 'libelle',
@@ -92,7 +94,7 @@ const sigColumn = [
 ];
 
 export default function Sig() {
-    //Valeur du listbox choix exercice ou situation-----------------------------------------------------
+    const { canAdd, canModify, canDelete, canView } = usePermission();
 
     let initial = init[0];
     const [fileInfos, setFileInfos] = useState('');
@@ -337,13 +339,13 @@ export default function Sig() {
     }, []);
 
     useEffect(() => {
-        if (fileId && compteId && selectedExerciceId) {
+        if (canView && fileId && compteId && selectedExerciceId) {
             getEtatFinancierGlobal();
         }
     }, [fileId, compteId, selectedExerciceId, isRefreshed])
 
     return (
-        <Box>
+        <>
             {
                 noFile
                     ?
@@ -365,168 +367,174 @@ export default function Sig() {
                     null
             }
 
-            <TabContext value={"1"}>
-                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                    <TabList aria-label="lab API tabs example" style={{ textTransform: 'none', outline: 'none', border: 'none', }}>
-                        <Tab
-                            style={{
-                                textTransform: 'none',
-                                outline: 'none',
-                                border: 'none',
-                                margin: -5
-                            }}
-                            label={InfoFileStyle(fileInfos?.dossier)} value="1"
-                        />
-                    </TabList>
-                </Box>
-                <TabPanel value="1" style={{ height: '100%' }}>
-                    <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
-                        <Typography variant='h6' sx={{ color: "black" }} align='left'>Administration - SIG</Typography>
+            <Box>
+                <TabContext value={"1"}>
+                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                        <TabList aria-label="lab API tabs example" style={{ textTransform: 'none', outline: 'none', border: 'none', }}>
+                            <Tab
+                                style={{
+                                    textTransform: 'none',
+                                    outline: 'none',
+                                    border: 'none',
+                                    margin: -5
+                                }}
+                                label={InfoFileStyle(fileInfos?.dossier)} value="1"
+                            />
+                        </TabList>
+                    </Box>
+                    <TabPanel value="1" style={{ height: '100%' }}>
+                        <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
+                            <Typography variant='h6' sx={{ color: "black" }} align='left'>Administration - SIG</Typography>
 
-                        <Stack width={"100%"} height={"80px"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "20px" }}>
-                            <Stack
-                                direction={'row'}
-                            >
-                                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                                    <InputLabel id="demo-simple-select-standard-label">Exercice:</InputLabel>
-                                    <Select
-                                        labelId="demo-simple-select-standard-label"
-                                        id="demo-simple-select-standard"
-                                        value={selectedExerciceId}
-                                        label={"valSelect"}
-                                        onChange={(e) => handleChangeExercice(e.target.value)}
-                                        sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                        MenuProps={{
-                                            disableScrollLock: true
-                                        }}
-                                    >
-                                        {listeExercice.map((option) => (
-                                            <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                                        ))
-                                        }
-                                    </Select>
-                                </FormControl>
+                            <Stack width={"100%"} height={"80px"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "20px" }}>
+                                <Stack
+                                    direction={'row'}
+                                >
+                                    <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
+                                        <InputLabel id="demo-simple-select-standard-label">Exercice:</InputLabel>
+                                        <Select
+                                            labelId="demo-simple-select-standard-label"
+                                            id="demo-simple-select-standard"
+                                            value={selectedExerciceId}
+                                            label={"valSelect"}
+                                            onChange={(e) => handleChangeExercice(e.target.value)}
+                                            sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                            MenuProps={{
+                                                disableScrollLock: true
+                                            }}
+                                        >
+                                            {listeExercice.map((option) => (
+                                                <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
+                                            ))
+                                            }
+                                        </Select>
+                                    </FormControl>
 
-                                <FormControl variant="standard" sx={{ m: 1, minWidth: 150 }}>
-                                    <InputLabel id="demo-simple-select-standard-label">Période</InputLabel>
-                                    <Select
-                                        labelId="demo-simple-select-standard-label"
-                                        id="demo-simple-select-standard"
-                                        value={selectedPeriodeChoiceId}
-                                        label={"valSelect"}
-                                        onChange={(e) => handleChangePeriode(e.target.value)}
-                                        sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                        MenuProps={{
-                                            disableScrollLock: true
-                                        }}
-                                    >
-                                        <MenuItem value={0}>Toutes</MenuItem>
-                                        <MenuItem value={1}>Situations</MenuItem>
-                                    </Select>
-                                </FormControl>
+                                    <FormControl variant="standard" sx={{ m: 1, minWidth: 150 }}>
+                                        <InputLabel id="demo-simple-select-standard-label">Période</InputLabel>
+                                        <Select
+                                            labelId="demo-simple-select-standard-label"
+                                            id="demo-simple-select-standard"
+                                            value={selectedPeriodeChoiceId}
+                                            label={"valSelect"}
+                                            onChange={(e) => handleChangePeriode(e.target.value)}
+                                            sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                            MenuProps={{
+                                                disableScrollLock: true
+                                            }}
+                                        >
+                                            <MenuItem value={0}>Toutes</MenuItem>
+                                            <MenuItem value={1}>Situations</MenuItem>
+                                        </Select>
+                                    </FormControl>
 
-                                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                                    <InputLabel id="demo-simple-select-standard-label">Du</InputLabel>
-                                    <Select
-                                        labelId="demo-simple-select-standard-label"
-                                        id="demo-simple-select-standard"
-                                        value={selectedPeriodeId}
-                                        label={"valSelect"}
-                                        onChange={(e) => handleChangeDateIntervalle(e.target.value)}
-                                        sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                        MenuProps={{
-                                            disableScrollLock: true
-                                        }}
-                                    >
-                                        {listeSituation?.map((option) => (
-                                            <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                                        ))
-                                        }
-                                    </Select>
-                                </FormControl>
+                                    <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
+                                        <InputLabel id="demo-simple-select-standard-label">Du</InputLabel>
+                                        <Select
+                                            labelId="demo-simple-select-standard-label"
+                                            id="demo-simple-select-standard"
+                                            value={selectedPeriodeId}
+                                            label={"valSelect"}
+                                            onChange={(e) => handleChangeDateIntervalle(e.target.value)}
+                                            sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                            MenuProps={{
+                                                disableScrollLock: true
+                                            }}
+                                        >
+                                            {listeSituation?.map((option) => (
+                                                <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
+                                            ))
+                                            }
+                                        </Select>
+                                    </FormControl>
+                                </Stack>
                             </Stack>
-                        </Stack>
 
-                        <Box sx={{ width: '100%', typography: 'body1' }}>
-
-                            <Stack
-                                width={"100%"}
-                                height={"100%"}
-                                spacing={0.5}
-                                alignItems={"flex-start"}
-                                alignContent={"flex-start"}
-                                justifyContent={"stretch"}
-                            >
-                                <Stack width={"100%"} height={"20px"} alignItems={"center"}
-                                    alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                    <Typography variant='h6' sx={{ color: "black" }} align='center'>Soldes intermédiaires de géstion</Typography>
-                                </Stack>
-
-                                <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
-                                    direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                    <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                        direction={"row"} justifyContent={"right"}>
-
-                                        <Tooltip title="Actualiser les calculs">
-                                            <IconButton
-                                                onClick={refreshSig}
-                                                variant="contained"
-                                                style={{
-                                                    width: "45px", height: '45px',
-                                                    borderRadius: "1px", borderColor: "transparent",
-                                                    backgroundColor: initial.theme,
-                                                    textTransform: 'none', outline: 'none',
-                                                    display: verrSig ? 'none' : 'inline-flex',
-                                                }}
-                                            >
-                                                <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
-                                            </IconButton>
-                                        </Tooltip>
-
-                                        <ExportEtatFinancierButton
-                                            exportToExcel={() => exportFile("EXCEL")}
-                                            exportToPdf={() => exportFile("PDF")}
-                                            value={'SIG'}
-                                        />
-
-                                        <Tooltip title={verrSig ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
-                                            <IconButton
-                                                onClick={lockTableSig}
-                                                variant="contained"
-                                                style={{
-                                                    width: "45px", height: '45px',
-                                                    borderRadius: "2px", borderColor: "transparent",
-                                                    backgroundColor: verrSig ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
-                                                    textTransform: 'none', outline: 'none'
-                                                }}
-                                            >
-                                                {verrSig
-                                                    ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                }
-                                            </IconButton>
-                                        </Tooltip>
-                                    </Stack>
-                                </Stack>
+                            <Box sx={{ width: '100%', typography: 'body1' }}>
 
                                 <Stack
                                     width={"100%"}
-                                    alignItems={"start"}
-                                    style={{ overflow: "auto" }}
+                                    height={"100%"}
+                                    spacing={0.5}
+                                    alignItems={"flex-start"}
+                                    alignContent={"flex-start"}
+                                    justifyContent={"stretch"}
                                 >
-                                    <VirtualTableEbilanEtatFinacier
-                                        columns={sigColumn}
-                                        rows={sigData}
-                                        state={verrSig}
-                                        setIsRefreshed={() => setIsRefreshed(prev => !prev)}
-                                    />
-                                </Stack>
+                                    <Stack width={"100%"} height={"20px"} alignItems={"center"}
+                                        alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                        <Typography variant='h6' sx={{ color: "black" }} align='center'>Soldes intermédiaires de géstion</Typography>
+                                    </Stack>
 
-                            </Stack>
-                        </Box>
-                    </Stack>
-                </TabPanel>
-            </TabContext>
-        </Box >
+                                    <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
+                                        direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
+                                        <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                            direction={"row"} justifyContent={"right"}>
+
+                                            <Tooltip title="Actualiser les calculs">
+                                                <IconButton
+                                                    onClick={refreshSig}
+                                                    variant="contained"
+                                                    style={{
+                                                        width: "45px", height: '45px',
+                                                        borderRadius: "1px", borderColor: "transparent",
+                                                        backgroundColor: initial.theme,
+                                                        textTransform: 'none', outline: 'none',
+                                                        display: verrSig ? 'none' : 'inline-flex',
+                                                    }}
+                                                >
+                                                    <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                </IconButton>
+                                            </Tooltip>
+
+                                            <ExportEtatFinancierButton
+                                                exportToExcel={() => exportFile("EXCEL")}
+                                                exportToPdf={() => exportFile("PDF")}
+                                                value={'SIG'}
+                                            />
+
+                                            <Tooltip title={verrSig ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
+                                                <IconButton
+                                                    onClick={lockTableSig}
+                                                    variant="contained"
+                                                    style={{
+                                                        width: "45px", height: '45px',
+                                                        borderRadius: "2px", borderColor: "transparent",
+                                                        backgroundColor: verrSig ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
+                                                        textTransform: 'none', outline: 'none'
+                                                    }}
+                                                >
+                                                    {verrSig
+                                                        ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                    }
+                                                </IconButton>
+                                            </Tooltip>
+                                        </Stack>
+                                    </Stack>
+
+                                    <Stack
+                                        width={"100%"}
+                                        alignItems={"start"}
+                                        style={{ overflow: "auto" }}
+                                    >
+                                        <VirtualTableEbilanEtatFinacier
+                                            canView={canView}
+                                            canAdd={canAdd}
+                                            canDelete={canDelete}
+                                            canModify={canModify}
+                                            columns={sigColumn}
+                                            rows={sigData}
+                                            state={verrSig}
+                                            setIsRefreshed={() => setIsRefreshed(prev => !prev)}
+                                        />
+                                    </Stack>
+
+                                </Stack>
+                            </Box>
+                        </Stack>
+                    </TabPanel>
+                </TabContext>
+            </Box >
+        </>
     )
 }

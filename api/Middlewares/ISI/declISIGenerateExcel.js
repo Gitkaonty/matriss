@@ -16,46 +16,46 @@ const formatDate = (dateStr) => {
 };
 
 const generateTitle = (
-  sheetName,
-  label,
-  dossier,
-  moisNoms,
-  annee,
-  date_debut,
-  date_fin,
-  cellEnd
+    sheetName,
+    label,
+    dossier,
+    moisNoms,
+    annee,
+    date_debut,
+    date_fin,
+    cellEnd
 ) => {
-  // ===== Ligne 1 : Titre principal =====
-  sheetName.insertRow(1, [label]);
-  sheetName.mergeCells(`A1:${cellEnd}1`);
-  const titre = sheetName.getRow(1);
-  titre.font = { bold: true, size: 20 };
-  titre.alignment = { horizontal: 'center', vertical: 'middle' };
-  titre.height = 25;
+    // ===== Ligne 1 : Titre principal =====
+    sheetName.insertRow(1, [label]);
+    sheetName.mergeCells(`A1:${cellEnd}1`);
+    const titre = sheetName.getRow(1);
+    titre.font = { bold: true, size: 20 };
+    titre.alignment = { horizontal: 'center', vertical: 'middle' };
+    titre.height = 25;
 
-  // ===== Ligne 2 : Dossier =====
-  sheetName.insertRow(2, [`Dossier : ${dossier || ''}`]);
-  sheetName.mergeCells(`A2:${cellEnd}2`);
-  const ligne2 = sheetName.getRow(2);
-  ligne2.font = { bold: true, size: 12, color: { argb: 'FF555555' } };
-  ligne2.alignment = { horizontal: 'center', vertical: 'middle' };
-  ligne2.height = 20;
+    // ===== Ligne 2 : Dossier =====
+    sheetName.insertRow(2, [`Dossier : ${dossier || ''}`]);
+    sheetName.mergeCells(`A2:${cellEnd}2`);
+    const ligne2 = sheetName.getRow(2);
+    ligne2.font = { bold: true, size: 12, color: { argb: 'FF555555' } };
+    ligne2.alignment = { horizontal: 'center', vertical: 'middle' };
+    ligne2.height = 20;
 
-  // ===== Ligne 3 : Mois et année =====
-  sheetName.insertRow(3, [`Mois et année : ${moisNoms || ''} ${annee || ''}`]);
-  sheetName.mergeCells(`A3:${cellEnd}3`);
-  const ligne3 = sheetName.getRow(3);
-  ligne3.font = { italic: true, size: 12, color: { argb: 'FF555555' } };
-  ligne3.alignment = { horizontal: 'left', vertical: 'middle' };
-  ligne3.height = 20;
+    // ===== Ligne 3 : Mois et année =====
+    sheetName.insertRow(3, [`Mois et année : ${moisNoms || ''} ${annee || ''}`]);
+    sheetName.mergeCells(`A3:${cellEnd}3`);
+    const ligne3 = sheetName.getRow(3);
+    ligne3.font = { italic: true, size: 12, color: { argb: 'FF555555' } };
+    ligne3.alignment = { horizontal: 'left', vertical: 'middle' };
+    ligne3.height = 20;
 
-  // ===== Ligne 4 : Exercice =====
-  sheetName.insertRow(4, [`Exercice du : ${date_debut || ''} au ${date_fin || ''}`]);
-  sheetName.mergeCells(`A4:${cellEnd}4`);
-  const ligne4 = sheetName.getRow(4);
-  ligne4.font = { italic: true, size: 12, color: { argb: 'FF555555' } };
-  ligne4.alignment = { horizontal: 'left', vertical: 'middle' };
-  ligne4.height = 20;
+    // ===== Ligne 4 : Exercice =====
+    sheetName.insertRow(4, [`Exercice du : ${date_debut || ''} au ${date_fin || ''}`]);
+    sheetName.mergeCells(`A4:${cellEnd}4`);
+    const ligne4 = sheetName.getRow(4);
+    ligne4.font = { italic: true, size: 12, color: { argb: 'FF555555' } };
+    ligne4.alignment = { horizontal: 'left', vertical: 'middle' };
+    ligne4.height = 20;
 };
 
 
@@ -70,7 +70,7 @@ const exportISIToExcel = async (id_compte, id_dossier, id_exercice, mois, annee,
         }
     })
 
-    const sheetISI = workbook.addWorksheet('Liste des déclarations ISI');
+    const sheetISI = workbook.addWorksheet('Déclaration ISI');
 
     sheetISI.columns = [
         { header: 'Nom', width: 35 },
@@ -85,7 +85,7 @@ const exportISIToExcel = async (id_compte, id_dossier, id_exercice, mois, annee,
         { header: 'Montant ISI', width: 23 },
     ];
 
-    generateTitle(sheetISI, 'Liste des déclarations ISI', dossier, moisNoms, annee, date_debut, date_fin, 'J');
+    generateTitle(sheetISI, 'Déclaration ISI', dossier, moisNoms, annee, date_debut, date_fin, 'J');
 
     const headerRow = sheetISI.getRow(5);
     headerRow.eachCell(cell => {

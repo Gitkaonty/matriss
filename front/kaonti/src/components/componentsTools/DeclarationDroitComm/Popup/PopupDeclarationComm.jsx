@@ -13,15 +13,35 @@ import MenuItem from '@mui/material/MenuItem';
 
 import { init } from '../../../../../init';
 import toast from 'react-hot-toast';
-import axios from '../../../../../config/axios';
 import InputAdornment from '@mui/material/InputAdornment';
 import { useFormik } from 'formik';
 import * as Yup from "yup";
 import FormatedInput from '../../FormatedInput';
 
 import { inputAutoFill } from '../../../inputStyle/inputAutoFill';
+import useAxiosPrivate from '../../../../../config/axiosPrivate';
 
 let initial = init[0];
+
+const getTextTitle = (text) => {
+    if (text === 'SVT') {
+        return 'Sommes versées à des tiers';
+    } else if (text === 'ADR') {
+        return 'Achats de marchandises destinées à la revente';
+    } else if (text === 'AC') {
+        return 'Achats non destinés à la vente';
+    } else if (text === 'AI') {
+        return 'Achats immobilisés';
+    } else if (text === 'DEB') {
+        return 'Debours';
+    } else if (text === 'MV') {
+        return 'Marchandises vendues';
+    } else if (text === 'PSV') {
+        return 'Prestations de services vendues';
+    } else if (text === 'PL') {
+        return 'Produits locaux';
+    }
+}
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialogContent-root': {
@@ -36,7 +56,11 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     },
 }));
 
-const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selectedExerciceId, compteId, type, nature, rowToModify, textTitle }) => {
+const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selectedExerciceId, compteId, type, nature, rowToModify }) => {
+    const textTitle = getTextTitle(nature);
+    const disabledFormMontant = rowToModify === null ? false : true;
+    const axiosPrivate = useAxiosPrivate();
+
     const handleClose = () => {
         confirmationState(false);
         setIsRefreshed();
@@ -272,7 +296,7 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
             cleanFormData.date_cin = null;
         }
 
-        axios.post('/declaration/comm/addDroitCommA', {
+        axiosPrivate.post('/declaration/comm/addDroitCommA', {
             formData: cleanFormData
         }).then((response) => {
             if (response.data.state) {
@@ -292,7 +316,7 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
             cleanFormData.date_cin = null;
         }
 
-        axios.post('/declaration/comm/addDroitCommB', {
+        axiosPrivate.post('/declaration/comm/addDroitCommB', {
             formData: cleanFormData
         }).then((response) => {
             if (response.data.state) {
@@ -313,7 +337,7 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
             cleanFormData.date_cin = null;
         }
 
-        axios.put(`/declaration/comm/updateDroitCommA/${id}`, {
+        axiosPrivate.put(`/declaration/comm/updateDroitCommA/${id}`, {
             formData: cleanFormData
         }).then((response) => {
             if (response.data.state) {
@@ -333,7 +357,7 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
             cleanFormData.date_cin = null;
         }
 
-        axios.put(`/declaration/comm/updateDroitCommB:${id}`, {
+        axiosPrivate.put(`/declaration/comm/updateDroitCommB:${id}`, {
             formData: cleanFormData
         }).then((response) => {
             if (response.data.state) {
@@ -523,7 +547,7 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
             >
                 <DialogTitle
                     id="customized-dialog-title"
-                    sx={{ ml: 1, p: 2, width: '550px', height: '50px', backgroundColor: 'transparent' }}
+                    sx={{ ml: 1, p: 2, width: '99%', height: '50px', backgroundColor: 'transparent' }}
                 >
                     <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', fontSize: 16 }}>
                         {type} d'une ligne pour : {textTitle}
@@ -575,7 +599,7 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                         {
                             formData.values.typeTier === 'avecNif' ?
                                 <>
-                                    <Stack flexDirection={'row'} justifyContent={'space-between'} alignItems={'center'}>
+                                    <Stack flexDirection={'row'} justifyContent={'space-between'}>
                                         <FormControl size="small" fullWidth style={{ width: '49%' }}>
                                             <TextField
                                                 size="small"
@@ -653,7 +677,7 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                 :
                                 formData.values.typeTier === 'sansNif' ?
                                     <>
-                                        <Stack flexDirection={'row'} justifyContent={'space-between'} alignItems={'center'}>
+                                        <Stack flexDirection={'row'} justifyContent={'space-between'} >
                                             <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '32%' }}>
                                                 <TextField
                                                     size="small"
@@ -732,7 +756,7 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                                     label="Date CIN"
                                                     name="date_cin"
                                                     type="date"
-                                                    value={formData.values.date_cin}
+                                                    value={formData.values.date_cin || ""}
                                                     onChange={formData.handleChange}
                                                     onBlur={formData.handleBlur}
                                                     error={Boolean(formData.touched.date_cin && formData.errors.date_cin)}
@@ -773,7 +797,7 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                     :
                                     formData.values.typeTier === 'prestataires' ?
                                         <>
-                                            <Stack flexDirection={'row'} justifyContent={'space-between'} alignItems={'center'}>
+                                            <Stack flexDirection={'row'} justifyContent={'space-between'} >
                                                 <FormControl size="small" fullWidth style={{ width: '50%' }}>
                                                     <TextField
                                                         size="small"
@@ -814,7 +838,7 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                         </>
                                         :
                                         <>
-                                            <Stack flexDirection={'row'} justifyContent={'space-between'} alignItems={'center'}>
+                                            <Stack flexDirection={'row'} justifyContent={'space-between'} >
                                                 <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '49%' }}>
                                                     <TextField
                                                         size="small"
@@ -897,7 +921,7 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                             nature === 'PL'
                                 ?
                                 <>
-                                    <Stack flexDirection={'row'} justifyContent={'space-between'} alignItems={'center'}>
+                                    <Stack flexDirection={'row'} justifyContent={'space-between'}>
                                         <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '49%' }}>
                                             <TextField
                                                 size="small"
@@ -978,7 +1002,7 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
 
                         {
                             nature === 'MV' || nature === 'PSV' ?
-                                <Stack flexDirection={'row'} justifyContent={'space-between'} alignItems={'center'}>
+                                <Stack flexDirection={'row'} justifyContent={'space-between'} >
                                     <FormControl size="small" fullWidth style={{ width: '49%' }}>
                                         <TextField
                                             size="small"
@@ -1093,7 +1117,7 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
 
                         <Divider />
                         <Typography fontWeight="bold">Adresse complèlte</Typography>
-                        <Stack flexDirection={'row'} justifyContent={'space-between'} alignItems={'center'}>
+                        <Stack flexDirection={'row'} justifyContent={'space-between'}>
                             {
                                 nature === 'MV' || nature === 'PSV' ?
                                     <>
@@ -1208,7 +1232,7 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                 />
                             </FormControl>
                         </Stack>
-                        <Stack flexDirection={'row'} justifyContent={'space-between'} alignItems={'center'}>
+                        <Stack flexDirection={'row'} justifyContent={'space-between'} >
                             <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '49%' }}>
                                 <TextField
                                     size="small"
@@ -1338,10 +1362,10 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                             nature === 'SVT' || nature === 'ADR' || nature === 'AC' || nature === 'AI' || nature === 'DEB' ?
                                 <>
                                     <Typography fontWeight="bold">Montant hors tâxe des sommes</Typography>
-                                    <Stack flexDirection={'row'} justifyContent={'space-between'} alignItems={'center'}>
+                                    <Stack flexDirection={'row'} justifyContent={'space-between'} >
                                         <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '49%' }}>
                                             <TextField
-                                                disabled
+                                                disabled={disabledFormMontant}
                                                 size="small"
                                                 label="Comptabilisées"
                                                 name="comptabilisees"
@@ -1379,7 +1403,7 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                         </FormControl>
                                         <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '49%' }}>
                                             <TextField
-                                                disabled
+                                                disabled={disabledFormMontant}
                                                 size="small"
                                                 label="Versees"
                                                 name="versees"
@@ -1419,7 +1443,7 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                 </> :
                                 nature === 'MV' || nature === 'PSV' ?
                                     <>
-                                        <Stack flexDirection={'row'} justifyContent={'space-between'} alignItems={'center'}>
+                                        <Stack flexDirection={'row'} justifyContent={'space-between'} >
                                             <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '29%' }}>
                                                 <TextField
                                                     size="small"
@@ -1545,7 +1569,7 @@ const PopupDeclarationComm = ({ confirmationState, setIsRefreshed, fileId, selec
                                     </> :
                                     nature === 'PL' ?
                                         <>
-                                            <Stack flexDirection={'row'} justifyContent={'space-between'} alignItems={'center'}>
+                                            <Stack flexDirection={'row'} justifyContent={'space-between'} >
                                                 <FormControl size="small" fullWidth style={{ marginBottom: '10px', width: '49%' }}>
                                                     <TextField
                                                         size="small"

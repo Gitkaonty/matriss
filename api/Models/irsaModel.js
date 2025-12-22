@@ -5,9 +5,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false
     },
-    matricule: { 
-      type: DataTypes.STRING, 
-      allowNull: true },
+    matricule: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     indemniteImposable: {
       type: DataTypes.DECIMAL(15, 2),
       allowNull: true
@@ -98,7 +99,9 @@ module.exports = (sequelize, DataTypes) => {
       references: {
         model: 'dossiers',
         key: 'id'
-      }
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     },
     id_exercice: {
       type: DataTypes.INTEGER,
@@ -106,7 +109,9 @@ module.exports = (sequelize, DataTypes) => {
       references: {
         model: 'exercices',
         key: 'id'
-      }
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     },
     id_compte: {
       type: DataTypes.INTEGER,
@@ -114,7 +119,9 @@ module.exports = (sequelize, DataTypes) => {
       references: {
         model: 'userscomptes',
         key: 'id'
-      }
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     }
   }, {
     tableName: 'irsas',

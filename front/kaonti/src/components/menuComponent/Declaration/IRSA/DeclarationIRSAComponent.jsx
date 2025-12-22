@@ -47,10 +47,14 @@ import { AiTwotoneFileText } from "react-icons/ai";
 import { MdImportExport } from "react-icons/md";
 import { MdOutlineAutoMode } from "react-icons/md";
 import { init } from "../../../../../init";
+import { MdOutlineAutoMode } from "react-icons/md";
+import { init } from "../../../../../init";
 import PopupActionConfirm from '../../../componentsTools/popupActionConfirm';
 import PopupConfirmDelete from '../../../componentsTools/popupConfirmDelete';
+import usePermission from '../../../../hooks/usePermission';
 
 export default function DeclarationIRSAComponent() {
+  const { canAdd, canModify, canDelete, canView } = usePermission();
 
   // Etat pour la popup d'export IRSA et l'affichage de l'historique
 
@@ -2249,7 +2253,7 @@ export default function DeclarationIRSAComponent() {
           }}
         />
       )}
-      {confirmDeleteIrsa && (
+      {(confirmDeleteIrsa && canDelete) && (
         <PopupConfirmDelete
           msg={`Voulez-vous vraiment supprimer les données IRSA du ${String(valSelectMois).padStart(2, '0')}/${valSelectAnnee} ?`}
           confirmationState={(val) => {
@@ -2259,7 +2263,7 @@ export default function DeclarationIRSAComponent() {
         />
       )}
 
-      {confirmDeletePaie && (
+      {(confirmDeletePaie && canDelete) && (
         <PopupConfirmDelete
           msg={`Voulez-vous vraiment supprimer les données PAIE du ${String(valSelectMois).padStart(2, '0')}/${valSelectAnnee} ?`}
           confirmationState={(val) => {
@@ -2498,6 +2502,7 @@ export default function DeclarationIRSAComponent() {
               <Tooltip title="Ajouter">
                 <span>
                   <IconButton
+                    disabled={!canAdd}
                     variant="contained"
                     onClick={() => { setEditRowModal(null); setOpenModalIrsa(true); }}
                     style={{ width: "35px", height: '35px', borderRadius: "2px", borderColor: "transparent", backgroundColor: '#1A5276', textTransform: 'none', outline: 'none' }}
@@ -2510,7 +2515,7 @@ export default function DeclarationIRSAComponent() {
               <Tooltip title="Modifier la ligne sélectionnée">
                 <span>
                   <IconButton
-                    disabled={disableModifyBouton || selectedRowId.length !== 1}
+                    disabled={!canModify || disableModifyBouton || selectedRowId.length !== 1}
                     variant="contained"
                     onClick={() => {
                       const rowToEdit = irsaData.find(row => row.id === selectedRowId[0]);
@@ -2528,7 +2533,7 @@ export default function DeclarationIRSAComponent() {
               <Tooltip title="Sauvegarder les modifications">
                 <span>
                   <IconButton
-                    disabled={disableSaveBouton}
+                    disabled={(!canAdd && !canModify) || disableSaveBouton}
                     variant="contained"
                     onClick={handleSaveClick(selectedRowId)}
                     style={{ width: "35px", height: '35px', borderRadius: "2px", borderColor: "transparent", backgroundColor: '#1A5276', textTransform: 'none', outline: 'none' }}
@@ -2554,6 +2559,7 @@ export default function DeclarationIRSAComponent() {
               <Tooltip title="Supprimer toutes les lignes IRSA">
                 <span>
                   <IconButton
+                    disabled={!canDelete}
                     variant="contained"
                     style={{ width: "35px", height: '35px', borderRadius: "2px", borderColor: "transparent", backgroundColor: '#EE4E4E', textTransform: 'none', outline: 'none' }}
                     onClick={() => {
@@ -2570,7 +2576,7 @@ export default function DeclarationIRSAComponent() {
               <VirtualTableIrsa
                 columns={irsaColumns}
                 onSort={handleSortIrsa}
-                rows={filters.reduce((rows, filter) => {
+                rows={canView ? filters.reduce((rows, filter) => {
                   const col = filter.column;
                   const colDef = irsaColumns.find(c => c.id === col);
                   return rows.filter(row => {
@@ -2585,7 +2591,7 @@ export default function DeclarationIRSAComponent() {
                     if (filter.operator === 'equals') return val === search;
                     return true;
                   });
-                }, irsaDataByPeriod)}
+                }, irsaDataByPeriod) : []}
                 deleteState={deleteOneRowIrsa}
                 modifyState={modifyRowIrsa}
                 setEditRowModal={setEditRowModal}
@@ -2669,10 +2675,19 @@ export default function DeclarationIRSAComponent() {
                 </span>
               </Tooltip>
             </Box>
+                      }}
+                      startIcon={<MdImportExport size={20} />}
+                    >
+                      Importer | Exporter
+                    </Button>
+                  </span>
+                </Tooltip>
+              </Box>
 
             <Tooltip title="Ajouter">
               <span>
                 <IconButton
+                    disabled={!canAdd}
                   variant="contained"
                   onClick={() => { setEditRowPaieModal(null); setOpenModalPaie(true); }}
                   style={{ width: "35px", height: '35px', borderRadius: "2px", borderColor: "transparent", backgroundColor: '#1A5276', textTransform: 'none', outline: 'none', marginLeft: 4 }}
@@ -2685,7 +2700,7 @@ export default function DeclarationIRSAComponent() {
             <Tooltip title="Modifier via formulaire">
               <span>
                 <IconButton
-                  disabled={disableModifyBouton || selectedRowId.length !== 1}
+                  disabled={!canModify || disableModifyBouton || selectedRowId.length !== 1}
                   variant="contained"
                   onClick={() => {
                     const rowToEdit = paieData.find(row => row.id === selectedRowId[0]);
@@ -2703,7 +2718,7 @@ export default function DeclarationIRSAComponent() {
             <Tooltip title="Sauvegarder">
               <span>
                 <IconButton
-                  disabled={disableSaveBouton}
+                  disabled={(!canAdd && !canModify) || disableSaveBouton}
                   variant="contained"
                   onClick={handleSaveClickPaie(selectedRowId)}
                   style={{ width: "35px", height: '35px', borderRadius: "2px", borderColor: "transparent", backgroundColor: '#1A5276', textTransform: 'none', outline: 'none' }}
@@ -2727,6 +2742,7 @@ export default function DeclarationIRSAComponent() {
             <Tooltip title="Supprimer toutes les lignes PAIE">
               <span>
                 <IconButton
+                    disabled={!canDelete}
                   variant="contained"
                   style={{ width: "35px", height: '35px', borderRadius: "2px", borderColor: "transparent", backgroundColor: '#EE4E4E', textTransform: 'none', outline: 'none' }}
                   onClick={() => {
@@ -2741,7 +2757,7 @@ export default function DeclarationIRSAComponent() {
           <Stack>
             <VirtualTablePaie
               columns={paieColumns}
-              rows={paieFilters.reduce((rows, filter) => {
+              rows={canView ? paieFilters.reduce((rows, filter) => {
                 const col = filter.column;
                 const colDef = paieColumns.find(c => c.id === col);
                 return rows.filter(row => {
@@ -2756,7 +2772,7 @@ export default function DeclarationIRSAComponent() {
                   if (filter.operator === 'equals') return val === search;
                   return true;
                 });
-              }, paieDataByPeriod)}
+              }, paieDataByPeriod) : []}
               deleteState={deleteOneRowPaie}
               modifyState={modifyRowPaie}
               setEditRowPaieModal={setEditRowPaieModal}

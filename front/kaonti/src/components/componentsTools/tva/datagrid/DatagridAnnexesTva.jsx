@@ -17,6 +17,10 @@ export default function DatagridAnnexesTva({
   onGenerate = () => {},
   onEditRow = null,
   onDeleteRow = null,
+  canModify,
+  canAdd,
+  canDelete,
+  canView
 }) {
   const formatNumberFrs = (n) => {
     if (n === null || n === undefined || n === '') return '';
@@ -89,6 +93,7 @@ export default function DatagridAnnexesTva({
       >
         <Tooltip title="Générer les annexes">
           <Button
+            disabled={!canAdd}
             variant="contained"
             style={{
               textTransform: 'none',
@@ -109,11 +114,11 @@ export default function DatagridAnnexesTva({
       <Box sx={{ height, width: '100%' }}>
         <VirtualTableTVA
           columns={columnsWithFormat}
-          rows={rows.map(r => ({
+          rows={canView ? rows.map(r => ({
             ...r,
             onEdit: onEditRow,
             onDelete: onDeleteRow,
-          }))}
+          })) : []}
           onDeleteRow={onDeleteRow}
         />
       </Box>

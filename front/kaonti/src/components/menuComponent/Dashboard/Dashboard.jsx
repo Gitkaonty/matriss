@@ -20,6 +20,7 @@ import useAuth from '../../../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
 import toast from 'react-hot-toast';
 import VirtualTableJournalAttente from '../../componentsTools/Dashboard/VirtualTableJournalAttente';
+import usePermission from '../../../hooks/usePermission';
 
 const columns = [
   {
@@ -77,6 +78,8 @@ const gridHeight = '70vh';
 const gridSpacing = 1;
 
 export default function DashboardComponent() {
+  const { canAdd, canModify, canDelete, canView } = usePermission();
+
   const [fileInfos, setFileInfos] = useState('');
   const [noFile, setNoFile] = useState(false);
   const navigate = useNavigate();
@@ -188,9 +191,9 @@ export default function DashboardComponent() {
         const exerciceNId = resData.list?.filter((item) => item.libelle_rang === "N");
         setListeSituation(exerciceNId);
 
-        setSelectedExerciceId(exerciceNId[0].id);
+        setSelectedExerciceId(exerciceNId[0]?.id);
         setSelectedPeriodeChoiceId(0);
-        setSelectedPeriodeId(exerciceNId[0].id);
+        setSelectedPeriodeId(exerciceNId[0]?.id);
 
       } else {
         setListeExercice([]);
@@ -333,277 +336,286 @@ export default function DashboardComponent() {
   }, []);
 
   useEffect(() => {
-    if (compteId && fileId && selectedExerciceId) {
+    if (compteId && fileId && selectedExerciceId && canView) {
       getAllInfo();
       getListeJournalEnAttente();
     }
   }, [compteId, fileId, selectedExerciceId]);
 
   return (
-    <Box>
-      {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
-
-      <TabContext value={"1"}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <TabList aria-label="lab API tabs example">
-            <Tab
-              style={{
-                textTransform: 'none',
-                outline: 'none',
-                border: 'none',
-                margin: -5
-              }}
-              label={InfoFileStyle(fileInfos?.dossier)} value="1"
-            />
-          </TabList>
-        </Box>
-        <TabPanel value="1" style={{ height: '100%' }}>
-          <Stack width={"100%"} height={"100%"} spacing={6} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
-            <Typography variant='h6' sx={{ color: "black", }} align='left'>Dashboard</Typography>
-
-            <Stack width={"100%"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"column"} style={{ marginLeft: "0px", marginTop: "20px" }}>
-              <Stack
-                direction={"row"}
-              >
-                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                  <InputLabel id="demo-simple-select-standard-label">Exercice:</InputLabel>
-                  <Select
-                    labelId="demo-simple-select-standard-label"
-                    id="demo-simple-select-standard"
-                    value={selectedExerciceId}
-                    label={"valSelect"}
-                    onChange={(e) => handleChangeExercice(e.target.value)}
-                    sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                    MenuProps={{
-                      disableScrollLock: true
-                    }}
-                  >
-                    {listeExercice.map((option) => (
-                      <MenuItem
-                        key={option.id}
-                        value={option.id}
-                      >{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                    ))
-                    }
-                  </Select>
-                </FormControl>
-
-                <FormControl variant="standard" sx={{ m: 1, minWidth: 150 }}>
-                  <InputLabel id="demo-simple-select-standard-label">Période</InputLabel>
-                  <Select
-                    disabled
-                    labelId="demo-simple-select-standard-label"
-                    id="demo-simple-select-standard"
-                    value={selectedPeriodeChoiceId}
-                    label={"valSelect"}
-                    onChange={(e) => handleChangePeriode(e.target.value)}
-                    sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                    MenuProps={{
-                      disableScrollLock: true
-                    }}
-                  >
-                    <MenuItem value={0}>Toutes</MenuItem>
-                    <MenuItem value={1}>Situations</MenuItem>
-                  </Select>
-                </FormControl>
-
-                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                  <InputLabel id="demo-simple-select-standard-label">Du</InputLabel>
-                  <Select
-                    labelId="demo-simple-select-standard-label"
-                    id="demo-simple-select-standard"
-                    value={selectedPeriodeId}
-                    label={"valSelect"}
-                    onChange={(e) => handleChangeDateIntervalle(e.target.value)}
-                    sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                    MenuProps={{
-                      disableScrollLock: true
-                    }}
-                  >
-                    {listeSituation?.map((option) => (
-                      <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                    ))
-                    }
-                  </Select>
-                </FormControl>
-              </Stack>
-            </Stack>
-
-            <Stack
-              alignItems={'center'}
-              direction={'row'}
-              width={'100%'}
-              spacing={gridSpacing}
-            >
-              <Stack
+    <>
+      {
+        noFile
+          ?
+          <PopupTestSelectedFile
+            confirmationState={sendToHome}
+          />
+          :
+          null
+      }
+      <Box>
+        <TabContext value={"1"}>
+          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <TabList aria-label="lab API tabs example">
+              <Tab
                 style={{
-                  backgroundColor: '#f4f6f7ff',
+                  textTransform: 'none',
+                  outline: 'none',
+                  border: 'none',
+                  margin: -5
                 }}
-                boxShadow={1}
-                borderRadius={0}
-                width={'65%'}
-                height={gridHeight}
-              >
+                label={InfoFileStyle(fileInfos?.dossier)} value="1"
+              />
+            </TabList>
+          </Box>
+          <TabPanel value="1" style={{ height: '100%' }}>
+            <Stack width={"100%"} height={"100%"} spacing={6} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
+              <Typography variant='h6' sx={{ color: "black", }} align='left'>Dashboard</Typography>
+
+              <Stack width={"100%"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"column"} style={{ marginLeft: "0px", marginTop: "20px" }}>
                 <Stack
-                  width="100%"
-                  height="100%"
-                  direction={'column'}
-                  spacing={1}
+                  direction={"row"}
                 >
-                  <Stack
-                    width="100%"
-                    height="100%"
-                    direction={'row'}
-                    justifyContent="space-between"
-                    spacing={1}
-                  >
-                    <LineChartComponent
-                      xAxis={xAxis}
-                      dataN={chiffresAffairesNGraph}
-                      dataN1={chiffresAffairesN1Graph}
-                      label={'Chiffre d\'affaires'}
-                    />
+                  <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
+                    <InputLabel id="demo-simple-select-standard-label">Exercice:</InputLabel>
+                    <Select
+                      labelId="demo-simple-select-standard-label"
+                      id="demo-simple-select-standard"
+                      value={selectedExerciceId}
+                      label={"valSelect"}
+                      onChange={(e) => handleChangeExercice(e.target.value)}
+                      sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                      MenuProps={{
+                        disableScrollLock: true
+                      }}
+                    >
+                      {listeExercice.map((option) => (
+                        <MenuItem
+                          key={option.id}
+                          value={option.id}
+                        >{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
+                      ))
+                      }
+                    </Select>
+                  </FormControl>
 
-                    <LineChartComponent
-                      xAxis={xAxis}
-                      dataN={margeBruteNGraph}
-                      dataN1={margeBruteN1Graph}
-                      label={'Marges brutes'}
-                    />
+                  <FormControl variant="standard" sx={{ m: 1, minWidth: 150 }}>
+                    <InputLabel id="demo-simple-select-standard-label">Période</InputLabel>
+                    <Select
+                      disabled
+                      labelId="demo-simple-select-standard-label"
+                      id="demo-simple-select-standard"
+                      value={selectedPeriodeChoiceId}
+                      label={"valSelect"}
+                      onChange={(e) => handleChangePeriode(e.target.value)}
+                      sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                      MenuProps={{
+                        disableScrollLock: true
+                      }}
+                    >
+                      <MenuItem value={0}>Toutes</MenuItem>
+                      <MenuItem value={1}>Situations</MenuItem>
+                    </Select>
+                  </FormControl>
 
-                  </Stack>
-                  <Stack
-                    width="100%"
-                    height="100%"
-                    direction={'row'}
-                    justifyContent="space-between"
-                    spacing={1}
-                  >
-                    <LineChartComponent
-                      xAxis={xAxis}
-                      dataN={tresorerieBanqueNGraph}
-                      dataN1={tresorerieBanqueN1Graph}
-                      label={'Trésoreries (Banques)'}
-                    />
-
-                    <LineChartComponent
-                      xAxis={xAxis}
-                      dataN={tresorerieCaisseNGraph}
-                      dataN1={tresorerieCaisseN1Graph}
-                      label={'Trésoreries (Caisses)'}
-                    />
-                  </Stack>
+                  <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
+                    <InputLabel id="demo-simple-select-standard-label">Du</InputLabel>
+                    <Select
+                      labelId="demo-simple-select-standard-label"
+                      id="demo-simple-select-standard"
+                      value={selectedPeriodeId}
+                      label={"valSelect"}
+                      onChange={(e) => handleChangeDateIntervalle(e.target.value)}
+                      sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                      MenuProps={{
+                        disableScrollLock: true
+                      }}
+                    >
+                      {listeSituation?.map((option) => (
+                        <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
+                      ))
+                      }
+                    </Select>
+                  </FormControl>
                 </Stack>
               </Stack>
 
               <Stack
                 alignItems={'center'}
-                direction={'column'}
-                justifyContent={'space-between'}
-                width={'35%'}
-                height={gridHeight}
+                direction={'row'}
+                width={'100%'}
                 spacing={gridSpacing}
               >
                 <Stack
-                  alignItems={'center'}
-                  direction={'row'}
-                  width={'100%'}
-                  height={'33.3%'}
-                  spacing={gridSpacing}
+                  style={{
+                    backgroundColor: '#f4f6f7ff',
+                  }}
+                  boxShadow={1}
+                  borderRadius={0}
+                  width={'65%'}
+                  height={gridHeight}
                 >
-                  <DashboardCard
-                    text={'Résultat'}
-                    type={'total'}
-                    montant={'$5000'}
-                    backgroundColor={'#289c70'}
-                    resultatN={resultatN}
-                    resultatN1={resultatN1}
-                    variationN={variationResultatN}
-                    variationN1={variationResultatN1}
-                    evolutionN={evolutionResultatN}
-                    evolutionN1={evolutionResultatN1}
-                  />
-                  <DashboardCard
-                    text={'Chiffre d\'affaires'}
-                    type={'comparaison'}
-                    pourcentage={'10'}
-                    backgroundColor={'#289c70'}
-                    resultatN={resultatChiffreAffaireN}
-                    resultatN1={resultatChiffreAffaireN1}
-                    variationN={variationChiffreAffaireN}
-                    variationN1={variationChiffreAffaireN1}
-                    evolutionN={evolutionChiffreAffaireN}
-                    evolutionN1={evolutionChiffreAffaireN1}
-                  />
+                  <Stack
+                    width="100%"
+                    height="100%"
+                    direction={'column'}
+                    spacing={1}
+                  >
+                    <Stack
+                      width="100%"
+                      height="100%"
+                      direction={'row'}
+                      justifyContent="space-between"
+                      spacing={1}
+                    >
+                      <LineChartComponent
+                        xAxis={xAxis}
+                        dataN={chiffresAffairesNGraph}
+                        dataN1={chiffresAffairesN1Graph}
+                        label={'Chiffre d\'affaires'}
+                      />
+
+                      <LineChartComponent
+                        xAxis={xAxis}
+                        dataN={margeBruteNGraph}
+                        dataN1={margeBruteN1Graph}
+                        label={'Marges brutes'}
+                      />
+
+                    </Stack>
+                    <Stack
+                      width="100%"
+                      height="100%"
+                      direction={'row'}
+                      justifyContent="space-between"
+                      spacing={1}
+                    >
+                      <LineChartComponent
+                        xAxis={xAxis}
+                        dataN={tresorerieBanqueNGraph}
+                        dataN1={tresorerieBanqueN1Graph}
+                        label={'Trésoreries (Banques)'}
+                      />
+
+                      <LineChartComponent
+                        xAxis={xAxis}
+                        dataN={tresorerieCaisseNGraph}
+                        dataN1={tresorerieCaisseN1Graph}
+                        label={'Trésoreries (Caisses)'}
+                      />
+                    </Stack>
+                  </Stack>
                 </Stack>
+
                 <Stack
                   alignItems={'center'}
-                  direction={'row'}
-                  width={'100%'}
-                  height={'33.3%'}
+                  direction={'column'}
+                  justifyContent={'space-between'}
+                  width={'35%'}
+                  height={gridHeight}
                   spacing={gridSpacing}
                 >
-                  <DashboardCard
-                    text={'Dépenses (Achats)'}
-                    type={'comparaison'}
-                    backgroundColor={'#c95e42'}
-                    resultatN={resultatDepenseAchatN}
-                    resultatN1={resultatDepenseAchatN1}
-                    variationN={variationDepenseAchatN}
-                    variationN1={variationDepenseAchatN1}
-                    evolutionN={evolutionDepenseAchatN}
-                    evolutionN1={evolutionDepenseAchatN1}
-                  />
-                  <DashboardCard
-                    text={'Dépenses salariales'}
-                    type={'comparaison'}
-                    backgroundColor={'#c95e42'}
-                    resultatN={resultatDepenseSalarialeN}
-                    resultatN1={resultatDepenseSalarialeN1}
-                    variationN={variationDepenseSalarialeN}
-                    variationN1={variationDepenseSalarialeN1}
-                    evolutionN={evolutionDepenseSalarialeN}
-                    evolutionN1={evolutionDepenseSalarialeN1}
-                  />
-                </Stack>
-                <Stack
-                  alignItems={'center'}
-                  direction={'row'}
-                  width={'100%'}
-                  height={'33.3%'}
-                  spacing={gridSpacing}
-                >
-                  <DashboardCard
-                    text={'Trésoreries (Banques)'}
-                    type={'comparaison'}
-                    backgroundColor={'#407dc9'}
-                    resultatN={resultatTresorerieBanqueN}
-                    resultatN1={resultatTresorerieBanqueN1}
-                    variationN={variationTresorerieBanqueN}
-                    variationN1={variationTresorerieBanqueN1}
-                    evolutionN={evolutionTresorerieBanqueN}
-                    evolutionN1={evolutionTresorerieBanqueN1}
-                  />
-                  <DashboardCard
-                    text={'Trésoreries (Caisse)'}
-                    type={'comparaison'}
-                    backgroundColor={'#407dc9'}
-                    resultatN={resultatTresorerieCaisseN}
-                    resultatN1={resultatTresorerieCaisseN1}
-                    variationN={variationTresorerieCaisseN}
-                    variationN1={variationTresorerieCaisseN1}
-                    evolutionN={evolutionTresorerieCaisseN}
-                    evolutionN1={evolutionTresorerieCaisseN1}
-                  />
+                  <Stack
+                    alignItems={'center'}
+                    direction={'row'}
+                    width={'100%'}
+                    height={'33.3%'}
+                    spacing={gridSpacing}
+                  >
+                    <DashboardCard
+                      text={'Résultat'}
+                      type={'total'}
+                      montant={'$5000'}
+                      backgroundColor={'#289c70'}
+                      resultatN={resultatN}
+                      resultatN1={resultatN1}
+                      variationN={variationResultatN}
+                      variationN1={variationResultatN1}
+                      evolutionN={evolutionResultatN}
+                      evolutionN1={evolutionResultatN1}
+                    />
+                    <DashboardCard
+                      text={'Chiffre d\'affaires'}
+                      type={'comparaison'}
+                      pourcentage={'10'}
+                      backgroundColor={'#289c70'}
+                      resultatN={resultatChiffreAffaireN}
+                      resultatN1={resultatChiffreAffaireN1}
+                      variationN={variationChiffreAffaireN}
+                      variationN1={variationChiffreAffaireN1}
+                      evolutionN={evolutionChiffreAffaireN}
+                      evolutionN1={evolutionChiffreAffaireN1}
+                    />
+                  </Stack>
+                  <Stack
+                    alignItems={'center'}
+                    direction={'row'}
+                    width={'100%'}
+                    height={'33.3%'}
+                    spacing={gridSpacing}
+                  >
+                    <DashboardCard
+                      text={'Dépenses (Achats)'}
+                      type={'comparaison'}
+                      backgroundColor={'#c95e42'}
+                      resultatN={resultatDepenseAchatN}
+                      resultatN1={resultatDepenseAchatN1}
+                      variationN={variationDepenseAchatN}
+                      variationN1={variationDepenseAchatN1}
+                      evolutionN={evolutionDepenseAchatN}
+                      evolutionN1={evolutionDepenseAchatN1}
+                    />
+                    <DashboardCard
+                      text={'Dépenses salariales'}
+                      type={'comparaison'}
+                      backgroundColor={'#c95e42'}
+                      resultatN={resultatDepenseSalarialeN}
+                      resultatN1={resultatDepenseSalarialeN1}
+                      variationN={variationDepenseSalarialeN}
+                      variationN1={variationDepenseSalarialeN1}
+                      evolutionN={evolutionDepenseSalarialeN}
+                      evolutionN1={evolutionDepenseSalarialeN1}
+                    />
+                  </Stack>
+                  <Stack
+                    alignItems={'center'}
+                    direction={'row'}
+                    width={'100%'}
+                    height={'33.3%'}
+                    spacing={gridSpacing}
+                  >
+                    <DashboardCard
+                      text={'Trésoreries (Banques)'}
+                      type={'comparaison'}
+                      backgroundColor={'#407dc9'}
+                      resultatN={resultatTresorerieBanqueN}
+                      resultatN1={resultatTresorerieBanqueN1}
+                      variationN={variationTresorerieBanqueN}
+                      variationN1={variationTresorerieBanqueN1}
+                      evolutionN={evolutionTresorerieBanqueN}
+                      evolutionN1={evolutionTresorerieBanqueN1}
+                    />
+                    <DashboardCard
+                      text={'Trésoreries (Caisse)'}
+                      type={'comparaison'}
+                      backgroundColor={'#407dc9'}
+                      resultatN={resultatTresorerieCaisseN}
+                      resultatN1={resultatTresorerieCaisseN1}
+                      variationN={variationTresorerieCaisseN}
+                      variationN1={variationTresorerieCaisseN1}
+                      evolutionN={evolutionTresorerieCaisseN}
+                      evolutionN1={evolutionTresorerieCaisseN1}
+                    />
+                  </Stack>
                 </Stack>
               </Stack>
-            </Stack>
 
-            <Typography variant='h5' sx={{ color: "black" }} align='left'>Comptes en attente</Typography>
-            <VirtualTableJournalAttente tableHeader={columns} tableRow={journalData} />
-          </Stack>
-        </TabPanel>
-      </TabContext>
-    </Box>
+              <Typography variant='h5' sx={{ color: "black" }} align='left'>Comptes en attente</Typography>
+              <VirtualTableJournalAttente tableHeader={columns} tableRow={journalData} />
+            </Stack>
+          </TabPanel>
+        </TabContext>
+      </Box>
+    </>
   )
 }

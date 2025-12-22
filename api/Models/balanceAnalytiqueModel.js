@@ -123,6 +123,16 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: true,
             defaultValue: 0
         },
+        soldedebittresoanalytique: {
+            type: DataTypes.DOUBLE,
+            allowNull: true,
+            defaultValue: 0
+        },
+        soldecredittresoanalytique: {
+            type: DataTypes.DOUBLE,
+            allowNull: true,
+            defaultValue: 0
+        }
     }, { timestamps: true },)
     return balanceanalytiques
 }

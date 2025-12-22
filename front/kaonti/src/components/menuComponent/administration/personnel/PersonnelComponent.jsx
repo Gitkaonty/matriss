@@ -1,7 +1,6 @@
-import { React, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Typography, Stack, Paper, IconButton, FormControl, Input, Checkbox, Select, MenuItem } from '@mui/material';
-import Button from '@mui/material/Button';
 import { TbPlaylistAdd } from "react-icons/tb";
 import { FaRegPenToSquare } from "react-icons/fa6";
 import { TfiSave } from "react-icons/tfi";
@@ -18,15 +17,21 @@ import PopupConfirmDelete from '../../../componentsTools/popupConfirmDelete';
 import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFile';
 import { init } from '../../../../../init';
 import { DataGridStyle } from '../../../componentsTools/DatagridToolsStyle';
-import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes } from '@mui/x-data-grid';
+import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes, useGridApiRef } from '@mui/x-data-grid';
 import QuickFilter from '../../../componentsTools/DatagridToolsStyle';
 import useAuth from '../../../../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
 import axios from '../../../../../config/axios';
 import toast from 'react-hot-toast'; import { useFormik } from 'formik';
-import * as Yup from "yup";
+import usePermission from '../../../../hooks/usePermission';
+import useAxiosPrivate from '../../../../../config/axiosPrivate';
 
 export default function PersonnelComponent() {
+    const apiRef = useGridApiRef();
+    const { canAdd, canModify, canDelete, canView } = usePermission();
+
+    const axiosPrivate = useAxiosPrivate();
+
     const initial = init[0];
     const { id } = useParams();
     const [fileId, setFileId] = useState(0);
@@ -504,7 +509,9 @@ export default function PersonnelComponent() {
 };
 
     useEffect(() => {
-        fetchPersonnels();
+        if (canView) {
+            fetchPersonnels();
+        }
         axios.get(`/parametres/fonction/${compteId}/${id}`).then(res => setFonctions(res.data.list || []));
         let dossierId = id;
         if (!dossierId) {
@@ -654,7 +661,7 @@ export default function PersonnelComponent() {
     const handleSaveClick = (id) => () => {
         const rowId = Array.isArray(id) ? id[0] : id;
         // Required fields validation
-        const req = ['matricule','nom','prenom','id_fonction','id_classe'];
+        const req = ['matricule', 'nom', 'prenom', 'id_fonction', 'id_classe'];
         const missing = req.filter(k => {
             const v = formNewParam.values[k];
             return v === '' || v === null || v === undefined;
@@ -678,7 +685,7 @@ export default function PersonnelComponent() {
         const dataToSend = { ...formNewParam.values, fileId, compteId };
         console.log('[PERSONNEL][SAVE] payload envoyé à /administration/personnel :', dataToSend);
 
-        axios.post(`/administration/personnel`, dataToSend)
+        axiosPrivate.post(`/administration/personnel`, dataToSend)
             .then((response) => {
                 const resData = response.data;
                 if (resData.state) {
@@ -767,12 +774,13 @@ export default function PersonnelComponent() {
                 setDisableAddRowBouton(false);
                 return;
             }
-            axios.delete(`/administration/personnel/${idToDelete}`)
+            axiosPrivate.delete(`/administration/personnel/${idToDelete}`)
                 .then(res => {
                     if (res.data && res.data.state) {
                         setRows(rows.filter((row) => row.id !== idToDelete));
                         setOpenDialogDeleteRow(false);
                         setDisableAddRowBouton(false);
+                        toast.success(res.data.msg);
                     } else {
                         toast.error(res.data.msg || 'Erreur lors de la suppression');
                         setOpenDialogDeleteRow(false);
@@ -810,10 +818,74 @@ export default function PersonnelComponent() {
         setSelectedRowId(ids);
     }
 
+    const handleCellKeyDown = (params, event) => {
+        const api = apiRef.current;
+
+        const allCols = api.getAllColumns().filter(c => c.editable);
+        const sortedRowIds = api.getSortedRowIds();
+        const currentColIndex = allCols.findIndex(c => c.field === params.field);
+        const currentRowIndex = sortedRowIds.indexOf(params.id);
+
+        let nextColIndex = currentColIndex;
+        let nextRowIndex = currentRowIndex;
+
+        if (event.key === 'Tab' && !event.shiftKey) {
+            event.preventDefault();
+            nextColIndex = currentColIndex + 1;
+            if (nextColIndex >= allCols.length) {
+                nextColIndex = 0;
+                nextRowIndex = currentRowIndex + 1;
+            }
+        } else if (event.key === 'Tab' && event.shiftKey) {
+            event.preventDefault();
+            nextColIndex = currentColIndex - 1;
+            if (nextColIndex < 0) {
+                nextColIndex = allCols.length - 1;
+                nextRowIndex = currentRowIndex - 1;
+            }
+        } else if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            nextColIndex = currentColIndex + 1;
+            if (nextColIndex >= allCols.length) nextColIndex = allCols.length - 1;
+        } else if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            nextColIndex = currentColIndex - 1;
+            if (nextColIndex < 0) nextColIndex = 0;
+        }
+
+        const nextRowId = sortedRowIds[nextRowIndex];
+        const targetCol = allCols[nextColIndex];
+
+        if (!nextRowId || !targetCol) return;
+
+        try {
+            api.stopCellEditMode({ id: params.id, field: params.field });
+        } catch (err) {
+            console.warn('Erreur stopCellEditMode ignorée:', err);
+        }
+
+        setTimeout(() => {
+            const cellInput = document.querySelector(
+                `[data-id="${nextRowId}"] [data-field="${targetCol.field}"] input, 
+             [data-id="${nextRowId}"] [data-field="${targetCol.field}"] textarea`
+            );
+            if (cellInput) cellInput.focus();
+        }, 50);
+    };
+
     return (
         <Box>
             {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
-            {openDialogDeleteRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer le personnel sélectionné ?"} confirmationState={deleteRow} /> : null}
+            {
+                (openDialogDeleteRow && canDelete)
+                    ?
+                    <PopupConfirmDelete
+                        msg={"Voulez-vous vraiment supprimer le personnel sélectionné ?"}
+                        confirmationState={deleteRow}
+                    />
+                    :
+                    null
+            }
 
             <TabContext value={"1"}>
                 <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -838,7 +910,7 @@ export default function PersonnelComponent() {
                             <Tooltip title="Ajouter une ligne">
                                 <span>
                                     <IconButton
-                                        disabled={disableAddRowBouton}
+                                        disabled={!canAdd || disableAddRowBouton}
                                         variant="contained"
                                         onClick={handleOpenDialogAddNewAssocie}
                                         style={{
@@ -855,7 +927,7 @@ export default function PersonnelComponent() {
                             <Tooltip title="Modifier la ligne sélectionnée">
                                 <span>
                                     <IconButton
-                                        disabled={disableModifyBouton}
+                                        disabled={(!canModify && selectedRowId > 0) || disableModifyBouton}
                                         variant="contained"
                                         onClick={handleEditClick(selectedRowId)}
                                         style={{
@@ -872,7 +944,7 @@ export default function PersonnelComponent() {
                             <Tooltip title="Sauvegarder les modifications">
                                 <span>
                                     <IconButton
-                                        disabled={disableSaveBouton}
+                                        disabled={(!canAdd && !canModify) || disableSaveBouton}
                                         variant="contained"
                                         onClick={handleSaveClick(selectedRowId)}
                                         style={{
@@ -906,7 +978,7 @@ export default function PersonnelComponent() {
                             <Tooltip title="Supprimer la ligne sélectionnée">
                                 <span>
                                     <IconButton
-                                        disabled={disableDeleteBouton}
+                                        disabled={!canDelete || disableDeleteBouton}
                                         onClick={handleOpenDialogConfirmDeleteAssocieRow}
                                         variant="contained"
                                         style={{
@@ -923,6 +995,7 @@ export default function PersonnelComponent() {
                         </Stack>
                         <Stack width={"100%"} height={'100%'} minHeight={'600px'}>
                             <DataGrid
+                                apiRef={apiRef}
                                 rows={rows}
                                 columns={personnelsColumns}
                                 disableMultipleSelection={DataGridStyle.disableMultipleSelection}
@@ -969,37 +1042,40 @@ export default function PersonnelComponent() {
                                 }}
                                 rowSelectionModel={selectedRow}
                                 onRowEditStart={(params, event) => {
-                                    if (!selectedRow.length || selectedRow[0] !== params.id) {
+                                    const rowId = params.id;
+                                    const rowData = params.row;
+
+                                    const isNewRow = rowId < 0;
+
+                                    if (!canModify && !isNewRow) {
                                         event.defaultMuiPrevented = true;
+                                        return;
                                     }
-                                    if (selectedRow.includes(params.id)) {
-                                        setDisableAddRowBouton(true);
-                                        event.stopPropagation();
 
-                                        const rowId = params.id;
-                                        const rowData = params.row;
+                                    event.stopPropagation();
+                                    setDisableAddRowBouton(true);
 
-                                        formNewParam.setFieldValue("idParam", rowId);
-                                        formNewParam.setFieldValue("matricule", rowData.matricule ?? '');
-                                        formNewParam.setFieldValue("nom", rowData.nom ?? '');
-                                        formNewParam.setFieldValue("prenom", rowData.prenom ?? '');
-                                        formNewParam.setFieldValue("id_fonction", rowData.id_fonction ?? null);
-                                        formNewParam.setFieldValue("id_classe", rowData.id_classe ?? null);
-                                        formNewParam.setFieldValue("numero_cnaps", rowData.numero_cnaps ?? '');
-                                        formNewParam.setFieldValue("cin_ou_carte_resident", rowData.cin_ou_carte_resident ?? '');
-                                        formNewParam.setFieldValue("nombre_enfants_charge", rowData.nombre_enfants_charge ?? 0);
-                                        formNewParam.setFieldValue("date_entree", rowData.date_entree ?? '');
-                                        formNewParam.setFieldValue("date_sortie", rowData.date_sortie ?? '');
-                                        formNewParam.setFieldValue("actif", rowData.actif ?? false);
+                                    formNewParam.setFieldValue("idParam", rowId);
+                                    formNewParam.setFieldValue("matricule", rowData.matricule ?? '');
+                                    formNewParam.setFieldValue("nom", rowData.nom ?? '');
+                                    formNewParam.setFieldValue("prenom", rowData.prenom ?? '');
+                                    formNewParam.setFieldValue("id_fonction", rowData.id_fonction ?? null);
+                                    formNewParam.setFieldValue("id_classe", rowData.id_classe ?? null);
+                                    formNewParam.setFieldValue("numero_cnaps", rowData.numero_cnaps ?? '');
+                                    formNewParam.setFieldValue("cin_ou_carte_resident", rowData.cin_ou_carte_resident ?? '');
+                                    formNewParam.setFieldValue("nombre_enfants_charge", rowData.nombre_enfants_charge ?? 0);
+                                    formNewParam.setFieldValue("date_entree", rowData.date_entree ?? '');
+                                    formNewParam.setFieldValue("date_sortie", rowData.date_sortie ?? '');
+                                    formNewParam.setFieldValue("actif", rowData.actif ?? false);
 
-                                        setRowModesModel((oldModel) => ({
-                                            ...oldModel,
-                                            [rowId]: { mode: GridRowModes.Edit },
-                                        }));
+                                    setRowModesModel((oldModel) => ({
+                                        ...oldModel,
+                                        [rowId]: { mode: GridRowModes.Edit },
+                                    }));
 
-                                        setDisableSaveBouton(false);
-                                    }
+                                    setDisableSaveBouton(false);
                                 }}
+                                onCellKeyDown={handleCellKeyDown}
                             />
                         </Stack>
                     </Stack>

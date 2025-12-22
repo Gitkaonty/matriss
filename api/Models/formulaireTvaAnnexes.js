@@ -7,9 +7,36 @@ module.exports = (sequelize, DataTypes) => {
       id_code: { type: DataTypes.BIGINT, allowNull: false },
       libelle: { type: DataTypes.STRING(250), allowNull: false },
       montant: { type: DataTypes.DECIMAL(18, 2), allowNull: false, defaultValue: 0 },
-      id_compte: { type: DataTypes.BIGINT, allowNull: false },
-      id_dossier: { type: DataTypes.BIGINT, allowNull: false },
-      id_exercice: { type: DataTypes.BIGINT, allowNull: false },
+      id_compte: {
+        type: DataTypes.BIGINT,
+        allowNull: false,
+        references: {
+          model: 'userscomptes',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
+      },
+      id_dossier: {
+        type: DataTypes.BIGINT,
+        allowNull: false,
+        references: {
+          model: 'dossiers',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
+      },
+      id_exercice: {
+        type: DataTypes.BIGINT,
+        allowNull: false,
+        references: {
+          model: 'exercice',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
+      },
       // Période
       mois: { type: DataTypes.INTEGER, allowNull: true },
       annee: { type: DataTypes.INTEGER, allowNull: true },

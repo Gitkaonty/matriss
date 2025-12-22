@@ -180,6 +180,7 @@ exports.deleteRubriquesExternes = async (req, res) => {
                 message: "Rubrique Externe non trouvée"
             });
         }
+        
         const id_dossier = rubrique.id_dossier;
         const id_exercice = rubrique.id_exercice;
         const id_compte = rubrique.id_compte;
@@ -428,53 +429,53 @@ exports.addOrUpdateCompteRubriqueExterne = async (req, res) => {
             msg: 'Une erreur est survenue au moment du traitement.',
         }
 
-        const rubriqueData = (await rubriquesExternes.findAll({
-            where: {
-                id_compte: compteId,
-                id_dossier: fileId,
-                id_exercice: exerciceId,
-                id_etat,
-                active: true
-            }
-        })).map(r => ({
-            ...r.toJSON(),
-            id: Number(r.id),
-            id_compte: Number(r.id_compte),
-            id_dossier: Number(r.id_dossier),
-            id_exercice: Number(r.id_exercice),
-        })).filter(r =>
-            ['RUBRIQUE', 'SOUS-RUBRIQUE', 'LIAISON', 'LIAISON VAR ACTIF', 'LIAISON VAR PASSIF'].includes(r.type)
-        );
+        // const rubriqueData = (await rubriquesExternes.findAll({
+        //     where: {
+        //         id_compte: compteId,
+        //         id_dossier: fileId,
+        //         id_exercice: exerciceId,
+        //         id_etat,
+        //         active: true
+        //     }
+        // })).map(r => ({
+        //     ...r.toJSON(),
+        //     id: Number(r.id),
+        //     id_compte: Number(r.id_compte),
+        //     id_dossier: Number(r.id_dossier),
+        //     id_exercice: Number(r.id_exercice),
+        // })).filter(r =>
+        //     ['RUBRIQUE', 'SOUS-RUBRIQUE', 'LIAISON', 'LIAISON VAR ACTIF', 'LIAISON VAR PASSIF'].includes(r.type)
+        // );
 
-        const idRubriqueList = [...new Set(rubriqueData.map(val => val.id_rubrique))];
+        // const idRubriqueList = [...new Set(rubriqueData.map(val => val.id_rubrique))];
 
-        const compteRubriqueData = (await compteRubriquesExternes.findAll({
-            where: {
-                id_compte: compteId,
-                id_dossier: fileId,
-                id_exercice: exerciceId,
-                active: true,
-                id_rubrique: idRubriqueList,
-                compte: compte,
-                id_etat
-            }
-        })).map(r => ({
-            ...r.toJSON(),
-            id: Number(r.id),
-            id_compte: Number(r.id_compte),
-            id_dossier: Number(r.id_dossier),
-            id_exercice: Number(r.id_exercice),
-        }));
+        // const compteRubriqueData = (await compteRubriquesExternes.findAll({
+        //     where: {
+        //         id_compte: compteId,
+        //         id_dossier: fileId,
+        //         id_exercice: exerciceId,
+        //         active: true,
+        //         id_rubrique: idRubriqueList,
+        //         compte: compte,
+        //         id_etat
+        //     }
+        // })).map(r => ({
+        //     ...r.toJSON(),
+        //     id: Number(r.id),
+        //     id_compte: Number(r.id_compte),
+        //     id_dossier: Number(r.id_dossier),
+        //     id_exercice: Number(r.id_exercice),
+        // }));
 
-        if (compteRubriqueData.length) {
-            resData.state = false;
+        // if (compteRubriqueData.length) {
+        //     resData.state = false;
 
-            const etats = [...new Set(compteRubriqueData.map(c => c.id_etat))].join(', ');
-            const rubriques = [...new Set(compteRubriqueData.map(c => c.id_rubrique))].join(', ');
+        //     const etats = [...new Set(compteRubriqueData.map(c => c.id_etat))].join(', ');
+        //     const rubriques = [...new Set(compteRubriqueData.map(c => c.id_rubrique))].join(', ');
 
-            resData.msg = `Cette compte existe déjà dans : ${etats} dans le rubrique : ${rubriques}`;
-            return res.json(resData);
-        }
+        //     resData.msg = `Cette compte existe déjà dans : ${etats} dans le rubrique : ${rubriques}`;
+        //     return res.json(resData);
+        // }
 
         const testIfExist = await compteRubriquesExternes.findAll({
             where: {

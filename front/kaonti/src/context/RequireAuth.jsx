@@ -10,10 +10,10 @@ const RequireAuth = ({ allowedRoles }) => {
         ? jwtDecode(auth.accessToken)
         : undefined
 
-    const roles = decoded?.UserInfo?.roles || [];
+    const roles = decoded?.UserInfo?.roles || null;
 
     return (
-        roles.find(role => allowedRoles?.includes(role))
+        allowedRoles.includes(roles)
             ? <Outlet />
             : auth?.accessToken
                 ? <Navigate to="/unauthorized" state={{ from: location }} replace />

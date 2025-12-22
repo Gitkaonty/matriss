@@ -8,7 +8,9 @@ module.exports = (sequelize, DataTypes) => {
             references: {
                 model: 'userscomptes',
                 key: 'id'
-            }
+            },
+            onUpdate: 'CASCADE',
+            onDelete: 'CASCADE'
         },
         compte: {
             type: DataTypes.STRING(50),

@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 
 import { IoMdRemoveCircleOutline } from "react-icons/io";
 import { FaRegCheckCircle } from "react-icons/fa";
+import useAxiosPrivate from '../../../../../../config/axiosPrivate.js';
 
 const initial = init[0];
 
@@ -32,8 +33,13 @@ const DatagridDetailSelectionLigne = ({
     isDetailSelectionRefreshed,
     listDetailSelection,
     listePlanComptable,
-    filteredList
+    filteredList,
+    canModify,
+    canAdd,
+    canDelete,
+    canView
 }) => {
+    const axiosPrivate = useAxiosPrivate();
     const [selectedDetailRows, setSelectedDetailRows] = useState([]);
 
     //Variable qui recupère si il y a au moins une declisi true sur les lignes selectionnées
@@ -67,7 +73,7 @@ const DatagridDetailSelectionLigne = ({
     // Modification du moi et année dans journal
     const updateAnneeMois = (type) => {
         if (type === 'Ajouter') {
-            axios.put(`/declaration/isi/ajoutMoisAnnee`, {
+            axiosPrivate.put(`/declaration/isi/ajoutMoisAnnee`, {
                 id_compte: Number(compteId),
                 id_exercice: Number(selectedExerciceId),
                 id_dossier: Number(fileId),
@@ -100,7 +106,7 @@ const DatagridDetailSelectionLigne = ({
                 toast.error("Erreur lors de la requête");
             });
         } else {
-            axios.put(`/declaration/isi/suppressionMoisAnnee`, {
+            axiosPrivate.put(`/declaration/isi/suppressionMoisAnnee`, {
                 id_compte: Number(compteId),
                 id_exercice: Number(selectedExerciceId),
                 id_dossier: Number(fileId),
@@ -122,16 +128,18 @@ const DatagridDetailSelectionLigne = ({
     }
 
     useEffect(() => {
-        const handleKeyDown = (e) => {
-            if (e.ctrlKey && e.key === "ArrowRight") {
-                handleNext();
-            } else if (e.ctrlKey && e.key === "ArrowLeft") {
-                handlePrevious();
-            }
-        };
+        if (canView) {
+            const handleKeyDown = (e) => {
+                if (e.ctrlKey && e.key === "ArrowRight") {
+                    handleNext();
+                } else if (e.ctrlKey && e.key === "ArrowLeft") {
+                    handlePrevious();
+                }
+            };
 
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
+            window.addEventListener("keydown", handleKeyDown);
+            return () => window.removeEventListener("keydown", handleKeyDown);
+        }
     }, [listePlanComptable, valSelectedCompte, isDetailSelectionRefreshed]);
 
     return (
@@ -191,7 +199,7 @@ const DatagridDetailSelectionLigne = ({
                                 <Tooltip title="Ctrl + < -">
                                     <span>
                                         <Button
-                                            disabled={valSelectedCompte === 'tout'}
+                                            disabled={!canView || valSelectedCompte === 'tout'}
                                             sx={{
                                                 minWidth: 0,
                                                 padding: 1,
@@ -223,6 +231,7 @@ const DatagridDetailSelectionLigne = ({
                                     <span>
                                         <Button
                                             disabled={
+                                                !canView ||
                                                 listePlanComptable.findIndex(item => item.id === valSelectedCompte) >= listePlanComptable.length - 1
                                             }
                                             sx={{
@@ -270,7 +279,7 @@ const DatagridDetailSelectionLigne = ({
                             <span>
                                 <Button
                                     variant="contained"
-                                    disabled={selectedDetailRows.length === 0 || hasDeclisiTrue}
+                                    disabled={!canAdd || selectedDetailRows.length === 0 || hasDeclisiTrue}
                                     style={{
                                         textTransform: 'none',
                                         outline: 'none',
@@ -290,7 +299,7 @@ const DatagridDetailSelectionLigne = ({
                             <span>
                                 <Button
                                     variant="contained"
-                                    disabled={selectedDetailRows.length === 0 || hasDeclisiFalse}
+                                    disabled={!canDelete || selectedDetailRows.length === 0 || hasDeclisiFalse}
                                     style={{
                                         textTransform: 'none',
                                         outline: 'none',

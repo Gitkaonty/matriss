@@ -1,6 +1,9 @@
 const express = require('express');
 const paramCAController = require('../../Controllers/Parametres/paramCAnalitique');
 
+const verifyJWT = require('../../Middlewares/verifyJWT');
+const verifyPermission = require('../../Middlewares/verifyPermission');
+
 const router = express.Router();
 
 // Récupérer la liste des axes
@@ -16,16 +19,16 @@ router.post('/addAxe', paramCAController.addAxe);
 router.post('/addSection', paramCAController.addSection);
 
 // Ajouter ou modifier une axe
-router.post('/addOrUpdateAxes', paramCAController.addOrUpdateAxes);
+router.post('/addOrUpdateAxes', verifyJWT, verifyPermission('ADD', 'EDIT'), paramCAController.addOrUpdateAxes);
 
 // Ajouter ou modifier une section
-router.post('/addOrUpdateSections', paramCAController.addOrUpdateSections);
+router.post('/addOrUpdateSections', verifyJWT, verifyPermission('ADD', 'EDIT'), paramCAController.addOrUpdateSections);
 
 // Supprimer les axes selectionnées
-router.post('/deleteAxes', paramCAController.deleteAxes);
+router.post('/deleteAxes', verifyJWT, verifyPermission('DELETE'), paramCAController.deleteAxes);
 
 // Supprimer les sections selectionnés
-router.post('/deleteSections', paramCAController.deleteSections);
+router.post('/deleteSections', verifyJWT, verifyPermission('DELETE'), paramCAController.deleteSections);
 
 // Récupération sections et axes
 router.get('/getListAxeSection/:id_compte/:id_dossier', paramCAController.getListAxeSection);

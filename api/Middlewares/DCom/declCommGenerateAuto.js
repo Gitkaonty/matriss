@@ -1,29 +1,34 @@
 const db = require('../../Models');
+const { Op } = require('sequelize');
 const journals = db.journals;
 const dossierplancomptable = db.dossierplancomptable;
 const droitcommas = db.droitcommas;
 const droitcommbs = db.droitcommbs;
+const codejournals = db.codejournals;
 
 const calculateSolde = (sens, data) => {
-    if (!data || data.length === 0) return 0;
+    if (!data) return 0;
 
     let total = 0;
 
-    if (sens === 'D-C') {
-        total = data.reduce((sum, l) => {
-            const debit = parseFloat(l.debit) || 0;
-            const credit = parseFloat(l.credit) || 0;
-            return sum + (debit - credit);
-        }, 0);
-    } else if (sens === 'C-D') {
-        total = data.reduce((sum, l) => {
-            const debit = parseFloat(l.debit) || 0;
-            const credit = parseFloat(l.credit) || 0;
-            return sum + (credit - debit);
-        }, 0);
+    if (Array.isArray(data)) {
+        if (sens === 'D-C') {
+            total = data.reduce((sum, l) => (sum + ((parseFloat(l.debit) || 0) - (parseFloat(l.credit) || 0))), 0);
+        } else if (sens === 'C-D') {
+            total = data.reduce((sum, l) => (sum + ((parseFloat(l.credit) || 0) - (parseFloat(l.debit) || 0))), 0);
+        }
+    } else { // data est un objet unique
+        const debit = parseFloat(data.debit) || 0;
+        const credit = parseFloat(data.credit) || 0;
+        total = sens === 'D-C' ? debit - credit : credit - debit;
     }
 
     return parseFloat(total.toFixed(2));
+};
+
+const parseDate = (value) => {
+    const date = new Date(value);
+    return isNaN(date.getTime()) ? null : date;
 };
 
 // Fonction pour plurieliser un mot
@@ -209,6 +214,279 @@ const generateDroitComm = async (res, nature, list, id_compte, id_dossier, id_ex
     }
 };
 
+const generateDComAuto = async (res, nature, list, id_compte, id_dossier, id_exercice) => {
+    try {
+        // const processedEcritures = new Set();
+        for (const compteData of list) {
+            const journalData = await journals.findAll({
+                where: {
+                    id_compte,
+                    id_dossier,
+                    id_exercice,
+                },
+                include: [
+                    {
+                        model: dossierplancomptable,
+                        attributes: ['compte'],
+                        required: true,
+                        where: { compte: { [Op.like]: `${compteData.compte}%` } }
+                    },
+                    {
+                        model: codejournals,
+                        attributes: ['code', 'type', 'nif', 'adresse', 'libelle']
+                    }
+                ],
+                order: [['dateecriture', 'ASC']]
+            });
+            // return res.json(journalData);
+
+            const journalEcriture = [...new Set(journalData.map(val => val.id_ecriture))];
+            for (const id_ecriture of journalEcriture) {
+                const journalCode = await journals.findAll({
+                    where: {
+                        id_compte,
+                        id_dossier,
+                        id_exercice,
+                        id_ecriture
+                    },
+                    include: [
+                        {
+                            model: dossierplancomptable,
+                            attributes: ['compte', 'id', 'typetier', 'cin', 'autrepieceid', 'statistique', 'adresse', 'nif', 'nifrepresentant', 'libelle', 'adresseetranger']
+                        },
+                        {
+                            model: codejournals,
+                            attributes: ['code', 'type', 'nif', 'adresse', 'libelle', 'stat']
+                        }
+                    ],
+                });
+
+                const journalCodeMappedData = await Promise.all(
+                    journalCode.map(async (entry) => {
+                        const j = entry.toJSON();
+                        const dpc = j.dossierplancomptable;
+                        const cj = j.codejournal;
+
+                        const compte_centralise = await dossierplancomptable.findByPk(entry.id_numcptcentralise);
+
+                        return {
+                            ...j,
+                            compte: dpc?.compte || null,
+                            journal: cj?.code || null,
+                            typeCodeJournal: cj?.type || null,
+                            compte_centralise: compte_centralise?.compte || null,
+                            nifCodeJournal: cj?.nif || null,
+                            statCodeJournal: cj?.stat || null,
+                            adresseCodeJournal: cj?.adresse || null,
+                            libelleCodeJournal: cj?.libelle || null
+                        };
+                    })
+                );
+
+                if (journalCodeMappedData.length > 0) {
+                    const codeJournalType = journalCodeMappedData[0].typeCodeJournal;
+                    if (codeJournalType) {
+                        switch (codeJournalType) {
+                            case 'ACHAT': {
+                                const journalAchats = journalCodeMappedData.filter(
+                                    item => item.compte_centralise && item.compte_centralise.toString().startsWith('401')
+                                );
+                                if (!journalAchats.length) continue;
+                                for (const journalAchatData of journalAchats) {
+                                    const dossierPlanComptableData = await dossierplancomptable.findByPk(journalAchatData.id_numcpt);
+                                    if (dossierPlanComptableData) {
+                                        const solde = calculateSolde(compteData.senscalcul, journalAchatData);
+                                        switch (dossierPlanComptableData.typetier) {
+                                            case 'avec-nif': {
+                                                const dataAvecNif = {
+                                                    id_compte,
+                                                    id_dossier,
+                                                    id_exercice,
+                                                    id_ecriture: journalAchatData.id_ecriture,
+                                                    id_numcpt: dossierPlanComptableData?.id || null,
+                                                    comptabilisees: solde,
+                                                    montanth_tva: solde,
+                                                    nif: dossierPlanComptableData?.nif || null,
+                                                    num_stat: dossierPlanComptableData?.statistique || null,
+                                                    raison_sociale: dossierPlanComptableData?.libelle,
+                                                    nom_commercial: dossierPlanComptableData?.libelle,
+                                                    adresse: dossierPlanComptableData?.adresse || null,
+                                                    fokontany: dossierPlanComptableData?.fokontany || null,
+                                                    ville: dossierPlanComptableData?.commune || null,
+                                                    ex_province: dossierPlanComptableData?.province || null,
+                                                    typeTier: 'avecNif',
+                                                    type: nature,
+                                                    date_cin: null
+                                                }
+                                                if (['SVT', 'ADR', 'AC', 'AI', 'DEB'].includes(nature)) {
+                                                    await droitcommas.create(dataAvecNif);
+                                                } else {
+                                                    await droitcommbs.create(dataAvecNif);
+                                                }
+                                                break;
+                                            }
+                                            case 'etranger': {
+                                                const dataEtranger = {
+                                                    id_compte,
+                                                    id_dossier,
+                                                    id_exercice,
+                                                    id_ecriture: journalAchatData.id_ecriture,
+                                                    id_numcpt: dossierPlanComptableData?.id || null,
+                                                    comptabilisees: solde,
+                                                    montanth_tva: solde,
+                                                    nif_representaires: dossierPlanComptableData?.nifrepresentant || null,
+                                                    adresse: dossierPlanComptableData?.adresseetranger || null,
+                                                    raison_sociale: dossierPlanComptableData?.libelle,
+                                                    nom_commercial: dossierPlanComptableData?.libelle,
+                                                    typeTier: 'prestataires',
+                                                    type: nature,
+                                                    date_cin: null
+                                                }
+                                                if (['SVT', 'ADR', 'AC', 'AI', 'DEB'].includes(nature)) {
+                                                    await droitcommas.create(dataEtranger);
+                                                } else {
+                                                    await droitcommbs.create(dataEtranger);
+                                                }
+                                                break;
+                                            }
+                                            case 'sans-nif': {
+                                                const dataSansNif = {
+                                                    id_compte,
+                                                    id_dossier,
+                                                    id_exercice,
+                                                    id_ecriture: journalAchatData.id_ecriture,
+                                                    id_numcpt: dossierPlanComptableData?.id || null,
+                                                    comptabilisees: solde,
+                                                    montanth_tva: solde,
+                                                    cin: dossierPlanComptableData?.cin || null,
+                                                    date_cin: parseDate(dossierPlanComptableData?.datecin),
+                                                    raison_sociale: dossierPlanComptableData?.libelle,
+                                                    nom_commercial: dossierPlanComptableData?.libelle,
+                                                    adresse: dossierPlanComptableData?.adresse || null,
+                                                    fokontany: dossierPlanComptableData?.fokontany || null,
+                                                    pays: dossierPlanComptableData?.pays || null,
+                                                    ville: dossierPlanComptableData?.commune || null,
+                                                    ex_province: dossierPlanComptableData?.province || null,
+                                                    typeTier: 'sansNif',
+                                                    type: nature
+                                                }
+                                                if (['SVT', 'ADR', 'AC', 'AI', 'DEB'].includes(nature)) {
+                                                    await droitcommas.create(dataSansNif);
+                                                } else {
+                                                    await droitcommbs.create(dataSansNif);
+                                                }
+                                                break;
+                                            }
+                                            case 'general': {
+                                                const dataAutre = {
+                                                    id_compte,
+                                                    id_dossier,
+                                                    id_exercice,
+                                                    id_ecriture: journalAchatData.id_ecriture,
+                                                    id_numcpt: dossierPlanComptableData?.id || null,
+                                                    comptabilisees: solde,
+                                                    montanth_tva: solde,
+                                                    typeTier: 'autres',
+                                                    type: nature,
+                                                    date_cin: null
+                                                }
+                                                if (['SVT', 'ADR', 'AC', 'AI', 'DEB'].includes(nature)) {
+                                                    await droitcommas.create(dataAutre);
+                                                } else {
+                                                    await droitcommbs.create(dataAutre);
+                                                }
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                break;
+                            }
+
+                            case 'OD':
+                            case 'CAISSE':
+                            case 'A_NOUVEAU':
+                            case 'VENTE': {
+                                const journalOthers = journalCodeMappedData.filter(
+                                    item => item.compte && item.compte.toString().startsWith(compteData.compte)
+                                )
+                                if (!journalOthers.length) continue;
+                                for (const journalOthersData of journalOthers) {
+                                    const dossierPlanComptableData = await dossierplancomptable.findByPk(journalOthersData.id_numcpt);
+                                    if (dossierPlanComptableData) {
+                                        const solde = calculateSolde(compteData.senscalcul, journalOthersData);
+                                        const dataAutre = {
+                                            id_compte,
+                                            id_dossier,
+                                            id_exercice,
+                                            id_ecriture: journalOthersData.id_ecriture,
+                                            id_numcpt: dossierPlanComptableData?.id || null,
+                                            comptabilisees: solde,
+                                            montanth_tva: solde,
+                                            typeTier: 'autres',
+                                            type: nature,
+                                            date_cin: null
+                                        }
+                                        if (['SVT', 'ADR', 'AC', 'AI', 'DEB'].includes(nature)) {
+                                            await droitcommas.create(dataAutre);
+                                        } else {
+                                            await droitcommbs.create(dataAutre);
+                                        }
+                                    }
+                                }
+                                break;
+                            }
+
+                            case 'BANQUE': {
+                                const journalBanque = journalCodeMappedData.filter(
+                                    item => item.compte &&
+                                        (item.compte.toString().startsWith('66') ||
+                                            item.compte.toString().startsWith('622'))
+                                )
+                                if (!journalBanque.length) continue;
+                                for (const journalBanqueData of journalBanque) {
+                                    const dossierPlanComptableData = await dossierplancomptable.findByPk(journalBanqueData.id_numcpt);
+                                    if (dossierPlanComptableData) {
+                                        const solde = calculateSolde(compteData.senscalcul, journalBanqueData);
+                                        const dataAvecNif = {
+                                            id_compte,
+                                            id_dossier,
+                                            id_exercice,
+                                            id_ecriture: journalBanqueData.id_ecriture,
+                                            id_numcpt: dossierPlanComptableData?.id || null,
+                                            comptabilisees: solde,
+                                            montanth_tva: solde,
+                                            nif: journalBanqueData?.nifCodeJournal || null,
+                                            num_stat: journalBanqueData?.statCodeJournal || null,
+                                            raison_sociale: journalBanqueData?.libelleCodeJournal,
+                                            nom_commercial: journalBanqueData?.libelleCodeJournal,
+                                            adresse: journalBanqueData?.adresseCodeJournal || null,
+                                            typeTier: 'avecNif',
+                                            type: nature,
+                                            date_cin: null
+                                        }
+                                        if (['SVT', 'ADR', 'AC', 'AI', 'DEB'].includes(nature)) {
+                                            await droitcommas.create(dataAvecNif);
+                                        } else {
+                                            await droitcommbs.create(dataAvecNif);
+                                        }
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return res.json({ message: `${nature} génerés avec succès`, state: true })
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ state: false, message: "Erreur serveur", error: error.message });
+    }
+}
+
 module.exports = {
-    generateDroitComm
+    generateDroitComm,
+    generateDComAuto
 };

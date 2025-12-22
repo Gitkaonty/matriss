@@ -168,7 +168,6 @@ const PopupModifDP = ({ choix, confirmationState, data }) => {
                             >
                                 <InputLabel style={{ color: '#1976d2', fontSize: '13px' }}>Nature des provisions</InputLabel>
                                 <Select
-                                    disabled
                                     label="Nature des provisions"
                                     name="nature_prov"
                                     value={formData.values.nature_prov}

@@ -24,6 +24,7 @@ import {
     frFR,
     GridRowEditStopReasons,
     GridRowModes,
+    useGridApiRef,
 } from "@mui/x-data-grid";
 
 import QuickFilter from "../../../componentsTools/DatagridToolsStyle";
@@ -32,9 +33,15 @@ import { jwtDecode } from "jwt-decode";
 import axios from "../../../../../config/axios";
 import toast from "react-hot-toast";
 import { useFormik } from "formik";
-import * as Yup from "yup";
- 
+import usePermission from "../../../../hooks/usePermission";
+import useAxiosPrivate from "../../../../../config/axiosPrivate";
+
 export default function ClassificationSalariesComponent() {
+    const { canAdd, canModify, canDelete, canView } = usePermission();
+    const apiRef = useGridApiRef();
+
+    const axiosPrivate = useAxiosPrivate();
+
     const initial = init[0];
 
     const { id } = useParams(); // id du dossier
@@ -59,10 +66,12 @@ export default function ClassificationSalariesComponent() {
     const [disableDeleteBouton, setDisableDeleteBouton] = useState(true);
     const [disableAddRowBouton, setDisableAddRowBouton] = useState(false);
 
+
     const [openDialogDeleteRow, setOpenDialogDeleteRow] = useState(false);
     const [editRow, setEditRow] = useState(null);
     const [newRow, setNewRow] = useState(null);
     const [selectedRow, setSelectedRow] = useState([]);
+    const [isNewRow, setIsNewRow] = useState(false);
 
     const [submitAttempt, setSubmitAttempt] = useState(false);
 
@@ -204,7 +213,7 @@ export default function ClassificationSalariesComponent() {
             .then((res) => {
                 const data = Array.isArray(res.data.list)
                     ? res.data.list.map((item, idx) => ({
-                        id: item.id || idx + 1,
+                        id: item.id,
                         classe: item.classe,
                         remarque: item.remarque,
                         id_dossier: item.id_dossier,
@@ -216,7 +225,9 @@ export default function ClassificationSalariesComponent() {
     };
 
     useEffect(() => {
-        fetchClassifications();
+        if (canView) {
+            fetchClassifications();
+        }
     }, []);
 
     // Sélection d'une ligne
@@ -284,8 +295,14 @@ export default function ClassificationSalariesComponent() {
         }
     };
 
+
     const handleOpenDialogAddNewAssocie = () => {
-        // if (newRow) return;
+        // Empêcher l'ajout si une nouvelle ligne existe déjà
+        if (isNewRow) {
+            toast.info("Terminez d'abord l'ajout de la ligne en cours");
+            return;
+        }
+
         setDisableModifyBouton(false);
         setDisableCancelBouton(false);
         setDisableDeleteBouton(false);
@@ -294,7 +311,8 @@ export default function ClassificationSalariesComponent() {
 
         const newId = -Date.now();
         formNewParam.setFieldValue("idClassification", newId);
-        const newDevise = {
+        
+        const newClassification = {
             id_compte: Number(compteId),
             id_dossier: Number(id),
             id: newId,
@@ -302,11 +320,13 @@ export default function ClassificationSalariesComponent() {
             remarque: '',
         };
 
-        setRows([...rows, newDevise]);
+        setRows(prevRows => [...prevRows, newClassification]);
         setSelectedRowId([newId]);
         setSelectedRow([newId]);
         setDisableAddRowBouton(true);
+        setIsNewRow(true);
     }
+
 
     // Sauvegarde
     const handleSaveClick = (id) => () => {
@@ -318,23 +338,47 @@ export default function ClassificationSalariesComponent() {
             setDisableSaveBouton(false);
             return;
         }
+        
         const dataToSend = { ...formNewParam.values, fileId, compteId };
-        axios.post(`/parametres/classification`, dataToSend).then((response) => {
+        axiosPrivate.post(`/parametres/classification`, dataToSend).then((response) => {
             const resData = response.data;
             if (resData.state) {
+                // Nettoyer les états locaux
                 setDisableAddRowBouton(false);
                 setDisableSaveBouton(true);
                 formNewParam.resetForm();
                 setSubmitAttempt(false);
+                setIsNewRow(false);
+                
+                // Supprimer la ligne temporaire si c'est une nouvelle ligne
+                if (id < 0) {
+                    setRows(prevRows => prevRows.filter(row => row.id !== id));
+                }
+                
                 toast.success(resData.msg);
+                
+                // Recharger les données depuis le serveur
                 fetchClassifications();
-                setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
+                
+                // Réinitialiser les sélections
+                setSelectedRow([]);
+                setSelectedRowId([]);
+                
+                // Nettoyer les modes de ligne
+                const newRowModes = { ...rowModesModel };
+                delete newRowModes[id];
+                setRowModesModel(newRowModes);
             } else {
                 setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
                 setDisableSaveBouton(false);
                 toast.error(resData.msg);
             }
-        })
+        }).catch((error) => {
+            console.error('Erreur lors de la sauvegarde:', error);
+            setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
+            setDisableSaveBouton(false);
+            toast.error('Erreur lors de la sauvegarde');
+        });
     };
 
     // Annulation
@@ -366,7 +410,7 @@ export default function ClassificationSalariesComponent() {
                 setRows(rows.filter((row) => row.id !== idToDelete));
                 return;
             }
-            axios.delete(`/parametres/classification/${idToDelete}`).then((res) => {
+            axiosPrivate.delete(`/parametres/classification/${idToDelete}`).then((res) => {
                 if (res.data && res.data.state) {
                     setRows(rows.filter((row) => row.id !== idToDelete));
                     setOpenDialogDeleteRow(false);
@@ -398,235 +442,307 @@ export default function ClassificationSalariesComponent() {
         setRowModesModel(newRowModesModel);
     };
 
+    const handleCellKeyDown = (params, event) => {
+        const api = apiRef.current;
+
+        const allCols = api.getAllColumns().filter(c => c.editable);
+        const sortedRowIds = api.getSortedRowIds();
+        const currentColIndex = allCols.findIndex(c => c.field === params.field);
+        const currentRowIndex = sortedRowIds.indexOf(params.id);
+
+        let nextColIndex = currentColIndex;
+        let nextRowIndex = currentRowIndex;
+
+        if (event.key === 'Tab' && !event.shiftKey) {
+            event.preventDefault();
+            nextColIndex = currentColIndex + 1;
+            if (nextColIndex >= allCols.length) {
+                nextColIndex = 0;
+                nextRowIndex = currentRowIndex + 1;
+            }
+        } else if (event.key === 'Tab' && event.shiftKey) {
+            event.preventDefault();
+            nextColIndex = currentColIndex - 1;
+            if (nextColIndex < 0) {
+                nextColIndex = allCols.length - 1;
+                nextRowIndex = currentRowIndex - 1;
+            }
+        } else if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            nextColIndex = currentColIndex + 1;
+            if (nextColIndex >= allCols.length) nextColIndex = allCols.length - 1;
+        } else if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            nextColIndex = currentColIndex - 1;
+            if (nextColIndex < 0) nextColIndex = 0;
+        }
+
+        const nextRowId = sortedRowIds[nextRowIndex];
+        const targetCol = allCols[nextColIndex];
+
+        if (!nextRowId || !targetCol) return;
+
+        try {
+            api.stopCellEditMode({ id: params.id, field: params.field });
+        } catch (err) {
+            console.warn('Erreur stopCellEditMode ignorée:', err);
+        }
+
+        setTimeout(() => {
+            const cellInput = document.querySelector(
+                `[data-id="${nextRowId}"] [data-field="${targetCol.field}"] input, 
+             [data-id="${nextRowId}"] [data-field="${targetCol.field}"] textarea`
+            );
+            if (cellInput) cellInput.focus();
+        }, 50);
+    };
+
     return (
-        <Box>
-            {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
+        <>
+            {
+                noFile
+                    ?
+                    <PopupTestSelectedFile
+                        confirmationState={sendToHome}
+                    />
+                    :
+                    null
+            }
 
-            {openDialogDeleteRow ? (
-                <PopupConfirmDelete
-                    msg={
-                        "Voulez-vous vraiment supprimer la classification sélectionnée ?"
-                    }
-                    confirmationState={deleteRow}
-                />
-            ) : null}
+            {
+                (openDialogDeleteRow && canDelete)
+                    ?
+                    <PopupConfirmDelete
+                        msg={
+                            "Voulez-vous vraiment supprimer la classification sélectionnée ?"
+                        }
+                        confirmationState={deleteRow}
+                    />
+                    :
+                    null
+            }
 
-            <TabContext value={"1"}>
-                <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-                    <TabList aria-label="lab API tabs example">
-                        <Tab
-                            style={{
-                                textTransform: "none",
-                                outline: "none",
-                                border: "none",
-                                margin: -5,
-                            }}
-                            label={InfoFileStyle(fileInfos?.dossier)}
-                            value="1"
-                        />
-                    </TabList>
-                </Box>
+            <Box>
+                <TabContext value={"1"}>
+                    <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+                        <TabList aria-label="lab API tabs example">
+                            <Tab
+                                style={{
+                                    textTransform: "none",
+                                    outline: "none",
+                                    border: "none",
+                                    margin: -5,
+                                }}
+                                label={InfoFileStyle(fileInfos?.dossier)}
+                                value="1"
+                            />
+                        </TabList>
+                    </Box>
 
-                <TabPanel value="1">
-                    <Typography variant="h6" sx={{ color: "black" }} align="left">
-                        Paramétrages : Catégories
-                    </Typography>
+                    <TabPanel value="1">
+                        <Typography variant="h6" sx={{ color: "black" }} align="left">
+                            Paramétrages : Catégories
+                        </Typography>
 
-                    <Stack
-                        width={"100%"}
-                        height={"30px"}
-                        spacing={0.5}
-                        alignItems={"center"}
-                        alignContent={"center"}
-                        direction={"column"}
-                        style={{
-                            marginLeft: "0px",
-                            marginTop: "20px",
-                            justifyContent: "right",
-                        }}
-                    >
                         <Stack
                             width={"100%"}
                             height={"30px"}
                             spacing={0.5}
                             alignItems={"center"}
                             alignContent={"center"}
-                            direction={"row"}
-                            justifyContent={"right"}
+                            direction={"column"}
+                            style={{
+                                marginLeft: "0px",
+                                marginTop: "20px",
+                                justifyContent: "right",
+                            }}
                         >
-                            <Tooltip title="Ajouter une ligne">
-                                <span>
-                                    <IconButton
-                                        disabled={disableAddRowBouton}
-                                        variant="contained"
-                                        onClick={handleOpenDialogAddNewAssocie}
-                                        style={{
-                                            width: "35px",
-                                            height: "35px",
-                                            borderRadius: "2px",
-                                            borderColor: "transparent",
-                                            backgroundColor: initial.theme,
-                                            textTransform: "none",
-                                            outline: "none",
-                                        }}
-                                    >
-                                        <TbPlaylistAdd
-                                            style={{ width: "25px", height: "25px", color: "white" }}
-                                        />
-                                    </IconButton>
-                                </span>
-                            </Tooltip>
+                            <Stack
+                                width={"100%"}
+                                height={"30px"}
+                                spacing={0.5}
+                                alignItems={"center"}
+                                alignContent={"center"}
+                                direction={"row"}
+                                justifyContent={"right"}
+                            >
+                                <Tooltip title="Ajouter une ligne">
+                                    <span>
+                                        <IconButton
+                                            disabled={!canAdd || disableAddRowBouton}
+                                            variant="contained"
+                                            onClick={handleOpenDialogAddNewAssocie}
+                                            style={{
+                                                width: "35px",
+                                                height: "35px",
+                                                borderRadius: "2px",
+                                                borderColor: "transparent",
+                                                backgroundColor: initial.theme,
+                                                textTransform: "none",
+                                                outline: "none",
+                                            }}
+                                        >
+                                            <TbPlaylistAdd
+                                                style={{ width: "25px", height: "25px", color: "white" }}
+                                            />
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
 
-                            <Tooltip title="Modifier la ligne sélectionnée">
-                                <span>
-                                    <IconButton
-                                        disabled={disableModifyBouton}
-                                        variant="contained"
-                                        onClick={handleEditClick(selectedRowId)}
-                                        style={{
-                                            width: "35px",
-                                            height: "35px",
-                                            borderRadius: "2px",
-                                            borderColor: "transparent",
-                                            backgroundColor: initial.theme,
-                                            textTransform: "none",
-                                            outline: "none",
-                                        }}
-                                    >
-                                        <FaRegPenToSquare
-                                            style={{ width: "25px", height: "25px", color: "white" }}
-                                        />
-                                    </IconButton>
-                                </span>
-                            </Tooltip>
+                                <Tooltip title="Modifier la ligne sélectionnée">
+                                    <span>
+                                        <IconButton
+                                            disabled={(!canModify && selectedRowId > 0) || disableModifyBouton}
+                                            variant="contained"
+                                            onClick={handleEditClick(selectedRowId)}
+                                            style={{
+                                                width: "35px",
+                                                height: "35px",
+                                                borderRadius: "2px",
+                                                borderColor: "transparent",
+                                                backgroundColor: initial.theme,
+                                                textTransform: "none",
+                                                outline: "none",
+                                            }}
+                                        >
+                                            <FaRegPenToSquare
+                                                style={{ width: "25px", height: "25px", color: "white" }}
+                                            />
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
 
-                            <Tooltip title="Sauvegarder les modifications">
-                                <span>
-                                    <IconButton
-                                        disabled={disableSaveBouton}
-                                        variant="contained"
-                                        onClick={handleSaveClick(selectedRowId)}
-                                        style={{
-                                            width: "35px",
-                                            height: "35px",
-                                            borderRadius: "2px",
-                                            borderColor: "transparent",
-                                            backgroundColor: initial.theme,
-                                            textTransform: "none",
-                                            outline: "none",
-                                        }}
-                                    >
-                                        <TfiSave
-                                            style={{ width: "50px", height: "50px", color: "white" }}
-                                        />
-                                    </IconButton>
-                                </span>
-                            </Tooltip>
+                                <Tooltip title="Sauvegarder les modifications">
+                                    <span>
+                                        <IconButton
+                                            disabled={(!canAdd && !canModify) || disableSaveBouton}
+                                            variant="contained"
+                                            onClick={handleSaveClick(selectedRowId)}
+                                            style={{
+                                                width: "35px",
+                                                height: "35px",
+                                                borderRadius: "2px",
+                                                borderColor: "transparent",
+                                                backgroundColor: initial.theme,
+                                                textTransform: "none",
+                                                outline: "none",
+                                            }}
+                                        >
+                                            <TfiSave
+                                                style={{ width: "50px", height: "50px", color: "white" }}
+                                            />
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
 
-                            <Tooltip title="Annuler les modifications">
-                                <span>
-                                    <IconButton
-                                        disabled={disableCancelBouton}
-                                        variant="contained"
-                                        onClick={handleCancelClick(selectedRowId)}
-                                        style={{
-                                            width: "35px",
-                                            height: "35px",
-                                            borderRadius: "2px",
-                                            borderColor: "transparent",
-                                            backgroundColor: initial.button_delete_color,
-                                            textTransform: "none",
-                                            outline: "none",
-                                        }}
-                                    >
-                                        <VscClose
-                                            style={{ width: "50px", height: "50px", color: "white" }}
-                                        />
-                                    </IconButton>
-                                </span>
-                            </Tooltip>
+                                <Tooltip title="Annuler les modifications">
+                                    <span>
+                                        <IconButton
+                                            disabled={disableCancelBouton}
+                                            variant="contained"
+                                            onClick={handleCancelClick(selectedRowId)}
+                                            style={{
+                                                width: "35px",
+                                                height: "35px",
+                                                borderRadius: "2px",
+                                                borderColor: "transparent",
+                                                backgroundColor: initial.button_delete_color,
+                                                textTransform: "none",
+                                                outline: "none",
+                                            }}
+                                        >
+                                            <VscClose
+                                                style={{ width: "50px", height: "50px", color: "white" }}
+                                            />
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
 
-                            <Tooltip title="Supprimer la ligne sélectionnée">
-                                <span>
-                                    <IconButton
-                                        disabled={disableDeleteBouton}
-                                        onClick={handleOpenDialogConfirmDeleteAssocieRow}
-                                        variant="contained"
-                                        style={{
-                                            width: "35px",
-                                            height: "35px",
-                                            borderRadius: "2px",
-                                            borderColor: "transparent",
-                                            backgroundColor: initial.button_delete_color,
-                                            textTransform: "none",
-                                            outline: "none",
-                                        }}
-                                    >
-                                        <IoMdTrash
-                                            style={{ width: "50px", height: "50px", color: "white" }}
-                                        />
-                                    </IconButton>
-                                </span>
-                            </Tooltip>
-                        </Stack>
+                                <Tooltip title="Supprimer la ligne sélectionnée">
+                                    <span>
+                                        <IconButton
+                                            disabled={!canDelete || disableDeleteBouton}
+                                            onClick={handleOpenDialogConfirmDeleteAssocieRow}
+                                            variant="contained"
+                                            style={{
+                                                width: "35px",
+                                                height: "35px",
+                                                borderRadius: "2px",
+                                                borderColor: "transparent",
+                                                backgroundColor: initial.button_delete_color,
+                                                textTransform: "none",
+                                                outline: "none",
+                                            }}
+                                        >
+                                            <IoMdTrash
+                                                style={{ width: "50px", height: "50px", color: "white" }}
+                                            />
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
+                            </Stack>
 
-                        <Stack width={"100%"} height={"100%"} minHeight={"600px"}>
-                            <DataGrid
-                                columns={classificationColumns}
-                                rows={rows}
-                                disableMultipleSelection={DataGridStyle.disableMultipleSelection}
-                                disableColumnSelector={DataGridStyle.disableColumnSelector}
-                                disableDensitySelector={DataGridStyle.disableDensitySelector}
-                                localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
-                                disableRowSelectionOnClick
-                                disableSelectionOnClick={true}
-                                slots={{ toolbar: QuickFilter }}
-                                sx={{
-                                    ...DataGridStyle.sx,
-                                    '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
-                                        outline: 'none',
-                                        border: 'none',
-                                    },
-                                    '& .MuiDataGrid-virtualScroller': {
-                                        maxHeight: '100%',
-                                    },
-                                }}
-                                rowHeight={DataGridStyle.rowHeight}
-                                columnHeaderHeight={DataGridStyle.columnHeaderHeight}
-                                editMode='row'
-                                onRowClick={(e) => handleCellEditCommit(e.row)}
-                                onRowSelectionModelChange={ids => {
-                                    const single = Array.isArray(ids) && ids.length ? [ids[ids.length - 1]] : [];
-                                    setSelectedRow(single);
-                                    saveSelectedRow(single);
-                                    deselectRow(single);
-                                }}
-                                rowModesModel={rowModesModel}
-                                onRowModesModelChange={handleRowModesModelChange}
-                                onRowEditStop={handleRowEditStop}
-                                processRowUpdate={processRowUpdate}
-                                initialState={{
-                                    pagination: {
-                                        paginationModel: { page: 0, pageSize: 100 },
-                                    },
-                                }}
-                                pageSizeOptions={[50, 100]}
-                                pagination={DataGridStyle.pagination}
-                                checkboxSelection={DataGridStyle.checkboxSelection}
-                                columnVisibilityModel={{
-                                    id: false,
-                                }}
-                                rowSelectionModel={selectedRow}
-                                onRowEditStart={(params, event) => {
-                                    if (!selectedRow.length || selectedRow[0] !== params.id) {
-                                        event.defaultMuiPrevented = true;
-                                    }
-                                    if (selectedRow.includes(params.id)) {
-                                        setDisableAddRowBouton(true);
-                                        event.stopPropagation();
-
+                            <Stack width={"100%"} height={"100%"} minHeight={"600px"}>
+                                <DataGrid
+                                    apiRef={apiRef}
+                                    columns={classificationColumns}
+                                    rows={rows}
+                                    disableMultipleSelection={DataGridStyle.disableMultipleSelection}
+                                    disableColumnSelector={DataGridStyle.disableColumnSelector}
+                                    disableDensitySelector={DataGridStyle.disableDensitySelector}
+                                    localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                                    disableRowSelectionOnClick
+                                    disableSelectionOnClick={true}
+                                    slots={{ toolbar: QuickFilter }}
+                                    sx={{
+                                        ...DataGridStyle.sx,
+                                        '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+                                            outline: 'none',
+                                            border: 'none',
+                                        },
+                                        '& .MuiDataGrid-virtualScroller': {
+                                            maxHeight: '100%',
+                                        },
+                                    }}
+                                    rowHeight={DataGridStyle.rowHeight}
+                                    columnHeaderHeight={DataGridStyle.columnHeaderHeight}
+                                    editMode='row'
+                                    onRowClick={(e) => handleCellEditCommit(e.row)}
+                                    onRowSelectionModelChange={ids => {
+                                        const single = Array.isArray(ids) && ids.length ? [ids[ids.length - 1]] : [];
+                                        setSelectedRow(single);
+                                        saveSelectedRow(single);
+                                        deselectRow(single);
+                                    }}
+                                    rowModesModel={rowModesModel}
+                                    onRowModesModelChange={handleRowModesModelChange}
+                                    onRowEditStop={handleRowEditStop}
+                                    processRowUpdate={processRowUpdate}
+                                    initialState={{
+                                        pagination: {
+                                            paginationModel: { page: 0, pageSize: 100 },
+                                        },
+                                    }}
+                                    pageSizeOptions={[50, 100]}
+                                    pagination={DataGridStyle.pagination}
+                                    checkboxSelection={DataGridStyle.checkboxSelection}
+                                    columnVisibilityModel={{
+                                        id: false,
+                                    }}
+                                    rowSelectionModel={selectedRow}
+                                    onRowEditStart={(params, event) => {
                                         const rowId = params.id;
                                         const rowData = params.row;
+
+                                        const isNewRow = rowId < 0;
+
+                                        if (!canModify && !isNewRow) {
+                                            event.defaultMuiPrevented = true;
+                                            return;
+                                        }
+
+                                        event.stopPropagation();
+                                        setDisableAddRowBouton(true);
 
                                         formNewParam.setFieldValue("idClassification", rowId);
                                         formNewParam.setFieldValue("classe", rowData.classe ?? '');
@@ -638,13 +754,14 @@ export default function ClassificationSalariesComponent() {
                                         }));
 
                                         setDisableSaveBouton(false);
-                                    }
-                                }}
-                            />
+                                    }}
+                                    onCellKeyDown={handleCellKeyDown}
+                                />
+                            </Stack>
                         </Stack>
-                    </Stack>
-                </TabPanel>
-            </TabContext>
-        </Box>
+                    </TabPanel>
+                </TabContext>
+            </Box>
+        </>
     );
 }

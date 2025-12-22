@@ -1,7 +1,7 @@
 const bcrypt = require("bcrypt");
 const db = require("../../Models");
+const { sequelize } = require('../../Models');
 require('dotenv').config();
-const Sequelize = require('sequelize');
 
 const dossiers = db.dossiers;
 const dossierassocies = db.dossierassocies;
@@ -9,6 +9,21 @@ const dossierfiliales = db.dossierfiliales;
 const dossierDomBank = db.dombancaires;
 const pays = db.pays;
 const dossierplancomptable = db.dossierplancomptable;
+const devises = db.devises;
+
+const updateParDefautDevise = async (id_devise, id_dossier, id_compte) => {
+  await sequelize.transaction(async (t) => {
+    await devises.update({ par_defaut: false }, {
+      where: { id_compte, id_dossier },
+      transaction: t
+    });
+
+    await devises.update({ par_defaut: true }, {
+      where: { id: id_devise },
+      transaction: t
+    });
+  });
+}
 
 const getListePays = async (req, res) => {
   try {
@@ -106,12 +121,17 @@ const modifyingInfos = async (req, res) => {
       listeAssocies,
       listeFiliales,
       compteisi,
-      immo_amort_base_jours
+      immo_amort_base_jours,
+      portefeuille,
+      typecomptabilite,
+      devisepardefaut,
+      consolidation
     } = req.body;
 
     const modify = await dossiers.update(
       {
         id_compte: idCompte,
+        id_portefeuille: portefeuille,
         dossier: nomdossier,
         nif: nif,
         stat: stat,
@@ -140,12 +160,25 @@ const modifyingInfos = async (req, res) => {
         id_plancomptable: plancomptable,
         rcs: rcs,
         compteisi: compteisi,
-        immo_amort_base_jours: Number(immo_amort_base_jours) || 365
+        immo_amort_base_jours: Number(immo_amort_base_jours) || 365,
+        typecomptabilite: typecomptabilite,
+        consolidation
       },
       {
         where: { id: idDossier }
       }
     );
+
+    // await users.update(
+    //   {
+    //     id_portefeuille: Sequelize.fn('array_append', Sequelize.col('id_portefeuille'), 2)
+    //   },
+    //   {
+    //     where: { id: idCompte }
+    //   }
+    // );
+
+    await updateParDefautDevise(devisepardefaut, idDossier, idCompte);
 
     if (modify) {
       resData.state = true;
@@ -615,13 +648,13 @@ const updateAccountsLength = async (req, res) => {
         console.log(`Compte ignoré (numéro vide): id=${compte.id}, libelle=${compte.libelle}`);
         continue;
       }
-      
+
       let newCompte = currentCompte;
       let shouldUpdate = false;
 
       // Déterminer si c'est un compte standard ou auxiliaire
       const isCompteStandard = compte.nature === 'General' || compte.nature === 'Collectif';
-      
+
       const isCompteAuxiliaire = !isCompteStandard && currentCompte && (
         compte.nature === 'Aux' ||
         compte.nature === 'auxiliaire' ||
@@ -674,13 +707,13 @@ const updateAccountsLength = async (req, res) => {
       // Mettre à jour le compte si nécessaire
       if (shouldUpdate && newCompte !== currentCompte) {
         const updateData = { compte: newCompte };
-        
+
         // Pour les comptes standard, mettre à jour aussi la centralisation (baseaux)
         if (!isCompteAuxiliaire) {
           updateData.baseaux = newCompte;
           console.log(`Mise à jour centralisation: baseaux = ${newCompte}`);
         }
-        
+
         await dossierplancomptable.update(
           updateData,
           { where: { id: compte.id } }

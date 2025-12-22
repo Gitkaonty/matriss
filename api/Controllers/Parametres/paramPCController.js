@@ -58,6 +58,21 @@ const recupPc = async (req, res) => {
   }
 };
 
+const updateCompteAux = async (id_numcpt, baseaux_id, nature) => {
+  if (nature === 'Aux' && baseaux_id) {
+    const compteCollectif = await dossierPlanComptable.findByPk(baseaux_id);
+    if (!compteCollectif) return
+    await dossierPlanComptable.update({
+      baseaux: compteCollectif.compte,
+      baseaux_id
+    }, {
+      where: {
+        id: id_numcpt
+      }
+    })
+  }
+}
+
 const AddCptToPc = async (req, res) => {
   try {
     const {
@@ -87,10 +102,12 @@ const AddCptToPc = async (req, res) => {
       province,
       region,
       district,
-      commune
+      commune,
+      typecomptabilite
     } = req.body;
 
     // return console.log(req.body);
+    console.log('baseCptCollectif : ', baseCptCollectif);
 
     const DossierParam = await dossiers.findOne({
       where: {
@@ -198,12 +215,15 @@ const AddCptToPc = async (req, res) => {
           province: province,
           region: region,
           district: district,
-          commune: commune
+          commune: commune,
+          typecomptabilite
         });
 
         if (NewCptAdded.id) {
           await NewCptAdded.update({ baseaux_id: NewCptAdded.id });
         }
+
+        await updateCompteAux(NewCptAdded.id, baseCptCollectif, nature);
 
         //Enregistrer les compte de charges et TVA associés au compte
         if (listeCptChg.length > 0) {
@@ -322,12 +342,14 @@ const AddCptToPc = async (req, res) => {
           province: province,
           region: region,
           district: district,
-          commune: commune
+          commune: commune,
+          typecomptabilite
         });
 
         if (NewCptAdded.id) {
           await NewCptAdded.update({ baseaux_id: NewCptAdded.id });
         }
+        await updateCompteAux(NewCptAdded.id, baseCptCollectif, nature);
 
         //Enregistrer les compte de charges et TVA associés au compte
         if (listeCptChg.length > 0) {
@@ -447,12 +469,14 @@ const AddCptToPc = async (req, res) => {
           province: province,
           region: region,
           district: district,
-          commune: commune
+          commune: commune,
+          typecomptabilite
         });
 
         if (NewCptAdded.id) {
           await NewCptAdded.update({ baseaux_id: NewCptAdded.id });
         }
+        await updateCompteAux(NewCptAdded.id, baseCptCollectif, nature);
 
         //Enregistrer les compte de charges et TVA associés au compte
         if (listeCptChg.length > 0) {
@@ -569,12 +593,14 @@ const AddCptToPc = async (req, res) => {
           province: province,
           region: region,
           district: district,
-          commune: commune
+          commune: commune,
+          typecomptabilite
         });
 
         if (NewCptAdded.id) {
           await NewCptAdded.update({ baseaux_id: NewCptAdded.id });
         }
+        await updateCompteAux(NewCptAdded.id, baseCptCollectif, nature);
 
         //Enregistrer les compte de charges et TVA associés au compte
         if (listeCptChg.length > 0) {
@@ -706,7 +732,8 @@ const AddCptToPc = async (req, res) => {
           province: province,
           region: region,
           district: district,
-          commune: commune
+          commune: commune,
+          typecomptabilite
         };
 
         const NewCptAdded = await dossierPlanComptable.update(
@@ -717,6 +744,8 @@ const AddCptToPc = async (req, res) => {
             }
           }
         );
+        
+        await updateCompteAux(itemId, baseCptCollectif, nature);
 
         //Enregistrer les compte de charges et TVA associés au compte
         if (listeCptChg.length > 0) {
@@ -844,7 +873,8 @@ const AddCptToPc = async (req, res) => {
           province: province,
           region: region,
           district: district,
-          commune: commune
+          commune: commune,
+          typecomptabilite
         };
 
         const NewCptAdded = await dossierPlanComptable.update(
@@ -980,7 +1010,8 @@ const AddCptToPc = async (req, res) => {
           province: province,
           region: region,
           district: district,
-          commune: commune
+          commune: commune,
+          typecomptabilite
         };
 
         const NewCptAdded = await dossierPlanComptable.update(
@@ -1114,7 +1145,8 @@ const AddCptToPc = async (req, res) => {
           province: province,
           region: region,
           district: district,
-          commune: commune
+          commune: commune,
+          typecomptabilite
         };
 
         const NewCptAdded = await dossierPlanComptable.update(

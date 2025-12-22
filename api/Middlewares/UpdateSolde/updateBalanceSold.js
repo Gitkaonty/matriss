@@ -6,11 +6,34 @@ const codejournals = db.codejournals;
 const dossierPlanComptable = db.dossierplancomptable;
 const balances = db.balances;
 
-const updateSold = async (compte_id, dossier_id, exercice_id, listecompte, allCompte) => {
-    try {
-        let stateUpdate = false;
-        if (allCompte) {
+const updateNatureBalance = async (id_compte, id_dossier, id_exercice) => {
+    const dossierPlanComptableData = await dossierPlanComptable.findAll({
+        where: {
+            id_compte,
+            id_dossier
+        }
+    })
+    if (dossierPlanComptableData.length > 0) {
+        for (const dossierPc of dossierPlanComptableData) {
+            await balances.update({
+                nature: dossierPc.nature
+            }, {
+                where: {
+                    id_numcompte: dossierPc.id,
+                    id_dossier,
+                    id_compte,
+                    id_exercice
+                }
+            })
+        }
+    }
+}
 
+const updateSold = async (compte_id, dossier_id, exercice_id, listecompte, allCompte) => {
+    let stateUpdate = false;
+    try {
+        if (allCompte) {
+            await updateNatureBalance(compte_id, dossier_id, exercice_id);
             const existingBalances = await balances.findAll({
                 where: {
                     id_compte: compte_id,
@@ -118,7 +141,6 @@ const updateSold = async (compte_id, dossier_id, exercice_id, listecompte, allCo
                     type: db.Sequelize.QueryTypes.UPDATE
                 });
 
-            //mettre à jour le solde pour les comptes définit comme collectif
             await db.sequelize.query(`
                 UPDATE balances SET
                     mvtdebit = ROUND(
@@ -175,12 +197,81 @@ const updateSold = async (compte_id, dossier_id, exercice_id, listecompte, allCo
                     type: db.Sequelize.QueryTypes.UPDATE
                 });
 
+            const compteCollectif = await dossierPlanComptable.findAll({
+                where: {
+                    id_compte: compte_id,
+                    id_dossier: dossier_id,
+                    nature: 'Collectif'
+                }
+            });
+
+            if (compteCollectif.length > 0) {
+
+                const compteCollectifId = [...new Set(compteCollectif.map(val => Number(val.id)))];
+
+                for (const id_collectif of compteCollectifId) {
+
+                    const compteAuxilliaire = await dossierPlanComptable.findAll({
+                        where: {
+                            id_compte: compte_id,
+                            id_dossier: dossier_id,
+                            nature: 'Aux',
+                            baseaux_id: id_collectif
+                        }
+                    });
+
+                    if (compteAuxilliaire.length > 0) {
+
+                        const compteAuxId = [...new Set(compteAuxilliaire.map(val => Number(val.id)))];
+
+                        const balanceCompteAux = await balances.findAll({
+                            where: {
+                                id_numcompte: { [Op.in]: compteAuxId }
+                            }
+                        });
+
+                        if (balanceCompteAux.length > 0) {
+
+                            const totals = balanceCompteAux.reduce((acc, val) => {
+                                acc.total_mvtdebit += Number(val.mvtdebit) || 0;
+                                acc.total_mvtcredit += Number(val.mvtcredit) || 0;
+                                acc.total_soldedebit += Number(val.soldedebit) || 0;
+                                acc.total_soldecredit += Number(val.soldecredit) || 0;
+                                acc.total_valeur += Number(val.valeur) || 0;
+                                return acc;
+                            }, {
+                                total_mvtdebit: 0,
+                                total_mvtcredit: 0,
+                                total_soldedebit: 0,
+                                total_soldecredit: 0,
+                                total_valeur: 0
+                            });
+
+                            await balances.update(
+                                {
+                                    mvtdebit: totals.total_mvtdebit,
+                                    mvtcredit: totals.total_mvtcredit,
+                                    soldedebit: totals.total_soldedebit,
+                                    soldecredit: totals.total_soldecredit,
+                                    valeur: totals.total_valeur
+                                },
+                                {
+                                    where: { id_numcompte: id_collectif }
+                                }
+                            );
+                        }
+                    }
+                }
+            }
+
             stateUpdate = true;
         }
         return stateUpdate;
     } catch (error) {
+        stateUpdate = true;
         console.error("Erreur dans updateSold :", error.message);
         console.log(error);
+        return stateUpdate;
     }
 }
 

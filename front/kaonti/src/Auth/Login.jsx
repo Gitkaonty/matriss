@@ -24,10 +24,8 @@ const Login = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  //Envoi requete de connexion
   const { setAuth } = useAuth();
 
-  //Option de choix d'afficher ou non du mot de passe
   const [showPassword, setShowPassword] = useState(false);
 
   const handleClickShowPassword = () => setShowPassword((show) => !show);
@@ -52,7 +50,7 @@ const Login = () => {
       } else if (err.response?.status === 400) {
         toast.error('Veuillez insérer votre email et mot de passe correctement');
       } else if (err.response?.status === 401) {
-        toast.error('Unauthorized');
+        toast.error(err.response?.data?.message);
       } else {
         toast.error('Erreur de connexion');
       }

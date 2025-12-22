@@ -9,7 +9,7 @@ export default function SubMenuList({ list, navigatePath }) {
   const [fileId, setFileId] = useState(0);
   const location = useLocation();
   let idDossier;
-  
+
   useEffect(() => {
     idDossier = sessionStorage.getItem("fileId");
     setFileId(idDossier);

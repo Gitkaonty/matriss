@@ -11,15 +11,18 @@ import { init } from '../../../../../init';
 import axios from '../../../../../config/axios';
 import toast from 'react-hot-toast';
 import { DataGridStyle } from '../../../componentsTools/DatagridToolsStyle';
-import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes } from '@mui/x-data-grid';
+import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes, useGridApiRef } from '@mui/x-data-grid';
 import QuickFilter from '../../../componentsTools/DatagridToolsStyle';
 import { TfiSave } from 'react-icons/tfi';
 
 import { useFormik } from 'formik';
 import * as Yup from "yup";
 import PopupConfirmDelete from '../../popupConfirmDelete.jsx';
+import useAxiosPrivate from '../../../../../config/axiosPrivate.js';
 
-const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeId, setSelectedRowAxeId, isCaActive }) => {
+const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeId, setSelectedRowAxeId, isCaActive, canModify, canAdd, canDelete, canView }) => {
+    const apiRef = useGridApiRef();
+    const axiosPrivate = useAxiosPrivate();
     let initial = init[0];
     const [axesData, setAxesData] = useState([]);
 
@@ -169,10 +172,8 @@ const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeId, setSel
     };
 
     const handleEditClick = (id) => () => {
-        //réinitialiser les couleurs des champs
         setCodeValidationColor('transparent');
         setLibelleValidationColor('transparent');
-        //charger dans le formik les données de la ligne
         const selectedRowInfos = axesData?.filter((item) => item.id === id[0]);
 
         formNewParam.setFieldValue("id", selectedRowInfos[0]?.id ? selectedRowInfos[0]?.id : 0);
@@ -222,7 +223,7 @@ const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeId, setSel
 
             const dataToSend = { ...formNewParam.values, compteId: id_compte, fileId: id_dossier };
 
-            axios.post(`/paramCa/addOrUpdateAxes`, dataToSend).then((response) => {
+            axiosPrivate.post(`/paramCa/addOrUpdateAxes`, dataToSend).then((response) => {
                 const resData = response.data;
 
                 if (resData.state) {
@@ -252,12 +253,13 @@ const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeId, setSel
                 if (idToDelete < 0) {
                     setOpenDialogDeleteRow(false);
                     setAxesData(axesData.filter((row) => row.id !== idToDelete));
+                    toast.success('Axe supprimé avec succès');
                     return;
                 }
 
                 const dataToSend = { fileId: id_dossier, compteId: id_compte, idToDelete };
 
-                axios.post(`/paramCa/deleteAxes`, dataToSend).then((response) => {
+                axiosPrivate.post(`/paramCa/deleteAxes`, dataToSend).then((response) => {
                     const resData = response.data;
                     if (resData.state) {
                         setOpenDialogDeleteRow(false);
@@ -348,14 +350,71 @@ const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeId, setSel
             })
     }
 
+    const handleCellKeyDown = (params, event) => {
+        const api = apiRef.current;
+
+        const allCols = api.getAllColumns().filter(c => c.editable);
+        const sortedRowIds = api.getSortedRowIds();
+        const currentColIndex = allCols.findIndex(c => c.field === params.field);
+        const currentRowIndex = sortedRowIds.indexOf(params.id);
+
+        let nextColIndex = currentColIndex;
+        let nextRowIndex = currentRowIndex;
+
+        if (event.key === 'Tab' && !event.shiftKey) {
+            event.preventDefault();
+            nextColIndex = currentColIndex + 1;
+            if (nextColIndex >= allCols.length) {
+                nextColIndex = 0;
+                nextRowIndex = currentRowIndex + 1;
+            }
+        } else if (event.key === 'Tab' && event.shiftKey) {
+            event.preventDefault();
+            nextColIndex = currentColIndex - 1;
+            if (nextColIndex < 0) {
+                nextColIndex = allCols.length - 1;
+                nextRowIndex = currentRowIndex - 1;
+            }
+        } else if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            nextColIndex = currentColIndex + 1;
+            if (nextColIndex >= allCols.length) nextColIndex = allCols.length - 1;
+        } else if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            nextColIndex = currentColIndex - 1;
+            if (nextColIndex < 0) nextColIndex = 0;
+        }
+
+        const nextRowId = sortedRowIds[nextRowIndex];
+        const targetCol = allCols[nextColIndex];
+
+        if (!nextRowId || !targetCol) return;
+
+        try {
+            api.stopCellEditMode({ id: params.id, field: params.field });
+        } catch (err) {
+            console.warn('Erreur stopCellEditMode ignorée:', err);
+        }
+
+        setTimeout(() => {
+            const cellInput = document.querySelector(
+                `[data-id="${nextRowId}"] [data-field="${targetCol.field}"] input, 
+             [data-id="${nextRowId}"] [data-field="${targetCol.field}"] textarea`
+            );
+            if (cellInput) cellInput.focus();
+        }, 50);
+    };
+
     useEffect(() => {
-        handleGetAxes();
+        if (canView) {
+            handleGetAxes();
+        }
     }, [id_compte, id_dossier, isRefreshed])
 
     return (
         <>
             {
-                openDialogDeleteRow
+                openDialogDeleteRow && canDelete
                     ?
                     <PopupConfirmDelete
                         msg={"Voulez-vous vraiment supprimer la ligne sélectionnée ?"}
@@ -385,7 +444,7 @@ const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeId, setSel
                     <Tooltip title="Ajouter une ligne">
                         <Stack>
                             <IconButton
-                                disabled={disableAddRowBouton || !isCaActive}
+                                disabled={!canAdd || disableAddRowBouton || !isCaActive}
                                 variant="contained"
                                 onClick={handleOpenDialogAddNewRow}
                                 style={{
@@ -403,7 +462,7 @@ const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeId, setSel
                     <Tooltip title="Modifier la ligne sélectionnée">
                         <Stack>
                             <IconButton
-                                disabled={disableModifyBouton || !isCaActive}
+                                disabled={(!canModify && selectedRowId > 0) || disableModifyBouton || !isCaActive}
                                 variant="contained"
                                 onClick={handleEditClick(selectedRowId)}
                                 style={{
@@ -421,7 +480,7 @@ const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeId, setSel
                     <Tooltip title="Sauvegarder les modifications">
                         <Stack>
                             <IconButton
-                                disabled={disableSaveBouton || !formNewParam.isValid || !isCaActive}
+                                disabled={(!canAdd && !canModify) || disableSaveBouton || !formNewParam.isValid || !isCaActive}
                                 variant="contained"
                                 onClick={handleSaveClick(selectedRowId)}
                                 style={{
@@ -457,7 +516,7 @@ const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeId, setSel
                     <Tooltip title="Supprimer la ligne sélectionné">
                         <Stack>
                             <IconButton
-                                disabled={disableDeleteBouton || !isCaActive}
+                                disabled={!canDelete || disableDeleteBouton || !isCaActive}
                                 onClick={handleOpenDialogConfirmDeleteRow}
                                 variant="contained"
                                 style={{
@@ -480,6 +539,7 @@ const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeId, setSel
                     }}
                 >
                     <DataGrid
+                        apiRef={apiRef}
                         disableMultipleSelection={DataGridStyle.disableMultipleSelection}
                         disableColumnSelector={DataGridStyle.disableColumnSelector}
                         disableDensitySelector={DataGridStyle.disableDensitySelector}
@@ -489,7 +549,6 @@ const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeId, setSel
                         slots={{ toolbar: QuickFilter }}
                         sx={{
                             ...DataGridStyle.sx,
-                            // paddingTop: '30px',
                             '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
                                 outline: 'none',
                                 border: 'none',
@@ -533,36 +592,37 @@ const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeId, setSel
                         rowSelectionModel={selectedRowAxeId}
                         hideFooterSelectedRowCount
                         onRowEditStart={(params, event) => {
-                            if (!selectedRowAxeId.length || selectedRowAxeId[0] !== params.id) {
+                            const rowId = params.id;
+                            const rowData = params.row;
+
+                            const isNewRow = rowId < 0;
+
+                            if (!canModify && !isNewRow) {
                                 event.defaultMuiPrevented = true;
+                                return;
                             }
-                            if (selectedRowAxeId.includes(params.id)) {
-                                setDisableAddRowBouton(true);
-                                event.stopPropagation();
 
-                                const rowId = params.id;
-                                const rowData = params.row;
+                            event.stopPropagation();
 
-                                setCodeValidationColor('transparent');
-                                setLibelleValidationColor('transparent');
+                            setCodeValidationColor('transparent');
+                            setLibelleValidationColor('transparent');
 
-                                const newValues = {
-                                    ...formNewParam.values,
-                                    id: rowId ?? null,
-                                    code: rowData.code ?? '',
-                                    libelle: rowData.libelle ?? ''
-                                }
+                            formNewParam.setValues({
+                                ...formNewParam.values,
+                                id: rowId ?? null,
+                                code: rowData.code ?? '',
+                                libelle: rowData.libelle ?? ''
+                            });
 
-                                formNewParam.setValues(newValues);
+                            setRowModesModel((oldModel) => ({
+                                ...oldModel,
+                                [rowId]: { mode: GridRowModes.Edit },
+                            }));
 
-                                setRowModesModel((oldModel) => ({
-                                    ...oldModel,
-                                    [rowId]: { mode: GridRowModes.Edit },
-                                }));
-
-                                setDisableSaveBouton(false);
-                            }
+                            setDisableAddRowBouton(true);
+                            setDisableSaveBouton(false);
                         }}
+                        onCellKeyDown={handleCellKeyDown}
                     />
                 </Stack>
             </Box>

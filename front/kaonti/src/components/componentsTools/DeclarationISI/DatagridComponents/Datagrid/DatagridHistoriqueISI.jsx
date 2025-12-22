@@ -7,10 +7,12 @@ import { init } from '../../../../../../init';
 import PopupConfirmDelete from '../../../popupConfirmDelete';
 import axios from '../../../../../../config/axios';
 import toast from 'react-hot-toast';
+import useAxiosPrivate from '../../../../../../config/axiosPrivate';
 
 const initial = init[0];
 
-const DatagridHistoriqueISI = ({ columns, rows, DATAGRID_HEIGHT, setHistoriqueIsi }) => {
+const DatagridHistoriqueISI = ({ columns, rows, DATAGRID_HEIGHT, setHistoriqueIsi, canDelete }) => {
+    const axiosPrivate = useAxiosPrivate();
     const [selectedHistoriqueIds, setSelectedHistoriqueIds] = useState([]);
     const [showPopupConfirmDelete, setShowPopupConfirmDelete] = useState(false);
 
@@ -21,7 +23,7 @@ const DatagridHistoriqueISI = ({ columns, rows, DATAGRID_HEIGHT, setHistoriqueIs
 
     const handleDeleteRow = (value) => {
         if (value) {
-            axios.post('/declaration/isi/deleteSelectedHistoriqueIsi', { selectedHistoriqueIds })
+            axiosPrivate.post('/declaration/isi/deleteSelectedHistoriqueIsi', { selectedHistoriqueIds })
                 .then((response) => {
                     if (response?.data?.state) {
                         toast.success(response?.data?.message);
@@ -42,7 +44,7 @@ const DatagridHistoriqueISI = ({ columns, rows, DATAGRID_HEIGHT, setHistoriqueIs
     return (
         <>
             {
-                showPopupConfirmDelete ?
+                (showPopupConfirmDelete && canDelete) ?
                     <PopupConfirmDelete
                         msg={`Voulez-vous vraiment supprimer ${selectedHistoriqueIds.length > 1 ? 'les lignes sélectionnées ?' : 'la ligne sélectionnée ?'}`}
                         confirmationState={handleDeleteRow}
@@ -78,7 +80,7 @@ const DatagridHistoriqueISI = ({ columns, rows, DATAGRID_HEIGHT, setHistoriqueIs
                                 backgroundColor: initial.button_delete_color,
                             }}
                             onClick={handleOpenPopupDeleteHistorique}
-                            disabled={selectedHistoriqueIds.length === 0}
+                            disabled={!canDelete || selectedHistoriqueIds.length === 0}
                         >
                             <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
                         </IconButton>

@@ -1,4 +1,3 @@
-import React from 'react';
 import { useState, useEffect } from 'react';
 import {
     Typography, Stack, Paper, RadioGroup, FormControlLabel, Radio, FormControl,
@@ -32,8 +31,9 @@ import { DataGridStyle } from '../../../componentsTools/DatagridToolsStyle';
 import PopupConfirmDelete from '../../../componentsTools/popupConfirmDelete';
 import PopupImportModelePlanComptable from '../../administration/import/PopupImportModelePlanComptable';
 import { format } from 'date-fns';
-import { FaGlobeAmericas } from "react-icons/fa";
 import { DetailsInformation } from '../../../componentsTools/DetailsInformation';
+import usePermission from '../../../../hooks/usePermission';
+import useAxiosPrivate from '../../../../../config/axiosPrivate';
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialogContent-root': {
@@ -53,6 +53,9 @@ const columnHeaderModel = ParamPCModele_column.columnHeaderModel;
 const columnHeaderAddNewRowModelDetail = ParamPCModele_column.columnHeaderAddNewRowModelDetail;
 
 export default function ParamPlanComptableModele() {
+    const { canAdd, canModify, canDelete, canView } = usePermission();
+    const axiosPrivate = useAxiosPrivate();
+
     let initial = init[0];
     const { auth } = useAuth();
 
@@ -128,7 +131,9 @@ export default function ParamPlanComptableModele() {
     }
 
     useEffect(() => {
-        GetListePlanComptableModele();
+        if (canView) {
+            GetListePlanComptableModele();
+        }
     }, [compteId]);
 
     //AJOUT D'UN NOUVEAU MODELE DE PLAN COMPTABLE
@@ -178,7 +183,7 @@ export default function ParamPlanComptableModele() {
                 .min(1, 'Veuillez ajouter au moin un caractère pour le nom du modèle')
         }),
         onSubmit: (values) => {
-            axios.post(`/paramPlanComptableModele/createModel`, values).then((response) => {
+            axiosPrivate.post(`/paramPlanComptableModele/createModel`, values).then((response) => {
                 const resData = response.data;
                 GetListePlanComptableModele();
                 handleCloseNewModel();
@@ -196,7 +201,7 @@ export default function ParamPlanComptableModele() {
                 if (modelSelectedRow.pardefault) {
                     toast.error("Vous ne pouvez pas supprimer un modèle plan comptable natif de kaonty.");
                 } else {
-                    axios.post(`/paramPlanComptableModele/deleteModel`, { rowId }).then((response) => {
+                    axiosPrivate.post(`/paramPlanComptableModele/deleteModel`, { rowId }).then((response) => {
                         const resData = response.data;
                         GetListePlanComptableModele();
                         setOpenDialogDeleteModel(false);
@@ -513,7 +518,7 @@ export default function ParamPlanComptableModele() {
         if (modelSelectedRow.pardefault) {
             toast.error("Vous ne pouvez pas modifier les comptes associés au modèle de plan comptable natif de kaonty.");
         } else {
-            axios.post(`/paramPlanComptableModele/AddCptTodetailModel`, values).then((response) => {
+            axiosPrivate.post(`/paramPlanComptableModele/AddCptTodetailModel`, values).then((response) => {
                 const resData = response.data;
                 if (resData.state === true) {
                     showModelDetail(modelId);
@@ -858,7 +863,7 @@ export default function ParamPlanComptableModele() {
                 if (modelSelectedRow.pardefault) {
                     toast.error("Vous ne pouvez pas supprimer des comptes associés au modèle de plan comptable natif de kaonty.");
                 } else {
-                    axios.post(`/paramPlanComptableModele/deleteItemPc`, { listId, modelId, compteId }).then((response) => {
+                    axiosPrivate.post(`/paramPlanComptableModele/deleteItemPc`, { listId, modelId, compteId }).then((response) => {
                         const resData = response.data;
                         showModelDetail(modelId);
                         setOpenDialogDeleteItemsPc(false);
@@ -921,6 +926,7 @@ export default function ParamPlanComptableModele() {
 
                         <Tooltip title="Ajouter un nouveau modèle">
                             <IconButton
+                                disabled={!canAdd}
                                 onClick={handleClickOpenNewModel}
                                 variant="contained"
                                 style={{
@@ -937,6 +943,7 @@ export default function ParamPlanComptableModele() {
                         <Tooltip title="Supprimer le modèle sélectionné">
                             <span>
                                 <IconButton
+                                    disabled={!canDelete}
                                     onClick={handleClickOpenDialogDeleteModel}
                                     variant="contained"
                                     style={{

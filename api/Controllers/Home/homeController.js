@@ -1,6 +1,7 @@
 //importing modules
 const bcrypt = require("bcrypt");
 const db = require("../../Models");
+const { Op } = require("sequelize");
 
 const dossier = db.dossiers;
 const dossierassocies = db.dossierassocies;
@@ -13,6 +14,10 @@ const dossierpcdetailcptchg = db.dossierpcdetailcptchg;
 const dossierpcdetailcpttva = db.dossierpcdetailcpttva;
 const dombancaires = db.dombancaires;
 const pays = db.pays;
+const portefeuille = db.portefeuille;
+const users = db.users;
+const devises = db.devises;
+const consolidationDossier = db.consolidationDossier;
 
 dombancaires.belongsTo(pays, { as: 'tablepays', foreignKey: 'pays', targetKey: 'code' });
 
@@ -22,31 +27,62 @@ function isValidDate(date) {
 
 const recupListDossier = async (req, res) => {
   try {
-    const compteId = req.params.compteId;
+    const { userId } = req.query;
+    const { compteId } = req.params;
 
     let resData = {
       state: false,
       msg: '',
       fileList: []
-    }
+    };
+
+    const userData = await users.findByPk(userId, {
+      attributes: ['id_portefeuille']
+    });
+
+    const portefeuillesIds = userData.id_portefeuille;
 
     const list = await dossier.findAll({
       where: {
-        id_compte: compteId
+        id_compte: compteId,
+        id_portefeuille: {
+          [Op.overlap]: portefeuillesIds
+        }
       }
     });
 
     if (list) {
+      const dossiersAvecPortefeuille = await Promise.all(
+        list.map(async d => {
+          const nomsPortefeuilles = await portefeuille.findAll({
+            where: {
+              id: d.id_portefeuille
+            },
+            attributes: ['nom']
+          });
+
+          const nomsString = nomsPortefeuilles.map(p => p.nom).join(', ');
+
+          return {
+            ...d.dataValues,
+            portefeuille: nomsString
+          };
+        })
+      );
+
       resData.state = true;
-      resData.fileList = list;
-    } else {
-      resData.state = false;
-      resData.msg = 'une erreur est survenue lors du traitement.';
+      resData.fileList = dossiersAvecPortefeuille;
     }
 
     return res.json(resData);
+
   } catch (error) {
     console.log(error);
+    return res.status(500).json({
+      state: false,
+      msg: 'Erreur serveur',
+      error: error.message
+    });
   }
 };
 
@@ -93,12 +129,18 @@ const createNewFile = async (req, res) => {
       province,
       region,
       district,
-      commune
+      commune,
+      portefeuille,
+      typecomptabilite,
+      devisepardefaut,
+      listeConsolidation,
+      consolidation
     } = req.body;
 
     if (action === 'new') {
       const newFile = await dossier.create({
         id_compte: idCompte,
+        id_portefeuille: portefeuille,
         dossier: nomdossier,
         nif: nif,
         stat: stat,
@@ -129,7 +171,9 @@ const createNewFile = async (req, res) => {
         region: region,
         district: district,
         commune: commune,
-          });
+        typecomptabilite,
+        consolidation
+      });
 
       //copie la liste des associés
       if (newFile.id) {
@@ -182,6 +226,32 @@ const createNewFile = async (req, res) => {
               enactivite: item.enactivite
             });
           }
+        }
+      }
+
+      // Création consolidation dossier
+      if (newFile.id) {
+        if (listeConsolidation.length > 0) {
+          for (const item of listeConsolidation) {
+            await consolidationDossier.create({
+              id_compte: idCompte,
+              id_dossier: newFile.id,
+              id_dossier_autre: item.idDossier
+            })
+          }
+        }
+      }
+
+      // Ajout de devise si pour MGA
+      if (newFile.id) {
+        if (devisepardefaut === 'MGA') {
+          await devises.create({
+            id_dossier: newFile.id,
+            id_compte: idCompte,
+            code: 'MGA',
+            libelle: 'Madagascar',
+            par_defaut: true
+          })
         }
       }
 
@@ -588,10 +658,47 @@ const updateCentrefisc = async (req, res) => {
   }
 }
 
+const checkAccessDossier = async (req, res) => {
+  try {
+    const dossierId = Number(req.params.id);
+    const compteId = Number(req.user.compteId);
+
+    const user = await users.findOne({
+      where: {
+        compte_id: compteId
+      },
+      attributes: ['id_portefeuille']
+    })
+
+    if (!user || !user.id_portefeuille || user.id_portefeuille.length === 0) {
+      return res.status(200).json({ state: false });
+    }
+
+    const dossierData = await dossier.findOne({
+      where: {
+        id: dossierId,
+        id_compte: compteId
+      }
+    }, {
+      attributes: ['id_portefeuille']
+    });
+
+    if (!dossierData) return res.status(404).json({ state: false });
+
+    const hasAccess = user.id_portefeuille.some(id => dossierData.id_portefeuille.includes(id));
+
+    return res.status(200).json({ state: hasAccess });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ state: false, message: 'Erreur serveur' });
+  }
+};
+
 module.exports = {
   recupListDossier,
   createNewFile,
   deleteCreatedFile,
   informationsFile,
   updateCentrefisc,
+  checkAccessDossier
 };

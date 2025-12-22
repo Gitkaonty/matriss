@@ -31,7 +31,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                 padding: '16px',
                 borderRadius: '8px',
               },
-              duration: 4000, // Durée par défaut
+              duration: 4000,
               success: {
                 duration: 5000,
                 style: {

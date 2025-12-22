@@ -6,7 +6,7 @@ import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import FormulaireTvaCollapsibleTable from '../../../componentsTools/tva/table/FormulaireTvaCollapsibleTable';
 
-export default function FormulaireTvaUnified({ fileInfos, fileId, compteId, selectedExerciceId, mois, annee, computeTrigger, refreshCounter, onAnomaliesChange }) {
+export default function FormulaireTvaUnified({ fileInfos, fileId, compteId, selectedExerciceId, mois, annee, computeTrigger, refreshCounter, onAnomaliesChange, canView }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [anomsLoading, setAnomsLoading] = useState(false);
@@ -48,16 +48,20 @@ export default function FormulaireTvaUnified({ fileInfos, fileId, compteId, sele
     368: [320, 330],
     370: { terms: [{ id: 368, w: 365 }] },
     375: [310, 366, 370],
-        // Nouvelles formules alignées backend
+    // Nouvelles formules alignées backend
     400: { terms: [{ id: 375, w: 1 }, { id: 275, w: -1 }] },
-    700: { terms: [
-      { id: 275, w: 1 }, { id: 620, w: 1 },
-      { id: 375, w: -1 }, { id: 579, w: -1 }, { id: 589, w: -1 }, { id: 635, w: -1 }, { id: 640, w: -1 }, { id: 660, w: -1 }
-    ] },
-    701: { terms: [
-      { id: 610, w: 1 }, { id: 400, w: 1 }, { id: 579, w: 1 }, { id: 589, w: 1 }, { id: 640, w: 1 },
-      { id: 620, w: -1 }, { id: 630, w: -1 }, { id: 670, w: -1 }
-    ] },
+    700: {
+      terms: [
+        { id: 275, w: 1 }, { id: 620, w: 1 },
+        { id: 375, w: -1 }, { id: 579, w: -1 }, { id: 589, w: -1 }, { id: 635, w: -1 }, { id: 640, w: -1 }, { id: 660, w: -1 }
+      ]
+    },
+    701: {
+      terms: [
+        { id: 610, w: 1 }, { id: 400, w: 1 }, { id: 579, w: 1 }, { id: 589, w: 1 }, { id: 640, w: 1 },
+        { id: 620, w: -1 }, { id: 630, w: -1 }, { id: 670, w: -1 }
+      ]
+    },
   }), []);
   const getCurrentFormulas = () => formulas;
 
@@ -147,7 +151,7 @@ export default function FormulaireTvaUnified({ fileInfos, fileId, compteId, sele
               if (kind === '') kind = null; else kind = kind.toLowerCase();
               dbSeen.add(`${code}::${kind ?? ''}`);
             }
-            const compSeen = new Set(uniqueList.map(it => `${Number(it.code)||0}::${(it.kind ?? '').toString().trim().toLowerCase()}`));
+            const compSeen = new Set(uniqueList.map(it => `${Number(it.code) || 0}::${(it.kind ?? '').toString().trim().toLowerCase()}`));
             const sameSize = dbSeen.size === compSeen.size;
             let equal = sameSize;
             if (equal) {
@@ -179,7 +183,7 @@ export default function FormulaireTvaUnified({ fileInfos, fileId, compteId, sele
                     setAnomsCount(cnt2);
                     setAnomsList(list2);
                     if (typeof onAnomaliesChange === 'function') onAnomaliesChange({ count: cnt2, list: list2 });
-                  } catch {}
+                  } catch { }
                 } else {
                   console.warn('[FormTVA] persist anomalies failed (non-bloquant)', e);
                 }
@@ -231,7 +235,9 @@ export default function FormulaireTvaUnified({ fileInfos, fileId, compteId, sele
 
   // Fetch anomalies whenever the context/period changes
   useEffect(() => {
-    fetchAnomalies();
+    if (canView) {
+      fetchAnomalies();
+    }
   }, [fetchAnomalies]);
 
   // Fetch form after any context/period trigger changes
@@ -260,7 +266,7 @@ export default function FormulaireTvaUnified({ fileInfos, fileId, compteId, sele
   //     reloadFormRows();
   //   }
   // }, [computeTrigger, mois, annee]);
-  
+
   async function reloadFormRows() {
     try {
       setLoading(true);
@@ -274,22 +280,22 @@ export default function FormulaireTvaUnified({ fileInfos, fileId, compteId, sele
 
   const applyFormulas = (rws) => {
     if (!Array.isArray(rws)) return [];
-    
+
     let currentRows = [...rws];
     let hasChanges = true;
     let iterations = 0;
     const maxIterations = 5; // Éviter les boucles infinies
-    
+
     // 🔁 Répéter les calculs jusqu'à ce qu'il n'y ait plus de changements (calculs en cascade)
     while (hasChanges && iterations < maxIterations) {
       hasChanges = false;
       iterations++;
-      
+
       const byId = new Map(currentRows.map(r => [r.id, r]));
       const newRows = currentRows.map(r => {
         const def = getCurrentFormulas()[r.id];
         const norm = normalizeFormula(def);
-        
+
         if (norm && Array.isArray(norm.sources) && norm.sources.length > 0) {
           let sum = 0;
           if (Array.isArray(norm.terms)) {
@@ -298,20 +304,20 @@ export default function FormulaireTvaUnified({ fileInfos, fileId, compteId, sele
             sum = norm.sources.reduce((acc, sid) => acc + (Number(byId.get(sid)?.montant) || 0), 0);
           }
           const value = sum * (norm.factor || 1);
-          
+
           // ✅ Vérifier si la valeur a changé
           if (Math.abs(value - (r.montant || 0)) > 0.01) {
             hasChanges = true;
           }
-          
+
           return { ...r, montant: value, _computed: true };
         }
         return { ...r, _computed: false };
       });
-      
+
       currentRows = newRows;
     }
-    
+
     return currentRows;
   };
 
@@ -324,16 +330,16 @@ export default function FormulaireTvaUnified({ fileInfos, fileId, compteId, sele
     try {
       setLoading(true);
       const url = `/declaration/tva/formulaire/${fileId}/${compteId}/${selectedExerciceId}`;
-      try { console.log('[FRONT][FORM LIST] url:', url, 'params:', { mois, annee }); } catch {}
+      try { console.log('[FRONT][FORM LIST] url:', url, 'params:', { mois, annee }); } catch { }
       const { data } = await axios.get(url, { params: { mois, annee } });
       if (data?.state) {
         let list = Array.isArray(data.list) ? data.list : (data.list ? [data.list] : []);
         if (!list || list.length === 0) {
           try {
             const initUrl = `/declaration/tva/formulaire/initialize/${fileId}/${compteId}/${selectedExerciceId}`;
-            try { console.log('[FRONT][FORM INIT] url:', initUrl, 'params:', { mois, annee }); } catch {}
+            try { console.log('[FRONT][FORM INIT] url:', initUrl, 'params:', { mois, annee }); } catch { }
             await axios.post(initUrl, null, { params: { mois, annee } });
-            try { console.log('[FRONT][FORM LIST-RELOAD] url:', url, 'params:', { mois, annee }); } catch {}
+            try { console.log('[FRONT][FORM LIST-RELOAD] url:', url, 'params:', { mois, annee }); } catch { }
             const { data: data2 } = await axios.get(url, { params: { mois, annee } });
             list = data2?.state ? (Array.isArray(data2.list) ? data2.list : (data2.list ? [data2.list] : [])) : [];
           } catch (err) {
@@ -387,30 +393,32 @@ export default function FormulaireTvaUnified({ fileInfos, fileId, compteId, sele
 
   useEffect(() => {
     // Debounce les chargements pour laisser le temps à mois/annee de se mettre à jour après un changement d'exercice
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-      debounceTimerRef.current = null;
-    }
-    debounceTimerRef.current = setTimeout(() => {
-      // Si paramètres manquants, on ne tente rien
-      if (!fileId || !compteId || !selectedExerciceId || !mois || !annee) return;
-      // Lancer les chargements
-      (async () => {
-        setLoading(true);
-        try {
-          await fetchFormulaire();
-          await fetchAnomalies();
-        } finally {
-          setLoading(false);
-        }
-      })();
-    }, 250);
-    return () => {
+    if (canView) {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
         debounceTimerRef.current = null;
       }
-    };
+      debounceTimerRef.current = setTimeout(() => {
+        // Si paramètres manquants, on ne tente rien
+        if (!fileId || !compteId || !selectedExerciceId || !mois || !annee) return;
+        // Lancer les chargements
+        (async () => {
+          setLoading(true);
+          try {
+            await fetchFormulaire();
+            await fetchAnomalies();
+          } finally {
+            setLoading(false);
+          }
+        })();
+      }, 250);
+      return () => {
+        if (debounceTimerRef.current) {
+          clearTimeout(debounceTimerRef.current);
+          debounceTimerRef.current = null;
+        }
+      };
+    }
   }, [fileInfos?.centrefisc, fileId, compteId, selectedExerciceId, mois, annee, computeTrigger, refreshCounter]);
 
 
@@ -427,81 +435,81 @@ export default function FormulaireTvaUnified({ fileInfos, fileId, compteId, sele
     setEditRowData(row ? { ...row } : {});
   };
 
-// --- Lorsqu'on modifie une ligne ---
-const onEditChange = (field, value) => {
-  setEditRowData(prev => ({ ...prev, [field]: value }));
+  // --- Lorsqu'on modifie une ligne ---
+  const onEditChange = (field, value) => {
+    setEditRowData(prev => ({ ...prev, [field]: value }));
 
-  if (field === 'montant' && editRowId) {
-    const num = parseFloat(value);
-    const safe = isNaN(num) ? 0 : num;
-
-    setRows(prev => {
-      // Met à jour la ligne modifiée
-      const updatedRows = prev.map(r =>
-        r.id === editRowId ? { ...r, montant: safe } : r
-      );
-
-      // 🔁 Recalcule immédiatement toutes les lignes dépendantes (400, 700, 701, etc.)
-      const recomputed = applyFormulas(updatedRows);
-
-      return recomputed;
-    });
-  }
-};
-
-const onEditSave = async () => {
-  if (!editRowId) return;
-  const newVal = parseFloat(editRowData.montant);
-  const safeVal = isNaN(newVal) ? 0 : newVal;
-
-  try {
-    const payload = {
-      id_dossier: fileId,
-      id_compte: compteId,
-      id_exercice: selectedExerciceId,
-      montant: safeVal,
-      mois,
-      annee,
-    };
-
-    const { data } = await axios.put(`/declaration/tva/formulaire/${editRowId}`, payload);
-
-    if (data?.state) {
-      toast.success('Montant mis à jour');
+    if (field === 'montant' && editRowId) {
+      const num = parseFloat(value);
+      const safe = isNaN(num) ? 0 : num;
 
       setRows(prev => {
-        // Mise à jour immédiate côté client
+        // Met à jour la ligne modifiée
         const updatedRows = prev.map(r =>
-          r.id === editRowId ? { ...r, montant: safeVal } : r
+          r.id === editRowId ? { ...r, montant: safe } : r
         );
 
-        // 🔁 Recalcule toutes les lignes dépendantes
+        // 🔁 Recalcule immédiatement toutes les lignes dépendantes (400, 700, 701, etc.)
         const recomputed = applyFormulas(updatedRows);
 
         return recomputed;
       });
-
-      setEditRowId(null);
-      setEditRowData({});
-      setRowsBackup(null);
-
-      // ⏳ Petit délai avant de refetch le formulaire complet
-      setTimeout(async () => {
-        try {
-          await reloadFormRows(); // fetchFormulaire + fetchAnomalies
-        } catch (err) {
-          console.error('[FormTVA] reload after save failed', err);
-        }
-      }, 500); // 500ms, tu peux ajuster selon ton serveur
-
-    } else {
-      toast.error(data?.msg || 'Échec mise à jour');
     }
-  } catch (e) {
-    console.error('[FormTVA] update error', e);
-    toast.error('Erreur serveur lors de la mise à jour');
-  }
-};
+  };
+
+  const onEditSave = async () => {
+    if (!editRowId) return;
+    const newVal = parseFloat(editRowData.montant);
+    const safeVal = isNaN(newVal) ? 0 : newVal;
+
+    try {
+      const payload = {
+        id_dossier: fileId,
+        id_compte: compteId,
+        id_exercice: selectedExerciceId,
+        montant: safeVal,
+        mois,
+        annee,
+      };
+
+      const { data } = await axios.put(`/declaration/tva/formulaire/${editRowId}`, payload);
+
+      if (data?.state) {
+        toast.success('Montant mis à jour');
+
+        setRows(prev => {
+          // Mise à jour immédiate côté client
+          const updatedRows = prev.map(r =>
+            r.id === editRowId ? { ...r, montant: safeVal } : r
+          );
+
+          // 🔁 Recalcule toutes les lignes dépendantes
+          const recomputed = applyFormulas(updatedRows);
+
+          return recomputed;
+        });
+
+        setEditRowId(null);
+        setEditRowData({});
+        setRowsBackup(null);
+
+        // ⏳ Petit délai avant de refetch le formulaire complet
+        setTimeout(async () => {
+          try {
+            await reloadFormRows(); // fetchFormulaire + fetchAnomalies
+          } catch (err) {
+            console.error('[FormTVA] reload after save failed', err);
+          }
+        }, 500); // 500ms, tu peux ajuster selon ton serveur
+
+      } else {
+        toast.error(data?.msg || 'Échec mise à jour');
+      }
+    } catch (e) {
+      console.error('[FormTVA] update error', e);
+      toast.error('Erreur serveur lors de la mise à jour');
+    }
+  };
 
 
   const onEditCancel = () => {

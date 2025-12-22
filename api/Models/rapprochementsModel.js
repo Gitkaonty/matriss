@@ -3,14 +3,32 @@ module.exports = (sequelize, DataTypes) => {
     id_compte: {
       type: DataTypes.BIGINT,
       allowNull: false,
+      references: {
+        model: 'userscomptes',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     },
     id_dossier: {
       type: DataTypes.BIGINT,
       allowNull: false,
+      references: {
+        model: 'dossiers',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     },
     id_exercice: {
       type: DataTypes.BIGINT,
       allowNull: false,
+      references: {
+        model: 'exercices',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     },
     pc_id: {
       type: DataTypes.BIGINT,

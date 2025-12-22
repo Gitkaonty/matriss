@@ -67,6 +67,9 @@ import ExportEbilanButton from '../../../componentsTools/DeclarationEbilan/Butto
 import ExportEbilanButtonAll from '../../../componentsTools/DeclarationEbilan/ButtonEbilanExport/ExportEbilanButton/ExportEbilanButtonAll';
 
 import ImportEbilanButton from '../../../componentsTools/DeclarationEbilan/ButtonEbilanExport/ImportEbilanButton/ImportEbilanButton';
+import usePermission from '../../../../hooks/usePermission';
+
+import useAxiosPrivate from '../../../../../config/axiosPrivate';
 
 const associeColumn = [
     {
@@ -411,7 +414,10 @@ const bhiapcColumn = [
         label: 'Montant charge',
         minWidth: 200,
         align: 'right',
-        format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        format: (value) => {
+            const v = Math.abs(value) < 1e-8 ? 0 : value;
+            return v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        },
         isnumber: true
     },
     {
@@ -419,7 +425,10 @@ const bhiapcColumn = [
         label: 'Montant bénéf.',
         minWidth: 200,
         align: 'right',
-        format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        format: (value) => {
+            const v = Math.abs(value) < 1e-8 ? 0 : value;
+            return v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        },
         isnumber: true
     },
 ];
@@ -1112,9 +1121,12 @@ const neColumn = [
 ];
 
 export default function DeclarationEbilan() {
+    const { canAdd, canModify, canDelete, canView } = usePermission();
+    const axiosPrivate = useAxiosPrivate();
+
     //Valeur du listbox choix exercice ou situation-----------------------------------------------------
     let tabEbilan = ""
-    if (typeof window !== undefined) {
+    if (typeof window !== 'undefined') {
         tabEbilan = localStorage.getItem('tabEbilan');
     }
     const [value, setValue] = useState(tabEbilan || "1");
@@ -1960,8 +1972,9 @@ export default function DeclarationEbilan() {
     }
 
     // Api pour générer les tables auto
-    const generateEbilanAuto = (val) => {
+    const generateEbilanAuto = async (val) => {
         if (val) {
+            setIsLoading(true);
             if (value === "4") {
                 // BILAN
             } else if (value === "5") {
@@ -1978,7 +1991,7 @@ export default function DeclarationEbilan() {
                 // DRF
             } else if (value === "11") {
                 // BHIAPC
-                axios.post('/declaration/ebilan/generateBhiapcAuto', {
+                await axios.post('/declaration/ebilan/generateBhiapcAuto', {
                     id_dossier: Number(fileId),
                     id_exercice: Number(selectedExerciceId),
                     id_compte: Number(compteId)
@@ -2000,7 +2013,7 @@ export default function DeclarationEbilan() {
                 // DA
             } else if (value === "14") {
                 // DP
-                axios.post('/declaration/ebilan/generateDpAuto', {
+                await axios.post('/declaration/ebilan/generateDpAuto', {
                     id_dossier: Number(fileId),
                     id_exercice: Number(selectedExerciceId),
                     id_compte: Number(compteId)
@@ -2028,6 +2041,7 @@ export default function DeclarationEbilan() {
                 // NE
             }
             setOpenDialogGenerateAuto(false);
+            setIsLoading(false);
             recupRubriqueGlobal(compteId, fileId, selectedExerciceId);
         } else {
             setOpenDialogGenerateAuto(false);
@@ -2072,7 +2086,7 @@ export default function DeclarationEbilan() {
                 setSelectedPeriodeChoiceId(0);
                 setSelectedPeriodeId(exerciceNId[0].id);
 
-                recupRubriqueGlobal(compteId, id, exerciceNId[0].id);
+                canView ? recupRubriqueGlobal(compteId, id, exerciceNId[0].id) : null;
                 infosVerrouillage(compteId, id, exerciceNId[0].id);
             } else {
                 setListeExercice([]);
@@ -2142,7 +2156,7 @@ export default function DeclarationEbilan() {
         if (formData.state) {
             const exerciceId = selectedPeriodeId;
             const tableau = 'DA';
-            axios.post(`/declaration/ebilan/addmodifyTableau`, { compteId, fileId, exerciceId, tableau, formData }).then((response) => {
+            axiosPrivate.post(`/declaration/ebilan/addmodifyTableau`, { compteId, fileId, exerciceId, tableau, formData }).then((response) => {
                 const resData = response.data;
                 if (resData.state) {
                     const data = resData.liste;
@@ -2203,7 +2217,7 @@ export default function DeclarationEbilan() {
     const deleteOneRow = (value) => {
         if (value) {
             const exerciceId = selectedPeriodeId;
-            axios.post(`/declaration/ebilan/deleteTableOneRow`, { compteId, fileId, exerciceId, infoRowToDelete }).then((response) => {
+            axiosPrivate.post(`/declaration/ebilan/deleteTableOneRow`, { compteId, fileId, exerciceId, infoRowToDelete }).then((response) => {
                 const resData = response.data;
                 if (resData.state) {
                     const tableau = infoRowToDelete.tableau;
@@ -2276,62 +2290,11 @@ export default function DeclarationEbilan() {
     const deleteAllRow = (value) => {
         if (value) {
             const exerciceId = selectedPeriodeId;
-            axios.post(`/declaration/ebilan/deleteTableAllRow`, { compteId, fileId, exerciceId, tableauToDeleteAllRow }).then((response) => {
+            axiosPrivate.post(`/declaration/ebilan/deleteTableAllRow`, { compteId, fileId, exerciceId, tableauToDeleteAllRow }).then((response) => {
                 const resData = response.data;
                 if (resData.state) {
-                    switch (tableauToDeleteAllRow) {
-                        case 'BHIAPC':
-                            setBhiapcData(resData.liste);
-                            break;
-                        case 'MP':
-                            setMpData(resData.liste);
-                            break;
-                        case 'DA': {
-                            const data = resData.liste;
-                            const groupedData = data.reduce((acc, item) => {
-                                acc[item.rubriques_poste] = acc[item.rubriques_poste] || [];
-                                acc[item.rubriques_poste].push(item);
-                                return acc;
-                            }, {});
-                            const rows = Object.entries(groupedData).map(([key, items]) => ({ rubriques_poste: key, items }))
-                                .sort((a, b) => a.rubriques_poste.localeCompare(b.rubriques_poste));
-                            setDaData(rows);
-                            break;
-                        }
-                        case 'DP': {
-                            const data = resData.liste;
-                            const grouped = data.reduce((acc, item) => {
-                                acc[item.nature_prov] = acc[item.nature_prov] || [];
-                                acc[item.nature_prov].push(item);
-                                return acc;
-                            }, {});
-                            const rows = Object.entries(grouped).map(([key, items]) => ({ nature_prov: key, items }))
-                                .sort((a, b) => a.nature_prov.localeCompare(b.nature_prov));
-                            setDpData(rows);
-                            break;
-                        }
-                        case 'EIAFNC': {
-                            const data = resData.liste;
-                            const grouped = data.reduce((acc, item) => {
-                                acc[item.rubriques_poste] = acc[item.rubriques_poste] || [];
-                                acc[item.rubriques_poste].push(item);
-                                return acc;
-                            }, {});
-                            const rows = Object.entries(grouped).map(([key, items]) => ({ rubriques_poste: key, items }))
-                                .sort((a, b) => a.rubriques_poste.localeCompare(b.rubriques_poste));
-                            setEiafncData(rows);
-                            break;
-                        }
-                        case 'SE':
-                            setSeData(resData.liste);
-                            break;
-                        case 'NE':
-                            setNeData(resData.liste);
-                            break;
-                        default:
-                            console.warn("Tableau non reconnu :", tableau);
-                    }
                     toast.success(resData.msg);
+                    recupRubriqueGlobal(compteId, fileId, exerciceId);
                     setConfirmDeleteAllRow(false);
                 } else {
                     toast.error(resData.msg);
@@ -2416,7 +2379,6 @@ export default function DeclarationEbilan() {
                 });
 
                 setDaData(rows);
-                setDaData(rows);
 
                 // //données pour DP
                 const data2 = resData.dp;
@@ -2453,7 +2415,6 @@ export default function DeclarationEbilan() {
                     return 0;
                 });
 
-                setDpData(rows2);
                 setDpData(rows2);
 
                 // //données pour EIAFNC
@@ -2500,6 +2461,21 @@ export default function DeclarationEbilan() {
                 //RECUPERATION INFOS ANOMALIES
                 //==================================================================
                 setDetailAnombilan(resData.detailAnomBilan);
+                setDetailAnomcrn(resData.detailAnomCrn);
+                setDetailAnomcrf(resData.detailAnomCrf);
+                setDetailAnomtftd(resData.detailAnomTftd);
+                setDetailAnomtfti(resData.detailAnomTfti);
+                setDetailAnomevcp(resData.detailAnomEvcp);
+                setDetailAnomdrf(resData.detailAnomDrf);
+                setDetailAnombhiapc(resData.detailAnomBhiapc);
+                setDetailAnommp(resData.detailAnomMp);
+                setDetailAnomda(resData.detailAnomDa);
+                setDetailAnomdp(resData.detailAnomDp);
+                setDetailAnomeiafnc(resData.detailAnomEiafnc);
+                setDetailAnomsad(resData.detailAnomSad);
+                setDetailAnomsdr(resData.detailAnomSdr);
+                setDetailAnomse(resData.detailAnomSe);
+
                 setNbrAnomalieBILAN(resData.etatglobal.find((item) => item.code === 'BILAN')?.nbranomalie);
                 setNbrAnomalieCRN(resData.etatglobal.find((item) => item.code === 'CRN')?.nbranomalie);
                 setNbrAnomalieCRF(resData.etatglobal.find((item) => item.code === 'CRF')?.nbranomalie);
@@ -2751,7 +2727,7 @@ export default function DeclarationEbilan() {
         if (formData.state) {
             const exerciceId = selectedPeriodeId;
             const tableau = 'BHIAPC';
-            axios.post(`/declaration/ebilan/addmodifyTableau`, { compteId, fileId, exerciceId, tableau, formData }).then((response) => {
+            axiosPrivate.post(`/declaration/ebilan/addmodifyTableau`, { compteId, fileId, exerciceId, tableau, formData }).then((response) => {
                 const resData = response.data;
                 if (resData.state) {
                     setBhiapcData(resData.liste);
@@ -2770,7 +2746,7 @@ export default function DeclarationEbilan() {
         if (formData.state) {
             const exerciceId = selectedPeriodeId;
             const tableau = 'MP';
-            axios.post(`/declaration/ebilan/addmodifyTableau`, { compteId, fileId, exerciceId, tableau, formData }).then((response) => {
+            axiosPrivate.post(`/declaration/ebilan/addmodifyTableau`, { compteId, fileId, exerciceId, tableau, formData }).then((response) => {
                 const resData = response.data;
                 if (resData.state) {
                     setMpData(resData.liste);
@@ -2789,7 +2765,7 @@ export default function DeclarationEbilan() {
         if (formData.state) {
             const exerciceId = selectedPeriodeId;
             const tableau = 'DP';
-            axios.post(`/declaration/ebilan/addmodifyTableau`, { compteId, fileId, exerciceId, tableau, formData }).then((response) => {
+            axiosPrivate.post(`/declaration/ebilan/addmodifyTableau`, { compteId, fileId, exerciceId, tableau, formData }).then((response) => {
                 const resData = response.data;
                 if (resData.state) {
                     const data2 = resData.liste;
@@ -2850,7 +2826,7 @@ export default function DeclarationEbilan() {
         if (formData.state) {
             const exerciceId = selectedPeriodeId;
             const tableau = 'EIAFNC';
-            axios.post(`/declaration/ebilan/addmodifyTableau`, { compteId, fileId, exerciceId, tableau, formData }).then((response) => {
+            axiosPrivate.post(`/declaration/ebilan/addmodifyTableau`, { compteId, fileId, exerciceId, tableau, formData }).then((response) => {
                 const resData = response.data;
                 if (resData.state) {
                     const data3 = resData.liste;
@@ -2906,7 +2882,7 @@ export default function DeclarationEbilan() {
         if (formData.state) {
             const exerciceId = selectedPeriodeId;
             const tableau = 'SE';
-            axios.post(`/declaration/ebilan/addmodifyTableau`, { compteId, fileId, exerciceId, tableau, formData }).then((response) => {
+            axiosPrivate.post(`/declaration/ebilan/addmodifyTableau`, { compteId, fileId, exerciceId, tableau, formData }).then((response) => {
                 const resData = response.data;
                 if (resData.state) {
                     setSeData(resData.liste);
@@ -2925,7 +2901,7 @@ export default function DeclarationEbilan() {
         if (formData.state) {
             const exerciceId = selectedPeriodeId;
             const tableau = 'NE';
-            axios.post(`/declaration/ebilan/addmodifyTableau`, { compteId, fileId, exerciceId, tableau, formData }).then((response) => {
+            axiosPrivate.post(`/declaration/ebilan/addmodifyTableau`, { compteId, fileId, exerciceId, tableau, formData }).then((response) => {
                 const resData = response.data;
                 if (resData.state) {
                     setNeData(resData.liste);
@@ -3065,8 +3041,17 @@ export default function DeclarationEbilan() {
     }, [updateCalculEtatfinancier.state]);
 
     return (
-        <Box>
-            {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
+        <>
+
+            {
+                noFile
+                    ?
+                    <PopupTestSelectedFile
+                        confirmationState={sendToHome}
+                    />
+                    :
+                    null
+            }
             {
                 showTableRefresh ?
                     <PopupActionConfirm
@@ -3077,20 +3062,122 @@ export default function DeclarationEbilan() {
                     :
                     null
             }
-            {confirmDeleteOneRow ? <PopupConfirmDelete msg={'Voulez-vous vraiement supprimer la ligne sélectionnée?'} confirmationState={deleteOneRow} /> : null}
-            {confirmDeleteAllRow ? <PopupConfirmDelete msg={'Voulez-vous vraiement supprimer toutes les lignes du tableau?'} confirmationState={deleteAllRow} /> : null}
-            {confirmShowAnomalie ? <PopupDetailAnomalie title={tableToRefresh} rows={listeAnomalie} confirmationState={closeDetailAnomalie} /> : null}
-
-            {showFormBHIAPC ? <PopupModifBHIAPC choix={choixActionBHIAPC} confirmationState={AddOrModifyRowBHIAPC} data={rowToModifyBHIAPC} /> : null}
-            {showFormMP ? <PopupModifMP choix={choixActionMP} confirmationState={AddOrModifyRowMP} data={rowToModifyMP} /> : null}
-            {showFormDA ? <PopupModifDA choix={choixActionDA} confirmationState={AddOrModifyRowDA} data={rowToModifyDA} /> : null}
-            {showFormDP ? <PopupModifDP choix={choixActionDP} confirmationState={AddOrModifyRowDP} data={rowToModifyDP} /> : null}
-            {showFormEIAFNC ? <PopupModifEIAFNC choix={choixActionEIAFNC} confirmationState={AddOrModifyRowEIAFNC} data={rowToModifyEIAFNC} /> : null}
-            {showFormSE ? <PopupModifSE choix={choixActionSE} confirmationState={AddOrModifyRowSE} data={rowToModifySE} /> : null}
-            {showFormNE ? <PopupModifNE compteId={compteId} fileId={fileId} exerciceId={selectedPeriodeId} choix={choixActionNE} confirmationState={AddOrModifyRowNE} data={rowToModifyNE} /> : null}
+            {
+                (confirmDeleteOneRow && canDelete)
+                    ?
+                    <PopupConfirmDelete
+                        msg={'Voulez-vous vraiement supprimer la ligne sélectionnée?'}
+                        confirmationState={deleteOneRow}
+                    />
+                    :
+                    null
+            }
+            {
+                (confirmDeleteAllRow && canDelete)
+                    ?
+                    <PopupConfirmDelete
+                        msg={'Voulez-vous vraiement supprimer toutes les lignes du tableau?'}
+                        confirmationState={deleteAllRow}
+                    />
+                    :
+                    null
+            }
 
             {
-                showPopupImportCsv ?
+                confirmShowAnomalie
+                    ?
+                    <PopupDetailAnomalie
+                        title={tableToRefresh}
+                        rows={listeAnomalie}
+                        confirmationState={closeDetailAnomalie}
+                    />
+                    :
+                    null
+            }
+            {
+                showFormBHIAPC && (canAdd || canDelete)
+                    ?
+                    <PopupModifBHIAPC
+                        choix={choixActionBHIAPC}
+                        confirmationState={AddOrModifyRowBHIAPC}
+                        data={rowToModifyBHIAPC}
+                    />
+                    :
+                    null
+            }
+
+            {
+                showFormMP && (canAdd || canDelete)
+                    ?
+                    <PopupModifMP
+                        choix={choixActionMP}
+                        confirmationState={AddOrModifyRowMP}
+                        data={rowToModifyMP}
+                    />
+                    :
+                    null
+            }
+            {
+                showFormDA && (canAdd || canDelete)
+                    ?
+                    <PopupModifDA
+                        choix={choixActionDA}
+                        confirmationState={AddOrModifyRowDA}
+                        data={rowToModifyDA}
+                    />
+                    :
+                    null
+            }
+            {
+                showFormDP && (canAdd || canDelete)
+                    ?
+                    <PopupModifDP
+                        choix={choixActionDP}
+                        confirmationState={AddOrModifyRowDP}
+                        data={rowToModifyDP}
+                    />
+                    :
+                    null
+            }
+            {
+                showFormEIAFNC && (canAdd || canDelete)
+                    ?
+                    <PopupModifEIAFNC
+                        choix={choixActionEIAFNC}
+                        confirmationState={AddOrModifyRowEIAFNC}
+                        data={rowToModifyEIAFNC}
+                    />
+                    :
+                    null
+            }
+            {
+                showFormSE && (canAdd || canDelete)
+                    ?
+                    <PopupModifSE
+                        choix={choixActionSE}
+                        confirmationState={AddOrModifyRowSE}
+                        data={rowToModifySE}
+                    />
+                    :
+                    null
+            }
+            {
+                showFormNE && (canAdd || canDelete)
+                    ?
+                    <PopupModifNE
+                        compteId={compteId}
+                        fileId={fileId}
+                        exerciceId={selectedPeriodeId}
+                        choix={choixActionNE}
+                        confirmationState={AddOrModifyRowNE}
+                        data={rowToModifyNE}
+                    />
+                    :
+                    null
+            }
+            {
+                showPopupImportCsv
+                    ?
                     <PopupImportToCsv
                         type={value}
                         closePopup={handleClosePopupImport}
@@ -3102,1942 +3189,2073 @@ export default function DeclarationEbilan() {
                     :
                     null
             }
-
             {
-                openDialogGenerateAuto ? <PopupConfirmDelete
-                    msg={`Voulez-vous vraiment générer automatiquement les ${getPopupTitle(value)} ? Toutes les anciennes données seront supprimées.`}
-                    confirmationState={generateEbilanAuto}
-                    type={"Generer"}
-                /> : null
+                (openDialogGenerateAuto && canDelete) ?
+                    <PopupActionConfirm
+                        msg={`Voulez-vous vraiment actualiser les calculs pour le tableau du ${getPopupTitle(value)} ?`}
+                        confirmationState={generateEbilanAuto}
+                        isLoading={isLoading}
+                    />
+                    :
+                    null
             }
+            <Box>
+                <TabContext value={"1"}>
+                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                        <TabList aria-label="lab API tabs example" style={{ textTransform: 'none', outline: 'none', border: 'none', }}>
+                            <Tab
+                                style={{
+                                    textTransform: 'none',
+                                    outline: 'none',
+                                    border: 'none',
+                                    margin: -5
+                                }}
+                                label={InfoFileStyle(fileInfos?.dossier)} value="1"
+                            />
+                        </TabList>
+                    </Box>
+                    <TabPanel value="1" style={{ height: '100%' }}>
+                        <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
+                            <Typography variant='h6' sx={{ color: "black" }} align='left'>Déclaration - Ebilan</Typography>
 
-            <TabContext value={"1"}>
-                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                    <TabList aria-label="lab API tabs example" style={{ textTransform: 'none', outline: 'none', border: 'none', }}>
-                        <Tab
-                            style={{
-                                textTransform: 'none',
-                                outline: 'none',
-                                border: 'none',
-                                margin: -5
-                            }}
-                            label={InfoFileStyle(fileInfos?.dossier)} value="1"
-                        />
-                    </TabList>
-                </Box>
-                <TabPanel value="1" style={{ height: '100%' }}>
-                    <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
-                        <Typography variant='h6' sx={{ color: "black" }} align='left'>Déclaration - Ebilan</Typography>
+                            <Stack width={"100%"} height={"80px"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "20px" }}>
+                                <Stack
+                                    direction={'row'}
+                                >
+                                    <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
+                                        <InputLabel id="demo-simple-select-standard-label">Exercice:</InputLabel>
+                                        <Select
+                                            labelId="demo-simple-select-standard-label"
+                                            id="demo-simple-select-standard"
+                                            value={selectedExerciceId}
+                                            label={"valSelect"}
+                                            onChange={(e) => handleChangeExercice(e.target.value)}
+                                            sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                            MenuProps={{
+                                                disableScrollLock: true
+                                            }}
+                                        >
+                                            {listeExercice.map((option) => (
+                                                <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
+                                            ))
+                                            }
+                                        </Select>
+                                    </FormControl>
 
-                        <Stack width={"100%"} height={"80px"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "20px" }}>
-                            <Stack
-                                direction={'row'}
-                            >
-                                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                                    <InputLabel id="demo-simple-select-standard-label">Exercice:</InputLabel>
-                                    <Select
-                                        labelId="demo-simple-select-standard-label"
-                                        id="demo-simple-select-standard"
-                                        value={selectedExerciceId}
-                                        label={"valSelect"}
-                                        onChange={(e) => handleChangeExercice(e.target.value)}
-                                        sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                        MenuProps={{
-                                            disableScrollLock: true
-                                        }}
-                                    >
-                                        {listeExercice.map((option) => (
-                                            <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                                        ))
-                                        }
-                                    </Select>
-                                </FormControl>
+                                    <FormControl variant="standard" sx={{ m: 1, minWidth: 150 }}>
+                                        <InputLabel id="demo-simple-select-standard-label">Période</InputLabel>
+                                        <Select
+                                            labelId="demo-simple-select-standard-label"
+                                            id="demo-simple-select-standard"
+                                            value={selectedPeriodeChoiceId}
+                                            label={"valSelect"}
+                                            onChange={(e) => handleChangePeriode(e.target.value)}
+                                            sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                            MenuProps={{
+                                                disableScrollLock: true
+                                            }}
+                                        >
+                                            <MenuItem value={0}>Toutes</MenuItem>
+                                            <MenuItem value={1}>Situations</MenuItem>
+                                        </Select>
+                                    </FormControl>
 
-                                <FormControl variant="standard" sx={{ m: 1, minWidth: 150 }}>
-                                    <InputLabel id="demo-simple-select-standard-label">Période</InputLabel>
-                                    <Select
-                                        labelId="demo-simple-select-standard-label"
-                                        id="demo-simple-select-standard"
-                                        value={selectedPeriodeChoiceId}
-                                        label={"valSelect"}
-                                        onChange={(e) => handleChangePeriode(e.target.value)}
-                                        sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                        MenuProps={{
-                                            disableScrollLock: true
-                                        }}
-                                    >
-                                        <MenuItem value={0}>Toutes</MenuItem>
-                                        <MenuItem value={1}>Situations</MenuItem>
-                                    </Select>
-                                </FormControl>
+                                    <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
+                                        <InputLabel id="demo-simple-select-standard-label">Du</InputLabel>
+                                        <Select
+                                            labelId="demo-simple-select-standard-label"
+                                            id="demo-simple-select-standard"
+                                            value={selectedPeriodeId}
+                                            label={"valSelect"}
+                                            onChange={(e) => handleChangeDateIntervalle(e.target.value)}
+                                            sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                            MenuProps={{
+                                                disableScrollLock: true
+                                            }}
+                                        >
+                                            {listeSituation?.map((option) => (
+                                                <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
+                                            ))
+                                            }
+                                        </Select>
+                                    </FormControl>
+                                </Stack>
+                                {
+                                    !["1", "2", "3"].includes(value) && listeExercice && listeExercice.length > 0 && selectedExerciceId && selectedExerciceId !== 0 && (
+                                        <ExportEbilanButtonAll
+                                            exportAllToPdf={() => exportAllFile("PDF")}
+                                            exportAllToExcel={() => exportAllFile("EXCEL")}
+                                            exportAllToXML={() => exportAllFile("XML")}
+                                        />
+                                    )
+                                }
 
-                                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                                    <InputLabel id="demo-simple-select-standard-label">Du</InputLabel>
-                                    <Select
-                                        labelId="demo-simple-select-standard-label"
-                                        id="demo-simple-select-standard"
-                                        value={selectedPeriodeId}
-                                        label={"valSelect"}
-                                        onChange={(e) => handleChangeDateIntervalle(e.target.value)}
-                                        sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                        MenuProps={{
-                                            disableScrollLock: true
-                                        }}
-                                    >
-                                        {listeSituation?.map((option) => (
-                                            <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                                        ))
-                                        }
-                                    </Select>
-                                </FormControl>
                             </Stack>
-                            {
-                                !["1", "2", "3"].includes(value) && listeExercice && listeExercice.length > 0 && selectedExerciceId && selectedExerciceId !== 0 && (
-                                    <ExportEbilanButtonAll
-                                        exportAllToPdf={() => exportAllFile("PDF")}
-                                        exportAllToExcel={() => exportAllFile("EXCEL")}
-                                        exportAllToXML={() => exportAllFile("XML")}
-                                    />
-                                )
-                            }
 
-                        </Stack>
+                            <Box sx={{ width: '100%', typography: 'body1' }}>
+                                <TabContext value={value}>
+                                    <Box sx={{ borderBottom: 1, borderColor: 'transparent' }}>
+                                        <TabList onChange={handleChangeTAB} aria-label="lab API tabs example" variant='scrollable'>
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="infos société" value="1" />
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="actionnaires" value="2" />
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="dom. bancaire" value="3" />
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="bilan" value="4" />
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="crn" value="5" />
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="crf" value="6" />
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="tftd" value="7" />
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="tfti" value="8" />
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="evcp" value="9" />
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="drf" value="10" />
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="bhiapc" value="11" />
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="mp" value="12" />
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="da" value="13" />
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="dp" value="14" />
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="eiafnc" value="15" />
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="sad" value="16" />
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="sdr" value="17" />
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="se" value="18" />
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="note" value="19" />
+                                        </TabList>
+                                    </Box>
 
-                        <Box sx={{ width: '100%', typography: 'body1' }}>
-                            <TabContext value={value}>
-                                <Box sx={{ borderBottom: 1, borderColor: 'transparent' }}>
-                                    <TabList onChange={handleChangeTAB} aria-label="lab API tabs example" variant='scrollable'>
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="infos société" value="1" />
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="actionnaires" value="2" />
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="dom. bancaire" value="3" />
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="bilan" value="4" />
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="crn" value="5" />
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="crf" value="6" />
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="tftd" value="7" />
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="tfti" value="8" />
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="evcp" value="9" />
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="drf" value="10" />
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="bhiapc" value="11" />
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="mp" value="12" />
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="da" value="13" />
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="dp" value="14" />
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="eiafnc" value="15" />
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="sad" value="16" />
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="sdr" value="17" />
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="se" value="18" />
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="note" value="19" />
-                                    </TabList>
-                                </Box>
+                                    <TabPanel value="1">
+                                        <Stack
+                                            width={"100%"}
+                                            height={"100%"}
+                                            spacing={3}
+                                            alignItems={"flex-start"}
+                                            alignContent={"flex-start"}
+                                            justifyContent={"stretch"}
+                                        >
+                                            <Stack width={"100%"} height={"20px"} spacing={1} alignItems={"center"}
+                                                alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                                <Typography variant='h6' sx={{ color: "black" }} align='center'>Infos société</Typography>
+                                            </Stack>
 
-                                <TabPanel value="1">
-                                    <Stack
-                                        width={"100%"}
-                                        height={"100%"}
-                                        spacing={3}
-                                        alignItems={"flex-start"}
-                                        alignContent={"flex-start"}
-                                        justifyContent={"stretch"}
-                                    >
-                                        <Stack width={"100%"} height={"20px"} spacing={1} alignItems={"center"}
-                                            alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                            <Typography variant='h6' sx={{ color: "black" }} align='center'>Infos société</Typography>
-                                        </Stack>
-
-                                        <Card>
-                                            <CardActionArea
-                                                sx={{
-                                                    width: '80vw',
-                                                    height: '400px',
-                                                    '&[data-active]': {
-                                                        backgroundColor: 'action.selected',
-                                                        '&:hover': {
-                                                            backgroundColor: 'action.selectedHover',
+                                            <Card>
+                                                <CardActionArea
+                                                    sx={{
+                                                        width: '80vw',
+                                                        height: '400px',
+                                                        '&[data-active]': {
+                                                            backgroundColor: 'action.selected',
+                                                            '&:hover': {
+                                                                backgroundColor: 'action.selectedHover',
+                                                            },
                                                         },
-                                                    },
-                                                    border: 'none',
-                                                    '&:focus': {
-                                                        outline: 'none',
-                                                    },
-                                                    '&:focus-visible': {
-                                                        outline: 'none',
-                                                    },
-                                                    '&:active': {
-                                                        outline: 'none',
                                                         border: 'none',
-                                                        boxShadow: 'none',
-                                                    },
-                                                }}
-                                            >
-                                                <CardContent sx={{ height: '100%' }}>
-                                                    <Typography variant="h5" fontWeight="normal" gutterBottom>
-                                                        {fileInfos.raisonsociale}
-                                                    </Typography>
-
-                                                    <Divider sx={{ mb: 2 }} />
-
-                                                    <Stack spacing={1}>
-                                                        <Box display="flex" alignItems="center" gap={1}>
-                                                            <BsCreditCard2FrontFill color={theme.palette.primary.main} />
-                                                            <Typography variant="body1">
-                                                                nif : {fileInfos.nif}
-                                                            </Typography>
-                                                        </Box>
-
-                                                        <Box display="flex" alignItems="center" gap={1}>
-                                                            <BsCreditCard2FrontFill color={theme.palette.primary.main} />
-                                                            <Typography variant="body1">
-                                                                N° Statistique : {fileInfos.stat}
-                                                            </Typography>
-                                                        </Box>
-
-                                                        <Box display="flex" alignItems="center" gap={1}>
-                                                            <FaLocationDot color={theme.palette.primary.main} />
-                                                            <Typography variant="body1">
-                                                                Adresse : {fileInfos.adresse}
-                                                            </Typography>
-                                                        </Box>
-                                                    </Stack>
-                                                </CardContent>
-                                            </CardActionArea>
-                                        </Card>
-                                    </Stack>
-                                </TabPanel>
-
-                                <TabPanel value="2">
-                                    <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
-                                        alignContent={"flex-start"} justifyContent={"stretch"} >
-                                        <Stack width={"100%"} height={"20px"} spacing={1} alignItems={"center"}
-                                            alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                            <Typography variant='h6' sx={{ color: "black" }} align='center'>Liste des actionnaires</Typography>
-                                        </Stack>
-
-                                        <Stack
-                                            width={"100%"}
-                                            height={"50vh"}
-                                            alignItems={"start"}
-                                            style={{ overflow: "auto" }}
-                                        >
-                                            <VirtualTableEbilan refreshTable={setUpdateCalculEtatfinancier} columns={associeColumn} rows={associeData} noCollapsible={true} />
-                                        </Stack>
-                                        {/* <TableListeActionnaireModel rows={rows} key={"ListeActionnaire"} /> */}
-                                    </Stack>
-                                </TabPanel>
-
-                                <TabPanel value="3">
-                                    <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
-                                        alignContent={"flex-start"} justifyContent={"stretch"} >
-                                        <Stack width={"100%"} height={"20px"} spacing={1} alignItems={"center"}
-                                            alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                            <Typography variant='h6' sx={{ color: "black" }} align='center'>Renseignement sur les domiciliations bancaires</Typography>
-                                        </Stack>
-                                        <Stack
-                                            width={"100%"}
-                                            height={"50vh"}
-                                            alignItems={"start"}
-                                            style={{ overflow: "auto" }}
-                                        >
-                                            <VirtualTableEbilan refreshTable={setUpdateCalculEtatfinancier} columns={domBankColumn} rows={domBankData} noCollapsible={true} />
-                                        </Stack>
-                                    </Stack>
-                                </TabPanel>
-
-                                {/* BILAN */}
-                                <TabPanel value="4">
-                                    <Stack width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"}
-                                        alignContent={"flex-start"} justifyContent={"stretch"}
-                                    >
-                                        <Stack width={"100%"} height={"20px"} spacing={1} alignItems={"center"}
-                                            alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                            <Typography variant='h6' sx={{ color: "black" }} align='center'>Bilan</Typography>
-                                        </Stack>
-
-                                        <Stack width={"100%"} height={"100%"} spacing={0} alignItems={"center"} alignContent={"center"}
-                                            direction={"row"} style={{ marginLeft: "0px", marginTop: "00px" }}>
-
-                                            <Stack width={"30%"} height={"30px"} spacing={2} alignItems={"left"} alignContent={"left"}
-                                                direction={"row"} justifyContent={"left"}
-                                            >
-                                                <ButtonGroup
-                                                    disableElevation
-                                                    variant="contained"
-                                                    aria-label="Disabled button group"
+                                                        '&:focus': {
+                                                            outline: 'none',
+                                                        },
+                                                        '&:focus-visible': {
+                                                            outline: 'none',
+                                                        },
+                                                        '&:active': {
+                                                            outline: 'none',
+                                                            border: 'none',
+                                                            boxShadow: 'none',
+                                                        },
+                                                    }}
                                                 >
-                                                    <Button
-                                                        onClick={() => choixAffichageBilan('actif')}
-                                                        variant={buttonActifVariant}
-                                                        style={{ borderRadius: "0", textTransform: 'none', outline: 'none', width: 75 }}
-                                                    >
-                                                        Actif
-                                                    </Button>
-                                                    <Button
-                                                        onClick={() => choixAffichageBilan('passif')}
-                                                        variant={buttonPassifVariant}
-                                                        style={{ borderRadius: "0", textTransform: 'none', outline: 'none', width: 75 }}
-                                                    >
-                                                        Passif
-                                                    </Button>
-                                                </ButtonGroup>
+                                                    <CardContent sx={{ height: '100%' }}>
+                                                        <Typography variant="h5" fontWeight="normal" gutterBottom>
+                                                            {fileInfos.raisonsociale}
+                                                        </Typography>
+
+                                                        <Divider sx={{ mb: 2 }} />
+
+                                                        <Stack spacing={1}>
+                                                            <Box display="flex" alignItems="center" gap={1}>
+                                                                <BsCreditCard2FrontFill color={theme.palette.primary.main} />
+                                                                <Typography variant="body1">
+                                                                    nif : {fileInfos.nif}
+                                                                </Typography>
+                                                            </Box>
+
+                                                            <Box display="flex" alignItems="center" gap={1}>
+                                                                <BsCreditCard2FrontFill color={theme.palette.primary.main} />
+                                                                <Typography variant="body1">
+                                                                    N° Statistique : {fileInfos.stat}
+                                                                </Typography>
+                                                            </Box>
+
+                                                            <Box display="flex" alignItems="center" gap={1}>
+                                                                <FaLocationDot color={theme.palette.primary.main} />
+                                                                <Typography variant="body1">
+                                                                    Adresse : {fileInfos.adresse}
+                                                                </Typography>
+                                                            </Box>
+                                                        </Stack>
+                                                    </CardContent>
+                                                </CardActionArea>
+                                            </Card>
+                                        </Stack>
+                                    </TabPanel>
+
+                                    <TabPanel value="2">
+                                        <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
+                                            alignContent={"flex-start"} justifyContent={"stretch"} >
+                                            <Stack width={"100%"} height={"20px"} spacing={1} alignItems={"center"}
+                                                alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                                <Typography variant='h6' sx={{ color: "black" }} align='center'>Liste des actionnaires</Typography>
                                             </Stack>
 
-                                            <Stack width={"70%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                                direction={"row"} justifyContent={"right"}>
-                                                <Tooltip title="Liste des anomalies">
-                                                    <IconButton
-                                                        onClick={() => showAnomalie('BILAN')}
-                                                        style={{
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
-                                                    >
-                                                        <Badge badgeContent={nbrAnomalieBILAN} >
-                                                            <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
+                                            <Stack
+                                                width={"100%"}
+                                                height={"50vh"}
+                                                alignItems={"start"}
+                                                style={{ overflow: "auto" }}
+                                            >
+                                                <VirtualTableEbilan refreshTable={setUpdateCalculEtatfinancier} columns={associeColumn} rows={associeData} noCollapsible={true} />
+                                            </Stack>
+                                            {/* <TableListeActionnaireModel rows={rows} key={"ListeActionnaire"} /> */}
+                                        </Stack>
+                                    </TabPanel>
 
-                                                <Tooltip title="Liste des articles associés au formulaire">
-                                                    <IconButton
-                                                        style={{
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
-                                                    >
-                                                        <Badge badgeContent={12} color="success">
-                                                            <PiArticleThin style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Actualiser les calculs">
-                                                    <IconButton
-                                                        onClick={refreshBILAN}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrBilan ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <ExportEbilanButton
-                                                    exportToExcel={() => exportFile("EXCEL")}
-                                                    exportToPdf={() => exportFile("PDF")}
-                                                    value={value}
-                                                />
-
-                                                <Tooltip title={verrBilan ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
-                                                    <IconButton
-                                                        onClick={lockTableBILAN}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "2px", borderColor: "transparent",
-                                                            backgroundColor: verrBilan ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
-                                                    >
-                                                        {verrBilan
-                                                            ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        }
-                                                    </IconButton>
-                                                </Tooltip>
+                                    <TabPanel value="3">
+                                        <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
+                                            alignContent={"flex-start"} justifyContent={"stretch"} >
+                                            <Stack width={"100%"} height={"20px"} spacing={1} alignItems={"center"}
+                                                alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                                <Typography variant='h6' sx={{ color: "black" }} align='center'>Renseignement sur les domiciliations bancaires</Typography>
+                                            </Stack>
+                                            <Stack
+                                                width={"100%"}
+                                                height={"50vh"}
+                                                alignItems={"start"}
+                                                style={{ overflow: "auto" }}
+                                            >
+                                                <VirtualTableEbilan refreshTable={setUpdateCalculEtatfinancier} columns={domBankColumn} rows={domBankData} noCollapsible={true} />
                                             </Stack>
                                         </Stack>
+                                    </TabPanel>
 
-                                        {showBilan === 'actif'
-                                            ? <Stack
+                                    {/* BILAN */}
+                                    <TabPanel value="4">
+                                        <Stack width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"}
+                                            alignContent={"flex-start"} justifyContent={"stretch"}
+                                        >
+                                            <Stack width={"100%"} height={"20px"} spacing={1} alignItems={"center"}
+                                                alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                                <Typography variant='h6' sx={{ color: "black" }} align='center'>Bilan</Typography>
+                                            </Stack>
+
+                                            <Stack width={"100%"} height={"100%"} spacing={0} alignItems={"center"} alignContent={"center"}
+                                                direction={"row"} style={{ marginLeft: "0px", marginTop: "00px" }}>
+
+                                                <Stack width={"30%"} height={"30px"} spacing={2} alignItems={"left"} alignContent={"left"}
+                                                    direction={"row"} justifyContent={"left"}
+                                                >
+                                                    <ButtonGroup
+                                                        disableElevation
+                                                        variant="contained"
+                                                        aria-label="Disabled button group"
+                                                    >
+                                                        <Button
+                                                            onClick={() => choixAffichageBilan('actif')}
+                                                            variant={buttonActifVariant}
+                                                            style={{ borderRadius: "0", textTransform: 'none', outline: 'none', width: 75 }}
+                                                        >
+                                                            Actif
+                                                        </Button>
+                                                        <Button
+                                                            onClick={() => choixAffichageBilan('passif')}
+                                                            variant={buttonPassifVariant}
+                                                            style={{ borderRadius: "0", textTransform: 'none', outline: 'none', width: 75 }}
+                                                        >
+                                                            Passif
+                                                        </Button>
+                                                    </ButtonGroup>
+                                                </Stack>
+
+                                                <Stack width={"70%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                                    direction={"row"} justifyContent={"right"}>
+                                                    <Tooltip title="Liste des anomalies">
+                                                        <IconButton
+                                                            onClick={() => showAnomalie('BILAN')}
+                                                            style={{
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            <Badge badgeContent={nbrAnomalieBILAN} >
+                                                                <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Liste des articles associés au formulaire">
+                                                        <IconButton
+                                                            style={{
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            <Badge badgeContent={12} color="success">
+                                                                <PiArticleThin style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Actualiser les calculs">
+                                                        <IconButton
+                                                            onClick={refreshBILAN}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrBilan ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <ExportEbilanButton
+                                                        exportToExcel={() => exportFile("EXCEL")}
+                                                        exportToPdf={() => exportFile("PDF")}
+                                                        value={value}
+                                                    />
+
+                                                    <Tooltip title={verrBilan ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
+                                                        <IconButton
+                                                            onClick={lockTableBILAN}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: verrBilan ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            {verrBilan
+                                                                ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            }
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </Stack>
+                                            </Stack>
+
+                                            {showBilan === 'actif'
+                                                ? <Stack
+                                                    width={"100%"}
+                                                    alignItems={"start"}
+                                                    style={{ overflow: "auto" }}
+                                                >
+                                                    <VirtualTableEbilan
+                                                        canView={canView}
+                                                        canAdd={canAdd}
+                                                        canDelete={canDelete}
+                                                        canModify={canModify}
+                                                        refreshTable={setUpdateCalculEtatfinancier}
+                                                        columns={BilanActifColumn}
+                                                        rows={bilanActifData}
+                                                        noCollapsible={false}
+                                                        state={verrBilan}
+                                                        type={"Actif"}
+                                                    />
+                                                </Stack>
+                                                : null
+                                            }
+                                            {showBilan === 'passif'
+                                                ? <Stack
+                                                    width={"100%"}
+                                                    alignItems={"start"}
+                                                    style={{ overflow: "auto" }}
+                                                >
+                                                    <VirtualTableEbilan
+                                                        canView={canView}
+                                                        canAdd={canAdd}
+                                                        canDelete={canDelete}
+                                                        canModify={canModify}
+                                                        refreshTable={setUpdateCalculEtatfinancier}
+                                                        columns={BilanPassifColumn}
+                                                        rows={bilanPassifData}
+                                                        noCollapsible={false}
+                                                        state={verrBilan}
+                                                        type={"Passif"}
+                                                    />
+                                                </Stack>
+                                                : null
+                                            }
+                                        </Stack>
+
+                                    </TabPanel>
+
+                                    {/* CRN */}
+                                    <TabPanel value="5">
+                                        <Stack
+                                            width={"100%"}
+                                            height={"100%"}
+                                            spacing={0.5}
+                                            alignItems={"flex-start"}
+                                            alignContent={"flex-start"}
+                                            justifyContent={"stretch"}
+                                        >
+                                            <Stack width={"100%"} height={"20px"} alignItems={"center"}
+                                                alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                                <Typography variant='h6' sx={{ color: "black" }} align='center'>Compte de résultat par nature</Typography>
+                                            </Stack>
+
+                                            <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
+                                                direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                                    direction={"row"} justifyContent={"right"}>
+                                                    <Tooltip title="Liste des anomalies">
+                                                        <IconButton
+                                                            style={{ textTransform: 'none', outline: 'none' }}
+                                                            onClick={() => showAnomalie('CRN')}
+                                                        >
+                                                            <Badge badgeContent={nbrAnomalieCRN} >
+                                                                <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Liste des articles associés au formulaire">
+                                                        <IconButton style={{ textTransform: 'none', outline: 'none' }}>
+                                                            <Badge badgeContent={12} color="success">
+                                                                <PiArticleThin style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Actualiser les calculs">
+                                                        <IconButton
+                                                            onClick={refreshCRN}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrCrn ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <ExportEbilanButton
+                                                        exportToExcel={() => exportFile("EXCEL")}
+                                                        exportToPdf={() => exportFile("PDF")}
+                                                        value={value}
+                                                    />
+
+                                                    <Tooltip title={verrCrn ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
+                                                        <IconButton
+                                                            onClick={lockTableCRN}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: verrCrn ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            {verrCrn
+                                                                ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            }
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </Stack>
+                                            </Stack>
+
+                                            <Stack
                                                 width={"100%"}
                                                 alignItems={"start"}
                                                 style={{ overflow: "auto" }}
                                             >
                                                 <VirtualTableEbilan
+                                                    canView={canView}
+                                                    canAdd={canAdd}
+                                                    canDelete={canDelete}
+                                                    canModify={canModify}
                                                     refreshTable={setUpdateCalculEtatfinancier}
-                                                    columns={BilanActifColumn}
-                                                    rows={bilanActifData}
-                                                    noCollapsible={false}
-                                                    state={verrBilan}
-                                                    type={"Actif"}
+                                                    columns={crnColumn}
+                                                    rows={crnData}
+                                                    state={verrCrn}
                                                 />
                                             </Stack>
-                                            : null
-                                        }
-                                        {showBilan === 'passif'
-                                            ? <Stack
+
+                                        </Stack>
+                                    </TabPanel>
+
+                                    {/* CRF */}
+                                    <TabPanel value="6">
+                                        <Stack
+                                            width={"100%"}
+                                            height={"100%"}
+                                            spacing={0.5}
+                                            alignItems={"flex-start"}
+                                            alignContent={"flex-start"}
+                                            justifyContent={"stretch"}
+                                        >
+                                            <Stack width={"100%"} height={"20px"} alignItems={"center"}
+                                                alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                                <Typography variant='h6' sx={{ color: "black" }} align='center'>Compte de résultat par fonction</Typography>
+                                            </Stack>
+
+                                            <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
+                                                direction={"row"} style={{ marginLeft: "00px", marginTop: "00px" }}>
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                                    direction={"row"} justifyContent={"right"}>
+                                                    <Tooltip title="Liste des anomalies">
+                                                        <IconButton
+                                                            style={{ textTransform: 'none', outline: 'none' }}
+                                                            onClick={() => showAnomalie('CRF')}
+                                                        >
+                                                            <Badge badgeContent={nbrAnomalieCRF} >
+                                                                <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Liste des articles associés au formulaire">
+                                                        <IconButton style={{ textTransform: 'none', outline: 'none' }}>
+                                                            <Badge badgeContent={12} color="success">
+                                                                <PiArticleThin style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Actualiser les calculs">
+                                                        <IconButton
+                                                            onClick={refreshCRF}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrCrf ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <ExportEbilanButton
+                                                        exportToExcel={() => exportFile("EXCEL")}
+                                                        exportToPdf={() => exportFile("PDF")}
+                                                        value={value}
+                                                    />
+
+                                                    <Tooltip title={verrCrf ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
+                                                        <IconButton
+                                                            onClick={lockTableCRF}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: verrCrf ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            {verrCrf
+                                                                ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            }
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </Stack>
+                                            </Stack>
+
+                                            <Stack
                                                 width={"100%"}
                                                 alignItems={"start"}
                                                 style={{ overflow: "auto" }}
                                             >
                                                 <VirtualTableEbilan
+                                                    canView={canView}
+                                                    canAdd={canAdd}
+                                                    canDelete={canDelete}
+                                                    canModify={canModify}
                                                     refreshTable={setUpdateCalculEtatfinancier}
-                                                    columns={BilanPassifColumn}
-                                                    rows={bilanPassifData}
-                                                    noCollapsible={false}
-                                                    state={verrBilan}
-                                                    type={"Passif"}
+                                                    columns={crnColumn}
+                                                    rows={crfData}
+                                                    state={verrCrf}
                                                 />
                                             </Stack>
-                                            : null
-                                        }
-                                    </Stack>
 
-                                </TabPanel>
-
-                                {/* CRN */}
-                                <TabPanel value="5">
-                                    <Stack
-                                        width={"100%"}
-                                        height={"100%"}
-                                        spacing={0.5}
-                                        alignItems={"flex-start"}
-                                        alignContent={"flex-start"}
-                                        justifyContent={"stretch"}
-                                    >
-                                        <Stack width={"100%"} height={"20px"} alignItems={"center"}
-                                            alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                            <Typography variant='h6' sx={{ color: "black" }} align='center'>Compte de résultat par nature</Typography>
                                         </Stack>
+                                    </TabPanel>
 
-                                        <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
-                                            direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                                direction={"row"} justifyContent={"right"}>
-                                                <Tooltip title="Liste des anomalies">
-                                                    <IconButton
-                                                        style={{ textTransform: 'none', outline: 'none' }}
-                                                        onClick={() => showAnomalie('CRN')}
-                                                    >
-                                                        <Badge badgeContent={nbrAnomalieCRN} >
-                                                            <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Liste des articles associés au formulaire">
-                                                    <IconButton style={{ textTransform: 'none', outline: 'none' }}>
-                                                        <Badge badgeContent={12} color="success">
-                                                            <PiArticleThin style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Actualiser les calculs">
-                                                    <IconButton
-                                                        onClick={refreshCRN}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrCrn ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <ExportEbilanButton
-                                                    exportToExcel={() => exportFile("EXCEL")}
-                                                    exportToPdf={() => exportFile("PDF")}
-                                                    value={value}
-                                                />
-
-                                                <Tooltip title={verrCrn ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
-                                                    <IconButton
-                                                        onClick={lockTableCRN}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "2px", borderColor: "transparent",
-                                                            backgroundColor: verrCrn ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
-                                                    >
-                                                        {verrCrn
-                                                            ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        }
-                                                    </IconButton>
-                                                </Tooltip>
-                                            </Stack>
-                                        </Stack>
-
+                                    {/* TFTD */}
+                                    <TabPanel value="7">
                                         <Stack
                                             width={"100%"}
-                                            alignItems={"start"}
-                                            style={{ overflow: "auto" }}
+                                            height={"100%"}
+                                            spacing={0.5}
+                                            alignItems={"flex-start"}
+                                            alignContent={"flex-start"}
+                                            justifyContent={"stretch"}
                                         >
-                                            <VirtualTableEbilan refreshTable={setUpdateCalculEtatfinancier} columns={crnColumn} rows={crnData} state={verrCrn} />
-                                        </Stack>
-
-                                    </Stack>
-                                </TabPanel>
-
-                                {/* CRF */}
-                                <TabPanel value="6">
-                                    <Stack
-                                        width={"100%"}
-                                        height={"100%"}
-                                        spacing={0.5}
-                                        alignItems={"flex-start"}
-                                        alignContent={"flex-start"}
-                                        justifyContent={"stretch"}
-                                    >
-                                        <Stack width={"100%"} height={"20px"} alignItems={"center"}
-                                            alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                            <Typography variant='h6' sx={{ color: "black" }} align='center'>Compte de résultat par fonction</Typography>
-                                        </Stack>
-
-                                        <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
-                                            direction={"row"} style={{ marginLeft: "00px", marginTop: "00px" }}>
-                                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                                direction={"row"} justifyContent={"right"}>
-                                                <Tooltip title="Liste des anomalies">
-                                                    <IconButton
-                                                        style={{ textTransform: 'none', outline: 'none' }}
-                                                        onClick={() => showAnomalie('CRF')}
-                                                    >
-                                                        <Badge badgeContent={nbrAnomalieCRF} >
-                                                            <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Liste des articles associés au formulaire">
-                                                    <IconButton style={{ textTransform: 'none', outline: 'none' }}>
-                                                        <Badge badgeContent={12} color="success">
-                                                            <PiArticleThin style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Actualiser les calculs">
-                                                    <IconButton
-                                                        onClick={refreshCRF}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrCrf ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <ExportEbilanButton
-                                                    exportToExcel={() => exportFile("EXCEL")}
-                                                    exportToPdf={() => exportFile("PDF")}
-                                                    value={value}
-                                                />
-
-                                                <Tooltip title={verrCrf ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
-                                                    <IconButton
-                                                        onClick={lockTableCRF}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "2px", borderColor: "transparent",
-                                                            backgroundColor: verrCrf ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
-                                                    >
-                                                        {verrCrf
-                                                            ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        }
-                                                    </IconButton>
-                                                </Tooltip>
+                                            <Stack width={"100%"} height={"20px"} alignItems={"center"}
+                                                alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                                <Typography variant='h6' sx={{ color: "black" }} align='center'>Tableau de flux de trésoreries méthode directe</Typography>
                                             </Stack>
-                                        </Stack>
 
+                                            <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
+                                                direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                                    direction={"row"} justifyContent={"right"}>
+                                                    <Tooltip title="Liste des anomalies">
+                                                        <IconButton
+                                                            style={{ textTransform: 'none', outline: 'none' }}
+                                                            onClick={() => showAnomalie('TFTD')}
+                                                        >
+                                                            <Badge badgeContent={nbrAnomalieTFTD} >
+                                                                <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Liste des articles associés au formulaire">
+                                                        <IconButton style={{ textTransform: 'none', outline: 'none' }}>
+                                                            <Badge badgeContent={12} color="success">
+                                                                <PiArticleThin style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Actualiser les calculs">
+                                                        <IconButton
+                                                            onClick={refreshTFTD}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrTftd ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <ExportEbilanButton
+                                                        exportToExcel={() => exportFile("EXCEL")}
+                                                        exportToPdf={() => exportFile("PDF")}
+                                                        value={value}
+                                                    />
+
+                                                    <Tooltip title={verrTftd ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
+                                                        <IconButton
+                                                            onClick={lockTableTFTD}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: verrTftd ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            {verrTftd
+                                                                ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            }
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </Stack>
+                                            </Stack>
+
+                                            <Stack
+                                                width={"100%"}
+                                                alignItems={"start"}
+                                                style={{ overflow: "auto" }}
+                                            >
+                                                <VirtualTableEbilan
+                                                    canView={canView}
+                                                    canAdd={canAdd}
+                                                    canDelete={canDelete}
+                                                    canModify={canModify}
+                                                    refreshTable={setUpdateCalculEtatfinancier}
+                                                    columns={tftdColumn}
+                                                    rows={tftdData}
+                                                    state={verrTftd}
+                                                />
+                                            </Stack>
+
+                                        </Stack>
+                                    </TabPanel>
+
+                                    {/* TFTI */}
+                                    <TabPanel value="8">
                                         <Stack
                                             width={"100%"}
-                                            alignItems={"start"}
-                                            style={{ overflow: "auto" }}
+                                            height={"100%"}
+                                            spacing={0.5}
+                                            alignItems={"flex-start"}
+                                            alignContent={"flex-start"}
+                                            justifyContent={"stretch"}
                                         >
-                                            <VirtualTableEbilan refreshTable={setUpdateCalculEtatfinancier} columns={crnColumn} rows={crfData} state={verrCrf} />
-                                        </Stack>
-
-                                    </Stack>
-                                </TabPanel>
-
-                                {/* TFTD */}
-                                <TabPanel value="7">
-                                    <Stack
-                                        width={"100%"}
-                                        height={"100%"}
-                                        spacing={0.5}
-                                        alignItems={"flex-start"}
-                                        alignContent={"flex-start"}
-                                        justifyContent={"stretch"}
-                                    >
-                                        <Stack width={"100%"} height={"20px"} alignItems={"center"}
-                                            alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                            <Typography variant='h6' sx={{ color: "black" }} align='center'>Tableau de flux de trésoreries méthode directe</Typography>
-                                        </Stack>
-
-                                        <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
-                                            direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                                direction={"row"} justifyContent={"right"}>
-                                                <Tooltip title="Liste des anomalies">
-                                                    <IconButton
-                                                        style={{ textTransform: 'none', outline: 'none' }}
-                                                        onClick={() => showAnomalie('TFTD')}
-                                                    >
-                                                        <Badge badgeContent={nbrAnomalieTFTD} >
-                                                            <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Liste des articles associés au formulaire">
-                                                    <IconButton style={{ textTransform: 'none', outline: 'none' }}>
-                                                        <Badge badgeContent={12} color="success">
-                                                            <PiArticleThin style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Actualiser les calculs">
-                                                    <IconButton
-                                                        onClick={refreshTFTD}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrTftd ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <ExportEbilanButton
-                                                    exportToExcel={() => exportFile("EXCEL")}
-                                                    exportToPdf={() => exportFile("PDF")}
-                                                    value={value}
-                                                />
-
-                                                <Tooltip title={verrTftd ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
-                                                    <IconButton
-                                                        onClick={lockTableTFTD}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "2px", borderColor: "transparent",
-                                                            backgroundColor: verrTftd ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
-                                                    >
-                                                        {verrTftd
-                                                            ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        }
-                                                    </IconButton>
-                                                </Tooltip>
+                                            <Stack width={"100%"} height={"20px"} alignItems={"center"}
+                                                alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                                <Typography variant='h6' sx={{ color: "black" }} align='center'>Tableau de flux de trésoreries méthode indirecte</Typography>
                                             </Stack>
+
+                                            <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
+                                                direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                                    direction={"row"} justifyContent={"right"}>
+                                                    <Tooltip title="Liste des anomalies">
+                                                        <IconButton
+                                                            style={{ textTransform: 'none', outline: 'none' }}
+                                                            onClick={() => showAnomalie('TFTI')}
+                                                        >
+                                                            <Badge badgeContent={nbrAnomalieTFTI} >
+                                                                <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Liste des articles associés au formulaire">
+                                                        <IconButton style={{ textTransform: 'none', outline: 'none' }}>
+                                                            <Badge badgeContent={12} color="success">
+                                                                <PiArticleThin style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Actualiser les calculs">
+                                                        <IconButton
+                                                            onClick={refreshTFTI}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrTfti ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <ExportEbilanButton
+                                                        exportToExcel={() => exportFile("EXCEL")}
+                                                        exportToPdf={() => exportFile("PDF")}
+                                                        value={value}
+                                                    />
+
+                                                    <Tooltip title={verrTfti ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
+                                                        <IconButton
+                                                            onClick={lockTableTFTI}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: verrTfti ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            {verrTfti
+                                                                ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            }
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </Stack>
+                                            </Stack>
+
+                                            <Stack
+                                                width={"100%"}
+                                                alignItems={"start"}
+                                                style={{ overflow: "auto" }}
+                                            >
+                                                <VirtualTableEbilan
+                                                    canView={canView}
+                                                    canAdd={canAdd}
+                                                    canDelete={canDelete}
+                                                    canModify={canModify}
+                                                    refreshTable={setUpdateCalculEtatfinancier}
+                                                    columns={crnColumn} rows={tftiData}
+                                                    state={verrTfti}
+                                                />
+                                            </Stack>
+
                                         </Stack>
 
+                                    </TabPanel>
+
+                                    {/* EVCP */}
+                                    <TabPanel value="9">
                                         <Stack
                                             width={"100%"}
-                                            alignItems={"start"}
-                                            style={{ overflow: "auto" }}
+                                            height={"100%"}
+                                            spacing={0.5}
+                                            alignItems={"flex-start"}
+                                            alignContent={"flex-start"}
+                                            justifyContent={"stretch"}
                                         >
-                                            <VirtualTableEbilan
-                                                refreshTable={setUpdateCalculEtatfinancier}
-                                                columns={tftdColumn}
-                                                rows={tftdData}
-                                                state={verrTftd}
-                                            />
-                                        </Stack>
-
-                                    </Stack>
-                                </TabPanel>
-
-                                {/* TFTI */}
-                                <TabPanel value="8">
-                                    <Stack
-                                        width={"100%"}
-                                        height={"100%"}
-                                        spacing={0.5}
-                                        alignItems={"flex-start"}
-                                        alignContent={"flex-start"}
-                                        justifyContent={"stretch"}
-                                    >
-                                        <Stack width={"100%"} height={"20px"} alignItems={"center"}
-                                            alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                            <Typography variant='h6' sx={{ color: "black" }} align='center'>Tableau de flux de trésoreries méthode indirecte</Typography>
-                                        </Stack>
-
-                                        <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
-                                            direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                                direction={"row"} justifyContent={"right"}>
-                                                <Tooltip title="Liste des anomalies">
-                                                    <IconButton
-                                                        style={{ textTransform: 'none', outline: 'none' }}
-                                                        onClick={() => showAnomalie('TFTI')}
-                                                    >
-                                                        <Badge badgeContent={nbrAnomalieTFTI} >
-                                                            <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Liste des articles associés au formulaire">
-                                                    <IconButton style={{ textTransform: 'none', outline: 'none' }}>
-                                                        <Badge badgeContent={12} color="success">
-                                                            <PiArticleThin style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Actualiser les calculs">
-                                                    <IconButton
-                                                        onClick={refreshTFTI}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrTfti ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <ExportEbilanButton
-                                                    exportToExcel={() => exportFile("EXCEL")}
-                                                    exportToPdf={() => exportFile("PDF")}
-                                                    value={value}
-                                                />
-
-                                                <Tooltip title={verrTfti ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
-                                                    <IconButton
-                                                        onClick={lockTableTFTI}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "2px", borderColor: "transparent",
-                                                            backgroundColor: verrTfti ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
-                                                    >
-                                                        {verrTfti
-                                                            ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        }
-                                                    </IconButton>
-                                                </Tooltip>
+                                            <Stack width={"100%"} height={"20px"} alignItems={"center"}
+                                                alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                                <Typography variant='h6' sx={{ color: "black" }} align='center'>Etat de variation des capitaux propres</Typography>
                                             </Stack>
-                                        </Stack>
 
+                                            <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
+                                                direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                                    direction={"row"} justifyContent={"right"}>
+                                                    <Tooltip title="Liste des anomalies">
+                                                        <IconButton
+                                                            style={{ textTransform: 'none', outline: 'none' }}
+                                                            onClick={() => showAnomalie('EVCP')}
+                                                        >
+                                                            <Badge badgeContent={nbrAnomalieEVCP} >
+                                                                <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Liste des articles associés au formulaire">
+                                                        <IconButton style={{ textTransform: 'none', outline: 'none' }}>
+                                                            <Badge badgeContent={12} color="success">
+                                                                <PiArticleThin style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Actualiser les calculs">
+                                                        <IconButton
+                                                            onClick={refreshEVCP}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrEvcp ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <ExportEbilanButton
+                                                        exportToExcel={() => exportFile("EXCEL")}
+                                                        exportToPdf={() => exportFile("PDF")}
+                                                        value={value}
+                                                    />
+
+                                                    <Tooltip title={verrEvcp ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
+                                                        <IconButton
+                                                            onClick={lockTableEVCP}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: verrEvcp ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            {verrEvcp
+                                                                ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            }
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </Stack>
+                                            </Stack>
+
+                                            <Stack
+                                                width={"100%"}
+                                                alignItems={"start"}
+                                                style={{ overflow: "auto" }}
+                                            >
+                                                <VirtualTableEVCPEbilan
+                                                    canView={canView}
+                                                    canAdd={canAdd}
+                                                    canDelete={canDelete}
+                                                    canModify={canModify}
+                                                    refreshTable={setUpdateCalculEtatfinancier}
+                                                    columns={evcpColumn}
+                                                    rows={evcpData}
+                                                    state={verrEvcp}
+                                                />
+                                            </Stack>
+
+                                        </Stack>
+                                    </TabPanel>
+
+                                    {/* DRF */}
+                                    <TabPanel value="10">
                                         <Stack
                                             width={"100%"}
-                                            alignItems={"start"}
-                                            style={{ overflow: "auto" }}
+                                            height={"100%"}
+                                            spacing={0.5}
+                                            alignItems={"flex-start"}
+                                            alignContent={"flex-start"}
+                                            justifyContent={"stretch"}
                                         >
-                                            <VirtualTableEbilan
-                                                refreshTable={setUpdateCalculEtatfinancier}
-                                                columns={crnColumn} rows={tftiData}
-                                                state={verrTfti}
-                                            />
-                                        </Stack>
-
-                                    </Stack>
-
-                                </TabPanel>
-
-                                {/* EVCP */}
-                                <TabPanel value="9">
-                                    <Stack
-                                        width={"100%"}
-                                        height={"100%"}
-                                        spacing={0.5}
-                                        alignItems={"flex-start"}
-                                        alignContent={"flex-start"}
-                                        justifyContent={"stretch"}
-                                    >
-                                        <Stack width={"100%"} height={"20px"} alignItems={"center"}
-                                            alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                            <Typography variant='h6' sx={{ color: "black" }} align='center'>Etat de variation des capitaux propres</Typography>
-                                        </Stack>
-
-                                        <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
-                                            direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                                direction={"row"} justifyContent={"right"}>
-                                                <Tooltip title="Liste des anomalies">
-                                                    <IconButton
-                                                        style={{ textTransform: 'none', outline: 'none' }}
-                                                        onClick={() => showAnomalie('EVCP')}
-                                                    >
-                                                        <Badge badgeContent={nbrAnomalieEVCP} >
-                                                            <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Liste des articles associés au formulaire">
-                                                    <IconButton style={{ textTransform: 'none', outline: 'none' }}>
-                                                        <Badge badgeContent={12} color="success">
-                                                            <PiArticleThin style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Actualiser les calculs">
-                                                    <IconButton
-                                                        onClick={refreshEVCP}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrEvcp ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <ExportEbilanButton
-                                                    exportToExcel={() => exportFile("EXCEL")}
-                                                    exportToPdf={() => exportFile("PDF")}
-                                                    value={value}
-                                                />
-
-                                                <Tooltip title={verrEvcp ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
-                                                    <IconButton
-                                                        onClick={lockTableEVCP}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "2px", borderColor: "transparent",
-                                                            backgroundColor: verrEvcp ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
-                                                    >
-                                                        {verrEvcp
-                                                            ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        }
-                                                    </IconButton>
-                                                </Tooltip>
+                                            <Stack width={"100%"} height={"20px"} alignItems={"center"}
+                                                alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                                <Typography variant='h6' sx={{ color: "black" }} align='center'>Détermination du résultat fiscal</Typography>
                                             </Stack>
-                                        </Stack>
 
+                                            <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
+                                                direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                                    direction={"row"} justifyContent={"right"}>
+                                                    <Tooltip title="Liste des anomalies">
+                                                        <IconButton
+                                                            style={{ textTransform: 'none', outline: 'none' }}
+                                                            onClick={() => showAnomalie('DRF')}
+                                                        >
+                                                            <Badge badgeContent={nbrAnomalieDRF} >
+                                                                <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Liste des articles associés au formulaire">
+                                                        <IconButton style={{ textTransform: 'none', outline: 'none' }}>
+                                                            <Badge badgeContent={12} >
+                                                                <PiArticleThin style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Actualiser les calculs">
+                                                        <IconButton
+                                                            onClick={refreshDRF}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrDrf ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <ExportEbilanButton
+                                                        exportToExcel={() => exportFile("EXCEL")}
+                                                        exportToPdf={() => exportFile("PDF")}
+                                                        value={value}
+                                                    />
+
+                                                    <Tooltip title={verrDrf ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
+                                                        <IconButton
+                                                            onClick={lockTableDRF}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: verrDrf ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            {verrDrf
+                                                                ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            }
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </Stack>
+                                            </Stack>
+
+                                            <Stack
+                                                width={"100%"}
+                                                alignItems={"start"}
+                                                style={{ overflow: "auto" }}
+                                            >
+                                                <VirtualTableDRFEbilan
+                                                    canView={canView}
+                                                    canAdd={canAdd}
+                                                    canDelete={canDelete}
+                                                    canModify={canModify}
+                                                    refreshTable={setUpdateCalculEtatfinancier}
+                                                    columns={drfColumn}
+                                                    rows={drfData}
+                                                    state={verrDrf}
+                                                />
+                                            </Stack>
+
+                                        </Stack>
+                                    </TabPanel>
+
+                                    {/* BHIAPC */}
+                                    <TabPanel value="11">
                                         <Stack
                                             width={"100%"}
-                                            alignItems={"start"}
-                                            style={{ overflow: "auto" }}
+                                            height={"100%"}
+                                            spacing={0.5}
+                                            alignItems={"flex-start"}
+                                            alignContent={"flex-start"}
+                                            justifyContent={"stretch"}
                                         >
-                                            <VirtualTableEVCPEbilan
-                                                refreshTable={setUpdateCalculEtatfinancier}
-                                                columns={evcpColumn}
-                                                rows={evcpData}
-                                                state={verrEvcp}
-                                            />
-                                        </Stack>
-
-                                    </Stack>
-                                </TabPanel>
-
-                                {/* DRF */}
-                                <TabPanel value="10">
-                                    <Stack
-                                        width={"100%"}
-                                        height={"100%"}
-                                        spacing={0.5}
-                                        alignItems={"flex-start"}
-                                        alignContent={"flex-start"}
-                                        justifyContent={"stretch"}
-                                    >
-                                        <Stack width={"100%"} height={"20px"} alignItems={"center"}
-                                            alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                            <Typography variant='h6' sx={{ color: "black" }} align='center'>Détermination du résultat fiscal</Typography>
-                                        </Stack>
-
-                                        <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
-                                            direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                                direction={"row"} justifyContent={"right"}>
-                                                <Tooltip title="Liste des anomalies">
-                                                    <IconButton
-                                                        style={{ textTransform: 'none', outline: 'none' }}
-                                                        onClick={() => showAnomalie('DRF')}
-                                                    >
-                                                        <Badge badgeContent={nbrAnomalieDRF} >
-                                                            <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Liste des articles associés au formulaire">
-                                                    <IconButton style={{ textTransform: 'none', outline: 'none' }}>
-                                                        <Badge badgeContent={12} >
-                                                            <PiArticleThin style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Actualiser les calculs">
-                                                    <IconButton
-                                                        onClick={refreshDRF}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrDrf ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <ExportEbilanButton
-                                                    exportToExcel={() => exportFile("EXCEL")}
-                                                    exportToPdf={() => exportFile("PDF")}
-                                                    value={value}
-                                                />
-
-                                                <Tooltip title={verrDrf ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
-                                                    <IconButton
-                                                        onClick={lockTableDRF}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "2px", borderColor: "transparent",
-                                                            backgroundColor: verrDrf ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
-                                                    >
-                                                        {verrDrf
-                                                            ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        }
-                                                    </IconButton>
-                                                </Tooltip>
+                                            <Stack width={"100%"} height={"20px"} alignItems={"center"}
+                                                alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                                <Typography variant='h6' sx={{ color: "black" }} align='center'>Etat des bénéficiaires d'honoraires,d'intérêts ou d'arrérages portés en charge</Typography>
                                             </Stack>
-                                        </Stack>
 
+                                            <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
+                                                direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                                    direction={"row"} justifyContent={"right"}>
+                                                    <Tooltip title="Liste des anomalies">
+                                                        <IconButton
+                                                            style={{ textTransform: 'none', outline: 'none' }}
+                                                            onClick={() => showAnomalie('BHIAPC')}
+                                                        >
+                                                            <Badge badgeContent={nbrAnomalieBHIAPC} >
+                                                                <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Liste des articles associés au formulaire">
+                                                        <IconButton style={{ textTransform: 'none', outline: 'none' }}>
+                                                            <Badge badgeContent={12} color="success">
+                                                                <PiArticleThin style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <ImportEbilanButton
+                                                        verouillage={verrBhiapc}
+                                                        handleShowPopupImport={handleShowPopupImport}
+                                                    />
+
+                                                    <ExportEbilanButton
+                                                        exportToExcel={() => exportFile("EXCEL")}
+                                                        exportToPdf={() => exportFile("PDF")}
+                                                        value={value}
+                                                    />
+
+                                                    <Tooltip title="Ajouter une ligne">
+                                                        <IconButton
+                                                            disabled={!canAdd}
+                                                            onClick={handleAddNewRowBHIAPC}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrBhiapc ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Supprimer toutes les lignes du tableau">
+                                                        <IconButton
+                                                            disabled={!canDelete}
+                                                            onClick={deleteAllRowBHIAPC}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.button_delete_color,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrBhiapc ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Actualiser les calculs">
+                                                        <IconButton
+                                                            // onClick={refreshBHIAPC}
+                                                            onClick={handleOpenDialogConfirmGenerateAuto}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrBhiapc ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title={verrBhiapc ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
+                                                        <IconButton
+                                                            onClick={lockTableBHIAPC}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: verrBhiapc ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            {verrBhiapc
+                                                                ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            }
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </Stack>
+                                            </Stack>
+
+                                            <Stack
+                                                width={"100%"}
+                                                alignItems={"start"}
+                                                style={{ overflow: "auto" }}
+                                            >
+                                                <VirtualTableModifiableEbilan
+                                                    canView={canView}
+                                                    canAdd={canAdd}
+                                                    canDelete={canDelete}
+                                                    canModify={canModify}
+                                                    columns={bhiapcColumn}
+                                                    rows={bhiapcData}
+                                                    deleteState={deleteOneRowBHIAPC}
+                                                    modifyState={modifyRowBHIAPC}
+                                                    state={verrBhiapc}
+                                                    withFooter={true}
+                                                    withAnomalie={true}
+                                                    type={'BHIAPC'}
+                                                />
+                                            </Stack>
+
+                                        </Stack>
+                                    </TabPanel>
+
+                                    {/* MP */}
+                                    <TabPanel value="12">
                                         <Stack
                                             width={"100%"}
-                                            alignItems={"start"}
-                                            style={{ overflow: "auto" }}
+                                            height={"100%"}
+                                            spacing={0.5}
+                                            alignItems={"flex-start"}
+                                            alignContent={"flex-start"}
+                                            justifyContent={"stretch"}
                                         >
-                                            <VirtualTableDRFEbilan refreshTable={setUpdateCalculEtatfinancier} columns={drfColumn} rows={drfData} state={verrDrf} />
-                                        </Stack>
+                                            <Stack width={"100%"} height={"20px"} alignItems={"center"}
+                                                alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                                <Typography variant='h6' sx={{ color: "black" }} align='center'>Marché public</Typography>
+                                            </Stack>
 
-                                    </Stack>
-                                </TabPanel>
+                                            <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
+                                                direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                                    direction={"row"} justifyContent={"right"}>
+                                                    <Tooltip title="Liste des anomalies">
+                                                        <IconButton
+                                                            style={{ textTransform: 'none', outline: 'none' }}
+                                                            onClick={() => showAnomalie('MP')}
+                                                        >
+                                                            <Badge badgeContent={nbrAnomalieMP} >
+                                                                <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
 
-                                {/* BHIAPC */}
-                                <TabPanel value="11">
-                                    <Stack
-                                        width={"100%"}
-                                        height={"100%"}
-                                        spacing={0.5}
-                                        alignItems={"flex-start"}
-                                        alignContent={"flex-start"}
-                                        justifyContent={"stretch"}
-                                    >
-                                        <Stack width={"100%"} height={"20px"} alignItems={"center"}
-                                            alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                            <Typography variant='h6' sx={{ color: "black" }} align='center'>Etat des bénéficiaires d'honoraires,d'intérêts ou d'arrérages portés en charge</Typography>
-                                        </Stack>
+                                                    <Tooltip title="Liste des articles associés au formulaire">
+                                                        <IconButton style={{ textTransform: 'none', outline: 'none' }}>
+                                                            <Badge badgeContent={12} color="success">
+                                                                <PiArticleThin style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
 
-                                        <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
-                                            direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                                direction={"row"} justifyContent={"right"}>
-                                                <Tooltip title="Liste des anomalies">
-                                                    <IconButton
-                                                        style={{ textTransform: 'none', outline: 'none' }}
-                                                        onClick={() => showAnomalie('BHIAPC')}
-                                                    >
-                                                        <Badge badgeContent={nbrAnomalieBHIAPC} >
-                                                            <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
+                                                    <ImportEbilanButton
+                                                        verouillage={verrMp}
+                                                        handleShowPopupImport={handleShowPopupImport}
+                                                    />
 
-                                                <Tooltip title="Liste des articles associés au formulaire">
-                                                    <IconButton style={{ textTransform: 'none', outline: 'none' }}>
-                                                        <Badge badgeContent={12} color="success">
-                                                            <PiArticleThin style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
+                                                    <ExportEbilanButton
+                                                        exportToExcel={() => exportFile("EXCEL")}
+                                                        exportToPdf={() => exportFile("PDF")}
+                                                        value={value}
+                                                    />
 
-                                                <ImportEbilanButton
-                                                    verouillage={verrBhiapc}
-                                                    handleShowPopupImport={handleShowPopupImport}
+                                                    <Tooltip title="Ajouter une ligne">
+                                                        <IconButton
+                                                            disabled={!canAdd}
+                                                            onClick={handleAddNewRowMP}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrMp ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Supprimer toutes les lignes du tableau">
+                                                        <IconButton
+                                                            disabled={!canDelete}
+                                                            onClick={deleteAllRowMP}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.button_delete_color,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrMp ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title={verrMp ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
+                                                        <IconButton
+                                                            onClick={lockTableMP}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: verrMp ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            {verrMp
+                                                                ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            }
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </Stack>
+                                            </Stack>
+
+                                            <Stack
+                                                width={"100%"}
+                                                alignItems={"start"}
+                                                style={{ overflow: "auto" }}
+                                            >
+                                                <VirtualTableModifiableEbilan
+                                                    canView={canView}
+                                                    canAdd={canAdd}
+                                                    canDelete={canDelete}
+                                                    canModify={canModify}
+                                                    columns={mpColumn}
+                                                    rows={mpData}
+                                                    deleteState={deleteOneRowMP}
+                                                    modifyState={modifyRowMP}
+                                                    state={verrMp}
+                                                    withFooter={true}
+                                                    type={'MP'}
                                                 />
-
-                                                <ExportEbilanButton
-                                                    exportToExcel={() => exportFile("EXCEL")}
-                                                    exportToPdf={() => exportFile("PDF")}
-                                                    value={value}
-                                                />
-
-                                                <Tooltip title="Ajouter une ligne">
-                                                    <IconButton
-                                                        onClick={handleAddNewRowBHIAPC}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrBhiapc ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Supprimer toutes les lignes du tableau">
-                                                    <IconButton
-                                                        onClick={deleteAllRowBHIAPC}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.button_delete_color,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrBhiapc ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Actualiser les calculs">
-                                                    <IconButton
-                                                        // onClick={refreshBHIAPC}
-                                                        onClick={handleOpenDialogConfirmGenerateAuto}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrBhiapc ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title={verrBhiapc ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
-                                                    <IconButton
-                                                        onClick={lockTableBHIAPC}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "2px", borderColor: "transparent",
-                                                            backgroundColor: verrBhiapc ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
-                                                    >
-                                                        {verrBhiapc
-                                                            ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        }
-                                                    </IconButton>
-                                                </Tooltip>
                                             </Stack>
                                         </Stack>
+                                    </TabPanel>
 
+                                    {/* DA */}
+                                    <TabPanel value="13">
                                         <Stack
                                             width={"100%"}
-                                            alignItems={"start"}
-                                            style={{ overflow: "auto" }}
+                                            height={"100%"}
+                                            spacing={0.5}
+                                            alignItems={"flex-start"}
+                                            alignContent={"flex-start"}
+                                            justifyContent={"stretch"}
                                         >
-                                            <VirtualTableModifiableEbilan columns={bhiapcColumn} rows={bhiapcData} deleteState={deleteOneRowBHIAPC} modifyState={modifyRowBHIAPC} state={verrBhiapc} withFooter={true} withAnomalie={true} type={'BHIAPC'} />
-                                        </Stack>
-
-                                    </Stack>
-                                </TabPanel>
-
-                                {/* MP */}
-                                <TabPanel value="12">
-                                    <Stack
-                                        width={"100%"}
-                                        height={"100%"}
-                                        spacing={0.5}
-                                        alignItems={"flex-start"}
-                                        alignContent={"flex-start"}
-                                        justifyContent={"stretch"}
-                                    >
-                                        <Stack width={"100%"} height={"20px"} alignItems={"center"}
-                                            alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                            <Typography variant='h6' sx={{ color: "black" }} align='center'>Marché public</Typography>
-                                        </Stack>
-
-                                        <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
-                                            direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                                direction={"row"} justifyContent={"right"}>
-                                                <Tooltip title="Liste des anomalies">
-                                                    <IconButton
-                                                        style={{ textTransform: 'none', outline: 'none' }}
-                                                        onClick={() => showAnomalie('MP')}
-                                                    >
-                                                        <Badge badgeContent={nbrAnomalieMP} >
-                                                            <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Liste des articles associés au formulaire">
-                                                    <IconButton style={{ textTransform: 'none', outline: 'none' }}>
-                                                        <Badge badgeContent={12} color="success">
-                                                            <PiArticleThin style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <ImportEbilanButton
-                                                    verouillage={verrMp}
-                                                    handleShowPopupImport={handleShowPopupImport}
-                                                />
-
-                                                <ExportEbilanButton
-                                                    exportToExcel={() => exportFile("EXCEL")}
-                                                    exportToPdf={() => exportFile("PDF")}
-                                                    value={value}
-                                                />
-
-                                                <Tooltip title="Ajouter une ligne">
-                                                    <IconButton
-                                                        onClick={handleAddNewRowMP}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrMp ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Supprimer toutes les lignes du tableau">
-                                                    <IconButton
-                                                        onClick={deleteAllRowMP}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.button_delete_color,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrMp ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title={verrMp ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
-                                                    <IconButton
-                                                        onClick={lockTableMP}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "2px", borderColor: "transparent",
-                                                            backgroundColor: verrMp ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
-                                                    >
-                                                        {verrMp
-                                                            ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        }
-                                                    </IconButton>
-                                                </Tooltip>
+                                            <Stack width={"100%"} height={"20px"} alignItems={"center"}
+                                                alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                                <Typography variant='h6' sx={{ color: "black" }} align='center'>Détails amortissements</Typography>
                                             </Stack>
-                                        </Stack>
 
-                                        <Stack
-                                            width={"100%"}
-                                            alignItems={"start"}
-                                            style={{ overflow: "auto" }}
-                                        >
-                                            <VirtualTableModifiableEbilan columns={mpColumn} rows={mpData} deleteState={deleteOneRowMP} modifyState={modifyRowMP} state={verrMp} withFooter={true} type={'MP'} />
-                                        </Stack>
-                                    </Stack>
-                                </TabPanel>
+                                            <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
+                                                direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                                    direction={"row"} justifyContent={"right"}>
+                                                    <Tooltip title="Liste des anomalies">
+                                                        <IconButton
+                                                            style={{ textTransform: 'none', outline: 'none' }}
+                                                            onClick={() => showAnomalie('DA')}
+                                                        >
+                                                            <Badge badgeContent={nbrAnomalieDA} >
+                                                                <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
 
-                                {/* DA */}
-                                <TabPanel value="13">
-                                    <Stack
-                                        width={"100%"}
-                                        height={"100%"}
-                                        spacing={0.5}
-                                        alignItems={"flex-start"}
-                                        alignContent={"flex-start"}
-                                        justifyContent={"stretch"}
-                                    >
-                                        <Stack width={"100%"} height={"20px"} alignItems={"center"}
-                                            alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                            <Typography variant='h6' sx={{ color: "black" }} align='center'>Détails amortissements</Typography>
-                                        </Stack>
+                                                    <Tooltip title="Liste des articles associés au formulaire">
+                                                        <IconButton style={{ textTransform: 'none', outline: 'none' }}>
+                                                            <Badge badgeContent={12} color="success">
+                                                                <PiArticleThin style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
 
-                                        <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
-                                            direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                                direction={"row"} justifyContent={"right"}>
-                                                <Tooltip title="Liste des anomalies">
-                                                    <IconButton
-                                                        style={{ textTransform: 'none', outline: 'none' }}
-                                                        onClick={() => showAnomalie('DA')}
-                                                    >
-                                                        <Badge badgeContent={nbrAnomalieDA} >
-                                                            <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
+                                                    <ImportEbilanButton
+                                                        verouillage={verrDa}
+                                                        handleShowPopupImport={handleShowPopupImport}
+                                                    />
 
-                                                <Tooltip title="Liste des articles associés au formulaire">
-                                                    <IconButton style={{ textTransform: 'none', outline: 'none' }}>
-                                                        <Badge badgeContent={12} color="success">
-                                                            <PiArticleThin style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
+                                                    <ExportEbilanButton
+                                                        exportToExcel={() => exportFile("EXCEL")}
+                                                        exportToPdf={() => exportFile("PDF")}
+                                                        value={value}
+                                                    />
 
-                                                <ImportEbilanButton
-                                                    verouillage={verrDa}
-                                                    handleShowPopupImport={handleShowPopupImport}
-                                                />
+                                                    <Tooltip title="Ajouter une ligne">
+                                                        <IconButton
+                                                            disabled={!canAdd}
+                                                            onClick={handleAddNewRowDA}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrDa ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
 
-                                                <ExportEbilanButton
-                                                    exportToExcel={() => exportFile("EXCEL")}
-                                                    exportToPdf={() => exportFile("PDF")}
-                                                    value={value}
-                                                />
+                                                    <Tooltip title="Supprimer toutes les lignes du tableau">
+                                                        <IconButton
+                                                            disabled={!canDelete}
+                                                            onClick={deleteAllRowDA}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.button_delete_color,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrDa ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
 
-                                                <Tooltip title="Ajouter une ligne">
-                                                    <IconButton
-                                                        onClick={handleAddNewRowDA}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrDa ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Supprimer toutes les lignes du tableau">
-                                                    <IconButton
-                                                        onClick={deleteAllRowDA}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.button_delete_color,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrDa ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Actualiser les calculs">
-                                                    <IconButton
-                                                        onClick={refreshMP}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrDa ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title={verrDa ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
-                                                    <IconButton
-                                                        onClick={lockTableDA}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "2px", borderColor: "transparent",
-                                                            backgroundColor: verrDa ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
-                                                    >
-                                                        {verrDa
-                                                            ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        }
-                                                    </IconButton>
-                                                </Tooltip>
+                                                    <Tooltip title={verrDa ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
+                                                        <IconButton
+                                                            onClick={lockTableDA}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: verrDa ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            {verrDa
+                                                                ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            }
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </Stack>
                                             </Stack>
-                                        </Stack>
 
-                                        <Stack
-                                            width={"100%"}
-                                            alignItems={"start"}
-                                            style={{ overflow: "auto" }}
-                                        >
-                                            <VirtualTableModifiableGroupableEbilanDA columns={daColumn} rows={daData} deleteState={deleteOneRowDA} modifyState={modifyRowDA} state={verrDa} />
-                                        </Stack>
-
-                                    </Stack>
-                                </TabPanel>
-
-                                {/* DP */}
-                                <TabPanel value="14">
-                                    <Stack
-                                        width={"100%"}
-                                        height={"100%"}
-                                        spacing={0.5}
-                                        alignItems={"flex-start"}
-                                        alignContent={"flex-start"}
-                                        justifyContent={"stretch"}
-                                    >
-                                        <Stack width={"100%"} height={"20px"} alignItems={"center"}
-                                            alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                            <Typography variant='h6' sx={{ color: "black" }} align='center'>Détails provisions</Typography>
-                                        </Stack>
-
-                                        <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
-                                            direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                                direction={"row"} justifyContent={"right"}>
-                                                <Tooltip title="Liste des anomalies">
-                                                    <IconButton
-                                                        style={{ textTransform: 'none', outline: 'none' }}
-                                                        onClick={() => showAnomalie('DP')}
-                                                    >
-                                                        <Badge badgeContent={nbrAnomalieDP} >
-                                                            <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Liste des articles associés au formulaire">
-                                                    <IconButton style={{ textTransform: 'none', outline: 'none' }}>
-                                                        <Badge badgeContent={12} color="success">
-                                                            <PiArticleThin style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <ExportEbilanButton
-                                                    exportToExcel={() => exportFile("EXCEL")}
-                                                    exportToPdf={() => exportFile("PDF")}
-                                                    value={value}
+                                            <Stack
+                                                width={"100%"}
+                                                alignItems={"start"}
+                                                style={{ overflow: "auto" }}
+                                            >
+                                                <VirtualTableModifiableGroupableEbilanDA
+                                                    columns={daColumn}
+                                                    rows={daData}
+                                                    deleteState={deleteOneRowDA}
+                                                    modifyState={modifyRowDA}
+                                                    state={verrDa}
                                                 />
-
-                                                <Tooltip title="Ajouter une ligne">
-                                                    <IconButton
-                                                        onClick={handleAddNewRowDP}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrDp ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Supprimer toutes les lignes du tableau">
-                                                    <IconButton
-                                                        onClick={deleteAllRowDP}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.button_delete_color,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrDp ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Actualiser les calculs">
-                                                    <IconButton
-                                                        onClick={handleOpenDialogConfirmGenerateAuto}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrDp ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title={verrDp ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
-                                                    <IconButton
-                                                        onClick={lockTableDP}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "2px", borderColor: "transparent",
-                                                            backgroundColor: verrDp ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
-                                                    >
-                                                        {verrDp
-                                                            ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        }
-                                                    </IconButton>
-                                                </Tooltip>
                                             </Stack>
-                                        </Stack>
 
+                                        </Stack>
+                                    </TabPanel>
+
+                                    {/* DP */}
+                                    <TabPanel value="14">
                                         <Stack
                                             width={"100%"}
-                                            alignItems={"start"}
-                                            style={{ overflow: "auto" }}
+                                            height={"100%"}
+                                            spacing={0.5}
+                                            alignItems={"flex-start"}
+                                            alignContent={"flex-start"}
+                                            justifyContent={"stretch"}
                                         >
-                                            <VirtualTableModifiableGroupableEbilanDP columns={dpColumn} rows={dpData} deleteState={deleteOneRowDP} modifyState={modifyRowDP} state={verrDp} />
-                                        </Stack>
-
-                                    </Stack>
-                                </TabPanel>
-
-                                {/* EIAFNC */}
-                                <TabPanel value="15">
-                                    <Stack
-                                        width={"100%"}
-                                        height={"100%"}
-                                        spacing={0.5}
-                                        alignItems={"flex-start"}
-                                        alignContent={"flex-start"}
-                                        justifyContent={"stretch"}
-                                    >
-                                        <Stack width={"100%"} height={"20px"} alignItems={"center"}
-                                            alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                            <Typography variant='h6' sx={{ color: "black" }} align='center'>Evolution des immobilisations et actifs financiers non courants</Typography>
-                                        </Stack>
-
-                                        <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
-                                            direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                                direction={"row"} justifyContent={"right"}>
-                                                <Tooltip title="Liste des anomalies">
-                                                    <IconButton
-                                                        style={{ textTransform: 'none', outline: 'none', }}
-                                                        onClick={() => showAnomalie('EIAFNC')}
-                                                    >
-                                                        <Badge badgeContent={nbrAnomalieEIAFNC} >
-                                                            <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Liste des articles associés au formulaire">
-                                                    <IconButton style={{ textTransform: 'none', outline: 'none', }}>
-                                                        <Badge badgeContent={12} color="success">
-                                                            <PiArticleThin style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <ImportEbilanButton
-                                                    verouillage={verrEiafnc}
-                                                    handleShowPopupImport={handleShowPopupImport}
-                                                />
-
-                                                <ExportEbilanButton
-                                                    exportToExcel={() => exportFile("EXCEL")}
-                                                    exportToPdf={() => exportFile("PDF")}
-                                                    value={value}
-                                                />
-
-                                                <Tooltip title="Ajouter une ligne">
-                                                    <IconButton
-                                                        onClick={handleAddNewRowEIAFNC}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrEiafnc ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Supprimer toutes les lignes du tableau">
-                                                    <IconButton
-                                                        onClick={deleteAllRowEIAFNC}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.button_delete_color,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrEiafnc ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title={verrEiafnc ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
-                                                    <IconButton
-                                                        onClick={lockTableEIAFNC}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "2px", borderColor: "transparent",
-                                                            backgroundColor: verrEiafnc ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
-                                                    >
-                                                        {verrEiafnc
-                                                            ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        }
-                                                    </IconButton>
-                                                </Tooltip>
+                                            <Stack width={"100%"} height={"20px"} alignItems={"center"}
+                                                alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                                <Typography variant='h6' sx={{ color: "black" }} align='center'>Détails provisions</Typography>
                                             </Stack>
-                                        </Stack>
 
-                                        <Stack
-                                            width={"100%"}
-                                            alignItems={"start"}
-                                            style={{ overflow: "auto" }}
-                                        >
-                                            <VirtualTableModifiableGroupableEbilanEIAFNC columns={eiafncColumn} rows={eiafncData} deleteState={deleteOneRowEIAFNC} modifyState={modifyRowEIAFNC} state={verrEiafnc} />
-                                        </Stack>
+                                            <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
+                                                direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                                    direction={"row"} justifyContent={"right"}>
+                                                    <Tooltip title="Liste des anomalies">
+                                                        <IconButton
+                                                            style={{ textTransform: 'none', outline: 'none' }}
+                                                            onClick={() => showAnomalie('DP')}
+                                                        >
+                                                            <Badge badgeContent={nbrAnomalieDP} >
+                                                                <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
 
-                                    </Stack>
-                                </TabPanel>
+                                                    <Tooltip title="Liste des articles associés au formulaire">
+                                                        <IconButton style={{ textTransform: 'none', outline: 'none' }}>
+                                                            <Badge badgeContent={12} color="success">
+                                                                <PiArticleThin style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
 
-                                {/* SAD */}
-                                <TabPanel value="16">
-                                    <Stack
-                                        width={"100%"}
-                                        height={"100%"}
-                                        spacing={0.5}
-                                        alignItems={"flex-start"}
-                                        alignContent={"flex-start"}
-                                        justifyContent={"stretch"}
-                                    >
-                                        <Stack width={"100%"} height={"20px"} alignItems={"center"}
-                                            alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                            <Typography variant='h6' sx={{ color: "black" }} align='center'>Suivi des amortissements différés</Typography>
-                                        </Stack>
+                                                    <ExportEbilanButton
+                                                        exportToExcel={() => exportFile("EXCEL")}
+                                                        exportToPdf={() => exportFile("PDF")}
+                                                        value={value}
+                                                    />
 
-                                        <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
-                                            direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                                direction={"row"} justifyContent={"right"}>
-                                                <Tooltip title="Liste des anomalies">
-                                                    <IconButton
-                                                        style={{ textTransform: 'none', outline: 'none', }}
-                                                        onClick={() => showAnomalie('SAD')}
-                                                    >
-                                                        <Badge badgeContent={nbrAnomalieSAD} >
-                                                            <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
+                                                    <Tooltip title="Ajouter une ligne">
+                                                        <IconButton
+                                                            disabled={!canAdd}
+                                                            onClick={handleAddNewRowDP}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrDp ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
 
-                                                <Tooltip title="Liste des articles associés au formulaire">
-                                                    <IconButton style={{ textTransform: 'none', outline: 'none', }}>
-                                                        <Badge badgeContent={12} color="success">
-                                                            <PiArticleThin style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
+                                                    <Tooltip title="Supprimer toutes les lignes du tableau">
+                                                        <IconButton
+                                                            disabled={!canDelete}
+                                                            onClick={deleteAllRowDP}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.button_delete_color,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrDp ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
 
-                                                <Tooltip title="Actualiser les calculs">
-                                                    <IconButton
-                                                        onClick={refreshSAD}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrSad ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
+                                                    <Tooltip title="Actualiser les calculs">
+                                                        <IconButton
+                                                            onClick={handleOpenDialogConfirmGenerateAuto}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrDp ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
 
-                                                <ExportEbilanButton
-                                                    exportToExcel={() => exportFile("EXCEL")}
-                                                    exportToPdf={() => exportFile("PDF")}
-                                                    value={value}
-                                                />
-
-                                                <Tooltip title={verrSad ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
-                                                    <IconButton
-                                                        onClick={lockTableSAD}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "2px", borderColor: "transparent",
-                                                            backgroundColor: verrSad ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
-                                                    >
-                                                        {verrSad
-                                                            ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        }
-                                                    </IconButton>
-                                                </Tooltip>
+                                                    <Tooltip title={verrDp ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
+                                                        <IconButton
+                                                            onClick={lockTableDP}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: verrDp ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            {verrDp
+                                                                ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            }
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </Stack>
                                             </Stack>
-                                        </Stack>
 
-                                        <Stack
-                                            width={"100%"}
-                                            alignItems={"start"}
-                                            style={{ overflow: "auto" }}
-                                        >
-                                            <VirtualTableSADEbilan refreshTable={setUpdateCalculEtatfinancier} columns={sadColumn} rows={sadData} state={verrSad} />
-                                        </Stack>
-
-                                    </Stack>
-                                </TabPanel>
-
-                                {/* SDR */}
-                                <TabPanel value="17">
-                                    <Stack
-                                        width={"100%"}
-                                        height={"100%"}
-                                        spacing={0.5}
-                                        alignItems={"flex-start"}
-                                        alignContent={"flex-start"}
-                                        justifyContent={"stretch"}
-                                    >
-                                        <Stack width={"100%"} height={"20px"} alignItems={"center"}
-                                            alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                            <Typography variant='h6' sx={{ color: "black" }} align='center'>Suivi des déficits reportables</Typography>
-                                        </Stack>
-
-                                        <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
-                                            direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                                direction={"row"} justifyContent={"right"}>
-                                                <Tooltip title="Liste des anomalies">
-                                                    <IconButton
-                                                        style={{ textTransform: 'none', outline: 'none', }}
-                                                        onClick={() => showAnomalie('SDR')}
-                                                    >
-                                                        <Badge badgeContent={nbrAnomalieSDR} >
-                                                            <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Liste des articles associés au formulaire">
-                                                    <IconButton style={{ textTransform: 'none', outline: 'none', }}>
-                                                        <Badge badgeContent={12} color="success">
-                                                            <PiArticleThin style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Actualiser les calculs">
-                                                    <IconButton
-                                                        onClick={refreshSDR}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrSdr ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <ExportEbilanButton
-                                                    exportToExcel={() => exportFile("EXCEL")}
-                                                    exportToPdf={() => exportFile("PDF")}
-                                                    value={value}
+                                            <Stack
+                                                width={"100%"}
+                                                alignItems={"start"}
+                                                style={{ overflow: "auto" }}
+                                            >
+                                                <VirtualTableModifiableGroupableEbilanDP
+                                                    columns={dpColumn}
+                                                    rows={dpData}
+                                                    deleteState={deleteOneRowDP}
+                                                    modifyState={modifyRowDP}
+                                                    state={verrDp}
                                                 />
-
-                                                <Tooltip title={verrSdr ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
-                                                    <IconButton
-                                                        onClick={lockTableSDR}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "2px", borderColor: "transparent",
-                                                            backgroundColor: verrSdr ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
-                                                    >
-                                                        {verrSdr
-                                                            ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        }
-                                                    </IconButton>
-                                                </Tooltip>
                                             </Stack>
-                                        </Stack>
 
+                                        </Stack>
+                                    </TabPanel>
+
+                                    {/* EIAFNC */}
+                                    <TabPanel value="15">
                                         <Stack
                                             width={"100%"}
-                                            alignItems={"start"}
-                                            style={{ overflow: "auto" }}
+                                            height={"100%"}
+                                            spacing={0.5}
+                                            alignItems={"flex-start"}
+                                            alignContent={"flex-start"}
+                                            justifyContent={"stretch"}
                                         >
-                                            <VirtualTableSDREbilan refreshTable={setUpdateCalculEtatfinancier} columns={sdrColumn} rows={sdrData} state={verrSdr} />
-                                        </Stack>
-
-                                    </Stack>
-                                </TabPanel>
-
-                                {/* SE */}
-                                <TabPanel value="18">
-                                    <Stack
-                                        width={"100%"}
-                                        height={"100%"}
-                                        spacing={0.5}
-                                        alignItems={"flex-start"}
-                                        alignContent={"flex-start"}
-                                        justifyContent={"stretch"}
-                                    >
-                                        <Stack width={"100%"} height={"20px"} alignItems={"center"}
-                                            alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                            <Typography variant='h6' sx={{ color: "black" }} align='center'>Suivi des emprunts</Typography>
-                                        </Stack>
-
-                                        <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
-                                            direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                                direction={"row"} justifyContent={"right"}>
-                                                <Tooltip title="Liste des anomalies">
-                                                    <IconButton
-                                                        style={{ textTransform: 'none', outline: 'none', }}
-                                                        onClick={() => showAnomalie('SE')}
-                                                    >
-                                                        <Badge badgeContent={nbrAnomalieSE} >
-                                                            <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Liste des articles associés au formulaire">
-                                                    <IconButton style={{ textTransform: 'none', outline: 'none', }}>
-                                                        <Badge badgeContent={12} color="success">
-                                                            <PiArticleThin style={{ width: '30px', height: '30px' }} />
-                                                        </Badge>
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <ImportEbilanButton
-                                                    verouillage={verrSe}
-                                                    handleShowPopupImport={handleShowPopupImport}
-                                                />
-
-                                                <ExportEbilanButton
-                                                    exportToExcel={() => exportFile("EXCEL")}
-                                                    exportToPdf={() => exportFile("PDF")}
-                                                    value={value}
-                                                />
-
-                                                <Tooltip title="Ajouter une ligne">
-                                                    <IconButton
-                                                        onClick={handleAddNewRowSE}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrSe ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Supprimer toutes les lignes du tableau">
-                                                    <IconButton
-                                                        onClick={deleteAllRowSE}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.button_delete_color,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrSe ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title={verrSe ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
-                                                    <IconButton
-                                                        onClick={lockTableSE}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "2px", borderColor: "transparent",
-                                                            backgroundColor: verrSe ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
-                                                    >
-                                                        {verrSe
-                                                            ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        }
-                                                    </IconButton>
-                                                </Tooltip>
+                                            <Stack width={"100%"} height={"20px"} alignItems={"center"}
+                                                alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                                <Typography variant='h6' sx={{ color: "black" }} align='center'>Evolution des immobilisations et actifs financiers non courants</Typography>
                                             </Stack>
-                                        </Stack>
 
-                                        <Stack
-                                            width={"100%"}
-                                            alignItems={"start"}
-                                            style={{ overflow: "auto" }}
-                                        >
-                                            <VirtualTableModifiableEbilan columns={seColumn} rows={seData} deleteState={deleteOneRowSE} modifyState={modifyRowSE} state={verrSe} withFooter={true} />
-                                        </Stack>
+                                            <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
+                                                direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                                    direction={"row"} justifyContent={"right"}>
+                                                    <Tooltip title="Liste des anomalies">
+                                                        <IconButton
+                                                            style={{ textTransform: 'none', outline: 'none', }}
+                                                            onClick={() => showAnomalie('EIAFNC')}
+                                                        >
+                                                            <Badge badgeContent={nbrAnomalieEIAFNC} >
+                                                                <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
 
-                                    </Stack>
-                                </TabPanel>
+                                                    <Tooltip title="Liste des articles associés au formulaire">
+                                                        <IconButton style={{ textTransform: 'none', outline: 'none', }}>
+                                                            <Badge badgeContent={12} color="success">
+                                                                <PiArticleThin style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
 
-                                {/* NOTE */}
-                                <TabPanel value="19">
-                                    <Stack
-                                        width={"100%"}
-                                        height={"100%"}
-                                        spacing={0.5}
-                                        alignItems={"flex-start"}
-                                        alignContent={"flex-start"}
-                                        justifyContent={"stretch"}
-                                    >
-                                        <Stack width={"100%"} height={"20px"} alignItems={"center"}
-                                            alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                            <Typography variant='h6' sx={{ color: "black" }} align='center'>Notes explicatives</Typography>
-                                        </Stack>
+                                                    <ImportEbilanButton
+                                                        verouillage={verrEiafnc}
+                                                        handleShowPopupImport={handleShowPopupImport}
+                                                    />
 
-                                        <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
-                                            direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                                direction={"row"} justifyContent={"right"}>
+                                                    <ExportEbilanButton
+                                                        exportToExcel={() => exportFile("EXCEL")}
+                                                        exportToPdf={() => exportFile("PDF")}
+                                                        value={value}
+                                                    />
 
-                                                <ExportEbilanButton
-                                                    exportToExcel={() => exportFile("EXCEL")}
-                                                    exportToPdf={() => exportFile("PDF")}
-                                                    value={value}
-                                                />
+                                                    <Tooltip title="Ajouter une ligne">
+                                                        <IconButton
+                                                            disabled={!canAdd}
+                                                            onClick={handleAddNewRowEIAFNC}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrEiafnc ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
 
-                                                <Tooltip title="Ajouter une ligne">
-                                                    <IconButton
-                                                        onClick={handleAddNewRowNE}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrNote ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
+                                                    <Tooltip title="Supprimer toutes les lignes du tableau">
+                                                        <IconButton
+                                                            disabled={!canDelete}
+                                                            onClick={deleteAllRowEIAFNC}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.button_delete_color,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrEiafnc ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
 
-                                                <Tooltip title="Supprimer toutes les lignes du tableau">
-                                                    <IconButton
-                                                        onClick={deleteAllRowNE}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.button_delete_color,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrNote ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title={verrNote ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
-                                                    <IconButton
-                                                        onClick={lockTableNE}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "2px", borderColor: "transparent",
-                                                            backgroundColor: verrNote ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
-                                                    >
-                                                        {verrNote
-                                                            ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        }
-                                                    </IconButton>
-                                                </Tooltip>
+                                                    <Tooltip title={verrEiafnc ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
+                                                        <IconButton
+                                                            onClick={lockTableEIAFNC}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: verrEiafnc ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            {verrEiafnc
+                                                                ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            }
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </Stack>
                                             </Stack>
-                                        </Stack>
 
+                                            <Stack
+                                                width={"100%"}
+                                                alignItems={"start"}
+                                                style={{ overflow: "auto" }}
+                                            >
+                                                <VirtualTableModifiableGroupableEbilanEIAFNC
+                                                    columns={eiafncColumn}
+                                                    rows={eiafncData}
+                                                    deleteState={deleteOneRowEIAFNC}
+                                                    modifyState={modifyRowEIAFNC}
+                                                    state={verrEiafnc}
+                                                />
+                                            </Stack>
+
+                                        </Stack>
+                                    </TabPanel>
+
+                                    {/* SAD */}
+                                    <TabPanel value="16">
                                         <Stack
                                             width={"100%"}
-                                            height={"50vh"}
-                                            alignItems={"start"}
-                                            style={{ overflow: "auto" }}
+                                            height={"100%"}
+                                            spacing={0.5}
+                                            alignItems={"flex-start"}
+                                            alignContent={"flex-start"}
+                                            justifyContent={"stretch"}
                                         >
-                                            <VirtualTableModifiableEbilan columns={neColumn} rows={neData} deleteState={deleteOneRowNE} modifyState={modifyRowNE} state={verrNote} withFooter={false} />
-                                        </Stack>
+                                            <Stack width={"100%"} height={"20px"} alignItems={"center"}
+                                                alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                                <Typography variant='h6' sx={{ color: "black" }} align='center'>Suivi des amortissements différés</Typography>
+                                            </Stack>
 
-                                    </Stack>
-                                </TabPanel>
-                            </TabContext>
-                        </Box>
-                    </Stack>
-                </TabPanel>
-            </TabContext>
-        </Box>
+                                            <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
+                                                direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                                    direction={"row"} justifyContent={"right"}>
+                                                    <Tooltip title="Liste des anomalies">
+                                                        <IconButton
+                                                            style={{ textTransform: 'none', outline: 'none', }}
+                                                            onClick={() => showAnomalie('SAD')}
+                                                        >
+                                                            <Badge badgeContent={nbrAnomalieSAD} >
+                                                                <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Liste des articles associés au formulaire">
+                                                        <IconButton style={{ textTransform: 'none', outline: 'none', }}>
+                                                            <Badge badgeContent={12} color="success">
+                                                                <PiArticleThin style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Actualiser les calculs">
+                                                        <IconButton
+                                                            onClick={refreshSAD}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrSad ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <ExportEbilanButton
+                                                        exportToExcel={() => exportFile("EXCEL")}
+                                                        exportToPdf={() => exportFile("PDF")}
+                                                        value={value}
+                                                    />
+
+                                                    <Tooltip title={verrSad ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
+                                                        <IconButton
+                                                            onClick={lockTableSAD}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: verrSad ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            {verrSad
+                                                                ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            }
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </Stack>
+                                            </Stack>
+
+                                            <Stack
+                                                width={"100%"}
+                                                alignItems={"start"}
+                                                style={{ overflow: "auto" }}
+                                            >
+                                                <VirtualTableSADEbilan
+                                                    canView={canView}
+                                                    canAdd={canAdd}
+                                                    canDelete={canDelete}
+                                                    canModify={canModify}
+                                                    refreshTable={setUpdateCalculEtatfinancier}
+                                                    columns={sadColumn}
+                                                    rows={sadData}
+                                                    state={verrSad}
+                                                />
+                                            </Stack>
+
+                                        </Stack>
+                                    </TabPanel>
+
+                                    {/* SDR */}
+                                    <TabPanel value="17">
+                                        <Stack
+                                            width={"100%"}
+                                            height={"100%"}
+                                            spacing={0.5}
+                                            alignItems={"flex-start"}
+                                            alignContent={"flex-start"}
+                                            justifyContent={"stretch"}
+                                        >
+                                            <Stack width={"100%"} height={"20px"} alignItems={"center"}
+                                                alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                                <Typography variant='h6' sx={{ color: "black" }} align='center'>Suivi des déficits reportables</Typography>
+                                            </Stack>
+
+                                            <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
+                                                direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                                    direction={"row"} justifyContent={"right"}>
+                                                    <Tooltip title="Liste des anomalies">
+                                                        <IconButton
+                                                            style={{ textTransform: 'none', outline: 'none', }}
+                                                            onClick={() => showAnomalie('SDR')}
+                                                        >
+                                                            <Badge badgeContent={nbrAnomalieSDR} >
+                                                                <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Liste des articles associés au formulaire">
+                                                        <IconButton style={{ textTransform: 'none', outline: 'none', }}>
+                                                            <Badge badgeContent={12} color="success">
+                                                                <PiArticleThin style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Actualiser les calculs">
+                                                        <IconButton
+                                                            onClick={refreshSDR}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrSdr ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <ExportEbilanButton
+                                                        exportToExcel={() => exportFile("EXCEL")}
+                                                        exportToPdf={() => exportFile("PDF")}
+                                                        value={value}
+                                                    />
+
+                                                    <Tooltip title={verrSdr ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
+                                                        <IconButton
+                                                            onClick={lockTableSDR}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: verrSdr ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            {verrSdr
+                                                                ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            }
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </Stack>
+                                            </Stack>
+
+                                            <Stack
+                                                width={"100%"}
+                                                alignItems={"start"}
+                                                style={{ overflow: "auto" }}
+                                            >
+                                                <VirtualTableSDREbilan
+                                                    canView={canView}
+                                                    canAdd={canAdd}
+                                                    canDelete={canDelete}
+                                                    canModify={canModify}
+                                                    refreshTable={setUpdateCalculEtatfinancier}
+                                                    columns={sdrColumn}
+                                                    rows={sdrData}
+                                                    state={verrSdr}
+                                                />
+                                            </Stack>
+
+                                        </Stack>
+                                    </TabPanel>
+
+                                    {/* SE */}
+                                    <TabPanel value="18">
+                                        <Stack
+                                            width={"100%"}
+                                            height={"100%"}
+                                            spacing={0.5}
+                                            alignItems={"flex-start"}
+                                            alignContent={"flex-start"}
+                                            justifyContent={"stretch"}
+                                        >
+                                            <Stack width={"100%"} height={"20px"} alignItems={"center"}
+                                                alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                                <Typography variant='h6' sx={{ color: "black" }} align='center'>Suivi des emprunts</Typography>
+                                            </Stack>
+
+                                            <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
+                                                direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                                    direction={"row"} justifyContent={"right"}>
+                                                    <Tooltip title="Liste des anomalies">
+                                                        <IconButton
+                                                            style={{ textTransform: 'none', outline: 'none', }}
+                                                            onClick={() => showAnomalie('SE')}
+                                                        >
+                                                            <Badge badgeContent={nbrAnomalieSE} >
+                                                                <GoAlert color='#FF8A8A' style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Liste des articles associés au formulaire">
+                                                        <IconButton style={{ textTransform: 'none', outline: 'none', }}>
+                                                            <Badge badgeContent={12} color="success">
+                                                                <PiArticleThin style={{ width: '30px', height: '30px' }} />
+                                                            </Badge>
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <ImportEbilanButton
+                                                        verouillage={verrSe}
+                                                        handleShowPopupImport={handleShowPopupImport}
+                                                    />
+
+                                                    <ExportEbilanButton
+                                                        exportToExcel={() => exportFile("EXCEL")}
+                                                        exportToPdf={() => exportFile("PDF")}
+                                                        value={value}
+                                                    />
+
+                                                    <Tooltip title="Ajouter une ligne">
+                                                        <IconButton
+                                                            disabled={!canAdd}
+                                                            onClick={handleAddNewRowSE}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrSe ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Supprimer toutes les lignes du tableau">
+                                                        <IconButton
+                                                            disabled={!canDelete}
+                                                            onClick={deleteAllRowSE}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.button_delete_color,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrSe ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title={verrSe ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
+                                                        <IconButton
+                                                            onClick={lockTableSE}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: verrSe ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            {verrSe
+                                                                ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            }
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </Stack>
+                                            </Stack>
+
+                                            <Stack
+                                                width={"100%"}
+                                                alignItems={"start"}
+                                                style={{ overflow: "auto" }}
+                                            >
+                                                <VirtualTableModifiableEbilan
+                                                    canView={canView}
+                                                    canAdd={canAdd}
+                                                    canDelete={canDelete}
+                                                    canModify={canModify}
+                                                    columns={seColumn}
+                                                    rows={seData}
+                                                    deleteState={deleteOneRowSE}
+                                                    modifyState={modifyRowSE}
+                                                    state={verrSe}
+                                                    withFooter={true}
+                                                />
+                                            </Stack>
+
+                                        </Stack>
+                                    </TabPanel>
+
+                                    {/* NOTE */}
+                                    <TabPanel value="19">
+                                        <Stack
+                                            width={"100%"}
+                                            height={"100%"}
+                                            spacing={0.5}
+                                            alignItems={"flex-start"}
+                                            alignContent={"flex-start"}
+                                            justifyContent={"stretch"}
+                                        >
+                                            <Stack width={"100%"} height={"20px"} alignItems={"center"}
+                                                alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                                <Typography variant='h6' sx={{ color: "black" }} align='center'>Notes explicatives</Typography>
+                                            </Stack>
+
+                                            <Stack width={"100%"} height={"50px"} alignItems={"center"} alignContent={"center"}
+                                                direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                                    direction={"row"} justifyContent={"right"}>
+
+                                                    <ExportEbilanButton
+                                                        exportToExcel={() => exportFile("EXCEL")}
+                                                        exportToPdf={() => exportFile("PDF")}
+                                                        value={value}
+                                                    />
+
+                                                    <Tooltip title="Ajouter une ligne">
+                                                        <IconButton
+                                                            disabled={!canAdd}
+                                                            onClick={handleAddNewRowNE}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrNote ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Supprimer toutes les lignes du tableau">
+                                                        <IconButton
+                                                            disabled={!canDelete}
+                                                            onClick={deleteAllRowNE}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.button_delete_color,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrNote ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title={verrNote ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}>
+                                                        <IconButton
+                                                            onClick={lockTableNE}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: verrNote ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            {verrNote
+                                                                ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            }
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </Stack>
+                                            </Stack>
+
+                                            <Stack
+                                                width={"100%"}
+                                                height={"50vh"}
+                                                alignItems={"start"}
+                                                style={{ overflow: "auto" }}
+                                            >
+                                                <VirtualTableModifiableEbilan
+                                                    canView={canView}
+                                                    canAdd={canAdd}
+                                                    canDelete={canDelete}
+                                                    canModify={canModify}
+                                                    columns={neColumn}
+                                                    rows={neData}
+                                                    deleteState={deleteOneRowNE}
+                                                    modifyState={modifyRowNE}
+                                                    state={verrNote}
+                                                    withFooter={false}
+                                                />
+                                            </Stack>
+
+                                        </Stack>
+                                    </TabPanel>
+                                </TabContext>
+                            </Box>
+                        </Stack>
+                    </TabPanel>
+                </TabContext>
+            </Box>
+        </>
     )
 }

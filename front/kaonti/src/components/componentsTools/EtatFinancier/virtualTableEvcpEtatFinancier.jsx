@@ -16,7 +16,7 @@ import { FaRegPenToSquare } from "react-icons/fa6";
 import { init } from '../../../../init';
 import PopupAjustRubriqueEvcpEtatFinancier from './popup/popupAjustRubriqueEvcpEtatFinancier';
 
-const virtualTableEvcpEtatFinancier = ({ columns, rows, noCollapsible, state, setIsRefreshed }) => {
+const virtualTableEvcpEtatFinancier = ({ columns, rows, noCollapsible, state, setIsRefreshed, canModify, canAdd, canDelete, canView }) => {
   const initial = init[0];
   const targetColumnId = 'libelle';
   const [openRows, setOpenRows] = React.useState({});
@@ -35,7 +35,7 @@ const virtualTableEvcpEtatFinancier = ({ columns, rows, noCollapsible, state, se
 
   //ajout de montant ajustement valeur d'une rubrique
   const handleCellClick = (row, column, value) => {
-    if (row.nature !== 'TOTAL' && row.nature !== 'TITRE' && column !== "total_varcap") {
+    if (row.nature !== 'TOTAL' && row.nature !== 'TITRE' && column !== "total_varcap" && column !== 'note') {
       setDetailRow(row);
       setDetailColumnHeader(column);
       setDetailValue(value);
@@ -89,7 +89,24 @@ const virtualTableEvcpEtatFinancier = ({ columns, rows, noCollapsible, state, se
 
   return (
     <Box sx={{ width: '100%', padding: 0, margin: 0 }}>
-      {openTableDetail ? <PopupAjustRubriqueEvcpEtatFinancier actionState={handleRefreshTableAjust} row={detailRow} column={detailColumnHeader} value={detailValue} dataAjust={[]} setIsRefreshed={setIsRefreshed} /> : null}
+      {
+        (openTableDetail && canView)
+          ?
+          <PopupAjustRubriqueEvcpEtatFinancier
+            actionState={handleRefreshTableAjust}
+            row={detailRow}
+            column={detailColumnHeader}
+            value={detailValue}
+            dataAjust={[]}
+            setIsRefreshed={setIsRefreshed}
+            canAdd={canAdd}
+            canModify={canModify}
+            canDelete={canDelete}
+            canView={canView}
+          />
+          :
+          null
+      }
       <TableContainer component={Paper} sx={{ width: '100%', overflowX: 'auto' }}>
         <Table sx={{ width: '100%', border: '1px solid #ddd', }} aria-label="simple table">
           <TableHead
@@ -256,12 +273,11 @@ const virtualTableEvcpEtatFinancier = ({ columns, rows, noCollapsible, state, se
                               paddingBottom: '5px',
                               fontWeight: row.niveau === 1 ? 'bold' : 'normal',
                               fontSize: 15,
-                              cursor: `${state ? '' : 'pointer'}`
+                              cursor: `${(state || column.id === 'note' || !canModify) ? '' : 'pointer'}`
                             }}
                             onClick={() => {
-                              if (!state) {
-                                handleCellClick(row, column.id, value);
-                              }
+                              if (state || !canModify) return;
+                              handleCellClick(row, column.id, value);
                             }}
                           >
                             {column.isNumber

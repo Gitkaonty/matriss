@@ -16,7 +16,9 @@ module.exports = {
         references: {
           model: 'dossiers',
           key: 'id'
-        }
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
       id_compte: {
         type: Sequelize.INTEGER,
@@ -24,7 +26,9 @@ module.exports = {
         references: {
           model: 'userscomptes',
           key: 'id'
-        }
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
       createdAt: {
         type: Sequelize.DATE,

@@ -128,7 +128,7 @@ const VirtualTableModifiableGroupableEbilanEIAFNC = ({ columns, rows, deleteStat
                   {
                     columns.map((column) => {
                       if (column.id === 'rubriques_poste') {
-                        const label = group.rubriques_poste === "AUTREACTIF"
+                        const label = group.rubriques_poste === "AUTRESACTIF"
                           ? "Autres actifs financiers non courant"
                           : group.rubriques_poste === "IMMOCORP"
                             ? "Immobilisation corporelle"
@@ -249,22 +249,18 @@ const VirtualTableModifiableGroupableEbilanEIAFNC = ({ columns, rows, deleteStat
                                       <IoMdCreate style={{ width: '25px', height: '25px', color: initial.theme, position: 'absolute', }} />
                                     </IconButton>
 
-                                    {
-                                      group.rubriques_poste === 'AUTRE'
-                                        ? <IconButton
-                                          onClick={() => handleRowDeleteClick(item)}
-                                          variant="contained"
-                                          style={{
-                                            width: "25px", height: '25px',
-                                            borderRadius: "1px", borderColor: "transparent",
-                                            backgroundColor: "transparent",
-                                            textTransform: 'none', outline: 'none'
-                                          }}
-                                        >
-                                          <IoMdTrash style={{ width: '25px', height: '25px', color: initial.button_delete_color, position: 'absolute', }} />
-                                        </IconButton>
-                                        : null
-                                    }
+                                    <IconButton
+                                      onClick={() => handleRowDeleteClick(item)}
+                                      variant="contained"
+                                      style={{
+                                        width: "25px", height: '25px',
+                                        borderRadius: "1px", borderColor: "transparent",
+                                        backgroundColor: "transparent",
+                                        textTransform: 'none', outline: 'none'
+                                      }}
+                                    >
+                                      <IoMdTrash style={{ width: '25px', height: '25px', color: initial.button_delete_color, position: 'absolute', }} />
+                                    </IconButton>
 
                                   </Stack>
                                 ) : (

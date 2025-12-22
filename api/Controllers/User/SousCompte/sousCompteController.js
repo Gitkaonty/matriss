@@ -1,19 +1,21 @@
 require('dotenv').config();
 const bcrypt = require("bcrypt");
-const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
-
-const db = require("../../../Models");
 const { Op } = require('sequelize');
 
-const Sequelize = require('sequelize');
-const fs = require('fs');
-
-const users = db.users; 
+const db = require("../../../Models");
+const users = db.users;
 const userscomptes = db.userscomptes;
-const resettokens = db.resettokens;
+const resettokens = db.resetToken;
+const userPermission = db.userPermission;
+const rolePermission = db.rolePermission;
+const roles = db.roles;
+const permissions = db.permissions;
 
 const transporter = require('../../../config/mailer');
+
+const rolePermissionMiddleware = require('../../../Middlewares/RolePermission/rolePermission');
+const createUserPermission = rolePermissionMiddleware.createUserPermission;
 
 exports.getAllSousComptes = async (req, res) => {
     try {
@@ -54,17 +56,23 @@ exports.getAllSousComptesByIdCompte = async (req, res) => {
 
 exports.addSousCompte = async (req, res) => {
     try {
-        const { username, email, password, compte_id, roles } = req.body;
+        const { username, email, password, compte_id, roles, portefeuille, role_id } = req.body;
 
         const hashedPwd = await bcrypt.hash(password, 10);
 
-        await users.create({
+        const sousCompteCreated = await users.create({
+            role_id,
             username,
             email,
             password: hashedPwd,
             compte_id,
-            roles
+            roles,
+            id_portefeuille: portefeuille
         });
+
+        const user_id = sousCompteCreated.id;
+
+        await createUserPermission(user_id, role_id);
 
         const compteParent = await userscomptes.findByPk(compte_id);
 
@@ -112,24 +120,20 @@ exports.deleteSelectedSousCompte = async (req, res) => {
             return res.status(404).json({ message: 'Ids des sous-comptes non trouvés', state: false });
         }
 
-        // Récupérer les sous-comptes avant suppression
         const sousComptes = await users.findAll({
             where: { id: sousCompteIds }
         });
 
-        // Supprimer les sous-comptes
         const result = await users.destroy({
             where: { id: sousCompteIds }
         });
 
-        // Regrouper les sous-comptes par compte parent
         const comptesMap = {};
         sousComptes.forEach(sc => {
             if (!comptesMap[sc.compte_id]) comptesMap[sc.compte_id] = [];
             comptesMap[sc.compte_id].push(sc);
         });
 
-        // Envoyer un seul email par compte parent avec tableau HTML
         for (const compteId in comptesMap) {
             const compteParent = await userscomptes.findByPk(compteId);
             if (compteParent && compteParent.email) {
@@ -337,8 +341,6 @@ exports.verifyEmail = async (req, res) => {
             }
         })
 
-        // Génération d'un token unique
-        // const token = crypto.randomBytes(32).toString("hex");
         const token = jwt.sign(
             { userId: sousCompte.id },
             process.env.ACCESS_TOKEN_SECRET,
@@ -356,7 +358,8 @@ exports.verifyEmail = async (req, res) => {
         });
 
         // Envoi de l'email de réinitialisation
-        const resetUrl = `http://localhost:5173/reset-password/token=${token}`;
+        // const resetUrl = `http://localhost:5173/reset-password/token=${token}`;
+        const resetUrl = `${process.env.FRONT_END_ADMIN_LINK}=${token}`;
         await transporter.sendMail({
             from: `"Kaonti" <${process.env.MAIL_USER}>`,
             to: sousCompte.email,
@@ -487,5 +490,137 @@ exports.verifyResetToken = async (req, res) => {
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: "Erreur serveur", state: false, error: error.message });
+    }
+}
+
+exports.getUserPermissions = async (req, res) => {
+    try {
+        const { sousCompteId } = req.body;
+
+        if (!Array.isArray(sousCompteId) || sousCompteId.length === 0) {
+            return res.status(409).json({ message: 'Aucun sous-compte sélectionné', state: false });
+        }
+
+        const permissionData = await permissions.findAll({});
+        const roleData = await roles.findAll({});
+
+        for (const id of sousCompteId) {
+
+            const userData = await users.findByPk(id, {
+                include: [{ model: roles, as: "role" }]
+            });
+
+            if (!userData) continue;
+
+            let userPermissionData = await userPermission.findAll({
+                where: { user_id: id }
+            });
+
+            if (userPermissionData.length === 0) {
+
+                const rolePermissionData = await rolePermission.findAll({
+                    where: { role_id: userData.role_id }
+                });
+
+                for (const rp of rolePermissionData) {
+                    await userPermission.create({
+                        user_id: id,
+                        permission_id: rp.permission_id,
+                        allowed: rp.allowed
+                    });
+                }
+            }
+        }
+
+        const results = await users.findAll({
+            where: { id: sousCompteId },
+            include: [
+                { model: roles, as: "role" },
+                {
+                    model: userPermission,
+                    as: "userpermissions",
+                    include: [
+                        {
+                            model: permissions,
+                            as: "permission",
+                            attributes: ["id", "nom"]
+                        }
+                    ],
+                    order: [[{ model: permissions, as: 'permission' }, 'id', 'ASC']]
+                }
+            ]
+        });
+
+        return res.status(200).json({
+            state: true,
+            list: results,
+            listPermissions: permissionData,
+            listRoles: roleData
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Erreur serveur", state: false, error: error.message });
+    }
+};
+
+exports.updateUserPermission = async (req, res) => {
+    try {
+        const { userId, permissionId, allowed } = req.body;
+
+        if (!userId || !permissionId) {
+            return res.status(409).json({ message: 'Réponse non trouvée', state: false });
+        }
+
+        await userPermission.update(
+            { allowed },
+            {
+                where: {
+                    user_id: userId,
+                    permission_id: permissionId
+                }
+            }
+        );
+
+        return res.status(200).json({ message: 'Permission mise à jour', state: true });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Erreur serveur', state: false, error: error.message });
+    }
+};
+
+exports.updateUserRole = async (req, res) => {
+    try {
+        const { userId, roleId } = req.body;
+
+        if (!userId || !roleId) {
+            return res.status(409).json({ message: 'Réponse non trouvée', state: false });
+        }
+
+        await users.update(
+            { role_id: roleId },
+            {
+                where: {
+                    id: userId,
+                }
+            }
+        );
+
+        return res.status(200).json({ message: 'Rôle mise à jour', state: true });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Erreur serveur', state: false, error: error.message });
+    }
+};
+
+exports.getAllRoles = async (req, res) => {
+    try {
+        const rolesData = await roles.findAll({ order: [['id', 'ASC']] });
+        return res.status(200).json(rolesData);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Erreur serveur', state: false, error: error.message });
     }
 }

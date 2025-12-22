@@ -52,6 +52,9 @@ import { AiTwotoneFileText } from 'react-icons/ai';
 import EditTvaAnnexeDialog from '../../../componentsTools/tva/dialogs/EditTvaAnnexeDialog';
 import ExportTvaDialog from './ExportTvaDialog';
 import { CiLock, CiUnlock } from 'react-icons/ci';
+import usePermission from '../../../../hooks/usePermission';
+import useAxiosPrivate from '../../../../../config/axiosPrivate';
+
 // ============================================================
 // 🔹 Colonnes pour le tableau Annexes déclarations
 // ============================================================
@@ -80,6 +83,8 @@ const annexesColumns = [
 ];
 
 export default function ParamTVAComponent() {
+  const { canAdd, canModify, canDelete, canView } = usePermission();
+  const axiosPrivate = useAxiosPrivate();
   let initial = init[0];
   // ============================================================
   // 🔹 Colonnes pour le tableau Annexes déclarations
@@ -473,25 +478,25 @@ export default function ParamTVAComponent() {
    * Récupère la liste des annexes TVA pour le contexte courant.
    * GET /declaration/tva/annexes
    */
-const fetchAnnexes = async () => {
-  try {
-    if (!fileId || !compteId || !selectedExerciceId || !valSelectMois || !valSelectAnnee) {
-      setAnnexesRows([]);
-      return;
-    }
+  const fetchAnnexes = async () => {
+    try {
+      if (!fileId || !compteId || !selectedExerciceId || !valSelectMois || !valSelectAnnee) {
+        setAnnexesRows([]);
+        return;
+      }
 
-    const params = {
-      id_dossier: fileId,
-      id_compte: compteId,
-      id_exercice: selectedExerciceId,
-      mois: valSelectMois,
-      annee: valSelectAnnee,
-    };
+      const params = {
+        id_dossier: fileId,
+        id_compte: compteId,
+        id_exercice: selectedExerciceId,
+        mois: valSelectMois,
+        annee: valSelectAnnee,
+      };
 
-    const { data } = await axios.get('/declaration/tva/annexes', { 
-      params,
-      timeout: 60000 
-    });
+      const { data } = await axios.get('/declaration/tva/annexes', {
+        params,
+        timeout: 60000
+      });
 
     if (data?.state) {
       const updatedRows = Array.isArray(data.list) ? data.list : (data.list ? [data.list] : []);
@@ -882,7 +887,7 @@ const fetchAnnexes = async () => {
         mois: valSelectMois,
         annee: valSelectAnnee,
       };
-      const { data } = await axios.post("/declaration/tva/generateAnnexeDeclarationAuto", payload, { timeout: 120000 });
+      const { data } = await axiosPrivate.post("/declaration/tva/generateAnnexeDeclarationAuto", payload, { timeout: 120000 });
       if (data?.state) {
         toast.success(data?.msg || "Annexes générées avec succès");
         fetchAnnexes(); // Recharger les données
@@ -1744,7 +1749,7 @@ const fetchAnnexes = async () => {
     if (value === true) {
       if (selectedRowId.length === 1) {
         const idToDelete = selectedRowId[0];
-        axios.post(`/paramTva/paramTvaDelete`, { fileId, compteId, idToDelete }).then((response) => {
+        axiosPrivate.post(`/paramTva/paramTvaDelete`, { fileId, compteId, idToDelete }).then((response) => {
           const resData = response.data;
           if (resData.state) {
             setOpenDialogDeleteRow(false);
@@ -1784,7 +1789,7 @@ const fetchAnnexes = async () => {
   return (
     <Paper sx={{ p: 2 }}>
       {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
-      {openDialogDeleteRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer le code journal sélectionné ?"} confirmationState={deleteRow} /> : null}
+      {(openDialogDeleteRow && canDelete) ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer le code journal sélectionné ?"} confirmationState={deleteRow} /> : null}
       <Stack width="100%" spacing={2}>
         <TabContext value={"1"}>
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -2146,6 +2151,7 @@ const fetchAnnexes = async () => {
               {!verrTva && (
                 <Tooltip title="Actualiser les calculs">
                   <IconButton
+                    disabled={!canAdd}
                     onClick={openConfirmRefreshTva}
                     variant="contained"
                     style={{
@@ -2187,6 +2193,7 @@ const fetchAnnexes = async () => {
             computeTrigger={computeTrigger}
             refreshCounter={refreshCounter}
             onAnomaliesChange={setDbAnomaliesRows}
+            canView={canView}
           />
         </TabPanel>
 
@@ -2210,6 +2217,10 @@ const fetchAnnexes = async () => {
             onGenerate={handleGenerateAnnexes}
             onEditRow={handleOpenEditAnnexe}
             onDeleteRow={openConfirmDeleteAnnexe}
+            canView={canView}
+            canAdd={canAdd}
+            canDelete={canDelete}
+            canModify={canModify}
           />
         </TabPanel>
         {/* Dialog Ajouter Annexe */}
@@ -2263,6 +2274,10 @@ const fetchAnnexes = async () => {
                 setJournalLoading={setJournalLoading}
                 filteredList={filteredList}
                 setFilteredList={setFilteredList}
+                canView={canView}
+                canAdd={canAdd}
+                canDelete={canDelete}
+                canModify={canModify}
               />
             </TabPanel>
 
@@ -2273,6 +2288,10 @@ const fetchAnnexes = async () => {
                 compteId={compteId}
                 valSelectAnnee={valSelectAnnee}
                 valSelectMois={valSelectMois}
+                canView={canView}
+                canAdd={canAdd}
+                canDelete={canDelete}
+                canModify={canModify}
               />
             </TabPanel>
           </TabContext>

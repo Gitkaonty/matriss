@@ -46,7 +46,9 @@ module.exports = {
         references: {
           model: 'dossiers',
           key: 'id'
-        }
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
       id_exercice: {
         type: Sequelize.INTEGER,
@@ -54,7 +56,9 @@ module.exports = {
         references: {
           model: 'exercices',
           key: 'id'
-        }
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
       id_compte: {
         type: Sequelize.INTEGER,
@@ -62,7 +66,9 @@ module.exports = {
         references: {
           model: 'userscomptes',
           key: 'id'
-        }
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
       totalSalaireBrut: {
         type: Sequelize.DECIMAL(15, 2), allowNull: true

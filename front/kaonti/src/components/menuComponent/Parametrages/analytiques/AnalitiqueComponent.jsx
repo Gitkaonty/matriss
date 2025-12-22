@@ -14,8 +14,11 @@ import { jwtDecode } from 'jwt-decode';
 // Importation Datagrid
 import DatagridAnalitiqueAxe from '../../../componentsTools/Analitique/DatagridAnalitique/DatagridAnalitiqueAxe';
 import DatagridAnalitiqueSection from '../../../componentsTools/Analitique/DatagridAnalitique/DatagridAnalitiqueSection';
+import usePermission from '../../../../hooks/usePermission';
 
 export default function DeclarationCommComponent() {
+    const { canAdd, canModify, canDelete, canView } = usePermission();
+
     let initial = init[0];
     const [fileInfos, setFileInfos] = useState('');
     const [fileId, setFileId] = useState(0);
@@ -76,7 +79,7 @@ export default function DeclarationCommComponent() {
     }, []);
 
     return (
-        <Box>
+        <>
             {
                 noFile
                     ?
@@ -86,49 +89,59 @@ export default function DeclarationCommComponent() {
                     :
                     null
             }
-            <TabContext value={"1"} >
-                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                    <TabList aria-label="lab API tabs example">
-                        <Tab
-                            style={{
-                                textTransform: 'none',
-                                outline: 'none',
-                                border: 'none',
-                                margin: -5
-                            }}
-                            label={InfoFileStyle(fileInfos?.dossier)} value="1"
-                        />
-                    </TabList>
-                </Box>
-                <TabPanel value="1" style={{ height: '100%' }}>
-                    <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
-                        <Typography variant='h6' sx={{ color: "black", pb: '5px' }} align='left'>{"Paramétrages - Gestion Analitique"}</Typography>
-                        <Typography sx={{ color: "black", pb: '5px' }} align='left'>
-                            {`La comptabilité analytique de ce dossier est ${isCaActive ? 'activée' : 'désactivée'}`}
-                        </Typography>
-                        <Box sx={{ width: '100%' }}>
-                            <Box sx={{ width: '100%', height: '15px', backgroundColor: '#F4F9F9' }} />
-                            <Stack direction="row" sx={{ width: '100%', minHeight: 450 }}>
-                                <DatagridAnalitiqueAxe
-                                    id_compte={compteId}
-                                    id_dossier={fileId}
-                                    selectedRowAxeId={selectedRowAxeId}
-                                    setSelectedRowAxeId={setSelectedRowAxeId}
-                                    isCaActive={isCaActive}
-                                />
-                                <DatagridAnalitiqueSection
-                                    id_compte={compteId}
-                                    id_dossier={fileId}
-                                    selectedRowAxeId={selectedRowAxeId}
-                                    isCaActive={isCaActive}
-                                />
-                            </Stack>
-                            <Box sx={{ width: '100%', height: '15px', backgroundColor: '#F4F9F9' }} />
-                        </Box>
+            <Box>
+                <TabContext value={"1"} >
+                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                        <TabList aria-label="lab API tabs example">
+                            <Tab
+                                style={{
+                                    textTransform: 'none',
+                                    outline: 'none',
+                                    border: 'none',
+                                    margin: -5
+                                }}
+                                label={InfoFileStyle(fileInfos?.dossier)} value="1"
+                            />
+                        </TabList>
+                    </Box>
+                    <TabPanel value="1" style={{ height: '100%' }}>
+                        <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
+                            <Typography variant='h6' sx={{ color: "black", pb: '5px' }} align='left'>{"Paramétrages - Gestion Analitique"}</Typography>
+                            <Typography sx={{ color: "black", pb: '5px' }} align='left'>
+                                {`La comptabilité analytique de ce dossier est ${isCaActive ? 'activée' : 'désactivée'}`}
+                            </Typography>
+                            <Box sx={{ width: '100%' }}>
+                                <Box sx={{ width: '100%', height: '15px', backgroundColor: '#F4F9F9' }} />
+                                <Stack direction="row" sx={{ width: '100%', minHeight: 450 }}>
+                                    <DatagridAnalitiqueAxe
+                                        id_compte={compteId}
+                                        id_dossier={fileId}
+                                        selectedRowAxeId={selectedRowAxeId}
+                                        setSelectedRowAxeId={setSelectedRowAxeId}
+                                        isCaActive={isCaActive}
+                                        canView={canView}
+                                        canAdd={canAdd}
+                                        canDelete={canDelete}
+                                        canModify={canModify}
+                                    />
+                                    <DatagridAnalitiqueSection
+                                        id_compte={compteId}
+                                        id_dossier={fileId}
+                                        selectedRowAxeId={selectedRowAxeId}
+                                        isCaActive={isCaActive}
+                                        canView={canView}
+                                        canAdd={canAdd}
+                                        canDelete={canDelete}
+                                        canModify={canModify}
+                                    />
+                                </Stack>
+                                <Box sx={{ width: '100%', height: '15px', backgroundColor: '#F4F9F9' }} />
+                            </Box>
 
-                    </Stack>
-                </TabPanel>
-            </TabContext>
-        </Box>
+                        </Stack>
+                    </TabPanel>
+                </TabContext>
+            </Box>
+        </>
     )
 }

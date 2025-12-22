@@ -27,8 +27,13 @@ import { BsPersonFillSlash } from "react-icons/bs";
 import { FaGlobeAmericas } from "react-icons/fa";
 import { useSearchParams } from "react-router-dom";
 import PopupAddNewAccount from '../../../componentsTools/PlanComptable/PopupAddNewAccount';
+import usePermission from '../../../../hooks/usePermission';
+import useAxiosPrivate from '../../../../../config/axiosPrivate';
 
 export default function ParamPlanComptable() {
+    const { canAdd, canModify, canDelete, canView } = usePermission();
+    const axiosPrivate = useAxiosPrivate();
+
     let initial = init[0];
     const { auth } = useAuth();
     const navigate = useNavigate();
@@ -93,6 +98,15 @@ export default function ParamPlanComptable() {
                     </span>
                 );
             }
+        },
+        {
+            field: 'typecomptabilite',
+            headerName: <strong>Type comptabilité</strong>,
+            type: 'string',
+            sortable: true,
+            width: 150,
+            headerAlign: 'left',
+            headerClassName: 'HeaderbackColor',
         },
         {
             field: 'libelle',
@@ -605,7 +619,7 @@ export default function ParamPlanComptable() {
             if (pcAllselectedRow.length >= 1) {
                 const listId = pcAllselectedRow;
 
-                axios.post(`/paramPlanComptable/deleteItemPc`, { listId, compteId, fileId }).then((response) => {
+                axiosPrivate.post(`/paramPlanComptable/deleteItemPc`, { listId, compteId, fileId }).then((response) => {
                     const resData = response.data;
                     showPc();
                     setOpenDialogDeleteItemsPc(false);
@@ -651,11 +665,14 @@ export default function ParamPlanComptable() {
     }, []);
 
     useEffect(() => {
-        showPc();
+        if (canView) {
+            showPc();
+        }
     }, [fileId, compte, isRefresh]);
 
     return (
-        <Box>
+        <>
+
             {
                 noFile
                     ?
@@ -666,7 +683,7 @@ export default function ParamPlanComptable() {
                     null
             }
             {
-                openInfos ?
+                (openInfos && canView) ?
                     <DetailsInformation
                         row={rowCptInfos}
                         confirmOpen={showCptInfos}
@@ -676,7 +693,7 @@ export default function ParamPlanComptable() {
                     :
                     null}
             {
-                openDialogAddNewAccount && (
+                openDialogAddNewAccount && (canAdd || canModify) && (
                     <PopupAddNewAccount
                         id_dossier={fileId}
                         id_compte={compteId}
@@ -688,7 +705,7 @@ export default function ParamPlanComptable() {
                 )
             }
             {
-                openDialogDeleteItemsPc
+                (openDialogDeleteItemsPc && canDelete)
                     ?
                     <PopupConfirmDelete
                         msg={"Voulez-vous vraiment supprimer les comptes sélectionnés ?"}
@@ -697,116 +714,118 @@ export default function ParamPlanComptable() {
                     :
                     null
             }
+            <Box>
+                <TabContext value={"1"}>
+                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                        <TabList aria-label="lab API tabs example">
+                            <Tab
+                                style={{
+                                    textTransform: 'none',
+                                    outline: 'none',
+                                    border: 'none',
+                                    margin: -5
+                                }}
+                                label={InfoFileStyle(fileInfos?.dossier)} value="1"
+                            />
+                        </TabList>
+                    </Box>
+                    <TabPanel value="1">
+                        <Stack width={"100%"} height={"90%"} spacing={0.5} alignItems={"flex-start"} justifyContent={"stretch"}>
+                            <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages : Plan comptable</Typography>
+                            <Stack width={"100%"} height={"30px"} spacing={0} alignItems={"center"} alignContent={"center"}
+                                direction={"row"} style={{ marginLeft: "0px", marginTop: "30px", justifyContent: "right" }}>
 
-            <TabContext value={"1"}>
-                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                    <TabList aria-label="lab API tabs example">
-                        <Tab
-                            style={{
-                                textTransform: 'none',
-                                outline: 'none',
-                                border: 'none',
-                                margin: -5
-                            }}
-                            label={InfoFileStyle(fileInfos?.dossier)} value="1"
-                        />
-                    </TabList>
-                </Box>
-                <TabPanel value="1">
-                    <Stack width={"100%"} height={"90%"} spacing={0.5} alignItems={"flex-start"} justifyContent={"stretch"}>
-                        <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages : Plan comptable</Typography>
-                        <Stack width={"100%"} height={"30px"} spacing={0} alignItems={"center"} alignContent={"center"}
-                            direction={"row"} style={{ marginLeft: "0px", marginTop: "30px", justifyContent: "right" }}>
-
-                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                direction={"row"} justifyContent={"right"}>
-                                <Tooltip title="Ajouter un nouveau compte">
-                                    <IconButton
-                                        // disabled={statutDeleteButton}  
-                                        onClick={() => handleOpenDialogAddNewAccount('ajout')}
-                                        variant="contained"
-                                        style={{
-                                            width: "35px", height: '35px',
-                                            borderRadius: "5px", borderColor: "transparent",
-                                            backgroundColor: initial.theme,
-                                            textTransform: 'none', outline: 'none'
-                                        }}
-                                    >
-                                        <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                                    </IconButton>
-                                </Tooltip>
-
-                                <Tooltip title="Modifier le compte sélectionné">
-                                    <IconButton
-                                        disabled={selectedRow.length === 0}
-                                        onClick={() => handleOpenDialogAddNewAccount('modification')}
-                                        variant="contained"
-                                        style={{
-                                            width: "35px", height: '35px',
-                                            borderRadius: "5px", borderColor: "transparent",
-                                            backgroundColor: initial.theme,
-                                            textTransform: 'none', outline: 'none'
-                                        }}
-                                    >
-                                        <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
-                                    </IconButton>
-                                </Tooltip>
-
-                                <Tooltip title="Supprimer le compte sélectionné">
-                                    <span>
+                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                    direction={"row"} justifyContent={"right"}>
+                                    <Tooltip title="Ajouter un nouveau compte">
                                         <IconButton
-                                            disabled={selectedRow.length === 0}
-                                            onClick={handleOpenDialogCptDelete}
+                                            disabled={!canAdd}
+                                            // disabled={statutDeleteButton}  
+                                            onClick={() => handleOpenDialogAddNewAccount('ajout')}
                                             variant="contained"
                                             style={{
                                                 width: "35px", height: '35px',
                                                 borderRadius: "5px", borderColor: "transparent",
-                                                backgroundColor: initial.button_delete_color,
+                                                backgroundColor: initial.theme,
                                                 textTransform: 'none', outline: 'none'
                                             }}
                                         >
-                                            <IoMdTrash style={{ width: '40px', height: '40px', color: 'white' }} />
+                                            <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
                                         </IconButton>
-                                    </span>
-                                </Tooltip>
+                                    </Tooltip>
+
+                                    <Tooltip title="Modifier le compte sélectionné">
+                                        <IconButton
+                                            disabled={(!canModify) || selectedRow.length === 0}
+                                            onClick={() => handleOpenDialogAddNewAccount('modification')}
+                                            variant="contained"
+                                            style={{
+                                                width: "35px", height: '35px',
+                                                borderRadius: "5px", borderColor: "transparent",
+                                                backgroundColor: initial.theme,
+                                                textTransform: 'none', outline: 'none'
+                                            }}
+                                        >
+                                            <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
+                                        </IconButton>
+                                    </Tooltip>
+
+                                    <Tooltip title="Supprimer le compte sélectionné">
+                                        <span>
+                                            <IconButton
+                                                disabled={!canDelete || selectedRow.length === 0}
+                                                onClick={handleOpenDialogCptDelete}
+                                                variant="contained"
+                                                style={{
+                                                    width: "35px", height: '35px',
+                                                    borderRadius: "5px", borderColor: "transparent",
+                                                    backgroundColor: initial.button_delete_color,
+                                                    textTransform: 'none', outline: 'none'
+                                                }}
+                                            >
+                                                <IoMdTrash style={{ width: '40px', height: '40px', color: 'white' }} />
+                                            </IconButton>
+                                        </span>
+                                    </Tooltip>
+                                </Stack>
+                            </Stack>
+                            <Stack height={"70vh"} width={'100%'}>
+                                <DataGrid
+                                    disableMultipleSelection={DataGridStyle.disableMultipleSelection}
+                                    disableColumnSelector={DataGridStyle.disableColumnSelector}
+                                    disableDensitySelector={DataGridStyle.disableDensitySelector}
+                                    localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                                    disableRowSelectionOnClick
+                                    disableSelectionOnClick={true}
+                                    slots={{ toolbar: QuickFilter }}
+                                    sx={DataGridStyle.sx}
+                                    rowHeight={DataGridStyle.rowHeight}
+                                    columnHeaderHeight={DataGridStyle.columnHeaderHeight}
+                                    onRowSelectionModelChange={ids => {
+                                        const lastId = ids && ids.length ? ids[ids.length - 1] : null;
+                                        listPCSelectedRow(lastId != null ? [lastId] : []);
+                                    }}
+                                    rowSelectionModel={pcAllselectedRow}
+                                    rows={pc}
+                                    columns={columnHeaderDetail}
+                                    initialState={{
+                                        pagination: {
+                                            paginationModel: { page: 0, pageSize: 100 },
+                                        },
+                                    }}
+                                    experimentalFeatures={{ columnPinning: true }}
+                                    pageSizeOptions={[50, 100]}
+                                    pagination={DataGridStyle.pagination}
+                                    checkboxSelection={DataGridStyle.checkboxSelection}
+                                    columnVisibilityModel={{
+                                        id: false,
+                                    }}
+                                />
                             </Stack>
                         </Stack>
-                        <Stack height={"70vh"} width={'100%'}>
-                            <DataGrid
-                                disableMultipleSelection={DataGridStyle.disableMultipleSelection}
-                                disableColumnSelector={DataGridStyle.disableColumnSelector}
-                                disableDensitySelector={DataGridStyle.disableDensitySelector}
-                                localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
-                                disableRowSelectionOnClick
-                                disableSelectionOnClick={true}
-                                slots={{ toolbar: QuickFilter }}
-                                sx={DataGridStyle.sx}
-                                rowHeight={DataGridStyle.rowHeight}
-                                columnHeaderHeight={DataGridStyle.columnHeaderHeight}
-                                onRowSelectionModelChange={ids => {
-                                    const lastId = ids && ids.length ? ids[ids.length - 1] : null;
-                                    listPCSelectedRow(lastId != null ? [lastId] : []);
-                                }}
-                                rowSelectionModel={pcAllselectedRow}
-                                rows={pc}
-                                columns={columnHeaderDetail}
-                                initialState={{
-                                    pagination: {
-                                        paginationModel: { page: 0, pageSize: 100 },
-                                    },
-                                }}
-                                experimentalFeatures={{ columnPinning: true }}
-                                pageSizeOptions={[50, 100]}
-                                pagination={DataGridStyle.pagination}
-                                checkboxSelection={DataGridStyle.checkboxSelection}
-                                columnVisibilityModel={{
-                                    id: false,
-                                }}
-                            />
-                        </Stack>
-                    </Stack>
-                </TabPanel>
-            </TabContext>
-        </Box>
+                    </TabPanel>
+                </TabContext>
+            </Box>
+        </>
     )
 }

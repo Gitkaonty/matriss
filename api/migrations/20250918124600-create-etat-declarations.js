@@ -2,7 +2,7 @@
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  async up (queryInterface, Sequelize) {
+  async up(queryInterface, Sequelize) {
     await queryInterface.createTable('etatsdeclarations', {
       id: {
         type: Sequelize.BIGINT,
@@ -17,7 +17,9 @@ module.exports = {
         references: {
           model: 'dossiers',
           key: 'id'
-        }
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
       id_exercice: {
         type: Sequelize.INTEGER,
@@ -25,7 +27,9 @@ module.exports = {
         references: {
           model: 'exercices',
           key: 'id'
-        }
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
       id_compte: {
         type: Sequelize.INTEGER,
@@ -33,7 +37,9 @@ module.exports = {
         references: {
           model: 'userscomptes',
           key: 'id'
-        }
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
       code: {
         type: Sequelize.STRING(15),
@@ -53,13 +59,13 @@ module.exports = {
         allowNull: false,
         defaultValue: 0
       },
-      mois: { 
-        type: Sequelize.INTEGER, 
-        allowNull: true 
+      mois: {
+        type: Sequelize.INTEGER,
+        allowNull: true
       },
-      annee: { 
-        type: Sequelize.INTEGER, 
-        allowNull: true 
+      annee: {
+        type: Sequelize.INTEGER,
+        allowNull: true
       },
       createdAt: {
         allowNull: false,
@@ -74,7 +80,7 @@ module.exports = {
     });
   },
 
-  async down (queryInterface, Sequelize) {
+  async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('etatsdeclarations');
   }
 };

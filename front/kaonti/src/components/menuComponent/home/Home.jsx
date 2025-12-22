@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Stack, TextField, Tooltip, Typography } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import InputAdornment from '@mui/material/InputAdornment';
-import Button from '@mui/material/Button';
 import { init } from '../../../../init';
 import toast from 'react-hot-toast';
 import { DataGrid, frFR } from '@mui/x-data-grid';
@@ -17,13 +15,14 @@ import { IoMdTrash } from 'react-icons/io';
 import { AiOutlineFileAdd } from "react-icons/ai";
 import { DataGridStyle } from '../../componentsTools/DatagridToolsStyle';
 import useAuth from '../../../hooks/useAuth';
-import axios from '../../../../config/axios';
+// import axios from '../../../../config/axios';
 import { jwtDecode } from 'jwt-decode';
 import PopupConfirmDelete from '../../componentsTools/popupConfirmDelete';
 import { useNavigate } from 'react-router-dom';
 import { FcFile } from "react-icons/fc";
-import { IoCloseOutline } from "react-icons/io5";
 import useFileInfos from '../../../hooks/useFileInfos';
+import usePermission from '../../../hooks/usePermission';
+import useAxiosPrivate from '../../../../config/axiosPrivate';
 
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="right" ref={ref} {...props} />;
@@ -31,6 +30,9 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 
 export default function Home() {
   const navigate = useNavigate();
+  const axios = useAxiosPrivate();
+
+  const { canAdd, canModify, canDelete, canView } = usePermission();
 
   let initial = init[0];
   let [listeDossier, setListeDossier] = useState([]);
@@ -48,22 +50,27 @@ export default function Home() {
 
   //Chargement des données dans datagrid
   const GetListeDossier = () => {
-    axios.get(`/home/file/${compteId}`).then((response) => {
+    axios.get(`/home/file/${compteId}`, { params: { userId: userId } }).then((response) => {
       const resData = response.data;
       setListeDossier(resData.fileList);
-      setFinalListeDossier(resData.fileList);
+      canView ? setFinalListeDossier(resData.fileList) : setFinalListeDossier([]);
     })
   }
 
   //Filtrer la liste des dossiers
   const HandleFindClick = () => {
-    if (findText === '') {
+    if (findText.trim() === '') {
       setFinalListeDossier(listeDossier);
     } else {
-      const filtered = listeDossier.filter(dossier => dossier.dossier.includes(findText));
+      const filterValue = findText.toLowerCase();
+
+      const filtered = listeDossier.filter(dossier =>
+        dossier.dossier.toLowerCase().includes(filterValue)
+      );
+
       setFinalListeDossier(filtered);
     }
-  }
+  };
 
   //Restaurer la liste des dossiers si le champ de filtre est vide
   const handleChangeFindText = (e) => {
@@ -171,6 +178,15 @@ export default function Home() {
       }
     },
     {
+      field: 'portefeuille',
+      headerName: "Portefeuille",
+      type: 'string',
+      sortable: true,
+      flex: 1.5,
+      headerAlign: 'left',
+      headerClassName: 'HeaderbackColor'
+    },
+    {
       field: 'nif',
       headerName: "Nif",
       type: 'string',
@@ -218,13 +234,24 @@ export default function Home() {
   ];
 
   useEffect(() => {
-    GetListeDossier();
+    if (compteId) {
+      GetListeDossier();
+    }
   }, [compteId]);
 
   return (
     <>
       {/* MODAL POUR LA SUPPRESSION D'UN DOSSIER */}
-      {openDialogDeleteDossier ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer le dossier sélectionné ?"} confirmationState={deleteDossier} /> : null}
+      {
+        openDialogDeleteDossier && canDelete
+          ?
+          <PopupConfirmDelete
+            msg={"Voulez-vous vraiment supprimer le dossier sélectionné ?"}
+            confirmationState={deleteDossier}
+          />
+          :
+          null
+      }
       {open ?
         <Dialog
           fullScreen
@@ -326,6 +353,7 @@ export default function Home() {
             >
               <Tooltip title="Ajouter un nouveau dossier">
                 <IconButton
+                  disabled={!canAdd}
                   onClick={handleDialogClickOpen}
                   variant="contained"
                   style={{
@@ -340,6 +368,7 @@ export default function Home() {
 
               <Tooltip title="Supprimer le dossier">
                 <IconButton
+                  disabled={!canDelete || selectedDossierRow.length > 1 || selectedDossierRow.length === 0}
                   onClick={handleOpenDialogConfirmDeleteDossier}
                   variant="contained"
                   style={{

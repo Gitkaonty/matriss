@@ -9,6 +9,9 @@ router.post('/recupBalance', exportBalanceController.recupBalance);
 // Récupération balance analytique
 router.post('/recupBalanceCa', exportBalanceController.recupBalanceCa);
 
+// Actualisation de la balance
+router.post('/actualizeBalance', exportBalanceController.actualizeBalance);
+
 // export PDF/Excel balance
 router.post('/pdf', exportBalanceController.exportPdf);
 router.post('/excel', exportBalanceController.exportExcel);

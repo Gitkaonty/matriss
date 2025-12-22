@@ -40,6 +40,8 @@ import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import VirtualTableEbilanEtatFinaciereAnalytique from '../../../componentsTools/EtatFinancierAnalytique/virtualTableEbilanEtatFinancierAnalytique';
 import VirtualTableEvcpEtatFinancierAnalytique from '../../../componentsTools/EtatFinancierAnalytique/virtualTableEvcpEtatFinancierAnalytique';
 
+import usePermission from '../../../../hooks/usePermission';
+
 const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
 const checkedIcon = <CheckBoxIcon fontSize="small" />;
 
@@ -242,6 +244,8 @@ const evcpColumn = [
 ];
 
 export default function EtatFinancierAnalytique() {
+    const { canAdd, canModify, canDelete, canView } = usePermission();
+
     //Valeur du listbox choix exercice ou situation-----------------------------------------------------
     let tabFinancierAnalytique = "";
     let axeId = 0;
@@ -716,7 +720,7 @@ export default function EtatFinancierAnalytique() {
     }, []);
 
     useEffect(() => {
-        if (fileId && compteId && selectedExerciceId && selectedAxeId && selectedSectionsId) {
+        if (canView && fileId && compteId && selectedExerciceId && selectedAxeId && selectedSectionsId) {
             getEtatFinancierAnalytiqueGlobal();
         }
     }, [fileId, compteId, selectedExerciceId, selectedAxeId, selectedSectionsId, isRefreshed])
@@ -1060,6 +1064,10 @@ export default function EtatFinancierAnalytique() {
                                                 style={{ overflow: "auto" }}
                                             >
                                                 <VirtualTableEbilanEtatFinaciereAnalytique
+                                                    canView={canView}
+                                                    canAdd={canAdd}
+                                                    canDelete={canDelete}
+                                                    canModify={canModify}
                                                     columns={BilanActifColumn}
                                                     rows={bilanActifData}
                                                     state={verrBilan}
@@ -1077,6 +1085,10 @@ export default function EtatFinancierAnalytique() {
                                                 style={{ overflow: "auto" }}
                                             >
                                                 <VirtualTableEbilanEtatFinaciereAnalytique
+                                                    canView={canView}
+                                                    canAdd={canAdd}
+                                                    canDelete={canDelete}
+                                                    canModify={canModify}
                                                     columns={BilanPassifColumn}
                                                     rows={bilanPassifData}
                                                     state={verrBilan}
@@ -1159,6 +1171,10 @@ export default function EtatFinancierAnalytique() {
                                             style={{ overflow: "auto" }}
                                         >
                                             <VirtualTableEbilanEtatFinaciereAnalytique
+                                                canView={canView}
+                                                canAdd={canAdd}
+                                                canDelete={canDelete}
+                                                canModify={canModify}
                                                 columns={crnColumn}
                                                 rows={crnData}
                                                 state={verrCrn}
@@ -1239,6 +1255,10 @@ export default function EtatFinancierAnalytique() {
                                             style={{ overflow: "auto" }}
                                         >
                                             <VirtualTableEbilanEtatFinaciereAnalytique
+                                                canView={canView}
+                                                canAdd={canAdd}
+                                                canDelete={canDelete}
+                                                canModify={canModify}
                                                 columns={crnColumn}
                                                 rows={crfData}
                                                 state={verrCrf}
@@ -1319,6 +1339,10 @@ export default function EtatFinancierAnalytique() {
                                             style={{ overflow: "auto" }}
                                         >
                                             <VirtualTableEbilanEtatFinaciereAnalytique
+                                                canView={canView}
+                                                canAdd={canAdd}
+                                                canDelete={canDelete}
+                                                canModify={canModify}
                                                 columns={tftdColumn}
                                                 rows={tftdData}
                                                 state={verrTftd}
@@ -1399,6 +1423,10 @@ export default function EtatFinancierAnalytique() {
                                             style={{ overflow: "auto" }}
                                         >
                                             <VirtualTableEbilanEtatFinaciereAnalytique
+                                                canView={canView}
+                                                canAdd={canAdd}
+                                                canDelete={canDelete}
+                                                canModify={canModify}
                                                 columns={crnColumn}
                                                 rows={tftiData}
                                                 state={verrTfti}
@@ -1480,6 +1508,10 @@ export default function EtatFinancierAnalytique() {
                                             style={{ overflow: "auto" }}
                                         >
                                             <VirtualTableEvcpEtatFinancierAnalytique
+                                                canView={canView}
+                                                canAdd={canAdd}
+                                                canDelete={canDelete}
+                                                canModify={canModify}
                                                 columns={evcpColumn}
                                                 rows={evcpData}
                                                 state={verrEvcp}

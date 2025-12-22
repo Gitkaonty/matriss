@@ -24,6 +24,7 @@ import { FaRegPenToSquare, FaFilePdf, FaFileExcel } from 'react-icons/fa6';
 import { TfiSave } from 'react-icons/tfi';
 import { VscClose } from 'react-icons/vsc';
 import { IoMdTrash } from 'react-icons/io';
+import usePermission from '../../../../hooks/usePermission';
 
 // Comparator to keep total row at the bottom regardless of sort
 const keepTotalBottomComparator = (v1, v2, cellParams1, cellParams2) => {
@@ -74,6 +75,7 @@ const formatMoneyFr = (n) => {
 };
 
 function RapprochementsBancaires() {
+  const { canAdd, canModify, canDelete, canView } = usePermission();
   let initial = init[0];
   const [fileInfos, setFileInfos] = useState('');
   const [fileId, setFileId] = useState(0);

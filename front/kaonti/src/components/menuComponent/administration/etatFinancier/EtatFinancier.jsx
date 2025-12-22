@@ -39,6 +39,8 @@ import ExportEtatFinancierButtonAll from '../../../componentsTools/EtatFinancier
 
 import VirtualTableEvcpEtatFinancier from '../../../componentsTools/EtatFinancier/virtualTableEvcpEtatFinancier';
 
+import usePermission from '../../../../hooks/usePermission';
+
 //colonne bilan
 const BilanActifColumn = [
     {
@@ -238,9 +240,11 @@ const evcpColumn = [
 ];
 
 export default function EtatFinancier() {
+    const { canAdd, canModify, canDelete, canView } = usePermission();
+
     //Valeur du listbox choix exercice ou situation-----------------------------------------------------
     let tabFinancier = ""
-    if (typeof window !== undefined) {
+    if (typeof window !== 'undefined') {
         tabFinancier = localStorage.getItem('tabFinancier');
     }
     const [value, setValue] = useState(tabFinancier || "1");
@@ -659,7 +663,7 @@ export default function EtatFinancier() {
     }, []);
 
     useEffect(() => {
-        if (fileId && compteId && selectedExerciceId) {
+        if (canView && fileId && compteId && selectedExerciceId) {
             getEtatFinancierGlobal();
         }
     }, [fileId, compteId, selectedExerciceId, isRefreshed])
@@ -878,6 +882,10 @@ export default function EtatFinancier() {
                                                 style={{ overflow: "auto" }}
                                             >
                                                 <VirtualTableEbilanEtatFinacier
+                                                    canView={canView}
+                                                    canAdd={canAdd}
+                                                    canDelete={canDelete}
+                                                    canModify={canModify}
                                                     columns={BilanActifColumn}
                                                     rows={bilanActifData}
                                                     state={verrBilan}
@@ -893,6 +901,10 @@ export default function EtatFinancier() {
                                                 style={{ overflow: "auto" }}
                                             >
                                                 <VirtualTableEbilanEtatFinacier
+                                                    canView={canView}
+                                                    canAdd={canAdd}
+                                                    canDelete={canDelete}
+                                                    canModify={canModify}
                                                     columns={BilanPassifColumn}
                                                     rows={bilanPassifData}
                                                     state={verrBilan}
@@ -973,6 +985,10 @@ export default function EtatFinancier() {
                                             style={{ overflow: "auto" }}
                                         >
                                             <VirtualTableEbilanEtatFinacier
+                                                canView={canView}
+                                                canAdd={canAdd}
+                                                canDelete={canDelete}
+                                                canModify={canModify}
                                                 columns={crnColumn}
                                                 rows={crnData}
                                                 state={verrCrn}
@@ -1051,6 +1067,10 @@ export default function EtatFinancier() {
                                             style={{ overflow: "auto" }}
                                         >
                                             <VirtualTableEbilanEtatFinacier
+                                                canView={canView}
+                                                canAdd={canAdd}
+                                                canDelete={canDelete}
+                                                canModify={canModify}
                                                 columns={crnColumn}
                                                 rows={crfData}
                                                 state={verrCrf}
@@ -1129,6 +1149,10 @@ export default function EtatFinancier() {
                                             style={{ overflow: "auto" }}
                                         >
                                             <VirtualTableEbilanEtatFinacier
+                                                canView={canView}
+                                                canAdd={canAdd}
+                                                canDelete={canDelete}
+                                                canModify={canModify}
                                                 columns={tftdColumn}
                                                 rows={tftdData}
                                                 state={verrTftd}
@@ -1207,6 +1231,10 @@ export default function EtatFinancier() {
                                             style={{ overflow: "auto" }}
                                         >
                                             <VirtualTableEbilanEtatFinacier
+                                                canView={canView}
+                                                canAdd={canAdd}
+                                                canDelete={canDelete}
+                                                canModify={canModify}
                                                 columns={crnColumn}
                                                 rows={tftiData}
                                                 state={verrTfti}
@@ -1286,6 +1314,10 @@ export default function EtatFinancier() {
                                             style={{ overflow: "auto" }}
                                         >
                                             <VirtualTableEvcpEtatFinancier
+                                                canView={canView}
+                                                canAdd={canAdd}
+                                                canDelete={canDelete}
+                                                canModify={canModify}
                                                 columns={evcpColumn}
                                                 rows={evcpData}
                                                 state={verrEvcp}

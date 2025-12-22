@@ -124,7 +124,8 @@ const createNotExistingCompte = async (req, res) => {
             nature: "Aux",
             typetier: "sans-nif",
             pays: 'Madagascar',
-            baseaux: base?.id || 0
+            baseaux: base?.id || 0,
+            typecomptabilite: 'Français'
           });
         })
       );
