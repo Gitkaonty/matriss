@@ -822,7 +822,7 @@ export default function ImportJournal() {
                         });
 
                         if (compteNonValideStd) {
-                            msg.push('Attention, la longueur des comptes dans le fichier FEC est différente de la longueur des comptes dans le paramétrage CRM du dossier.');
+                            msg.push('Attention, la longueur des comptes dans le fichier csv est différente de celle des comptes dans le paramétrage CRM du dossier.');
                             nbrAnom = nbrAnom + 1;
                             setNbrAnomalie(nbrAnom);
                             setCouleurBoutonAnomalie(couleurAnom);

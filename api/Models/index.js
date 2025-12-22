@@ -196,7 +196,7 @@ db.liasseses.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique', target
 
 //
 db.devises.belongsTo(db.userscomptes, { foreignKey: 'compte_id', targetKey: 'id' });
-db.journals.belongsTo(db.dossierplancomptable, { foreignKey: 'id_numcpt', targetKey: 'id' });
+db.journals.belongsTo(db.dossierplancomptable, { foreignKey: 'id_numcptcentralise', targetKey: 'id' });
 db.journals.belongsTo(db.codejournals, { foreignKey: 'id_journal', targetKey: 'id' });
 
 // Droit de communication

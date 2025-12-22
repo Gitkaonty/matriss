@@ -24,7 +24,7 @@ const createNotExistingCodeJournal = async (req, res) => {
         const payload = {
           id_compte: compteId,
           id_dossier: fileId,
-          code: typeof item === 'string' ? item : (item?.code || ''),
+          code: typeof item === 'string' ? item : (item?.code || 'OD'),
           libelle: typeof item === 'object' && item?.libelle ? item.libelle : 'Libellé à définir',
         };
         codejournals.create(payload);
