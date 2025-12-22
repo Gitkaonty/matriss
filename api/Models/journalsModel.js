@@ -114,6 +114,11 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: true,
             defaultValue: 0
         },
+        id_immob: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            defaultValue: 0
+        },
         num_facture: {
             type: DataTypes.STRING(50),
             allowNull: true,

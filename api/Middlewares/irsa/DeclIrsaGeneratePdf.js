@@ -50,30 +50,30 @@ try {
     const buildTable = (data) => {
         const body = [];
     
-        // En-têtes
+        // En-têtes (texte à gauche, montants à droite, dates au centre)
         body.push([
-            { text: 'Nom', style: 'tableHeader' },
-            { text: 'Prénom', style: 'tableHeader' },
-            { text: 'CIN', style: 'tableHeader' },
-            { text: 'CNAPS', style: 'tableHeader' },
-            { text: 'Fonction', style: 'tableHeader' },
-            { text: 'Date Entrée', style: 'tableHeader' },
-            { text: 'Date Sortie', style: 'tableHeader' },
-            { text: 'Salaire Base', style: 'tableHeader' },
-            { text: 'Heures Supp', style: 'tableHeader' },
-            { text: 'Prime/Gratif.', style: 'tableHeader' },
-            { text: 'Autres', style: 'tableHeader' },
-            { text: 'Salaire Brut', style: 'tableHeader' },
-            { text: 'CNAPS Retenu', style: 'tableHeader' },
-            { text: 'Org. Santé', style: 'tableHeader' },
-            { text: 'Salaire Net', style: 'tableHeader' },
-            { text: 'Autre Déduction', style: 'tableHeader' },
-            { text: 'Montant Imposable', style: 'tableHeader' },
-            { text: 'Impôt Corr.', style: 'tableHeader' },
-            { text: 'Réd. Charge Fam.', style: 'tableHeader' },
-            { text: 'Impôt Dû', style: 'tableHeader' },
-            { text: 'Mois', style: 'tableHeader' },
-            { text: 'Année', style: 'tableHeader' }
+            { text: 'Nom', style: 'tableHeader', alignment: 'left' },
+            { text: 'Prénom', style: 'tableHeader', alignment: 'left' },
+            { text: 'CIN', style: 'tableHeader', alignment: 'left' },
+            { text: 'CNAPS', style: 'tableHeader', alignment: 'left' },
+            { text: 'Fonction', style: 'tableHeader', alignment: 'left' },
+            { text: 'Date Entrée', style: 'tableHeader', alignment: 'center' },
+            { text: 'Date Sortie', style: 'tableHeader', alignment: 'center' },
+            { text: 'Salaire Base', style: 'tableHeader', alignment: 'right' },
+            { text: 'Heures Supp', style: 'tableHeader', alignment: 'right' },
+            { text: 'Prime/Gratif.', style: 'tableHeader', alignment: 'right' },
+            { text: 'Autres', style: 'tableHeader', alignment: 'right' },
+            { text: 'Salaire Brut', style: 'tableHeader', alignment: 'right' },
+            { text: 'CNAPS Retenu', style: 'tableHeader', alignment: 'right' },
+            { text: 'Org. Santé', style: 'tableHeader', alignment: 'right' },
+            { text: 'Salaire Net', style: 'tableHeader', alignment: 'right' },
+            { text: 'Autre Déduction', style: 'tableHeader', alignment: 'right' },
+            { text: 'Montant Imposable', style: 'tableHeader', alignment: 'right' },
+            { text: "Impôt Corr.", style: 'tableHeader', alignment: 'right' },
+            { text: 'Réd. Charge Fam.', style: 'tableHeader', alignment: 'right' },
+            { text: "Impôt Dû", style: 'tableHeader', alignment: 'right' },
+            { text: 'Mois', style: 'tableHeader', alignment: 'right' },
+            { text: 'Année', style: 'tableHeader', alignment: 'right' }
         ]);
     
         // Totaux

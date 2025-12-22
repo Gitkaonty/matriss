@@ -74,7 +74,7 @@ export default function ParamCRM() {
     const [disableCancelBoutonDomBank, setDisableCancelBoutonDomBank] = useState(true);
     const [disableSaveBoutonDomBank, setDisableSaveBoutonDomBank] = useState(true);
     const [disableDeleteBoutonDomBank, setDisableDeleteBoutonDomBank] = useState(true);
-    
+
     const [openDialogDeleteAssocieRow, setOpenDialogDeleteAssocieRow] = useState(false);
 
     const [selectedRowIdFiliale, setSelectedRowIdFiliale] = useState([]);
@@ -100,7 +100,7 @@ export default function ParamCRM() {
 
     const [crm, setCrm] = useState([]);
     const [selectedRowDomBank, setSelectedRowDomBank] = useState([]);
-    
+
 
     const [typeValidationColor, setTypeValidationColor] = useState('transparent');
     const [nomValidationColor, setNomValidationColor] = useState('transparent');
@@ -299,7 +299,8 @@ export default function ParamCRM() {
         listeAssocies: [],
         listeFiliales: [],
         listeDomBank: [],
-        compteisi: ''
+        compteisi: '',
+        immo_amort_base_jours: '365'
     };
 
     const formInfosNewFileValidationSchema = Yup.object({
@@ -716,14 +717,14 @@ export default function ParamCRM() {
             setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
             const associeId = Array.isArray(selectedRowId) ? selectedRowId[0] : selectedRowId;
             const payloadAssocie = {
-            ...useFormikAssocie.values,   // contient 'nombreparts'
-            idCompte: compteId,
-            idDossier: fileId,
-            idAssocie: associeId,
+                ...useFormikAssocie.values,   // contient 'nombreparts'
+                idCompte: compteId,
+                idDossier: fileId,
+                idAssocie: associeId,
             };
 
             axios.post(`/paramCrm/associe`, payloadAssocie).then((response) => {
-            const resData = response.data;
+                const resData = response.data;
                 if (resData.state) {
                     setDisableSaveBouton(true);
                     setDisableAddRowBouton(false);
@@ -1135,14 +1136,14 @@ export default function ParamCRM() {
             setRowModesModelFiliale({ ...rowModesModelFiliale, [selectedRowIdFiliale]: { mode: GridRowModes.View } });
             const filialeId = Array.isArray(selectedRowIdFiliale) ? selectedRowIdFiliale[0] : selectedRowIdFiliale;
             const payloadFiliale = {
-            ...useFormikFiliale.values,  // contient 'nombreparts'
-            idCompte: compteId,
-            idDossier: fileId,
-            idFiliale: filialeId,
+                ...useFormikFiliale.values,  // contient 'nombreparts'
+                idCompte: compteId,
+                idDossier: fileId,
+                idFiliale: filialeId,
             };
 
             axios.post(`/paramCrm/filiale`, payloadFiliale).then((response) => {
-            const resData = response.data;
+                const resData = response.data;
 
                 if (resData.state) {
                     setDisableSaveBoutonFiliale(true);
@@ -1503,29 +1504,29 @@ export default function ParamCRM() {
         }
     };
 
-const handleEditClickDomBank = (id) => () => {
-                //réinitialiser les couleurs des champs
-                setBankDomBankValidationColor('transparent');
-                setNumCompteDomBankValidationColor('transparent');
-                setDeviseDomBankValidationColor('transparent');
-                setPaysDomBankValidationColor('transparent');
-        
-                //charger dans le formik les données de la ligne
-                const selectedRowInfos = listDomBank?.filter((item) => item.id === id[0]);
-        
-                useFormikDomBank.setFieldValue("idCompte", compteId);
-                useFormikDomBank.setFieldValue("idDossier", fileId);
-                useFormikDomBank.setFieldValue("idDomBank", selectedRowInfos[0].id);
-                useFormikDomBank.setFieldValue("banque", selectedRowInfos[0].banque);
-                useFormikDomBank.setFieldValue("numcompte", selectedRowInfos[0].numcompte);
-                useFormikDomBank.setFieldValue("devise", selectedRowInfos[0].devise);
-                useFormikDomBank.setFieldValue("pays", selectedRowInfos[0].pays);
-                useFormikDomBank.setFieldValue("enactivite", selectedRowInfos[0].enactivite);
-        
-                setRowModesModelDomBank({ ...rowModesModelDomBank, [id]: { mode: GridRowModes.Edit } });
-                setDisableSaveBoutonDomBank(false);
+    const handleEditClickDomBank = (id) => () => {
+        //réinitialiser les couleurs des champs
+        setBankDomBankValidationColor('transparent');
+        setNumCompteDomBankValidationColor('transparent');
+        setDeviseDomBankValidationColor('transparent');
+        setPaysDomBankValidationColor('transparent');
+
+        //charger dans le formik les données de la ligne
+        const selectedRowInfos = listDomBank?.filter((item) => item.id === id[0]);
+
+        useFormikDomBank.setFieldValue("idCompte", compteId);
+        useFormikDomBank.setFieldValue("idDossier", fileId);
+        useFormikDomBank.setFieldValue("idDomBank", selectedRowInfos[0].id);
+        useFormikDomBank.setFieldValue("banque", selectedRowInfos[0].banque);
+        useFormikDomBank.setFieldValue("numcompte", selectedRowInfos[0].numcompte);
+        useFormikDomBank.setFieldValue("devise", selectedRowInfos[0].devise);
+        useFormikDomBank.setFieldValue("pays", selectedRowInfos[0].pays);
+        useFormikDomBank.setFieldValue("enactivite", selectedRowInfos[0].enactivite);
+
+        setRowModesModelDomBank({ ...rowModesModelDomBank, [id]: { mode: GridRowModes.Edit } });
+        setDisableSaveBoutonDomBank(false);
     };
-    
+
     const handleSaveClickDomBank = (id) => () => {
         let saveBoolbanque = false;
         let saveBoolNumCompte = false;
@@ -1753,21 +1754,21 @@ const handleEditClickDomBank = (id) => () => {
     //submit les informations du nouveau dossier
     const handlSubmitModification = async (values) => {
         console.log("Modifié : ", values);
-        
+
         try {
             // Récupérer les anciennes valeurs de longueur pour comparaison
             const oldLongueurStd = crm?.longcomptestd || 6;
             const oldLongueurAux = crm?.longcompteaux || 6;
             const newLongueurStd = parseInt(values.longueurcptstd);
             const newLongueurAux = parseInt(values.longueurcptaux);
-            
+
             // Sauvegarder les modifications CRM
             const response = await axios.post(`/paramCrm/modifying`, values);
             const resData = response.data;
-            
+
             if (resData.state) {
                 toast.success(resData.msg);
-                
+
                 // Si la longueur des comptes a changé, mettre à jour tous les comptes existants
                 if (oldLongueurStd !== newLongueurStd || oldLongueurAux !== newLongueurAux) {
                     await updateExistingAccountsLength(oldLongueurStd, newLongueurStd, oldLongueurAux, newLongueurAux, values.autocompletion);
@@ -1793,11 +1794,11 @@ const handleEditClickDomBank = (id) => () => {
                 newLongueurAux: newLongueurAux,
                 autocompletion: autocompletion // Utiliser la valeur passée en paramètre
             };
-            
+
             console.log('Données envoyées:', updateData);
-            
+
             const response = await axios.post(`/paramCrm/updateAccountsLength`, updateData);
-            
+
             if (response.data.state) {
                 toast.success(`Longueur des comptes mise à jour : ${response.data.updatedCount} comptes modifiés`);
             } else {
@@ -1810,39 +1811,39 @@ const handleEditClickDomBank = (id) => () => {
     }
     const handleChangeCentrefisc = async (newValue) => {
         try {
-          await axios.put(`/home/FileCentrefisc/${fileId}`, { centrefisc: newValue });
-          setTypeCentre(newValue);
-          toast.success('CFISC mis à jour');
-      
-          // Recharger les infos dossier pour refléter la modif partout
-          await GetInfosIdDossier(fileId);
-      
-          // Optionnel: si tu veux forcer un refresh ailleurs (ex: un contexte global), déclenche-le ici.
+            await axios.put(`/home/FileCentrefisc/${fileId}`, { centrefisc: newValue });
+            setTypeCentre(newValue);
+            toast.success('CFISC mis à jour');
+
+            // Recharger les infos dossier pour refléter la modif partout
+            await GetInfosIdDossier(fileId);
+
+            // Optionnel: si tu veux forcer un refresh ailleurs (ex: un contexte global), déclenche-le ici.
         } catch (e) {
-          toast.error("Mise à jour du centre fiscal échouée");
+            toast.error("Mise à jour du centre fiscal échouée");
         }
-      };
-      const deselectRow = (ids) => {
-              const deselected = selectedRowId.filter(id => !ids.includes(id));
-      
-              const updatedRowModes = { ...rowModesModel };
-              deselected.forEach((id) => {
-                  updatedRowModes[id] = { mode: GridRowModes.View, ignoreModifications: true };
-              });
-              setRowModesModel(updatedRowModes);
-      
-              setDisableAddRowBouton(false);
-              setSelectedRowId(ids);
-          }
-        const deselectRowFiliale = (ids) => {
+    };
+    const deselectRow = (ids) => {
+        const deselected = selectedRowId.filter(id => !ids.includes(id));
+
+        const updatedRowModes = { ...rowModesModel };
+        deselected.forEach((id) => {
+            updatedRowModes[id] = { mode: GridRowModes.View, ignoreModifications: true };
+        });
+        setRowModesModel(updatedRowModes);
+
+        setDisableAddRowBouton(false);
+        setSelectedRowId(ids);
+    }
+    const deselectRowFiliale = (ids) => {
         const deselected = selectedRowIdFiliale.filter(id => !ids.includes(id));
- 
+
         const updatedRowModes = { ...rowModesModel };
         deselected.forEach((id) => {
             updatedRowModes[id] = { mode: GridRowModes.View, ignoreModifications: true };
         });
         setRowModesModelFiliale(updatedRowModes);
- 
+
         setDisableAddRowBoutonFiliale(false);
         setSelectedRowIdFiliale(ids);
     }
@@ -1927,6 +1928,7 @@ const handleEditClickDomBank = (id) => () => {
                                         setFieldValue('pourcentageca', crmData.pourcentageca);
                                         setFieldValue('montantmin', crmData.montantmin);
                                         setFieldValue('assujettitva', crmData.assujettitva);
+                                        setFieldValue('immo_amort_base_jours', String(crmData.immo_amort_base_jours ?? 365));
                                         const formattedCapital = Number(crmData.capital).toLocaleString('fr-FR', {
                                             minimumFractionDigits: 2,
                                             maximumFractionDigits: 2,
@@ -2499,6 +2501,21 @@ const handleEditClickDomBank = (id) => () => {
                                                             <label htmlFor="avecanalytique" style={{ fontSize: 15, color: 'black' }}>Avec analytique</label>
                                                             <ErrorMessage name='avecanalytique' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
                                                         </Stack>
+
+                                                        {/* Immobilisation */}
+                                                        <Typography style={{ fontWeight: 'bold', fontSize: "18px", marginLeft: "0px", marginTop: "20px" }}>Immobilisation</Typography>
+                                                        <Stack spacing={1} sx={{ mt: 1 }}>
+                                                            <Stack direction="row" spacing={4} alignItems="center">
+                                                                <Typography style={{ fontSize: "14px", marginLeft: 0 }}>Base de calcul de l'amort (en jours) :</Typography>
+                                                                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                                    <Field type="radio" name="immo_amort_base_jours" value="365" /> 365 jours
+                                                                </label>
+                                                                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                                    <Field type="radio" name="immo_amort_base_jours" value="360" /> 360 jours
+                                                                </label>
+                                                            </Stack>
+                                                            <ErrorMessage name='immo_amort_base_jours' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                        </Stack>
                                                     </Stack>
                                                 </TabPanel>
 
@@ -2506,33 +2523,33 @@ const handleEditClickDomBank = (id) => () => {
                                                     <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
                                                         alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"20px"}
                                                     >
-                                                         {/* Bloc radio DGE / centre fiscale */}
+                                                        {/* Bloc radio DGE / centre fiscale */}
                                                         <Stack spacing={1}>
-                                                        <Typography style={{ fontWeight: 'bold', fontSize: "18px", marginLeft: "0px", marginTop: "5px" }}>Type de centre fiscal</Typography>
-                                                                <Stack direction="row" spacing={4} alignItems="center">
-                                                                    <FormControlLabel
+                                                            <Typography style={{ fontWeight: 'bold', fontSize: "18px", marginLeft: "0px", marginTop: "5px" }}>Type de centre fiscal</Typography>
+                                                            <Stack direction="row" spacing={4} alignItems="center">
+                                                                <FormControlLabel
                                                                     control={
                                                                         <input
-                                                                        type="radio"
-                                                                        value="DGE"
-                                                                        checked={typeCentre === 'DGE'}
-                                                                        onChange={() => handleChangeCentrefisc('DGE')}
+                                                                            type="radio"
+                                                                            value="DGE"
+                                                                            checked={typeCentre === 'DGE'}
+                                                                            onChange={() => handleChangeCentrefisc('DGE')}
                                                                         />
                                                                     }
                                                                     label={<span style={{ fontWeight: typeCentre === 'DGE' ? 600 : 400 }}>DGE</span>}
-                                                                    />
-                                                                    <FormControlLabel
+                                                                />
+                                                                <FormControlLabel
                                                                     control={
                                                                         <input
-                                                                        type="radio"
-                                                                        value="CFISC"
-                                                                        checked={typeCentre === 'CFISC'}
-                                                                        onChange={() => handleChangeCentrefisc('CFISC')}
+                                                                            type="radio"
+                                                                            value="CFISC"
+                                                                            checked={typeCentre === 'CFISC'}
+                                                                            onChange={() => handleChangeCentrefisc('CFISC')}
                                                                         />
                                                                     }
                                                                     label={<span style={{ fontWeight: typeCentre === 'CFISC' ? 600 : 400 }}>Centre fiscales</span>}
-                                                                    />
-                                                                </Stack>
+                                                                />
+                                                            </Stack>
                                                         </Stack>
 
                                                         <Typography style={{ fontWeight: 'bold', fontSize: "18px", marginLeft: "0px", marginTop: "20px" }}>Impôt sur le revenu (IR)</Typography>
@@ -3179,7 +3196,7 @@ const handleEditClickDomBank = (id) => () => {
                                                                     saveSelectedRowDomBank(ids);
                                                                     deselectRow(ids);
                                                                 }}
-                                                                  rowSelectionModel={selectedRowDomBank}
+                                                                rowSelectionModel={selectedRowDomBank}
                                                                 editMode='row'
                                                                 selectionModel={selectedRowIdDomBank}
                                                                 rowModesModel={rowModesModelDomBank}

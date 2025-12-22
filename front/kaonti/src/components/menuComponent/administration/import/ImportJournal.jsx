@@ -633,7 +633,15 @@ export default function ImportJournal() {
         axios.post(`/paramPlanComptable/pc`, { fileId }).then((response) => {
             const resData = response.data;
             if (resData.state) {
-                setPlanComptable(resData.liste);
+                const list = Array.isArray(resData.liste) ? resData.liste : [];
+                const unique = Object.values(
+                    list.reduce((acc, r) => {
+                        const k = String(r.compte || '');
+                        if (!acc[k]) acc[k] = r;
+                        return acc;
+                    }, {})
+                );
+                setPlanComptable(unique);
             } else {
                 toast.error(resData.msg);
             }
@@ -803,7 +811,8 @@ export default function ImportJournal() {
                         setCouleurBoutonAnomalie('white');
                         setNbrAnomalie(0);
 
-                        const listeUniqueCodeJnlInitial = [...new Set(result.data.map(item => item.JournalCode))];
+                        const normalizeCode = (v) => String(v || '').trim().toUpperCase();
+                        const listeUniqueCodeJnlInitial = [...new Set(result.data.map(item => normalizeCode(item.JournalCode)))];
                         const listeUniqueCodeJnl = listeUniqueCodeJnlInitial.filter(item => item !== '');
 
                         const listeUniqueCompteInitial = [
@@ -848,7 +857,7 @@ export default function ImportJournal() {
                         ];
                         const listeUniqueCompteAux = listeUniqueCompteAuxInitial.filter(item => item !== '');
 
-                        const ListeCodeJnlParams = [...new Set(codeJournal.map(item => item.code))];
+                        const ListeCodeJnlParams = [...new Set(codeJournal.map(item => normalizeCode(item.code)))];
                         const ListeCompteParams = [...new Set(planComptable.map(item => item.compte))];
 
                         const codeJournalNotInParams = existance(ListeCodeJnlParams, listeUniqueCodeJnl);
@@ -871,7 +880,7 @@ export default function ImportJournal() {
 
                             // Construire { code, libelle } à partir du fichier importé (JournalLib si présent)
                             const missingCodeWithLib = codeJournalNotInParams.map((code) => {
-                                const row = result.data.find(r => r.JournalCode === code);
+                                const row = result.data.find(r => normalizeCode(r.JournalCode) === code);
                                 const libelle = row && (row.JournalLib || row.JournalLabel || row.Journal || '')
                                     ? (row.JournalLib || row.JournalLabel || row.Journal)
                                     : `Journal ${code}`;
@@ -914,10 +923,10 @@ export default function ImportJournal() {
                             DataWithId = result.data;
                         }
 
-                        // Déterminer la période de l'exercice sélectionné
+                        // Déterminer la période de l'exercice sélectionné (période active)
                         const getExerciseRange = () => {
-                            const ex = (listeExercice || []).find(e => e.id === selectedExerciceId) || {};
-                            // Support de plusieurs clés possibles
+                            const all = [...(listeSituation || []), ...(listeExercice || [])];
+                            const ex = all.find(e => e.id === selectedPeriodeId) || {};
                             const start = ex.datedebut || ex.date_debut || ex.debut || ex.startDate || null;
                             const end = ex.datefin || ex.date_fin || ex.fin || ex.endDate || null;
                             return { start, end };
@@ -925,41 +934,61 @@ export default function ImportJournal() {
 
                         const parseToDate = (str) => {
                             if (!str) return null;
+                            if (typeof str === 'string') str = str.trim();
+                            let d = null;
                             if (typeof str === 'string') {
                                 if (str.includes('/')) {
-                                    const [day, month, year] = str.split('/');
-                                    return new Date(`${year}-${month}-${day}`);
+                                    const [day, month, year] = str.split('/').map(s => s.trim());
+                                    d = new Date(`${year}-${month}-${day}`);
+                                } else if (/^\d{8}$/.test(str)) {
+                                    d = new Date(`${str.substring(0, 4)}-${str.substring(4, 6)}-${str.substring(6, 8)}`);
+                                } else {
+                                    d = new Date(str);
                                 }
-                                if (/^\d{8}$/.test(str)) {
-                                    return new Date(`${str.substring(0, 4)}-${str.substring(4, 6)}-${str.substring(6, 8)}`);
-                                }
+                            } else {
+                                d = new Date(str);
                             }
-                            const d = new Date(str);
-                            return isNaN(d.getTime()) ? null : d;
+                            if (isNaN(d.getTime())) return null;
+                            d.setHours(0,0,0,0);
+                            return d;
                         };
 
-                        // Filtrage des lignes hors exercice si dates disponibles
+                        // Filtrage des lignes hors exercice si au moins une borne est disponible
                         const { start, end } = getExerciseRange();
                         let finalData = DataWithId;
-                        if (start && end) {
-                            const dStart = parseToDate(start);
-                            const dEnd = parseToDate(end);
-                            if (dStart && dEnd) {
-                                const outOfRange = DataWithId.filter(r => {
-                                    const d = parseToDate(r.EcritureDate);
-                                    return !d || d < dStart || d > dEnd;
-                                });
-                                if (outOfRange.length > 0) {
-                                    msg.push("Certaines lignes ne seront pas importées car leurs date d'écriture est en déhors de l'exercice");
-                                    nbrAnom = nbrAnom + 1;
-                                    setNbrAnomalie(nbrAnom);
-                                    setCouleurBoutonAnomalie(couleurAnom);
-                                }
-                                finalData = DataWithId.filter(r => {
-                                    const d = parseToDate(r.EcritureDate);
-                                    return d && d >= dStart && d <= dEnd;
-                                });
+                        const dStart = parseToDate(start);
+                        const dEnd = parseToDate(end);
+                        if (dStart || dEnd) {
+                            // Séparer dates manquantes et hors bornes pour des messages cohérents
+                            const missingDate = DataWithId.filter(r => !parseToDate(r.EcritureDate));
+                            const withDate = DataWithId.filter(r => !!parseToDate(r.EcritureDate));
+
+                            const outOfRange = withDate.filter(r => {
+                                const d = parseToDate(r.EcritureDate);
+                                const afterStart = dStart ? (d && d >= dStart) : true;
+                                const beforeEnd = dEnd ? (d && d <= dEnd) : true;
+                                return !(afterStart && beforeEnd);
+                            });
+
+                            if (missingDate.length > 0) {
+                                msg.push("Certaines lignes n'ont pas de date d'écriture valide: elles seront ignorées");
+                                nbrAnom = nbrAnom + 1;
+                                setNbrAnomalie(nbrAnom);
+                                setCouleurBoutonAnomalie(couleurAnom);
                             }
+                            if (outOfRange.length > 0) {
+                                msg.push("Certaines lignes ne seront pas importées car leur date d'écriture est en dehors de l'exercice");
+                                nbrAnom = nbrAnom + 1;
+                                setNbrAnomalie(nbrAnom);
+                                setCouleurBoutonAnomalie(couleurAnom);
+                            }
+
+                            finalData = withDate.filter(r => {
+                                const d = parseToDate(r.EcritureDate);
+                                const afterStart = dStart ? (d && d >= dStart) : true;
+                                const beforeEnd = dEnd ? (d && d <= dEnd) : true;
+                                return afterStart && beforeEnd;
+                            });
                         }
 
                         //const dataWithFooter = [...finalData, footerRow];
@@ -993,8 +1022,9 @@ export default function ImportJournal() {
 
                             if (compteNotInParamsAux.includes(compte) && !mapAux.has(compte)) {
                                 mapAux.set(compte, {
-                                    CompteNum: compte,
-                                    CompteLib: item.CompAuxLib
+                                    CompAuxNum: compte,
+                                    CompAuxLib: item.CompAuxLib,
+                                    CompteNum: item.CompteNum?.toString()?.padEnd(longeurCompteStd, "0")?.slice(0, longeurCompteStd) || ''
                                 });
                             }
                         });
@@ -1054,7 +1084,16 @@ export default function ImportJournal() {
         console.log("compteToCreateAux : ", compteToCreateAux);
         const response = await axios.post(`/administration/importJournal/createNotExistingCompte`, { compteId, fileId, compteToCreateGen, compteToCreateAux });
         const resData = response.data;
-        return resData.list;
+        const list = Array.isArray(resData.list) ? resData.list : [];
+        const unique = Object.values(
+            list.reduce((acc, r) => {
+                const k = String(r.compte || '');
+                if (!acc[k]) acc[k] = r;
+                return acc;
+            }, {})
+        );
+        setPlanComptable(unique);
+        return unique;
     }
 
     const handleImportJournal = async (value) => {
@@ -1073,7 +1112,12 @@ export default function ImportJournal() {
             if (Array.isArray(UpdatedCodeJournal) && Array.isArray(UpdatedPlanComptable)) {
                 setTraitementJournalMsg('Importation du journal en cours...');
                 setTraitementJournalWaiting(true);
-                axios.post(`/administration/importJournal/importJournal`, { compteId, userId, fileId, selectedPeriodeId, fileTypeCSV, valSelectCptDispatch, journalData, longeurCompteStd })
+                // transmettre les bornes de l'exercice sélectionné pour filtrer côté backend
+                const allPeriods = [...(listeSituation || []), ...(listeExercice || [])];
+                const selectedObj = allPeriods.find(x => x.id === selectedPeriodeId) || {};
+                const periodeStart = selectedObj.datedebut || selectedObj.date_debut || selectedObj.debut || selectedObj.startDate || null;
+                const periodeEnd = selectedObj.datefin || selectedObj.date_fin || selectedObj.fin || selectedObj.endDate || null;
+                axios.post(`/administration/importJournal/importJournal`, { compteId, userId, fileId, selectedPeriodeId, fileTypeCSV, valSelectCptDispatch, journalData, longeurCompteStd, periodeStart, periodeEnd })
                     .then((response) => {
                         const resData = response.data;
                         if (resData.state) {
@@ -1083,10 +1127,13 @@ export default function ImportJournal() {
                             setJournalData([]);
                             setNbrAnomalie(0);
                             setMsgAnomalie([]);
+                            setOpenDetailsAnomalie(false);
+                            // rafraîchir le plan comptable après import
+                            recupPlanComptable();
                         } else {
                             setTraitementJournalMsg('');
                             setTraitementJournalWaiting(false);
-                            console.log(resData.msg);
+                            toast.error(resData.msg || "Import non effectué");
                         }
                     })
                     .catch((err) => {

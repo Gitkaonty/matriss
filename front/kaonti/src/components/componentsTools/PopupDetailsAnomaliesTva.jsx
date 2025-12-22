@@ -126,6 +126,10 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
         // console.log('[ANOMS][POPUP] handleEditClick ids=', ids, 'selectedRowId=', selectedRowId);
         if (ids.length === 1 && canEdit) {
           const row = listeAnomalie.find(r => String(r.id) === String(ids[0]));
+          if (row && row._persisted === false) {
+            toast.error("Impossible de modifier une anomalie non enregistrée en base");
+            return;
+          }
           // console.log('[ANOMS][POPUP] editing row found=', row);
           setEditRow(row);
           setNewRow(null);
@@ -180,6 +184,10 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
             // 2) Récupérer la dernière valeur éditée
             const latest = editRowRef.current || listeAnomalie.find(r => String(r.id) === String(id));
             if (!latest) return;
+            if (latest._persisted === false) {
+                toast.error("Impossible d'enregistrer: anomalie non persistée en base");
+                return;
+            }
             // Préparer payload par clé fonctionnelle (contexte + code + kind)
             const payload = {
                 id_dossier: latest.id_dossier,

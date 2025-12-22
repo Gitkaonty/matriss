@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Box, Typography, Stack, FormControl, InputLabel, Select, MenuItem, CircularProgress } from '@mui/material';
+import { Box, Typography, Stack, FormControl, InputLabel, Select, MenuItem, CircularProgress, Tooltip, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button } from '@mui/material';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { GoAlert } from "react-icons/go";
 import { DataGrid } from '@mui/x-data-grid';
 import { TabContext, TabList, TabPanel } from '@mui/lab';
 import { Tab } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
+
 import axios from '../../../../../config/axios';
 import toast from 'react-hot-toast';
 import useAuth from '../../../../hooks/useAuth';
@@ -11,6 +14,14 @@ import { jwtDecode } from 'jwt-decode';
 import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFile';
 import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
 import { init } from '../../../../../init';
+import { TbPlaylistAdd } from "react-icons/tb";
+import { TfiSave } from "react-icons/tfi";
+import { FaRegPenToSquare } from "react-icons/fa6";
+import { IoMdTrash } from "react-icons/io";
+import { VscClose } from "react-icons/vsc";
+import { useCallback } from 'react';
+import DetailsImmoDialog from './DetailsImmoDialog';
+import { GoLink } from "react-icons/go";
 
 const keepTotalBottomComparator = (v1, v2, cellParams1, cellParams2) => {
   const r1 = cellParams1?.row;
@@ -23,6 +34,16 @@ const keepTotalBottomComparator = (v1, v2, cellParams1, cellParams2) => {
   const s1 = v1 == null ? '' : String(v1);
   const s2 = v2 == null ? '' : String(v2);
   return s1.localeCompare(s2);
+};
+
+// Example rule: add '8' after first digit and drop last digit
+// 20100 -> 28100
+// 2120000 -> 2812000
+const deriveCompteAmort = (compte) => {
+  if (!compte) return '';
+  const s = String(compte);
+  if (s.length < 3) return s; // need at least 3 to drop last
+  return s[0] + '8' + s.substring(1, s.length - 1);
 };
 
 const formatMoneyFr = (n) => {
@@ -55,10 +76,474 @@ const Immobilisations = () => {
   const [selectionModel, setSelectionModel] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  const rowsWithTotal = useMemo(() => {
+    if (!Array.isArray(rows) || rows.length === 0) return [];
+    const totalSolde = rows.reduce((s, r) => s + (Number(r.solde) || 0), 0);
+    const totalAmortAnt = rows.reduce((s, r) => s + (Number(r.amort_ant) || 0), 0);
+    const totalDotation = rows.reduce((s, r) => s + (Number(r.dotation) || 0), 0);
+    const totalValeurNette = rows.reduce((s, r) => s + (Number(r.valeur_nette) || 0), 0);
+    const totalVncImmo = rows.reduce((s, r) => s + (Number(r.vnc_immo) || 0), 0);
+    const totalRow = {
+      id: 'total-row',
+      isTotal: true,
+      compte: '',
+      libelle: 'Total',
+      compte_amort: '',
+      solde: totalSolde,
+      amort_ant: totalAmortAnt,
+      dotation: totalDotation,
+      valeur_nette: totalValeurNette,
+      vnc_immo: totalVncImmo,
+    };
+    return [...rows, totalRow];
+  }, [rows]);
+
+  // Helper to extract a safe message from Axios/unknown errors
+  const getErrMsg = (e) => {
+    try {
+      return (
+        e?.response?.data?.msg ||
+        e?.response?.data?.message ||
+        e?.message ||
+        'Erreur inattendue'
+      );
+    } catch {
+      return 'Erreur inattendue';
+    }
+  };
+
+  // Popup secondaire: sélection du lien écriture
+  const handleOpenLienEcriture = async () => {
+    try {
+      setJournalLoading(true);
+      setJournalRows([]);
+      // Preselect previously linked entry if any
+      const preSel = detailsForm?.lien_ecriture_id ? [detailsForm.lien_ecriture_id] : [];
+      setJournalSelection(preSel);
+
+      const fid = Number(id) || 0; const exoId = Number(selectedExerciceId) || 0;
+      const selectedPcId = Array.isArray(selectedPcIds) && selectedPcIds.length > 0 ? selectedPcIds[0] : null;
+      // Backend attend id_numcpt = id de dossierplancomptables (FK), pas le numéro de compte
+      const idNumcpt = Number(detailsForm?.pc_id ?? selectedPcId ?? 0);
+      if (!idNumcpt) {
+        toast("Aucun PC sélectionné (id_numcpt manquant)", { icon: 'ℹ️' });
+        setJournalLoading(false);
+        setLienDialogOpen(true);
+        return;
+      }
+      
+      const { data } = await axios.get('/paramTva/journals/byCompte', {
+        params: { id_numcpt: idNumcpt, id_dossier: fid, id_exercice: exoId }, timeout: 60000,
+      });
+
+      let list = Array.isArray(data?.list) ? data.list : [];
+      // Fallback: si vide, charger via selectionLigne et filtrer par compte
+      if (!list.length) {
+        try {
+          const sel = await axios.get(`/declaration/tva/selectionLigne/${compteId}/${fid}/${exoId}`, { timeout: 60000 });
+          const allRows = Array.isArray(sel?.data?.list) ? sel.data.list : [];
+          list = allRows.filter(r => Number(r?.id_numcpt || 0) === idNumcpt);
+        } catch { }
+      }
+      setJournalRows(list);
+      // keep selection to show which one was already selected
+      if (detailsForm?.lien_ecriture_id) {
+        setJournalSelection([detailsForm.lien_ecriture_id]);
+      }
+
+    } catch (e) {
+      setJournalRows([]);
+      toast.error(`Impossible de charger le journal pour ce compte: ${getErrMsg(e)}`);
+    } finally {
+      setJournalLoading(false);
+      setLienDialogOpen(true);
+    }
+  };
+
+  const handleConfirmLienEcriture = () => {
+    const selectedId = Array.isArray(journalSelection) && journalSelection.length > 0 ? journalSelection[journalSelection.length - 1] : null;
+    if (!selectedId) { toast('Sélectionnez une ligne de journal', { icon: 'ℹ️' }); return; }
+    setDetailsForm((prev) => ({ ...prev, lien_ecriture_id: selectedId }));
+    setLienDialogOpen(false);
+  };
+
+  // helper to get selected PC ids (top grid)
+  const selectedPcIds = useMemo(() => (Array.isArray(selectionModel) ? selectionModel : []), [selectionModel]);
+
+  // State for the second (details) grid with its own CRUD
+  const [detailsRows, setDetailsRows] = useState([]);
+  const [detailsSelectionModel, setDetailsSelectionModel] = useState([]);
+  const [detailsRowModesModel, setDetailsRowModesModel] = useState({});
+  const [detailsEditingRowId, setDetailsEditingRowId] = useState(null);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [detailsDialogMode, setDetailsDialogMode] = useState('add'); // 'add' | 'edit'
+  const [detailsForm, setDetailsForm] = useState({});
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [lienDialogOpen, setLienDialogOpen] = useState(false);
+  const [lienTempValue, setLienTempValue] = useState('');
+  const [journalRows, setJournalRows] = useState([]);
+  const [journalLoading, setJournalLoading] = useState(false);
+  const [journalSelection, setJournalSelection] = useState([]);
+
+  // Third grid: lignes d'amortissement
+  const [ligneRowsComp, setLigneRowsComp] = useState([]);
+  const [ligneRowsFisc, setLigneRowsFisc] = useState([]);
+  const [ligneLoading, setLigneLoading] = useState(false);
+  const [ligneTab, setLigneTab] = useState('comp'); // 'comp' | 'fisc'
+  const [savingLignes, setSavingLignes] = useState(false);
+  const [isCompDegTab, setIsCompDegTab] = useState(false);
+  const [isFiscDegTab, setIsFiscDegTab] = useState(false);
+
+  const hasCompData = useMemo(() => {
+    return Array.isArray(ligneRowsComp) && ligneRowsComp.length > 0;
+  }, [ligneRowsComp]);
+  const hasFiscData = useMemo(() => {
+    return Array.isArray(ligneRowsFisc) && ligneRowsFisc.length > 0;
+  }, [ligneRowsFisc]);
+
+  useEffect(() => {
+    // Ajuster l'onglet par défaut selon les données disponibles
+    if (ligneTab === 'comp' && !hasCompData && hasFiscData) setLigneTab('fisc');
+    else if (ligneTab === 'fisc' && !hasFiscData && hasCompData) setLigneTab('comp');
+  }, [hasCompData, hasFiscData]);
+
+  // Load lines for selected immobilisation detail
+  useEffect(() => {
+    const loadLignes = async () => {
+      try {
+        const fid = Number(id) || 0; const exoId = Number(selectedExerciceId) || 0;
+        const onePcId = Array.isArray(selectedPcIds) && selectedPcIds.length > 0 ? Number(selectedPcIds[0]) : null;
+        const selectedDetailId = Array.isArray(detailsSelectionModel) && detailsSelectionModel.length > 0 ? Number(detailsSelectionModel[detailsSelectionModel.length - 1]) : 0;
+        if (!fid || !compteId || !exoId || !selectedDetailId) { setLigneRowsComp([]); setLigneRowsFisc([]); return; }
+
+        setLigneLoading(true);
+        // Auto-détection du mode à partir de la ligne sélectionnée dans le 2e tableau
+        const detailRow = detailsRows.find(r => Number(r.id) === Number(selectedDetailId)) || {};
+        let autoMode = 'comp';
+        const fiscHints = [
+          Number(detailRow?.duree_amort_mois_fisc) || 0,
+          Number(detailRow?.amort_ant_fisc) || 0,
+          Number(detailRow?.dotation_periode_fisc) || 0,
+          Number(detailRow?.amort_exceptionnel_fisc) || 0,
+          Number(detailRow?.derogatoire_fisc) || 0,
+          Number(detailRow?.total_amortissement_fisc) || 0,
+        ];
+        if (detailRow.__amortTab === 'fisc') autoMode = 'fisc';
+        else if (detailRow.__amortTab === 'comp') autoMode = 'comp';
+        else if ((detailRow?.type_amort_fisc && String(detailRow.type_amort_fisc).length > 0)) autoMode = 'fisc';
+        else if (fiscHints.some(v => v > 0)) autoMode = 'fisc';
+        else autoMode = 'comp';
+
+        // Toujours récupérer les deux prévisualisations (linéaire + dégressif), puis choisir par onglet
+        const normalizeNoAccent = (s) => String(s || '')
+          .normalize('NFD')
+          .replace(/\p{Diacritic}/gu, '')
+          .toLowerCase();
+        const isCompDeg = normalizeNoAccent(detailRow?.type_amort).includes('degr');
+        const isFiscDeg = normalizeNoAccent(detailRow?.type_amort_fisc).includes('degr');
+
+        const [linRes, degRes] = await Promise.all([
+          axios.get('/administration/traitementSaisie/immobilisations/details/lineaire/preview', { params: { fileId: fid, compteId: compteId, exerciceId: exoId, detailId: selectedDetailId, mode: autoMode, view: 'both' }, timeout: 60000 }),
+          axios.get('/administration/traitementSaisie/immobilisations/details/degresif/preview', { params: { fileId: fid, compteId: compteId, exerciceId: exoId, detailId: selectedDetailId, mode: autoMode, view: 'both' }, timeout: 60000 }),
+        ]);
+
+        const lin = linRes?.data || {};
+        const deg = degRes?.data || {};
+
+        // Sélectionner la source par onglet (préférer dégressif si disponible)
+        const degComp = Array.isArray(deg.list_comp) ? deg.list_comp : [];
+        const degFisc = Array.isArray(deg.list_fisc) ? deg.list_fisc : [];
+        const linComp = Array.isArray(lin.list_comp) ? lin.list_comp : [];
+        const linFisc = Array.isArray(lin.list_fisc) ? lin.list_fisc : [];
+
+        const compUsesDeg = (isCompDeg || degComp.length > 0);
+        const fiscUsesDeg = (isFiscDeg || degFisc.length > 0);
+
+        const rawComp = compUsesDeg ? degComp : linComp;
+        const rawFisc = fiscUsesDeg ? degFisc : linFisc;
+        const meta = compUsesDeg ? (deg.meta || lin.meta || {}) : (lin.meta || deg.meta || {});
+
+        // Normalize possible backend schemas to frontend fields
+        const normComp = rawComp.map((r) => ({
+          rang: r.rang,
+          date_mise_service: r.date_mise_service ?? r.date_debut ?? r.debut ?? null,
+          date_fin_exercice: r.date_fin_exercice ?? r.date_fin ?? r.fin ?? null,
+          nb_jours: r.nb_jours ?? r.nbJours ?? null,
+          annee_nombre: r.annee_nombre ?? r.anneeNombre ?? null,
+          montant_immo_ht: r.montant_immo_ht ?? meta.montant_ht ?? null,
+          amort_ant_comp: r.amort_ant_comp ?? r.dot_ant ?? 0,
+          dotation_periode_comp: r.dotation_periode_comp ?? r.dotation_annuelle ?? 0,
+          cumul_amort_comp: r.cumul_amort_comp ?? r.cumul_amort ?? 0,
+          vnc: r.vnc ?? r.vnc_comp ?? null,
+          // keep fiscal zeros for comp view rows
+          amort_ant_fisc: 0,
+          dotation_periode_fisc: 0,
+          cumul_amort_fisc: 0,
+          dot_derogatoire: r.dot_derogatoire ?? 0,
+        }));
+
+        const normFisc = rawFisc.map((r) => ({
+          rang: r.rang,
+          date_mise_service: r.date_mise_service ?? r.date_debut ?? r.debut ?? null,
+          date_fin_exercice: r.date_fin_exercice ?? r.date_fin ?? r.fin ?? null,
+          nb_jours: r.nb_jours ?? r.nbJours ?? null,
+          annee_nombre: r.annee_nombre ?? r.anneeNombre ?? null,
+          montant_immo_ht: r.montant_immo_ht ?? meta.montant_ht ?? null,
+          // keep comp zeros for fisc view rows
+          amort_ant_comp: 0,
+          dotation_periode_comp: 0,
+          cumul_amort_comp: 0,
+          vnc: r.vnc ?? Math.max(0, (meta.montant_ht ?? 0) - (r.cumul_amort_fisc ?? r.cumul_amort ?? 0)),
+          amort_ant_fisc: r.amort_ant_fisc ?? r.dot_ant ?? 0,
+          dotation_periode_fisc: r.dotation_periode_fisc ?? r.dotation_annuelle ?? 0,
+          cumul_amort_fisc: r.cumul_amort_fisc ?? r.cumul_amort ?? 0,
+          dot_derogatoire: r.dot_derogatoire ?? 0,
+        }));
+
+        setLigneRowsComp(normComp);
+        setLigneRowsFisc(normFisc);
+        setIsCompDegTab(!!compUsesDeg);
+        setIsFiscDegTab(!!fiscUsesDeg);
+
+      } catch (e) {
+        setLigneRowsComp([]);
+        setLigneRowsFisc([]);
+        toast.error(`Erreur lors du chargement des lignes d'amortissement: ${getErrMsg(e)}`);
+      } finally { setLigneLoading(false); }
+    };
+    loadLignes();
+  }, [id, compteId, selectedExerciceId, selectedPcIds, detailsSelectionModel, detailsRows]);
+
+  // Enregistrer manuellement les lignes (tableau 3)  
+  const handleSaveLignes = async () => {
+    try {
+      const fid = Number(id) || 0; const exoId = Number(selectedExerciceId) || 0;
+      const selectedDetailId = Array.isArray(detailsSelectionModel) && detailsSelectionModel.length > 0 ? Number(detailsSelectionModel[detailsSelectionModel.length - 1]) : 0;
+      if (!fid || !compteId || !exoId || !selectedDetailId) {
+        toast('Sélectionnez une immobilisation dans le tableau du milieu', { icon: 'ℹ️' });
+        return;
+      }
+      // Détecter le mode comme dans le chargement
+      const detailRow = detailsRows.find(r => Number(r.id) === Number(selectedDetailId)) || {};
+      let autoMode = 'comp';
+      const fiscHints = [
+        Number(detailRow?.duree_amort_mois_fisc) || 0,
+        Number(detailRow?.amort_ant_fisc) || 0,
+        Number(detailRow?.dotation_periode_fisc) || 0,
+        Number(detailRow?.amort_exceptionnel_fisc) || 0,
+        Number(detailRow?.derogatoire_fisc) || 0,
+        Number(detailRow?.total_amortissement_fisc) || 0,
+      ];
+      if (detailRow.__amortTab === 'fisc') autoMode = 'fisc';
+      else if (detailRow.__amortTab === 'comp') autoMode = 'comp';
+      else if ((detailRow?.type_amort_fisc && String(detailRow.type_amort_fisc).length > 0)) autoMode = 'fisc';
+      else if (fiscHints.some(v => v > 0)) autoMode = 'fisc';
+      else autoMode = 'comp';
+
+      setSavingLignes(true);
+      await axios.post('/administration/traitementSaisie/immobilisations/details/lineaire/save',
+        { fileId: fid, compteId: compteId, exerciceId: exoId, detailId: selectedDetailId, mode: autoMode },
+        { timeout: 60000 }
+      );
+      toast.success('Lignes d\'amortissement enregistrées');
+    } catch (e) {
+      toast.error(`Enregistrement des lignes échoué: ${getErrMsg(e)}`);
+    } finally { setSavingLignes(false); }
+  };
+
+  // Fetch details_immo from backend and filter by selected PCs
+  const fetchDetails = useCallback(async () => {
+    try {
+      const fid = Number(id) || 0;
+      const exoId = Number(selectedExerciceId) || 0;
+      if (!fid || !compteId || !exoId) { setDetailsRows([]); return; }
+      const onePcId = Array.isArray(selectedPcIds) && selectedPcIds.length > 0 ? Number(selectedPcIds[0]) : null;
+      const { data } = await axios.get('/administration/traitementSaisie/immobilisations/details', {
+        params: { fileId: fid, compteId: onePcId ?? compteId, exerciceId: exoId, pcId: onePcId || undefined }, timeout: 60000,
+      });
+
+      const list = Array.isArray(data?.list) ? data.list : [];
+      const sel = selectedPcIds;
+      const filtered = sel && sel.length > 0 ? list.filter(d => sel.includes(d.pc_id)) : list;
+      setDetailsRows(filtered);
+    } catch (e) {
+      setDetailsRows([]);
+      toast.error(`Erreur lors du chargement des détails immobilisations: ${getErrMsg(e)}`);
+    }
+  }, [id, compteId, selectedExerciceId, selectedPcIds]);
+
+  useEffect(() => { fetchDetails(); }, [fetchDetails]);
+
+  const handleDetailsAdd = () => {
+    if (!selectedPcIds || selectedPcIds.length !== 1) { toast('Sélectionnez un seul compte immo dans le tableau du haut', { icon: 'ℹ️' }); return; }
+    const pcId = selectedPcIds[0];
+    const pcRow = rows.find(r => r.id === pcId);
+    // Bloquer si le compte d'amortissement n'existe pas côté plan comptable
+    if (!pcRow?.compte_amort) {
+      toast.error("Veuillez créer un compte d'amortissement de l'immobilisation");
+      return;
+    }
+    setDetailsDialogMode('add');
+    setDetailsForm({
+      pc_id: pcId,
+      code: '',
+      intitule: pcRow?.libelle || '',
+      compte_id: pcRow?.compte || '',
+      fournisseur: '',
+      date_acquisition: '',
+      date_mise_service: '',
+      duree_amort_mois: '',
+      type_amort: '',
+      montant: Number(pcRow?.solde) || 0,
+      taux_tva: '', montant_tva: '', montant_ht: '',
+      // amortissement comptable par défaut: tout à 0
+      amort_ant_comp: 0,
+      dotation_periode_comp: 0,
+      amort_exceptionnel_comp: 0,
+      derogatoire_comp: 0,
+      total_amortissement_comp: 0,
+      // amortissement fiscal initialisé à 0
+      amort_ant_fisc: 0,
+      dotation_periode_fisc: 0,
+      amort_exceptionnel_fisc: 0,
+      derogatoire_fisc: 0,
+      total_amortissement_fisc: 0,
+      // champs fiscaux durée/type
+      duree_amort_mois_fisc: '',
+      type_amort_fisc: '',
+      __amortTab: 'comp',
+      compte_amortissement: deriveCompteAmort(pcRow?.compte),
+      vnc: Number(pcRow?.vnc_immo ?? pcRow?.valeur_nette) || 0,
+      date_sortie: '', prix_vente: '',
+    });
+    setDetailsDialogOpen(true);
+  };
+
+  const handleDetailsEdit = () => {
+    const idSel = Array.isArray(detailsSelectionModel) && detailsSelectionModel.length > 0 ? detailsSelectionModel[detailsSelectionModel.length - 1] : null;
+    if (!idSel) { toast('Sélectionnez une ligne détail', { icon: 'ℹ️' }); return; }
+    const row = detailsRows.find(r => r.id === idSel);
+    if (!row) return;
+    setDetailsDialogMode('edit');
+    // Compat: si l'enregistrement existant n'a pas encore les suffixes, mapper les anciens champs vers _comp
+    const mapped = { ...row };
+    if (mapped.amort_ant_comp === undefined && mapped.amort_ant !== undefined) mapped.amort_ant_comp = mapped.amort_ant;
+    if (mapped.dotation_periode_comp === undefined && mapped.dotation_periode !== undefined) mapped.dotation_periode_comp = mapped.dotation_periode;
+    if (mapped.amort_exceptionnel_comp === undefined && mapped.amort_exceptionnel !== undefined) mapped.amort_exceptionnel_comp = mapped.amort_exceptionnel;
+    if (mapped.derogatoire_comp === undefined && mapped.derogatoire !== undefined) mapped.derogatoire_comp = mapped.derogatoire;
+    if (mapped.total_amortissement_comp === undefined && mapped.total_amortissement !== undefined) mapped.total_amortissement_comp = mapped.total_amortissement;
+    if (!mapped.__amortTab) mapped.__amortTab = 'comp';
+    setDetailsForm(mapped);
+    setDetailsDialogOpen(true);
+  };
+
+  const handleDetailsSave = () => { /* save handled inside dialog */ };
+
+  const handleDetailsCancel = () => { setDetailsDialogOpen(false); };
+
+  const handleDetailsDelete = async () => {
+    const idSel = Array.isArray(detailsSelectionModel) && detailsSelectionModel.length > 0 ? detailsSelectionModel[detailsSelectionModel.length - 1] : null;
+    if (!idSel) { toast('Sélectionnez une ligne détail', { icon: 'ℹ️' }); return; }
+    try {
+      const fid = Number(id) || 0; const exoId = Number(selectedExerciceId) || 0;
+      const onePcId = Array.isArray(selectedPcIds) && selectedPcIds.length > 0 ? Number(selectedPcIds[0]) : null;
+      await axios.delete(`/administration/traitementSaisie/immobilisations/details/${idSel}`, { params: { fileId: fid, compteId: onePcId ?? compteId, exerciceId: exoId } });
+
+      toast.success('Détail supprimé');
+      await fetchDetails();
+    } catch (e) {
+      toast.error(`Suppression échouée: ${getErrMsg(e)}`);
+    }
+  };
+
+  const submitDetailsForm = async () => {
+    try {
+      const fid = Number(id) || 0; const exoId = Number(selectedExerciceId) || 0; if (!fid || !compteId || !exoId) return;
+      setDetailsLoading(true);
+      // Sanitize payload to avoid '' for integer/date columns
+      const numericKeys = [
+        'duree_amort_mois', 'montant', 'taux_tva', 'montant_tva', 'montant_ht',
+        // anciens champs (compat si encore présents)
+        'amort_ant', 'dotation_periode', 'amort_exceptionnel', 'total_amortissement', 'derogatoire',
+        // nouveaux champs suffixés comptables
+        'amort_ant_comp', 'dotation_periode_comp', 'amort_exceptionnel_comp', 'derogatoire_comp', 'total_amortissement_comp',
+        // nouveaux champs suffixés fiscaux
+        'amort_ant_fisc', 'dotation_periode_fisc', 'amort_exceptionnel_fisc', 'derogatoire_fisc', 'total_amortissement_fisc',
+        // durée amort fiscale
+        'duree_amort_mois_fisc',
+        'vnc', 'prix_vente'
+      ];
+
+      const dateKeys = ['date_acquisition', 'date_mise_service', 'date_sortie'];
+      const cleaned = { ...detailsForm };
+      numericKeys.forEach(k => {
+        const v = cleaned[k];
+        if (v === '' || v === undefined || v === null) cleaned[k] = null; else cleaned[k] = Number(v);
+      });
+      dateKeys.forEach(k => { const v = cleaned[k]; if (!v || v === '') cleaned[k] = null; });
+      cleaned.pc_id = Number(cleaned.pc_id || 0);
+      cleaned.lien_ecriture_id = cleaned.lien_ecriture_id ? Number(cleaned.lien_ecriture_id) : null;
+
+      const onePcId = Array.isArray(selectedPcIds) && selectedPcIds.length > 0 ? Number(selectedPcIds[0]) : null;
+      const effectiveCompteId = onePcId ?? compteId;
+      if (detailsDialogMode === 'add') {
+        const payload = { fileId: fid, compteId: effectiveCompteId, exerciceId: exoId, pcId: Number(cleaned.pc_id || 0), ...cleaned };
+        await axios.post('/administration/traitementSaisie/immobilisations/details', payload);
+        toast.success('Détail ajouté');
+      } else {
+        const payload = { fileId: fid, compteId: effectiveCompteId, exerciceId: exoId, pcId: Number(cleaned.pc_id || 0), ...cleaned };
+        await axios.put(`/administration/traitementSaisie/immobilisations/details/${detailsForm.id}`, payload);
+        toast.success('Détail modifié');
+      }
+      setDetailsDialogOpen(false);
+      await fetchDetails();
+    } catch (e) {
+      const status = e?.response?.status;
+      const msg = e?.response?.data?.msg || e?.response?.data?.message || '';
+      if (status === 400 && /amort/i.test(String(msg))) {
+        toast.error("Veuillez ajouter un compte d'amort");
+        // ne pas fermer le dialog, l'utilisateur peut corriger
+      } else {
+        toast.error(`Veuillez créer un compte d'amortissement de l'immobilisation: ${getErrMsg(e)}`);
+      }
+    } finally { setDetailsLoading(false); }
+  };
+
   const columns = useMemo(() => ([
     { field: 'compte', headerName: 'N° de compte', width: 140, sortComparator: keepTotalBottomComparator },
     { field: 'libelle', headerName: 'Libellé', flex: 1, sortComparator: keepTotalBottomComparator },
-    { field: 'compte_amort', headerName: 'Compte amort', width: 140, sortComparator: keepTotalBottomComparator },
+    {
+      field: 'compte_amort',
+      headerName: 'Compte amort',
+      width: 160,
+      sortComparator: keepTotalBottomComparator,
+      headerAlign: 'right',
+      align: 'right',
+      renderCell: (params) => {
+        // Ne pas afficher d’icône dans la ligne Total
+        if (params.row?.isTotal) {
+          return (
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', width: '100%' }}>
+              <Typography variant="body2">{params.value || ''}</Typography>
+            </Box>
+          );
+        }
+
+        const hasCompte = !!params.value;
+
+        return (
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', width: '100%', gap: 0.5 }}>
+            <Typography variant="body2">{params.value || ''}</Typography>
+
+            {hasCompte ? (
+              <CheckCircleIcon sx={{ color: 'green', fontSize: 16 }} />
+            ) : (
+              <GoAlert style={{ color: 'red', fontSize: 16 }} />
+            )}
+          </Box>
+        );
+      },
+    },
     {
       field: 'solde', headerName: 'Solde', width: 120, type: 'number', headerAlign: 'right', align: 'right',
       renderCell: (p) => formatMoneyFr(p.value),
@@ -270,14 +755,17 @@ const Immobilisations = () => {
                 </Stack>
               )}
               <DataGrid
-                rows={rows}
+                rows={rowsWithTotal}
                 columns={columns}
                 getRowId={(r) => r.id}
-                rowSelectionModel={selectionModel}
-                onRowSelectionModelChange={(m) => setSelectionModel(m.slice(-1))}
-                checkboxSelection
                 disableRowSelectionOnClick
                 disableColumnMenu
+                checkboxSelection
+                rowSelectionModel={selectionModel}
+                onRowSelectionModelChange={(m) => {
+                  const arr = Array.isArray(m) ? m : [];
+                  setSelectionModel(arr.slice(-1));
+                }}
                 density="compact"
                 pageSizeOptions={[10, 25, 50]}
                 autoHeight
@@ -288,8 +776,303 @@ const Immobilisations = () => {
                     color: 'white',
                     fontWeight: 'bold',
                   },
+                  '& .total-row': {
+                    fontWeight: 'bold',
+                    color: 'white',
+                    backgroundColor: initial.theme,
+                  },
+                  // garder la même couleur pour la ligne Total même au survol / sélection
+                  '& .MuiDataGrid-row.total-row:hover, & .MuiDataGrid-row.total-row.Mui-hovered': {
+                    backgroundColor: `${initial.theme} !important`,
+                  },
+                  '& .MuiDataGrid-row.Mui-selected.total-row, & .MuiDataGrid-row.Mui-selected.total-row:hover': {
+                    backgroundColor: `${initial.theme} !important`,
+                  },
+                  '& .MuiDataGrid-cell:focus': {
+                    outline: 'none !important',
+                  },
+                  '& .MuiDataGrid-cell:focus-within': {
+                    outline: 'none !important',
+                  },
+                  '& .MuiDataGrid-columnHeader:focus': {
+                    outline: 'none !important',
+                  },
+                  '& .MuiDataGrid-columnHeader:focus-within': {
+                    outline: 'none !important',
+                  },
                 }}
+                getRowClassName={(params) => (params.row?.isTotal ? 'total-row' : '')}
               />
+              {selectedPcIds.length > 0 && (
+                <Box sx={{ mt: 2 }}>
+                  <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+                    <Typography variant="subtitle1">Listes des immobilisations</Typography>
+                    <Stack direction="row" spacing={0.5} alignItems="center">
+                      <Tooltip title="Ajouter">
+                        <span>
+                          <IconButton onClick={handleDetailsAdd} style={{ width: 35, height: 35, borderRadius: 2, backgroundColor: initial.theme }}>
+                            <TbPlaylistAdd style={{ width: 22, height: 22, color: 'white' }} />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                      <Tooltip title="Modifier">
+                        <span>
+                          <IconButton onClick={handleDetailsEdit} disabled={detailsSelectionModel.length === 0} style={{ width: 35, height: 35, borderRadius: 2, backgroundColor: initial.theme }}>
+                            <FaRegPenToSquare style={{ width: 20, height: 20, color: 'white' }} />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                      <Tooltip title="Sauvegarder">
+                        <span>
+                          <IconButton onClick={handleDetailsSave} disabled={!detailsEditingRowId} style={{ width: 35, height: 35, borderRadius: 2, backgroundColor: initial.theme }}>
+                            <TfiSave style={{ width: 20, height: 20, color: 'white' }} />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                      <Tooltip title="Annuler">
+                        <span>
+                          <IconButton onClick={handleDetailsCancel} disabled={!detailsEditingRowId} style={{ width: 35, height: 35, borderRadius: 2, backgroundColor: initial.button_delete_color }}>
+                            <VscClose style={{ width: 20, height: 20, color: 'white' }} />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                      <Tooltip title="Supprimer">
+                        <span>
+                          <IconButton onClick={handleDetailsDelete} disabled={detailsSelectionModel.length === 0} style={{ width: 35, height: 35, borderRadius: 2, backgroundColor: initial.button_delete_color }}>
+                            <IoMdTrash style={{ width: 20, height: 20, color: 'white' }} />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    </Stack>
+                  </Stack>
+                  <DataGrid
+                    rows={detailsRows}
+                    columns={[
+                      { field: 'code', headerName: 'Code', width: 140 },
+                      { field: 'intitule', headerName: 'Intitulé', width: 220 },
+                      { field: 'lien_ecriture_id', headerName: 'Lien écriture', width: 120, align: 'center', headerAlign: 'center', sortable: false, renderCell: (p) => (p.value ? <GoLink color={initial.theme} size={22} /> : '') },
+                      // { field: 'pc_id', headerName: 'Compte ID', width: 120 },
+                      { field: 'fournisseur', headerName: 'Fournisseur', width: 160 },
+                      {
+                        field: 'date_acquisition', headerName: "Date d'acquisition", align: 'center', width: 150, valueGetter: (p) => {
+                          const s = p?.row?.date_acquisition ? String(p.row.date_acquisition).substring(0, 10) : '';
+                          return s ? `${s.substring(8, 10)}/${s.substring(5, 7)}/${s.substring(0, 4)}` : '';
+                        }
+                      },
+                      {
+                        field: 'date_mise_service', headerName: 'Date mise en service', align: 'center', width: 170, valueGetter: (p) => {
+                          const s = p?.row?.date_mise_service ? String(p.row.date_mise_service).substring(0, 10) : '';
+                          return s ? `${s.substring(8, 10)}/${s.substring(5, 7)}/${s.substring(0, 4)}` : '';
+                        }
+                      },
+                      { field: 'duree_amort_mois', headerName: 'Durée amort (mois)', width: 160 },
+                      { field: 'type_amort', headerName: "Type d'amortissement", width: 170 },
+                      { field: 'montant', headerName: 'Montant', width: 140, type: 'number', headerAlign: 'right', align: 'right', renderCell: (p) => formatMoneyFr(p.value) },
+                      { field: 'taux_tva', headerName: 'taux TVA', width: 110, type: 'number', headerAlign: 'right', align: 'right', renderCell: (p) => formatMoneyFr(p.value) },
+                      { field: 'montant_tva', headerName: 'Montant TVA', width: 140, type: 'number', headerAlign: 'right', align: 'right', renderCell: (p) => formatMoneyFr(p.value) },
+                      { field: 'montant_ht', headerName: 'montant HT', width: 140, type: 'number', headerAlign: 'right', align: 'right', renderCell: (p) => formatMoneyFr(p.value) },
+                      { field: 'amort_ant_comp', headerName: 'Amort ant', width: 120, type: 'number', headerAlign: 'right', align: 'right', renderCell: (p) => formatMoneyFr(p.value) },
+                      { field: 'dotation_periode_comp', headerName: 'dotation période', width: 150, type: 'number', headerAlign: 'right', align: 'right', renderCell: (p) => formatMoneyFr(p.value) },
+                      { field: 'amort_exceptionnel_comp', headerName: 'Amort exceptionnel', width: 170, type: 'number', headerAlign: 'right', align: 'right', renderCell: (p) => formatMoneyFr(p.value) },
+                      { field: 'total_amortissement_comp', headerName: 'Total amortissement', width: 170, type: 'number', headerAlign: 'right', align: 'right', renderCell: (p) => formatMoneyFr(p.value) },
+                      { field: 'compte_amortissement', headerName: 'compte amortissement', width: 180 },
+                      { field: 'derogatoire_comp', headerName: 'Dérogatoire', width: 130, type: 'number', headerAlign: 'right', align: 'right', renderCell: (p) => formatMoneyFr(p.value) },
+                      { field: 'vnc', headerName: 'VNC', width: 140, type: 'number', headerAlign: 'right', align: 'right', renderCell: (p) => formatMoneyFr(p.value) },
+                      {
+                        field: 'date_sortie', headerName: 'date de sortie', align: 'center', width: 140, valueGetter: (p) => {
+                          const s = p?.row?.date_sortie ? String(p.row.date_sortie).substring(0, 10) : '';
+                          return s ? `${s.substring(8, 10)}/${s.substring(5, 7)}/${s.substring(0, 4)}` : '';
+                        }
+                      },
+                      { field: 'prix_vente', headerName: 'prix de vente', width: 140, type: 'number', headerAlign: 'right', align: 'right', renderCell: (p) => formatMoneyFr(p.value) },
+                    ]}
+                    getRowId={(r) => r.id}
+                    disableColumnMenu
+                    disableRowSelectionOnClick={false}
+                    checkboxSelection
+                    rowSelectionModel={detailsSelectionModel}
+                    onRowSelectionModelChange={(m) => {
+                      const arr = Array.isArray(m) ? m : [];
+                      setDetailsSelectionModel(arr.slice(-1));
+                    }}
+                    isCellEditable={() => false}
+                    density="compact"
+                    autoHeight
+                    sx={{
+                      '& .MuiDataGrid-columnHeaders': {
+                        backgroundColor: initial.theme,
+                        color: 'white',
+                        fontWeight: 'bold',
+                      },
+                    }}
+                  />
+                  {Array.isArray(detailsSelectionModel) && detailsSelectionModel.length > 0 && (
+                    <Box sx={{ mt: 2 }}>
+                      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+                        <Typography variant="subtitle1">Tableau des lignes d'amortissement</Typography>
+                        <Button
+                          variant="contained"
+                          onClick={handleSaveLignes}
+                          disabled={
+                            savingLignes ||
+                            ligneLoading ||
+                            !(Array.isArray(detailsSelectionModel) && detailsSelectionModel.length > 0) ||
+                            (ligneTab === 'comp' ? isCompDegTab : isFiscDegTab)
+                          }
+                          style={{ backgroundColor: initial.theme, color: 'white', textTransform: 'none' }}
+                        >
+                          {savingLignes ? 'Enregistrement...' : 'Enregistrer les lignes'}
+                        </Button>
+                      </Stack>
+
+                      <TabContext value={ligneTab}>
+                        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                          <TabList onChange={(_, v) => setLigneTab(v)} aria-label="tabs amort">
+                            <Tab label="comptable" value="comp" sx={{ textTransform: 'none' }} />
+                            <Tab label="fiscal" value="fisc" sx={{ textTransform: 'none' }} />
+                          </TabList>
+                        </Box>
+
+                        <TabPanel value="comp" sx={{ px: 0 }}>
+                          <DataGrid
+                            rows={Array.isArray(ligneRowsComp) ? ligneRowsComp : []}
+                            getRowId={(r) => r.rang || r.id}
+                            columns={[
+                              { field: 'date_mise_service', headerName: 'Date mise en service', width: 170, align: 'center', headerAlign: 'center', valueGetter: (p) => { const s = p?.row?.date_mise_service ? String(p.row.date_mise_service).substring(0, 10) : ''; return s ? `${s.substring(8, 10)}/${s.substring(5, 7)}/${s.substring(0, 4)}` : ''; } },
+                              { field: 'date_fin_exercice', headerName: "Date fin de l'exercice", width: 180, align: 'center', headerAlign: 'center', valueGetter: (p) => { const s = p?.row?.date_fin_exercice ? String(p.row.date_fin_exercice).substring(0, 10) : ''; return s ? `${s.substring(8, 10)}/${s.substring(5, 7)}/${s.substring(0, 4)}` : ''; } },
+                              { field: 'annee_nombre', headerName: 'Année Nombre', width: 130, type: 'number', headerAlign: 'right', align: 'right' },
+                              { field: 'montant_immo_ht', headerName: 'Montant immo HT', width: 160, type: 'number', headerAlign: 'right', align: 'right', renderCell: (p) => formatMoneyFr(p.value) },
+                              { field: 'amort_ant_comp', headerName: 'Amort Ant', width: 130, type: 'number', headerAlign: 'right', align: 'right', renderCell: (p) => formatMoneyFr(p.value) },
+                              { field: 'dotation_periode_comp', headerName: 'Dot période', width: 140, type: 'number', headerAlign: 'right', align: 'right', renderCell: (p) => formatMoneyFr(p.value) },
+                              { field: 'cumul_amort_comp', headerName: 'Cumul amort', width: 140, type: 'number', headerAlign: 'right', align: 'right', renderCell: (p) => formatMoneyFr(p.value) },
+                              { field: 'vnc', headerName: 'VNC', width: 140, type: 'number', headerAlign: 'right', align: 'right', renderCell: (p) => formatMoneyFr(p.value) },
+                              { field: 'dot_derogatoire', headerName: 'Dot dérogatoire', width: 140, type: 'number', headerAlign: 'right', align: 'right', renderCell: (p) => formatMoneyFr(p.value) },
+                            ]}
+                            loading={ligneLoading}
+                            disableColumnMenu
+                            disableRowSelectionOnClick
+                            density="compact"
+                            sx={{
+                              height: 250,
+                              '& .MuiDataGrid-columnHeaders': {
+                                backgroundColor: initial.theme,
+                                color: 'white',
+                                fontWeight: 'bold',
+                              },
+                            }}
+                          />
+                        </TabPanel>
+
+                        <TabPanel value="fisc" sx={{ px: 0 }}>
+                          <DataGrid
+                            rows={Array.isArray(ligneRowsFisc) ? ligneRowsFisc : []}
+                            getRowId={(r) => r.rang || r.id}
+                            columns={[
+                              { field: 'date_mise_service', headerName: 'Date mise en service', width: 170, align: 'center', headerAlign: 'center', valueGetter: (p) => { const s = p?.row?.date_mise_service ? String(p.row.date_mise_service).substring(0, 10) : ''; return s ? `${s.substring(8, 10)}/${s.substring(5, 7)}/${s.substring(0, 4)}` : ''; } },
+                              { field: 'date_fin_exercice', headerName: "Date fin de l'exercice", width: 180, align: 'center', headerAlign: 'center', valueGetter: (p) => { const s = p?.row?.date_fin_exercice ? String(p.row.date_fin_exercice).substring(0, 10) : ''; return s ? `${s.substring(8, 10)}/${s.substring(5, 7)}/${s.substring(0, 4)}` : ''; } },
+                              { field: 'annee_nombre', headerName: 'Année Nombre', width: 130, type: 'number', headerAlign: 'right', align: 'right' },
+                              { field: 'montant_immo_ht', headerName: 'Montant immo HT', width: 160, type: 'number', headerAlign: 'right', align: 'right', renderCell: (p) => formatMoneyFr(p.value) },
+                              { field: 'amort_ant_fisc', headerName: 'Amort fiscal ant', width: 160, type: 'number', headerAlign: 'right', align: 'right', renderCell: (p) => formatMoneyFr(p.value) },
+                              { field: 'dotation_periode_fisc', headerName: 'Dot fiscal', width: 130, type: 'number', headerAlign: 'right', align: 'right', renderCell: (p) => formatMoneyFr(p.value) },
+                              { field: 'cumul_amort_fisc', headerName: 'Cumul amort fiscal', width: 180, type: 'number', headerAlign: 'right', align: 'right', renderCell: (p) => formatMoneyFr(p.value) },
+                              { field: 'vnc', headerName: 'VNC', width: 160, type: 'number', headerAlign: 'right', align: 'right', renderCell: (p) => formatMoneyFr(p.value) },
+                              { field: 'dot_derogatoire', headerName: 'Dot dérogatoire', width: 160, type: 'number', headerAlign: 'right', align: 'right', renderCell: (p) => formatMoneyFr(p.value) },
+                            ]}
+                            loading={ligneLoading}
+                            disableColumnMenu
+                            disableRowSelectionOnClick
+                            density="compact"
+                            sx={{
+                              height: 250,
+                              '& .MuiDataGrid-columnHeaders': {
+                                backgroundColor: initial.theme,
+                                color: 'white',
+                                fontWeight: 'bold',
+                              },
+                            }}
+                          />
+                        </TabPanel>
+                      </TabContext>
+                    </Box>
+                  )}
+                  <DetailsImmoDialog
+                    open={detailsDialogOpen}
+                    mode={detailsDialogMode}
+                    form={detailsForm}
+                    onChange={(f) => setDetailsForm(f)}
+                    onClose={() => setDetailsDialogOpen(false)}
+                    onSubmit={submitDetailsForm}
+                    loading={detailsLoading}
+                    onOpenLienEcriture={handleOpenLienEcriture}
+                  />
+
+                  <Dialog open={lienDialogOpen} onClose={() => setLienDialogOpen(false)} maxWidth="md" fullWidth>
+                    <DialogTitle>Choisir une écriture du journal</DialogTitle>
+                    <DialogContent dividers>
+                      {/* <Typography variant="body2" sx={{ mb: 1 }}>Compte: {detailsForm?.compte_id || ''}</Typography> */}
+                      <DataGrid
+                        rows={journalRows}
+                        getRowId={(r) => r.id}
+                        columns={[
+                          {
+                            field: 'dateecriture', headerName: 'Date écriture', width: 120, valueGetter: (p) => {
+                              const s = p?.row?.dateecriture ? String(p.row.dateecriture).substring(0, 10) : '';
+                              return s ? `${s.substring(8, 10)}/${s.substring(5, 7)}/${s.substring(0, 4)}` : '';
+                            }
+                          },
+                          { field: 'journal', headerName: 'Jnl', width: 50, valueGetter: (p) => p?.row?.journal ?? p?.row?.id_journal ?? '' },
+                          { field: 'piece', headerName: 'Pièce', width: 100 },
+                          { field: 'libelle', headerName: 'Libellé', width: 160 },
+                          { field: 'debit', headerName: 'Débit', width: 120, type: 'number', headerAlign: 'right', align: 'right', renderCell: (p) => formatMoneyFr(p.value) },
+                          { field: 'credit', headerName: 'Crédit', width: 120, type: 'number', headerAlign: 'right', align: 'right', renderCell: (p) => formatMoneyFr(p.value) },
+                          // { field: 'solde', headerName: 'Solde', width: 120, type: 'number', headerAlign: 'right', align: 'right', valueGetter: (p) => (Number(p?.row?.debit || 0) - Number(p?.row?.credit || 0)), renderCell: (p) => formatMoneyFr(p.value) },
+                          { field: 'lettrage', headerName: 'Lettrage', width: 120, valueGetter: (p) => p?.row?.lettrage ?? '' },
+                        ]}
+                        loading={journalLoading}
+                        checkboxSelection
+                        disableColumnMenu
+                        disableRowSelectionOnClick
+                        rowSelectionModel={journalSelection}
+                        onRowSelectionModelChange={(m) => {
+                          const arr = Array.isArray(m) ? m : [];
+                          setJournalSelection(arr.slice(-1));
+                        }}
+                        autoHeight
+                        density="compact"
+                        sx={{
+                          '& .MuiDataGrid-columnHeaders': {
+                            backgroundColor: initial.theme, 
+                            color: '#fff',              
+                            fontWeight: 'bold',
+                          }
+                        }}
+                      />
+                    </DialogContent>
+                    <DialogActions>
+                      <Button autoFocus
+                        variant="outlined"
+                         style={{
+                            backgroundColor: "transparent",
+                            color: initial.theme,
+                            width: "100px",
+                            textTransform: 'none',
+                            //outline: 'none',
+                        }}
+                        onClick={() => setLienDialogOpen(false)}>
+                          Annuler
+                      </Button>
+
+                      <Button autoFocus
+                      variant="contained"
+                       onClick={handleConfirmLienEcriture} 
+                       disabled={journalSelection.length === 0}
+                        style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}>
+                          Valider
+                      </Button>
+                    </DialogActions>
+                  </Dialog>
+                </Box>
+              )}
             </Box>
           </Stack>
         </TabPanel>

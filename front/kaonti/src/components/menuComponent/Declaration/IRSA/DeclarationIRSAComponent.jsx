@@ -6,7 +6,7 @@ import {
   Box, Button, IconButton, Stack, Tooltip, Modal,
   Typography, Divider, TextField, Select, Paper, Card, CardActionArea,
   CardContent, Tab, FormControl, InputLabel, Grid, Dialog, DialogTitle,
-  DialogContent, DialogActions, styled ,MenuItem
+  DialogContent, DialogActions, styled, MenuItem
 } from '@mui/material';
 import QuickFilter, { DataGridStyle } from '../../../componentsTools/DatagridToolsStyle';
 import axios from '../../../../../config/axios';
@@ -19,6 +19,7 @@ import { FaEdit, FaSave } from "react-icons/fa";
 import { TfiSave } from "react-icons/tfi";
 import { VscClose } from "react-icons/vsc";
 import { IoMdTrash } from "react-icons/io";
+import { CiImport } from "react-icons/ci";
 import { MdCancel } from "react-icons/md";
 import { toast } from 'react-hot-toast';
 import { BsBox2Fill, BsCreditCard2FrontFill } from "react-icons/bs";
@@ -44,19 +45,19 @@ import useAuth from '../../../../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
 import { AiTwotoneFileText } from "react-icons/ai";
 import { MdImportExport } from "react-icons/md";
-import {MdOutlineAutoMode} from "react-icons/md";
-import {init} from "../../../../../init";
+import { MdOutlineAutoMode } from "react-icons/md";
+import { init } from "../../../../../init";
 import PopupActionConfirm from '../../../componentsTools/popupActionConfirm';
 import PopupConfirmDelete from '../../../componentsTools/popupConfirmDelete';
 
 export default function DeclarationIRSAComponent() {
- 
+
   // Etat pour la popup d'export IRSA et l'affichage de l'historique
- 
+
   const [openExportDialog, setOpenExportDialog] = useState(false);
   const [showHistoriqueIrsa, setShowHistoriqueIrsa] = useState(false);
   const [refreshHistoriqueIrsaKey, setRefreshHistoriqueIrsaKey] = useState(Date.now());
-  
+
   // --- Confirmations (placées tôt pour respecter l'ordre des hooks) ---
   const [openConfirmDeleteAllIrsa, setOpenConfirmDeleteAllIrsa] = useState(false);
   const [openConfirmDeleteAllPaie, setOpenConfirmDeleteAllPaie] = useState(false);
@@ -94,13 +95,13 @@ export default function DeclarationIRSAComponent() {
       const res = await axios.post('/irsa/irsa/generate-batch-snapshot', { paies: paiesToSend });
       if (res.data && res.data.state) {
         toast.success('Génération IRSA réussie !');
-        
+
         // Recharger les données IRSA
         const irsaRes = await axios.get(`/irsa/irsa/${compteId}/${id}/${selectedExerciceId}`);
         if (irsaRes.data && Array.isArray(irsaRes.data.list)) {
           setIrsaData(irsaRes.data.list);
         }
-        
+
         // Recharger les données personnel pour synchronisation
         try {
           const personnelRes = await axios.get(`/administration/personnel/${compteId}/${id}`);
@@ -123,7 +124,7 @@ export default function DeclarationIRSAComponent() {
     }
   };
 
-  const performGenerateIrsa  = () => {
+  const performGenerateIrsa = () => {
     setOpenConfirmGenerateIrsa(false);
     generateIrsa();
   };
@@ -226,12 +227,12 @@ export default function DeclarationIRSAComponent() {
       if (res.data && Array.isArray(res.data.list)) {
         console.log('[DEBUG] Données brutes reçues de l\'API:', res.data.list);
 
-      // Synchroniser immédiatement chaque ligne avec l'objet personnel correspondant
-      const synchronizedAll = res.data.list.map(row => {
-      const personnelId = row.personnel_id ?? row.personnelId;
-      const foundPersonnel = personnels.find(p => p.id === personnelId);
+        // Synchroniser immédiatement chaque ligne avec l'objet personnel correspondant
+        const synchronizedAll = res.data.list.map(row => {
+          const personnelId = row.personnel_id ?? row.personnelId;
+          const foundPersonnel = personnels.find(p => p.id === personnelId);
 
-        return {
+          return {
             ...row,
             matricule: (foundPersonnel && foundPersonnel.matricule) || row.matricule || '',
             personnel: foundPersonnel || null
@@ -261,13 +262,19 @@ export default function DeclarationIRSAComponent() {
     }
   };
 
-  // Ajout immédiat IRSA
+  // Ajout immédiat IRSA avec synchronisation de l'objet personnel
   const handleAddIrsa = (row) => {
-    setIrsaData(prev => [...prev, row]);
+    const pid = row.personnel_id ?? row.personnelId;
+    const foundPersonnel = personnels.find(p => p.id === pid) || null;
+    const enrichedRow = foundPersonnel ? { ...row, personnel: foundPersonnel } : row;
+    setIrsaData(prev => [...prev, enrichedRow]);
   };
-  // Edition immédiate IRSA
+  // Edition immédiate IRSA avec synchronisation de l'objet personnel
   const handleEditIrsa = (row) => {
-    setIrsaData(prev => prev.map(r => r.id === row.id ? row : r));
+    const pid = row.personnel_id ?? row.personnelId;
+    const foundPersonnel = personnels.find(p => p.id === pid) || null;
+    const enrichedRow = foundPersonnel ? { ...row, personnel: foundPersonnel } : row;
+    setIrsaData(prev => prev.map(r => r.id === row.id ? enrichedRow : r));
   };
 
   const [verrIrsa, setVerrIrsa] = useState(false);
@@ -352,12 +359,12 @@ export default function DeclarationIRSAComponent() {
   const [noFile, setNoFile] = useState(false);
   const [fileId, setFileId] = useState(0);
   const { id } = useParams();
-  
+
   const scrollRef1 = useRef(null);
   const scrollRef2 = useRef(null);
 
   useEffect(() => {
-    // Recharger les paies quand l'exercice change
+    // Recharger les paies quand l'exercice change ou qu'un refresh est demandé
     setLoadingPaie(true);
     axios.get(`/paie/paie/${compteId}/${id}/${selectedExerciceId}`)
       .then(res => {
@@ -374,7 +381,7 @@ export default function DeclarationIRSAComponent() {
       })
       .catch(() => setAllPaieData([]))
       .finally(() => setLoadingPaie(false));
-  }, [selectedExerciceId]);
+  }, [selectedExerciceId, isRefresh]);
 
   // State for modal form only (menu removed)
   const [openModal, setOpenModal] = useState(false);
@@ -451,7 +458,7 @@ export default function DeclarationIRSAComponent() {
     setDisableCancelBouton(true);
     setDisableDeleteBouton(true);
   }, [valSelectMois, valSelectAnnee]);
-  
+
   // Vue PAIE dérivée mémoïsée selon mois/année sélectionnés (pas de setState)
   const paieDataByPeriod = useMemo(() => {
     return (paieData || []).filter(row =>
@@ -1481,18 +1488,18 @@ export default function DeclarationIRSAComponent() {
     try {
       const targetMois = Number(valSelectMois);
       const targetAnnee = Number(valSelectAnnee);
-  
+
       // Lignes à supprimer pour la période affichée
       const rowsToDelete = irsaData.filter(r =>
         Number(r.mois) === targetMois && Number(r.annee) === targetAnnee
       );
-  
+
       // IDs persistés à supprimer côté backend
       const idsToDelete = rowsToDelete.filter(r => r.id > 0).map(r => r.id);
-  
+
       // Suppression backend en parallèle
       await Promise.all(idsToDelete.map(id => axios.delete(`/irsa/irsa/${id}`)));
-  
+
       // Nettoyage local: on retire seulement la période courante
       setIrsaData(prev => prev.filter(r =>
         !(Number(r.mois) === targetMois && Number(r.annee) === targetAnnee)
@@ -1501,7 +1508,7 @@ export default function DeclarationIRSAComponent() {
       setAllIrsaData?.(prev => (prev || []).filter(r =>
         !(Number(r.mois) === targetMois && Number(r.annee) === targetAnnee)
       ));
-  
+
       toast.success(`Toutes les lignes IRSA du ${String(targetMois).padStart(2, '0')}/${targetAnnee} ont été supprimées.`);
     } catch (e) {
       toast.error('Erreur lors de la suppression des lignes IRSA de la période');
@@ -1515,18 +1522,18 @@ export default function DeclarationIRSAComponent() {
     try {
       const targetMois = Number(valSelectMois);
       const targetAnnee = Number(valSelectAnnee);
-  
+
       // Lignes PAIE de la période sélectionnée
       const rowsToDelete = paieData.filter(r =>
         Number(r.mois) === targetMois && Number(r.annee) === targetAnnee
       );
-  
+
       // IDs persistés à supprimer côté backend
       const idsToDelete = rowsToDelete.filter(r => r.id > 0).map(r => r.id);
-  
+
       // Suppression backend en parallèle
       await Promise.all(idsToDelete.map(id => axios.delete(`/paie/paie/${id}`)));
-  
+
       // Nettoyage local: on retire uniquement la période courante
       setPaieData(prev => prev.filter(r =>
         !(Number(r.mois) === targetMois && Number(r.annee) === targetAnnee)
@@ -1535,7 +1542,7 @@ export default function DeclarationIRSAComponent() {
       setAllPaieData?.(prev => (prev || []).filter(r =>
         !(Number(r.mois) === targetMois && Number(r.annee) === targetAnnee)
       ));
-  
+
       toast.success(`Toutes les lignes PAIE du ${String(targetMois).padStart(2, '0')}/${targetAnnee} ont été supprimées.`);
     } catch (e) {
       toast.error('Erreur lors de la suppression des lignes PAIE de la période');
@@ -1695,7 +1702,7 @@ export default function DeclarationIRSAComponent() {
     { id: 'personnel_fonction', label: 'Fonction', minWidth: 160, align: 'center', isnumber: false, valueGetter: ({ row }) => row.personnel?.fonction?.nom || row.personnel_fonction || '', editable: false },
     { id: 'personnel_date_entree', label: 'Date Entrée', minWidth: 160, align: 'left', isnumber: false, valueGetter: ({ row }) => row.personnel?.date_entree || '', editable: false, format: value => value ? new Date(value).toLocaleDateString('fr-FR') : '' },
     { id: 'personnel_date_sortie', label: 'Date Sortie', minWidth: 160, align: 'left', isnumber: false, valueGetter: ({ row }) => row.personnel?.date_sortie || '', editable: false, format: value => value ? new Date(value).toLocaleDateString('fr-FR') : '' },
-  
+
     // Montants & valeurs chiffrées
     { id: 'salaireBase', label: 'Salaire Base', minWidth: 160, align: 'right', isnumber: true, editable: true, format: value => formatNumber(value) },
     { id: 'heuresSupp', label: 'Heures Sup.', minWidth: 160, align: 'right', isnumber: true, editable: true, format: value => formatNumber(value) },
@@ -1705,7 +1712,7 @@ export default function DeclarationIRSAComponent() {
     { id: 'indemniteNonImposable', label: 'Indem. Non-Imp.', minWidth: 200, align: 'right', isnumber: true, editable: true, format: value => formatNumber(value) },
     { id: 'avantageImposable', label: 'Avantage Impos.', minWidth: 200, align: 'right', isnumber: true, editable: true, format: value => formatNumber(value) },
     { id: 'avantageExonere', label: 'Avantage Exonéré', minWidth: 200, align: 'right', isnumber: true, editable: true, format: value => formatNumber(value) },
-  
+
     // Calculs & retenues
     { id: 'salaireBrut', label: 'Salaire Brut', minWidth: 160, align: 'right', isnumber: true, editable: false, format: value => formatNumber(value) },
     { id: 'cnapsRetenu', label: 'CNAPS Retenu', minWidth: 200, align: 'right', isnumber: true, editable: false, format: value => formatNumber(value) },
@@ -1717,14 +1724,14 @@ export default function DeclarationIRSAComponent() {
     { id: 'reductionChargeFamille', label: 'Réduc. Famille', minWidth: 180, align: 'right', isnumber: true, editable: false, format: value => formatNumber(value) },
     { id: 'impotDu', label: 'Impôt Dû', minWidth: 160, align: 'right', isnumber: true, editable: false, format: value => formatNumber(value) }
   ];
-  
+
   // petite fonction utilitaire pour éviter de répéter
   function formatNumber(value) {
     return value !== undefined && value !== null && value !== ''
       ? Number(value).toLocaleString('fr-FR', { minimumFractionDigits: 2 })
       : '';
   }
-  
+
 
   const [filters, setFilters] = useState([
     { column: 'personnel_nom', operator: 'contains', value: '' }
@@ -2243,24 +2250,24 @@ export default function DeclarationIRSAComponent() {
         />
       )}
       {confirmDeleteIrsa && (
-          <PopupConfirmDelete
-            msg={`Voulez-vous vraiment supprimer les données IRSA du ${String(valSelectMois).padStart(2, '0')}/${valSelectAnnee} ?`}
-            confirmationState={(val) => {
-              setConfirmDeleteIrsa(false);
-              if (val === true) handleDeleteAllIrsa();
-            }}
-          />
-        )}
+        <PopupConfirmDelete
+          msg={`Voulez-vous vraiment supprimer les données IRSA du ${String(valSelectMois).padStart(2, '0')}/${valSelectAnnee} ?`}
+          confirmationState={(val) => {
+            setConfirmDeleteIrsa(false);
+            if (val === true) handleDeleteAllIrsa();
+          }}
+        />
+      )}
 
-        {confirmDeletePaie && (
-          <PopupConfirmDelete
-            msg={`Voulez-vous vraiment supprimer les données PAIE du ${String(valSelectMois).padStart(2, '0')}/${valSelectAnnee} ?`}
-            confirmationState={(val) => {
-              setConfirmDeletePaie(false);
-              if (val === true) handleDeleteAllPaie();
-            }}
-          />
-        )}
+      {confirmDeletePaie && (
+        <PopupConfirmDelete
+          msg={`Voulez-vous vraiment supprimer les données PAIE du ${String(valSelectMois).padStart(2, '0')}/${valSelectAnnee} ?`}
+          confirmationState={(val) => {
+            setConfirmDeletePaie(false);
+            if (val === true) handleDeleteAllPaie();
+          }}
+        />
+      )}
 
       <Paper sx={{ elevation: "3", margin: "1px", padding: "20px", width: "99%", height: "auto" }}>
         <Stack width="100%" spacing={2}>
@@ -2374,8 +2381,18 @@ export default function DeclarationIRSAComponent() {
         <TabContext value={tabValue}>
           <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
             <TabList onChange={handleTabChange} aria-label="Tabs" variant="scrollable">
-              <Tab label="IRSA" value="1" disabled={!listeExercice || listeExercice.length === 0} />
-              <Tab label="Paie" value="2" disabled={!listeExercice || listeExercice.length === 0} />
+              <Tab
+                label="Irsa"
+                value="1"
+                disabled={!listeExercice || listeExercice.length === 0}
+                sx={{ textTransform: 'none' }}   // 🔥 enlever uppercase
+              />
+              <Tab
+                label="Paie"
+                value="2"
+                disabled={!listeExercice || listeExercice.length === 0}
+                sx={{ textTransform: 'none' }}   // 🔥 enlever uppercase
+              />
             </TabList>
           </Box>
 
@@ -2393,10 +2410,10 @@ export default function DeclarationIRSAComponent() {
                       backgroundColor: '#3bbc24ff',
                       color: "white",
                       height: "35px",
-                  }} 
+                    }}
                     disabled={paieDataByPeriod.length === 0 || !listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0}
                     onClick={handleOpenGenerateConfirm}
-                    startIcon={<MdOutlineAutoMode size={20} />}                    
+                    startIcon={<MdOutlineAutoMode size={20} />}
                   >
                     Générer
                   </Button>
@@ -2405,13 +2422,13 @@ export default function DeclarationIRSAComponent() {
               <Tooltip title="Exporter">
                 <span>
                   <Button
-                  disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0}
-                  variant="outlined"
-                  style={{ textTransform: 'none', outline: 'none' }}
-                  startIcon={<AiTwotoneFileText size={22} />}
-                  onClick={() => setOpenExportDialog(true)}
+                    disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0}
+                    variant="outlined"
+                    style={{ textTransform: 'none', outline: 'none' }}
+                    startIcon={<AiTwotoneFileText size={22} />}
+                    onClick={() => setOpenExportDialog(true)}
                   >
-                    Exporter 
+                    Exporter
                   </Button>
                 </span>
               </Tooltip>
@@ -2591,7 +2608,7 @@ export default function DeclarationIRSAComponent() {
                   },
                 }}
               />
-            </Stack>  
+            </Stack>
             {/* Confirmation dialogs */}
             {/* Dialog de génération IRSA supprimé: on utilise PopupActionConfirm plus haut */}
 
@@ -2633,127 +2650,128 @@ export default function DeclarationIRSAComponent() {
               <Box ml={2}>
                 <Tooltip title="Importer / Exporter">
                   <span>
-                    <Button
+                    <IconButton
                       disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0}
                       variant="contained"
                       onClick={() => setOpenImportExportDialog(true)}
                       style={{
-                        textTransform: 'none',
-                        outline: 'none',
-                        backgroundColor: '#3bbc24ff',
-                        color: "white",
+                        width: "35px",
                         height: "35px",
-                    }}                      
-                    startIcon={<MdImportExport size={20}/>}
-                      >
-                        Importer | Exporter
-                    </Button>
-                  </span>
-                </Tooltip>
-              </Box>
+                        borderRadius: "2px",
+                        border: "2px solid rgba(5,96,116,0.60)",
+                        backgroundColor: "transparent",
+                        textTransform: "none",
+                        outline: "none",
+                      }}
+                    >
+                    <CiImport style={{ width: '25px', height: '25px', color: 'rgba(5,96,116,0.60)' }} />  
+                  </IconButton>
+                </span>
+              </Tooltip>
+            </Box>
 
-              <Tooltip title="Ajouter">
-                <span>
-                  <IconButton
-                    variant="contained"
-                    onClick={() => { setEditRowPaieModal(null); setOpenModalPaie(true); }}
-                    style={{ width: "35px", height: '35px', borderRadius: "2px", borderColor: "transparent", backgroundColor: '#1A5276', textTransform: 'none', outline: 'none', marginLeft: 4 }}
-                  >
-                    <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                  </IconButton>
-                </span>
-              </Tooltip>
+            <Tooltip title="Ajouter">
+              <span>
+                <IconButton
+                  variant="contained"
+                  onClick={() => { setEditRowPaieModal(null); setOpenModalPaie(true); }}
+                  style={{ width: "35px", height: '35px', borderRadius: "2px", borderColor: "transparent", backgroundColor: '#1A5276', textTransform: 'none', outline: 'none', marginLeft: 4 }}
+                >
+                  <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
+                </IconButton>
+              </span>
+            </Tooltip>
 
-              <Tooltip title="Modifier via formulaire">
-                <span>
-                  <IconButton
-                    disabled={disableModifyBouton || selectedRowId.length !== 1}
-                    variant="contained"
-                    onClick={() => {
-                      const rowToEdit = paieData.find(row => row.id === selectedRowId[0]);
-                      if (rowToEdit) {
-                        modifyRowPaie(rowToEdit);
-                      }
-                    }}
-                    style={{ width: "35px", height: '35px', borderRadius: "2px", borderColor: "transparent", backgroundColor: '#1A5276', textTransform: 'none', outline: 'none' }}
-                  >
-                    <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
-                  </IconButton>
-                </span>
-              </Tooltip>
-
-              <Tooltip title="Sauvegarder">
-                <span>
-                  <IconButton
-                    disabled={disableSaveBouton}
-                    variant="contained"
-                    onClick={handleSaveClickPaie(selectedRowId)}
-                    style={{ width: "35px", height: '35px', borderRadius: "2px", borderColor: "transparent", backgroundColor: '#1A5276', textTransform: 'none', outline: 'none' }}
-                  >
-                    <TfiSave style={{ width: '25px', height: '25px', color: 'white' }} />
-                  </IconButton>
-                </span>
-              </Tooltip>
-              <Tooltip title="Annuler">
-                <span>
-                  <IconButton
-                    disabled={disableCancelBouton}
-                    variant="contained"
-                    onClick={handleCancelClick(selectedRowId)}
-                    style={{ width: "35px", height: '35px', borderRadius: "2px", borderColor: "transparent", backgroundColor: '#d32f2f', textTransform: 'none', outline: 'none' }}
-                  >
-                    <VscClose style={{ width: '25px', height: '25px', color: 'white' }} />
-                  </IconButton>
-                </span>
-              </Tooltip>
-              <Tooltip title="Supprimer toutes les lignes PAIE">
-                <span>
-                  <IconButton
-                    variant="contained"
-                    style={{ width: "35px", height: '35px', borderRadius: "2px", borderColor: "transparent", backgroundColor: '#EE4E4E', textTransform: 'none', outline: 'none' }}
-                    onClick={() => {
-                      setConfirmDeletePaie(true);
-                    }}
-                  >
-                    <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
-                  </IconButton>
-                </span>
-              </Tooltip>
-            </Stack>
-            <Stack>
-              <VirtualTablePaie
-                columns={paieColumns}
-                rows={paieFilters.reduce((rows, filter) => {
-                  const col = filter.column;
-                  const colDef = paieColumns.find(c => c.id === col);
-                  return rows.filter(row => {
-                    let val = '';
-                    if (colDef && typeof colDef.valueGetter === 'function') {
-                      val = (colDef.valueGetter({ row }) || '').toString().toLowerCase();
-                    } else {
-                      val = (row[col] || '').toString().toLowerCase();
+            <Tooltip title="Modifier via formulaire">
+              <span>
+                <IconButton
+                  disabled={disableModifyBouton || selectedRowId.length !== 1}
+                  variant="contained"
+                  onClick={() => {
+                    const rowToEdit = paieData.find(row => row.id === selectedRowId[0]);
+                    if (rowToEdit) {
+                      modifyRowPaie(rowToEdit);
                     }
-                    const search = (filter.value || '').toString().toLowerCase();
-                    if (filter.operator === 'contains') return val.includes(search);
-                    if (filter.operator === 'equals') return val === search;
-                    return true;
-                  });
-                }, paieDataByPeriod)}
-                deleteState={deleteOneRowPaie}
-                modifyState={modifyRowPaie}
-                setEditRowPaieModal={setEditRowPaieModal}
-                personnels={personnels}
-                selectedRowId={selectedRowId}
-                onRowSelectionModelChange={saveSelectedRow}
-                onSort={handleSortPaie}
-                onFilter={setPaieFilters}
-                filters={paieFilters}
-              />
-            </Stack>
-          </TabPanel>
+                  }}
+                  style={{ width: "35px", height: '35px', borderRadius: "2px", borderColor: "transparent", backgroundColor: '#1A5276', textTransform: 'none', outline: 'none' }}
+                >
+                  <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
+                </IconButton>
+              </span>
+            </Tooltip>
 
-        </TabContext>
-      </Paper>
+            <Tooltip title="Sauvegarder">
+              <span>
+                <IconButton
+                  disabled={disableSaveBouton}
+                  variant="contained"
+                  onClick={handleSaveClickPaie(selectedRowId)}
+                  style={{ width: "35px", height: '35px', borderRadius: "2px", borderColor: "transparent", backgroundColor: '#1A5276', textTransform: 'none', outline: 'none' }}
+                >
+                  <TfiSave style={{ width: '25px', height: '25px', color: 'white' }} />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title="Annuler">
+              <span>
+                <IconButton
+                  disabled={disableCancelBouton}
+                  variant="contained"
+                  onClick={handleCancelClick(selectedRowId)}
+                  style={{ width: "35px", height: '35px', borderRadius: "2px", borderColor: "transparent", backgroundColor: '#d32f2f', textTransform: 'none', outline: 'none' }}
+                >
+                  <VscClose style={{ width: '25px', height: '25px', color: 'white' }} />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title="Supprimer toutes les lignes PAIE">
+              <span>
+                <IconButton
+                  variant="contained"
+                  style={{ width: "35px", height: '35px', borderRadius: "2px", borderColor: "transparent", backgroundColor: '#EE4E4E', textTransform: 'none', outline: 'none' }}
+                  onClick={() => {
+                    setConfirmDeletePaie(true);
+                  }}
+                >
+                  <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
+                </IconButton>
+              </span>
+            </Tooltip>
+          </Stack>
+          <Stack>
+            <VirtualTablePaie
+              columns={paieColumns}
+              rows={paieFilters.reduce((rows, filter) => {
+                const col = filter.column;
+                const colDef = paieColumns.find(c => c.id === col);
+                return rows.filter(row => {
+                  let val = '';
+                  if (colDef && typeof colDef.valueGetter === 'function') {
+                    val = (colDef.valueGetter({ row }) || '').toString().toLowerCase();
+                  } else {
+                    val = (row[col] || '').toString().toLowerCase();
+                  }
+                  const search = (filter.value || '').toString().toLowerCase();
+                  if (filter.operator === 'contains') return val.includes(search);
+                  if (filter.operator === 'equals') return val === search;
+                  return true;
+                });
+              }, paieDataByPeriod)}
+              deleteState={deleteOneRowPaie}
+              modifyState={modifyRowPaie}
+              setEditRowPaieModal={setEditRowPaieModal}
+              personnels={personnels}
+              selectedRowId={selectedRowId}
+              onRowSelectionModelChange={saveSelectedRow}
+              onSort={handleSortPaie}
+              onFilter={setPaieFilters}
+              filters={paieFilters}
+            />
+          </Stack>
+        </TabPanel>
+
+      </TabContext>
+    </Paper >
     </>
   );
 }

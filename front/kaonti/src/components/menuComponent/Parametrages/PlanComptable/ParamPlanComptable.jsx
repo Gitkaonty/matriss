@@ -53,6 +53,7 @@ export default function ParamPlanComptable() {
 
     const [openDialogAddNewAccount, setOpenDialogAddNewAccount] = useState(false);
     const [typeAction, setTypeAction] = useState('');
+    const [isRefresh, setisRefresh] = useState(false);
 
     const handleOpenDialogAddNewAccount = (type) => {
         setTypeAction(type);
@@ -61,6 +62,7 @@ export default function ParamPlanComptable() {
 
     const handleCloseDialogAddNewAccount = () => {
         setOpenDialogAddNewAccount(false);
+        setisRefresh(prev => !prev);
     }
 
     const columnHeaderDetail = [
@@ -560,7 +562,16 @@ export default function ParamPlanComptable() {
                     listePc = listePc.filter((row) => row.compte === compte);
                 }
 
-                setPc(listePc);
+                // Déduplication par numéro de compte pour éviter les doublons visuels
+                const unique = Object.values(
+                    (Array.isArray(listePc) ? listePc : []).reduce((acc, r) => {
+                        const k = String(r.compte || '');
+                        if (!acc[k]) acc[k] = r;
+                        return acc;
+                    }, {})
+                );
+
+                setPc(unique);
             } else {
                 toast.error(resData.msg);
             }
@@ -641,7 +652,7 @@ export default function ParamPlanComptable() {
 
     useEffect(() => {
         showPc();
-    }, [fileId, compte]);
+    }, [fileId, compte, isRefresh]);
 
     return (
         <Box>
@@ -793,7 +804,6 @@ export default function ParamPlanComptable() {
                                 }}
                             />
                         </Stack>
-
                     </Stack>
                 </TabPanel>
             </TabContext>

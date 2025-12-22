@@ -25,27 +25,33 @@ const formatDate = (dateString) => {
 module.exports = {
   exportPdf: async (req, res) => {
     try {
-      const fileId = Number(req.query?.fileId);
-      const compteId = Number(req.query?.compteId);
-      const exerciceId = Number(req.query?.exerciceId);
-      const pcId = Number(req.query?.pcId);
       const rapproId = Number(req.query?.rapproId);
-      if (
-        fileId === undefined || fileId === null || isNaN(fileId) ||
-        compteId === undefined || compteId === null || isNaN(compteId) ||
-        exerciceId === undefined || exerciceId === null || isNaN(exerciceId) ||
-        pcId === undefined || pcId === null || isNaN(pcId) ||
-        rapproId === undefined || rapproId === null || isNaN(rapproId)
-      ) {
-        return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
+      const rawFileId = Number(req.query?.fileId);
+      const rawCompteId = Number(req.query?.compteId);
+      const rawExerciceId = Number(req.query?.exerciceId);
+      const rawPcId = Number(req.query?.pcId);
+
+      if (rapproId === undefined || rapproId === null || isNaN(rapproId)) {
+        return res.status(400).json({ state: false, msg: 'Paramètre rapproId manquant' });
       }
+
+      try {
+        console.log('[RAPPRO][EXPORT][PDF][PARAMS]', { fileId: rawFileId, compteId: rawCompteId, exerciceId: rawExerciceId, pcId: rawPcId, rapproId });
+      } catch (e) { }
+
+      // On récupère d'abord la ligne réelle à partir de son id, puis on en déduit les autres ids
+      const row = await rapprochements.findByPk(rapproId);
+      if (!row) return res.status(404).json({ state: false, msg: 'Ligne de rapprochement introuvable' });
+
+      const fileId = row.id_dossier;
+      const compteId = row.id_compte;
+      const exerciceId = row.id_exercice;
+      const pcId = row.pc_id;
 
       const dossier = await dossiers.findByPk(fileId);
       const exercice = await exercices.findByPk(exerciceId);
       const compte = await userscomptes.findByPk(compteId, { attributes: ['id','nom'], raw: true });
       const pc = await dossierplancomptables.findByPk(pcId);
-      const row = await rapprochements.findOne({ where: { id: rapproId, id_dossier: fileId, id_compte: compteId, id_exercice: exerciceId, pc_id: pcId } });
-      if (!row) return res.status(404).json({ state: false, msg: 'Ligne de rapprochement introuvable' });
 
       const fonts = {
         Helvetica: {
@@ -99,21 +105,32 @@ module.exports = {
 
   exportExcel: async (req, res) => {
     try {
-      const fileId = Number(req.query?.fileId);
-      const compteId = Number(req.query?.compteId);
-      const exerciceId = Number(req.query?.exerciceId);
-      const pcId = Number(req.query?.pcId);
       const rapproId = Number(req.query?.rapproId);
-      if (!fileId || !compteId || !exerciceId || !pcId || !rapproId) {
-        return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
+      const rawFileId = Number(req.query?.fileId);
+      const rawCompteId = Number(req.query?.compteId);
+      const rawExerciceId = Number(req.query?.exerciceId);
+      const rawPcId = Number(req.query?.pcId);
+
+      if (!rapproId || isNaN(rapproId)) {
+        return res.status(400).json({ state: false, msg: 'Paramètre rapproId manquant' });
       }
+
+      try {
+        console.log('[RAPPRO][EXPORT][EXCEL][PARAMS]', { fileId: rawFileId, compteId: rawCompteId, exerciceId: rawExerciceId, pcId: rawPcId, rapproId });
+      } catch (e) { }
+
+      const row = await rapprochements.findByPk(rapproId);
+      if (!row) return res.status(404).json({ state: false, msg: 'Ligne de rapprochement introuvable' });
+
+      const fileId = row.id_dossier;
+      const compteId = row.id_compte;
+      const exerciceId = row.id_exercice;
+      const pcId = row.pc_id;
 
       const dossier = await dossiers.findByPk(fileId);
       const exercice = await exercices.findByPk(exerciceId);
       const compte = await userscomptes.findByPk(compteId, { attributes: ['id','nom'], raw: true });
       const pc = await dossierplancomptables.findByPk(pcId);
-      const row = await rapprochements.findOne({ where: { id: rapproId, id_dossier: fileId, id_compte: compteId, id_exercice: exerciceId, pc_id: pcId } });
-      if (!row) return res.status(404).json({ state: false, msg: 'Ligne de rapprochement introuvable' });
 
       const workbook = new ExcelJS.Workbook();
       await exportRapprochementExcel(fileId, compteId, exerciceId, pcId, rapproId, workbook, dossier?.dossier, compte?.nom, exercice?.date_debut, exercice?.date_fin);

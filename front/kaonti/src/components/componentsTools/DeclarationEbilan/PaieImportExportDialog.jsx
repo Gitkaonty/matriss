@@ -141,9 +141,9 @@ export default function PaieImportExportDialog({ open, onClose, paieColumns, onI
           justifyContent="flex-start"
           sx={{ mt: 1.5, mb: 2 }}
         >
-          {/* Bouton Télécharger le modèle */}
+          {/* Bouton Télécharger le modèle (ne ferme plus le dialog) */}
           <Button
-            onClick={() => { onDownload(); onClose(); }}
+            onClick={() => { onDownload(); }}
             sx={{
               width: 260,
               height: 40,
@@ -161,11 +161,11 @@ export default function PaieImportExportDialog({ open, onClose, paieColumns, onI
             Télécharger le modèle d'import
           </Button>
 
-          {/* Bouton Importer CSV */}
+          {/* Bouton Importer CSV (ne ferme plus le dialog automatiquement) */}
           <ImportPaieCsvButton
             personnels={personnels}
             paieColumns={paieColumns}
-            onImport={(data) => { onImport(data); onClose(); }}
+            onImport={(data) => { onImport(data); }}
             onAnomalies={handleAnomaliesReceived}
             mois={mois}
             annee={annee}

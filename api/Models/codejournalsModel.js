@@ -44,6 +44,11 @@ module.exports = (sequelize, DataTypes) => {
             unique: false,
             allowNull: true
         },
+        taux_tva: {
+            type: DataTypes.DECIMAL(10, 4),
+            unique: false,
+            allowNull: true
+        },
 
     }, {timestamps: true}, )
     return codejournals
