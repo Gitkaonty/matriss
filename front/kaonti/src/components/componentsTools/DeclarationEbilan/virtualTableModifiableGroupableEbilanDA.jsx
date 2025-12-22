@@ -244,23 +244,19 @@ const VirtualTableModifiableGroupableEbilanDA = ({ columns, rows, deleteState, m
                                         >
                                           <IoMdCreate style={{ width: '25px', height: '25px', color: initial.theme, position: 'absolute', }} />
                                         </IconButton>
-
-                                        {
-                                          group.rubriques_poste === 'AUTRE'
-                                            ? <IconButton
-                                              onClick={() => handleRowDeleteClick(item)}
-                                              variant="contained"
-                                              style={{
-                                                width: "25px", height: '25px',
-                                                borderRadius: "1px", borderColor: "transparent",
-                                                backgroundColor: "transparent",
-                                                textTransform: 'none', outline: 'none'
-                                              }}
-                                            >
-                                              <IoMdTrash style={{ width: '25px', height: '25px', color: initial.button_delete_color, position: 'absolute', }} />
-                                            </IconButton>
-                                            : null
-                                        }
+                                        
+                                        <IconButton
+                                          onClick={() => handleRowDeleteClick(item)}
+                                          variant="contained"
+                                          style={{
+                                            width: "25px", height: '25px',
+                                            borderRadius: "1px", borderColor: "transparent",
+                                            backgroundColor: "transparent",
+                                            textTransform: 'none', outline: 'none'
+                                          }}
+                                        >
+                                          <IoMdTrash style={{ width: '25px', height: '25px', color: initial.button_delete_color, position: 'absolute', }} />
+                                        </IconButton>
 
                                       </Stack>
                                     )

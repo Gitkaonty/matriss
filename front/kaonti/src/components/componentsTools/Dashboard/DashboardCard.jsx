@@ -109,7 +109,7 @@ const DashboardCard = ({
                             '&:hover': {
                                 transform: 'scale(1.2)',
                             },
-                        }} s
+                        }}
                         onClick={() => setFlipped(false)}
                     >
                         <HiOutlineSwitchHorizontal size={20} />

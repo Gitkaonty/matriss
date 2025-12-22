@@ -206,48 +206,59 @@ export const processDaRow = (row, rowIndex, anomalies) => {
     const rubriques_poste = row.rubriques_poste ? row.rubriques_poste.trim().toUpperCase() : "";
     if (rubriques_poste && !["IMMO_CORP", "GOODWILL", "IMMO_INCORP", "IMMO_FIN", "IMMO_ENCOURS"].includes(rubriques_poste)) {
         anomaliesRow.push(
-            `rubriques_poste doit être "IMMO_CORP", "GOODWILL", "IMMO_INCORP", "IMMO_FIN" ou "IMMO_ENCOURS"`
+            `${rubriques_poste} n'est pas reconnue dans "IMMO_CORP", "GOODWILL", "IMMO_INCORP", "IMMO_FIN" ou "IMMO_ENCOURS"`
         );
     }
 
-    // Libelle (optionnel mais validation si rempli)
+    // Libelle (OBLIGATOIRE mais si rempli, validation)
     const libelle = row.libelle ? row.libelle.trim().toUpperCase() : "";
+    if (!libelle) anomaliesRow.push("libelle est obligatoire");
 
-    // Num compte (obligatoire)
-    const num_compte = Number(row.num_compte);
-    if (isNaN(num_compte)) anomaliesRow.push("num_compte est obligatoire");
+    // Num compte (OPTIONNEL)
+    const num_compte = row.num_compte !== undefined && row.num_compte !== ""
+        ? Number(row.num_compte)
+        : null;
+    if (num_compte !== null && isNaN(num_compte)) anomaliesRow.push("num_compte invalide");
 
-    // Date acquisition (optionnel mais validation si rempli)
+    // Date acquisition (OBLIGATOIRE et valide)
     const date_acquisition = row.date_acquisition ? formatDateToISO(row.date_acquisition) : null;
-    if (row.date_acquisition && !date_acquisition) anomaliesRow.push("date_acquisition invalide");
+    if (!date_acquisition) anomaliesRow.push("date_acquisition est obligatoire ou invalide");
 
-    // Taux (obligatoire)
-    const taux = Number(row.taux)
-    if (isNaN(taux)) anomaliesRow.push("taux est obligatoire");
+    // Taux (OBLIGATOIRE et valide)
+    const taux = row.taux !== undefined && row.taux !== ""
+        ? Number(parseFloat(row.taux.replace(',', '.')).toFixed(2))
+        : null;
+    if (taux === null || isNaN(taux)) anomaliesRow.push("taux est obligatoire et doit être un nombre");
 
     // Valeur acquisition (OBLIGATOIRE et valide)
-    const valeur_acquisition = Number(parseFloat(row.valeur_acquisition?.replace(',', '.')).toFixed(2));
-    if (isNaN(valeur_acquisition)) anomaliesRow.push("valeur_acquisition doit être un nombre");
+    const valeur_acquisition = row.valeur_acquisition !== undefined && row.valeur_acquisition !== ""
+        ? Number(parseFloat(row.valeur_acquisition.replace(',', '.')).toFixed(2))
+        : null;
+    if (valeur_acquisition === null || isNaN(valeur_acquisition)) anomaliesRow.push("valeur_acquisition est obligatoire et doit être un nombre");
 
+    // Augmentation (OPTIONNEL)
     const augmentation = row.augmentation !== undefined && row.augmentation !== ""
-        ? Number(parseFloat(row.augmentation?.replace(',', '.')).toFixed(2))
+        ? Number(parseFloat(row.augmentation.replace(',', '.')).toFixed(2))
         : 0;
     if (augmentation !== null && isNaN(augmentation)) anomaliesRow.push("augmentation doit être un nombre");
 
+    // Diminution (OPTIONNEL)
     const diminution = row.diminution !== undefined && row.diminution !== ""
-        ? Number(parseFloat(row.diminution?.replace(',', '.')).toFixed(2))
+        ? Number(parseFloat(row.diminution.replace(',', '.')).toFixed(2))
         : 0;
     if (diminution !== null && isNaN(diminution)) anomaliesRow.push("diminution doit être un nombre");
 
+    // Amortissement antérieur (OBLIGATOIRE)
     const amort_anterieur = row.amort_anterieur !== undefined && row.amort_anterieur !== ""
-        ? Number(parseFloat(row.amort_anterieur?.replace(',', '.')).toFixed(2))
-        : 0;
-    if (amort_anterieur !== null && isNaN(amort_anterieur)) anomaliesRow.push("amort_anterieur doit être un nombre");
+        ? Number(parseFloat(row.amort_anterieur.replace(',', '.')).toFixed(2))
+        : null;
+    if (amort_anterieur === null || isNaN(amort_anterieur)) anomaliesRow.push("amort_anterieur est obligatoire et doit être un nombre");
 
+    // Dotation exercice (OBLIGATOIRE)
     const dotation_exercice = row.dotation_exercice !== undefined && row.dotation_exercice !== ""
-        ? Number(parseFloat(row.dotation_exercice?.replace(',', '.')).toFixed(2))
-        : 0;
-    if (dotation_exercice !== null && isNaN(dotation_exercice)) anomaliesRow.push("dotation_exercice doit être un nombre");
+        ? Number(parseFloat(row.dotation_exercice.replace(',', '.')).toFixed(2))
+        : null;
+    if (dotation_exercice === null || isNaN(dotation_exercice)) anomaliesRow.push("dotation_exercice est obligatoire et doit être un nombre");
 
     // Si anomalies => enregistrer et ignorer la ligne
     if (anomaliesRow.length > 0) {
@@ -281,7 +292,7 @@ export const processEiafncRow = (row, rowIndex, anomalies) => {
     const rubriques_poste = row.rubriques_poste ? row.rubriques_poste.trim().toUpperCase() : "";
     if (rubriques_poste && !["AUTRESACTIF", "IMMOCORP", "IMMOENCOUR", "IMMOINCORP", "IMMOFIN", "PART"].includes(rubriques_poste)) {
         anomaliesRow.push(
-            `rubriques_poste doit être "AUTRESACTIF", "IMMOCORP", "IMMOENCOUR", "IMMOINCORP", "IMMOFIN" ou "PART"`
+            `${rubriques_poste} n'est pas reconnue dans "AUTRESACTIF", "IMMOCORP", "IMMOENCOUR", "IMMOINCORP", "IMMOFIN" ou "PART"`
         );
     }
 

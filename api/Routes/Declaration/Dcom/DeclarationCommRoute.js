@@ -1,20 +1,22 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
+
+const verifyJWT = require('../../../Middlewares/verifyJWT');
+const verifyPermission = require('../../../Middlewares/verifyPermission');
 
 const droitCommController = require('../../../Controllers/Declaration/Dcom/DeclarationCommController');
 
 // Ajout declaration comm du type a
-router.post('/addDroitCommA', droitCommController.addDroitCommA);
+router.post('/addDroitCommA', verifyJWT, verifyPermission('ADD'), droitCommController.addDroitCommA);
 
 // Ajout declaration comm type b
-router.post('/addDroitCommB', droitCommController.addDroitCommB);
+router.post('/addDroitCommB', verifyJWT, verifyPermission('ADD'), droitCommController.addDroitCommB);
 
 // Suppression de tout declaration by type
-router.delete('/deleteAllCommByType', droitCommController.deleteAllCommByType);
+router.delete('/deleteAllCommByType', verifyJWT, verifyPermission('DELETE'), droitCommController.deleteAllCommByType);
 
 // Suppression d'une declaration par type
-router.delete('/deleteOneCommByType', droitCommController.deleteOneCommByType);
+router.delete('/deleteOneCommByType', verifyJWT, verifyPermission('DELETE'), droitCommController.deleteOneCommByType);
 
 // Recupérer declaration comm par type
 router.get('/getDroitCommGlobal/:id_compte/:id_dossier/:id_exercice', droitCommController.getDroitCommGlobal);
@@ -23,13 +25,13 @@ router.get('/getDroitCommGlobal/:id_compte/:id_dossier/:id_exercice', droitCommC
 router.get('/getListePlp/:id_compte/:id_dossier/:id_exercice', droitCommController.getListePlp);
 
 // Modification déclaration comm du type a
-router.put('/updateDroitCommA/:id', droitCommController.updateDroitCommA);
+router.put('/updateDroitCommA/:id', verifyJWT, verifyPermission('EDIT'), droitCommController.updateDroitCommA);
 
 // Modification déclaration comm du type b
-router.put('/updateDroitCommB/:id', droitCommController.updateDroitCommB);
+router.put('/updateDroitCommB/:id', verifyJWT, verifyPermission('EDIT'), droitCommController.updateDroitCommB);
 
 // Modification déclaration comm pour plp
-router.put('/updateDroitCommPlp/:id', droitCommController.updateDroitCommPlp);
+router.put('/updateDroitCommPlp/:id', verifyJWT, verifyPermission('EDIT'), droitCommController.updateDroitCommPlp);
 
 // Récupération des vérouillages du table
 router.get('/getVerrouillageComm/:id_compte/:id_dossier/:id_exercice', droitCommController.getVerrouillageComm);
@@ -43,5 +45,11 @@ router.post('/importdroitCommB', droitCommController.importdroitCommB);
 
 // Génération automatique d'une tableau de droit de communication
 router.post('/generateDCommAuto', droitCommController.generateDCommAuto);
+
+// Exportation en PDF
+router.get('/exportToPDF/:id_compte/:id_dossier/:id_exercice/:id_etat', droitCommController.exportToPDF);
+
+// Exportation en EXCEL
+router.get('/exportToExcel/:id_compte/:id_dossier/:id_exercice/:id_etat', droitCommController.exportToExcel)
 
 module.exports = router;

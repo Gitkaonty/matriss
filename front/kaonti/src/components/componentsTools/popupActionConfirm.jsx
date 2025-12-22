@@ -21,7 +21,7 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
 
 const PopupActionConfirm = ({ msg, confirmationState, isLoading }) => {
     const handleConfirm = () => confirmationState(true);
-    const handleClose = () => confirmationState(false);
+    const handleClose = () => { isLoading ? null : confirmationState(false) };
 
     return (
         <BootstrapDialog
@@ -32,6 +32,7 @@ const PopupActionConfirm = ({ msg, confirmationState, isLoading }) => {
             fullWidth
         >
             <IconButton
+                disabled={isLoading}
                 style={{ color: 'red', textTransform: 'none', outline: 'none' }}
                 aria-label="close"
                 onClick={handleClose}
@@ -59,7 +60,9 @@ const PopupActionConfirm = ({ msg, confirmationState, isLoading }) => {
             </DialogContent>
 
             <DialogActions>
-                <Button autoFocus
+                <Button
+                    disabled={isLoading}
+                    autoFocus
                     style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
                     type='submit'
                     onClick={handleClose}

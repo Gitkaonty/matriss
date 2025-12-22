@@ -16,7 +16,7 @@ import { RiExchangeBoxFill } from "react-icons/ri";
 import PopupAjustRubriqueDRFEbilan from '../FormulaireModifTableauEbilan/popupAjustRubriqueDRFEbilan';
 import { FaRegPenToSquare } from "react-icons/fa6";
 
-const VirtualTableDRFEbilan = ({ refreshTable, columns, rows, noCollapsible, state }) => {
+const VirtualTableDRFEbilan = ({ refreshTable, columns, rows, noCollapsible, state, canModify, canAdd, canDelete, canView }) => {
   const initial = init[0];
   const targetColumnId = 'rubriquesmatrix.libelle';
   const [openRows, setOpenRows] = React.useState({});
@@ -34,6 +34,7 @@ const VirtualTableDRFEbilan = ({ refreshTable, columns, rows, noCollapsible, sta
 
   //ajout de montant ajustement valeur d'une rubrique
   const handleCellClick = (row, column, value) => {
+    if (column === 'note' || column === 'signe') return;
     if (row.nature !== 'TOTAL' && row.nature !== 'TITRE') {
       setDetailRow(row);
       setDetailColumnHeader(column);
@@ -66,8 +67,12 @@ const VirtualTableDRFEbilan = ({ refreshTable, columns, rows, noCollapsible, sta
   return (
     <Box sx={{ width: '100%', padding: 0, margin: 0 }}>
       {
-        openTableDetail ?
+        (openTableDetail && canView) ?
           <PopupAjustRubriqueDRFEbilan
+            canView={canView}
+            canAdd={canAdd}
+            canDelete={canDelete}
+            canModify={canModify}
             actionState={handleRefreshTableAjust}
             row={detailRow}
             column={detailColumnHeader}
@@ -243,12 +248,11 @@ const VirtualTableDRFEbilan = ({ refreshTable, columns, rows, noCollapsible, sta
                               paddingBottom: '5px',
                               fontWeight: row.niveau === 1 ? 'bold' : 'normal',
                               fontSize: 15,
-                              cursor: 'pointer'
+                              cursor: `${(state || !canModify) || column.id === "note" || column.id === "signe" || row.nature === 'TOTAL' || row.nature === 'TITRE' ? '' : 'pointer'}`
                             }}
                             onClick={() => {
-                              if (!state) {
-                                handleCellClick(row, column.id, value);
-                              }
+                              if (state || !canModify) return;
+                              handleCellClick(row, column.id, value);
                             }}
                           >
                             {column.isNumber

@@ -1,6 +1,6 @@
-import { React, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Typography, Stack, Paper, IconButton, FormControl, Input } from '@mui/material';
+import { Typography, Stack, IconButton, FormControl, Input } from '@mui/material';
 import { TbPlaylistAdd } from "react-icons/tb";
 import { FaRegPenToSquare } from "react-icons/fa6";
 import { TfiSave } from "react-icons/tfi";
@@ -18,17 +18,21 @@ import PopupConfirmDelete from './componentsTools/popupConfirmDelete';
 import PopupTestSelectedFile from './componentsTools/popupTestSelectedFile';
 import { init } from '../../init';
 import { DataGridStyle } from './componentsTools/DatagridToolsStyle';
-import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes } from '@mui/x-data-grid';
+import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes, useGridApiRef } from '@mui/x-data-grid';
 import QuickFilter from './componentsTools/DatagridToolsStyle';
 import useAuth from '../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
 import axios from '../../config/axios';
 import toast from 'react-hot-toast';
 import { useFormik } from 'formik';
-import * as Yup from "yup";
+import usePermission from '../hooks/usePermission';
+import useAxiosPrivate from '../../config/axiosPrivate';
 
 export default function ParamDeviseComponent() {
+    const apiRef = useGridApiRef();
+    const { canAdd, canModify, canDelete, canView } = usePermission();
     const initial = init[0];
+    const axiosPrivate = useAxiosPrivate();
 
     const { id } = useParams();
     const [fileId, setFileId] = useState(0);
@@ -166,6 +170,17 @@ export default function ParamDeviseComponent() {
                 );
             },
         },
+        {
+            field: 'par_defaut',
+            headerName: 'Par défaut',
+            type: 'boolean',
+            sortable: false,
+            width: 100,
+            headerAlign: 'center',
+            align: 'center',
+            headerClassName: 'HeaderbackColor',
+            editable: false
+        },
     ];
 
     const handleRowEditStop = (params, event) => {
@@ -182,7 +197,8 @@ export default function ParamDeviseComponent() {
                     id: item.id || idx + 1,
                     code: item.code,
                     libelle: item.libelle,
-                    id_compte: item.id_compte
+                    id_compte: item.id_compte,
+                    par_defaut: item.par_defaut
                 })) : [];
                 setRows(data);
             })
@@ -190,7 +206,9 @@ export default function ParamDeviseComponent() {
     };
 
     useEffect(() => {
-        fetchDevises();
+        if (canView) {
+            fetchDevises();
+        }
     }, []);
 
     // Sélection d'une ligne
@@ -287,7 +305,7 @@ export default function ParamDeviseComponent() {
     const handleSaveClick = (id) => () => {
         setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
         const dataToSend = { ...formNewParam.values, fileId, compteId };
-        axios.post(`/devises/devise`, dataToSend).then((response) => {
+        axiosPrivate.post(`/devises/devise`, dataToSend).then((response) => {
             const resData = response.data;
             if (resData.state) {
                 setDisableAddRowBouton(false);
@@ -329,7 +347,7 @@ export default function ParamDeviseComponent() {
                 setRows(rows.filter((row) => row.id !== idToDelete));
                 return;
             }
-            axios.delete(`/devises/devise/${idToDelete}`)
+            axiosPrivate.delete(`/devises/devise/${idToDelete}`)
                 .then(res => {
                     if (res.data && res.data.state) {
                         setRows(rows.filter((row) => row.id !== idToDelete));
@@ -360,192 +378,270 @@ export default function ParamDeviseComponent() {
         setRowModesModel(newRowModesModel);
     };
 
+    const handleCellKeyDown = (params, event) => {
+        const api = apiRef.current;
+
+        const allCols = api.getAllColumns().filter(c => c.editable);
+        const sortedRowIds = api.getSortedRowIds();
+        const currentColIndex = allCols.findIndex(c => c.field === params.field);
+        const currentRowIndex = sortedRowIds.indexOf(params.id);
+
+        let nextColIndex = currentColIndex;
+        let nextRowIndex = currentRowIndex;
+
+        if (event.key === 'Tab' && !event.shiftKey) {
+            event.preventDefault();
+            nextColIndex = currentColIndex + 1;
+            if (nextColIndex >= allCols.length) {
+                nextColIndex = 0;
+                nextRowIndex = currentRowIndex + 1;
+            }
+        } else if (event.key === 'Tab' && event.shiftKey) {
+            event.preventDefault();
+            nextColIndex = currentColIndex - 1;
+            if (nextColIndex < 0) {
+                nextColIndex = allCols.length - 1;
+                nextRowIndex = currentRowIndex - 1;
+            }
+        } else if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            nextColIndex = currentColIndex + 1;
+            if (nextColIndex >= allCols.length) nextColIndex = allCols.length - 1;
+        } else if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            nextColIndex = currentColIndex - 1;
+            if (nextColIndex < 0) nextColIndex = 0;
+        }
+
+        const nextRowId = sortedRowIds[nextRowIndex];
+        const targetCol = allCols[nextColIndex];
+
+        if (!nextRowId || !targetCol) return;
+
+        try {
+            api.stopCellEditMode({ id: params.id, field: params.field });
+        } catch (err) {
+            console.warn('Erreur stopCellEditMode ignorée:', err);
+        }
+
+        setTimeout(() => {
+            const cellInput = document.querySelector(
+                `[data-id="${nextRowId}"] [data-field="${targetCol.field}"] input, 
+             [data-id="${nextRowId}"] [data-field="${targetCol.field}"] textarea`
+            );
+            if (cellInput) cellInput.focus();
+        }, 50);
+    };
+
     return (
-        <Box>
-            {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
-            {openDialogDeleteRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer la devise sélectionnée ?"} confirmationState={deleteRow} /> : null}
+        <>
+            {
+                noFile
+                    ?
+                    <PopupTestSelectedFile
+                        confirmationState={sendToHome}
+                    />
+                    :
+                    null
+            }
+            {
+                (openDialogDeleteRow && canDelete)
+                    ?
+                    <PopupConfirmDelete
+                        msg={"Voulez-vous vraiment supprimer la devise sélectionnée ?"}
+                        confirmationState={deleteRow}
+                    />
+                    :
+                    null
+            }
+            <Box>
 
-            <TabContext value={"1"}>
-                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                    <TabList aria-label="lab API tabs example">
-                        <Tab
-                            style={{
-                                textTransform: 'none',
-                                outline: 'none',
-                                border: 'none',
-                                margin: -5
-                            }}
-                            label={InfoFileStyle(fileInfos?.dossier)} value="1"
-                        />
-                    </TabList>
-                </Box>
-                <TabPanel value="1">
-                    <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages : Devises</Typography>
-                    <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"}
-                        direction={"column"} style={{ marginLeft: "0px", marginTop: "20px", justifyContent: "right" }}>
-                        <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                            direction={"row"} justifyContent={"right"}>
-                            <Tooltip title="Ajouter une ligne">
-                                <span>
-                                    <IconButton
-                                        disabled={disableAddRowBouton}
-                                        variant="contained"
-                                        onClick={handleOpenDialogAddNewAssocie}
-                                        style={{
-                                            width: "35px", height: '35px',
-                                            borderRadius: "2px", borderColor: "transparent",
-                                            backgroundColor: initial.theme,
-                                            textTransform: 'none', outline: 'none'
-                                        }}
-                                    >
-                                        <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                                    </IconButton>
-                                </span>
-                            </Tooltip>
-                            <Tooltip title="Modifier la ligne sélectionnée">
-                                <span>
-                                    <IconButton
-                                        disabled={disableModifyBouton}
-                                        variant="contained"
-                                        onClick={handleEditClick(selectedRowId)}
-                                        style={{
-                                            width: "35px", height: '35px',
-                                            borderRadius: "2px", borderColor: "transparent",
-                                            backgroundColor: initial.theme,
-                                            textTransform: 'none', outline: 'none'
-                                        }}
-                                    >
-                                        <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
-                                    </IconButton>
-                                </span>
-                            </Tooltip>
-                            <Tooltip title="Sauvegarder les modifications">
-                                <span>
-                                    <IconButton
-                                        disabled={disableSaveBouton}
-                                        variant="contained"
-                                        onClick={handleSaveClick(selectedRowId)}
-                                        style={{
-                                            width: "35px", height: '35px',
-                                            borderRadius: "2px", borderColor: "transparent",
-                                            backgroundColor: initial.theme,
-                                            textTransform: 'none', outline: 'none'
-                                        }}
-                                    >
-                                        <TfiSave style={{ width: '50px', height: '50px', color: 'white' }} />
-                                    </IconButton>
-                                </span>
-                            </Tooltip>
-                            <Tooltip title="Annuler les modifications">
-                                <span>
-                                    <IconButton
-                                        disabled={disableCancelBouton}
-                                        variant="contained"
-                                        onClick={handleCancelClick(selectedRowId)}
-                                        style={{
-                                            width: "35px", height: '35px',
-                                            borderRadius: "2px", borderColor: "transparent",
-                                            backgroundColor: initial.button_delete_color,
-                                            textTransform: 'none', outline: 'none'
-                                        }}
-                                    >
-                                        <VscClose style={{ width: '50px', height: '50px', color: 'white' }} />
-                                    </IconButton>
-                                </span>
-                            </Tooltip>
-                            <Tooltip title="Supprimer la ligne sélectionnée">
-                                <span>
-                                    <IconButton
-                                        disabled={disableDeleteBouton}
-                                        onClick={handleOpenDialogConfirmDeleteAssocieRow}
-                                        variant="contained"
-                                        style={{
-                                            width: "35px", height: '35px',
-                                            borderRadius: "2px", borderColor: "transparent",
-                                            backgroundColor: initial.button_delete_color,
-                                            textTransform: 'none', outline: 'none'
-                                        }}
-                                    >
-                                        <IoMdTrash style={{ width: '50px', height: '50px', color: 'white' }} />
-                                    </IconButton>
-                                </span>
-                            </Tooltip>
-                        </Stack>
-                        <Stack width={"100%"} height={'100%'} minHeight={'600px'}>
-                            <DataGrid
-                                rows={rows}
-                                columns={deviseColumns}
-                                disableMultipleSelection={DataGridStyle.disableMultipleSelection}
-                                disableColumnSelector={DataGridStyle.disableColumnSelector}
-                                disableDensitySelector={DataGridStyle.disableDensitySelector}
-                                localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
-                                disableRowSelectionOnClick
-                                disableSelectionOnClick={true}
-                                slots={{ toolbar: QuickFilter }}
-                                sx={{
-                                    ...DataGridStyle.sx,
-                                    '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
-                                        outline: 'none',
-                                        border: 'none',
-                                    },
-                                    '& .MuiDataGrid-virtualScroller': {
-                                        maxHeight: '100%',
-                                    },
+                <TabContext value={"1"}>
+                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                        <TabList aria-label="lab API tabs example">
+                            <Tab
+                                style={{
+                                    textTransform: 'none',
+                                    outline: 'none',
+                                    border: 'none',
+                                    margin: -5
                                 }}
-                                rowHeight={DataGridStyle.rowHeight}
-                                columnHeaderHeight={DataGridStyle.columnHeaderHeight}
-                                editMode='row'
-                                onRowClick={(e) => handleCellEditCommit(e.row)}
-                                onRowSelectionModelChange={ids => {
-                                    const single = Array.isArray(ids) && ids.length ? [ids[ids.length - 1]] : [];
-                                    setSelectedRow(single);
-                                    saveSelectedRow(single);
-                                    deselectRow(single);
-                                }}
-                                rowModesModel={rowModesModel}
-                                onRowModesModelChange={handleRowModesModelChange}
-                                onRowEditStop={handleRowEditStop}
-                                processRowUpdate={processRowUpdate}
-                                initialState={{
-                                    pagination: {
-                                        paginationModel: { page: 0, pageSize: 100 },
-                                    },
-                                }}
-                                pageSizeOptions={[50, 100]}
-                                pagination={DataGridStyle.pagination}
-                                checkboxSelection={DataGridStyle.checkboxSelection}
-                                columnVisibilityModel={{
-                                    id: false,
-                                }}
-                                rowSelectionModel={selectedRow}
-                                onRowEditStart={(params, event) => {
-                                    if (!selectedRow.length || selectedRow[0] !== params.id) {
-                                        event.defaultMuiPrevented = true;
-                                    }
-                                    if (selectedRow.includes(params.id)) {
-                                        setDisableAddRowBouton(true);
-                                        event.stopPropagation();
-
+                                label={InfoFileStyle(fileInfos?.dossier)} value="1"
+                            />
+                        </TabList>
+                    </Box>
+                    <TabPanel value="1">
+                        <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages : Devises</Typography>
+                        <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"}
+                            direction={"column"} style={{ marginLeft: "0px", marginTop: "20px", justifyContent: "right" }}>
+                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                direction={"row"} justifyContent={"right"}>
+                                <Tooltip title="Ajouter une ligne">
+                                    <span>
+                                        <IconButton
+                                            disabled={!canAdd || disableAddRowBouton}
+                                            variant="contained"
+                                            onClick={handleOpenDialogAddNewAssocie}
+                                            style={{
+                                                width: "35px", height: '35px',
+                                                borderRadius: "2px", borderColor: "transparent",
+                                                backgroundColor: initial.theme,
+                                                textTransform: 'none', outline: 'none'
+                                            }}
+                                        >
+                                            <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
+                                <Tooltip title="Modifier la ligne sélectionnée">
+                                    <span>
+                                        <IconButton
+                                            disabled={(!canModify && selectedRowId > 0) || disableModifyBouton}
+                                            variant="contained"
+                                            onClick={handleEditClick(selectedRowId)}
+                                            style={{
+                                                width: "35px", height: '35px',
+                                                borderRadius: "2px", borderColor: "transparent",
+                                                backgroundColor: initial.theme,
+                                                textTransform: 'none', outline: 'none'
+                                            }}
+                                        >
+                                            <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
+                                <Tooltip title="Sauvegarder les modifications">
+                                    <span>
+                                        <IconButton
+                                            disabled={(!canAdd && !canModify) || disableSaveBouton}
+                                            variant="contained"
+                                            onClick={handleSaveClick(selectedRowId)}
+                                            style={{
+                                                width: "35px", height: '35px',
+                                                borderRadius: "2px", borderColor: "transparent",
+                                                backgroundColor: initial.theme,
+                                                textTransform: 'none', outline: 'none'
+                                            }}
+                                        >
+                                            <TfiSave style={{ width: '50px', height: '50px', color: 'white' }} />
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
+                                <Tooltip title="Annuler les modifications">
+                                    <span>
+                                        <IconButton
+                                            disabled={disableCancelBouton}
+                                            variant="contained"
+                                            onClick={handleCancelClick(selectedRowId)}
+                                            style={{
+                                                width: "35px", height: '35px',
+                                                borderRadius: "2px", borderColor: "transparent",
+                                                backgroundColor: initial.button_delete_color,
+                                                textTransform: 'none', outline: 'none'
+                                            }}
+                                        >
+                                            <VscClose style={{ width: '50px', height: '50px', color: 'white' }} />
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
+                                <Tooltip title="Supprimer la ligne sélectionnée">
+                                    <span>
+                                        <IconButton
+                                            disabled={!canDelete || disableDeleteBouton}
+                                            onClick={handleOpenDialogConfirmDeleteAssocieRow}
+                                            variant="contained"
+                                            style={{
+                                                width: "35px", height: '35px',
+                                                borderRadius: "2px", borderColor: "transparent",
+                                                backgroundColor: initial.button_delete_color,
+                                                textTransform: 'none', outline: 'none'
+                                            }}
+                                        >
+                                            <IoMdTrash style={{ width: '50px', height: '50px', color: 'white' }} />
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
+                            </Stack>
+                            <Stack width={"100%"} height={'100%'} minHeight={'600px'}>
+                                <DataGrid
+                                    apiRef={apiRef}
+                                    rows={rows}
+                                    columns={deviseColumns}
+                                    disableMultipleSelection={DataGridStyle.disableMultipleSelection}
+                                    disableColumnSelector={DataGridStyle.disableColumnSelector}
+                                    disableDensitySelector={DataGridStyle.disableDensitySelector}
+                                    localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                                    disableRowSelectionOnClick
+                                    disableSelectionOnClick={true}
+                                    slots={{ toolbar: QuickFilter }}
+                                    sx={{
+                                        ...DataGridStyle.sx,
+                                        '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+                                            outline: 'none',
+                                            border: 'none',
+                                        },
+                                        '& .MuiDataGrid-virtualScroller': {
+                                            maxHeight: '100%',
+                                        },
+                                    }}
+                                    rowHeight={DataGridStyle.rowHeight}
+                                    columnHeaderHeight={DataGridStyle.columnHeaderHeight}
+                                    editMode='row'
+                                    onRowClick={(e) => handleCellEditCommit(e.row)}
+                                    onRowSelectionModelChange={ids => {
+                                        const single = Array.isArray(ids) && ids.length ? [ids[ids.length - 1]] : [];
+                                        setSelectedRow(single);
+                                        saveSelectedRow(single);
+                                        deselectRow(single);
+                                    }}
+                                    rowModesModel={rowModesModel}
+                                    onRowModesModelChange={handleRowModesModelChange}
+                                    onRowEditStop={handleRowEditStop}
+                                    processRowUpdate={processRowUpdate}
+                                    initialState={{
+                                        pagination: {
+                                            paginationModel: { page: 0, pageSize: 100 },
+                                        },
+                                    }}
+                                    pageSizeOptions={[50, 100]}
+                                    pagination={DataGridStyle.pagination}
+                                    checkboxSelection={DataGridStyle.checkboxSelection}
+                                    columnVisibilityModel={{
+                                        id: false,
+                                    }}
+                                    rowSelectionModel={selectedRow}
+                                    onRowEditStart={(params, event) => {
                                         const rowId = params.id;
                                         const rowData = params.row;
 
-                                        formNewParam.setFieldValue("idDevise", rowId);
-                                        formNewParam.setFieldValue("code", rowData.code ?? '');
-                                        formNewParam.setFieldValue("libelle", rowData.libelle ?? '');
+                                        const isNewRow = rowId < 0;
+
+                                        if (!canModify && !isNewRow) {
+                                            event.defaultMuiPrevented = true;
+                                            return;
+                                        }
+
+                                        event.stopPropagation();
 
                                         setRowModesModel((oldModel) => ({
                                             ...oldModel,
                                             [rowId]: { mode: GridRowModes.Edit },
                                         }));
 
+                                        formNewParam.setFieldValue("idDevise", rowId);
+                                        formNewParam.setFieldValue("code", rowData.code ?? '');
+                                        formNewParam.setFieldValue("libelle", rowData.libelle ?? '');
+
+                                        setDisableAddRowBouton(true);
                                         setDisableSaveBouton(false);
-                                    }
-                                }}
-                            />
+                                    }}
+                                    onCellKeyDown={handleCellKeyDown}
+                                />
+                            </Stack>
                         </Stack>
-                    </Stack>
-                </TabPanel>
-            </TabContext>
-        </Box>
+                    </TabPanel>
+                </TabContext>
+            </Box>
+        </>
     )
 }

@@ -1,10 +1,10 @@
-import * as React from 'react';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
 import SubMenuList from '../subMenuComponents/SubMenuList';
 import SubMenuHeader from '../subMenuComponents/SubMenuHeader';
 import { init } from '../../../../init';
 import { Stack } from '@mui/material';
+import { useEffect, useState } from 'react';
 
 const comptaList = [
     {
@@ -103,10 +103,18 @@ const socialesList = [
         path: "/tab/parametrages/paramFonctions",
         urldynamic: true
     },
+    {
+        text: 'Portefeuille',
+        name: "portefeuille",
+        path: "/tab/parametrages/paramPortefeuille",
+        urldynamic: true
+    },
 ];
 
-export default function Parametrages({ onWindowState, pathToNavigate, humburgerMenuState, closeDrawer }) {
+export default function Parametrages({ onWindowState, pathToNavigate, humburgerMenuState, closeDrawer, roles, consolidation }) {
     let initial = init[0];
+
+    const [sociales, setSociales] = useState(socialesList);
 
     const SendStateToParent = () => {
         onWindowState(false);
@@ -115,6 +123,21 @@ export default function Parametrages({ onWindowState, pathToNavigate, humburgerM
     const HandlePath = (newPath) => {
         pathToNavigate(newPath);
     }
+
+    useEffect(() => {
+        let newSocialList = [...socialesList];
+        if (consolidation) {
+            if (!newSocialList.some(item => item.name === "consolidation-correpondance")) {
+                newSocialList.push({
+                    text: 'Consolidation - Correpondace',
+                    name: "consolidation-correpondace",
+                    path: "/tab/parametrages/consolidation-correpondance",
+                    urldynamic: true
+                });
+            }
+        }
+        setSociales(newSocialList);
+    }, [consolidation]);
 
     return (
         <Stack backgroundColor={initial.theme}
@@ -158,7 +181,7 @@ export default function Parametrages({ onWindowState, pathToNavigate, humburgerM
 
                 <Stack width={"25%"} height={"30px"} spacing={0.1} alignItems={"flex-start"} direction={"column"}>
                     <Typography variant='h6' marginLeft={"50px"} color={"white"}>Sociales</Typography>
-                    <SubMenuList list={socialesList} navigatePath={HandlePath} />
+                    <SubMenuList list={sociales} navigatePath={HandlePath} />
                 </Stack>
             </Stack>
         </Stack>

@@ -4,7 +4,6 @@ import { DataGrid, frFR } from '@mui/x-data-grid';
 import { DataGridStyle } from '../../../DatagridToolsStyle';
 import QuickFilter from '../../../DatagridToolsStyle';
 import { init } from '../../../../../../init';
-import axios from '../../../../../../config/axios';
 
 import DatagridColumnsEcritureAssocie from '../../DatagridHeaders/DatagridColumnsEcritureAssocie';
 import PopupConfirmDelete from '../../../popupConfirmDelete';
@@ -13,6 +12,9 @@ import { MdOutlineAutoMode } from "react-icons/md";
 import { MdReplay } from "react-icons/md";
 
 import toast from 'react-hot-toast';
+import useAxiosPrivate from '../../../../../../config/axiosPrivate';
+
+import PopupActionConfirm from '../../../../componentsTools/popupActionConfirm';
 
 const initial = init[0];
 
@@ -27,47 +29,59 @@ const DatagridDetailEcritureAssocie = ({
     listDetailEcriture,
     setIsDetailEcritureRefreshed,
     setIsDetailSelectionRefreshed,
-    setIsAnnexeRefreshed
+    setIsAnnexeRefreshed,
+    canModify,
+    canAdd,
+    canDelete,
+    canView
 }) => {
+    const axiosPrivate = useAxiosPrivate();
     const [selectedDetailRows, setSelectedDetailRows] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
 
     const [openDialogGenerateAuto, setOpenDialogGenerateAuto] = useState(false);
     const [openDialogReinitialize, setOpenDialogReinitialize] = useState(false);
 
     // Génération auto de ISI
-    const generateIsiAuto = (value) => {
+    const generateIsiAuto = async (value) => {
         if (value) {
-            axios.post(`/declaration/isi/generateIsiAutoDetail`, {
-                id_compte: compteId,
-                id_exercice: selectedExerciceId,
-                id_dossier: fileId,
-                declisiannee: valSelectAnnee,
-                declisimois: valSelectMois,
-                compteisi: compteisi
-            })
-                .then((response) => {
-                    const resData = response.data;
-                    if (resData.state) {
-                        toast.success(response?.data?.message);
-                        setIsDetailEcritureRefreshed(prev => !prev);
-                        setIsDetailSelectionRefreshed(prev => !prev);
-                        setOpenDialogGenerateAuto(false);
-                    } else {
-                        toast.error(resData.message)
-                    }
+            setIsLoading(true);
+            try {
+                await axiosPrivate.post(`/declaration/isi/generateIsiAutoDetail`, {
+                    id_compte: compteId,
+                    id_exercice: selectedExerciceId,
+                    id_dossier: fileId,
+                    declisiannee: valSelectAnnee,
+                    declisimois: valSelectMois,
+                    compteisi: compteisi
                 })
-                .catch((error) => {
-                    toast.error(error.response?.data?.message || error.message);
-                })
+                    .then((response) => {
+                        const resData = response.data;
+                        if (resData.state) {
+                            toast.success(response?.data?.message);
+                            setIsDetailEcritureRefreshed(prev => !prev);
+                            setIsDetailSelectionRefreshed(prev => !prev);
+                            setOpenDialogGenerateAuto(false);
+                        } else {
+                            toast.error(resData.message)
+                        }
+                    })
+            } catch (error) {
+                const errMsg = error.response?.data?.message || error.message || "Erreur inconnue";
+                toast.error(errMsg);
+            } finally {
+                setOpenDialogGenerateAuto(false);
+            }
         } else {
             setOpenDialogGenerateAuto(false);
         }
+        setIsLoading(false);
     }
 
     // Réinitalisation de ISI
     const reinitializeIsi = (value) => {
         if (value) {
-            axios.post(`/declaration/isi/reinitializeIsi`, {
+            axiosPrivate.post(`/declaration/isi/reinitializeIsi`, {
                 id_compte: compteId,
                 id_exercice: selectedExerciceId,
                 id_dossier: fileId,
@@ -109,18 +123,26 @@ const DatagridDetailEcritureAssocie = ({
     return (
         <>
             {
-                openDialogGenerateAuto ? <PopupConfirmDelete
-                    msg={`Voulez-vous vraiment générer automatiquement les details ? Toutes les anciennes données seront supprimées.`}
-                    confirmationState={generateIsiAuto}
-                    type={"Generer"}
-                /> : null
+                openDialogGenerateAuto && canAdd
+                    ?
+                    <PopupActionConfirm
+                        msg={`Voulez-vous vraiment générer automatiquement les details ? Toutes les anciennes données seront supprimées.`}
+                        confirmationState={generateIsiAuto}
+                        isLoading={isLoading}
+                    />
+                    :
+                    null
             }
             {
-                openDialogReinitialize ? <PopupConfirmDelete
-                    msg={`Voulez-vous vraiment réinitaliser le mois et l'année de toutes ces lignes ?`}
-                    confirmationState={reinitializeIsi}
-                    type={"Reinialiser"}
-                /> : null
+                openDialogReinitialize && canDelete
+                    ?
+                    <PopupConfirmDelete
+                        msg={`Voulez-vous vraiment réinitaliser le mois et l'année de toutes ces lignes ?`}
+                        confirmationState={reinitializeIsi}
+                        type={"Reinialiser"}
+                    />
+                    :
+                    null
             }
             <Stack width={"100%"} height={"100%"} alignItems={"flex-start"}
                 alignContent={"flex-start"} justifyContent={"stretch"} >
@@ -148,7 +170,7 @@ const DatagridDetailEcritureAssocie = ({
                                 }}
                                 startIcon={<MdReplay size={20} />}
                                 onClick={handleOpenDialogConfirmReinitialize}
-                                disabled={listDetailEcriture.length === 0}
+                                disabled={!canDelete || listDetailEcriture.length === 0}
                             >
                                 Réinitialiser
                             </Button>
@@ -157,6 +179,7 @@ const DatagridDetailEcritureAssocie = ({
                     <Tooltip title="Générer automatiquement les écritures">
                         <span>
                             <Button
+                                disabled={!canAdd}
                                 variant="contained"
                                 style={{
                                     textTransform: 'none',

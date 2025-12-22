@@ -60,7 +60,7 @@ app.use('/logout', require('./Routes/logoutRoute'));
 
 
 //placer la vérification pour les routes qui ne nécessite pas de vérification
-//app.use(verifyJWT);
+// app.use(verifyJWT);
 
 
 //routes pour l'authentification
@@ -89,7 +89,7 @@ app.use('/administration/personnel', require('./Routes/Administration/personnels
 
 app.use('/administration/etatFinancier', require('./Routes/Administration/etatFinancier/etatFinancierRoute'));
 
-app.use('/administration/etatFinancierAnalytique',require('./Routes/Administration/etatFinancierAnalytique/etatFinancierAnalytiqueRoute'));
+app.use('/administration/etatFinancierAnalytique', require('./Routes/Administration/etatFinancierAnalytique/etatFinancierAnalytiqueRoute'));
 
 //export
 app.use('/administration/exportBalance', require('./Routes/Administration/exportBalanceRoute'));
@@ -135,8 +135,14 @@ app.use('/parametres/fonction', require('./Routes/Parametres/personnels/fonction
 
 app.use('/devises/devise', require('./Routes/Parametres/Devises/deviseRoutes'));
 
-//router pour paramètres rubrique externes
+// Route pour paramètres rubrique externes
 app.use('/paramRubriqueExterne', require('./Routes/Parametres/RubriqueExtrenes/paramRubriquesExternesRoute'));
+
+// Route pour portefeuille
+app.use('/param/portefeuille', require('./Routes/Parametres/Portefeuille/portefeuilleRoute'));
+
+// Route pour consolidation
+app.use('/param/consolidation', require('./Routes/Parametres/Consolidation/paramConsolidationRoute'));
 
 //----------------------------------------------------------------------------------------------------------------
 // MENU DECLARATION

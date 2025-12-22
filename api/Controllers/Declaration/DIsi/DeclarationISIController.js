@@ -1,5 +1,4 @@
 require('dotenv').config();
-const bcrypt = require("bcrypt");
 const db = require("../../../Models");
 const { Op } = require('sequelize');
 const { create } = require('xmlbuilder2');
@@ -641,6 +640,9 @@ exports.getDetailSelectionLigne = async (req, res) => {
             return res.status(400).json({ state: false, message: 'Id_exercice non trouvé' });
         }
 
+        const debutMois = new Date(annee, mois - 1, 1);
+        const finMois = new Date(annee, mois, 0, 23, 59, 59, 999);
+
         const journalData = await journals.findAll({
             where: {
                 id_compte,
@@ -655,7 +657,8 @@ exports.getDetailSelectionLigne = async (req, res) => {
                             { declisiannee: annee }
                         ]
                     }
-                ]
+                ],
+                dateecriture: { [Op.between]: [debutMois, finMois] },
             },
             include: [
                 {
@@ -994,6 +997,9 @@ exports.getDetailEcritureAssocie = async (req, res) => {
             return res.status(400).json({ state: false, message: 'Compte Isi manquant' });
         }
 
+        const debutMois = new Date(annee, mois - 1, 1);
+        const finMois = new Date(annee, mois, 0, 23, 59, 59, 999);
+
         const journalData = await journals.findAll({
             where: {
                 id_compte,
@@ -1002,6 +1008,7 @@ exports.getDetailEcritureAssocie = async (req, res) => {
                 declisimois: mois,
                 declisiannee: annee,
                 declisi: true,
+                dateecriture: { [Op.between]: [debutMois, finMois] },
             },
             include: [
                 {
@@ -1061,6 +1068,9 @@ exports.generateAnnexeDeclarationAuto = async (req, res) => {
             return res.status(400).json({ state: false, message: 'Compte Isi manquant' });
         }
 
+        const debutMois = new Date(annee, mois - 1, 1);
+        const finMois = new Date(annee, mois, 0, 23, 59, 59, 999);
+
         const journalData = await journals.findAll({
             where: {
                 id_compte,
@@ -1069,6 +1079,7 @@ exports.generateAnnexeDeclarationAuto = async (req, res) => {
                 declisimois: mois,
                 declisiannee: annee,
                 declisi: true,
+                dateecriture: { [Op.between]: [debutMois, finMois] },
             },
             include: [
                 {
@@ -1311,14 +1322,14 @@ exports.exportISIToPDF = async (req, res) => {
         const docDefinition = {
             pageOrientation: 'landscape',
             content: [
-                { text: 'Liste des déclarations ISI', style: 'title' },
+                { text: 'Déclaration ISI', style: 'title' },
                 infoBlock(dossier, exercice, mois, annee),
                 ...buildTable(isi)
             ],
             styles: {
                 title: { fontSize: 18, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-                subTitle: { fontSize: 14,bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-                subTitleExo: { fontSize: 9},
+                subTitle: { fontSize: 14, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+                subTitleExo: { fontSize: 9 },
                 tableHeader: { bold: true, fillColor: '#1A5276', color: 'white', margin: [0, 2, 0, 2] }
             },
             defaultStyle: { font: 'Helvetica', fontSize: 7 }

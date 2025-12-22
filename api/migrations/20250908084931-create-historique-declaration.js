@@ -13,12 +13,24 @@ module.exports = {
       idCompte: {
         type: Sequelize.INTEGER,
         allowNull: false,
+        references: {
+          model: 'userscomptes',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
         comment: 'ID du compte utilisateur lié à l\'export'
       },
       // Dossier concerné par l\'export
       idDossier: {
         type: Sequelize.INTEGER,
         allowNull: false,
+        references: {
+          model: 'dossiers',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
         comment: 'ID du dossier concerné par l\'export'
       },
       declaration: {

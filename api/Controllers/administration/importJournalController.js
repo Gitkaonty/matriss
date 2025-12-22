@@ -66,9 +66,9 @@ const createNotExistingCodeJournal = async (req, res) => {
 const createNotExistingCompte = async (req, res) => {
   try {
     const { compteId, fileId, compteToCreateGen, compteToCreateAux } = req.body;
- 
+
     let resData = { state: false, msg: '', list: [] };
- 
+
     if (compteToCreateGen.length > 0) {
       await Promise.all(
         compteToCreateGen.map(item =>
@@ -80,16 +80,17 @@ const createNotExistingCompte = async (req, res) => {
             nature: "General",
             typetier: "general",
             baseaux: item.CompteNum,
-            pays: 'Madagascar'
+            pays: 'Madagascar',
+            typecomptabilite: 'Français'
           })
         )
       );
     }
- 
+
     if (compteToCreateAux.length > 0) {
       await Promise.all(
         compteToCreateAux.map(async item => {
- 
+
           const baseauxID = await dossierPlanComptable.findOne({
             where: {
               id_compte: compteId,
@@ -97,7 +98,7 @@ const createNotExistingCompte = async (req, res) => {
               compte: item.CompteNum
             }
           });
- 
+
           return dossierPlanComptable.create({
             id_compte: compteId,
             id_dossier: fileId,
@@ -106,12 +107,13 @@ const createNotExistingCompte = async (req, res) => {
             nature: "Aux",
             typetier: "sans-nif",
             pays: 'Madagascar',
-            baseaux: baseauxID?.id || 0
+            baseaux: baseauxID?.id || 0,
+            typecomptabilite: 'Français'
           });
         })
       );
     }
- 
+
     await db.sequelize.query(
       `UPDATE dossierplancomptables
        SET baseaux_id = id
@@ -123,17 +125,17 @@ const createNotExistingCompte = async (req, res) => {
         type: db.Sequelize.QueryTypes.UPDATE
       }
     );
- 
+
     const updatedList = await dossierPlanComptable.findAll({
       where: { id_compte: compteId, id_dossier: fileId },
       raw: true
     });
- 
+
     resData.state = true;
     resData.list = updatedList;
- 
+
     return res.json(resData);
- 
+
   } catch (error) {
     console.log("Erreur createNotExistingCompte :", error);
     return res.status(500).json({ state: false, error: error.message });

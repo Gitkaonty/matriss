@@ -1,6 +1,6 @@
-import { React, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Typography, Stack, Paper, IconButton, FormControl, InputLabel, Select, MenuItem, Input, FormHelperText, Chip } from '@mui/material';
+import { Typography, Stack, IconButton, FormControl, InputLabel, Select, MenuItem, Input, FormHelperText, Chip } from '@mui/material';
 import Tooltip from '@mui/material/Tooltip';
 import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
 import { useParams } from 'react-router-dom';
@@ -18,7 +18,7 @@ import PopupConfirmDelete from '../../../componentsTools/popupConfirmDelete';
 import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFile';
 import { init } from '../../../../../init';
 import { DataGridStyle } from '../../../componentsTools/DatagridToolsStyle';
-import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes } from '@mui/x-data-grid';
+import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes, useGridApiRef } from '@mui/x-data-grid';
 import QuickFilter from '../../../componentsTools/DatagridToolsStyle';
 import useAuth from '../../../../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
@@ -32,8 +32,13 @@ import { BsArrow90DegUp } from "react-icons/bs";
 import { BsArrow90DegDown } from "react-icons/bs";
 import { BsRecord } from "react-icons/bs";
 import { MdOutlineSyncLock } from "react-icons/md";
+import usePermission from '../../../../hooks/usePermission';
+import useAxiosPrivate from '../../../../../config/axiosPrivate';
 
 export default function ParamCodeJournalComponent() {
+    const apiRef = useGridApiRef();
+    const { canAdd, canModify, canDelete, canView } = usePermission();
+    const axiosPrivate = useAxiosPrivate();
     const initial = init[0];
     //récupération information du dossier sélectionné
     const { id } = useParams();
@@ -174,8 +179,10 @@ export default function ParamCodeJournalComponent() {
     }
 
     useEffect(() => {
-        showPc();
-        GetListeCodeJournaux(fileId);
+        if (canView) {
+            showPc();
+            GetListeCodeJournaux(fileId);
+        }
     }, [fileId]);
 
     //Entete du tableau
@@ -193,34 +200,34 @@ export default function ParamCodeJournalComponent() {
     const recupListeCptBanqueCaisse = (typeTreso) => {
         const listBank = pc?.filter((row) => row.compte.startsWith('512'));
         const listCash = pc?.filter((row) => row.compte.startsWith('53'));
-      
+
         formikNewCodeJournal.setFieldValue("type", typeTreso);
-      
+
         if (typeTreso === 'BANQUE') {
-          setListeCptAssocie(listBank);
-          setCompteAssocieValidationColor('#F6D6D6');
-          // Champs manuels (vides)
-          formikNewCodeJournal.setFieldValue('nif', '');
-          formikNewCodeJournal.setFieldValue('stat', '');
-          formikNewCodeJournal.setFieldValue('adresse', '');
-        }  else if  (typeTreso === 'CAISSE')  {
-          setListeCptAssocie(listCash);
-          setCompteAssocieValidationColor('#F6D6D6');
-          // Ces champs doivent rester vides
-          formikNewCodeJournal.setFieldValue('nif', '');
-          formikNewCodeJournal.setFieldValue('stat', '');
-          formikNewCodeJournal.setFieldValue('adresse', '');
+            setListeCptAssocie(listBank);
+            setCompteAssocieValidationColor('#F6D6D6');
+            // Champs manuels (vides)
+            formikNewCodeJournal.setFieldValue('nif', '');
+            formikNewCodeJournal.setFieldValue('stat', '');
+            formikNewCodeJournal.setFieldValue('adresse', '');
+        } else if (typeTreso === 'CAISSE') {
+            setListeCptAssocie(listCash);
+            setCompteAssocieValidationColor('#F6D6D6');
+            // Ces champs doivent rester vides
+            formikNewCodeJournal.setFieldValue('nif', '');
+            formikNewCodeJournal.setFieldValue('stat', '');
+            formikNewCodeJournal.setFieldValue('adresse', '');
         } else {
-          // Pour les autres types
-          setListeCptAssocie([]);
-          setCompteAssocieValidationColor('transparent');
-          formikNewCodeJournal.setFieldValue("compteassocie", '');
-          formikNewCodeJournal.setFieldValue('nif', '');
-          formikNewCodeJournal.setFieldValue('stat', '');
-          formikNewCodeJournal.setFieldValue('adresse', '');
+            // Pour les autres types
+            setListeCptAssocie([]);
+            setCompteAssocieValidationColor('transparent');
+            formikNewCodeJournal.setFieldValue("compteassocie", '');
+            formikNewCodeJournal.setFieldValue('nif', '');
+            formikNewCodeJournal.setFieldValue('stat', '');
+            formikNewCodeJournal.setFieldValue('adresse', '');
         }
-      };
-      
+    };
+
 
     const CodeJournauxColumnHeader = [
         {
@@ -509,7 +516,7 @@ export default function ParamCodeJournalComponent() {
                         <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
                             <Chip
                                 icon={<MdOutlineSyncLock style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
-                                    label={params.value}
+                                label={params.value}
 
                                 style={{
                                     width: "100%",
@@ -536,41 +543,41 @@ export default function ParamCodeJournalComponent() {
             headerClassName: 'HeaderbackColor',
             editable: true,
             valueFormatter: (params) => {
-              const selectedType = listeCptAssocie.find((option) => option.compte === params.value);
-              return selectedType ? `${selectedType.compte} ${selectedType.libelle}` : params.value;
+                const selectedType = listeCptAssocie.find((option) => option.compte === params.value);
+                return selectedType ? `${selectedType.compte} ${selectedType.libelle}` : params.value;
             },
             renderCell: (params) => (
-              <span style={{ color: (params.row.type !== 'CAISSE' && params.row.type !== 'BANQUE') ? '#999' : '#000' }}>
-                {params.value}
-              </span>
+                <span style={{ color: (params.row.type !== 'CAISSE' && params.row.type !== 'BANQUE') ? '#999' : '#000' }}>
+                    {params.value}
+                </span>
             ),
             renderEditCell: (params) => {
-              const isEditable = formikNewCodeJournal.values.type === 'BANQUE' || formikNewCodeJournal.values.type === 'CAISSE';
-              return (
-                <FormControl fullWidth>
-                  <InputLabel><em>Choisir...</em></InputLabel>
-                  <Select
-                    style={{ backgroundColor: isEditable ? '#fff' : '#f0f0f0' }}
-                    value={formikNewCodeJournal.values.compteassocie}
-                    onChange={(e) => formikNewCodeJournal.setFieldValue('compteassocie', e.target.value)}
-                    disabled={!isEditable} // désactive si non éditable
-                  >
-                    {listeCptAssocie?.map((option) => (
-                      <MenuItem key={option.compte} value={option.compte}>
-                        {option.compte} {option.libelle}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  <FormHelperText style={{ color: 'red' }}>
-                    {formikNewCodeJournal.errors.compteassocie &&
-                     formikNewCodeJournal.touched.compteassocie &&
-                     formikNewCodeJournal.errors.compteassocie}
-                  </FormHelperText>
-                </FormControl>
-              );
+                const isEditable = formikNewCodeJournal.values.type === 'BANQUE' || formikNewCodeJournal.values.type === 'CAISSE';
+                return (
+                    <FormControl fullWidth>
+                        <InputLabel><em>Choisir...</em></InputLabel>
+                        <Select
+                            style={{ backgroundColor: isEditable ? '#fff' : '#f0f0f0' }}
+                            value={formikNewCodeJournal.values.compteassocie}
+                            onChange={(e) => formikNewCodeJournal.setFieldValue('compteassocie', e.target.value)}
+                            disabled={!isEditable} // désactive si non éditable
+                        >
+                            {listeCptAssocie?.map((option) => (
+                                <MenuItem key={option.compte} value={option.compte}>
+                                    {option.compte} {option.libelle}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                        <FormHelperText style={{ color: 'red' }}>
+                            {formikNewCodeJournal.errors.compteassocie &&
+                                formikNewCodeJournal.touched.compteassocie &&
+                                formikNewCodeJournal.errors.compteassocie}
+                        </FormHelperText>
+                    </FormControl>
+                );
             },
-          },
-        
+        },
+
         {
             field: 'nif',
             headerName: 'NIF',
@@ -599,7 +606,7 @@ export default function ParamCodeJournalComponent() {
                             disabled={!isEditable}
                         />
 
-                        <FormHelperText style={{  color:  'red'  }}>
+                        <FormHelperText style={{ color: 'red' }}>
                             {formikNewCodeJournal.errors.nif && formikNewCodeJournal.touched.nif && formikNewCodeJournal.errors.nif}
                         </FormHelperText>
                     </FormControl>
@@ -634,7 +641,7 @@ export default function ParamCodeJournalComponent() {
                             disabled={!isEditable} // Désactiver complètement si non éditable
                         />
 
-                        <FormHelperText style={{  color:  'red'  }}>
+                        <FormHelperText style={{ color: 'red' }}>
                             {formikNewCodeJournal.errors.libelle && formikNewCodeJournal.touched.libelle && formikNewCodeJournal.errors.libelle}
                         </FormHelperText>
                     </FormControl>
@@ -810,7 +817,7 @@ export default function ParamCodeJournalComponent() {
                 setNifValidationColor('transparent');
                 saveBoolNif = true;
             }
-        
+
             if (formikNewCodeJournal.values.stat === '') {
                 setStatValidationColor('#F6D6D6');
                 saveBoolStat = false;
@@ -818,7 +825,7 @@ export default function ParamCodeJournalComponent() {
                 setStatValidationColor('transparent');
                 saveBoolStat = true;
             }
-        
+
             if (formikNewCodeJournal.values.adresse === '') {
                 setAdresseValidationColor('#F6D6D6');
                 saveBoolAdresse = false;
@@ -826,7 +833,7 @@ export default function ParamCodeJournalComponent() {
                 setAdresseValidationColor('transparent');
                 saveBoolAdresse = true;
             }
-        
+
         } else if (formikNewCodeJournal.values.type === 'CAISSE') {
             // Juste compte associé obligatoire, les autres ignorés
             setNifValidationColor('transparent');
@@ -848,8 +855,8 @@ export default function ParamCodeJournalComponent() {
             saveBoolStat = true;
             saveBoolAdresse = true;
         }
-        
-        if(saveBoolCode && saveBoolLibelle && saveBoolType && saveBoolCompteAssocie && saveBoolNif && saveBoolStat && saveBoolAdresse){
+
+        if (saveBoolCode && saveBoolLibelle && saveBoolType && saveBoolCompteAssocie && saveBoolNif && saveBoolStat && saveBoolAdresse) {
             // Vérification locale de doublon de code (hors ligne courante)
             const currentId = Array.isArray(id) ? id[0] : id;
             const newCode = String(formikNewCodeJournal.values.code || '').trim();
@@ -860,7 +867,7 @@ export default function ParamCodeJournalComponent() {
             }
 
             setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
-            axios.post(`/paramCodeJournaux/codeJournauxAdd`, formikNewCodeJournal.values).then((response) => {
+            axiosPrivate.post(`/paramCodeJournaux/codeJournauxAdd`, formikNewCodeJournal.values).then((response) => {
                 const resData = response.data;
                 if (resData.state) {
                     setDisableAddRowBouton(false);
@@ -890,9 +897,10 @@ export default function ParamCodeJournalComponent() {
                 if (idToDelete < 0) {
                     setOpenDialogDeleteRow(false);
                     setListeCodeJournaux(listeCodeJournaux.filter((row) => row.id !== idToDelete));
+                    toast.success('Ligne supprimé avec succès')
                     return;
                 }
-                axios.post(`/paramCodeJournaux/codeJournauxDelete`, { fileId, compteId, idToDelete }).then((response) => {
+                axiosPrivate.post(`/paramCodeJournaux/codeJournauxDelete`, { fileId, compteId, idToDelete }).then((response) => {
                     const resData = response.data;
                     if (resData.state) {
                         setDisableAddRowBouton(false);
@@ -1000,71 +1008,111 @@ export default function ParamCodeJournalComponent() {
         setSelectedRowId(ids);
     }
 
+    const handleCellKeyDown = (params, event) => {
+        const api = apiRef.current;
+
+        const allCols = api.getAllColumns().filter(c => c.editable);
+        const sortedRowIds = api.getSortedRowIds();
+        const currentColIndex = allCols.findIndex(c => c.field === params.field);
+        const currentRowIndex = sortedRowIds.indexOf(params.id);
+
+        let nextColIndex = currentColIndex;
+        let nextRowIndex = currentRowIndex;
+
+        if (event.key === 'Tab' && !event.shiftKey) {
+            event.preventDefault();
+            nextColIndex = currentColIndex + 1;
+            if (nextColIndex >= allCols.length) {
+                nextColIndex = 0;
+                nextRowIndex = currentRowIndex + 1;
+            }
+        } else if (event.key === 'Tab' && event.shiftKey) {
+            event.preventDefault();
+            nextColIndex = currentColIndex - 1;
+            if (nextColIndex < 0) {
+                nextColIndex = allCols.length - 1;
+                nextRowIndex = currentRowIndex - 1;
+            }
+        } else if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            nextColIndex = currentColIndex + 1;
+            if (nextColIndex >= allCols.length) nextColIndex = allCols.length - 1;
+        } else if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            nextColIndex = currentColIndex - 1;
+            if (nextColIndex < 0) nextColIndex = 0;
+        }
+
+        const nextRowId = sortedRowIds[nextRowIndex];
+        const targetCol = allCols[nextColIndex];
+
+        if (!nextRowId || !targetCol) return;
+
+        try {
+            api.stopCellEditMode({ id: params.id, field: params.field });
+        } catch (err) {
+            console.warn('Erreur stopCellEditMode ignorée:', err);
+        }
+
+        setTimeout(() => {
+            const cellInput = document.querySelector(
+                `[data-id="${nextRowId}"] [data-field="${targetCol.field}"] input, 
+             [data-id="${nextRowId}"] [data-field="${targetCol.field}"] textarea`
+            );
+            if (cellInput) cellInput.focus();
+        }, 50);
+    };
+
     return (
-        <Box>
-            {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
-            {openDialogDeleteRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer le code journal sélectionné ?"} confirmationState={deleteRow} /> : null}
+        <>
+            {
+                noFile
+                    ?
+                    <PopupTestSelectedFile
+                        confirmationState={sendToHome}
+                    />
+                    :
+                    null
+            }
+            {
+                (openDialogDeleteRow && canDelete)
+                    ?
+                    <PopupConfirmDelete
+                        msg={"Voulez-vous vraiment supprimer le code journal sélectionné ?"}
+                        confirmationState={deleteRow}
+                    />
+                    :
+                    null
+            }
+            <Box>
 
-            <TabContext value={"1"}>
-                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                    <TabList aria-label="lab API tabs example">
-                        <Tab
-                            style={{
-                                textTransform: 'none',
-                                outline: 'none',
-                                border: 'none',
-                                margin: -5
-                            }}
-                            label={InfoFileStyle(fileInfos?.dossier)} value="1"
-                        />
-                    </TabList>
-                </Box>
-                <TabPanel value="1">
-                    <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages : codes journaux</Typography>
+                <TabContext value={"1"}>
+                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                        <TabList aria-label="lab API tabs example">
+                            <Tab
+                                style={{
+                                    textTransform: 'none',
+                                    outline: 'none',
+                                    border: 'none',
+                                    margin: -5
+                                }}
+                                label={InfoFileStyle(fileInfos?.dossier)} value="1"
+                            />
+                        </TabList>
+                    </Box>
+                    <TabPanel value="1">
+                        <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages : codes journaux</Typography>
 
-                    <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"}
-                        direction={"column"} style={{ marginLeft: "0px", marginTop: "20px", justifyContent: "right" }}>
+                        <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"}
+                            direction={"column"} style={{ marginLeft: "0px", marginTop: "20px", justifyContent: "right" }}>
 
-                        <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                            direction={"row"} justifyContent={"right"}>
-                            <Tooltip title="Ajouter une ligne">
-                                <IconButton
-                                    disabled={disableAddRowBouton}
-                                    variant="contained"
-                                    onClick={handleOpenDialogAddNewAssocie}
-                                    style={{
-                                        width: "35px", height: '35px',
-                                        borderRadius: "2px", borderColor: "transparent",
-                                        backgroundColor: initial.theme,
-                                        textTransform: 'none', outline: 'none'
-                                    }}
-                                >
-                                    <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                                </IconButton>
-                            </Tooltip>
-
-                            <Tooltip title="Modifier la ligne sélectionnée">
-                                <IconButton
-                                    disabled={disableModifyBouton}
-                                    variant="contained"
-                                    onClick={handleEditClick(selectedRowId)}
-                                    style={{
-                                        width: "35px", height: '35px',
-                                        borderRadius: "2px", borderColor: "transparent",
-                                        backgroundColor: initial.theme,
-                                        textTransform: 'none', outline: 'none'
-                                    }}
-                                >
-                                    <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
-                                </IconButton>
-                            </Tooltip>
-
-                            <Tooltip title="Sauvegarder les modifications">
-                                <span>
+                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                direction={"row"} justifyContent={"right"}>
+                                <Tooltip title="Ajouter une ligne">
                                     <IconButton
-                                        disabled={!formikNewCodeJournal.isValid}
+                                        disabled={!canAdd || disableAddRowBouton}
                                         variant="contained"
-                                        onClick={handleSaveClick(selectedRowId)}
+                                        onClick={handleOpenDialogAddNewAssocie}
                                         style={{
                                             width: "35px", height: '35px',
                                             borderRadius: "2px", borderColor: "transparent",
@@ -1072,98 +1120,135 @@ export default function ParamCodeJournalComponent() {
                                             textTransform: 'none', outline: 'none'
                                         }}
                                     >
-                                        <TfiSave style={{ width: '50px', height: '50px', color: 'white' }} />
+                                        <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
                                     </IconButton>
-                                </span>
-                            </Tooltip>
+                                </Tooltip>
 
-                            <Tooltip title="Annuler les modifications">
-                                <span>
+                                <Tooltip title="Modifier la ligne sélectionnée">
                                     <IconButton
-                                        disabled={disableCancelBouton}
+                                        disabled={(!canModify && selectedRowId > 0) || disableModifyBouton}
                                         variant="contained"
-                                        onClick={handleCancelClick(selectedRowId)}
+                                        onClick={handleEditClick(selectedRowId)}
                                         style={{
                                             width: "35px", height: '35px',
                                             borderRadius: "2px", borderColor: "transparent",
-                                            backgroundColor: initial.button_delete_color,
+                                            backgroundColor: initial.theme,
                                             textTransform: 'none', outline: 'none'
                                         }}
                                     >
-                                        <VscClose style={{ width: '50px', height: '50px', color: 'white' }} />
+                                        <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
                                     </IconButton>
-                                </span>
-                            </Tooltip>
+                                </Tooltip>
 
-                            <Tooltip title="Supprimer la ligne sélectionné">
-                                <span>
-                                    <IconButton
-                                        disabled={disableDeleteBouton}
-                                        onClick={handleOpenDialogConfirmDeleteAssocieRow}
-                                        variant="contained"
-                                        style={{
-                                            width: "35px", height: '35px',
-                                            borderRadius: "2px", borderColor: "transparent",
-                                            backgroundColor: initial.button_delete_color,
-                                            textTransform: 'none', outline: 'none'
-                                        }}
-                                    >
-                                        <IoMdTrash style={{ width: '50px', height: '50px', color: 'white' }} />
-                                    </IconButton>
-                                </span>
-                            </Tooltip>
-                        </Stack>
+                                <Tooltip title="Sauvegarder les modifications">
+                                    <span>
+                                        <IconButton
+                                            disabled={(!canAdd && !canModify) || !formikNewCodeJournal.isValid}
+                                            variant="contained"
+                                            onClick={handleSaveClick(selectedRowId)}
+                                            style={{
+                                                width: "35px", height: '35px',
+                                                borderRadius: "2px", borderColor: "transparent",
+                                                backgroundColor: initial.theme,
+                                                textTransform: 'none', outline: 'none'
+                                            }}
+                                        >
+                                            <TfiSave style={{ width: '50px', height: '50px', color: 'white' }} />
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
 
-                        <Stack width={"100%"} height={'100%'} minHeight={'600px'}>
-                            <DataGrid
-                                disableMultipleSelection={DataGridStyle.disableMultipleSelection}
-                                disableColumnSelector={DataGridStyle.disableColumnSelector}
-                                disableDensitySelector={DataGridStyle.disableDensitySelector}
-                                disableRowSelectionOnClick
-                                disableSelectionOnClick={true}
-                                localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
-                                slots={{ toolbar: QuickFilter }}
-                                sx={DataGridStyle.sx}
-                                rowHeight={DataGridStyle.rowHeight}
-                                columnHeaderHeight={DataGridStyle.columnHeaderHeight}
-                                editMode='row'
-                                columns={CodeJournauxColumnHeader}
-                                rows={listeCodeJournaux}
-                                onRowClick={(e) => handleCellEditCommit(e.row)}
-                                // onCellClick={(e) => test(e.row)}
-                                onRowSelectionModelChange={ids => {
-                                    const single = Array.isArray(ids) && ids.length ? [ids[ids.length - 1]] : [];
-                                    setSelectedRow(single);
-                                    saveSelectedRow(single);
-                                    deselectRow(single);
-                                }}
-                                rowModesModel={rowModesModel}
-                                onRowModesModelChange={handleRowModesModelChange}
-                                onRowEditStop={handleRowEditStop}
-                                processRowUpdate={processRowUpdate}
-                                initialState={{
-                                    pagination: {
-                                        paginationModel: { page: 0, pageSize: 100 },
-                                    },
-                                }}
-                                experimentalFeatures={{ newEditingApi: true }}
-                                pageSizeOptions={[50, 100]}
-                                pagination={DataGridStyle.pagination}
-                                checkboxSelection={DataGridStyle.checkboxSelection}
-                                columnVisibilityModel={{
-                                    id: false,
-                                }}
-                                rowSelectionModel={selectedRow}
-                                onRowEditStart={(params, event) => {
-                                    if (!selectedRow.length || selectedRow[0] !== params.id) {
-                                        event.defaultMuiPrevented = true;
-                                    }
-                                    if (selectedRow.includes(params.id)) {
-                                        setDisableAddRowBouton(true);
-                                        event.stopPropagation();
+                                <Tooltip title="Annuler les modifications">
+                                    <span>
+                                        <IconButton
+                                            disabled={disableCancelBouton}
+                                            variant="contained"
+                                            onClick={handleCancelClick(selectedRowId)}
+                                            style={{
+                                                width: "35px", height: '35px',
+                                                borderRadius: "2px", borderColor: "transparent",
+                                                backgroundColor: initial.button_delete_color,
+                                                textTransform: 'none', outline: 'none'
+                                            }}
+                                        >
+                                            <VscClose style={{ width: '50px', height: '50px', color: 'white' }} />
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
 
+                                <Tooltip title="Supprimer la ligne sélectionné">
+                                    <span>
+                                        <IconButton
+                                            disabled={!canDelete || disableDeleteBouton}
+                                            onClick={handleOpenDialogConfirmDeleteAssocieRow}
+                                            variant="contained"
+                                            style={{
+                                                width: "35px", height: '35px',
+                                                borderRadius: "2px", borderColor: "transparent",
+                                                backgroundColor: initial.button_delete_color,
+                                                textTransform: 'none', outline: 'none'
+                                            }}
+                                        >
+                                            <IoMdTrash style={{ width: '50px', height: '50px', color: 'white' }} />
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
+                            </Stack>
+
+                            <Stack width={"100%"} height={'100%'} minHeight={'600px'}>
+                                <DataGrid
+                                    apiRef={apiRef}
+                                    disableMultipleSelection={DataGridStyle.disableMultipleSelection}
+                                    disableColumnSelector={DataGridStyle.disableColumnSelector}
+                                    disableDensitySelector={DataGridStyle.disableDensitySelector}
+                                    disableRowSelectionOnClick
+                                    disableSelectionOnClick={true}
+                                    localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                                    slots={{ toolbar: QuickFilter }}
+                                    sx={DataGridStyle.sx}
+                                    rowHeight={DataGridStyle.rowHeight}
+                                    columnHeaderHeight={DataGridStyle.columnHeaderHeight}
+                                    editMode='row'
+                                    columns={CodeJournauxColumnHeader}
+                                    rows={listeCodeJournaux}
+                                    onRowClick={(e) => handleCellEditCommit(e.row)}
+                                    // onCellClick={(e) => test(e.row)}
+                                    onRowSelectionModelChange={ids => {
+                                        const single = Array.isArray(ids) && ids.length ? [ids[ids.length - 1]] : [];
+                                        setSelectedRow(single);
+                                        saveSelectedRow(single);
+                                        deselectRow(single);
+                                    }}
+                                    rowModesModel={rowModesModel}
+                                    onRowModesModelChange={handleRowModesModelChange}
+                                    onRowEditStop={handleRowEditStop}
+                                    processRowUpdate={processRowUpdate}
+                                    initialState={{
+                                        pagination: {
+                                            paginationModel: { page: 0, pageSize: 100 },
+                                        },
+                                    }}
+                                    experimentalFeatures={{ newEditingApi: true }}
+                                    pageSizeOptions={[50, 100]}
+                                    pagination={DataGridStyle.pagination}
+                                    checkboxSelection={DataGridStyle.checkboxSelection}
+                                    columnVisibilityModel={{
+                                        id: false,
+                                    }}
+                                    rowSelectionModel={selectedRow}
+                                    onRowEditStart={(params, event) => {
                                         const rowId = params.id;
                                         const rowData = params.row;
+
+                                        const isNewRow = rowId < 0;
+
+                                        if (!canModify && !isNewRow) {
+                                            event.defaultMuiPrevented = true;
+                                            return;
+                                        }
+
+                                        event.stopPropagation();
+                                        setDisableAddRowBouton(true);
 
                                         setLibelleValidationColor('transparent');
                                         setTypeValidationColor('transparent');
@@ -1179,7 +1264,7 @@ export default function ParamCodeJournalComponent() {
                                         formikNewCodeJournal.setFieldValue("libelle", rowData.libelle);
                                         formikNewCodeJournal.setFieldValue("type", rowData.type);
                                         formikNewCodeJournal.setFieldValue("compteassocie", rowData.compteassocie);
-                                        // Renseigner nif/stat/adresse en fonction du type
+
                                         if (rowData.type === 'BANQUE') {
                                             formikNewCodeJournal.setFieldValue('nif', rowData.nif || '');
                                             formikNewCodeJournal.setFieldValue('stat', rowData.stat || '');
@@ -1196,13 +1281,14 @@ export default function ParamCodeJournalComponent() {
                                         }));
 
                                         setDisableSaveBouton(false);
-                                    }
-                                }}
-                            />
+                                    }}
+                                    onCellKeyDown={handleCellKeyDown}
+                                />
+                            </Stack>
                         </Stack>
-                    </Stack>
-                </TabPanel>
-            </TabContext>
-        </Box>
+                    </TabPanel>
+                </TabContext>
+            </Box>
+        </>
     )
 }

@@ -105,20 +105,37 @@ const deleteAllRowDA = async (compteId, fileId, exerciceId) => {
 
 const deleteAllRowDP = async (compteId, fileId, exerciceId) => {
   try {
-    let stateDeleting = false;
+    let stateDeleting = true;
 
-    if (liassedps.destroy({
-      where:
-      {
-        id_compte: compteId,
-        id_dossier: fileId,
-        id_exercice: exerciceId,
-        id_etat: 'MANUEL',
-        nature_prov: { [Op.notIn]: ['RISQUE', 'DEPRECIATION'] },
+    await liassedps.destroy({
+      where: {
+        id_compte: Number(compteId),
+        id_dossier: Number(fileId),
+        id_exercice: Number(exerciceId),
       }
     })
-    ) {
-      stateDeleting = true;
+
+    const listeRubriqueDP = await rubriquesmatrices.findAll({
+      where:
+      {
+        id_etat: "DP",
+      }
+    });
+
+    if (listeRubriqueDP.length > 0) {
+      listeRubriqueDP.map((item) => {
+        liassedps.create({
+          id_compte: Number(compteId),
+          id_dossier: Number(fileId),
+          id_exercice: Number(exerciceId),
+          id_etat: item.id_etat,
+          id_rubrique: item.id_rubrique,
+          libelle: item.libelle,
+          nature_prov: item.nature,
+          ordre: item.ordre,
+          niveau: item.niveau,
+        });
+      });
     }
 
     return stateDeleting;

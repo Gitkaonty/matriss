@@ -16,12 +16,13 @@ import FormatedInput from '../FormatedInput';
 import { DataGridStyle } from '../DatagridToolsStyle';
 import { TfiSave } from "react-icons/tfi";
 import QuickFilter from '../DatagridToolsStyle';
-import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes } from '@mui/x-data-grid';
+import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes, useGridApiRef } from '@mui/x-data-grid';
 import { TbPlaylistAdd } from 'react-icons/tb';
 import { IoMdTrash } from 'react-icons/io';
 import { FaRegPenToSquare } from "react-icons/fa6";
 import { VscClose } from "react-icons/vsc";
 import PopupConfirmDelete from '../popupConfirmDelete';
+import useAxiosPrivate from '../../../../config/axiosPrivate';
 
 let initial = init[0];
 
@@ -34,7 +35,9 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     },
 }));
 
-const popupAjustRubriqueSADEbilan = ({ actionState, row, column, value }) => {
+const popupAjustRubriqueSADEbilan = ({ actionState, row, column, value, canModify, canAdd, canDelete, canView }) => {
+    const apiRef = useGridApiRef();
+    const axiosPrivate = useAxiosPrivate();
     const [selectedRowId, setSelectedRowId] = useState([]);
     const [rowModesModel, setRowModesModel] = useState({});
     const [disableModifyBouton, setDisableModifyBouton] = useState(true);
@@ -105,7 +108,9 @@ const popupAjustRubriqueSADEbilan = ({ actionState, row, column, value }) => {
     };
 
     useEffect(() => {
-        setListAjust(row.ajustsSAD.filter(item => item.nature === nature));
+        if (canView) {
+            setListAjust(row.ajustsSAD.filter(item => item.nature === nature));
+        }
     }, [row]);
 
     const columnHeader = [
@@ -191,6 +196,9 @@ const popupAjustRubriqueSADEbilan = ({ actionState, row, column, value }) => {
                         style={{
                             width: '100%',
                             textAlign: 'right',
+                        }}
+                        onFocus={(e) => {
+                            e.target.setSelectionRange(0, 0);
                         }}
                         InputProps={{
                             inputComponent: FormatedInput,
@@ -290,7 +298,7 @@ const popupAjustRubriqueSADEbilan = ({ actionState, row, column, value }) => {
 
         //setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
         const newFormDataFinal = { ...formDataFinal, state: true };
-        axios.post(`/declaration/ebilan/addModifyAjust`, newFormDataFinal).then((response) => {
+        axiosPrivate.post(`/declaration/ebilan/addModifyAjust`, newFormDataFinal).then((response) => {
             const resData = response.data;
             if (resData.state) {
                 setDisableAddRowBouton(false);
@@ -323,7 +331,7 @@ const popupAjustRubriqueSADEbilan = ({ actionState, row, column, value }) => {
                     setListAjust(listAjust.filter(row => row.id !== idToDelete));
                     return;
                 }
-                axios.post(`/declaration/ebilan/deleteAjust`, { idCompte, idDossier, idExercice, idEtat, idRubrique, nature, idToDelete }).then((response) => {
+                axiosPrivate.post(`/declaration/ebilan/deleteAjust`, { idCompte, idDossier, idExercice, idEtat, idRubrique, nature, idToDelete }).then((response) => {
                     const resData = response.data;
 
                     if (resData.state) {
@@ -380,14 +388,14 @@ const popupAjustRubriqueSADEbilan = ({ actionState, row, column, value }) => {
             setDisableModifyBouton(true);
             setDisableSaveBouton(true);
             setDisableCancelBouton(true);
-            //toast.error("sélectionnez une seule ligne pour pouvoir la modifier");
+            //toast.error("Sélectionnez une seule ligne pour pouvoir la modifier");
         } else {
             setDisableModifyBouton(false);
             setDisableSaveBouton(false);
             setDisableCancelBouton(false);
             if (!selectedRowId.includes(params.id)) {
                 setEditableRow(false);
-                //toast.error("sélectionnez une ligne pour pouvoir la modifier");
+                //toast.error("Sélectionnez une ligne pour pouvoir la modifier");
             } else {
                 setEditableRow(true);
             }
@@ -448,9 +456,73 @@ const popupAjustRubriqueSADEbilan = ({ actionState, row, column, value }) => {
         setSelectedRowId(ids);
     }
 
+    const handleCellKeyDown = (params, event) => {
+        const api = apiRef.current;
+
+        const allCols = api.getAllColumns().filter(c => c.editable);
+        const sortedRowIds = api.getSortedRowIds();
+        const currentColIndex = allCols.findIndex(c => c.field === params.field);
+        const currentRowIndex = sortedRowIds.indexOf(params.id);
+
+        let nextColIndex = currentColIndex;
+        let nextRowIndex = currentRowIndex;
+
+        if (event.key === 'Tab' && !event.shiftKey) {
+            event.preventDefault();
+            nextColIndex = currentColIndex + 1;
+            if (nextColIndex >= allCols.length) {
+                nextColIndex = 0;
+                nextRowIndex = currentRowIndex + 1;
+            }
+        } else if (event.key === 'Tab' && event.shiftKey) {
+            event.preventDefault();
+            nextColIndex = currentColIndex - 1;
+            if (nextColIndex < 0) {
+                nextColIndex = allCols.length - 1;
+                nextRowIndex = currentRowIndex - 1;
+            }
+        } else if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            nextColIndex = currentColIndex + 1;
+            if (nextColIndex >= allCols.length) nextColIndex = allCols.length - 1;
+        } else if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            nextColIndex = currentColIndex - 1;
+            if (nextColIndex < 0) nextColIndex = 0;
+        }
+
+        const nextRowId = sortedRowIds[nextRowIndex];
+        const targetCol = allCols[nextColIndex];
+
+        if (!nextRowId || !targetCol) return;
+
+        try {
+            api.stopCellEditMode({ id: params.id, field: params.field });
+        } catch (err) {
+            console.warn('Erreur stopCellEditMode ignorée:', err);
+        }
+
+        setTimeout(() => {
+            const cellInput = document.querySelector(
+                `[data-id="${nextRowId}"] [data-field="${targetCol.field}"] input, 
+             [data-id="${nextRowId}"] [data-field="${targetCol.field}"] textarea`
+            );
+            if (cellInput) cellInput.focus();
+        }, 50);
+    };
+
     return (
-        <div>
-            {openDialogDeleteRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer la ligne sélectionnée ?"} confirmationState={deleteRow} /> : null}
+        <>
+            {
+                (openDialogDeleteRow && canDelete)
+                    ?
+                    <PopupConfirmDelete
+                        msg={"Voulez-vous vraiment supprimer la ligne sélectionnée ?"}
+                        confirmationState={deleteRow}
+                    />
+                    :
+                    null
+            }
             <BootstrapDialog
                 onClose={handleClose}
                 aria-labelledby="customized-dialog-title"
@@ -487,7 +559,7 @@ const popupAjustRubriqueSADEbilan = ({ actionState, row, column, value }) => {
                         >
                             <Tooltip title="Ajouter une ligne">
                                 <IconButton
-                                    disabled={disableAddRowBouton}
+                                    disabled={!canAdd || disableAddRowBouton}
                                     onClick={handleOpenDialogAddNew}
                                     variant="contained"
                                     style={{
@@ -503,7 +575,7 @@ const popupAjustRubriqueSADEbilan = ({ actionState, row, column, value }) => {
 
                             <Tooltip title="Modifier la ligne sélectionnée">
                                 <IconButton
-                                    disabled={disableModifyBouton}
+                                    disabled={(!canModify && selectedRowId > 0) || disableModifyBouton}
                                     onClick={handleEditClick(selectedRowId)}
                                     variant="contained"
                                     style={{
@@ -520,7 +592,7 @@ const popupAjustRubriqueSADEbilan = ({ actionState, row, column, value }) => {
                             <Tooltip title="Sauvegarder les modifications">
                                 <span>
                                     <IconButton
-                                        onClick={handleSaveClick(selectedRowId)}
+                                        onClick={(!canAdd && !canModify) || handleSaveClick(selectedRowId)}
                                         disabled={disableSaveBouton}
                                         variant="contained"
                                         style={{
@@ -556,7 +628,7 @@ const popupAjustRubriqueSADEbilan = ({ actionState, row, column, value }) => {
                             <Tooltip title="Supprimer la ligne sélectionné">
                                 <span>
                                     <IconButton
-                                        disabled={disableDeleteBouton}
+                                        disabled={!canDelete || disableDeleteBouton}
                                         onClick={handleOpenDialogConfirmDelete}
                                         variant="contained"
                                         style={{
@@ -577,6 +649,7 @@ const popupAjustRubriqueSADEbilan = ({ actionState, row, column, value }) => {
                             height={"420px"}
                         >
                             <DataGrid
+                                apiRef={apiRef}
                                 disableMultipleSelection={DataGridStyle.disableMultipleSelection}
                                 disableColumnSelector={DataGridStyle.disableColumnSelector}
                                 disableDensitySelector={DataGridStyle.disableDensitySelector}
@@ -618,37 +691,40 @@ const popupAjustRubriqueSADEbilan = ({ actionState, row, column, value }) => {
                                 }}
                                 rowSelectionModel={selectedRow}
                                 onRowEditStart={(params, event) => {
-                                    if (!selectedRow.length || selectedRow[0] !== params.id) {
+                                    const rowId = params.id;
+                                    const rowData = params.row;
+
+                                    const isNewRow = rowId < 0;
+
+                                    if (!canModify && !isNewRow) {
                                         event.defaultMuiPrevented = true;
+                                        return;
                                     }
-                                    if (selectedRow.includes(params.id)) {
-                                        setDisableAddRowBouton(true);
-                                        event.stopPropagation();
 
-                                        const rowId = params.id;
-                                        const rowData = params.row;
+                                    event.stopPropagation();
 
-                                        setFormDataFinal((prev) => ({
-                                            ...prev,
-                                            id: rowId,
-                                            id_compte: rowData.id_compte,
-                                            id_dossier: rowData.id_dossier,
-                                            id_exercice: rowData.id_exercice,
-                                            id_rubrique: rowData.id_rubrique,
-                                            id_etat: rowData.id_etat,
-                                            nature: rowData.nature,
-                                            motif: rowData.motif,
-                                            montant: rowData.montant,
-                                        }));
+                                    setFormDataFinal((prev) => ({
+                                        ...prev,
+                                        id: rowId,
+                                        id_compte: rowData.id_compte,
+                                        id_dossier: rowData.id_dossier,
+                                        id_exercice: rowData.id_exercice,
+                                        id_rubrique: rowData.id_rubrique,
+                                        id_etat: rowData.id_etat,
+                                        nature: rowData.nature,
+                                        motif: rowData.motif,
+                                        montant: rowData.montant,
+                                    }));
 
-                                        setRowModesModel((oldModel) => ({
-                                            ...oldModel,
-                                            [rowId]: { mode: GridRowModes.Edit },
-                                        }));
+                                    setRowModesModel((oldModel) => ({
+                                        ...oldModel,
+                                        [rowId]: { mode: GridRowModes.Edit },
+                                    }));
 
-                                        setDisableSaveBouton(false);
-                                    }
+                                    setDisableAddRowBouton(true);
+                                    setDisableSaveBouton(false);
                                 }}
+                                onCellKeyDown={handleCellKeyDown}
                             />
                         </Stack>
 
@@ -721,7 +797,7 @@ const popupAjustRubriqueSADEbilan = ({ actionState, row, column, value }) => {
                     </Button>
                 </DialogActions>
             </BootstrapDialog>
-        </div>
+        </>
 
     )
 }

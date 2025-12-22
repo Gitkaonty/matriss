@@ -100,35 +100,63 @@ const calculateRubriqueAnalytique = async (id_dossier, id_compte, id_exercice, i
                             id_axe,
                             id_section: { [Op.in]: id_sections }
                         },
-                        attributes: ['soldedebitanalytique', 'soldecreditanalytique', 'id_numcpt'],
+                        attributes: ['soldedebitanalytique', 'soldecreditanalytique', 'id_numcpt', 'soldedebittresoanalytique', 'soldecredittresoanalytique'],
                         include: [
                             {
                                 model: dossierplancomptableModel,
                                 as: 'compteLibelle',
-                                attributes: ['compte'],
-                                required: true,
+                                attributes: ['compte', 'nature'],
+                                nature: { [Op.notIn]: ['Collectif'] },
                             }
                         ],
                         raw: true,
                     });
 
                     const filteredBalances = relatedBalancesAnalytique.filter(b =>
-                        b['compteLibelle.compte']?.startsWith(compteRubrique.compte?.toString())
+                        b['compteLibelle.compte']?.startsWith(compteRubrique.compte?.toString()) && b['compteLibelle.nature'] !== 'Collectif'
                     );
 
-                    const totalDebit = filteredBalances.reduce((sum, b) => sum + (Number(b.soldedebitanalytique) || 0), 0);
-                    const totalCredit = filteredBalances.reduce((sum, b) => sum + (Number(b.soldecreditanalytique) || 0), 0);
+                    let filteredBalancesForCalc = filteredBalances;
+
+                    if (id_etat === 'TFTD') {
+                        if (compteRubrique.condition === "SiD") {
+                            filteredBalancesForCalc = filteredBalances.filter(b => Number(b.soldedebittresoanalytique) !== 0);
+                        } else if (compteRubrique.condition === "SiC") {
+                            filteredBalancesForCalc = filteredBalances.filter(b => Number(b.soldecredittresoanalytique) !== 0);
+                        }
+
+                    } else {
+                        if (compteRubrique.condition === "SiD") {
+                            filteredBalancesForCalc = filteredBalances.filter(b => Number(b.soldedebitanalytique) !== 0);
+                        } else if (compteRubrique.condition === "SiC") {
+                            filteredBalancesForCalc = filteredBalances.filter(b => Number(b.soldecreditanalytique) !== 0);
+                        }
+                    }
+                    const totalDebit = filteredBalancesForCalc.reduce((sum, b) => sum + (Number(b.soldedebitanalytique) || 0), 0);
+                    const totalCredit = filteredBalancesForCalc.reduce((sum, b) => sum + (Number(b.soldecreditanalytique) || 0), 0);
+
+                    const totalDebitTreso = filteredBalancesForCalc.reduce((sum, b) => sum + (Number(b.soldedebittresoanalytique) || 0), 0);
+                    const totalCreditTreso = filteredBalancesForCalc.reduce((sum, b) => sum + (Number(b.soldecredittresoanalytique) || 0), 0);
 
                     let solde = 0;
 
                     if (compteRubrique.senscalcul === "D-C") {
-                        solde = totalDebit;
+                        if (id_etat === 'TFTD') {
+                            solde = totalDebitTreso - totalCreditTreso;
+                        } else {
+                            solde = totalDebit - totalCredit;
+                        }
+                        if (compteRubrique.condition === "SiD" && solde <= 0) solde = 0;
+                        else if (compteRubrique.condition === "SiC" && solde >= 0) solde = 0;
                     } else if (compteRubrique.senscalcul === "C-D") {
-                        solde = totalCredit;
+                        if (id_etat === 'TFTD') {
+                            solde = totalCreditTreso - totalDebitTreso;
+                        } else {
+                            solde = totalCredit - totalDebit;
+                        }
+                        if (compteRubrique.condition === "SiD" && solde >= 0) solde = 0;
+                        else if (compteRubrique.condition === "SiC" && solde <= 0) solde = 0;
                     }
-
-                    if (compteRubrique.condition === "SiD" && solde <= 0) solde = 0;
-                    else if (compteRubrique.condition === "SiC" && solde >= 0) solde = 0;
 
                     if (associatedIdRubrique) {
                         const rubriqueExterneAssociatedIdRubrique = await rubriquesExternesAnalytiques.findOne({
@@ -152,6 +180,9 @@ const calculateRubriqueAnalytique = async (id_dossier, id_compte, id_exercice, i
                                 break;
                             case "LIAISON":
                                 solde = rubriqueExterneAssociatedIdRubrique?.montantnet || 0;
+                                break;
+                            case "LIAISON N1":
+                                solde = rubriqueExterneAssociatedIdRubrique?.montantnetn1 || 0;
                                 break;
                         }
                     }

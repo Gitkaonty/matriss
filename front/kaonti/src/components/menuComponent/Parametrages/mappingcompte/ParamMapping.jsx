@@ -26,10 +26,13 @@ import { VscRepoFetch } from "react-icons/vsc";
 
 import DatagridTableDpMappingDetail from '../../../componentsTools/MappingCompte/DatagridTableDpMappingDetail';
 import DatagridTableDpComMappingDetail from '../../../componentsTools/MappingCompte/Dcom/DatagridDcomMappingDetail';
+import usePermission from '../../../../hooks/usePermission';
 
 export default function ParamMappingComponent() {
+    const { canAdd, canModify, canDelete, canView } = usePermission();
+
     let tabEbilanParamMapping = "", tabParamMapping = "";
-    if (typeof window !== undefined) {
+    if (typeof window !== 'undefined') {
         tabEbilanParamMapping = localStorage.getItem('valueEbilanParamMapping');
         tabParamMapping = localStorage.getItem('valueParamMapping');
     }
@@ -778,7 +781,7 @@ export default function ParamMappingComponent() {
     }, [compteId, fileId, selectedExerciceId])
 
     return (
-        <Box>
+        <>
             {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
 
             {showRestaurePopupBilan ? <PopupActionConfirm msg={msgRestaurePopupBilan} confirmationState={restaureDefaultParameterBilan} /> : null}
@@ -802,762 +805,861 @@ export default function ParamMappingComponent() {
             {showRestaurePopupBhiapc ? <PopupActionConfirm msg={msgRestaurePopupBhiapc} confirmationState={restaureDefaultParameterBhiapc} /> : null}
             {showUpdatePopupBhiapc ? <PopupActionConfirm msg={msgUpdatePopupBhiapc} confirmationState={updateDefaultParameterBhiapc} /> : null}
 
-            <TabContext value={"1"}>
-                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                    <TabList aria-label="lab API tabs example">
-                        <Tab
-                            style={{
-                                textTransform: 'none',
-                                outline: 'none',
-                                border: 'none',
-                                margin: -5
-                            }}
-                            label={InfoFileStyle(fileInfos?.dossier)} value="1"
-                        />
-                    </TabList>
-                </Box>
-                <TabPanel value="1" style={{ height: '85%' }}>
-                    <Stack width={"100%"} height={"95%"} spacing={1} alignItems={"flex-start"} justifyContent={"stretch"}>
-                        <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages: Mapping des comptes</Typography>
+            <Box>
 
-                        <Stack width={"100%"} height={"80px"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "20px" }}>
-                            <Stack
-                                direction={"row"}
-                            >
-                                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                                    <InputLabel id="demo-simple-select-standard-label">Exercice:</InputLabel>
-                                    <Select
-                                        labelId="demo-simple-select-standard-label"
-                                        id="demo-simple-select-standard"
-                                        value={selectedExerciceId}
-                                        label={"valSelect"}
-                                        onChange={(e) => handleChangeExercice(e.target.value)}
-                                        sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                        MenuProps={{
-                                            disableScrollLock: true
-                                        }}
-                                    >
-                                        {listeExercice.map((option) => (
-                                            <MenuItem
-                                                key={option.id}
-                                                value={option.id}
-                                            >{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                                        ))
-                                        }
-                                    </Select>
-                                </FormControl>
+                <TabContext value={"1"}>
+                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                        <TabList aria-label="lab API tabs example">
+                            <Tab
+                                style={{
+                                    textTransform: 'none',
+                                    outline: 'none',
+                                    border: 'none',
+                                    margin: -5
+                                }}
+                                label={InfoFileStyle(fileInfos?.dossier)} value="1"
+                            />
+                        </TabList>
+                    </Box>
+                    <TabPanel value="1" style={{ height: '85%' }}>
+                        <Stack width={"100%"} height={"95%"} spacing={1} alignItems={"flex-start"} justifyContent={"stretch"}>
+                            <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages: Mapping des comptes</Typography>
 
-                                <FormControl variant="standard" sx={{ m: 1, minWidth: 150 }}>
-                                    <InputLabel id="demo-simple-select-standard-label">Période</InputLabel>
-                                    <Select
-                                        disabled
-                                        labelId="demo-simple-select-standard-label"
-                                        id="demo-simple-select-standard"
-                                        value={selectedPeriodeChoiceId}
-                                        label={"valSelect"}
-                                        onChange={(e) => handleChangePeriode(e.target.value)}
-                                        sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                        MenuProps={{
-                                            disableScrollLock: true
-                                        }}
-                                    >
-                                        <MenuItem value={0}>Toutes</MenuItem>
-                                        <MenuItem value={1}>Situations</MenuItem>
-                                    </Select>
-                                </FormControl>
-
-                                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                                    <InputLabel id="demo-simple-select-standard-label">Du</InputLabel>
-                                    <Select
-                                        labelId="demo-simple-select-standard-label"
-                                        id="demo-simple-select-standard"
-                                        value={selectedPeriodeId}
-                                        label={"valSelect"}
-                                        onChange={(e) => handleChangeDateIntervalle(e.target.value)}
-                                        sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                        MenuProps={{
-                                            disableScrollLock: true
-                                        }}
-                                    >
-                                        {listeSituation?.map((option) => (
-                                            <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                                        ))
-                                        }
-                                    </Select>
-                                </FormControl>
-                            </Stack>
-                        </Stack>
-
-                        <Box sx={{ width: '100%', height: '100%', typography: 'body1' }}>
-                            <TabContext value={valueParamMapping} style={{ height: '100%' }}>
-                                <Box >
-                                    <TabList onChange={handleChangeTab} aria-label="lab API tabs example" variant='scrollable'>
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Ebilan" value="1" />
-                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="D. Com" value="2" />
-                                    </TabList>
-                                </Box>
-
-                                <TabPanel value="1" style={{ height: '100%', }}>
-                                    <TabContext value={valueEbilanParamMapping} style={{ height: '100%' }}>
-                                        <Box >
-                                            <TabList onChange={handleChangeTabEbilan} aria-label="lab API tabs example" variant='scrollable'>
-                                                <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Bilan" value="1" />
-                                                <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Crn" value="2" />
-                                                <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Crf" value="3" />
-                                                <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Tftd" value="4" />
-                                                <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Tfti" value="5" />
-                                                <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Bhiapc" value="6" />
-                                                <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Dp" value="7" />
-                                            </TabList>
-                                        </Box>
-
-                                        <TabPanel value="1" style={{ height: '100%', }}>
-                                            <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"center"} alignContent={"center"}
-                                                justifyContent={"stretch"}
-                                            >
-
-                                                <Stack width={"100%"} height={"35px"} spacing={0.5} alignItems={"right"} alignContent={"right"}
-                                                    direction={"row"} justifyContent={"right"}
-                                                >
-                                                    <Tooltip title="Simuler les paramétrages des comptes">
-                                                        <IconButton
-                                                            variant="contained"
-                                                            style={{
-                                                                width: "35px", height: '35px',
-                                                                borderRadius: "2px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
-                                                                textTransform: 'none', outline: 'none'
-                                                            }}
-                                                        >
-                                                            <VscRepoFetch style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            {/* <Typography style={{color: 'white'}}>Simuler</Typography> */}
-                                                        </IconButton>
-                                                    </Tooltip>
-
-                                                    <Tooltip title="Restaurer les paramétrages par défaut">
-                                                        <IconButton
-                                                            onClick={handleRestaureDefaultParameterBilan}
-                                                            variant="contained"
-                                                            style={{
-                                                                width: "35px", height: '35px',
-                                                                borderRadius: "2px", borderColor: "transparent",
-                                                                backgroundColor: "rgba(9, 77, 31, 0.8)",
-                                                                textTransform: 'none', outline: 'none'
-                                                            }}
-                                                        >
-                                                            <LuArchiveRestore style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            {/* <Typography style={{color: 'white'}}>Restaurer</Typography> */}
-                                                        </IconButton>
-                                                    </Tooltip>
-
-                                                    <Tooltip title="mettre à jour les paramétrages par défaut">
-                                                        <IconButton
-                                                            onClick={handleUpdateDefaultParameterBilan}
-                                                            variant="contained"
-                                                            style={{
-                                                                width: "35px", height: '35px',
-                                                                borderRadius: "2px", borderColor: "transparent",
-                                                                backgroundColor: "rgba(9, 77, 31, 0.8)",
-                                                                textTransform: 'none', outline: 'none'
-                                                            }}
-                                                        >
-                                                            <GrUpdate style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            {/* <Typography style={{color: 'white'}}>Mettre à jour</Typography> */}
-                                                        </IconButton>
-                                                    </Tooltip>
-
-                                                </Stack>
-
-                                                <Stack width={"100%"} height={"30px"} spacing={2} alignItems={"left"} alignContent={"left"}
-                                                    direction={"row"} justifyContent={"left"}
-                                                >
-                                                    <Stack width={"50%"} height={"30px"} spacing={2} alignItems={"left"} alignContent={"left"}
-                                                        direction={"row"} justifyContent={"left"}
-                                                    >
-                                                        <ButtonGroup
-                                                            disableElevation
-                                                            variant="contained"
-                                                            aria-label="Disabled button group"
-                                                        >
-                                                            <Button onClick={() => choixAffichageBilan(1)} variant={buttonActifVariant} style={{ borderRadius: "0", textTransform: 'none', outline: 'none', width: 80 }}>Actif</Button>
-                                                            <Button onClick={() => choixAffichageBilan(2)} variant={buttonPassifVariant} style={{ borderRadius: "0", textTransform: 'none', outline: 'none', width: 80 }}>Passif</Button>
-                                                        </ButtonGroup>
-                                                    </Stack>
-
-                                                    <Stack width={"50%"} height={"30px"} spacing={3} alignItems={"left"} alignContent={"left"}
-                                                        direction={"row"} justifyContent={"left"}
-                                                    >
-                                                        <ButtonGroup
-                                                            disableElevation
-                                                            variant="contained"
-                                                            aria-label="Disabled button group"
-                                                        >
-                                                            <Button onClick={() => choixAffichageDetailCalcul('BRUT')} variant={buttonActifVariant2} style={{ borderRadius: "0", textTransform: 'none', outline: 'none', width: 80 }}>Brut</Button>
-                                                            <Button onClick={() => choixAffichageDetailCalcul('AMORT')} variant={buttonPassifVariant2} style={{ borderRadius: "0", textTransform: 'none', outline: 'none', width: 80 }}>Amort</Button>
-                                                        </ButtonGroup>
-                                                    </Stack>
-                                                </Stack>
-
-                                                <Stack width={"100%"} height={"75%"} spacing={2} alignItems={"start"} alignContent={"start"}
-                                                    direction={"row"} style={{ marginLeft: "0px", marginTop: "5px" }}
-                                                >
-                                                    <Stack width={"50%"} height={"100%"} spacing={1} alignItems={"flex-start"}
-                                                        alignContent={"flex-start"} justifyContent={"stretch"} direction={"column"}
-                                                        style={{ border: '2px solid rgba(5,96,116,0.60)' }} paddingLeft={"10px"} paddingRight={"10px"} paddingBottom={"10px"} paddingTop={"22px"}>
-                                                        <Typography variant='h7' sx={{ color: "rgba(5,96,116,0.60)", fontSize: 16.9 }} align='left'>Liste des rubriques</Typography>
-                                                        <Stack
-                                                            width="100%"
-                                                            height="700px"
-                                                            style={{
-                                                                marginLeft: "0px",
-                                                                marginTop: "20px",
-                                                            }}
-                                                        >
-                                                            <Datagridbase row_id={updateSelectedRowId} tableRow={bilanData} />
-                                                        </Stack>
-                                                    </Stack>
-
-                                                    <Stack width={"50%"} height={"100%"} spacing={3} alignItems={"flex-start"}
-                                                        alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"0px"}
-                                                        style={{ border: '2px solid rgba(5,96,116,0.60)' }} padding={"10px"}
-                                                    >
-                                                        <Datagriddetail compteId={compteId} fileId={fileId} exerciceId={selectedPeriodeId} etatId={"BILAN"} rubriqueId={bilanSelectedRubriqueId} nature={showBrut} bilanRubriqueData={bilanRubriqueData} />
-                                                    </Stack>
-                                                </Stack>
-                                            </Stack>
-                                        </TabPanel>
-
-                                        <TabPanel value="2" style={{ height: '100%' }}>
-                                            <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"center"} alignContent={"center"}
-                                                justifyContent={"stretch"}
-                                            >
-                                                <Stack width={"100%"} height={"35px"} spacing={0.5} alignItems={"right"} alignContent={"right"}
-                                                    direction={"row"} justifyContent={"right"}
-                                                >
-                                                    <Tooltip title="Simuler les paramétrages des comptes">
-                                                        <IconButton
-                                                            variant="contained"
-                                                            style={{
-                                                                width: "35px", height: '35px',
-                                                                borderRadius: "2px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
-                                                                textTransform: 'none', outline: 'none'
-                                                            }}
-                                                        >
-                                                            <VscRepoFetch style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            {/* <Typography style={{color: 'white'}}>Simuler</Typography> */}
-                                                        </IconButton>
-                                                    </Tooltip>
-
-                                                    <Tooltip title="Restaurer les paramétrages par défaut">
-                                                        <IconButton
-                                                            onClick={handleRestaureDefaultParameterCRN}
-                                                            variant="contained"
-                                                            style={{
-                                                                width: "35px", height: '35px',
-                                                                borderRadius: "2px", borderColor: "transparent",
-                                                                backgroundColor: "rgba(9, 77, 31, 0.8)",
-                                                                textTransform: 'none', outline: 'none'
-                                                            }}
-                                                        >
-                                                            <LuArchiveRestore style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-
-                                                    <Tooltip title="mettre à jour les paramétrages par défaut">
-                                                        <IconButton
-                                                            onClick={handleUpdateDefaultParameterCRN}
-                                                            variant="contained"
-                                                            style={{
-                                                                width: "35px", height: '35px',
-                                                                borderRadius: "2px", borderColor: "transparent",
-                                                                backgroundColor: "rgba(9, 77, 31, 0.8)",
-                                                                textTransform: 'none', outline: 'none'
-                                                            }}
-                                                        >
-                                                            <GrUpdate style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                </Stack>
-
-                                                <Stack width={"100%"} height={"75%"} spacing={2} alignItems={"start"} alignContent={"start"}
-                                                    direction={"row"} style={{ marginLeft: "0px", marginTop: "5px" }}
-                                                >
-                                                    <Stack width={"50%"} height={"100%"} spacing={1} alignItems={"flex-start"}
-                                                        alignContent={"flex-start"} justifyContent={"stretch"} direction={"column"}
-                                                        style={{ border: '2px solid rgba(5,96,116,0.60)' }} paddingLeft={"10px"} paddingRight={"10px"} paddingBottom={"10px"} paddingTop={"22px"}>
-                                                        <Typography variant='h7' sx={{ color: "rgba(5,96,116,0.60)", fontSize: 16.9 }} align='left'>Liste des rubriques</Typography>
-                                                        <Stack
-                                                            width="100%"
-                                                            height="700px"
-                                                            style={{
-                                                                marginLeft: "0px",
-                                                                marginTop: "20px",
-                                                            }}
-                                                        >
-                                                            <Datagridbase row_id={updateSelectedRowIdCRN} tableRow={crnData} />
-                                                        </Stack>
-                                                    </Stack>
-
-                                                    <Stack width={"50%"} height={"100%"} spacing={3} alignItems={"flex-start"}
-                                                        alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"0px"}
-                                                        style={{ border: '2px solid rgba(5,96,116,0.60)' }} padding={"10px"}
-                                                    >
-                                                        <Datagriddetail compteId={compteId} fileId={fileId} exerciceId={selectedPeriodeId} etatId={"CRN"} rubriqueId={crnSelectedRubriqueId} nature={'BRUT'} bilanRubriqueData={crnRubriqueData} />
-                                                    </Stack>
-                                                </Stack>
-                                            </Stack>
-                                        </TabPanel>
-
-                                        <TabPanel value="3" style={{ height: '100%' }}>
-
-                                            <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"center"} alignContent={"center"}
-                                                justifyContent={"stretch"}
-                                            >
-                                                <Stack width={"100%"} height={"35px"} spacing={0.5} alignItems={"right"} alignContent={"right"}
-                                                    direction={"row"} justifyContent={"right"}
-                                                >
-                                                    <Tooltip title="Simuler les paramétrages des comptes">
-                                                        <IconButton
-                                                            variant="contained"
-                                                            style={{
-                                                                width: "35px", height: '35px',
-                                                                borderRadius: "2px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
-                                                                textTransform: 'none', outline: 'none'
-                                                            }}
-                                                        >
-                                                            <VscRepoFetch style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            {/* <Typography style={{color: 'white'}}>Simuler</Typography> */}
-                                                        </IconButton>
-                                                    </Tooltip>
-
-                                                    <Tooltip title="Restaurer les paramétrages par défaut">
-                                                        <IconButton
-                                                            onClick={handleRestaureDefaultParameterCRF}
-                                                            variant="contained"
-                                                            style={{
-                                                                width: "35px", height: '35px',
-                                                                borderRadius: "2px", borderColor: "transparent",
-                                                                backgroundColor: "rgba(9, 77, 31, 0.8)",
-                                                                textTransform: 'none', outline: 'none'
-                                                            }}
-                                                        >
-                                                            <LuArchiveRestore style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-
-                                                    <Tooltip title="mettre à jour les paramétrages par défaut">
-                                                        <IconButton
-                                                            onClick={handleUpdateDefaultParameterCRF}
-                                                            variant="contained"
-                                                            style={{
-                                                                width: "35px", height: '35px',
-                                                                borderRadius: "2px", borderColor: "transparent",
-                                                                backgroundColor: "rgba(9, 77, 31, 0.8)",
-                                                                textTransform: 'none', outline: 'none'
-                                                            }}
-                                                        >
-                                                            <GrUpdate style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                </Stack>
-
-                                                <Stack width={"100%"} height={"75%"} spacing={2} alignItems={"start"} alignContent={"start"}
-                                                    direction={"row"} style={{ marginLeft: "0px", marginTop: "5px" }}
-                                                >
-                                                    <Stack width={"50%"} height={"100%"} spacing={1} alignItems={"flex-start"}
-                                                        alignContent={"flex-start"} justifyContent={"stretch"} direction={"column"}
-                                                        style={{ border: '2px solid rgba(5,96,116,0.60)' }} paddingLeft={"10px"} paddingRight={"10px"} paddingBottom={"10px"} paddingTop={"22px"}>
-                                                        <Typography variant='h7' sx={{ color: "rgba(5,96,116,0.60)", fontSize: 16.9 }} align='left'>Liste des rubriques</Typography>
-                                                        <Stack
-                                                            width="100%"
-                                                            height="700px"
-                                                            style={{
-                                                                marginLeft: "0px",
-                                                                marginTop: "20px",
-                                                            }}
-                                                        >
-                                                            <Datagridbase row_id={updateSelectedRowIdCRF} tableRow={crfData} />
-                                                        </Stack>
-                                                    </Stack>
-
-                                                    <Stack width={"50%"} height={"100%"} spacing={3} alignItems={"flex-start"}
-                                                        alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"0px"}
-                                                        style={{ border: '2px solid rgba(5,96,116,0.60)' }} padding={"10px"}
-                                                    >
-                                                        <Datagriddetail compteId={compteId} fileId={fileId} exerciceId={selectedPeriodeId} etatId={"CRF"} rubriqueId={crfSelectedRubriqueId} nature={'BRUT'} bilanRubriqueData={crfRubriqueData} />
-                                                    </Stack>
-                                                </Stack>
-                                            </Stack>
-                                        </TabPanel>
-
-                                        <TabPanel value="4" style={{ height: '100%' }}>
-
-                                            <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"center"} alignContent={"center"}
-                                                justifyContent={"stretch"}
-                                            >
-                                                <Stack width={"100%"} height={"35px"} spacing={0.5} alignItems={"right"} alignContent={"right"}
-                                                    direction={"row"} justifyContent={"right"}
-                                                >
-                                                    <Tooltip title="Simuler les paramétrages des comptes">
-                                                        <IconButton
-                                                            variant="contained"
-                                                            style={{
-                                                                width: "35px", height: '35px',
-                                                                borderRadius: "2px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
-                                                                textTransform: 'none', outline: 'none'
-                                                            }}
-                                                        >
-                                                            <VscRepoFetch style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            {/* <Typography style={{color: 'white'}}>Simuler</Typography> */}
-                                                        </IconButton>
-                                                    </Tooltip>
-
-                                                    <Tooltip title="Restaurer les paramétrages par défaut">
-                                                        <IconButton
-                                                            onClick={handleRestaureDefaultParameterTFTD}
-                                                            variant="contained"
-                                                            style={{
-                                                                width: "35px", height: '35px',
-                                                                borderRadius: "2px", borderColor: "transparent",
-                                                                backgroundColor: "rgba(9, 77, 31, 0.8)",
-                                                                textTransform: 'none', outline: 'none'
-                                                            }}
-                                                        >
-                                                            <LuArchiveRestore style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-
-                                                    <Tooltip title="mettre à jour les paramétrages par défaut">
-                                                        <IconButton
-                                                            onClick={handleUpdateDefaultParameterTFTD}
-                                                            variant="contained"
-                                                            style={{
-                                                                width: "35px", height: '35px',
-                                                                borderRadius: "2px", borderColor: "transparent",
-                                                                backgroundColor: "rgba(9, 77, 31, 0.8)",
-                                                                textTransform: 'none', outline: 'none'
-                                                            }}
-                                                        >
-                                                            <GrUpdate style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                </Stack>
-
-                                                <Stack width={"100%"} height={"75%"} spacing={2} alignItems={"start"} alignContent={"start"}
-                                                    direction={"row"} style={{ marginLeft: "0px", marginTop: "5px" }}
-                                                >
-                                                    <Stack width={"50%"} height={"100%"} spacing={1} alignItems={"flex-start"}
-                                                        alignContent={"flex-start"} justifyContent={"stretch"} direction={"column"}
-                                                        style={{ border: '2px solid rgba(5,96,116,0.60)' }} paddingLeft={"10px"} paddingRight={"10px"} paddingBottom={"10px"} paddingTop={"22px"}>
-                                                        <Typography variant='h7' sx={{ color: "rgba(5,96,116,0.60)", fontSize: 16.9 }} align='left'>Liste des rubriques</Typography>
-                                                        <Stack
-                                                            width="100%"
-                                                            height="700px"
-                                                            style={{
-                                                                marginLeft: "0px",
-                                                                marginTop: "20px",
-                                                            }}
-                                                        >
-                                                            <Datagridbase row_id={updateSelectedRowIdTFTD} tableRow={tftdData} />
-                                                        </Stack>
-                                                    </Stack>
-
-                                                    <Stack width={"50%"} height={"100%"} spacing={3} alignItems={"flex-start"}
-                                                        alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"0px"}
-                                                        style={{ border: '2px solid rgba(5,96,116,0.60)' }} padding={"10px"}
-                                                    >
-                                                        <Datagriddetail compteId={compteId} fileId={fileId} exerciceId={selectedPeriodeId} etatId={"TFTD"} rubriqueId={tftdSelectedRubriqueId} nature={'BRUT'} bilanRubriqueData={tftdRubriqueData} />
-                                                    </Stack>
-                                                </Stack>
-                                            </Stack>
-                                        </TabPanel>
-
-                                        <TabPanel value="5" style={{ height: '100%' }}>
-
-                                            <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"center"} alignContent={"center"}
-                                                justifyContent={"stretch"}
-                                            >
-                                                <Stack width={"100%"} height={"35px"} spacing={0.5} alignItems={"right"} alignContent={"right"}
-                                                    direction={"row"} justifyContent={"right"}
-                                                >
-                                                    <Tooltip title="Simuler les paramétrages des comptes">
-                                                        <IconButton
-                                                            variant="contained"
-                                                            style={{
-                                                                width: "35px", height: '35px',
-                                                                borderRadius: "2px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
-                                                                textTransform: 'none', outline: 'none'
-                                                            }}
-                                                        >
-                                                            <VscRepoFetch style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            {/* <Typography style={{color: 'white'}}>Simuler</Typography> */}
-                                                        </IconButton>
-                                                    </Tooltip>
-
-                                                    <Tooltip title="Restaurer les paramétrages par défaut">
-                                                        <IconButton
-                                                            onClick={handleRestaureDefaultParameterTFTI}
-                                                            variant="contained"
-                                                            style={{
-                                                                width: "35px", height: '35px',
-                                                                borderRadius: "2px", borderColor: "transparent",
-                                                                backgroundColor: "rgba(9, 77, 31, 0.8)",
-                                                                textTransform: 'none', outline: 'none'
-                                                            }}
-                                                        >
-                                                            <LuArchiveRestore style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-
-                                                    <Tooltip title="mettre à jour les paramétrages par défaut">
-                                                        <IconButton
-                                                            onClick={handleUpdateDefaultParameterTFTI}
-                                                            variant="contained"
-                                                            style={{
-                                                                width: "35px", height: '35px',
-                                                                borderRadius: "2px", borderColor: "transparent",
-                                                                backgroundColor: "rgba(9, 77, 31, 0.8)",
-                                                                textTransform: 'none', outline: 'none'
-                                                            }}
-                                                        >
-                                                            <GrUpdate style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                </Stack>
-
-                                                <Stack width={"100%"} height={"75%"} spacing={2} alignItems={"start"} alignContent={"start"}
-                                                    direction={"row"} style={{ marginLeft: "0px", marginTop: "5px" }}
-                                                >
-                                                    <Stack width={"50%"} height={"100%"} spacing={1} alignItems={"flex-start"}
-                                                        alignContent={"flex-start"} justifyContent={"stretch"} direction={"column"}
-                                                        style={{ border: '2px solid rgba(5,96,116,0.60)' }} paddingLeft={"10px"} paddingRight={"10px"} paddingBottom={"10px"} paddingTop={"22px"}>
-                                                        <Typography variant='h7' sx={{ color: "rgba(5,96,116,0.60)", fontSize: 16.9 }} align='left'>Liste des rubriques</Typography>
-                                                        <Stack
-                                                            width="100%"
-                                                            height="700px"
-                                                            style={{
-                                                                marginLeft: "0px",
-                                                                marginTop: "20px",
-                                                            }}
-                                                        >
-                                                            <Datagridbase row_id={updateSelectedRowIdTFTI} tableRow={tftiData} />
-                                                        </Stack>
-                                                    </Stack>
-
-                                                    <Stack width={"50%"} height={"100%"} spacing={3} alignItems={"flex-start"}
-                                                        alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"0px"}
-                                                        style={{ border: '2px solid rgba(5,96,116,0.60)' }} padding={"10px"}
-                                                    >
-                                                        <Datagriddetail compteId={compteId} fileId={fileId} exerciceId={selectedPeriodeId} etatId={"TFTI"} rubriqueId={tftiSelectedRubriqueId} nature={'BRUT'} bilanRubriqueData={tftiRubriqueData} />
-                                                    </Stack>
-                                                </Stack>
-                                            </Stack>
-                                        </TabPanel>
-
-                                        <TabPanel value="6" style={{ height: '100%' }}>
-
-                                            <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"center"} alignContent={"center"}
-                                                justifyContent={"stretch"}
-                                            >
-                                                <Stack width={"100%"} height={"35px"} spacing={0.5} alignItems={"right"} alignContent={"right"}
-                                                    direction={"row"} justifyContent={"right"}
-                                                >
-
-                                                    <Tooltip title="Restaurer les paramétrages par défaut">
-                                                        <IconButton
-                                                            onClick={handleRestaureDefaultParameterBHIAPC}
-                                                            variant="contained"
-                                                            style={{
-                                                                width: "35px", height: '35px',
-                                                                borderRadius: "2px", borderColor: "transparent",
-                                                                backgroundColor: "rgba(9, 77, 31, 0.8)",
-                                                                textTransform: 'none', outline: 'none'
-                                                            }}
-                                                        >
-                                                            <LuArchiveRestore style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-
-                                                    <Tooltip title="mettre à jour les paramétrages par défaut">
-                                                        <IconButton
-                                                            onClick={handleUpdateDefaultParameterBHIAPC}
-                                                            variant="contained"
-                                                            style={{
-                                                                width: "35px", height: '35px',
-                                                                borderRadius: "2px", borderColor: "transparent",
-                                                                backgroundColor: "rgba(9, 77, 31, 0.8)",
-                                                                textTransform: 'none', outline: 'none'
-                                                            }}
-                                                        >
-                                                            <GrUpdate style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                </Stack>
-
-                                                <Stack width={"100%"} height={"75%"} spacing={2} alignItems={"start"} alignContent={"start"}
-                                                    direction={"row"} style={{ marginLeft: "0px", marginTop: "5px" }}
-                                                >
-                                                    <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
-                                                        alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"0px"}
-                                                        style={{ border: '2px solid rgba(5,96,116,0.60)' }} padding={"10px"}
-                                                    >
-                                                        <DatagridBHIAPCdetail compteId={compteId} fileId={fileId} exerciceId={selectedPeriodeId} etatId={"BHIAPC"} rubriqueId={bhiapcSelectedRubriqueId} nature={'BRUT'} bilanRubriqueData={bhiapcRubriqueData} />
-                                                    </Stack>
-                                                </Stack>
-                                            </Stack>
-                                        </TabPanel>
-
-                                        <TabPanel value="7" style={{ height: '100%' }}>
-
-                                            <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"center"} alignContent={"center"}
-                                                justifyContent={"stretch"}
-                                            >
-                                                <Stack width={"100%"} height={"35px"} spacing={0.5} alignItems={"right"} alignContent={"right"}
-                                                    direction={"row"} justifyContent={"right"}
-                                                >
-                                                    <Tooltip title="Simuler les paramétrages des comptes">
-                                                        <IconButton
-                                                            variant="contained"
-                                                            style={{
-                                                                width: "35px", height: '35px',
-                                                                borderRadius: "2px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
-                                                                textTransform: 'none', outline: 'none'
-                                                            }}
-                                                        >
-                                                            <VscRepoFetch style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            {/* <Typography style={{color: 'white'}}>Simuler</Typography> */}
-                                                        </IconButton>
-                                                    </Tooltip>
-
-                                                    <Tooltip title="Restaurer les paramétrages par défaut">
-                                                        <IconButton
-                                                            onClick={handleRestaureDefaultParameterDP}
-                                                            variant="contained"
-                                                            style={{
-                                                                width: "35px", height: '35px',
-                                                                borderRadius: "2px", borderColor: "transparent",
-                                                                backgroundColor: "rgba(9, 77, 31, 0.8)",
-                                                                textTransform: 'none', outline: 'none'
-                                                            }}
-                                                        >
-                                                            <LuArchiveRestore style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-
-                                                    <Tooltip title="mettre à jour les paramétrages par défaut">
-                                                        <IconButton
-                                                            onClick={handleUpdateDefaultParameterDP}
-                                                            variant="contained"
-                                                            style={{
-                                                                width: "35px", height: '35px',
-                                                                borderRadius: "2px", borderColor: "transparent",
-                                                                backgroundColor: "rgba(9, 77, 31, 0.8)",
-                                                                textTransform: 'none', outline: 'none'
-                                                            }}
-                                                        >
-                                                            <GrUpdate style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                </Stack>
-
-                                                <Stack width={"100%"} height={"75%"} spacing={2} alignItems={"start"} alignContent={"start"}
-                                                    direction={"row"} style={{ marginLeft: "0px", marginTop: "5px" }}
-                                                >
-                                                    <Stack
-                                                        width={"50%"}
-                                                        height={"100%"}
-                                                        alignItems={"flex-start"}
-                                                        alignContent={"flex-start"}
-                                                        justifyContent={"stretch"}
-                                                        direction={"column"}
-                                                        style={{
-                                                            border: '2px solid rgba(5,96,116,0.60)'
-                                                        }}
-                                                        paddingLeft={"10px"}
-                                                        paddingRight={"10px"}
-                                                        paddingBottom={"10px"}
-                                                        paddingTop={"22px"}
-                                                    >
-                                                        <Typography variant='h7' sx={{ color: "rgba(5,96,116,0.60)", fontSize: 16.9 }} align='left'>Liste des rubriques</Typography>
-
-                                                        <Stack
-                                                            width="100%"
-                                                            height="700px"
-                                                            style={{
-                                                                marginLeft: "0px",
-                                                                marginTop: "20px",
-                                                            }}
-                                                        >
-                                                            <Datagridbase row_id={updateSelectedRowIdDP} tableRow={dpData} />
-                                                        </Stack>
-                                                    </Stack>
-
-                                                    <Stack width={"50%"} height={"100%"} spacing={3} alignItems={"flex-start"}
-                                                        alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"0px"}
-                                                        style={{ border: '2px solid rgba(5,96,116,0.60)' }} padding={"10px"}
-                                                    >
-                                                        <DatagridTableDpMappingDetail compteId={compteId} fileId={fileId} exerciceId={selectedPeriodeId} etatId={"DP"} rubriqueId={dpSelectedRubriqueId} nature={'BRUT'} bilanRubriqueData={dpRubriqueData} />
-                                                    </Stack>
-                                                </Stack>
-                                            </Stack>
-                                        </TabPanel>
-
-                                    </TabContext>
-                                </TabPanel>
-
-                                <TabPanel value="2" style={{ height: '100%' }}>
-                                    <Stack width={"100%"} height={"75%"} spacing={2} alignItems={"start"} alignContent={"start"}
-                                        direction={"row"} style={{ marginLeft: "0px", marginTop: "5px" }}
-                                    >
-                                        <Stack
-                                            width={"50%"}
-                                            height={"100%"}
-                                            alignItems={"flex-start"}
-                                            alignContent={"flex-start"}
-                                            justifyContent={"stretch"}
-                                            direction={"column"}
-                                            style={{
-                                                border: '2px solid rgba(5,96,116,0.60)'
+                            <Stack width={"100%"} height={"80px"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "20px" }}>
+                                <Stack
+                                    direction={"row"}
+                                >
+                                    <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
+                                        <InputLabel id="demo-simple-select-standard-label">Exercice:</InputLabel>
+                                        <Select
+                                            labelId="demo-simple-select-standard-label"
+                                            id="demo-simple-select-standard"
+                                            value={selectedExerciceId}
+                                            label={"valSelect"}
+                                            onChange={(e) => handleChangeExercice(e.target.value)}
+                                            sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                            MenuProps={{
+                                                disableScrollLock: true
                                             }}
-                                            paddingLeft={"10px"}
-                                            paddingRight={"10px"}
-                                            paddingBottom={"10px"}
-                                            paddingTop={"22px"}
                                         >
-                                            <Typography variant='h7' sx={{ color: "rgba(5,96,116,0.60)", fontSize: 16.9 }} align='left'>Liste des rubriques</Typography>
+                                            {listeExercice.map((option) => (
+                                                <MenuItem
+                                                    key={option.id}
+                                                    value={option.id}
+                                                >{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
+                                            ))
+                                            }
+                                        </Select>
+                                    </FormControl>
 
+                                    <FormControl variant="standard" sx={{ m: 1, minWidth: 150 }}>
+                                        <InputLabel id="demo-simple-select-standard-label">Période</InputLabel>
+                                        <Select
+                                            disabled
+                                            labelId="demo-simple-select-standard-label"
+                                            id="demo-simple-select-standard"
+                                            value={selectedPeriodeChoiceId}
+                                            label={"valSelect"}
+                                            onChange={(e) => handleChangePeriode(e.target.value)}
+                                            sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                            MenuProps={{
+                                                disableScrollLock: true
+                                            }}
+                                        >
+                                            <MenuItem value={0}>Toutes</MenuItem>
+                                            <MenuItem value={1}>Situations</MenuItem>
+                                        </Select>
+                                    </FormControl>
+
+                                    <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
+                                        <InputLabel id="demo-simple-select-standard-label">Du</InputLabel>
+                                        <Select
+                                            labelId="demo-simple-select-standard-label"
+                                            id="demo-simple-select-standard"
+                                            value={selectedPeriodeId}
+                                            label={"valSelect"}
+                                            onChange={(e) => handleChangeDateIntervalle(e.target.value)}
+                                            sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                            MenuProps={{
+                                                disableScrollLock: true
+                                            }}
+                                        >
+                                            {listeSituation?.map((option) => (
+                                                <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
+                                            ))
+                                            }
+                                        </Select>
+                                    </FormControl>
+                                </Stack>
+                            </Stack>
+
+                            <Box sx={{ width: '100%', height: '100%', typography: 'body1' }}>
+                                <TabContext value={valueParamMapping} style={{ height: '100%' }}>
+                                    <Box >
+                                        <TabList onChange={handleChangeTab} aria-label="lab API tabs example" variant='scrollable'>
+                                            <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Ebilan" value="1" />
+                                            <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="D. Com" value="2" />
+                                        </TabList>
+                                    </Box>
+
+                                    <TabPanel value="1" style={{ height: '100%', }}>
+                                        <TabContext value={valueEbilanParamMapping} style={{ height: '100%' }}>
+                                            <Box >
+                                                <TabList onChange={handleChangeTabEbilan} aria-label="lab API tabs example" variant='scrollable'>
+                                                    <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Bilan" value="1" />
+                                                    <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Crn" value="2" />
+                                                    <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Crf" value="3" />
+                                                    <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Tftd" value="4" />
+                                                    <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Tfti" value="5" />
+                                                    <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Bhiapc" value="6" />
+                                                    <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Dp" value="7" />
+                                                </TabList>
+                                            </Box>
+
+                                            <TabPanel value="1" style={{ height: '100%', }}>
+                                                <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"center"} alignContent={"center"}
+                                                    justifyContent={"stretch"}
+                                                >
+
+                                                    <Stack width={"100%"} height={"35px"} spacing={0.5} alignItems={"right"} alignContent={"right"}
+                                                        direction={"row"} justifyContent={"right"}
+                                                    >
+                                                        <Tooltip title="Simuler les paramétrages des comptes">
+                                                            <IconButton
+                                                                variant="contained"
+                                                                style={{
+                                                                    width: "35px", height: '35px',
+                                                                    borderRadius: "2px", borderColor: "transparent",
+                                                                    backgroundColor: initial.theme,
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                            >
+                                                                <VscRepoFetch style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                {/* <Typography style={{color: 'white'}}>Simuler</Typography> */}
+                                                            </IconButton>
+                                                        </Tooltip>
+
+                                                        <Tooltip title="Restaurer les paramétrages par défaut">
+                                                            <IconButton
+                                                                onClick={handleRestaureDefaultParameterBilan}
+                                                                variant="contained"
+                                                                style={{
+                                                                    width: "35px", height: '35px',
+                                                                    borderRadius: "2px", borderColor: "transparent",
+                                                                    backgroundColor: "rgba(9, 77, 31, 0.8)",
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                            >
+                                                                <LuArchiveRestore style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                {/* <Typography style={{color: 'white'}}>Restaurer</Typography> */}
+                                                            </IconButton>
+                                                        </Tooltip>
+
+                                                        <Tooltip title="mettre à jour les paramétrages par défaut">
+                                                            <IconButton
+                                                                onClick={handleUpdateDefaultParameterBilan}
+                                                                variant="contained"
+                                                                style={{
+                                                                    width: "35px", height: '35px',
+                                                                    borderRadius: "2px", borderColor: "transparent",
+                                                                    backgroundColor: "rgba(9, 77, 31, 0.8)",
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                            >
+                                                                <GrUpdate style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                {/* <Typography style={{color: 'white'}}>Mettre à jour</Typography> */}
+                                                            </IconButton>
+                                                        </Tooltip>
+
+                                                    </Stack>
+
+                                                    <Stack width={"100%"} height={"30px"} spacing={2} alignItems={"left"} alignContent={"left"}
+                                                        direction={"row"} justifyContent={"left"}
+                                                    >
+                                                        <Stack width={"50%"} height={"30px"} spacing={2} alignItems={"left"} alignContent={"left"}
+                                                            direction={"row"} justifyContent={"left"}
+                                                        >
+                                                            <ButtonGroup
+                                                                disableElevation
+                                                                variant="contained"
+                                                                aria-label="Disabled button group"
+                                                            >
+                                                                <Button onClick={() => choixAffichageBilan(1)} variant={buttonActifVariant} style={{ borderRadius: "0", textTransform: 'none', outline: 'none', width: 80 }}>Actif</Button>
+                                                                <Button onClick={() => choixAffichageBilan(2)} variant={buttonPassifVariant} style={{ borderRadius: "0", textTransform: 'none', outline: 'none', width: 80 }}>Passif</Button>
+                                                            </ButtonGroup>
+                                                        </Stack>
+
+                                                        <Stack width={"50%"} height={"30px"} spacing={3} alignItems={"left"} alignContent={"left"}
+                                                            direction={"row"} justifyContent={"left"}
+                                                        >
+                                                            <ButtonGroup
+                                                                disableElevation
+                                                                variant="contained"
+                                                                aria-label="Disabled button group"
+                                                            >
+                                                                <Button onClick={() => choixAffichageDetailCalcul('BRUT')} variant={buttonActifVariant2} style={{ borderRadius: "0", textTransform: 'none', outline: 'none', width: 80 }}>Brut</Button>
+                                                                <Button onClick={() => choixAffichageDetailCalcul('AMORT')} variant={buttonPassifVariant2} style={{ borderRadius: "0", textTransform: 'none', outline: 'none', width: 80 }}>Amort</Button>
+                                                            </ButtonGroup>
+                                                        </Stack>
+                                                    </Stack>
+
+                                                    <Stack width={"100%"} height={"75%"} spacing={2} alignItems={"start"} alignContent={"start"}
+                                                        direction={"row"} style={{ marginLeft: "0px", marginTop: "5px" }}
+                                                    >
+                                                        <Stack width={"50%"} height={"100%"} spacing={1} alignItems={"flex-start"}
+                                                            alignContent={"flex-start"} justifyContent={"stretch"} direction={"column"}
+                                                            style={{ border: '2px solid rgba(5,96,116,0.60)' }} paddingLeft={"10px"} paddingRight={"10px"} paddingBottom={"10px"} paddingTop={"22px"}>
+                                                            <Typography variant='h7' sx={{ color: "rgba(5,96,116,0.60)", fontSize: 16.9 }} align='left'>Liste des rubriques</Typography>
+                                                            <Stack
+                                                                width="100%"
+                                                                height="700px"
+                                                                style={{
+                                                                    marginLeft: "0px",
+                                                                    marginTop: "20px",
+                                                                }}
+                                                            >
+                                                                <Datagridbase row_id={updateSelectedRowId} tableRow={canView ? bilanData : []} />
+                                                            </Stack>
+                                                        </Stack>
+
+                                                        <Stack width={"50%"} height={"100%"} spacing={3} alignItems={"flex-start"}
+                                                            alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"0px"}
+                                                            style={{ border: '2px solid rgba(5,96,116,0.60)' }} padding={"10px"}
+                                                        >
+                                                            <Datagriddetail
+                                                                canView={canView}
+                                                                canAdd={canAdd}
+                                                                canDelete={canDelete}
+                                                                canModify={canModify}
+                                                                compteId={compteId}
+                                                                fileId={fileId}
+                                                                exerciceId={selectedPeriodeId}
+                                                                etatId={"BILAN"}
+                                                                rubriqueId={bilanSelectedRubriqueId}
+                                                                nature={showBrut}
+                                                                bilanRubriqueData={bilanRubriqueData}
+                                                            />
+                                                        </Stack>
+                                                    </Stack>
+                                                </Stack>
+                                            </TabPanel>
+
+                                            <TabPanel value="2" style={{ height: '100%' }}>
+                                                <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"center"} alignContent={"center"}
+                                                    justifyContent={"stretch"}
+                                                >
+                                                    <Stack width={"100%"} height={"35px"} spacing={0.5} alignItems={"right"} alignContent={"right"}
+                                                        direction={"row"} justifyContent={"right"}
+                                                    >
+                                                        <Tooltip title="Simuler les paramétrages des comptes">
+                                                            <IconButton
+                                                                variant="contained"
+                                                                style={{
+                                                                    width: "35px", height: '35px',
+                                                                    borderRadius: "2px", borderColor: "transparent",
+                                                                    backgroundColor: initial.theme,
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                            >
+                                                                <VscRepoFetch style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                {/* <Typography style={{color: 'white'}}>Simuler</Typography> */}
+                                                            </IconButton>
+                                                        </Tooltip>
+
+                                                        <Tooltip title="Restaurer les paramétrages par défaut">
+                                                            <IconButton
+                                                                onClick={handleRestaureDefaultParameterCRN}
+                                                                variant="contained"
+                                                                style={{
+                                                                    width: "35px", height: '35px',
+                                                                    borderRadius: "2px", borderColor: "transparent",
+                                                                    backgroundColor: "rgba(9, 77, 31, 0.8)",
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                            >
+                                                                <LuArchiveRestore style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            </IconButton>
+                                                        </Tooltip>
+
+                                                        <Tooltip title="mettre à jour les paramétrages par défaut">
+                                                            <IconButton
+                                                                onClick={handleUpdateDefaultParameterCRN}
+                                                                variant="contained"
+                                                                style={{
+                                                                    width: "35px", height: '35px',
+                                                                    borderRadius: "2px", borderColor: "transparent",
+                                                                    backgroundColor: "rgba(9, 77, 31, 0.8)",
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                            >
+                                                                <GrUpdate style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    </Stack>
+
+                                                    <Stack width={"100%"} height={"75%"} spacing={2} alignItems={"start"} alignContent={"start"}
+                                                        direction={"row"} style={{ marginLeft: "0px", marginTop: "5px" }}
+                                                    >
+                                                        <Stack width={"50%"} height={"100%"} spacing={1} alignItems={"flex-start"}
+                                                            alignContent={"flex-start"} justifyContent={"stretch"} direction={"column"}
+                                                            style={{ border: '2px solid rgba(5,96,116,0.60)' }} paddingLeft={"10px"} paddingRight={"10px"} paddingBottom={"10px"} paddingTop={"22px"}>
+                                                            <Typography variant='h7' sx={{ color: "rgba(5,96,116,0.60)", fontSize: 16.9 }} align='left'>Liste des rubriques</Typography>
+                                                            <Stack
+                                                                width="100%"
+                                                                height="700px"
+                                                                style={{
+                                                                    marginLeft: "0px",
+                                                                    marginTop: "20px",
+                                                                }}
+                                                            >
+                                                                <Datagridbase row_id={updateSelectedRowIdCRN} tableRow={canView ? crnData : []} />
+                                                            </Stack>
+                                                        </Stack>
+
+                                                        <Stack width={"50%"} height={"100%"} spacing={3} alignItems={"flex-start"}
+                                                            alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"0px"}
+                                                            style={{ border: '2px solid rgba(5,96,116,0.60)' }} padding={"10px"}
+                                                        >
+                                                            <Datagriddetail
+                                                                canView={canView}
+                                                                canAdd={canAdd}
+                                                                canDelete={canDelete}
+                                                                canModify={canModify}
+                                                                compteId={compteId}
+                                                                fileId={fileId}
+                                                                exerciceId={selectedPeriodeId}
+                                                                etatId={"CRN"}
+                                                                rubriqueId={crnSelectedRubriqueId}
+                                                                nature={'BRUT'}
+                                                                bilanRubriqueData={crnRubriqueData}
+                                                            />
+                                                        </Stack>
+                                                    </Stack>
+                                                </Stack>
+                                            </TabPanel>
+
+                                            <TabPanel value="3" style={{ height: '100%' }}>
+
+                                                <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"center"} alignContent={"center"}
+                                                    justifyContent={"stretch"}
+                                                >
+                                                    <Stack width={"100%"} height={"35px"} spacing={0.5} alignItems={"right"} alignContent={"right"}
+                                                        direction={"row"} justifyContent={"right"}
+                                                    >
+                                                        <Tooltip title="Simuler les paramétrages des comptes">
+                                                            <IconButton
+                                                                variant="contained"
+                                                                style={{
+                                                                    width: "35px", height: '35px',
+                                                                    borderRadius: "2px", borderColor: "transparent",
+                                                                    backgroundColor: initial.theme,
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                            >
+                                                                <VscRepoFetch style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                {/* <Typography style={{color: 'white'}}>Simuler</Typography> */}
+                                                            </IconButton>
+                                                        </Tooltip>
+
+                                                        <Tooltip title="Restaurer les paramétrages par défaut">
+                                                            <IconButton
+                                                                onClick={handleRestaureDefaultParameterCRF}
+                                                                variant="contained"
+                                                                style={{
+                                                                    width: "35px", height: '35px',
+                                                                    borderRadius: "2px", borderColor: "transparent",
+                                                                    backgroundColor: "rgba(9, 77, 31, 0.8)",
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                            >
+                                                                <LuArchiveRestore style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            </IconButton>
+                                                        </Tooltip>
+
+                                                        <Tooltip title="mettre à jour les paramétrages par défaut">
+                                                            <IconButton
+                                                                onClick={handleUpdateDefaultParameterCRF}
+                                                                variant="contained"
+                                                                style={{
+                                                                    width: "35px", height: '35px',
+                                                                    borderRadius: "2px", borderColor: "transparent",
+                                                                    backgroundColor: "rgba(9, 77, 31, 0.8)",
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                            >
+                                                                <GrUpdate style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    </Stack>
+
+                                                    <Stack width={"100%"} height={"75%"} spacing={2} alignItems={"start"} alignContent={"start"}
+                                                        direction={"row"} style={{ marginLeft: "0px", marginTop: "5px" }}
+                                                    >
+                                                        <Stack width={"50%"} height={"100%"} spacing={1} alignItems={"flex-start"}
+                                                            alignContent={"flex-start"} justifyContent={"stretch"} direction={"column"}
+                                                            style={{ border: '2px solid rgba(5,96,116,0.60)' }} paddingLeft={"10px"} paddingRight={"10px"} paddingBottom={"10px"} paddingTop={"22px"}>
+                                                            <Typography variant='h7' sx={{ color: "rgba(5,96,116,0.60)", fontSize: 16.9 }} align='left'>Liste des rubriques</Typography>
+                                                            <Stack
+                                                                width="100%"
+                                                                height="700px"
+                                                                style={{
+                                                                    marginLeft: "0px",
+                                                                    marginTop: "20px",
+                                                                }}
+                                                            >
+                                                                <Datagridbase row_id={updateSelectedRowIdCRF} tableRow={canView ? crfData : []} />
+                                                            </Stack>
+                                                        </Stack>
+
+                                                        <Stack width={"50%"} height={"100%"} spacing={3} alignItems={"flex-start"}
+                                                            alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"0px"}
+                                                            style={{ border: '2px solid rgba(5,96,116,0.60)' }} padding={"10px"}
+                                                        >
+                                                            <Datagriddetail
+                                                                canView={canView}
+                                                                canAdd={canAdd}
+                                                                canDelete={canDelete}
+                                                                canModify={canModify}
+                                                                compteId={compteId}
+                                                                fileId={fileId}
+                                                                exerciceId={selectedPeriodeId}
+                                                                etatId={"CRF"}
+                                                                rubriqueId={crfSelectedRubriqueId}
+                                                                nature={'BRUT'}
+                                                                bilanRubriqueData={crfRubriqueData}
+                                                            />
+                                                        </Stack>
+                                                    </Stack>
+                                                </Stack>
+                                            </TabPanel>
+
+                                            <TabPanel value="4" style={{ height: '100%' }}>
+
+                                                <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"center"} alignContent={"center"}
+                                                    justifyContent={"stretch"}
+                                                >
+                                                    <Stack width={"100%"} height={"35px"} spacing={0.5} alignItems={"right"} alignContent={"right"}
+                                                        direction={"row"} justifyContent={"right"}
+                                                    >
+                                                        <Tooltip title="Simuler les paramétrages des comptes">
+                                                            <IconButton
+                                                                variant="contained"
+                                                                style={{
+                                                                    width: "35px", height: '35px',
+                                                                    borderRadius: "2px", borderColor: "transparent",
+                                                                    backgroundColor: initial.theme,
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                            >
+                                                                <VscRepoFetch style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                {/* <Typography style={{color: 'white'}}>Simuler</Typography> */}
+                                                            </IconButton>
+                                                        </Tooltip>
+
+                                                        <Tooltip title="Restaurer les paramétrages par défaut">
+                                                            <IconButton
+                                                                onClick={handleRestaureDefaultParameterTFTD}
+                                                                variant="contained"
+                                                                style={{
+                                                                    width: "35px", height: '35px',
+                                                                    borderRadius: "2px", borderColor: "transparent",
+                                                                    backgroundColor: "rgba(9, 77, 31, 0.8)",
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                            >
+                                                                <LuArchiveRestore style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            </IconButton>
+                                                        </Tooltip>
+
+                                                        <Tooltip title="mettre à jour les paramétrages par défaut">
+                                                            <IconButton
+                                                                onClick={handleUpdateDefaultParameterTFTD}
+                                                                variant="contained"
+                                                                style={{
+                                                                    width: "35px", height: '35px',
+                                                                    borderRadius: "2px", borderColor: "transparent",
+                                                                    backgroundColor: "rgba(9, 77, 31, 0.8)",
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                            >
+                                                                <GrUpdate style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    </Stack>
+
+                                                    <Stack width={"100%"} height={"75%"} spacing={2} alignItems={"start"} alignContent={"start"}
+                                                        direction={"row"} style={{ marginLeft: "0px", marginTop: "5px" }}
+                                                    >
+                                                        <Stack width={"50%"} height={"100%"} spacing={1} alignItems={"flex-start"}
+                                                            alignContent={"flex-start"} justifyContent={"stretch"} direction={"column"}
+                                                            style={{ border: '2px solid rgba(5,96,116,0.60)' }} paddingLeft={"10px"} paddingRight={"10px"} paddingBottom={"10px"} paddingTop={"22px"}>
+                                                            <Typography variant='h7' sx={{ color: "rgba(5,96,116,0.60)", fontSize: 16.9 }} align='left'>Liste des rubriques</Typography>
+                                                            <Stack
+                                                                width="100%"
+                                                                height="700px"
+                                                                style={{
+                                                                    marginLeft: "0px",
+                                                                    marginTop: "20px",
+                                                                }}
+                                                            >
+                                                                <Datagridbase row_id={updateSelectedRowIdTFTD} tableRow={canView ? tftdData : []} />
+                                                            </Stack>
+                                                        </Stack>
+
+                                                        <Stack width={"50%"} height={"100%"} spacing={3} alignItems={"flex-start"}
+                                                            alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"0px"}
+                                                            style={{ border: '2px solid rgba(5,96,116,0.60)' }} padding={"10px"}
+                                                        >
+                                                            <Datagriddetail
+                                                                canView={canView}
+                                                                canAdd={canAdd}
+                                                                canDelete={canDelete}
+                                                                canModify={canModify}
+                                                                compteId={compteId}
+                                                                fileId={fileId}
+                                                                exerciceId={selectedPeriodeId}
+                                                                etatId={"TFTD"}
+                                                                rubriqueId={tftdSelectedRubriqueId}
+                                                                nature={'BRUT'}
+                                                                bilanRubriqueData={tftdRubriqueData}
+                                                            />
+                                                        </Stack>
+                                                    </Stack>
+                                                </Stack>
+                                            </TabPanel>
+
+                                            <TabPanel value="5" style={{ height: '100%' }}>
+
+                                                <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"center"} alignContent={"center"}
+                                                    justifyContent={"stretch"}
+                                                >
+                                                    <Stack width={"100%"} height={"35px"} spacing={0.5} alignItems={"right"} alignContent={"right"}
+                                                        direction={"row"} justifyContent={"right"}
+                                                    >
+                                                        <Tooltip title="Simuler les paramétrages des comptes">
+                                                            <IconButton
+                                                                variant="contained"
+                                                                style={{
+                                                                    width: "35px", height: '35px',
+                                                                    borderRadius: "2px", borderColor: "transparent",
+                                                                    backgroundColor: initial.theme,
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                            >
+                                                                <VscRepoFetch style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                {/* <Typography style={{color: 'white'}}>Simuler</Typography> */}
+                                                            </IconButton>
+                                                        </Tooltip>
+
+                                                        <Tooltip title="Restaurer les paramétrages par défaut">
+                                                            <IconButton
+                                                                onClick={handleRestaureDefaultParameterTFTI}
+                                                                variant="contained"
+                                                                style={{
+                                                                    width: "35px", height: '35px',
+                                                                    borderRadius: "2px", borderColor: "transparent",
+                                                                    backgroundColor: "rgba(9, 77, 31, 0.8)",
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                            >
+                                                                <LuArchiveRestore style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            </IconButton>
+                                                        </Tooltip>
+
+                                                        <Tooltip title="mettre à jour les paramétrages par défaut">
+                                                            <IconButton
+                                                                onClick={handleUpdateDefaultParameterTFTI}
+                                                                variant="contained"
+                                                                style={{
+                                                                    width: "35px", height: '35px',
+                                                                    borderRadius: "2px", borderColor: "transparent",
+                                                                    backgroundColor: "rgba(9, 77, 31, 0.8)",
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                            >
+                                                                <GrUpdate style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    </Stack>
+
+                                                    <Stack width={"100%"} height={"75%"} spacing={2} alignItems={"start"} alignContent={"start"}
+                                                        direction={"row"} style={{ marginLeft: "0px", marginTop: "5px" }}
+                                                    >
+                                                        <Stack width={"50%"} height={"100%"} spacing={1} alignItems={"flex-start"}
+                                                            alignContent={"flex-start"} justifyContent={"stretch"} direction={"column"}
+                                                            style={{ border: '2px solid rgba(5,96,116,0.60)' }} paddingLeft={"10px"} paddingRight={"10px"} paddingBottom={"10px"} paddingTop={"22px"}>
+                                                            <Typography variant='h7' sx={{ color: "rgba(5,96,116,0.60)", fontSize: 16.9 }} align='left'>Liste des rubriques</Typography>
+                                                            <Stack
+                                                                width="100%"
+                                                                height="700px"
+                                                                style={{
+                                                                    marginLeft: "0px",
+                                                                    marginTop: "20px",
+                                                                }}
+                                                            >
+                                                                <Datagridbase row_id={updateSelectedRowIdTFTI} tableRow={canView ? tftiData : []} />
+                                                            </Stack>
+                                                        </Stack>
+
+                                                        <Stack width={"50%"} height={"100%"} spacing={3} alignItems={"flex-start"}
+                                                            alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"0px"}
+                                                            style={{ border: '2px solid rgba(5,96,116,0.60)' }} padding={"10px"}
+                                                        >
+                                                            <Datagriddetail
+                                                                canView={canView}
+                                                                canAdd={canAdd}
+                                                                canDelete={canDelete}
+                                                                canModify={canModify}
+                                                                compteId={compteId}
+                                                                fileId={fileId}
+                                                                exerciceId={selectedPeriodeId}
+                                                                etatId={"TFTI"}
+                                                                rubriqueId={tftiSelectedRubriqueId}
+                                                                nature={'BRUT'}
+                                                                bilanRubriqueData={tftiRubriqueData}
+                                                            />
+                                                        </Stack>
+                                                    </Stack>
+                                                </Stack>
+                                            </TabPanel>
+
+                                            <TabPanel value="6" style={{ height: '100%' }}>
+
+                                                <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"center"} alignContent={"center"}
+                                                    justifyContent={"stretch"}
+                                                >
+                                                    <Stack width={"100%"} height={"35px"} spacing={0.5} alignItems={"right"} alignContent={"right"}
+                                                        direction={"row"} justifyContent={"right"}
+                                                    >
+
+                                                        <Tooltip title="Restaurer les paramétrages par défaut">
+                                                            <IconButton
+                                                                onClick={handleRestaureDefaultParameterBHIAPC}
+                                                                variant="contained"
+                                                                style={{
+                                                                    width: "35px", height: '35px',
+                                                                    borderRadius: "2px", borderColor: "transparent",
+                                                                    backgroundColor: "rgba(9, 77, 31, 0.8)",
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                            >
+                                                                <LuArchiveRestore style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            </IconButton>
+                                                        </Tooltip>
+
+                                                        <Tooltip title="mettre à jour les paramétrages par défaut">
+                                                            <IconButton
+                                                                onClick={handleUpdateDefaultParameterBHIAPC}
+                                                                variant="contained"
+                                                                style={{
+                                                                    width: "35px", height: '35px',
+                                                                    borderRadius: "2px", borderColor: "transparent",
+                                                                    backgroundColor: "rgba(9, 77, 31, 0.8)",
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                            >
+                                                                <GrUpdate style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    </Stack>
+
+                                                    <Stack width={"100%"} height={"75%"} spacing={2} alignItems={"start"} alignContent={"start"}
+                                                        direction={"row"} style={{ marginLeft: "0px", marginTop: "5px" }}
+                                                    >
+                                                        <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
+                                                            alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"0px"}
+                                                            style={{ border: '2px solid rgba(5,96,116,0.60)' }} padding={"10px"}
+                                                        >
+                                                            <DatagridBHIAPCdetail
+                                                                canView={canView}
+                                                                canAdd={canAdd}
+                                                                canDelete={canDelete}
+                                                                canModify={canModify}
+                                                                compteId={compteId}
+                                                                fileId={fileId}
+                                                                exerciceId={selectedPeriodeId}
+                                                                etatId={"BHIAPC"}
+                                                                rubriqueId={bhiapcSelectedRubriqueId}
+                                                                nature={'BRUT'}
+                                                                bilanRubriqueData={canView ? bhiapcRubriqueData : []}
+                                                            />
+                                                        </Stack>
+                                                    </Stack>
+                                                </Stack>
+                                            </TabPanel>
+
+                                            <TabPanel value="7" style={{ height: '100%' }}>
+
+                                                <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"center"} alignContent={"center"}
+                                                    justifyContent={"stretch"}
+                                                >
+                                                    <Stack width={"100%"} height={"35px"} spacing={0.5} alignItems={"right"} alignContent={"right"}
+                                                        direction={"row"} justifyContent={"right"}
+                                                    >
+                                                        <Tooltip title="Simuler les paramétrages des comptes">
+                                                            <IconButton
+                                                                variant="contained"
+                                                                style={{
+                                                                    width: "35px", height: '35px',
+                                                                    borderRadius: "2px", borderColor: "transparent",
+                                                                    backgroundColor: initial.theme,
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                            >
+                                                                <VscRepoFetch style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                {/* <Typography style={{color: 'white'}}>Simuler</Typography> */}
+                                                            </IconButton>
+                                                        </Tooltip>
+
+                                                        <Tooltip title="Restaurer les paramétrages par défaut">
+                                                            <IconButton
+                                                                onClick={handleRestaureDefaultParameterDP}
+                                                                variant="contained"
+                                                                style={{
+                                                                    width: "35px", height: '35px',
+                                                                    borderRadius: "2px", borderColor: "transparent",
+                                                                    backgroundColor: "rgba(9, 77, 31, 0.8)",
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                            >
+                                                                <LuArchiveRestore style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            </IconButton>
+                                                        </Tooltip>
+
+                                                        <Tooltip title="mettre à jour les paramétrages par défaut">
+                                                            <IconButton
+                                                                onClick={handleUpdateDefaultParameterDP}
+                                                                variant="contained"
+                                                                style={{
+                                                                    width: "35px", height: '35px',
+                                                                    borderRadius: "2px", borderColor: "transparent",
+                                                                    backgroundColor: "rgba(9, 77, 31, 0.8)",
+                                                                    textTransform: 'none', outline: 'none'
+                                                                }}
+                                                            >
+                                                                <GrUpdate style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    </Stack>
+
+                                                    <Stack width={"100%"} height={"75%"} spacing={2} alignItems={"start"} alignContent={"start"}
+                                                        direction={"row"} style={{ marginLeft: "0px", marginTop: "5px" }}
+                                                    >
+                                                        <Stack
+                                                            width={"50%"}
+                                                            height={"100%"}
+                                                            alignItems={"flex-start"}
+                                                            alignContent={"flex-start"}
+                                                            justifyContent={"stretch"}
+                                                            direction={"column"}
+                                                            style={{
+                                                                border: '2px solid rgba(5,96,116,0.60)'
+                                                            }}
+                                                            paddingLeft={"10px"}
+                                                            paddingRight={"10px"}
+                                                            paddingBottom={"10px"}
+                                                            paddingTop={"22px"}
+                                                        >
+                                                            <Typography variant='h7' sx={{ color: "rgba(5,96,116,0.60)", fontSize: 16.9 }} align='left'>Liste des rubriques</Typography>
+
+                                                            <Stack
+                                                                width="100%"
+                                                                height="700px"
+                                                                style={{
+                                                                    marginLeft: "0px",
+                                                                    marginTop: "20px",
+                                                                }}
+                                                            >
+                                                                <Datagridbase row_id={updateSelectedRowIdDP} tableRow={canView ? dpData : []} />
+                                                            </Stack>
+                                                        </Stack>
+
+                                                        <Stack width={"50%"} height={"100%"} spacing={3} alignItems={"flex-start"}
+                                                            alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"0px"}
+                                                            style={{ border: '2px solid rgba(5,96,116,0.60)' }} padding={"10px"}
+                                                        >
+                                                            <DatagridTableDpMappingDetail
+                                                                canView={canView}
+                                                                canAdd={canAdd}
+                                                                canDelete={canDelete}
+                                                                canModify={canModify}
+                                                                compteId={compteId}
+                                                                fileId={fileId}
+                                                                exerciceId={selectedPeriodeId}
+                                                                etatId={"DP"}
+                                                                rubriqueId={dpSelectedRubriqueId}
+                                                                nature={'BRUT'}
+                                                                bilanRubriqueData={dpRubriqueData}
+                                                            />
+                                                        </Stack>
+                                                    </Stack>
+                                                </Stack>
+                                            </TabPanel>
+
+                                        </TabContext>
+                                    </TabPanel>
+
+                                    <TabPanel value="2" style={{ height: '100%' }}>
+                                        <Stack width={"100%"} height={"75%"} spacing={2} alignItems={"start"} alignContent={"start"}
+                                            direction={"row"} style={{ marginLeft: "0px", marginTop: "5px" }}
+                                        >
                                             <Stack
-                                                width="100%"
-                                                height="700px"
+                                                width={"50%"}
+                                                height={"100%"}
+                                                alignItems={"flex-start"}
+                                                alignContent={"flex-start"}
+                                                justifyContent={"stretch"}
+                                                direction={"column"}
                                                 style={{
-                                                    marginLeft: "0px",
-                                                    marginTop: "20px",
+                                                    border: '2px solid rgba(5,96,116,0.60)'
                                                 }}
+                                                paddingLeft={"10px"}
+                                                paddingRight={"10px"}
+                                                paddingBottom={"10px"}
+                                                paddingTop={"22px"}
                                             >
-                                                <Datagridbase row_id={updateSelectedRowIdDCom} tableRow={dComData} />
+                                                <Typography variant='h7' sx={{ color: "rgba(5,96,116,0.60)", fontSize: 16.9 }} align='left'>Liste des rubriques</Typography>
+
+                                                <Stack
+                                                    width="100%"
+                                                    height="700px"
+                                                    style={{
+                                                        marginLeft: "0px",
+                                                        marginTop: "20px",
+                                                    }}
+                                                >
+                                                    <Datagridbase row_id={updateSelectedRowIdDCom} tableRow={canView ? dComData : []} />
+                                                </Stack>
+                                            </Stack>
+
+                                            <Stack width={"50%"} height={"100%"} spacing={3} alignItems={"flex-start"}
+                                                alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"0px"}
+                                                style={{ border: '2px solid rgba(5,96,116,0.60)' }} padding={"10px"}
+                                            >
+                                                {/* <DatagridTableDpMappingDetail compteId={compteId} fileId={fileId} exerciceId={selectedPeriodeId} etatId={"DCOM"} rubriqueId={dComSelectedRubriqueId} nature={'BRUT'} bilanRubriqueData={dpRubriqueData} /> */}
+                                                <DatagridTableDpComMappingDetail
+                                                    canView={canView}
+                                                    canAdd={canAdd}
+                                                    canDelete={canDelete}
+                                                    canModify={canModify}
+                                                    compteId={compteId}
+                                                    fileId={fileId}
+                                                    exerciceId={selectedPeriodeId}
+                                                    etatId={"DCOM"}
+                                                    rubriqueId={dComSelectedRubriqueId}
+                                                    nature={'BRUT'}
+                                                    dComRubriqueData={dComRubriqueData}
+                                                />
                                             </Stack>
                                         </Stack>
+                                    </TabPanel>
 
-                                        <Stack width={"50%"} height={"100%"} spacing={3} alignItems={"flex-start"}
-                                            alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"0px"}
-                                            style={{ border: '2px solid rgba(5,96,116,0.60)' }} padding={"10px"}
-                                        >
-                                            {/* <DatagridTableDpMappingDetail compteId={compteId} fileId={fileId} exerciceId={selectedPeriodeId} etatId={"DCOM"} rubriqueId={dComSelectedRubriqueId} nature={'BRUT'} bilanRubriqueData={dpRubriqueData} /> */}
-                                            <DatagridTableDpComMappingDetail compteId={compteId} fileId={fileId} exerciceId={selectedPeriodeId} etatId={"DCOM"} rubriqueId={dComSelectedRubriqueId} nature={'BRUT'} dComRubriqueData={dComRubriqueData} />
-                                        </Stack>
-                                    </Stack>
-                                </TabPanel>
-
-                            </TabContext>
-                        </Box>
-                    </Stack>
-                </TabPanel>
-            </TabContext>
-        </Box>
+                                </TabContext>
+                            </Box>
+                        </Stack>
+                    </TabPanel>
+                </TabContext>
+            </Box>
+        </>
     )
 }

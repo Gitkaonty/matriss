@@ -1,4 +1,3 @@
-import React from "react";
 import { BiHomeAlt2, BiSelectMultiple } from "react-icons/bi";
 import { FaRegChartBar } from "react-icons/fa6";
 import { BiSliderAlt } from "react-icons/bi";

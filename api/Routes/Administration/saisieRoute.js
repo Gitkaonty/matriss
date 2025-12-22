@@ -3,13 +3,16 @@ const saisieController = require('../../Controllers/administration/saisieControl
 const exportRapprochementsController = require('../../Controllers/administration/exportRapprochementsController');
 const path = require('path');
 
+const verifyJWT = require('../../Middlewares/verifyJWT');
+const verifyPermission = require('../../Middlewares/verifyPermission');
+
 const router = express.Router();
 
 const multer = require('multer');
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        const uploadPath = path.join(__dirname, '..', '..', 'public'); 
+        const uploadPath = path.join(__dirname, '..', '..', 'public');
         cb(null, uploadPath);
     },
     filename: function (req, file, cb) {
@@ -25,9 +28,9 @@ const upload = multer({ storage });
 //router.post('/recupBalance', exportBalanceController.recupBalance);
 router.get('/recupDevise/:id', saisieController.getAllDevises);
 
-router.post('/ajoutJournal', upload.single('file'), saisieController.addJournal);
+router.post('/ajoutJournal', verifyJWT, verifyPermission('ADD'), upload.single('file'), saisieController.addJournal);
 
-router.delete('/deleteJournal', saisieController.deleteJournal);
+router.delete('/deleteJournal', verifyJWT, verifyPermission('DELETE'), saisieController.deleteJournal);
 
 // Rapprochements bancaires
 router.get('/rapprochements', saisieController.listRapprochements); // expects query: fileId, compteId, exerciceId, pcId
@@ -50,12 +53,12 @@ router.get('/rapprochements/export/excel', exportRapprochementsController.export
 router.get('/getJournal/:id_compte/:id_dossier/:id_exercice', saisieController.getJournal);
 
 // Récupération de journal filtré
-router.post('/getJournalFiltered', saisieController.getJournalFiltered);
+router.post('/getJournalFiltered', verifyJWT, verifyPermission('VIEW'), saisieController.getJournalFiltered);
 
-router.post('/addLettrage', saisieController.addLettrage);
+router.post('/addLettrage', verifyJWT, verifyPermission('ADD'), saisieController.addLettrage);
 
-router.post('/modificationJournal', upload.single('file'), saisieController.modificationJournal);
+router.post('/modificationJournal', verifyJWT, verifyPermission('EDIT'), upload.single('file'), saisieController.modificationJournal);
 
-router.put('/deleteLettrage', saisieController.deleteLettrage);
+router.put('/deleteLettrage', verifyJWT, verifyPermission('DELETE'), saisieController.deleteLettrage);
 
 module.exports = router;

@@ -4,6 +4,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.BIGINT,
             allowNull: false
         },
+        id_portefeuille: {
+            type: DataTypes.ARRAY(DataTypes.BIGINT),
+            allowNull: true,
+        },
         id_user: {
             type: DataTypes.BIGINT,
             allowNull: false,
@@ -193,7 +197,16 @@ module.exports = (sequelize, DataTypes) => {
         compteisi: {
             type: DataTypes.STRING(30),
             allowNull: true
-        }
+        },
+        typecomptabilite: {
+            type: DataTypes.STRING(20),
+            defaultValue: 'Français',
+            allowNull: true
+        },
+        consolidation: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false
+        },
     }, { timestamps: true },)
     return dossiers
 }

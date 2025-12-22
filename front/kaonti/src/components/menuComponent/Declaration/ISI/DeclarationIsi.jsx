@@ -21,10 +21,13 @@ import DatagridDetailEcritureAssocie from '../../../componentsTools/DeclarationI
 import DatagridDetailSelectionLigne from '../../../componentsTools/DeclarationISI/DatagridComponents/Datagrid/DatagridDetailSelectionLigne';
 
 import PopupExportIsi from '../../../componentsTools/DeclarationISI/Popup/PopupExportIsi';
+import usePermission from '../../../../hooks/usePermission';
 
 const DATAGRID_HEIGHT = "500px"
 
 export default function DeclarationIsi() {
+    const { canAdd, canModify, canDelete, canView } = usePermission();
+
     const [fileInfos, setFileInfos] = useState('');
     const [fileId, setFileId] = useState(0);
     const { id } = useParams();
@@ -32,7 +35,7 @@ export default function DeclarationIsi() {
     let tabISI = "";
     let tabISIDetail = "";
 
-    if (typeof window !== undefined) {
+    if (typeof window !== 'undefined') {
         tabISI = localStorage.getItem('tabISI');
         tabISIDetail = localStorage.getItem('tabISIDetail');
     }
@@ -75,7 +78,7 @@ export default function DeclarationIsi() {
 
     //Valeur du listbox choix compte
     const [valSelectedCompte, setValSelectedCompte] = useState(() => {
-        if (typeof window !== "undefined") {
+        if (typeof window !== 'undefined') {
             return localStorage.getItem("valSelectedCompteISI") || "tout";
         }
         return "tout";
@@ -358,28 +361,36 @@ export default function DeclarationIsi() {
 
     // Récupération des listes isi générés automatique
     useEffect(() => {
-        if (valSelectAnnee) {
+        if (valSelectAnnee && canView) {
             getAnnexeDeclaration();
         }
     }, [compteId, selectedExerciceId, fileId, valSelectAnnee, valSelectMois, isAnnexeRefreshed])
 
     // Liste Detail/Sélection ligne
     useEffect(() => {
-        getDetailSelectionLigne();
+        if (canView) {
+            getDetailSelectionLigne();
+        }
     }, [compteId, fileId, selectedExerciceId, valSelectMois, valSelectAnnee, isDetailSelectionRefreshed])
 
     // Liste Détail/ Ecriture associées
     useEffect(() => {
-        getDetailEcritureAssocie();
+        if (canView) {
+            getDetailEcritureAssocie();
+        }
     }, [compteId, fileId, selectedExerciceId, valSelectMois, valSelectAnnee, isListDetailEcritureRefreshed])
 
     // Liste plan comptable
     useEffect(() => {
-        getPc()
+        if (canView) {
+            getPc()
+        }
     }, [fileId, compteId, valSelectMois, valSelectAnnee, isDetailSelectionRefreshed])
 
     useEffect(() => {
-        handleSearch();
+        if (canView) {
+            handleSearch();
+        }
     }, [valSelectedCompte, listDetailSelection]);
 
     useEffect(() => {
@@ -389,11 +400,13 @@ export default function DeclarationIsi() {
     }, [valSelectedCompte]);
 
     useEffect(() => {
-        getHistoriqueIsi();
+        if (canView) {
+            getHistoriqueIsi();
+        }
     }, [compteId, fileId, isHistoriqueRefreshed])
 
     return (
-        <Box>
+        <>
             {
                 noFile
                     ?
@@ -404,7 +417,7 @@ export default function DeclarationIsi() {
                     null
             }
             {
-                showPopupExportIsi ?
+                showPopupExportIsi && canView ?
                     <PopupExportIsi
                         open={showPopupExportIsi}
                         onClose={handleClosePopupExportIsi}
@@ -416,222 +429,237 @@ export default function DeclarationIsi() {
                         setHistoriqueIsi={setHistoriqueIsi}
                         historiqueIsi={historiqueIsi}
                         handleRefresheHistorique={handleRefresheHistorique}
+                        canDelete={canDelete}
                     />
                     :
                     null
             }
-            <TabContext value={"1"} >
-                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                    <TabList aria-label="lab API tabs example">
-                        <Tab
-                            style={{
-                                textTransform: 'none',
-                                outline: 'none',
-                                border: 'none',
-                                margin: -5
-                            }}
-                            label={InfoFileStyle(fileInfos?.dossier)} value="1"
-                        />
-                    </TabList>
-                </Box>
-                <TabPanel value="1" style={{ height: '100%' }}>
-                    <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
-                        <Typography variant='h6' sx={{ color: "black" }} align='left'>{"Déclaration - ISI"}</Typography>
-                        <Stack width={"100%"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"column"} style={{ marginLeft: "0px", marginTop: "20px" }}>
-                            <Stack
-                                direction={"row"}
-                            >
-                                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                                    <InputLabel id="demo-simple-select-standard-label">Exercice:</InputLabel>
-                                    <Select
-                                        labelId="demo-simple-select-standard-label"
-                                        id="demo-simple-select-standard"
-                                        value={selectedExerciceId}
-                                        label={"valSelect"}
-                                        onChange={(e) => handleChangeExercice(e.target.value)}
-                                        sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                        MenuProps={{
-                                            disableScrollLock: true
-                                        }}
-                                    >
-                                        {listeExercice.map((option) => (
-                                            <MenuItem
-                                                key={option.id}
-                                                value={option.id}
-                                            >{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                                        ))
-                                        }
-                                    </Select>
-                                </FormControl>
+            <Box>
+                <TabContext value={"1"} >
+                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                        <TabList aria-label="lab API tabs example">
+                            <Tab
+                                style={{
+                                    textTransform: 'none',
+                                    outline: 'none',
+                                    border: 'none',
+                                    margin: -5
+                                }}
+                                label={InfoFileStyle(fileInfos?.dossier)} value="1"
+                            />
+                        </TabList>
+                    </Box>
+                    <TabPanel value="1" style={{ height: '100%' }}>
+                        <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
+                            <Typography variant='h6' sx={{ color: "black" }} align='left'>{"Déclaration - ISI"}</Typography>
+                            <Stack width={"100%"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"column"} style={{ marginLeft: "0px", marginTop: "20px" }}>
+                                <Stack
+                                    direction={"row"}
+                                >
+                                    <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
+                                        <InputLabel id="demo-simple-select-standard-label">Exercice:</InputLabel>
+                                        <Select
+                                            labelId="demo-simple-select-standard-label"
+                                            id="demo-simple-select-standard"
+                                            value={selectedExerciceId}
+                                            label={"valSelect"}
+                                            onChange={(e) => handleChangeExercice(e.target.value)}
+                                            sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                            MenuProps={{
+                                                disableScrollLock: true
+                                            }}
+                                        >
+                                            {listeExercice.map((option) => (
+                                                <MenuItem
+                                                    key={option.id}
+                                                    value={option.id}
+                                                >{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
+                                            ))
+                                            }
+                                        </Select>
+                                    </FormControl>
 
-                                <FormControl variant="standard" sx={{ m: 1, minWidth: 150 }}>
-                                    <InputLabel id="demo-simple-select-standard-label">Période</InputLabel>
-                                    <Select
-                                        disabled
-                                        labelId="demo-simple-select-standard-label"
-                                        id="demo-simple-select-standard"
-                                        value={selectedPeriodeChoiceId}
-                                        label={"valSelect"}
-                                        onChange={(e) => handleChangePeriode(e.target.value)}
-                                        sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                        MenuProps={{
-                                            disableScrollLock: true
-                                        }}
-                                    >
-                                        <MenuItem value={0}>Toutes</MenuItem>
-                                        <MenuItem value={1}>Situations</MenuItem>
-                                    </Select>
-                                </FormControl>
+                                    <FormControl variant="standard" sx={{ m: 1, minWidth: 150 }}>
+                                        <InputLabel id="demo-simple-select-standard-label">Période</InputLabel>
+                                        <Select
+                                            disabled
+                                            labelId="demo-simple-select-standard-label"
+                                            id="demo-simple-select-standard"
+                                            value={selectedPeriodeChoiceId}
+                                            label={"valSelect"}
+                                            onChange={(e) => handleChangePeriode(e.target.value)}
+                                            sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                            MenuProps={{
+                                                disableScrollLock: true
+                                            }}
+                                        >
+                                            <MenuItem value={0}>Toutes</MenuItem>
+                                            <MenuItem value={1}>Situations</MenuItem>
+                                        </Select>
+                                    </FormControl>
 
-                                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                                    <InputLabel id="demo-simple-select-standard-label">Du</InputLabel>
-                                    <Select
-                                        labelId="demo-simple-select-standard-label"
-                                        id="demo-simple-select-standard"
-                                        value={selectedPeriodeId}
-                                        label={"valSelect"}
-                                        onChange={(e) => handleChangeDateIntervalle(e.target.value)}
-                                        sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                        MenuProps={{
-                                            disableScrollLock: true
-                                        }}
-                                    >
-                                        {listeSituation?.map((option) => (
-                                            <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                                        ))
-                                        }
-                                    </Select>
-                                </FormControl>
+                                    <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
+                                        <InputLabel id="demo-simple-select-standard-label">Du</InputLabel>
+                                        <Select
+                                            labelId="demo-simple-select-standard-label"
+                                            id="demo-simple-select-standard"
+                                            value={selectedPeriodeId}
+                                            label={"valSelect"}
+                                            onChange={(e) => handleChangeDateIntervalle(e.target.value)}
+                                            sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                            MenuProps={{
+                                                disableScrollLock: true
+                                            }}
+                                        >
+                                            {listeSituation?.map((option) => (
+                                                <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
+                                            ))
+                                            }
+                                        </Select>
+                                    </FormControl>
+                                </Stack>
                             </Stack>
-                        </Stack>
 
-                        <Stack width={"100%"} spacing={4} direction={"row"} alignItems={"left"} justifyContent={'space-between'} alignContent={"center"} style={{ marginLeft: "0px" }}>
-                            <Stack
-                                direction={"row"}
-                            >
-                                <FormControl variant="standard" sx={{ minWidth: 130, m: 1 }}>
-                                    <InputLabel>Mois</InputLabel>
-                                    <Select
-                                        value={valSelectMois}
-                                        onChange={handleChangeMois}
-                                        MenuProps={{
-                                            disableScrollLock: true
-                                        }}
-                                    >
-                                        <MenuItem value={1}>Janvier</MenuItem>
-                                        <MenuItem value={2}>Février</MenuItem>
-                                        <MenuItem value={3}>Mars</MenuItem>
-                                        <MenuItem value={4}>Avril</MenuItem>
-                                        <MenuItem value={5}>Mai</MenuItem>
-                                        <MenuItem value={6}>Juin</MenuItem>
-                                        <MenuItem value={7}>Juillet</MenuItem>
-                                        <MenuItem value={8}>Août</MenuItem>
-                                        <MenuItem value={9}>Septembre</MenuItem>
-                                        <MenuItem value={10}>Octobre</MenuItem>
-                                        <MenuItem value={11}>Novembre</MenuItem>
-                                        <MenuItem value={12}>Décembre</MenuItem>
-                                    </Select>
-                                </FormControl>
+                            <Stack width={"100%"} spacing={4} direction={"row"} alignItems={"left"} justifyContent={'space-between'} alignContent={"center"} style={{ marginLeft: "0px" }}>
+                                <Stack
+                                    direction={"row"}
+                                >
+                                    <FormControl variant="standard" sx={{ minWidth: 130, m: 1 }}>
+                                        <InputLabel>Mois</InputLabel>
+                                        <Select
+                                            value={valSelectMois}
+                                            onChange={handleChangeMois}
+                                            MenuProps={{
+                                                disableScrollLock: true
+                                            }}
+                                        >
+                                            <MenuItem value={1}>Janvier</MenuItem>
+                                            <MenuItem value={2}>Février</MenuItem>
+                                            <MenuItem value={3}>Mars</MenuItem>
+                                            <MenuItem value={4}>Avril</MenuItem>
+                                            <MenuItem value={5}>Mai</MenuItem>
+                                            <MenuItem value={6}>Juin</MenuItem>
+                                            <MenuItem value={7}>Juillet</MenuItem>
+                                            <MenuItem value={8}>Août</MenuItem>
+                                            <MenuItem value={9}>Septembre</MenuItem>
+                                            <MenuItem value={10}>Octobre</MenuItem>
+                                            <MenuItem value={11}>Novembre</MenuItem>
+                                            <MenuItem value={12}>Décembre</MenuItem>
+                                        </Select>
+                                    </FormControl>
 
-                                <FormControl variant="standard" sx={{ minWidth: 130, m: 1 }} >
-                                    <InputLabel>Année</InputLabel>
-                                    <Select
-                                        value={valSelectAnnee}
-                                        onChange={(e) => setValSelectAnnee(e.target.value)}
-                                        name="valSelectAnnee"
-                                        MenuProps={{
-                                            disableScrollLock: true
-                                        }}
-                                    >
-                                        {listeAnnee.map((year, index) => (
-                                            <MenuItem key={index} value={year}>
-                                                {year}
-                                            </MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
+                                    <FormControl variant="standard" sx={{ minWidth: 130, m: 1 }} >
+                                        <InputLabel>Année</InputLabel>
+                                        <Select
+                                            value={valSelectAnnee}
+                                            onChange={(e) => setValSelectAnnee(e.target.value)}
+                                            name="valSelectAnnee"
+                                            MenuProps={{
+                                                disableScrollLock: true
+                                            }}
+                                        >
+                                            {listeAnnee.map((year, index) => (
+                                                <MenuItem key={index} value={year}>
+                                                    {year}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                </Stack>
                             </Stack>
+
+                            <Box sx={{ width: '100%', typography: 'body1' }}>
+                                <TabContext value={tabValue}>
+                                    <Box sx={{
+                                        borderBottom: 1,
+                                        borderColor: 'transparent',
+                                    }}>
+                                        <TabList onChange={handleChangeTAB} aria-label="lab API tabs example" variant='scrollable'>
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Annexe déclarations" value="1" />
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Détails" value="2" />
+                                        </TabList>
+                                    </Box>
+
+                                    <TabPanel value="1">
+                                        <DatagridAnnexeDeclaration
+                                            DATAGRID_HEIGHT={DATAGRID_HEIGHT}
+                                            listAnnexeDeclaration={listAnnexeDeclaration}
+                                            setIsAnnexeRefreshed={() => setIsAnnexeRefreshed(!isAnnexeRefreshed)}
+                                            selectedExerciceId={selectedExerciceId}
+                                            compteId={compteId}
+                                            fileId={fileId}
+                                            valSelectMois={valSelectMois}
+                                            valSelectAnnee={valSelectAnnee}
+                                            compteisi={compteisi}
+                                            handleOpenPopupExportIsi={handleOpenPopupExportIsi}
+                                            canView={canView}
+                                            canAdd={canAdd}
+                                            canDelete={canDelete}
+                                            canModify={canModify}
+                                        />
+                                    </TabPanel>
+
+                                    <TabPanel value="2">
+                                        <TabContext value={tabValueDetail}>
+                                            <Box sx={{
+                                                borderBottom: 1,
+                                                borderColor: 'transparent'
+                                            }}>
+                                                <TabList onChange={handleChangeTABDetail} aria-label="lab API tabs example" variant='scrollable'>
+                                                    <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Sélection de ligne" value="1" />
+                                                    <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Ecritures associées" value="2" />
+                                                </TabList>
+                                            </Box>
+                                            <TabPanel value="1">
+                                                <DatagridDetailSelectionLigne
+                                                    DATAGRID_HEIGHT={DATAGRID_HEIGHT}
+                                                    selectedExerciceId={selectedExerciceId}
+                                                    compteId={compteId}
+                                                    fileId={fileId}
+                                                    valSelectMois={valSelectMois}
+                                                    valSelectAnnee={valSelectAnnee}
+                                                    compteisi={compteisi}
+                                                    valSelectedCompte={valSelectedCompte}
+                                                    setValSelectedCompte={setValSelectedCompte}
+                                                    setIsDetailSelectionRefreshed={setIsDetailSelectionRefreshed}
+                                                    setIsDetailEcritureRefreshed={setIsDetailEcritureRefreshed}
+                                                    listDetailSelection={listDetailSelection}
+                                                    listePlanComptable={listePlanComptable}
+                                                    filteredList={filteredList}
+                                                    canView={canView}
+                                                    canAdd={canAdd}
+                                                    canDelete={canDelete}
+                                                    canModify={canModify}
+                                                />
+                                            </TabPanel>
+                                            <TabPanel value="2">
+                                                <DatagridDetailEcritureAssocie
+                                                    valSelectMois={valSelectMois}
+                                                    valSelectAnnee={valSelectAnnee}
+                                                    DATAGRID_HEIGHT={DATAGRID_HEIGHT}
+                                                    selectedExerciceId={selectedExerciceId}
+                                                    compteId={compteId}
+                                                    fileId={fileId}
+                                                    compteisi={compteisi}
+                                                    listDetailEcriture={listDetailEcriture}
+                                                    setIsDetailEcritureRefreshed={setIsDetailEcritureRefreshed}
+                                                    setIsDetailSelectionRefreshed={setIsDetailSelectionRefreshed}
+                                                    setIsAnnexeRefreshed={setIsAnnexeRefreshed}
+                                                    canView={canView}
+                                                    canAdd={canAdd}
+                                                    canDelete={canDelete}
+                                                    canModify={canModify}
+                                                />
+                                            </TabPanel>
+                                        </TabContext>
+                                    </TabPanel>
+
+                                </TabContext>
+                            </Box>
                         </Stack>
-
-                        <Box sx={{ width: '100%', typography: 'body1' }}>
-                            <TabContext value={tabValue}>
-                                <Box sx={{
-                                    borderBottom: 1,
-                                    borderColor: 'transparent',
-                                }}>
-                                    <TabList onChange={handleChangeTAB} aria-label="lab API tabs example" variant='scrollable'>
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Annexe déclarations" value="1" />
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Détails" value="2" />
-                                    </TabList>
-                                </Box>
-
-                                <TabPanel value="1">
-                                    <DatagridAnnexeDeclaration
-                                        DATAGRID_HEIGHT={DATAGRID_HEIGHT}
-                                        listAnnexeDeclaration={listAnnexeDeclaration}
-                                        setIsAnnexeRefreshed={() => setIsAnnexeRefreshed(!isAnnexeRefreshed)}
-                                        selectedExerciceId={selectedExerciceId}
-                                        compteId={compteId}
-                                        fileId={fileId}
-                                        valSelectMois={valSelectMois}
-                                        valSelectAnnee={valSelectAnnee}
-                                        compteisi={compteisi}
-                                        handleOpenPopupExportIsi={handleOpenPopupExportIsi}
-                                    />
-                                </TabPanel>
-
-                                <TabPanel value="2">
-                                    <TabContext value={tabValueDetail}>
-                                        <Box sx={{
-                                            borderBottom: 1,
-                                            borderColor: 'transparent'
-                                        }}>
-                                            <TabList onChange={handleChangeTABDetail} aria-label="lab API tabs example" variant='scrollable'>
-                                                <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Sélection de ligne" value="1" />
-                                                <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Ecritures associées" value="2" />
-                                            </TabList>
-                                        </Box>
-                                        <TabPanel value="1">
-                                            <DatagridDetailSelectionLigne
-                                                DATAGRID_HEIGHT={DATAGRID_HEIGHT}
-                                                selectedExerciceId={selectedExerciceId}
-                                                compteId={compteId}
-                                                fileId={fileId}
-                                                valSelectMois={valSelectMois}
-                                                valSelectAnnee={valSelectAnnee}
-                                                compteisi={compteisi}
-                                                valSelectedCompte={valSelectedCompte}
-                                                setValSelectedCompte={setValSelectedCompte}
-                                                setIsDetailSelectionRefreshed={setIsDetailSelectionRefreshed}
-                                                setIsDetailEcritureRefreshed={setIsDetailEcritureRefreshed}
-                                                listDetailSelection={listDetailSelection}
-                                                listePlanComptable={listePlanComptable}
-                                                filteredList={filteredList}
-                                            />
-                                        </TabPanel>
-                                        <TabPanel value="2">
-                                            <DatagridDetailEcritureAssocie
-                                                valSelectMois={valSelectMois}
-                                                valSelectAnnee={valSelectAnnee}
-                                                DATAGRID_HEIGHT={DATAGRID_HEIGHT}
-                                                selectedExerciceId={selectedExerciceId}
-                                                compteId={compteId}
-                                                fileId={fileId}
-                                                compteisi={compteisi}
-                                                listDetailEcriture={listDetailEcriture}
-                                                setIsDetailEcritureRefreshed={setIsDetailEcritureRefreshed}
-                                                setIsDetailSelectionRefreshed={setIsDetailSelectionRefreshed}
-                                                setIsAnnexeRefreshed={setIsAnnexeRefreshed}
-                                            />
-                                        </TabPanel>
-                                    </TabContext>
-                                </TabPanel>
-
-                            </TabContext>
-                        </Box>
-                    </Stack>
-                </TabPanel>
-            </TabContext>
-        </Box>
+                    </TabPanel>
+                </TabContext>
+            </Box>
+        </>
     )
 }

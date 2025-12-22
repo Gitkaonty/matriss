@@ -52,6 +52,9 @@ import { AiTwotoneFileText } from 'react-icons/ai';
 import EditTvaAnnexeDialog from '../../../componentsTools/tva/dialogs/EditTvaAnnexeDialog';
 import ExportTvaDialog from './ExportTvaDialog';
 import { CiLock, CiUnlock } from 'react-icons/ci';
+import usePermission from '../../../../hooks/usePermission';
+import useAxiosPrivate from '../../../../../config/axiosPrivate';
+
 // ============================================================
 // 🔹 Colonnes pour le tableau Annexes déclarations
 // ============================================================
@@ -80,6 +83,8 @@ const annexesColumns = [
 ];
 
 export default function ParamTVAComponent() {
+  const { canAdd, canModify, canDelete, canView } = usePermission();
+  const axiosPrivate = useAxiosPrivate();
   let initial = init[0];
   // ============================================================
   // 🔹 Colonnes pour le tableau Annexes déclarations
@@ -473,80 +478,80 @@ export default function ParamTVAComponent() {
    * Récupère la liste des annexes TVA pour le contexte courant.
    * GET /declaration/tva/annexes
    */
-const fetchAnnexes = async () => {
-  try {
-    if (!fileId || !compteId || !selectedExerciceId || !valSelectMois || !valSelectAnnee) {
-      setAnnexesRows([]);
-      return;
-    }
+  const fetchAnnexes = async () => {
+    try {
+      if (!fileId || !compteId || !selectedExerciceId || !valSelectMois || !valSelectAnnee) {
+        setAnnexesRows([]);
+        return;
+      }
 
-    const params = {
-      id_dossier: fileId,
-      id_compte: compteId,
-      id_exercice: selectedExerciceId,
-      mois: valSelectMois,
-      annee: valSelectAnnee,
-    };
+      const params = {
+        id_dossier: fileId,
+        id_compte: compteId,
+        id_exercice: selectedExerciceId,
+        mois: valSelectMois,
+        annee: valSelectAnnee,
+      };
 
-    const { data } = await axios.get('/declaration/tva/annexes', { 
-      params,
-      timeout: 60000 
-    });
+      const { data } = await axios.get('/declaration/tva/annexes', {
+        params,
+        timeout: 60000
+      });
 
-    if (data?.state) {
-      const updatedRows = Array.isArray(data.list) ? data.list : (data.list ? [data.list] : []);
-      
-      setAnnexesRows(prevRows => {
-        // Créer une map des lignes existantes pour un accès rapide
-        const existingRowsMap = new Map(prevRows.map(row => [row.id, row]));
-        
-        return updatedRows.map(row => {
-          const existingRow = existingRowsMap.get(row.id);
-          
-          // Si la ligne existe déjà, conserver son état d'anomalie et son commentaire
-          if (existingRow) {
+      if (data?.state) {
+        const updatedRows = Array.isArray(data.list) ? data.list : (data.list ? [data.list] : []);
+
+        setAnnexesRows(prevRows => {
+          // Créer une map des lignes existantes pour un accès rapide
+          const existingRowsMap = new Map(prevRows.map(row => [row.id, row]));
+
+          return updatedRows.map(row => {
+            const existingRow = existingRowsMap.get(row.id);
+
+            // Si la ligne existe déjà, conserver son état d'anomalie et son commentaire
+            if (existingRow) {
+              return {
+                ...row,
+                anomalies: existingRow.anomalies || row.anomalies || false,
+                commentaire: existingRow.commentaire || row.commentaire || ''
+              };
+            }
+
+            // Pour les nouvelles lignes, calculer les anomalies si nécessaire
+            const isEmpty = (v) => {
+              if (v === null || v === undefined) return true;
+              const s = String(v).trim();
+              if (s === '') return true;
+              const low = s.toLowerCase();
+              return low === 'n/a' || low === 'na' || low === 'null' || low === 'undefined' || low === '-' || low === '0';
+            };
+
+            const notes = [];
+            if (isEmpty(row?.nif)) notes.push('NIF vide');
+            if (isEmpty(row?.stat)) notes.push('STAT vide');
+            if (isEmpty(row?.raison_sociale)) notes.push('Raison sociale vide');
+            if (isEmpty(row?.adresse)) notes.push('Adresse vide');
+            if (isEmpty(row?.reference_facture)) notes.push('Référence facture vide');
+            if (isEmpty(row?.date_facture)) notes.push('Date facture vide');
+
             return {
               ...row,
-              anomalies: existingRow.anomalies || row.anomalies || false,
-              commentaire: existingRow.commentaire || row.commentaire || ''
+              anomalies: notes.length > 0,
+              commentaire: notes.join(', ')
             };
-          }
-          
-          // Pour les nouvelles lignes, calculer les anomalies si nécessaire
-          const isEmpty = (v) => {
-            if (v === null || v === undefined) return true;
-            const s = String(v).trim();
-            if (s === '') return true;
-            const low = s.toLowerCase();
-            return low === 'n/a' || low === 'na' || low === 'null' || low === 'undefined' || low === '-' || low === '0';
-          };
-          
-          const notes = [];
-          if (isEmpty(row?.nif)) notes.push('NIF vide');
-          if (isEmpty(row?.stat)) notes.push('STAT vide');
-          if (isEmpty(row?.raison_sociale)) notes.push('Raison sociale vide');
-          if (isEmpty(row?.adresse)) notes.push('Adresse vide');
-          if (isEmpty(row?.reference_facture)) notes.push('Référence facture vide');
-          if (isEmpty(row?.date_facture)) notes.push('Date facture vide');
-          
-          return {
-            ...row,
-            anomalies: notes.length > 0,
-            commentaire: notes.join(', ')
-          };
+          });
         });
-      });
-    } else {
-      setAnnexesRows([]);
-      if (data?.msg) {
-        toast.error(data.msg);
+      } else {
+        setAnnexesRows([]);
+        if (data?.msg) {
+          toast.error(data.msg);
+        }
       }
+    } catch (e) {
+      console.error('[Annexes] fetch error', e);
+      // toast.error("Erreur lors du chargement des annexes");
     }
-  } catch (e) {
-    console.error('[Annexes] fetch error', e);
-    // toast.error("Erreur lors du chargement des annexes");
-  }
-};
+  };
 
   /**
    * Génère les annexes TVA automatiquement.
@@ -565,7 +570,7 @@ const fetchAnnexes = async () => {
         mois: valSelectMois,
         annee: valSelectAnnee,
       };
-      const { data } = await axios.post("/declaration/tva/generateAnnexeDeclarationAuto", payload, { timeout: 120000 });
+      const { data } = await axiosPrivate.post("/declaration/tva/generateAnnexeDeclarationAuto", payload, { timeout: 120000 });
       if (data?.state) {
         toast.success(data?.msg || "Annexes générées avec succès");
         fetchAnnexes(); // Recharger les données
@@ -1367,7 +1372,7 @@ const fetchAnnexes = async () => {
     if (value === true) {
       if (selectedRowId.length === 1) {
         const idToDelete = selectedRowId[0];
-        axios.post(`/paramTva/paramTvaDelete`, { fileId, compteId, idToDelete }).then((response) => {
+        axiosPrivate.post(`/paramTva/paramTvaDelete`, { fileId, compteId, idToDelete }).then((response) => {
           const resData = response.data;
           if (resData.state) {
             setOpenDialogDeleteRow(false);
@@ -1407,7 +1412,7 @@ const fetchAnnexes = async () => {
   return (
     <Paper sx={{ p: 2 }}>
       {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
-      {openDialogDeleteRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer le code journal sélectionné ?"} confirmationState={deleteRow} /> : null}
+      {(openDialogDeleteRow && canDelete) ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer le code journal sélectionné ?"} confirmationState={deleteRow} /> : null}
       <Stack width="100%" spacing={2}>
         <TabContext value={"1"}>
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -1769,6 +1774,7 @@ const fetchAnnexes = async () => {
               {!verrTva && (
                 <Tooltip title="Actualiser les calculs">
                   <IconButton
+                    disabled={!canAdd}
                     onClick={openConfirmRefreshTva}
                     variant="contained"
                     style={{
@@ -1810,6 +1816,7 @@ const fetchAnnexes = async () => {
             computeTrigger={computeTrigger}
             refreshCounter={refreshCounter}
             onAnomaliesChange={setDbAnomaliesRows}
+            canView={canView}
           />
         </TabPanel>
 
@@ -1833,6 +1840,10 @@ const fetchAnnexes = async () => {
             onGenerate={handleGenerateAnnexes}
             onEditRow={handleOpenEditAnnexe}
             onDeleteRow={openConfirmDeleteAnnexe}
+            canView={canView}
+            canAdd={canAdd}
+            canDelete={canDelete}
+            canModify={canModify}
           />
         </TabPanel>
         {/* Dialog Ajouter Annexe */}
@@ -1886,6 +1897,10 @@ const fetchAnnexes = async () => {
                 setJournalLoading={setJournalLoading}
                 filteredList={filteredList}
                 setFilteredList={setFilteredList}
+                canView={canView}
+                canAdd={canAdd}
+                canDelete={canDelete}
+                canModify={canModify}
               />
             </TabPanel>
 
@@ -1896,6 +1911,10 @@ const fetchAnnexes = async () => {
                 compteId={compteId}
                 valSelectAnnee={valSelectAnnee}
                 valSelectMois={valSelectMois}
+                canView={canView}
+                canAdd={canAdd}
+                canDelete={canDelete}
+                canModify={canModify}
               />
             </TabPanel>
           </TabContext>

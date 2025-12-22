@@ -15,7 +15,7 @@ import { IoMdTrash } from "react-icons/io";
 import { ExpandMore, ExpandLess } from '@mui/icons-material';
 import { TiWarning } from "react-icons/ti";
 
-const VirtualTableDroitComm = ({ columns, nature, deleteState, modifyState, rows, verrouillage }) => {
+const VirtualTableDroitComm = ({ columns, nature, deleteState, modifyState, rows, verrouillage, canModify, canDelete }) => {
     const [openRows, setOpenRows] = useState({});
 
     const handleRowDeleteClick = (row, type) => {
@@ -24,7 +24,7 @@ const VirtualTableDroitComm = ({ columns, nature, deleteState, modifyState, rows
     }
 
     const handleRowModifClick = (row) => {
-        modifyState(row);
+        modifyState(row, nature);
     }
 
     const toggleRow = (compte) => setOpenRows(prev => ({ ...prev, [compte]: !prev[compte] }));
@@ -42,8 +42,33 @@ const VirtualTableDroitComm = ({ columns, nature, deleteState, modifyState, rows
         }, 0);
     };
 
+    const excludedColumnIds = new Set([
+        'compte',
+        'nif',
+        'nif_representaires',
+        'num_stat',
+        'cin',
+        'date_cin',
+        'lieu_cin',
+        'nature_autres',
+        'reference',
+        'raison_sociale',
+        'adresse',
+        'ville',
+        'ex_province',
+        'pays',
+        'nature',
+        'type',
+        'typeTier',
+        'nom',
+        'prenom',
+        'nom_commercial',
+        'fokontany',
+        'mode_payement',
+    ]);
+
     const groupedData = nature === 'PLP'
-        ? {}
+        ? rows
         : rows.reduce((acc, row) => {
             if (!acc[row.compte]) {
                 acc[row.compte] = {
@@ -253,6 +278,7 @@ const VirtualTableDroitComm = ({ columns, nature, deleteState, modifyState, rows
                                             <TableCell align="center" style={{ paddingTop: '4px', paddingBottom: '4px', position: "sticky", top: 35 }}>
                                                 <Stack direction="row" spacing={1} justifyContent="center" alignItems="center">
                                                     <IconButton
+                                                        disabled={!canModify}
                                                         onClick={() => handleRowModifClick(group)}
                                                         sx={{ p: 0, border: 'none', outline: 'none', '&:focus': { outline: 'none', boxShadow: 'none' } }}
                                                         disableFocusRipple
@@ -260,6 +286,7 @@ const VirtualTableDroitComm = ({ columns, nature, deleteState, modifyState, rows
                                                         <IoMdCreate style={{ width: '22px', height: '22px', color: initial.theme }} />
                                                     </IconButton>
                                                     <IconButton
+                                                        disabled={!canDelete}
                                                         onClick={() => handleRowDeleteClick(group, 'group')}
                                                         sx={{ p: 0, border: 'none', outline: 'none', '&:focus': { outline: 'none', boxShadow: 'none' } }}
                                                         disableFocusRipple
@@ -292,7 +319,7 @@ const VirtualTableDroitComm = ({ columns, nature, deleteState, modifyState, rows
                                             if (column.isnumber && (value === null || value === undefined)) {
                                                 value = 0;
                                             }
-                                            if (['compte', 'comptabilisees', 'versees', 'montanth_tva', 'tva'].includes(column.id)) {
+                                            if (['compte', 'comptabilisees', 'versees', 'montanth_tva', 'tva', 'nif', 'nif_representaires', 'num_stat', 'cin', 'date_cin', 'lieu_cin', 'nature_autres', 'reference', 'raison_sociale', 'adresse', 'ville', 'ex_province', 'pays', 'nature', 'type', 'typeTier', 'nom', 'prenom', 'nom_commercial', 'fokontany', 'mode_payement'].includes(column.id)) {
                                                 return (
                                                     <TableCell key={column.id} align={column.align} style={{ paddingTop: '4px', paddingBottom: '4px', fontSize: '13px', position: "sticky", top: 35 }}>
                                                         {column.renderCell
@@ -321,6 +348,7 @@ const VirtualTableDroitComm = ({ columns, nature, deleteState, modifyState, rows
                                                         >
                                                         </Stack>
                                                         <IconButton
+                                                            disabled={!canDelete}
                                                             onClick={() => handleRowDeleteClick(row, 'row')}
                                                             sx={{ p: 0, border: 'none', outline: 'none', '&:focus': { outline: 'none', boxShadow: 'none' } }}
                                                             disableFocusRipple
@@ -335,8 +363,15 @@ const VirtualTableDroitComm = ({ columns, nature, deleteState, modifyState, rows
                                             {columns
                                                 .filter(column => column.id !== 'compte')
                                                 .map((column) => {
-                                                    if (!column.id) return null;
+                                                    if (!column.id) {
+                                                        return null;
+                                                    }
+
                                                     let value = row[column.id];
+
+                                                    if (excludedColumnIds.has(column.id)) {
+                                                        value = "";
+                                                    }
 
                                                     if (column.isnumber && (value === null || value === undefined)) {
                                                         value = 0;
@@ -350,14 +385,13 @@ const VirtualTableDroitComm = ({ columns, nature, deleteState, modifyState, rows
                                                         >
                                                             {column.renderCell
                                                                 ? column.renderCell(value, row)
-                                                                : column.format && value !== null && value !== undefined
-                                                                    ? typeof value === 'number'
-                                                                        ? column.format(value)
-                                                                        : format(value, "dd/MM/yyyy")
+                                                                : column.format && value
+                                                                    ? column.format(value)
                                                                     : value}
                                                         </TableCell>
-                                                    )
+                                                    );
                                                 })}
+
                                         </TableRow>
                                     ))}
 

@@ -1,10 +1,5 @@
 require('dotenv').config();
-const bcrypt = require("bcrypt");
 const db = require("../../../Models");
-const { Op } = require('sequelize');
-
-const Sequelize = require('sequelize');
-const fs = require('fs');
 
 const userscomptes = db.userscomptes;
 const abonnements = db.abonnements;

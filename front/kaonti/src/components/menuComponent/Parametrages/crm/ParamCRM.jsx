@@ -1,9 +1,6 @@
-import { React, useState, useEffect } from 'react';
-// Ajout de l'état pour le type de centre fiscal
-// (à placer au début du composant ParamCRM)
-
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Typography, Stack, Paper, TextField, FormControl, InputLabel, Select, MenuItem, Tooltip, Button, IconButton, FormHelperText, Input, Autocomplete } from '@mui/material';
+import { Typography, Stack, TextField, FormControl, InputLabel, Select, MenuItem, Tooltip, Button, IconButton, FormHelperText, Input, Autocomplete, Checkbox, RadioGroup, Radio } from '@mui/material';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
 import TabContext from '@mui/lab/TabContext';
@@ -17,8 +14,6 @@ import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import useAuth from '../../../../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
-import { styled } from '@mui/material/styles';
-import Dialog from '@mui/material/Dialog';
 import axios from '../../../../../config/axios';
 import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFile';
 import toast from 'react-hot-toast';
@@ -37,12 +32,24 @@ import PopupConfirmDelete from '../../../componentsTools/popupConfirmDelete';
 import { TfiSave } from "react-icons/tfi";
 import { DataGridStyle } from '../../../componentsTools/DatagridToolsStyle';
 import QuickFilter from '../../../componentsTools/DatagridToolsStyle';
-import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes } from '@mui/x-data-grid';
+import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes, useGridApiRef } from '@mui/x-data-grid';
 import { TbPlaylistAdd } from 'react-icons/tb';
 import { IoMdTrash } from 'react-icons/io';
 import MontantCapitalField from '../../home/Field/MontantCapitalField';
 
+import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
+import CheckBoxIcon from '@mui/icons-material/CheckBox';
+
+import usePermission from '../../../../hooks/usePermission';
+import useAxiosPrivate from '../../../../../config/axiosPrivate';
+
+const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
+const checkedIcon = <CheckBoxIcon fontSize="small" />;
+
 export default function ParamCRM() {
+    const apiRef = useGridApiRef();
+    const { canAdd, canModify, canDelete, canView } = usePermission();
+    const axiosPrivate = useAxiosPrivate();
     // État pour le type de centre fiscal (DGE ou centre fiscale)
     const [typeCentre, setTypeCentre] = useState('DGE');
     //Choix TAB value-------------------------------------------------------------------------------------
@@ -69,12 +76,35 @@ export default function ParamCRM() {
     const [disableDeleteBouton, setDisableDeleteBouton] = useState(true);
     const [disableAddRowBouton, setDisableAddRowBouton] = useState(false);
 
+    const [listeDossier, setListeDossier] = useState([]);
+    const [listConsolidation, setListConsolidation] = useState([]);
+
+    const selectedDossierIds = listConsolidation
+        .map(val => Number(val.id_dossier_autre))
+        .filter(Boolean);
+
+    const availableDossier = listeDossier.filter(d =>
+        !selectedDossierIds.includes(Number(d.id)) && (Number(d.id) !== Number(id))
+    );
+
+    const [selectedRowIdConsolidation, setSelectedRowIdConsolidation] = useState([]);
+    const [rowModesModelConsolidation, setRowModesModelConsolidation] = useState({});
+    const [disableModifyBoutonConsolidation, setDisableModifyBoutonConsolidation] = useState(true);
+    const [disableCancelBoutonConsolidation, setDisableCancelBoutonConsolidation] = useState(true);
+    const [disableSaveBoutonConsolidation, setDisableSaveBoutonConsolidation] = useState(true);
+    const [disableDeleteBoutonConsolidation, setDisableDeleteBoutonConsolidation] = useState(true);
+    const [disableAddRowBoutonConsolidation, setDisableAddRowBoutonConsolidation] = useState(false);
+    const [editableRowConsolidation, setEditableRowConsolidation] = useState(true);
+    const [openDialogDeleteConsolidationRow, setOpenDialogDeleteConsolidationRow] = useState(false);
+    const [selectedRowConsolidations, setSelectedRowConsolidations] = useState([]);
+
+
     const [editableRow, setEditableRow] = useState(true);
     const [disableModifyBoutonDomBank, setDisableModifyBoutonDomBank] = useState(true);
     const [disableCancelBoutonDomBank, setDisableCancelBoutonDomBank] = useState(true);
     const [disableSaveBoutonDomBank, setDisableSaveBoutonDomBank] = useState(true);
     const [disableDeleteBoutonDomBank, setDisableDeleteBoutonDomBank] = useState(true);
-    
+
     const [openDialogDeleteAssocieRow, setOpenDialogDeleteAssocieRow] = useState(false);
 
     const [selectedRowIdFiliale, setSelectedRowIdFiliale] = useState([]);
@@ -85,6 +115,8 @@ export default function ParamCRM() {
     const [disableDeleteBoutonFiliale, setDisableDeleteBoutonFiliale] = useState(true);
     const [disableAddRowBoutonFiliale, setDisableAddRowBoutonFiliale] = useState(false);
 
+    const [listePortefeuille, setListePortefeuille] = useState([]);
+    const [listeDevise, setListeDevises] = useState([]);
 
     const [editableRowFiliale, setEditableRowFiliale] = useState(true);
     const [openDialogDeleteFilialeRow, setOpenDialogDeleteFilialeRow] = useState(false);
@@ -100,7 +132,6 @@ export default function ParamCRM() {
 
     const [crm, setCrm] = useState([]);
     const [selectedRowDomBank, setSelectedRowDomBank] = useState([]);
-    
 
     const [typeValidationColor, setTypeValidationColor] = useState('transparent');
     const [nomValidationColor, setNomValidationColor] = useState('transparent');
@@ -213,6 +244,14 @@ export default function ParamCRM() {
         });
     }
 
+    // Récupération de la liste des devises
+    const getDevises = async () => {
+        await axios.get(`/devises/devise/compte/${compteId}/${id}`).then((reponse => {
+            const resData = reponse.data;
+            setListeDevises(resData);
+        }))
+    }
+
     //useFormik pour le tableau des associers
     const useFormikAssocie = useFormik({
         initialValues: {
@@ -263,6 +302,18 @@ export default function ParamCRM() {
         validateOnBlur: true,
     });
 
+    //useFormik pour le tableau consolidation
+    const useFormikConsolidation = useFormik({
+        initialValues: {
+            idConsolidation: '',
+            idCompte: compteId,
+            idDossier: fileId,
+            idDossierAutre: ''
+        },
+        validateOnChange: false,
+        validateOnBlur: true,
+    })
+
     //Form pour l'enregistrement des données
     const InfosNewFileInitialValues = {
         action: 'new',
@@ -299,7 +350,12 @@ export default function ParamCRM() {
         listeAssocies: [],
         listeFiliales: [],
         listeDomBank: [],
-        compteisi: ''
+        compteisi: '',
+        portefeuille: [],
+        typecomptabilite: 'Français',
+        devisepardefaut: 0,
+        consolidation: false,
+        listeConsolidation: [],
     };
 
     const formInfosNewFileValidationSchema = Yup.object({
@@ -310,6 +366,9 @@ export default function ParamCRM() {
         longueurcptstd: Yup.number().moreThan(1, 'Taper une longueur de compte supérieur à 1'),
         longueurcptaux: Yup.number().moreThan(1, 'Taper une longueur de compte supérieur à 1'),
         tauxir: Yup.number().moreThan(0, 'Taper votre taux IR'),
+        portefeuille: Yup.array()
+            .required("Sélectionnez un portefeuille"),
+        typecomptabilite: Yup.string().required("Veuillez sélectioner le type de comptablilité"),
     });
 
     const sendToHome = (value) => {
@@ -716,14 +775,14 @@ export default function ParamCRM() {
             setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
             const associeId = Array.isArray(selectedRowId) ? selectedRowId[0] : selectedRowId;
             const payloadAssocie = {
-            ...useFormikAssocie.values,   // contient 'nombreparts'
-            idCompte: compteId,
-            idDossier: fileId,
-            idAssocie: associeId,
+                ...useFormikAssocie.values,   // contient 'nombreparts'
+                idCompte: compteId,
+                idDossier: fileId,
+                idAssocie: associeId,
             };
 
-            axios.post(`/paramCrm/associe`, payloadAssocie).then((response) => {
-            const resData = response.data;
+            axiosPrivate.post(`/paramCrm/associe`, payloadAssocie).then((response) => {
+                const resData = response.data;
                 if (resData.state) {
                     setDisableSaveBouton(true);
                     setDisableAddRowBouton(false);
@@ -756,7 +815,7 @@ export default function ParamCRM() {
                     setListAssocie(listAssocie.filter((row) => row.id !== idToDelete));
                     return;
                 }
-                axios.post(`/paramCrm/associeDelete`, { fileId, compteId, idToDelete }).then((response) => {
+                axiosPrivate.post(`/paramCrm/associeDelete`, { fileId, compteId, idToDelete }).then((response) => {
                     const resData = response.data;
                     if (resData.state) {
                         setOpenDialogDeleteAssocieRow(false);
@@ -1135,14 +1194,14 @@ export default function ParamCRM() {
             setRowModesModelFiliale({ ...rowModesModelFiliale, [selectedRowIdFiliale]: { mode: GridRowModes.View } });
             const filialeId = Array.isArray(selectedRowIdFiliale) ? selectedRowIdFiliale[0] : selectedRowIdFiliale;
             const payloadFiliale = {
-            ...useFormikFiliale.values,  // contient 'nombreparts'
-            idCompte: compteId,
-            idDossier: fileId,
-            idFiliale: filialeId,
+                ...useFormikFiliale.values,  // contient 'nombreparts'
+                idCompte: compteId,
+                idDossier: fileId,
+                idFiliale: filialeId,
             };
 
-            axios.post(`/paramCrm/filiale`, payloadFiliale).then((response) => {
-            const resData = response.data;
+            axiosPrivate.post(`/paramCrm/filiale`, payloadFiliale).then((response) => {
+                const resData = response.data;
 
                 if (resData.state) {
                     setDisableSaveBoutonFiliale(true);
@@ -1174,9 +1233,10 @@ export default function ParamCRM() {
                     setOpenDialogDeleteFilialeRow(false);
                     setListFiliales(listFiliales.filter((row) => row.id !== idToDelete));
                     setDisableAddRowBoutonFiliale(false);
+                    toast.success('Ligne supprimée avec succès');
                     return
                 }
-                axios.post(`/paramCrm/filialeDelete`, { fileId, compteId, idToDelete }).then((response) => {
+                axiosPrivate.post(`/paramCrm/filialeDelete`, { fileId, compteId, idToDelete }).then((response) => {
                     const resData = response.data;
                     if (resData.state) {
                         setOpenDialogDeleteFilialeRow(false);
@@ -1220,14 +1280,14 @@ export default function ParamCRM() {
             setDisableModifyBoutonFiliale(true);
             setDisableSaveBoutonFiliale(true);
             setDisableCancelBoutonFiliale(true);
-            toast.error("sélectionnez une seule ligne pour pouvoir la modifier");
+            toast.error("Sélectionnez une seule ligne pour pouvoir la modifier");
         } else {
             setDisableModifyBoutonFiliale(false);
             setDisableSaveBoutonFiliale(false);
             setDisableCancelBoutonFiliale(false);
             if (!selectedRowIdFiliale.includes(params.id)) {
                 setEditableRowFiliale(false);
-                toast.error("sélectionnez une ligne pour pouvoir la modifier");
+                toast.error("Sélectionnez une ligne pour pouvoir la modifier");
             } else {
                 setEditableRowFiliale(true);
             }
@@ -1503,35 +1563,34 @@ export default function ParamCRM() {
         }
     };
 
-const handleEditClickDomBank = (id) => () => {
-                //réinitialiser les couleurs des champs
-                setBankDomBankValidationColor('transparent');
-                setNumCompteDomBankValidationColor('transparent');
-                setDeviseDomBankValidationColor('transparent');
-                setPaysDomBankValidationColor('transparent');
-        
-                //charger dans le formik les données de la ligne
-                const selectedRowInfos = listDomBank?.filter((item) => item.id === id[0]);
-        
-                useFormikDomBank.setFieldValue("idCompte", compteId);
-                useFormikDomBank.setFieldValue("idDossier", fileId);
-                useFormikDomBank.setFieldValue("idDomBank", selectedRowInfos[0].id);
-                useFormikDomBank.setFieldValue("banque", selectedRowInfos[0].banque);
-                useFormikDomBank.setFieldValue("numcompte", selectedRowInfos[0].numcompte);
-                useFormikDomBank.setFieldValue("devise", selectedRowInfos[0].devise);
-                useFormikDomBank.setFieldValue("pays", selectedRowInfos[0].pays);
-                useFormikDomBank.setFieldValue("enactivite", selectedRowInfos[0].enactivite);
-        
-                setRowModesModelDomBank({ ...rowModesModelDomBank, [id]: { mode: GridRowModes.Edit } });
-                setDisableSaveBoutonDomBank(false);
+    const handleEditClickDomBank = (id) => () => {
+        //réinitialiser les couleurs des champs
+        setBankDomBankValidationColor('transparent');
+        setNumCompteDomBankValidationColor('transparent');
+        setDeviseDomBankValidationColor('transparent');
+        setPaysDomBankValidationColor('transparent');
+
+        //charger dans le formik les données de la ligne
+        const selectedRowInfos = listDomBank?.filter((item) => item.id === id[0]);
+
+        useFormikDomBank.setFieldValue("idCompte", compteId);
+        useFormikDomBank.setFieldValue("idDossier", fileId);
+        useFormikDomBank.setFieldValue("idDomBank", selectedRowInfos[0].id);
+        useFormikDomBank.setFieldValue("banque", selectedRowInfos[0].banque);
+        useFormikDomBank.setFieldValue("numcompte", selectedRowInfos[0].numcompte);
+        useFormikDomBank.setFieldValue("devise", selectedRowInfos[0].devise);
+        useFormikDomBank.setFieldValue("pays", selectedRowInfos[0].pays);
+        useFormikDomBank.setFieldValue("enactivite", selectedRowInfos[0].enactivite);
+
+        setRowModesModelDomBank({ ...rowModesModelDomBank, [id]: { mode: GridRowModes.Edit } });
+        setDisableSaveBoutonDomBank(false);
     };
-    
+
     const handleSaveClickDomBank = (id) => () => {
         let saveBoolbanque = false;
         let saveBoolNumCompte = false;
         let saveBoolDevise = false;
         let saveBoolPays = false;
-        console.log(useFormikDomBank.values);
 
         if (useFormikDomBank.values.banque === '') {
             setBankDomBankValidationColor('#F6D6D6');
@@ -1567,7 +1626,7 @@ const handleEditClickDomBank = (id) => () => {
 
         if (saveBoolbanque && saveBoolNumCompte && saveBoolDevise && saveBoolPays) {
             setRowModesModelDomBank({ ...rowModesModelDomBank, [selectedRowIdDomBank]: { mode: GridRowModes.View } });
-            axios.post(`/paramCrm/DomBank`, useFormikDomBank.values).then((response) => {
+            axiosPrivate.post(`/paramCrm/DomBank`, useFormikDomBank.values).then((response) => {
                 const resData = response.data;
                 if (resData.state) {
                     setDisableSaveBoutonDomBank(true);
@@ -1599,7 +1658,7 @@ const handleEditClickDomBank = (id) => () => {
                     setListDomBank(listDomBank.filter((row) => row.id !== idToDelete));
                     return;
                 }
-                axios.post(`/paramCrm/DomBankDelete`, { fileId, compteId, idToDelete }).then((response) => {
+                axiosPrivate.post(`/paramCrm/DomBankDelete`, { fileId, compteId, idToDelete }).then((response) => {
                     const resData = response.data;
                     if (resData.state) {
                         setOpenDialogDeleteDomBankRow(false);
@@ -1642,14 +1701,14 @@ const handleEditClickDomBank = (id) => () => {
             setDisableModifyBoutonDomBank(true);
             setDisableSaveBoutonDomBank(true);
             setDisableCancelBoutonDomBank(true);
-            toast.error("sélectionnez une seule ligne pour pouvoir la modifier");
+            toast.error("Sélectionnez une seule ligne pour pouvoir la modifier");
         } else {
             setDisableModifyBoutonDomBank(false);
             setDisableSaveBoutonDomBank(false);
             setDisableCancelBoutonDomBank(false);
             if (!selectedRowIdDomBank.includes(params.id)) {
                 setEditableRowDomBank(false);
-                toast.error("sélectionnez une ligne pour pouvoir la modifier");
+                toast.error("Sélectionnez une ligne pour pouvoir la modifier");
             } else {
                 setEditableRowDomBank(true);
             }
@@ -1750,24 +1809,33 @@ const handleEditClickDomBank = (id) => () => {
         setFieldValue('plancomptable', value);
     }
 
+    const handleOnChangeDeviseSelect = (setFieldValue) => (e) => {
+        const value = e.target.value;
+        setFieldValue('devisepardefaut', value);
+    }
+
     //submit les informations du nouveau dossier
     const handlSubmitModification = async (values) => {
-        console.log("Modifié : ", values);
-        
+
         try {
             // Récupérer les anciennes valeurs de longueur pour comparaison
             const oldLongueurStd = crm?.longcomptestd || 6;
             const oldLongueurAux = crm?.longcompteaux || 6;
             const newLongueurStd = parseInt(values.longueurcptstd);
             const newLongueurAux = parseInt(values.longueurcptaux);
-            
+
             // Sauvegarder les modifications CRM
-            const response = await axios.post(`/paramCrm/modifying`, values);
+            const portefeuilleIds = values.portefeuille.map(val => val.id);
+            const payload = {
+                ...values,
+                portefeuille: portefeuilleIds
+            }
+            const response = await axiosPrivate.post(`/paramCrm/modifying`, payload);
             const resData = response.data;
-            
+
             if (resData.state) {
                 toast.success(resData.msg);
-                
+
                 // Si la longueur des comptes a changé, mettre à jour tous les comptes existants
                 if (oldLongueurStd !== newLongueurStd || oldLongueurAux !== newLongueurAux) {
                     await updateExistingAccountsLength(oldLongueurStd, newLongueurStd, oldLongueurAux, newLongueurAux, values.autocompletion);
@@ -1781,6 +1849,24 @@ const handleEditClickDomBank = (id) => () => {
         }
     }
 
+    const handleOnChangePortefeuilleSelect = (setFieldValue) => (e) => {
+        const value = e.target.value;
+        setFieldValue('portefeuille', value);
+    }
+
+    // Charger la liste des portefeuille
+    const getAllPortefeuille = () => {
+        axios.get(`/param/portefeuille/getAllPortefeuille/${compteId}`)
+            .then(response => {
+                const resData = response?.data;
+                if (resData?.state) {
+                    setListePortefeuille(resData?.list)
+                } else {
+                    toast.error(resData?.message);
+                }
+            })
+    };
+
     // Fonction pour mettre à jour la longueur de tous les comptes existants
     const updateExistingAccountsLength = async (oldLongueurStd, newLongueurStd, oldLongueurAux, newLongueurAux, autocompletion) => {
         try {
@@ -1793,11 +1879,9 @@ const handleEditClickDomBank = (id) => () => {
                 newLongueurAux: newLongueurAux,
                 autocompletion: autocompletion // Utiliser la valeur passée en paramètre
             };
-            
-            console.log('Données envoyées:', updateData);
-            
+
             const response = await axios.post(`/paramCrm/updateAccountsLength`, updateData);
-            
+
             if (response.data.state) {
                 toast.success(`Longueur des comptes mise à jour : ${response.data.updatedCount} comptes modifiés`);
             } else {
@@ -1810,42 +1894,337 @@ const handleEditClickDomBank = (id) => () => {
     }
     const handleChangeCentrefisc = async (newValue) => {
         try {
-          await axios.put(`/home/FileCentrefisc/${fileId}`, { centrefisc: newValue });
-          setTypeCentre(newValue);
-          toast.success('CFISC mis à jour');
-      
-          // Recharger les infos dossier pour refléter la modif partout
-          await GetInfosIdDossier(fileId);
-      
-          // Optionnel: si tu veux forcer un refresh ailleurs (ex: un contexte global), déclenche-le ici.
+            await axios.put(`/home/FileCentrefisc/${fileId}`, { centrefisc: newValue });
+            setTypeCentre(newValue);
+            toast.success('CFISC mis à jour');
+
+            // Recharger les infos dossier pour refléter la modif partout
+            await GetInfosIdDossier(fileId);
+
+            // Optionnel: si tu veux forcer un refresh ailleurs (ex: un contexte global), déclenche-le ici.
         } catch (e) {
-          toast.error("Mise à jour du centre fiscal échouée");
+            toast.error("Mise à jour du centre fiscal échouée");
         }
-      };
-      const deselectRow = (ids) => {
-              const deselected = selectedRowId.filter(id => !ids.includes(id));
-      
-              const updatedRowModes = { ...rowModesModel };
-              deselected.forEach((id) => {
-                  updatedRowModes[id] = { mode: GridRowModes.View, ignoreModifications: true };
-              });
-              setRowModesModel(updatedRowModes);
-      
-              setDisableAddRowBouton(false);
-              setSelectedRowId(ids);
-          }
-        const deselectRowFiliale = (ids) => {
+    };
+    const deselectRow = (ids) => {
+        const deselected = selectedRowId.filter(id => !ids.includes(id));
+
+        const updatedRowModes = { ...rowModesModel };
+        deselected.forEach((id) => {
+            updatedRowModes[id] = { mode: GridRowModes.View, ignoreModifications: true };
+        });
+        setRowModesModel(updatedRowModes);
+
+        setDisableAddRowBouton(false);
+        setSelectedRowId(ids);
+    }
+    const deselectRowFiliale = (ids) => {
         const deselected = selectedRowIdFiliale.filter(id => !ids.includes(id));
- 
+
         const updatedRowModes = { ...rowModesModel };
         deselected.forEach((id) => {
             updatedRowModes[id] = { mode: GridRowModes.View, ignoreModifications: true };
         });
         setRowModesModelFiliale(updatedRowModes);
- 
+
         setDisableAddRowBoutonFiliale(false);
         setSelectedRowIdFiliale(ids);
     }
+
+    const handleCellKeyDown = (params, event) => {
+        const api = apiRef.current;
+
+        const allCols = api.getAllColumns().filter(c => c.editable);
+        const sortedRowIds = api.getSortedRowIds();
+        const currentColIndex = allCols.findIndex(c => c.field === params.field);
+        const currentRowIndex = sortedRowIds.indexOf(params.id);
+
+        let nextColIndex = currentColIndex;
+        let nextRowIndex = currentRowIndex;
+
+        if (event.key === 'Tab' && !event.shiftKey) {
+            event.preventDefault();
+            nextColIndex = currentColIndex + 1;
+            if (nextColIndex >= allCols.length) {
+                nextColIndex = 0;
+                nextRowIndex = currentRowIndex + 1;
+            }
+        } else if (event.key === 'Tab' && event.shiftKey) {
+            event.preventDefault();
+            nextColIndex = currentColIndex - 1;
+            if (nextColIndex < 0) {
+                nextColIndex = allCols.length - 1;
+                nextRowIndex = currentRowIndex - 1;
+            }
+        } else if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            nextColIndex = currentColIndex + 1;
+            if (nextColIndex >= allCols.length) nextColIndex = allCols.length - 1;
+        } else if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            nextColIndex = currentColIndex - 1;
+            if (nextColIndex < 0) nextColIndex = 0;
+        }
+
+        const nextRowId = sortedRowIds[nextRowIndex];
+        const targetCol = allCols[nextColIndex];
+
+        if (!nextRowId || !targetCol) return;
+
+        try {
+            api.stopCellEditMode({ id: params.id, field: params.field });
+        } catch (err) {
+            console.warn('Erreur stopCellEditMode ignorée:', err);
+        }
+
+        setTimeout(() => {
+            const cellInput = document.querySelector(
+                `[data-id="${nextRowId}"] [data-field="${targetCol.field}"] input, 
+             [data-id="${nextRowId}"] [data-field="${targetCol.field}"] textarea`
+            );
+            if (cellInput) cellInput.focus();
+        }, 50);
+    };
+
+    const handleRowEditStopConsolidation = (params, event) => {
+        if (params.reason === GridRowEditStopReasons.rowFocusOut) {
+            event.defaultMuiPrevented = true;
+        }
+    };
+
+    const handleEditClickConsolidation = (id) => () => {
+        //charger dans le formik les données de la ligne
+        const selectedRowInfos = listConsolidation?.filter((item) => item.id === id[0]);
+
+        console.log('selectedRowInfos : ', selectedRowInfos);
+
+        useFormikConsolidation.setFieldValue("idCompte", compteId);
+        useFormikConsolidation.setFieldValue("idDossier", fileId);
+        useFormikConsolidation.setFieldValue("idDossierAutre", selectedRowInfos[0].id_dossier_autre);
+        useFormikConsolidation.setFieldValue("idConsolidation", selectedRowInfos[0].id);
+
+
+        setRowModesModelConsolidation({ ...rowModesModelConsolidation, [id]: { mode: GridRowModes.Edit } });
+        setDisableSaveBoutonConsolidation(false);
+    };
+
+    const saveSelectedRowConsolidation = (ids) => {
+        if (ids.length === 1) {
+            setSelectedRowIdConsolidation(ids);
+            setDisableModifyBoutonConsolidation(false);
+            setDisableSaveBoutonConsolidation(false);
+            setDisableCancelBoutonConsolidation(false);
+            setDisableDeleteBoutonConsolidation(false);
+        } else {
+            setSelectedRowIdConsolidation([]);
+            setDisableModifyBoutonConsolidation(true);
+            setDisableSaveBoutonConsolidation(true);
+            setDisableCancelBoutonConsolidation(true);
+            setDisableDeleteBoutonConsolidation(true);
+        }
+    }
+
+    const handleSaveClickConsolidation = (setFieldValue) => () => {
+        let saveBoolIdDossierAutre = false;
+
+        if (useFormikConsolidation.values.idDossierAutre === '') {
+            saveBoolIdDossierAutre = false;
+        } else {
+            saveBoolIdDossierAutre = true;
+        }
+
+        if (saveBoolIdDossierAutre) {
+            const payloadConsolidation = {
+                ...useFormikConsolidation.values
+            }
+            setRowModesModelConsolidation({ ...rowModesModelConsolidation, [selectedRowIdConsolidation]: { mode: GridRowModes.View } });
+            axiosPrivate.post('/param/consolidation/addOrUpdateConsolidationDossier', payloadConsolidation)
+                .then((response) => {
+                    if (response?.data?.state) {
+                        toast.success(response?.data?.msg);
+                    } else {
+                        toast.error(response?.data?.msg);
+                    }
+                })
+            setDisableSaveBoutonConsolidation(true);
+            setDisableAddRowBoutonConsolidation(false);
+        }
+    };
+
+    const handleOpenDialogConfirmDeleteConsolidationRow = () => {
+        setOpenDialogDeleteConsolidationRow(true);
+        setDisableAddRowBoutonConsolidation(false);
+    }
+
+    const deleteConsolidationRow = (value) => {
+        if (value === true) {
+            if (selectedRowConsolidations.length === 1) {
+                const idToDelete = selectedRowConsolidations[0];
+                if (idToDelete < 0) {
+                    setListConsolidation(listConsolidation.filter((row) => row.id !== selectedRowIdConsolidation[0]));
+                    toast.success('Ligne supprimée avec succès');
+                    return;
+                }
+                axiosPrivate.delete(`/param/consolidation/deleteConsolidation/${idToDelete}`)
+                    .then((response) => {
+                        const resData = response?.data;
+                        if (resData?.state) {
+                            setListConsolidation(listConsolidation.filter((row) => row.id !== selectedRowIdConsolidation[0]));
+                            toast.success(resData?.message);
+                        } else {
+                            toast.error(resData.msg);
+                        }
+                    })
+                setOpenDialogDeleteConsolidationRow(false);
+                setDisableAddRowBoutonConsolidation(false);
+            }
+        } else {
+            setOpenDialogDeleteConsolidationRow(false);
+        }
+    }
+
+    const handleCancelClickConsolidation = (id) => () => {
+        setRowModesModelConsolidation({
+            ...rowModesModelConsolidation,
+            [id]: { mode: GridRowModes.View, ignoreModifications: true },
+        });
+        setDisableAddRowBoutonConsolidation(false);
+    };
+
+    const processRowUpdateConsolidation = (setFieldValue) => (newRow) => {
+        const updatedRow = { ...newRow };
+        setListConsolidation(listConsolidation.map((row) => (row.id === newRow.id ? updatedRow : row)));
+        setFieldValue('listeConsolidation', listConsolidation.map((row) => (row.id === newRow.id ? updatedRow : row)));
+        return updatedRow;
+    };
+
+    const handleRowModesModelChangeConsolidation = (newRowModesModel) => {
+        setRowModesModelConsolidation(newRowModesModel);
+    };
+
+    //Ajouter une ligne dans le tableau liste consolidation
+    const handleOpenDialogAddNewConsolidation = () => {
+        setDisableModifyBoutonConsolidation(false);
+        setDisableCancelBoutonConsolidation(false);
+        setDisableDeleteBoutonConsolidation(false);
+        const newRow = {
+            id: -Date.now(),
+        };
+        setListConsolidation([...listConsolidation, newRow]);
+        setSelectedRowConsolidations([newRow.id]);
+        setSelectedRowIdConsolidation([newRow.id]);
+        setDisableAddRowBoutonConsolidation(true);
+    }
+
+    const deselectRowConsolidation = (ids) => {
+        const deselected = selectedRowIdConsolidation.filter(id => !ids.includes(id));
+
+        const updatedRowModes = { ...rowModesModelConsolidation };
+        deselected.forEach((id) => {
+            updatedRowModes[id] = { mode: GridRowModes.View, ignoreModifications: true };
+        });
+        setRowModesModelConsolidation(updatedRowModes);
+
+        setDisableAddRowBoutonConsolidation(false);
+        setSelectedRowIdConsolidation(ids);
+    }
+
+    const handleCellEditCommitConsolidation = (params) => {
+        if (selectedRowIdConsolidation.length > 1 || selectedRowIdConsolidation.length === 0) {
+            setEditableRowConsolidation(false);
+            setDisableModifyBoutonConsolidation(true);
+            setDisableSaveBoutonConsolidation(true);
+            setDisableCancelBoutonConsolidation(true);
+            toast.error("Sélectionnez une seule ligne pour pouvoir la modifier");
+        } else {
+            setDisableModifyBoutonConsolidation(false);
+            setDisableSaveBoutonConsolidation(false);
+            setDisableCancelBoutonConsolidation(false);
+            if (!selectedRowIdConsolidation.includes(params.id)) {
+                setEditableRowConsolidation(false);
+                toast.error("Sélectionnez une ligne pour pouvoir la modifier");
+            } else {
+                setEditableRowConsolidation(true);
+            }
+        }
+    };
+
+    // Entête tableau consolidation
+    const ConsolidationColumnHeader = [
+        {
+            field: 'id_dossier_autre',
+            headerName: 'Dossier',
+            type: 'text',
+            sortable: true,
+            flex: 1,
+            headerAlign: 'left',
+            headerClassName: 'HeaderbackColor',
+            disableClickEventBubbling: true,
+            editable: editableRowConsolidation,
+            renderCell: (params) => {
+                const dossier = listeDossier.find(
+                    val => val.id === Number(params.value)
+                );
+
+                return <div>{dossier?.dossier || ''}</div>;
+            },
+            renderEditCell: (params) => {
+                const { id, field, value, api } = params;
+
+                const handleChange = (e) => {
+                    useFormikConsolidation.setFieldValue('idDossierAutre', e.target.value);
+                    api.setEditCellValue({
+                        id,
+                        field,
+                        value: e.target.value,
+                    });
+                };
+
+                const dossier = listeDossier.filter(
+                    val => val.id === Number(value)
+                );
+
+                return (
+                    <FormControl fullWidth>
+                        <InputLabel id="select-compte-label">Choisir...</InputLabel>
+                        <Select
+                            labelId="select-compte-label"
+                            value={value ?? ''}
+                            onChange={handleChange}
+                        >
+                            {(availableDossier.length > 0 ? availableDossier : dossier)
+                                .map((option) => (
+                                    <MenuItem key={option.id} value={option.id}>
+                                        {option.dossier}
+                                    </MenuItem>
+                                ))}
+                        </Select>
+                    </FormControl>
+                );
+            }
+        },
+    ];
+
+    const getListeDossier = () => {
+        axios.get(`/home/file/${compteId}`, { params: { userId: userId } }).then((response) => {
+            const resData = response.data;
+            setListeDossier(resData.fileList);
+        })
+    }
+
+    const getListeConsolidationDossier = () => {
+        axios.get(`/param/consolidation/getListeConsolidationDossier/${compteId}/${id}`).then((response) => {
+            const resData = response.data;
+            setListConsolidation(resData.list);
+        })
+    }
+
+    useEffect(() => {
+        getAllPortefeuille();
+        getDevises();
+        getListeDossier();
+        getListeConsolidationDossier();
+    }, [compteId]);
 
     return (
         <Box>
@@ -1874,6 +2253,10 @@ const handleEditClickDomBank = (id) => () => {
 
                     {/* MODAL POUR LA SUPPRESSION D'UNE LIGNE DU TABLEAU DOMICILIATION BANCAIRE */}
                     {openDialogDeleteDomBankRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer la ligne sélectionnée ?"} confirmationState={deleteDomBankRow} /> : null}
+
+                    {/* MODAL POUR LA SUPPRESSION D'UNE LIGNE DU TABLEAU FILIALE */}
+                    {openDialogDeleteConsolidationRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer la ligne sélectionnée ?"} confirmationState={deleteConsolidationRow} /> : null}
+
                     <Formik
                         initialValues={InfosNewFileInitialValues}
                         validationSchema={formInfosNewFileValidationSchema}
@@ -1893,12 +2276,20 @@ const handleEditClickDomBank = (id) => () => {
                             };
 
                             useEffect(() => {
+                                if (!listePortefeuille || listePortefeuille.length === 0) return;
                                 const id = fileId;
                                 axios.get(`/paramCrm/infoscrm/${id}`).then((response) => {
                                     const resData = response.data;
                                     if (resData.state) {
                                         setCrm(resData.list);
                                         const crmData = resData.list;
+
+                                        const mappedPortefeuille = crmData.id_portefeuille.map(id => {
+                                            return listePortefeuille.find(p => p.id === Number(id));
+                                        }).filter(Boolean);
+
+                                        const deviseParDefaut = listeDevise.find(val => val.par_defaut === true);
+
                                         setFieldValue('action', 'modify');
                                         setFieldValue('itemId', crmData.id);
                                         setFieldValue('idDossier', crmData.id);
@@ -1935,13 +2326,17 @@ const handleEditClickDomBank = (id) => () => {
                                         setFieldValue('nbrpart', crmData.nbrpart);
                                         setFieldValue('valeurpart', crmData.valeurpart);
                                         setFieldValue('compteisi', Number(crmData.compteisi));
+                                        setFieldValue('typecomptabilite', crmData.typecomptabilite || 'Français');
+                                        setFieldValue('portefeuille', mappedPortefeuille);
 
+                                        setFieldValue('devisepardefaut', deviseParDefaut.id);
+                                        setFieldValue('consolidation', crmData.consolidation || false);
                                     } else {
                                         setCrm([]);
                                     }
                                 })
 
-                            }, [fileId]);
+                            }, [fileId, listePortefeuille]);
 
                             return (
                                 <Form style={{ width: '100%' }}>
@@ -1951,11 +2346,13 @@ const handleEditClickDomBank = (id) => () => {
                                         >
                                             <Typography variant='h6' sx={{ color: "black", width: 'calc(100% - 120px)' }} align='left'>Paramétrages: CRM</Typography>
                                             <Button variant="contained"
+                                                disabled={!canModify}
                                                 onClick={handleSubmit}
                                                 style={{
                                                     borderRadius: "0",
                                                     height: '43px', marginLeft: "5px", width: '120px',
-                                                    textTransform: 'none', outline: 'none', border: 'none', backgroundColor: initial.theme
+                                                    textTransform: 'none', outline: 'none', border: 'none', backgroundColor: initial.theme,
+                                                    color: 'white'
                                                 }}
                                             >
                                                 Enregistrer
@@ -1972,6 +2369,7 @@ const handleEditClickDomBank = (id) => () => {
                                                         <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="Associés" value="4" />
                                                         <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="Filiales" value="5" />
                                                         <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="Domiciliations bancaires" value="6" />
+                                                        {values.consolidation === true ? <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="Consolidation" value="7" /> : null}
                                                     </TabList>
                                                 </Box>
 
@@ -2376,47 +2774,111 @@ const handleEditClickDomBank = (id) => () => {
                                                     <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
                                                         alignContent={"flex-start"} justifyContent={"stretch"}
                                                     >
-                                                        <Stack spacing={1}>
-                                                            <label htmlFor="plancomptable" style={{ fontSize: 12, color: '#3FA2F6' }}>Plan comptable</label>
-                                                            <Field
-                                                                disabled
-                                                                as={Select}
-                                                                required
-                                                                //value = {values.plancomptable}
-                                                                name='plancomptable'
-                                                                type='text'
-                                                                placeholder=""
-                                                                onChange={handleOnChangePlanComptableSelect(setFieldValue)}
-                                                                sx={{
-                                                                    borderRadius: 0,
-                                                                    width: 300,
-                                                                    height: 40,
-                                                                    '& .MuiOutlinedInput-notchedOutline': {
-                                                                        borderTop: 'none', // Supprime le cadre
-                                                                        borderLeft: 'none',
-                                                                        borderRight: 'none',
-                                                                        borderWidth: '0.5px'
-                                                                    },
-                                                                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                                        borderTop: 'none', // Supprime le cadre
-                                                                        borderLeft: 'none',
-                                                                        borderRight: 'none',
-                                                                        borderWidth: '0.5px'
-                                                                    },
-                                                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                                        borderTop: 'none', // Supprime le cadre
-                                                                        borderLeft: 'none',
-                                                                        borderRight: 'none',
-                                                                        borderWidth: '0.5px'
-                                                                    },
-                                                                }}
-                                                            >
-                                                                <MenuItem key={0} value={0}><em>Aucun</em></MenuItem>
-                                                                {listModel?.map((item) => (
-                                                                    <MenuItem key={item.id} value={item.id}>{item.nom}</MenuItem>
-                                                                ))};
-                                                            </Field>
-                                                            <ErrorMessage name='plancomptable' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                        <Stack spacing={5} direction={'row'}>
+                                                            <div>
+                                                                <label htmlFor="plancomptable" style={{ fontSize: 12, color: '#3FA2F6' }}>Plan comptable</label>
+                                                                <Stack direction="row" spacing={4} alignItems="center">
+                                                                    <Field
+                                                                        disabled
+                                                                        as={Select}
+                                                                        required
+                                                                        name='plancomptable'
+                                                                        type='text'
+                                                                        placeholder=""
+                                                                        onChange={handleOnChangePlanComptableSelect(setFieldValue)}
+                                                                        sx={{
+                                                                            borderRadius: 0,
+                                                                            width: 300,
+                                                                            height: 40,
+                                                                            '& .MuiOutlinedInput-notchedOutline': {
+                                                                                borderTop: 'none', // Supprime le cadre
+                                                                                borderLeft: 'none',
+                                                                                borderRight: 'none',
+                                                                                borderWidth: '0.5px'
+                                                                            },
+                                                                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                                                borderTop: 'none', // Supprime le cadre
+                                                                                borderLeft: 'none',
+                                                                                borderRight: 'none',
+                                                                                borderWidth: '0.5px'
+                                                                            },
+                                                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                                                borderTop: 'none', // Supprime le cadre
+                                                                                borderLeft: 'none',
+                                                                                borderRight: 'none',
+                                                                                borderWidth: '0.5px'
+                                                                            },
+                                                                        }}
+                                                                    >
+                                                                        <MenuItem key={0} value={0}><em>Aucun</em></MenuItem>
+                                                                        {listModel?.map((item) => (
+                                                                            <MenuItem key={item.id} value={item.id}>{item.nom}</MenuItem>
+                                                                        ))};
+                                                                    </Field>
+                                                                    <ErrorMessage name='plancomptable' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                </Stack>
+                                                            </div>
+                                                            <div>
+                                                                <label htmlFor="devisepardefaut" style={{ fontSize: 12, color: '#3FA2F6' }}>Devise par défaut</label>
+                                                                <Stack direction="row" spacing={4} alignItems="center">
+                                                                    <Field
+                                                                        as={Select}
+                                                                        required
+                                                                        name='devisepardefaut'
+                                                                        type='text'
+                                                                        placeholder=""
+                                                                        onChange={handleOnChangeDeviseSelect(setFieldValue)}
+                                                                        sx={{
+                                                                            borderRadius: 0,
+                                                                            width: 200,
+                                                                            height: 40,
+                                                                            '& .MuiOutlinedInput-notchedOutline': {
+                                                                                borderTop: 'none', // Supprime le cadre
+                                                                                borderLeft: 'none',
+                                                                                borderRight: 'none',
+                                                                                borderWidth: '0.5px'
+                                                                            },
+                                                                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                                                borderTop: 'none', // Supprime le cadre
+                                                                                borderLeft: 'none',
+                                                                                borderRight: 'none',
+                                                                                borderWidth: '0.5px'
+                                                                            },
+                                                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                                                borderTop: 'none', // Supprime le cadre
+                                                                                borderLeft: 'none',
+                                                                                borderRight: 'none',
+                                                                                borderWidth: '0.5px'
+                                                                            },
+                                                                        }}
+                                                                    >
+                                                                        {listeDevise.map((item) => (
+                                                                            <MenuItem key={item.id} value={item.id}>{item.code}</MenuItem>
+                                                                        ))}
+                                                                    </Field>
+                                                                    <ErrorMessage name='devisepardefaut' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                </Stack>
+                                                            </div>
+                                                            <div>
+                                                                <Stack spacing={0} direction={'row'}
+                                                                    style={{ alignItems: 'center', marginTop: 25 }}
+                                                                >
+                                                                    <Field
+                                                                        required
+                                                                        values={values.consolidation}
+                                                                        name='consolidation'
+                                                                        type='checkbox'
+                                                                        placeholder=""
+                                                                        style={{
+                                                                            height: 20, borderTop: 'none',
+                                                                            borderLeft: 'none', borderRight: 'none',
+                                                                            outline: 'none', fontSize: 14, borderWidth: '0.5px',
+                                                                            width: 20, marginRight: 10,
+                                                                        }}
+                                                                    />
+                                                                    <label htmlFor="consolidation" style={{ fontSize: 15, color: 'black' }}>Consolidation</label>
+                                                                </Stack>
+                                                            </div>
                                                         </Stack>
 
                                                         <Typography style={{ fontWeight: 'bold', fontSize: "18px", marginLeft: "0px", marginTop: "50px" }}>Paramétrages de longueur des comptes</Typography>
@@ -2499,6 +2961,83 @@ const handleEditClickDomBank = (id) => () => {
                                                             <label htmlFor="avecanalytique" style={{ fontSize: 15, color: 'black' }}>Avec analytique</label>
                                                             <ErrorMessage name='avecanalytique' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
                                                         </Stack>
+
+                                                        <Stack spacing={1} style={{ width: "50%" }}>
+                                                            <label htmlFor="portefeuille" style={{ fontSize: 12, color: '#3FA2F6' }}>Portefeuille</label>
+                                                            <Autocomplete
+                                                                multiple
+                                                                id="checkboxes-tags-demo"
+                                                                options={listePortefeuille}
+                                                                disableCloseOnSelect
+                                                                getOptionLabel={(option) => option.nom}
+                                                                onChange={(_event, newValue) => {
+                                                                    setFieldValue("portefeuille", newValue);
+                                                                }}
+                                                                value={values.portefeuille || []}
+                                                                renderOption={(props, option, { selected }) => {
+                                                                    const { key, ...optionProps } = props;
+                                                                    return (
+                                                                        <li
+                                                                            key={key}
+                                                                            {...optionProps}
+                                                                            style={{
+                                                                                paddingBottom: 2,
+                                                                                paddingLeft: 4,
+                                                                                paddingRight: 4,
+                                                                                fontSize: "0.8rem",
+                                                                                display: "flex",
+                                                                                alignItems: "center"
+                                                                            }}
+                                                                        >
+                                                                            <Checkbox
+                                                                                icon={icon}
+                                                                                checkedIcon={checkedIcon}
+                                                                                style={{ marginRight: 8 }}
+                                                                                checked={selected}
+                                                                            />
+                                                                            {option.nom}
+                                                                        </li>
+                                                                    );
+                                                                }}
+                                                                renderInput={(params) => (
+                                                                    <TextField
+                                                                        {...params}
+                                                                        variant="standard"
+                                                                    />
+                                                                )}
+                                                            />
+                                                            <ErrorMessage name='portefeuille' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                        </Stack>
+
+                                                        <Stack spacing={1}>
+                                                            <Typography
+                                                                style={{ fontWeight: 'bold', fontSize: "18px", marginLeft: "0px", marginTop: "5px" }}
+                                                            >
+                                                                Type de comptabilité
+                                                            </Typography>
+
+                                                            <Stack direction="row" spacing={4} alignItems="center">
+                                                                <RadioGroup
+                                                                    row
+                                                                    value={values.typecomptabilite}
+                                                                    onChange={(e) => setFieldValue("typecomptabilite", e.target.value)}
+                                                                    defaultValue={'Français'}
+                                                                >
+                                                                    <FormControlLabel
+                                                                        value="Français"
+                                                                        control={<Radio />}
+                                                                        label="Français"
+                                                                    />
+                                                                    <FormControlLabel
+                                                                        value="Autres"
+                                                                        control={<Radio />}
+                                                                        label="Autres"
+                                                                    />
+                                                                </RadioGroup>
+                                                                <ErrorMessage name='typecomptabilite' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                            </Stack>
+                                                        </Stack>
+
                                                     </Stack>
                                                 </TabPanel>
 
@@ -2506,33 +3045,33 @@ const handleEditClickDomBank = (id) => () => {
                                                     <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
                                                         alignContent={"flex-start"} justifyContent={"stretch"} marginLeft={"20px"}
                                                     >
-                                                         {/* Bloc radio DGE / centre fiscale */}
+                                                        {/* Bloc radio DGE / centre fiscale */}
                                                         <Stack spacing={1}>
-                                                        <Typography style={{ fontWeight: 'bold', fontSize: "18px", marginLeft: "0px", marginTop: "5px" }}>Type de centre fiscal</Typography>
-                                                                <Stack direction="row" spacing={4} alignItems="center">
-                                                                    <FormControlLabel
+                                                            <Typography style={{ fontWeight: 'bold', fontSize: "18px", marginLeft: "0px", marginTop: "5px" }}>Type de centre fiscal</Typography>
+                                                            <Stack direction="row" spacing={4} alignItems="center">
+                                                                <FormControlLabel
                                                                     control={
                                                                         <input
-                                                                        type="radio"
-                                                                        value="DGE"
-                                                                        checked={typeCentre === 'DGE'}
-                                                                        onChange={() => handleChangeCentrefisc('DGE')}
+                                                                            type="radio"
+                                                                            value="DGE"
+                                                                            checked={typeCentre === 'DGE'}
+                                                                            onChange={() => handleChangeCentrefisc('DGE')}
                                                                         />
                                                                     }
                                                                     label={<span style={{ fontWeight: typeCentre === 'DGE' ? 600 : 400 }}>DGE</span>}
-                                                                    />
-                                                                    <FormControlLabel
+                                                                />
+                                                                <FormControlLabel
                                                                     control={
                                                                         <input
-                                                                        type="radio"
-                                                                        value="CFISC"
-                                                                        checked={typeCentre === 'CFISC'}
-                                                                        onChange={() => handleChangeCentrefisc('CFISC')}
+                                                                            type="radio"
+                                                                            value="CFISC"
+                                                                            checked={typeCentre === 'CFISC'}
+                                                                            onChange={() => handleChangeCentrefisc('CFISC')}
                                                                         />
                                                                     }
                                                                     label={<span style={{ fontWeight: typeCentre === 'CFISC' ? 600 : 400 }}>Centre fiscales</span>}
-                                                                    />
-                                                                </Stack>
+                                                                />
+                                                            </Stack>
                                                         </Stack>
 
                                                         <Typography style={{ fontWeight: 'bold', fontSize: "18px", marginLeft: "0px", marginTop: "20px" }}>Impôt sur le revenu (IR)</Typography>
@@ -2650,19 +3189,6 @@ const handleEditClickDomBank = (id) => () => {
                                                         >
                                                             <Stack spacing={1}>
                                                                 <label htmlFor="montantcapital" style={{ fontSize: 12, color: '#3FA2F6' }}>Capitale</label>
-                                                                {/* <Field
-                                                                    required
-                                                                    name='montantcapital'
-                                                                    onChange={handleChange}
-                                                                    type='text'
-                                                                    placeholder=""
-                                                                    style={{
-                                                                        height: 22, borderTop: 'none',
-                                                                        borderLeft: 'none', borderRight: 'none',
-                                                                        outline: 'none', fontSize: 14, borderWidth: '0.5px',
-                                                                        width: '200px',
-                                                                    }}
-                                                                /> */}
                                                                 <MontantCapitalField setFieldValue={setFieldValue} calculateValeurPart={calculateValeurPart} values={values} />
                                                                 <ErrorMessage name='montantcapital' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
                                                             </Stack>
@@ -2739,7 +3265,7 @@ const handleEditClickDomBank = (id) => () => {
                                                         >
                                                             <Tooltip title="Ajouter une ligne">
                                                                 <IconButton
-                                                                    disabled={disableAddRowBouton}
+                                                                    disabled={!canAdd || disableAddRowBouton}
                                                                     variant="contained"
                                                                     onClick={handleOpenDialogAddNewAssocie}
                                                                     style={{
@@ -2755,7 +3281,7 @@ const handleEditClickDomBank = (id) => () => {
 
                                                             <Tooltip title="Modifier la ligne sélectionnée">
                                                                 <IconButton
-                                                                    disabled={disableModifyBouton}
+                                                                    disabled={(!canModify && selectedRowAssocie > 0) || disableModifyBouton}
                                                                     variant="contained"
                                                                     onClick={handleEditClick(selectedRowId)}
                                                                     style={{
@@ -2772,7 +3298,7 @@ const handleEditClickDomBank = (id) => () => {
                                                             <Tooltip title="Sauvegarder les modifications">
                                                                 <span>
                                                                     <IconButton
-                                                                        disabled={disableSaveBouton}
+                                                                        disabled={(!canAdd || !canModify) || disableSaveBouton}
                                                                         variant="contained"
                                                                         onClick={handleSaveClick(selectedRowId)}
                                                                         style={{
@@ -2808,7 +3334,7 @@ const handleEditClickDomBank = (id) => () => {
                                                             <Tooltip title="Supprimer la ligne sélectionné">
                                                                 <span>
                                                                     <IconButton
-                                                                        disabled={disableDeleteBouton}
+                                                                        disabled={!canDelete || disableDeleteBouton}
                                                                         onClick={handleOpenDialogConfirmDeleteAssocieRow}
                                                                         variant="contained"
                                                                         style={{
@@ -2826,6 +3352,7 @@ const handleEditClickDomBank = (id) => () => {
 
                                                         <Stack width={"100%"} height={'50vh'}>
                                                             <DataGrid
+                                                                apiRef={apiRef}
                                                                 disableMultipleSelection={DataGridStyle.disableMultipleSelection}
                                                                 disableColumnSelector={DataGridStyle.disableColumnSelector}
                                                                 disableDensitySelector={DataGridStyle.disableDensitySelector}
@@ -2864,34 +3391,33 @@ const handleEditClickDomBank = (id) => () => {
                                                                 }}
                                                                 rowSelectionModel={selectedRowAssocie}
                                                                 onRowEditStart={(params, event) => {
-                                                                    if (!selectedRowAssocie.length || selectedRowAssocie[0] !== params.id) {
+                                                                    const rowId = params.id;
+                                                                    const rowData = params.row;
+
+                                                                    const isNewRow = rowId < 0;
+
+                                                                    if (!canModify && !isNewRow) {
                                                                         event.defaultMuiPrevented = true;
+                                                                        return;
                                                                     }
-                                                                    if (selectedRowAssocie.includes(params.id)) {
-                                                                        setDisableAddRowBouton(true);
-                                                                        event.stopPropagation();
 
-                                                                        const rowId = params.id;
-                                                                        const rowData = params.row;
+                                                                    useFormikFiliale.setFieldValue("idCompte", compteId);
+                                                                    useFormikFiliale.setFieldValue("idDossier", fileId);
+                                                                    useFormikFiliale.setFieldValue("idFiliale", rowData.id);
+                                                                    useFormikFiliale.setFieldValue("nom", rowData.nom);
+                                                                    useFormikFiliale.setFieldValue("dateentree", rowData.dateentree);
+                                                                    useFormikFiliale.setFieldValue("datesortie", rowData.datesortie);
+                                                                    useFormikFiliale.setFieldValue("nombreparts", rowData.nbrpart);
+                                                                    useFormikFiliale.setFieldValue("enactivite", rowData.enactivite);
 
+                                                                    setRowModesModel((oldModel) => ({
+                                                                        ...oldModel,
+                                                                        [rowId]: { mode: GridRowModes.Edit },
+                                                                    }));
 
-                                                                        useFormikFiliale.setFieldValue("idCompte", compteId);
-                                                                        useFormikFiliale.setFieldValue("idDossier", fileId);
-                                                                        useFormikFiliale.setFieldValue("idFiliale", rowData.id);
-                                                                        useFormikFiliale.setFieldValue("nom", rowData.nom);
-                                                                        useFormikFiliale.setFieldValue("dateentree", rowData.dateentree);
-                                                                        useFormikFiliale.setFieldValue("datesortie", rowData.datesortie);
-                                                                        useFormikFiliale.setFieldValue("nombreparts", rowData.nbrpart);
-                                                                        useFormikFiliale.setFieldValue("enactivite", rowData.enactivite);
-
-                                                                        setRowModesModel((oldModel) => ({
-                                                                            ...oldModel,
-                                                                            [rowId]: { mode: GridRowModes.Edit },
-                                                                        }));
-
-                                                                        setDisableSaveBouton(false);
-                                                                    }
+                                                                    setDisableSaveBouton(false);
                                                                 }}
+                                                                onCellKeyDown={handleCellKeyDown}
                                                             />
                                                         </Stack>
 
@@ -2907,7 +3433,7 @@ const handleEditClickDomBank = (id) => () => {
                                                         >
                                                             <Tooltip title="Ajouter une ligne">
                                                                 <IconButton
-                                                                    disabled={disableAddRowBoutonFiliale}
+                                                                    disabled={!canAdd || disableAddRowBoutonFiliale}
                                                                     variant="contained"
                                                                     onClick={handleOpenDialogAddNewFiliale}
                                                                     style={{
@@ -2923,7 +3449,7 @@ const handleEditClickDomBank = (id) => () => {
 
                                                             <Tooltip title="Modifier la ligne sélectionnée">
                                                                 <IconButton
-                                                                    disabled={disableModifyBoutonFiliale}
+                                                                    disabled={(!canModify && selectedRowFiliales > 0) || disableModifyBoutonFiliale}
                                                                     variant="contained"
                                                                     onClick={handleEditClickFiliale(selectedRowIdFiliale)}
                                                                     style={{
@@ -2940,7 +3466,7 @@ const handleEditClickDomBank = (id) => () => {
                                                             <Tooltip title="Sauvegarder les modifications">
                                                                 <span>
                                                                     <IconButton
-                                                                        disabled={disableSaveBoutonFiliale}
+                                                                        disabled={(!canAdd || !canModify) || disableSaveBoutonFiliale}
                                                                         variant="contained"
                                                                         onClick={handleSaveClickFiliale(selectedRowIdFiliale)}
                                                                         style={{
@@ -2976,7 +3502,7 @@ const handleEditClickDomBank = (id) => () => {
                                                             <Tooltip title="Supprimer la ligne sélectionné">
                                                                 <span>
                                                                     <IconButton
-                                                                        disabled={disableDeleteBoutonFiliale}
+                                                                        disabled={!canDelete || disableDeleteBoutonFiliale}
                                                                         onClick={handleOpenDialogConfirmDeleteAssocieRowFiliale}
                                                                         variant="contained"
                                                                         style={{
@@ -2994,6 +3520,7 @@ const handleEditClickDomBank = (id) => () => {
 
                                                         <Stack width={"100%"} height={'60vh'}>
                                                             <DataGrid
+                                                                apiRef={apiRef}
                                                                 disableMultipleSelection={DataGridStyle.disableMultipleSelection}
                                                                 disableColumnSelector={DataGridStyle.disableColumnSelector}
                                                                 disableDensitySelector={DataGridStyle.disableDensitySelector}
@@ -3032,34 +3559,36 @@ const handleEditClickDomBank = (id) => () => {
                                                                 }}
                                                                 rowSelectionModel={selectedRowFiliales}
                                                                 onRowEditStart={(params, event) => {
-                                                                    if (!selectedRowFiliales.length || selectedRowFiliales[0] !== params.id) {
+                                                                    const rowId = params.id;
+                                                                    const rowData = params.row;
+
+                                                                    const isNewRow = rowId < 0;
+
+                                                                    if (!canModify && !isNewRow) {
                                                                         event.defaultMuiPrevented = true;
+                                                                        return;
                                                                     }
-                                                                    if (selectedRowFiliales.includes(params.id)) {
-                                                                        setDisableAddRowBoutonFiliale(true);
-                                                                        event.stopPropagation();
 
-                                                                        const rowId = params.id;
-                                                                        const rowData = params.row;
+                                                                    event.stopPropagation();
+                                                                    setDisableAddRowBouton(true);
 
+                                                                    useFormikFiliale.setFieldValue("idCompte", compteId);
+                                                                    useFormikFiliale.setFieldValue("idDossier", fileId);
+                                                                    useFormikFiliale.setFieldValue("idFiliale", rowData.id);
+                                                                    useFormikFiliale.setFieldValue("nom", rowData.nom);
+                                                                    useFormikFiliale.setFieldValue("dateentree", rowData.dateentree);
+                                                                    useFormikFiliale.setFieldValue("datesortie", rowData.datesortie);
+                                                                    useFormikFiliale.setFieldValue("nombreparts", rowData.nbrpart);
+                                                                    useFormikFiliale.setFieldValue("enactivite", rowData.enactivite);
 
-                                                                        useFormikFiliale.setFieldValue("idCompte", compteId);
-                                                                        useFormikFiliale.setFieldValue("idDossier", fileId);
-                                                                        useFormikFiliale.setFieldValue("idFiliale", rowData.id);
-                                                                        useFormikFiliale.setFieldValue("nom", rowData.nom);
-                                                                        useFormikFiliale.setFieldValue("dateentree", rowData.dateentree);
-                                                                        useFormikFiliale.setFieldValue("datesortie", rowData.datesortie);
-                                                                        useFormikFiliale.setFieldValue("nombreparts", rowData.nbrpart);
-                                                                        useFormikFiliale.setFieldValue("enactivite", rowData.enactivite);
+                                                                    setRowModesModelFiliale((oldModel) => ({
+                                                                        ...oldModel,
+                                                                        [rowId]: { mode: GridRowModes.Edit },
+                                                                    }));
 
-                                                                        setRowModesModelFiliale((oldModel) => ({
-                                                                            ...oldModel,
-                                                                            [rowId]: { mode: GridRowModes.Edit },
-                                                                        }));
-
-                                                                        setDisableSaveBoutonFiliale(false);
-                                                                    }
+                                                                    setDisableSaveBoutonFiliale(false);
                                                                 }}
+                                                                onCellKeyDown={handleCellKeyDown}
                                                             />
                                                         </Stack>
 
@@ -3075,7 +3604,7 @@ const handleEditClickDomBank = (id) => () => {
                                                         >
                                                             <Tooltip title="Ajouter une ligne">
                                                                 <IconButton
-                                                                    disabled={disableAddRowBouton}
+                                                                    disabled={!canAdd || disableAddRowBouton}
                                                                     variant="contained"
                                                                     onClick={handleOpenDialogAddNewDomBank}
                                                                     style={{
@@ -3091,7 +3620,7 @@ const handleEditClickDomBank = (id) => () => {
 
                                                             <Tooltip title="Modifier la ligne sélectionnée">
                                                                 <IconButton
-                                                                    disabled={disableModifyBouton}
+                                                                    disabled={(!canModify && selectedRowDomBank > 0) || disableModifyBouton}
                                                                     variant="contained"
                                                                     onClick={handleEditClickDomBank(selectedRowIdDomBank)}
                                                                     style={{
@@ -3108,7 +3637,7 @@ const handleEditClickDomBank = (id) => () => {
                                                             <Tooltip title="Sauvegarder les modifications">
                                                                 <span>
                                                                     <IconButton
-                                                                        disabled={disableSaveBouton}
+                                                                        disabled={(!canAdd || !canModify) || disableSaveBouton}
                                                                         variant="contained"
                                                                         onClick={handleSaveClickDomBank(selectedRowIdDomBank)}
                                                                         style={{
@@ -3144,7 +3673,7 @@ const handleEditClickDomBank = (id) => () => {
                                                             <Tooltip title="Supprimer la ligne sélectionné">
                                                                 <span>
                                                                     <IconButton
-                                                                        disabled={disableDeleteBouton}
+                                                                        disabled={!canDelete || disableDeleteBouton}
                                                                         onClick={handleOpenDialogConfirmDeleteAssocieRowDomBank}
                                                                         variant="contained"
                                                                         style={{
@@ -3162,6 +3691,7 @@ const handleEditClickDomBank = (id) => () => {
 
                                                         <Stack width={"100%"} height={'60vh'}>
                                                             <DataGrid
+                                                                apiRef={apiRef}
                                                                 disableMultipleSelection={DataGridStyle.disableMultipleSelection}
                                                                 disableColumnSelector={DataGridStyle.disableColumnSelector}
                                                                 disableDensitySelector={DataGridStyle.disableDensitySelector}
@@ -3179,7 +3709,7 @@ const handleEditClickDomBank = (id) => () => {
                                                                     saveSelectedRowDomBank(ids);
                                                                     deselectRow(ids);
                                                                 }}
-                                                                  rowSelectionModel={selectedRowDomBank}
+                                                                rowSelectionModel={selectedRowDomBank}
                                                                 editMode='row'
                                                                 selectionModel={selectedRowIdDomBank}
                                                                 rowModesModel={rowModesModelDomBank}
@@ -3200,11 +3730,183 @@ const handleEditClickDomBank = (id) => () => {
                                                                 columnVisibilityModel={{
                                                                     id: false,
                                                                 }}
+                                                                onCellKeyDown={handleCellKeyDown}
                                                             />
                                                         </Stack>
 
                                                     </Stack>
                                                 </TabPanel>
+                                                <TabPanel value="7">
+                                                    <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
+                                                        alignContent={"flex-start"} justifyContent={"stretch"}
+                                                    >
+                                                        <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                                            direction={"row"} justifyContent={"right"}
+                                                        >
+                                                            <Tooltip title="Ajouter une ligne">
+                                                                <IconButton
+                                                                    disabled={!canAdd || disableAddRowBoutonConsolidation || availableDossier.length === 0}
+                                                                    variant="contained"
+                                                                    onClick={handleOpenDialogAddNewConsolidation}
+                                                                    style={{
+                                                                        width: "35px", height: '35px',
+                                                                        borderRadius: "2px", borderColor: "transparent",
+                                                                        backgroundColor: initial.theme,
+                                                                        textTransform: 'none', outline: 'none'
+                                                                    }}
+                                                                >
+                                                                    <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                </IconButton>
+                                                            </Tooltip>
+
+                                                            <Tooltip title="Modifier la ligne sélectionnée">
+                                                                <IconButton
+                                                                    disabled={!canModify || disableModifyBoutonConsolidation}
+                                                                    variant="contained"
+                                                                    onClick={handleEditClickConsolidation(selectedRowIdConsolidation)}
+                                                                    style={{
+                                                                        width: "35px", height: '35px',
+                                                                        borderRadius: "2px", borderColor: "transparent",
+                                                                        backgroundColor: initial.theme,
+                                                                        textTransform: 'none', outline: 'none'
+                                                                    }}
+                                                                >
+                                                                    <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                </IconButton>
+                                                            </Tooltip>
+
+                                                            <Tooltip title="Sauvegarder les modifications">
+                                                                <span>
+                                                                    <IconButton
+                                                                        disabled={(!canAdd || !canModify) || disableSaveBoutonConsolidation}
+                                                                        variant="contained"
+                                                                        onClick={handleSaveClickConsolidation(setFieldValue)}
+                                                                        style={{
+                                                                            width: "35px", height: '35px',
+                                                                            borderRadius: "2px", borderColor: "transparent",
+                                                                            backgroundColor: initial.theme,
+                                                                            textTransform: 'none', outline: 'none'
+                                                                        }}
+                                                                    >
+                                                                        <TfiSave style={{ width: '50px', height: '50px', color: 'white' }} />
+                                                                    </IconButton>
+                                                                </span>
+                                                            </Tooltip>
+
+                                                            <Tooltip title="Annuler les modifications">
+                                                                <span>
+                                                                    <IconButton
+                                                                        disabled={disableCancelBoutonConsolidation}
+                                                                        variant="contained"
+                                                                        onClick={handleCancelClickConsolidation(selectedRowIdConsolidation)}
+                                                                        style={{
+                                                                            width: "35px", height: '35px',
+                                                                            borderRadius: "2px", borderColor: "transparent",
+                                                                            backgroundColor: initial.button_delete_color,
+                                                                            textTransform: 'none', outline: 'none'
+                                                                        }}
+                                                                    >
+                                                                        <VscClose style={{ width: '50px', height: '50px', color: 'white' }} />
+                                                                    </IconButton>
+                                                                </span>
+                                                            </Tooltip>
+
+                                                            <Tooltip title="Supprimer la ligne sélectionné">
+                                                                <span>
+                                                                    <IconButton
+                                                                        disabled={!canDelete || disableDeleteBoutonConsolidation}
+                                                                        onClick={handleOpenDialogConfirmDeleteConsolidationRow}
+                                                                        variant="contained"
+                                                                        style={{
+                                                                            width: "35px", height: '35px',
+                                                                            borderRadius: "2px", borderColor: "transparent",
+                                                                            backgroundColor: initial.button_delete_color,
+                                                                            textTransform: 'none', outline: 'none'
+                                                                        }}
+                                                                    >
+                                                                        <IoMdTrash style={{ width: '50px', height: '50px', color: 'white' }} />
+                                                                    </IconButton>
+                                                                </span>
+                                                            </Tooltip>
+                                                        </Stack>
+
+                                                        <Stack
+                                                            width={"100%"}
+                                                            height={"500px"}
+                                                        >
+                                                            <DataGrid
+                                                                apiRef={apiRef}
+                                                                disableMultipleSelection={DataGridStyle.disableMultipleSelection}
+                                                                disableColumnSelector={DataGridStyle.disableColumnSelector}
+                                                                disableDensitySelector={DataGridStyle.disableDensitySelector}
+                                                                disableRowSelectionOnClick
+                                                                disableSelectionOnClick={true}
+                                                                localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                                                                slots={{ toolbar: QuickFilter }}
+                                                                sx={DataGridStyle.sx}
+                                                                rowHeight={DataGridStyle.rowHeight}
+                                                                columnHeaderHeight={DataGridStyle.columnHeaderHeight}
+                                                                rows={listConsolidation}
+                                                                onRowClick={(e) => handleCellEditCommitConsolidation(e.row)}
+                                                                onRowSelectionModelChange={ids => {
+                                                                    const single = Array.isArray(ids) && ids.length ? [ids[ids.length - 1]] : [];
+                                                                    setSelectedRowConsolidations(single);
+                                                                    saveSelectedRowConsolidation(single);
+                                                                    deselectRowConsolidation(single);
+                                                                }}
+                                                                editMode='row'
+                                                                rowModesModel={rowModesModelConsolidation}
+                                                                onRowModesModelChange={handleRowModesModelChangeConsolidation}
+                                                                onRowEditStop={handleRowEditStopConsolidation}
+                                                                processRowUpdate={processRowUpdateConsolidation(setFieldValue)}
+
+                                                                columns={ConsolidationColumnHeader}
+                                                                initialState={{
+                                                                    pagination: {
+                                                                        paginationModel: { page: 0, pageSize: 100 },
+                                                                    },
+                                                                }}
+                                                                experimentalFeatures={{ newEditingApi: true }}
+                                                                pageSizeOptions={[50, 100]}
+                                                                pagination={DataGridStyle.pagination}
+                                                                checkboxSelection={DataGridStyle.checkboxSelection}
+                                                                columnVisibilityModel={{
+                                                                    id: false,
+                                                                }}
+                                                                rowSelectionModel={selectedRowConsolidations}
+                                                                onRowEditStart={(params, event) => {
+                                                                    const rowId = params.id;
+                                                                    const rowData = params.row;
+
+                                                                    const isNewRow = rowId < 0;
+
+                                                                    if (!canModify && !isNewRow) {
+                                                                        event.defaultMuiPrevented = true;
+                                                                        return;
+                                                                    }
+
+                                                                    event.stopPropagation();
+                                                                    setDisableAddRowBoutonConsolidation(true);
+
+                                                                    useFormikConsolidation.setFieldValue("idCompte", compteId);
+                                                                    useFormikConsolidation.setFieldValue("idDossier", fileId);
+                                                                    useFormikConsolidation.setFieldValue("idDossierAutre", rowData.id_dossier_autre);
+                                                                    useFormikConsolidation.setFieldValue("idConsolidation", rowData.id);
+
+                                                                    setRowModesModelConsolidation((oldModel) => ({
+                                                                        ...oldModel,
+                                                                        [rowId]: { mode: GridRowModes.Edit },
+                                                                    }));
+
+                                                                    setDisableSaveBoutonConsolidation(false);
+                                                                }}
+                                                                onCellKeyDown={handleCellKeyDown}
+                                                            />
+                                                        </Stack>
+
+                                                    </Stack>
+                                                </TabPanel>
+
                                             </TabContext>
                                         </Box>
                                     </Stack>

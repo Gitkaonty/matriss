@@ -2,54 +2,72 @@
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  async up (queryInterface, Sequelize) {
+  async up(queryInterface, Sequelize) {
     await queryInterface.createTable('users', {
       id: {
-          type: Sequelize.BIGINT,
-          allowNull: false,
-          unique: true,
-          autoIncrement:true,
-          primaryKey:true
+        type: Sequelize.BIGINT,
+        allowNull: false,
+        unique: true,
+        autoIncrement: true,
+        primaryKey: true
       },
       compte_id: {
-          type: Sequelize.BIGINT,
-          allowNull: false,
-          defaultValue:0,
-          unique: false,
-          references: {
-              model: 'userscomptes',
-              key: 'id'
-          }
+        type: Sequelize.BIGINT,
+        allowNull: false,
+        defaultValue: 0,
+        unique: false,
+        references: {
+          model: 'userscomptes',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
+      },
+      role_id: {
+        type: Sequelize.BIGINT,
+        allowNull: true,
+        defaultValue: 0,
+        unique: false,
+        references: {
+          model: 'roles',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
       username: {
-          type: Sequelize.STRING(150),
-          unique: false,
-          allowNull: false
+        type: Sequelize.STRING(150),
+        unique: false,
+        allowNull: false
       },
       email: {
-          type: Sequelize.STRING(150),
-          unique: true,
-          isEmail: true, //checks for email format
-          allowNull: false
+        type: Sequelize.STRING(150),
+        unique: true,
+        isEmail: true,
+        allowNull: false
       },
       password: {
-          type: Sequelize.STRING(255),
-          allowNull: false
+        type: Sequelize.STRING(255),
+        allowNull: false
       },
       roles: {
-          type: Sequelize.JSON,
-          allowNull: false
+        type: Sequelize.JSON,
+        allowNull: false
+      },
+      id_portefeuille: {
+        type: Sequelize.ARRAY(Sequelize.BIGINT),
+        allowNull: true
       },
       refresh_token: {
-          type: Sequelize.STRING(350),
-          allowNull: true
+        type: Sequelize.STRING(350),
+        allowNull: true
       },
     },
-    {timestamps: true}
-  );
+      { timestamps: true }
+    );
   },
 
-  async down (queryInterface, Sequelize) {
+  async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('Users');
   }
 };

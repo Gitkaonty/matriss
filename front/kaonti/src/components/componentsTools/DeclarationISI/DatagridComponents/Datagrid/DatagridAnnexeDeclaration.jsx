@@ -6,7 +6,7 @@ import { CiExport } from 'react-icons/ci';
 import { IoMdTrash } from "react-icons/io";
 
 import { init } from '../../../../../../init.js';
-import axios from '../../../../../../config/axios.js';
+import { TbRefresh } from "react-icons/tb";
 
 import PopupEditIsi from '../../Popup/PopupEditIsi.jsx';
 import PopupConfirmDelete from '../../../popupConfirmDelete.jsx';
@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 
 import VirtualTableAnnexeDeclarationTable from '../VirtualTable/Tables/VirtualTableAnnexeDeclarationTable.jsx';
 import VirtualTableAnnexeDeclarationColumns from '../VirtualTable/Columns/VirtualTableAnnexeDeclarationColumns.jsx';
+import useAxiosPrivate from '../../../../../../config/axiosPrivate.js';
 
 const initial = init[0];
 
@@ -26,9 +27,13 @@ const DatagridAnnexe = ({
     selectedExerciceId,
     fileId,
     compteisi,
-    handleOpenPopupExportIsi
+    handleOpenPopupExportIsi,
+    canModify,
+    canAdd,
+    canDelete,
+    canView
 }) => {
-
+    const axiosPrivate = useAxiosPrivate();
     const [showModalPopupIsiEdit, setShowModalPopupIsiEdit] = useState(false);
     const [showDialogIsiDelete, setShowDialogIsiDelete] = useState(false);
     const [showDialogIsiDeleteAll, setShowDialogIsiDeleteAll] = useState(false);
@@ -48,7 +53,7 @@ const DatagridAnnexe = ({
     const deleteSelectedIsi = (value) => {
         if (value) {
             setShowDialogIsiDelete(false);
-            axios.delete(`/declaration/isi/deleteIsi/${idToDelete}`, { data: { action: actionDelete } })
+            axiosPrivate.delete(`/declaration/isi/deleteIsi/${idToDelete}`, { data: { action: actionDelete } })
                 .then((response) => {
                     if (response?.data?.state) {
                         setIsAnnexeRefreshed();
@@ -74,7 +79,7 @@ const DatagridAnnexe = ({
     const deleteAllIsi = (value) => {
         if (value) {
             setShowDialogIsiDelete(false);
-            axios.delete(`/declaration/isi/deleteAllIsi/${compteId}/${fileId}/${selectedExerciceId}`, {
+            axiosPrivate.delete(`/declaration/isi/deleteAllIsi/${compteId}/${fileId}/${selectedExerciceId}`, {
                 params: {
                     mois: Number(valSelectMois),
                     annee: Number(valSelectAnnee)
@@ -102,7 +107,7 @@ const DatagridAnnexe = ({
 
     // Génération des ISI automatique
     const generateAnnexeDeclarationAuto = () => {
-        axios.post('/declaration/isi/generateAnnexeDeclarationAuto', {
+        axiosPrivate.post('/declaration/isi/generateAnnexeDeclarationAuto', {
             id_compte: Number(compteId),
             id_dossier: Number(fileId),
             id_exercice: Number(selectedExerciceId),
@@ -147,7 +152,7 @@ const DatagridAnnexe = ({
     return (
         <>
             {
-                showModalPopupIsiEdit
+                showModalPopupIsiEdit && canModify
                     ?
                     <PopupEditIsi
                         objectAnnexeDIsi={rowToModify}
@@ -158,7 +163,7 @@ const DatagridAnnexe = ({
                     null
             }
             {
-                showDialogIsiDelete ?
+                showDialogIsiDelete && canDelete ?
                     <PopupConfirmDelete
                         msg={`Voulez-vous vraiment supprimer le ligne sélectionnée ?`}
                         confirmationState={deleteSelectedIsi}
@@ -167,7 +172,7 @@ const DatagridAnnexe = ({
                     null
             }
             {
-                showDialogIsiDeleteAll ?
+                showDialogIsiDeleteAll && canDelete ?
                     <PopupConfirmDelete
                         msg={`Voulez-vous vraiment supprimer toutes les lignes de ce tableau ?`}
                         confirmationState={deleteAllIsi}
@@ -207,6 +212,7 @@ const DatagridAnnexe = ({
                     </Tooltip>
                     <Tooltip title="Générer automatiquement la déclaration ISI">
                         <IconButton
+                            disabled={!canAdd}
                             variant="contained"
                             style={{
                                 width: "45px",
@@ -215,15 +221,16 @@ const DatagridAnnexe = ({
                                 borderColor: "transparent",
                                 textTransform: 'none',
                                 outline: 'none',
-                                backgroundColor: '#24772dff',
+                                backgroundColor: initial.theme,
                             }}
                             onClick={generateAnnexeDeclarationAuto}
                         >
-                            <MdOutlineAutoMode style={{ width: '25px', height: '25px', color: 'white' }} />
+                            <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
                         </IconButton>
                     </Tooltip>
                     <Tooltip title="Supprimer toutes les lignes du tableau">
                         <IconButton
+                            disabled={!canDelete}
                             variant="contained"
                             style={{
                                 width: "45px",

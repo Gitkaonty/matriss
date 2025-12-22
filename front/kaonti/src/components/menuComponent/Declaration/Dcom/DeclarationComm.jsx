@@ -16,7 +16,7 @@ import { TbRefresh } from "react-icons/tb";
 import { TbPlaylistAdd } from "react-icons/tb";
 
 import { init } from '../../../../../init';
-import axios from '../../../../../config/axios';
+import axios, { URL } from '../../../../../config/axios';
 import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFile';
 import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
 import toast from 'react-hot-toast';
@@ -30,6 +30,7 @@ import useAuth from '../../../../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
 
 import VirtualTableDroitComm from '../../../componentsTools/DeclarationDroitComm/VirtualTableDroitComm';
+import VirtualTableDroitCommPlp from '../../../componentsTools/DeclarationDroitComm/VirtualTableDroitCommPlp.jsx';
 import PopupDeclarationComm from '../../../componentsTools/DeclarationDroitComm/Popup/PopupDeclarationComm';
 import PopupPlpEdit from '../../../componentsTools/DeclarationDroitComm/Popup/PopupPlpEdit';
 
@@ -37,17 +38,36 @@ import PopupPlpEdit from '../../../componentsTools/DeclarationDroitComm/Popup/Po
 import VirtualTableDroitCommasColumns from '../../../componentsTools/DeclarationDroitComm/TableColumn/VirtualTableDroitCommasColumns.jsx';
 import VirtualTableDroitCommbsColumns from '../../../componentsTools/DeclarationDroitComm/TableColumn/VirtualTableDroitCommbsColumns.jsx';
 import VirtualTableDroitCommPLColumns from '../../../componentsTools/DeclarationDroitComm/TableColumn/VirtualTableDroitCommPLColumns.jsx';
-import droitCommColumnPL from '../../../componentsTools/DeclarationDroitComm/TableColumn/VirtualTableDroitCommPLColumns.jsx';
 import droitCommColumnPLP from '../../../componentsTools/DeclarationDroitComm/TableColumn/DroitColumnPLP';
 
+import usePermission from '../../../../hooks/usePermission.jsx';
+import useAxiosPrivate from '../../../../../config/axiosPrivate.js';
+import PopupActionConfirm from '../../../componentsTools/popupActionConfirm';
+import ExportDComButton from '../../../componentsTools/DeclarationDroitComm/ButtonDComButton/ExportDComButton.jsx';
+
+const getNature = (value) => {
+    if (value === '1') return 'SVT'
+    else if (value === '2') return 'ADR'
+    else if (value === '3') return 'AC'
+    else if (value === '4') return 'AI'
+    else if (value === '5') return 'DEB'
+    else if (value === '6') return 'MV'
+    else if (value === '7') return 'PSV'
+    else if (value === '8') return 'PL'
+    else if (value === '9') return 'PLP'
+}
+
 export default function DeclarationComm() {
+    const { canAdd, canModify, canDelete, canView } = usePermission();
+    const axiosPrivate = useAxiosPrivate();
+
     let initial = init[0];
     const [fileInfos, setFileInfos] = useState('');
     const [fileId, setFileId] = useState(0);
     const { id } = useParams();
     const [noFile, setNoFile] = useState(false);
     let tabCom = ""
-    if (typeof window !== undefined) {
+    if (typeof window !== 'undefined') {
         tabCom = localStorage.getItem('tabCom');
     }
     const [value, setValue] = useState(tabCom || "1");
@@ -65,6 +85,8 @@ export default function DeclarationComm() {
     const [idToDelete, setIdToDelete] = useState(null);
     const [typeDelete, setTypeDelete] = useState(null);
     const [idNumcptToDelete, setIdNumcptToDelete] = useState(null);
+
+    const [isLoading, setIsLoading] = useState(false);
 
     const [isRefreshed, setIsRefreshed] = useState(false);
 
@@ -140,13 +162,15 @@ export default function DeclarationComm() {
     const handleChangeTAB = (event, newValue) => {
         setValue(newValue);
         localStorage.setItem('tabCom', newValue);
+        const nature = getNature(newValue);
+        setNature(nature);
     };
 
     //Fonction formulaire
     const handleOpenFormSVT = (type, nature) => {
-        setNature(nature);
         setTypeActionSVT(type);
         setShowFormSVT(true);
+        setNature(nature);
         const textTitle = getTextTitle(nature);
         setTextTitle(textTitle);
     }
@@ -174,7 +198,6 @@ export default function DeclarationComm() {
 
     // Fonction popup import
     const handleOpenPopupImport = (nature) => {
-        setNature(nature);
         const textTitle = getTextTitle(nature);
         setTextTitle(textTitle);
         setShowPopupImport(true);
@@ -186,6 +209,7 @@ export default function DeclarationComm() {
 
     const handleCloseFormSVT = (value) => {
         setShowFormSVT(value);
+        setRowToModify(null);
     }
 
     const handleCloseFormEditPlp = (value) => {
@@ -194,7 +218,6 @@ export default function DeclarationComm() {
 
     //Ouvrir la dialogue de suppression
     const handleOpenDialogConfirmDeleteComm = (nature) => {
-        setNature(nature);
         setOpenDialogDeleteAllComm(true);
     }
 
@@ -205,7 +228,6 @@ export default function DeclarationComm() {
         setIdNumcptToDelete(Number(row?.id_numcpt));
         setTypeDelete(row.type);
         setOpenDialogDeleteOneComm(true);
-        setNature('SVT');
     }
 
     const deleteOneRowAdr = (row) => {
@@ -213,7 +235,6 @@ export default function DeclarationComm() {
         setIdNumcptToDelete(Number(row?.id_numcpt));
         setTypeDelete(row.type);
         setOpenDialogDeleteOneComm(true);
-        setNature('ADR');
     }
 
     const deleteOneRowAc = (row) => {
@@ -221,7 +242,6 @@ export default function DeclarationComm() {
         setIdNumcptToDelete(Number(row?.id_numcpt));
         setTypeDelete(row.type);
         setOpenDialogDeleteOneComm(true);
-        setNature('AC');
     }
 
     const deleteOneRowAi = (row) => {
@@ -229,7 +249,6 @@ export default function DeclarationComm() {
         setIdNumcptToDelete(Number(row?.id_numcpt));
         setTypeDelete(row.type);
         setOpenDialogDeleteOneComm(true);
-        setNature('AI');
     }
 
     const deleteOneRowDeb = (row) => {
@@ -237,7 +256,6 @@ export default function DeclarationComm() {
         setIdNumcptToDelete(Number(row?.id_numcpt));
         setTypeDelete(row.type);
         setOpenDialogDeleteOneComm(true);
-        setNature('DEB');
     }
 
     const deleteOneRowMv = (row) => {
@@ -245,7 +263,6 @@ export default function DeclarationComm() {
         setIdNumcptToDelete(Number(row?.id_numcpt));
         setTypeDelete(row.type);
         setOpenDialogDeleteOneComm(true);
-        setNature('MV');
     }
 
     const deleteOneRowPsv = (row) => {
@@ -253,7 +270,6 @@ export default function DeclarationComm() {
         setIdNumcptToDelete(Number(row?.id_numcpt));
         setTypeDelete(row.type);
         setOpenDialogDeleteOneComm(true);
-        setNature('PSV');
     }
 
     const deleteOneRowPl = (row) => {
@@ -261,71 +277,71 @@ export default function DeclarationComm() {
         setIdNumcptToDelete(Number(row?.id_numcpt));
         setTypeDelete(row.type);
         setOpenDialogDeleteOneComm(true);
-        setNature('PL');
     }
 
     //Modification ligne ---------------------------------------------------------------------------------
 
-    const modifyOneRowSvt = (row) => {
+    const modifyOneRowSvt = (row, nature) => {
         setRowToModify(row);
         setShowFormSVT(true);
         setTypeActionSVT('Modification');
-        setNature('SVT');
+        setNature(nature);
     }
 
-    const modifyOneRowAdr = (row) => {
+    const modifyOneRowAdr = (row, nature) => {
         setRowToModify(row);
         setShowFormSVT(true);
         setTypeActionSVT('Modification');
-        setNature('ADR');
+        setNature(nature);
     }
 
-    const modifyOneRowAc = (row) => {
+    const modifyOneRowAc = (row, nature) => {
         setRowToModify(row);
         setShowFormSVT(true);
         setTypeActionSVT('Modification');
-        setNature('AC');
+        setNature(nature);
     }
 
-    const modifyOneRowAi = (row) => {
+    const modifyOneRowAi = (row, nature) => {
         setRowToModify(row);
         setShowFormSVT(true);
         setTypeActionSVT('Modification');
-        setNature('AI');
+        setNature(nature);
     }
 
-    const modifyOneRowDeb = (row) => {
+    const modifyOneRowDeb = (row, nature) => {
         setRowToModify(row);
         setShowFormSVT(true);
         setTypeActionSVT('Modification');
-        setNature('DEB');
+        setNature(nature);
     }
 
-    const modifyOneRowMv = (row) => {
+    const modifyOneRowMv = (row, nature) => {
         setRowToModify(row);
         setShowFormSVT(true);
         setTypeActionSVT('Modification');
-        setNature('MV');
+        setNature(nature);
     }
 
-    const modifyOneRowPsv = (row) => {
+    const modifyOneRowPsv = (row, nature) => {
         setRowToModify(row);
         setShowFormSVT(true);
         setTypeActionSVT('Modification');
-        setNature('PSV');
+        setNature(nature);
     }
 
-    const modifyOneRowPl = (row) => {
+    const modifyOneRowPl = (row, nature) => {
         setRowToModify(row);
         setShowFormSVT(true);
         setTypeActionSVT('Modification');
-        setNature('PL');
+        setNature(nature);
     }
 
     //Modification Plp
-    const modifyOneRowPlp = (row) => {
+    const modifyOneRowPlp = (row, nature) => {
         setRowToModify(row);
         setShowFormEditPlp(true);
+        setNature(nature);
     }
 
     const lockTableSvt = () => {
@@ -431,12 +447,13 @@ export default function DeclarationComm() {
     const handleDeleteOneCommByType = (value) => {
         if (value) {
             setOpenDialogDeleteOneComm(false);
-            axios.delete('/declaration/comm/deleteOneCommByType',
+            axiosPrivate.delete('/declaration/comm/deleteOneCommByType',
                 {
                     data: { id: idToDelete, type: nature, action: typeDelete, id_numcpt: idNumcptToDelete }
                 }).then((response) => {
                     if (response?.data?.state) {
                         setIsRefreshed(!isRefreshed);
+                        toast.success(response?.data?.message);
                     } else {
                         toast.error(response?.data?.message);
                     }
@@ -469,10 +486,11 @@ export default function DeclarationComm() {
     //Suppression droit de communication par type
     const handleDeleteAllCommByType = (value) => {
         if (value) {
-            axios.delete('/declaration/comm/deleteAllCommByType', { data: { type: nature } })
+            axiosPrivate.delete('/declaration/comm/deleteAllCommByType', { data: { type: nature } })
                 .then((response) => {
                     if (response.data.state) {
                         setIsRefreshed(!isRefreshed);
+                        toast.success(response?.data?.message);
                     } else {
                         toast.error(response.data.message);
                     }
@@ -525,38 +543,57 @@ export default function DeclarationComm() {
     //Afficher le modal de confirmation de génération automatique
     const handleOpenDialogConfirmGenerateAuto = (nature) => {
         setOpenDialogGenerateAuto(true);
-        setNature(nature);
     }
 
     //Génération automatique d'une table
-    const handleGenerateDComAuto = (value) => {
+    const handleGenerateDComAuto = async (value) => {
         if (value) {
-            axios.post(`/declaration/comm/generateDCommAuto`, {
-                id_dossier: Number(fileId),
-                id_exercice: Number(selectedExerciceId),
-                id_compte: Number(compteId),
-                nature
-            }).then((response) => {
-                const resData = response.data;
-                if (resData.state) {
-                    toast.success(response?.data?.message);
-                    setIsRefreshed(prev => !prev);
-                } else {
-                    toast.error(resData.message)
-                }
-            })
-                .catch((error) => {
-                    toast.error(error.response?.data?.message || error.message);
+            setIsLoading(true);
+            try {
+                await axios.post(`/declaration/comm/generateDCommAuto`, {
+                    id_dossier: Number(fileId),
+                    id_exercice: Number(selectedExerciceId),
+                    id_compte: Number(compteId),
+                    nature
+                }).then((response) => {
+                    const resData = response.data;
+                    if (resData.state) {
+                        toast.success(response?.data?.message);
+                        setIsRefreshed(prev => !prev);
+                    } else {
+                        toast.error(resData.message)
+                    }
                 })
-            setOpenDialogGenerateAuto(false);
+            } catch (error) {
+                const errMsg = error.response?.data?.message || error.message || "Erreur inconnue";
+                toast.error(errMsg);
+            } finally {
+                setOpenDialogGenerateAuto(false);
+            }
         } else {
             setOpenDialogGenerateAuto(false);
         }
+        setIsLoading(false);
     }
 
     const droitCommColumnsA = VirtualTableDroitCommasColumns(fileId);
     const droitCommColumnsB = VirtualTableDroitCommbsColumns(fileId);
     const droitCommColumnPL = VirtualTableDroitCommPLColumns(fileId);
+
+    const exportFile = (type, nature) => {
+        if (type === 'PDF') {
+            window.open(
+                `${URL}/declaration/comm/exportToPDF/${compteId}/${fileId}/${selectedExerciceId}/${nature}`,
+                "_blank"
+            );
+        } else {
+            const link = document.createElement('a');
+            link.href = `${URL}/declaration/comm/exportToExcel/${compteId}/${fileId}/${selectedExerciceId}/${nature}`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    }
 
     //récupérer les informations du dossier sélectionné
     useEffect(() => {
@@ -582,13 +619,15 @@ export default function DeclarationComm() {
     }, []);
 
     useEffect(() => {
-        handleGetDroitCommGLobal();
-        handleGetVerrouillage();
+        if (canView) {
+            handleGetDroitCommGLobal();
+            handleGetVerrouillage();
+        }
     }, [compteId, fileId, selectedExerciceId, isRefreshed])
 
     return (
-        <Box
-        >
+        <>
+
             {
                 noFile
                     ?
@@ -599,7 +638,7 @@ export default function DeclarationComm() {
                     null
             }
             {
-                openDialogDeleteAllComm
+                (openDialogDeleteAllComm && canDelete)
                     ?
                     <PopupConfirmDelete
                         msg={`Voulez-vous vraiment toutes les lignes du ${nature} ?`}
@@ -608,7 +647,7 @@ export default function DeclarationComm() {
                     null
             }
             {
-                openDialogDeleteOneComm
+                (openDialogDeleteOneComm && canDelete)
                     ?
                     <PopupConfirmDelete
                         msg={`Voulez-vous vraiment la ligne selectionné`}
@@ -617,7 +656,7 @@ export default function DeclarationComm() {
                     null
             }
             {
-                showFormSVT ?
+                (showFormSVT && (canAdd || canModify)) ?
                     <PopupDeclarationComm
                         type={typeActionSVT}
                         confirmationState={handleCloseFormSVT}
@@ -632,7 +671,7 @@ export default function DeclarationComm() {
                     /> : null
             }
             {
-                showFormEditPlp ?
+                (showFormEditPlp && canModify) ?
                     <PopupPlpEdit
                         confirmationState={handleCloseFormEditPlp}
                         rowToModify={rowToModify}
@@ -655,1073 +694,1228 @@ export default function DeclarationComm() {
                     null
             }
             {
-                openDialogGenerateAuto ? <PopupConfirmDelete
-                    msg={`Voulez-vous vraiment générer automatiquement les ${nature} ? Toutes les anciennes données seront supprimées.`}
-                    confirmationState={handleGenerateDComAuto}
-                    type={"Generer"}
-                /> : null
+                openDialogGenerateAuto ?
+                    <PopupActionConfirm
+                        msg={`Voulez-vous vraiment générer automatiquement les ${nature} ? Toutes les anciennes données seront supprimées.`}
+                        confirmationState={handleGenerateDComAuto}
+                        isLoading={isLoading}
+                    />
+                    :
+                    null
             }
-            <TabContext value={"1"} >
-                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                    <TabList aria-label="lab API tabs example">
-                        <Tab
-                            style={{
-                                textTransform: 'none',
-                                outline: 'none',
-                                border: 'none',
-                                margin: -5
-                            }}
-                            label={InfoFileStyle(fileInfos?.dossier)} value="1"
-                        />
-                    </TabList>
-                </Box>
-                <TabPanel value="1" style={{ height: '100%' }}>
-                    <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
-                        <Typography variant='h6' sx={{ color: "black" }} align='left'>{"Déclarations - DCom (Droit de communication)"}</Typography>
-                        <Stack width={"100%"} height={"80px"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "20px" }}>
-                            <Stack
-                                direction={"row"}
-                            >
-                                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                                    <InputLabel id="demo-simple-select-standard-label">Exercice:</InputLabel>
-                                    <Select
-                                        labelId="demo-simple-select-standard-label"
-                                        id="demo-simple-select-standard"
-                                        value={selectedExerciceId}
-                                        label={"valSelect"}
-                                        onChange={(e) => handleChangeExercice(e.target.value)}
-                                        sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                        MenuProps={{
-                                            disableScrollLock: true
-                                        }}
-                                    >
-                                        {listeExercice.map((option) => (
-                                            <MenuItem
-                                                key={option.id}
-                                                value={option.id}
-                                            >{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                                        ))
-                                        }
-                                    </Select>
-                                </FormControl>
-
-                                <FormControl variant="standard" sx={{ m: 1, minWidth: 150 }}>
-                                    <InputLabel id="demo-simple-select-standard-label">Période</InputLabel>
-                                    <Select
-                                        disabled
-                                        labelId="demo-simple-select-standard-label"
-                                        id="demo-simple-select-standard"
-                                        value={selectedPeriodeChoiceId}
-                                        label={"valSelect"}
-                                        onChange={(e) => handleChangePeriode(e.target.value)}
-                                        sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                        MenuProps={{
-                                            disableScrollLock: true
-                                        }}
-                                    >
-                                        <MenuItem value={0}>Toutes</MenuItem>
-                                        <MenuItem value={1}>Situations</MenuItem>
-                                    </Select>
-                                </FormControl>
-
-                                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                                    <InputLabel id="demo-simple-select-standard-label">Du</InputLabel>
-                                    <Select
-                                        labelId="demo-simple-select-standard-label"
-                                        id="demo-simple-select-standard"
-                                        value={selectedPeriodeId}
-                                        label={"valSelect"}
-                                        onChange={(e) => handleChangeDateIntervalle(e.target.value)}
-                                        sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                        MenuProps={{
-                                            disableScrollLock: true
-                                        }}
-                                    >
-                                        {listeSituation?.map((option) => (
-                                            <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                                        ))
-                                        }
-                                    </Select>
-                                </FormControl>
-                            </Stack>
-                        </Stack>
-                        <Box sx={{ width: '100%', typography: 'body1' }}>
-                            <TabContext value={value}>
-                                <Box sx={{
-                                    borderBottom: 1,
-                                    borderColor: 'transparent',
-                                    // width: 'fit-content',
-                                    // mx: 'auto',
-                                }}>
-                                    <TabList onChange={handleChangeTAB} aria-label="lab API tabs example" variant='scrollable'>
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="SVT" value="1" />
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="ADR" value="2" />
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="AC" value="3" />
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="AI" value="4" />
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="DEB" value="5" />
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="MV" value="6" />
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="PSV" value="7" />
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="PL" value="8" />
-                                        <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="PLP" value="9" />
-                                    </TabList>
-                                </Box>
-                                <TabPanel
-                                    value="1"
+            <Box>
+                <TabContext value={"1"} >
+                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                        <TabList aria-label="lab API tabs example">
+                            <Tab
+                                style={{
+                                    textTransform: 'none',
+                                    outline: 'none',
+                                    border: 'none',
+                                    margin: -5
+                                }}
+                                label={InfoFileStyle(fileInfos?.dossier)} value="1"
+                            />
+                        </TabList>
+                    </Box>
+                    <TabPanel value="1" style={{ height: '100%' }}>
+                        <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
+                            <Typography variant='h6' sx={{ color: "black" }} align='left'>{"Déclarations - DCom (Droit de communication)"}</Typography>
+                            <Stack width={"100%"} height={"80px"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "20px" }}>
+                                <Stack
+                                    direction={"row"}
                                 >
-                                    <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
-                                        alignContent={"flex-start"} justifyContent={"stretch"} >
-                                        <Stack width={"100%"} height={"20px"} spacing={1} alignItems={"center"}
-                                            alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                            <Typography variant='h6' sx={{ color: "black" }} align='center'>{"Sommes versées à des tiers"}</Typography>
-                                        </Stack>
-                                        <Stack width={"100%"} height={"50px"} spacing={0} alignItems={"center"} alignContent={"center"}
-                                            direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                                direction={"row"} justifyContent={"right"}>
+                                    <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
+                                        <InputLabel id="demo-simple-select-standard-label">Exercice:</InputLabel>
+                                        <Select
+                                            labelId="demo-simple-select-standard-label"
+                                            id="demo-simple-select-standard"
+                                            value={selectedExerciceId}
+                                            label={"valSelect"}
+                                            onChange={(e) => handleChangeExercice(e.target.value)}
+                                            sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                            MenuProps={{
+                                                disableScrollLock: true
+                                            }}
+                                        >
+                                            {listeExercice.map((option) => (
+                                                <MenuItem
+                                                    key={option.id}
+                                                    value={option.id}
+                                                >{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
+                                            ))
+                                            }
+                                        </Select>
+                                    </FormControl>
 
-                                                <Tooltip title="Importer des données">
-                                                    <IconButton
-                                                        onClick={() => handleOpenPopupImport('SVT')}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px",
-                                                            height: "45px",
-                                                            borderRadius: "2px",
-                                                            border: "2px solid rgba(5,96,116,0.60)",
-                                                            backgroundColor: "transparent",
-                                                            textTransform: "none",
-                                                            outline: "none",
-                                                            display: verrouillageSvt ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <CiImport style={{ width: '25px', height: '25px', color: 'rgba(5,96,116,0.60)' }} />
-                                                    </IconButton>
-                                                </Tooltip>
+                                    <FormControl variant="standard" sx={{ m: 1, minWidth: 150 }}>
+                                        <InputLabel id="demo-simple-select-standard-label">Période</InputLabel>
+                                        <Select
+                                            disabled
+                                            labelId="demo-simple-select-standard-label"
+                                            id="demo-simple-select-standard"
+                                            value={selectedPeriodeChoiceId}
+                                            label={"valSelect"}
+                                            onChange={(e) => handleChangePeriode(e.target.value)}
+                                            sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                            MenuProps={{
+                                                disableScrollLock: true
+                                            }}
+                                        >
+                                            <MenuItem value={0}>Toutes</MenuItem>
+                                            <MenuItem value={1}>Situations</MenuItem>
+                                        </Select>
+                                    </FormControl>
 
-                                                <Tooltip title="Ajouter une ligne">
-                                                    <IconButton
-                                                        onClick={() => handleOpenFormSVT('Ajout', 'SVT')}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrouillageSvt ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
+                                    <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
+                                        <InputLabel id="demo-simple-select-standard-label">Du</InputLabel>
+                                        <Select
+                                            labelId="demo-simple-select-standard-label"
+                                            id="demo-simple-select-standard"
+                                            value={selectedPeriodeId}
+                                            label={"valSelect"}
+                                            onChange={(e) => handleChangeDateIntervalle(e.target.value)}
+                                            sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                            MenuProps={{
+                                                disableScrollLock: true
+                                            }}
+                                        >
+                                            {listeSituation?.map((option) => (
+                                                <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
+                                            ))
+                                            }
+                                        </Select>
+                                    </FormControl>
+                                </Stack>
+                            </Stack>
+                            <Box sx={{ width: '100%', typography: 'body1' }}>
+                                <TabContext value={value}>
+                                    <Box sx={{
+                                        borderBottom: 1,
+                                        borderColor: 'transparent',
+                                        // width: 'fit-content',
+                                        // mx: 'auto',
+                                    }}>
+                                        <TabList onChange={handleChangeTAB} aria-label="lab API tabs example" variant='scrollable'>
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="SVT" value="1" />
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="ADR" value="2" />
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="AC" value="3" />
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="AI" value="4" />
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="DEB" value="5" />
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="MV" value="6" />
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="PSV" value="7" />
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="PL" value="8" />
+                                            <Tab disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0} style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="PLP" value="9" />
+                                        </TabList>
+                                    </Box>
+                                    <TabPanel
+                                        value="1"
+                                    >
+                                        <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
+                                            alignContent={"flex-start"} justifyContent={"stretch"} >
+                                            <Stack width={"100%"} height={"20px"} spacing={1} alignItems={"center"}
+                                                alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                                <Typography variant='h6' sx={{ color: "black" }} align='center'>{"Sommes versées à des tiers"}</Typography>
+                                            </Stack>
+                                            <Stack width={"100%"} height={"50px"} spacing={0} alignItems={"center"} alignContent={"center"}
+                                                direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                                    direction={"row"} justifyContent={"right"}>
 
-                                                <Tooltip title="Supprimer toutes les lignes du tableau">
-                                                    <IconButton
-                                                        onClick={() => handleOpenDialogConfirmDeleteComm('SVT')}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.button_delete_color,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrouillageSvt ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
+                                                    <Tooltip title="Importer des données">
+                                                        <IconButton
+                                                            onClick={() => handleOpenPopupImport('SVT')}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px",
+                                                                height: "45px",
+                                                                borderRadius: "2px",
+                                                                border: "2px solid rgba(5,96,116,0.60)",
+                                                                backgroundColor: "transparent",
+                                                                textTransform: "none",
+                                                                outline: "none",
+                                                                display: verrouillageSvt ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <CiImport style={{ width: '25px', height: '25px', color: 'rgba(5,96,116,0.60)' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
 
-                                                <Tooltip title="Actualiser les calculs">
-                                                    <IconButton
-                                                        // onClick={refreshBHIAPC}
-                                                        onClick={() => handleOpenDialogConfirmGenerateAuto('SVT')}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrouillageSvt ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
+                                                    <ExportDComButton
+                                                        exportToExcel={() => exportFile('EXCEL', 'SVT')}
+                                                        exportToPdf={() => exportFile('PDF', 'SVT')}
+                                                        value={nature}
+                                                    />
 
-                                                <Tooltip
-                                                    title={verrouillageSvt ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}
-                                                >
-                                                    <IconButton
-                                                        // onClick={lockTableBHIAPC}
-                                                        onClick={lockTableSvt}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "2px", borderColor: "transparent",
-                                                            backgroundColor: verrouillageSvt ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
+                                                    <Tooltip title="Ajouter une ligne">
+                                                        <IconButton
+                                                            disabled={!canAdd}
+                                                            onClick={() => handleOpenFormSVT('Ajout', 'SVT')}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrouillageSvt ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Supprimer toutes les lignes du tableau">
+                                                        <IconButton
+                                                            disabled={!canDelete}
+                                                            onClick={() => handleOpenDialogConfirmDeleteComm('SVT')}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.button_delete_color,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrouillageSvt ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Actualiser les calculs">
+                                                        <IconButton
+                                                            // onClick={refreshBHIAPC}
+                                                            onClick={() => handleOpenDialogConfirmGenerateAuto('SVT')}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrouillageSvt ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip
+                                                        title={verrouillageSvt ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}
                                                     >
-                                                        {verrouillageSvt
-                                                            ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        }
-                                                    </IconButton>
-                                                </Tooltip>
+                                                        <IconButton
+                                                            // onClick={lockTableBHIAPC}
+                                                            onClick={lockTableSvt}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: verrouillageSvt ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            {verrouillageSvt
+                                                                ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            }
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </Stack>
+                                            </Stack>
+                                            <Stack
+                                                width={"100%"}
+                                                height={"50vh"}
+                                                alignItems={'start'}
+                                                style={{ overflow: 'auto' }}
+                                            >
+                                                <VirtualTableDroitComm
+                                                    canModify={canModify}
+                                                    canDelete={canDelete}
+                                                    nature={'SVT'}
+                                                    columns={droitCommColumnsA}
+                                                    rows={dataSvt}
+                                                    verrouillage={verrouillageSvt}
+                                                    deleteState={deleteOneRowSvt}
+                                                    modifyState={modifyOneRowSvt}
+                                                />
                                             </Stack>
                                         </Stack>
-                                        <Stack
-                                            width={"100%"}
-                                            height={"50vh"}
-                                            alignItems={'start'}
-                                            style={{ overflow: 'auto' }}
-                                        >
-                                            <VirtualTableDroitComm nature={'SVT'} columns={droitCommColumnsA} rows={dataSvt} verrouillage={verrouillageSvt} deleteState={deleteOneRowSvt} modifyState={modifyOneRowSvt} />
-                                        </Stack>
-                                    </Stack>
-                                </TabPanel>
+                                    </TabPanel>
 
-                                <TabPanel value="2">
-                                    <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
-                                        alignContent={"flex-start"} justifyContent={"stretch"} >
-                                        <Stack width={"100%"} height={"20px"} spacing={1} alignItems={"center"}
-                                            alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                            <Typography variant='h6' sx={{ color: "black" }} align='center'>{"Achats de marchandises destinées à la revente"}</Typography>
-                                        </Stack>
-                                        <Stack width={"100%"} height={"50px"} spacing={0} alignItems={"center"} alignContent={"center"}
-                                            direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                                direction={"row"} justifyContent={"right"}>
+                                    <TabPanel value="2">
+                                        <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
+                                            alignContent={"flex-start"} justifyContent={"stretch"} >
+                                            <Stack width={"100%"} height={"20px"} spacing={1} alignItems={"center"}
+                                                alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                                <Typography variant='h6' sx={{ color: "black" }} align='center'>{"Achats de marchandises destinées à la revente"}</Typography>
+                                            </Stack>
+                                            <Stack width={"100%"} height={"50px"} spacing={0} alignItems={"center"} alignContent={"center"}
+                                                direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                                    direction={"row"} justifyContent={"right"}>
 
-                                                <Tooltip title="Importer des données">
-                                                    <IconButton
-                                                        onClick={() => handleOpenPopupImport('ADR')}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px",
-                                                            height: "45px",
-                                                            borderRadius: "2px",
-                                                            border: "2px solid rgba(5,96,116,0.60)",
-                                                            backgroundColor: "transparent",
-                                                            textTransform: "none",
-                                                            outline: "none",
-                                                            display: verrouillageAdr ? 'none' : 'inline-flex',
-                                                        }}
+                                                    <Tooltip title="Importer des données">
+                                                        <IconButton
+                                                            onClick={() => handleOpenPopupImport('ADR')}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px",
+                                                                height: "45px",
+                                                                borderRadius: "2px",
+                                                                border: "2px solid rgba(5,96,116,0.60)",
+                                                                backgroundColor: "transparent",
+                                                                textTransform: "none",
+                                                                outline: "none",
+                                                                display: verrouillageAdr ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <CiImport style={{ width: '25px', height: '25px', color: 'rgba(5,96,116,0.60)' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <ExportDComButton
+                                                        exportToExcel={() => exportFile('EXCEL', 'ADR')}
+                                                        exportToPdf={() => exportFile('PDF', 'ADR')}
+                                                        value={nature}
+                                                    />
+
+                                                    <Tooltip title="Ajouter une ligne">
+                                                        <IconButton
+                                                            disabled={!canAdd}
+                                                            onClick={() => handleOpenFormSVT('Ajout', 'ADR')}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrouillageAdr ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Supprimer toutes les lignes du tableau">
+                                                        <IconButton
+                                                            disabled={!canDelete}
+                                                            onClick={() => handleOpenDialogConfirmDeleteComm('ADR')}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.button_delete_color,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrouillageAdr ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Actualiser les calculs">
+                                                        <IconButton
+                                                            // onClick={refreshBHIAPC}
+                                                            onClick={() => handleOpenDialogConfirmGenerateAuto('ADR')}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrouillageAdr ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip
+                                                        title={verrouillageAdr ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}
                                                     >
-                                                        <CiImport style={{ width: '25px', height: '25px', color: 'rgba(5,96,116,0.60)' }} />
-                                                    </IconButton>
-                                                </Tooltip>
+                                                        <IconButton
+                                                            // onClick={lockTableBHIAPC}
+                                                            onClick={lockTableAdr}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: verrouillageAdr ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            {verrouillageAdr
+                                                                ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            }
+                                                        </IconButton>
+                                                    </Tooltip>
 
-                                                <Tooltip title="Ajouter une ligne">
-                                                    <IconButton
-                                                        onClick={() => handleOpenFormSVT('Ajout', 'ADR')}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrouillageAdr ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
+                                                </Stack>
+                                            </Stack>
 
-                                                <Tooltip title="Supprimer toutes les lignes du tableau">
-                                                    <IconButton
-                                                        onClick={() => handleOpenDialogConfirmDeleteComm('ADR')}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.button_delete_color,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrouillageAdr ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Actualiser les calculs">
-                                                    <IconButton
-                                                        // onClick={refreshBHIAPC}
-                                                        onClick={() => handleOpenDialogConfirmGenerateAuto('ADR')}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrouillageAdr ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip
-                                                    title={verrouillageAdr ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}
-                                                >
-                                                    <IconButton
-                                                        // onClick={lockTableBHIAPC}
-                                                        onClick={lockTableAdr}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "2px", borderColor: "transparent",
-                                                            backgroundColor: verrouillageAdr ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
-                                                    >
-                                                        {verrouillageAdr
-                                                            ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        }
-                                                    </IconButton>
-                                                </Tooltip>
-
+                                            <Stack
+                                                width={"100%"}
+                                                height={"50vh"}
+                                                alignItems={'start'}
+                                                style={{ overflow: 'auto' }}
+                                            >
+                                                <VirtualTableDroitComm
+                                                    canModify={canModify}
+                                                    canDelete={canDelete}
+                                                    nature={'ADR'}
+                                                    columns={droitCommColumnsA}
+                                                    rows={dataAdr}
+                                                    verrouillage={verrouillageAdr}
+                                                    deleteState={deleteOneRowAdr}
+                                                    modifyState={modifyOneRowAdr}
+                                                />
                                             </Stack>
                                         </Stack>
+                                    </TabPanel>
 
-                                        <Stack
-                                            width={"100%"}
-                                            height={"50vh"}
-                                            alignItems={'start'}
-                                            style={{ overflow: 'auto' }}
-                                        >
-                                            <VirtualTableDroitComm nature={'ADR'} columns={droitCommColumnsA} rows={dataAdr} verrouillage={verrouillageAdr} deleteState={deleteOneRowAdr} modifyState={modifyOneRowAdr} />
-                                        </Stack>
-                                    </Stack>
-                                </TabPanel>
+                                    <TabPanel value="3">
+                                        <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
+                                            alignContent={"flex-start"} justifyContent={"stretch"} >
+                                            <Stack width={"100%"} height={"20px"} spacing={1} alignItems={"center"}
+                                                alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                                <Typography variant='h6' sx={{ color: "black" }} align='center'>{"Achats non destinés à la vente"}</Typography>
+                                            </Stack>
+                                            <Stack width={"100%"} height={"50px"} spacing={0} alignItems={"center"} alignContent={"center"}
+                                                direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                                    direction={"row"} justifyContent={"right"}>
+                                                    <Tooltip title="Importer des données">
+                                                        <IconButton
+                                                            onClick={() => handleOpenPopupImport('AC')}
+                                                            style={{
+                                                                width: "45px",
+                                                                height: "45px",
+                                                                borderRadius: "2px",
+                                                                border: "2px solid rgba(5,96,116,0.60)",
+                                                                backgroundColor: "transparent",
+                                                                textTransform: "none",
+                                                                outline: "none",
+                                                                display: verrouillageAc ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <CiImport style={{ width: '25px', height: '25px', color: 'rgba(5,96,116,0.60)' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
 
-                                <TabPanel value="3">
-                                    <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
-                                        alignContent={"flex-start"} justifyContent={"stretch"} >
-                                        <Stack width={"100%"} height={"20px"} spacing={1} alignItems={"center"}
-                                            alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                            <Typography variant='h6' sx={{ color: "black" }} align='center'>{"Achats non destinés à la vente"}</Typography>
-                                        </Stack>
-                                        <Stack width={"100%"} height={"50px"} spacing={0} alignItems={"center"} alignContent={"center"}
-                                            direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                                direction={"row"} justifyContent={"right"}>
-                                                <Tooltip title="Importer des données">
-                                                    <IconButton
-                                                        onClick={() => handleOpenPopupImport('AC')}
-                                                        style={{
-                                                            width: "45px",
-                                                            height: "45px",
-                                                            borderRadius: "2px",
-                                                            border: "2px solid rgba(5,96,116,0.60)",
-                                                            backgroundColor: "transparent",
-                                                            textTransform: "none",
-                                                            outline: "none",
-                                                            display: verrouillageAc ? 'none' : 'inline-flex',
-                                                        }}
+                                                    <ExportDComButton
+                                                        exportToExcel={() => exportFile('EXCEL', 'AC')}
+                                                        exportToPdf={() => exportFile('PDF', 'AC')}
+                                                        value={nature}
+                                                    />
+
+                                                    <Tooltip title="Ajouter une ligne">
+                                                        <IconButton
+                                                            disabled={!canAdd}
+                                                            onClick={() => handleOpenFormSVT('Ajout', 'AC')}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrouillageAc ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Supprimer toutes les lignes du tableau">
+                                                        <IconButton
+                                                            disabled={!canDelete}
+                                                            onClick={() => handleOpenDialogConfirmDeleteComm('AC')}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.button_delete_color,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrouillageAc ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Actualiser les calculs">
+                                                        <IconButton
+                                                            // onClick={refreshBHIAPC}
+                                                            onClick={() => handleOpenDialogConfirmGenerateAuto('AC')}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrouillageAc ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip
+                                                        title={verrouillageAc ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}
                                                     >
-                                                        <CiImport style={{ width: '25px', height: '25px', color: 'rgba(5,96,116,0.60)' }} />
-                                                    </IconButton>
-                                                </Tooltip>
+                                                        <IconButton
+                                                            // onClick={lockTableBHIAPC}
+                                                            onClick={lockTableAc}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: verrouillageAc ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            {verrouillageAc
+                                                                ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            }
+                                                        </IconButton>
+                                                    </Tooltip>
 
-                                                <Tooltip title="Ajouter une ligne">
-                                                    <IconButton
-                                                        onClick={() => handleOpenFormSVT('Ajout', 'AC')}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrouillageAc ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
+                                                </Stack>
+                                            </Stack>
 
-                                                <Tooltip title="Supprimer toutes les lignes du tableau">
-                                                    <IconButton
-                                                        onClick={() => handleOpenDialogConfirmDeleteComm('AC')}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.button_delete_color,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrouillageAc ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Actualiser les calculs">
-                                                    <IconButton
-                                                        // onClick={refreshBHIAPC}
-                                                        onClick={() => handleOpenDialogConfirmGenerateAuto('AC')}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrouillageAc ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip
-                                                    title={verrouillageAc ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}
-                                                >
-                                                    <IconButton
-                                                        // onClick={lockTableBHIAPC}
-                                                        onClick={lockTableAc}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "2px", borderColor: "transparent",
-                                                            backgroundColor: verrouillageAc ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
-                                                    >
-                                                        {verrouillageAc
-                                                            ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        }
-                                                    </IconButton>
-                                                </Tooltip>
-
+                                            <Stack
+                                                width={"100%"}
+                                                height={"50vh"}
+                                                alignItems={'start'}
+                                                style={{ overflow: 'auto' }}
+                                            >
+                                                <VirtualTableDroitComm
+                                                    canModify={canModify}
+                                                    canDelete={canDelete}
+                                                    nature={'AC'}
+                                                    columns={droitCommColumnsA}
+                                                    verrouillage={verrouillageAc}
+                                                    rows={dataAc}
+                                                    deleteState={deleteOneRowAc}
+                                                    modifyState={modifyOneRowAc}
+                                                />
                                             </Stack>
                                         </Stack>
+                                    </TabPanel>
 
-                                        <Stack
-                                            width={"100%"}
-                                            height={"50vh"}
-                                            alignItems={'start'}
-                                            style={{ overflow: 'auto' }}
-                                        >
-                                            <VirtualTableDroitComm nature={'AC'} columns={droitCommColumnsA} verrouillage={verrouillageAc} rows={dataAc} deleteState={deleteOneRowAc} modifyState={modifyOneRowAc} />
-                                        </Stack>
-                                    </Stack>
-                                </TabPanel>
+                                    <TabPanel value="4">
+                                        <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
+                                            alignContent={"flex-start"} justifyContent={"stretch"} >
+                                            <Stack width={"100%"} height={"20px"} spacing={1} alignItems={"center"}
+                                                alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                                <Typography variant='h6' sx={{ color: "black" }} align='center'>{"Achats immobilisés"}</Typography>
+                                            </Stack>
+                                            <Stack width={"100%"} height={"50px"} spacing={0} alignItems={"center"} alignContent={"center"}
+                                                direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                                    direction={"row"} justifyContent={"right"}>
 
-                                <TabPanel value="4">
-                                    <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
-                                        alignContent={"flex-start"} justifyContent={"stretch"} >
-                                        <Stack width={"100%"} height={"20px"} spacing={1} alignItems={"center"}
-                                            alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                            <Typography variant='h6' sx={{ color: "black" }} align='center'>{"Achats immobilisés"}</Typography>
-                                        </Stack>
-                                        <Stack width={"100%"} height={"50px"} spacing={0} alignItems={"center"} alignContent={"center"}
-                                            direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                                direction={"row"} justifyContent={"right"}>
+                                                    <Tooltip title="Importer des données">
+                                                        <IconButton
+                                                            onClick={() => handleOpenPopupImport('AI')}
+                                                            style={{
+                                                                width: "45px",
+                                                                height: "45px",
+                                                                borderRadius: "2px",
+                                                                border: "2px solid rgba(5,96,116,0.60)",
+                                                                backgroundColor: "transparent",
+                                                                textTransform: "none",
+                                                                outline: "none",
+                                                                display: verrouillageAi ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <CiImport style={{ width: '25px', height: '25px', color: 'rgba(5,96,116,0.60)' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
 
-                                                <Tooltip title="Importer des données">
-                                                    <IconButton
-                                                        onClick={() => handleOpenPopupImport('AI')}
-                                                        style={{
-                                                            width: "45px",
-                                                            height: "45px",
-                                                            borderRadius: "2px",
-                                                            border: "2px solid rgba(5,96,116,0.60)",
-                                                            backgroundColor: "transparent",
-                                                            textTransform: "none",
-                                                            outline: "none",
-                                                            display: verrouillageAi ? 'none' : 'inline-flex',
-                                                        }}
+                                                    <ExportDComButton
+                                                        exportToExcel={() => exportFile('EXCEL', 'AI')}
+                                                        exportToPdf={() => exportFile('PDF', 'AI')}
+                                                        value={nature}
+                                                    />
+
+                                                    <Tooltip title="Ajouter une ligne">
+                                                        <IconButton
+                                                            disabled={!canAdd}
+                                                            onClick={() => handleOpenFormSVT('Ajout', 'AI')}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrouillageAi ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Supprimer toutes les lignes du tableau">
+                                                        <IconButton
+                                                            disabled={!canDelete}
+                                                            onClick={() => handleOpenDialogConfirmDeleteComm('AI')}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.button_delete_color,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrouillageAi ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Actualiser les calculs">
+                                                        <IconButton
+                                                            // onClick={refreshBHIAPC}
+                                                            onClick={() => handleOpenDialogConfirmGenerateAuto('AI')}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrouillageAi ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip
+                                                        title={verrouillageAi ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}
                                                     >
-                                                        <CiImport style={{ width: '25px', height: '25px', color: 'rgba(5,96,116,0.60)' }} />
-                                                    </IconButton>
-                                                </Tooltip>
+                                                        <IconButton
+                                                            // onClick={lockTableBHIAPC}
+                                                            onClick={lockTableAi}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: verrouillageAi ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            {verrouillageAi
+                                                                ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            }
+                                                        </IconButton>
+                                                    </Tooltip>
 
-                                                <Tooltip title="Ajouter une ligne">
-                                                    <IconButton
-                                                        onClick={() => handleOpenFormSVT('Ajout', 'AI')}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrouillageAi ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Supprimer toutes les lignes du tableau">
-                                                    <IconButton
-                                                        onClick={() => handleOpenDialogConfirmDeleteComm('AI')}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.button_delete_color,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrouillageAi ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Actualiser les calculs">
-                                                    <IconButton
-                                                        // onClick={refreshBHIAPC}
-                                                        onClick={() => handleOpenDialogConfirmGenerateAuto('AI')}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrouillageAi ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip
-                                                    title={verrouillageAi ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}
-                                                >
-                                                    <IconButton
-                                                        // onClick={lockTableBHIAPC}
-                                                        onClick={lockTableAi}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "2px", borderColor: "transparent",
-                                                            backgroundColor: verrouillageAi ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
-                                                    >
-                                                        {verrouillageAi
-                                                            ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        }
-                                                    </IconButton>
-                                                </Tooltip>
-
+                                                </Stack>
+                                            </Stack>
+                                            <Stack
+                                                width={"100%"}
+                                                height={"50vh"}
+                                                alignItems={'start'}
+                                                style={{ overflow: 'auto' }}
+                                            >
+                                                <VirtualTableDroitComm
+                                                    canModify={canModify}
+                                                    canDelete={canDelete}
+                                                    nature={'AI'}
+                                                    columns={droitCommColumnsA}
+                                                    rows={dataAi}
+                                                    verrouillage={verrouillageAi}
+                                                    deleteState={deleteOneRowAi}
+                                                    modifyState={modifyOneRowAi}
+                                                />
                                             </Stack>
                                         </Stack>
-                                        <Stack
-                                            width={"100%"}
-                                            height={"50vh"}
-                                            alignItems={'start'}
-                                            style={{ overflow: 'auto' }}
-                                        >
-                                            <VirtualTableDroitComm nature={'AI'} columns={droitCommColumnsA} rows={dataAi} verrouillage={verrouillageAi} deleteState={deleteOneRowAi} modifyState={modifyOneRowAi} />
-                                        </Stack>
-                                    </Stack>
-                                </TabPanel>
+                                    </TabPanel>
 
-                                <TabPanel value="5">
-                                    <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
-                                        alignContent={"flex-start"} justifyContent={"stretch"} >
-                                        <Stack width={"100%"} height={"20px"} spacing={1} alignItems={"center"}
-                                            alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                            <Typography variant='h6' sx={{ color: "black" }} align='center'>{"Debours"}</Typography>
-                                        </Stack>
-                                        <Stack width={"100%"} height={"50px"} spacing={0} alignItems={"center"} alignContent={"center"}
-                                            direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                                direction={"row"} justifyContent={"right"}>
+                                    <TabPanel value="5">
+                                        <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
+                                            alignContent={"flex-start"} justifyContent={"stretch"} >
+                                            <Stack width={"100%"} height={"20px"} spacing={1} alignItems={"center"}
+                                                alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                                <Typography variant='h6' sx={{ color: "black" }} align='center'>{"Debours"}</Typography>
+                                            </Stack>
+                                            <Stack width={"100%"} height={"50px"} spacing={0} alignItems={"center"} alignContent={"center"}
+                                                direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                                    direction={"row"} justifyContent={"right"}>
 
-                                                <Tooltip title="Importer des données">
-                                                    <IconButton
-                                                        onClick={() => handleOpenPopupImport('DEB')}
-                                                        style={{
-                                                            width: "45px",
-                                                            height: "45px",
-                                                            borderRadius: "2px",
-                                                            border: "2px solid rgba(5,96,116,0.60)",
-                                                            backgroundColor: "transparent",
-                                                            textTransform: "none",
-                                                            outline: "none",
-                                                            display: verrouillageDeb ? 'none' : 'inline-flex',
-                                                        }}
+                                                    <Tooltip title="Importer des données">
+                                                        <IconButton
+                                                            onClick={() => handleOpenPopupImport('DEB')}
+                                                            style={{
+                                                                width: "45px",
+                                                                height: "45px",
+                                                                borderRadius: "2px",
+                                                                border: "2px solid rgba(5,96,116,0.60)",
+                                                                backgroundColor: "transparent",
+                                                                textTransform: "none",
+                                                                outline: "none",
+                                                                display: verrouillageDeb ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <CiImport style={{ width: '25px', height: '25px', color: 'rgba(5,96,116,0.60)' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <ExportDComButton
+                                                        exportToExcel={() => exportFile('EXCEL', 'DEB')}
+                                                        exportToPdf={() => exportFile('PDF', 'DEB')}
+                                                        value={nature}
+                                                    />
+
+                                                    <Tooltip title="Ajouter une ligne">
+                                                        <IconButton
+                                                            disabled={!canAdd}
+                                                            onClick={() => handleOpenFormSVT('Ajout', 'DEB')}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrouillageDeb ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Supprimer toutes les lignes du tableau">
+                                                        <IconButton
+                                                            disabled={!canDelete}
+                                                            onClick={() => handleOpenDialogConfirmDeleteComm('DEB')}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.button_delete_color,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrouillageDeb ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Actualiser les calculs">
+                                                        <IconButton
+                                                            // onClick={refreshBHIAPC}
+                                                            onClick={() => handleOpenDialogConfirmGenerateAuto('DEB')}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrouillageDeb ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip
+                                                        title={verrouillageDeb ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}
                                                     >
-                                                        <CiImport style={{ width: '25px', height: '25px', color: 'rgba(5,96,116,0.60)' }} />
-                                                    </IconButton>
-                                                </Tooltip>
+                                                        <IconButton
+                                                            // onClick={lockTableBHIAPC}
+                                                            onClick={lockTableDeb}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: verrouillageDeb ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            {verrouillageDeb
+                                                                ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            }
+                                                        </IconButton>
+                                                    </Tooltip>
 
-                                                <Tooltip title="Ajouter une ligne">
-                                                    <IconButton
-                                                        onClick={() => handleOpenFormSVT('Ajout', 'DEB')}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: 'rgba(5,96,116,0.60)',
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrouillageDeb ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Supprimer toutes les lignes du tableau">
-                                                    <IconButton
-                                                        onClick={() => handleOpenDialogConfirmDeleteComm('DEB')}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.button_delete_color,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrouillageDeb ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Actualiser les calculs">
-                                                    <IconButton
-                                                        // onClick={refreshBHIAPC}
-                                                        onClick={() => handleOpenDialogConfirmGenerateAuto('DEB')}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrouillageDeb ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip
-                                                    title={verrouillageDeb ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}
-                                                >
-                                                    <IconButton
-                                                        // onClick={lockTableBHIAPC}
-                                                        onClick={lockTableDeb}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "2px", borderColor: "transparent",
-                                                            backgroundColor: verrouillageDeb ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
-                                                    >
-                                                        {verrouillageDeb
-                                                            ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        }
-                                                    </IconButton>
-                                                </Tooltip>
-
+                                                </Stack>
+                                            </Stack>
+                                            <Stack
+                                                width={"100%"}
+                                                height={"50vh"}
+                                                alignItems={'start'}
+                                                style={{ overflow: 'auto' }}
+                                            >
+                                                <VirtualTableDroitComm
+                                                    canModify={canModify}
+                                                    canDelete={canDelete}
+                                                    nature={'DEB'}
+                                                    columns={droitCommColumnsA}
+                                                    verrouillage={verrouillageDeb}
+                                                    rows={dataDeb}
+                                                    deleteState={deleteOneRowDeb}
+                                                    modifyState={modifyOneRowDeb}
+                                                />
                                             </Stack>
                                         </Stack>
-                                        <Stack
-                                            width={"100%"}
-                                            height={"50vh"}
-                                            alignItems={'start'}
-                                            style={{ overflow: 'auto' }}
-                                        >
-                                            <VirtualTableDroitComm nature={'DEB'} columns={droitCommColumnsA} verrouillage={verrouillageDeb} rows={dataDeb} deleteState={deleteOneRowDeb} modifyState={modifyOneRowDeb} />
-                                        </Stack>
-                                    </Stack>
-                                </TabPanel>
+                                    </TabPanel>
 
-                                <TabPanel value="6">
-                                    <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
-                                        alignContent={"flex-start"} justifyContent={"stretch"} >
-                                        <Stack width={"100%"} height={"20px"} spacing={1} alignItems={"center"}
-                                            alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                            <Typography variant='h6' sx={{ color: "black" }} align='center'>{"Marchandises vendues"}</Typography>
-                                        </Stack>
-                                        <Stack width={"100%"} height={"50px"} spacing={0} alignItems={"center"} alignContent={"center"}
-                                            direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                                direction={"row"} justifyContent={"right"}>
+                                    <TabPanel value="6">
+                                        <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
+                                            alignContent={"flex-start"} justifyContent={"stretch"} >
+                                            <Stack width={"100%"} height={"20px"} spacing={1} alignItems={"center"}
+                                                alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                                <Typography variant='h6' sx={{ color: "black" }} align='center'>{"Marchandises vendues"}</Typography>
+                                            </Stack>
+                                            <Stack width={"100%"} height={"50px"} spacing={0} alignItems={"center"} alignContent={"center"}
+                                                direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                                    direction={"row"} justifyContent={"right"}>
 
-                                                <Tooltip title="Importer des données">
-                                                    <IconButton
-                                                        onClick={() => handleOpenPopupImport('MV')}
-                                                        style={{
-                                                            width: "45px",
-                                                            height: "45px",
-                                                            borderRadius: "2px",
-                                                            border: "2px solid rgba(5,96,116,0.60)",
-                                                            backgroundColor: "transparent",
-                                                            textTransform: "none",
-                                                            outline: "none",
-                                                            display: verrouillageMv ? 'none' : 'inline-flex',
-                                                        }}
+                                                    <Tooltip title="Importer des données">
+                                                        <IconButton
+                                                            onClick={() => handleOpenPopupImport('MV')}
+                                                            style={{
+                                                                width: "45px",
+                                                                height: "45px",
+                                                                borderRadius: "2px",
+                                                                border: "2px solid rgba(5,96,116,0.60)",
+                                                                backgroundColor: "transparent",
+                                                                textTransform: "none",
+                                                                outline: "none",
+                                                                display: verrouillageMv ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <CiImport style={{ width: '25px', height: '25px', color: 'rgba(5,96,116,0.60)' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <ExportDComButton
+                                                        exportToExcel={() => exportFile('EXCEL', 'MV')}
+                                                        exportToPdf={() => exportFile('PDF', 'MV')}
+                                                        value={nature}
+                                                    />
+
+                                                    <Tooltip title="Ajouter une ligne">
+                                                        <IconButton
+                                                            disabled={!canAdd}
+                                                            onClick={() => handleOpenFormSVT('Ajout', 'MV')}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrouillageMv ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Supprimer toutes les lignes du tableau">
+                                                        <IconButton
+                                                            disabled={!canDelete}
+                                                            onClick={() => handleOpenDialogConfirmDeleteComm('MV')}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.button_delete_color,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrouillageMv ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Actualiser les calculs">
+                                                        <IconButton
+                                                            // onClick={refreshBHIAPC}
+                                                            onClick={() => handleOpenDialogConfirmGenerateAuto('MV')}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrouillageMv ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip
+                                                        title={verrouillageMv ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}
                                                     >
-                                                        <CiImport style={{ width: '25px', height: '25px', color: 'rgba(5,96,116,0.60)' }} />
-                                                    </IconButton>
-                                                </Tooltip>
+                                                        <IconButton
+                                                            // onClick={lockTableBHIAPC}
+                                                            onClick={lockTableMv}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: verrouillageMv ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            {verrouillageMv
+                                                                ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            }
+                                                        </IconButton>
+                                                    </Tooltip>
 
-                                                <Tooltip title="Ajouter une ligne">
-                                                    <IconButton
-                                                        onClick={() => handleOpenFormSVT('Ajout', 'MV')}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: 'rgba(5,96,116,0.60)',
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrouillageMv ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Supprimer toutes les lignes du tableau">
-                                                    <IconButton
-                                                        onClick={() => handleOpenDialogConfirmDeleteComm('MV')}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.button_delete_color,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrouillageMv ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Actualiser les calculs">
-                                                    <IconButton
-                                                        // onClick={refreshBHIAPC}
-                                                        onClick={() => handleOpenDialogConfirmGenerateAuto('MV')}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrouillageMv ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip
-                                                    title={verrouillageMv ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}
-                                                >
-                                                    <IconButton
-                                                        // onClick={lockTableBHIAPC}
-                                                        onClick={lockTableMv}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "2px", borderColor: "transparent",
-                                                            backgroundColor: verrouillageMv ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
-                                                    >
-                                                        {verrouillageMv
-                                                            ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        }
-                                                    </IconButton>
-                                                </Tooltip>
-
+                                                </Stack>
+                                            </Stack>
+                                            <Stack
+                                                width={"100%"}
+                                                height={"50vh"}
+                                                alignItems={'start'}
+                                                style={{ overflow: 'auto' }}
+                                            >
+                                                <VirtualTableDroitComm
+                                                    canModify={canModify}
+                                                    canDelete={canDelete}
+                                                    nature={'MV'}
+                                                    columns={droitCommColumnsB}
+                                                    verrouillage={verrouillageMv}
+                                                    rows={dataMv}
+                                                    deleteState={deleteOneRowMv}
+                                                    modifyState={modifyOneRowMv}
+                                                />
                                             </Stack>
                                         </Stack>
-                                        <Stack
-                                            width={"100%"}
-                                            height={"50vh"}
-                                            alignItems={'start'}
-                                            style={{ overflow: 'auto' }}
-                                        >
-                                            <VirtualTableDroitComm nature={'MV'} columns={droitCommColumnsB} verrouillage={verrouillageMv} rows={dataMv} deleteState={deleteOneRowMv} modifyState={modifyOneRowMv} />
-                                        </Stack>
-                                    </Stack>
-                                </TabPanel>
+                                    </TabPanel>
 
-                                <TabPanel value="7">
-                                    <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
-                                        alignContent={"flex-start"} justifyContent={"stretch"} >
-                                        <Stack width={"100%"} height={"20px"} spacing={1} alignItems={"center"}
-                                            alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                            <Typography variant='h6' sx={{ color: "black" }} align='center'>{"Prestations de services vendues"}</Typography>
-                                        </Stack>
-                                        <Stack width={"100%"} height={"50px"} spacing={0} alignItems={"center"} alignContent={"center"}
-                                            direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                                direction={"row"} justifyContent={"right"}>
+                                    <TabPanel value="7">
+                                        <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
+                                            alignContent={"flex-start"} justifyContent={"stretch"} >
+                                            <Stack width={"100%"} height={"20px"} spacing={1} alignItems={"center"}
+                                                alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                                <Typography variant='h6' sx={{ color: "black" }} align='center'>{"Prestations de services vendues"}</Typography>
+                                            </Stack>
+                                            <Stack width={"100%"} height={"50px"} spacing={0} alignItems={"center"} alignContent={"center"}
+                                                direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                                    direction={"row"} justifyContent={"right"}>
 
-                                                <Tooltip title="Importer des données">
-                                                    <IconButton
-                                                        onClick={() => handleOpenPopupImport('PSV')}
-                                                        style={{
-                                                            width: "45px",
-                                                            height: "45px",
-                                                            borderRadius: "2px",
-                                                            border: "2px solid rgba(5,96,116,0.60)",
-                                                            backgroundColor: "transparent",
-                                                            textTransform: "none",
-                                                            outline: "none",
-                                                            display: verrouillagePsv ? 'none' : 'inline-flex',
-                                                        }}
+                                                    <Tooltip title="Importer des données">
+                                                        <IconButton
+                                                            onClick={() => handleOpenPopupImport('PSV')}
+                                                            style={{
+                                                                width: "45px",
+                                                                height: "45px",
+                                                                borderRadius: "2px",
+                                                                border: "2px solid rgba(5,96,116,0.60)",
+                                                                backgroundColor: "transparent",
+                                                                textTransform: "none",
+                                                                outline: "none",
+                                                                display: verrouillagePsv ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <CiImport style={{ width: '25px', height: '25px', color: 'rgba(5,96,116,0.60)' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <ExportDComButton
+                                                        exportToExcel={() => exportFile('EXCEL', 'PSV')}
+                                                        exportToPdf={() => exportFile('PDF', 'PSV')}
+                                                        value={nature}
+                                                    />
+
+                                                    <Tooltip title="Ajouter une ligne">
+                                                        <IconButton
+                                                            disabled={!canAdd}
+                                                            onClick={() => handleOpenFormSVT('Ajout', 'PSV')}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrouillagePsv ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Supprimer toutes les lignes du tableau">
+                                                        <IconButton
+                                                            disabled={!canDelete}
+                                                            onClick={() => handleOpenDialogConfirmDeleteComm('PSV')}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.button_delete_color,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrouillagePsv ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Actualiser les calculs">
+                                                        <IconButton
+                                                            // onClick={refreshBHIAPC}
+                                                            onClick={() => handleOpenDialogConfirmGenerateAuto('PSV')}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrouillagePsv ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip
+                                                        title={verrouillagePsv ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}
                                                     >
-                                                        <CiImport style={{ width: '25px', height: '25px', color: 'rgba(5,96,116,0.60)' }} />
-                                                    </IconButton>
-                                                </Tooltip>
+                                                        <IconButton
+                                                            // onClick={lockTableBHIAPC}
+                                                            onClick={lockTablePsv}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: verrouillagePsv ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            {verrouillagePsv
+                                                                ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            }
+                                                        </IconButton>
+                                                    </Tooltip>
 
-                                                <Tooltip title="Ajouter une ligne">
-                                                    <IconButton
-                                                        onClick={() => handleOpenFormSVT('Ajout', 'PSV')}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrouillagePsv ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Supprimer toutes les lignes du tableau">
-                                                    <IconButton
-                                                        onClick={() => handleOpenDialogConfirmDeleteComm('PSV')}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.button_delete_color,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrouillagePsv ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Actualiser les calculs">
-                                                    <IconButton
-                                                        // onClick={refreshBHIAPC}
-                                                        onClick={() => handleOpenDialogConfirmGenerateAuto('PSV')}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrouillagePsv ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip
-                                                    title={verrouillagePsv ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}
-                                                >
-                                                    <IconButton
-                                                        // onClick={lockTableBHIAPC}
-                                                        onClick={lockTablePsv}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "2px", borderColor: "transparent",
-                                                            backgroundColor: verrouillagePsv ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
-                                                    >
-                                                        {verrouillagePsv
-                                                            ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        }
-                                                    </IconButton>
-                                                </Tooltip>
-
+                                                </Stack>
+                                            </Stack>
+                                            <Stack
+                                                width={"100%"}
+                                                height={"50vh"}
+                                                alignItems={'start'}
+                                                style={{ overflow: 'auto' }}
+                                            >
+                                                <VirtualTableDroitComm
+                                                    canModify={canModify}
+                                                    canDelete={canDelete}
+                                                    nature={'PSV'}
+                                                    columns={droitCommColumnsB}
+                                                    verrouillage={verrouillagePsv}
+                                                    rows={dataPsv}
+                                                    deleteState={deleteOneRowPsv}
+                                                    modifyState={modifyOneRowPsv}
+                                                />
                                             </Stack>
                                         </Stack>
-                                        <Stack
-                                            width={"100%"}
-                                            height={"50vh"}
-                                            alignItems={'start'}
-                                            style={{ overflow: 'auto' }}
-                                        >
-                                            <VirtualTableDroitComm nature={'PSV'} columns={droitCommColumnsB} verrouillage={verrouillagePsv} rows={dataPsv} deleteState={deleteOneRowPsv} modifyState={modifyOneRowPsv} />
-                                        </Stack>
-                                    </Stack>
-                                </TabPanel>
+                                    </TabPanel>
 
-                                <TabPanel value="8">
-                                    <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
-                                        alignContent={"flex-start"} justifyContent={"stretch"} >
-                                        <Stack width={"100%"} height={"20px"} spacing={1} alignItems={"center"}
-                                            alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                            <Typography variant='h6' sx={{ color: "black" }} align='center'>{"Produis locaux"}</Typography>
-                                        </Stack>
-                                        <Stack width={"100%"} height={"50px"} spacing={0} alignItems={"center"} alignContent={"center"}
-                                            direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                                direction={"row"} justifyContent={"right"}>
+                                    <TabPanel value="8">
+                                        <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
+                                            alignContent={"flex-start"} justifyContent={"stretch"} >
+                                            <Stack width={"100%"} height={"20px"} spacing={1} alignItems={"center"}
+                                                alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                                <Typography variant='h6' sx={{ color: "black" }} align='center'>{"Produis locaux"}</Typography>
+                                            </Stack>
+                                            <Stack width={"100%"} height={"50px"} spacing={0} alignItems={"center"} alignContent={"center"}
+                                                direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                                    direction={"row"} justifyContent={"right"}>
 
-                                                <Tooltip title="Importer des données">
-                                                    <IconButton
-                                                        onClick={() => handleOpenPopupImport('PL')}
-                                                        style={{
-                                                            width: "45px",
-                                                            height: "45px",
-                                                            borderRadius: "2px",
-                                                            border: "2px solid rgba(5,96,116,0.60)",
-                                                            backgroundColor: "transparent",
-                                                            textTransform: "none",
-                                                            outline: "none",
-                                                            display: verrouillagePl ? 'none' : 'inline-flex',
-                                                        }}
+                                                    <Tooltip title="Importer des données">
+                                                        <IconButton
+                                                            onClick={() => handleOpenPopupImport('PL')}
+                                                            style={{
+                                                                width: "45px",
+                                                                height: "45px",
+                                                                borderRadius: "2px",
+                                                                border: "2px solid rgba(5,96,116,0.60)",
+                                                                backgroundColor: "transparent",
+                                                                textTransform: "none",
+                                                                outline: "none",
+                                                                display: verrouillagePl ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <CiImport style={{ width: '25px', height: '25px', color: 'rgba(5,96,116,0.60)' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <ExportDComButton
+                                                        exportToExcel={() => exportFile('EXCEL', 'PL')}
+                                                        exportToPdf={() => exportFile('PDF', 'PL')}
+                                                        value={nature}
+                                                    />
+
+                                                    <Tooltip title="Ajouter une ligne">
+                                                        <IconButton
+                                                            disabled={!canAdd}
+                                                            onClick={() => handleOpenFormSVT('Ajout', 'PL')}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrouillagePl ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Supprimer toutes les lignes du tableau">
+                                                        <IconButton
+                                                            disabled={!canDelete}
+                                                            onClick={() => handleOpenDialogConfirmDeleteComm('PL')}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.button_delete_color,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrouillagePl ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+                                                    <Tooltip title="Actualiser les calculs">
+                                                        <IconButton
+                                                            // onClick={refreshBHIAPC}
+                                                            onClick={() => handleOpenDialogConfirmGenerateAuto('PL')}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "1px", borderColor: "transparent",
+                                                                backgroundColor: initial.theme,
+                                                                textTransform: 'none', outline: 'none',
+                                                                display: verrouillagePl ? 'none' : 'inline-flex',
+                                                            }}
+                                                        >
+                                                            <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+
+
+                                                    <Tooltip
+                                                        title={verrouillagePl ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}
                                                     >
-                                                        <CiImport style={{ width: '25px', height: '25px', color: 'rgba(5,96,116,0.60)' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Ajouter une ligne">
-                                                    <IconButton
-                                                        onClick={() => handleOpenFormSVT('Ajout', 'PL')}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrouillagePl ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Supprimer toutes les lignes du tableau">
-                                                    <IconButton
-                                                        onClick={() => handleOpenDialogConfirmDeleteComm('PL')}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.button_delete_color,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrouillagePl ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-                                                <Tooltip title="Actualiser les calculs">
-                                                    <IconButton
-                                                        // onClick={refreshBHIAPC}
-                                                        onClick={() => handleOpenDialogConfirmGenerateAuto('PL')}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
-                                                            textTransform: 'none', outline: 'none',
-                                                            display: verrouillagePl ? 'none' : 'inline-flex',
-                                                        }}
-                                                    >
-                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </Tooltip>
-
-
-                                                <Tooltip
-                                                    title={verrouillagePl ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}
-                                                >
-                                                    <IconButton
-                                                        // onClick={lockTableBHIAPC}
-                                                        onClick={lockTablePl}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "2px", borderColor: "transparent",
-                                                            backgroundColor: verrouillagePl ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
-                                                    >
-                                                        {verrouillagePl
-                                                            ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        }
-                                                    </IconButton>
-                                                </Tooltip>
+                                                        <IconButton
+                                                            // onClick={lockTableBHIAPC}
+                                                            onClick={lockTablePl}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: verrouillagePl ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            {verrouillagePl
+                                                                ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            }
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </Stack>
+                                            </Stack>
+                                            <Stack
+                                                width={"100%"}
+                                                height={"50vh"}
+                                                alignItems={'start'}
+                                                style={{ overflow: 'auto' }}
+                                            >
+                                                <VirtualTableDroitComm
+                                                    canModify={canModify}
+                                                    canDelete={canDelete}
+                                                    nature={'PL'}
+                                                    columns={droitCommColumnPL}
+                                                    verrouillage={verrouillagePl}
+                                                    rows={dataPl}
+                                                    deleteState={deleteOneRowPl}
+                                                    modifyState={modifyOneRowPl}
+                                                />
                                             </Stack>
                                         </Stack>
-                                        <Stack
-                                            width={"100%"}
-                                            height={"50vh"}
-                                            alignItems={'start'}
-                                            style={{ overflow: 'auto' }}
-                                        >
-                                            <VirtualTableDroitComm nature={'PL'} columns={droitCommColumnPL} verrouillage={verrouillagePl} rows={dataPl} deleteState={deleteOneRowPl} modifyState={modifyOneRowPl} />
-                                        </Stack>
-                                    </Stack>
-                                </TabPanel>
+                                    </TabPanel>
 
-                                <TabPanel value="9">
-                                    <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
-                                        alignContent={"flex-start"} justifyContent={"stretch"} >
-                                        <Stack width={"100%"} height={"20px"} spacing={1} alignItems={"center"}
-                                            alignContent={"center"} direction={"row"} justifyContent={"center"}>
-                                            <Typography variant='h6' sx={{ color: "black" }} align='center'>{"Produis locaux par produits"}</Typography>
-                                        </Stack>
-                                        <Stack width={"100%"} height={"50px"} spacing={0} alignItems={"center"} alignContent={"center"}
-                                            direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                                direction={"row"} justifyContent={"right"}>
+                                    <TabPanel value="9">
+                                        <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
+                                            alignContent={"flex-start"} justifyContent={"stretch"} >
+                                            <Stack width={"100%"} height={"20px"} spacing={1} alignItems={"center"}
+                                                alignContent={"center"} direction={"row"} justifyContent={"center"}>
+                                                <Typography variant='h6' sx={{ color: "black" }} align='center'>{"Produis locaux par produits"}</Typography>
+                                            </Stack>
+                                            <Stack width={"100%"} height={"50px"} spacing={0} alignItems={"center"} alignContent={"center"}
+                                                direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
+                                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                                    direction={"row"} justifyContent={"right"}>
 
-                                                <Tooltip
-                                                    title={verrouillagePlp ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}
-                                                >
-                                                    <IconButton
-                                                        onClick={lockTablePlp}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "45px", height: '45px',
-                                                            borderRadius: "2px", borderColor: "transparent",
-                                                            backgroundColor: verrouillagePlp ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
+                                                    <ExportDComButton
+                                                        exportToExcel={() => exportFile('EXCEL', 'PLP')}
+                                                        exportToPdf={() => exportFile('PDF', 'PLP')}
+                                                        value={nature}
+                                                    />
+
+                                                    <Tooltip
+                                                        title={verrouillagePlp ? 'Déverrouiller le tableau' : 'Vérrouiller le tableau'}
                                                     >
-                                                        {verrouillagePlp
-                                                            ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                            : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                        }
-                                                    </IconButton>
-                                                </Tooltip>
+                                                        <IconButton
+                                                            onClick={lockTablePlp}
+                                                            variant="contained"
+                                                            style={{
+                                                                width: "45px", height: '45px',
+                                                                borderRadius: "2px", borderColor: "transparent",
+                                                                backgroundColor: verrouillagePlp ? "rgba(240, 43, 33, 1)" : "rgba(9, 77, 31, 0.8)",
+                                                                textTransform: 'none', outline: 'none'
+                                                            }}
+                                                        >
+                                                            {verrouillagePlp
+                                                                ? <CiLock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                                : <CiUnlock style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                            }
+                                                        </IconButton>
+                                                    </Tooltip>
 
+                                                </Stack>
+                                            </Stack>
+                                            <Stack
+                                                width={"100%"}
+                                                height={"50vh"}
+                                                alignItems={'start'}
+                                                style={{ overflow: 'auto' }}
+                                            >
+                                                <VirtualTableDroitCommPlp
+                                                    canModify={canModify}
+                                                    canDelete={canDelete}
+                                                    nature={'PLP'}
+                                                    columns={droitCommColumnPLP}
+                                                    verrouillage={verrouillagePlp}
+                                                    rows={dataPlp}
+                                                    modifyState={modifyOneRowPlp}
+                                                />
                                             </Stack>
                                         </Stack>
-                                        <Stack
-                                            width={"100%"}
-                                            height={"50vh"}
-                                            alignItems={'start'}
-                                            style={{ overflow: 'auto' }}
-                                        >
-                                            <VirtualTableDroitComm nature={'PLP'} columns={droitCommColumnPLP} verrouillage={verrouillagePlp} rows={dataPlp} modifyState={modifyOneRowPlp} />
-                                        </Stack>
-                                    </Stack>
-                                </TabPanel>
-                            </TabContext>
-                        </Box>
-                    </Stack>
-                </TabPanel>
-            </TabContext>
-        </Box>
+                                    </TabPanel>
+                                </TabContext>
+                            </Box>
+                        </Stack>
+                    </TabPanel>
+                </TabContext>
+            </Box >
+        </>
     )
 }

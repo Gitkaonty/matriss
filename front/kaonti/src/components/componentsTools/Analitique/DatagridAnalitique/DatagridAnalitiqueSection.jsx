@@ -11,7 +11,7 @@ import { init } from '../../../../../init';
 import axios from '../../../../../config/axios';
 import toast from 'react-hot-toast';
 import { DataGridStyle } from '../../../componentsTools/DatagridToolsStyle';
-import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes } from '@mui/x-data-grid';
+import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes, useGridApiRef } from '@mui/x-data-grid';
 import QuickFilter from '../../../componentsTools/DatagridToolsStyle';
 import { TfiSave } from 'react-icons/tfi';
 
@@ -20,8 +20,12 @@ import * as Yup from "yup";
 
 import PopupConfirmDelete from '../../popupConfirmDelete';
 import FormatedInput from '../../FormatedInput';
+import useAxiosPrivate from '../../../../../config/axiosPrivate';
 
-const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, isCaActive }) => {
+const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, isCaActive, canModify, canAdd, canDelete, canView }) => {
+    const apiRef = useGridApiRef();
+
+    const axiosPrivate = useAxiosPrivate();
     let initial = init[0];
     const [sectionsData, setSectionsData] = useState([]);
 
@@ -221,6 +225,9 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
                         InputProps={{
                             inputComponent: FormatedInput,
                         }}
+                        onFocus={(e) => {
+                            e.target.setSelectionRange(0, 0);
+                        }}
                     />
                 );
             },
@@ -380,7 +387,7 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
 
             const dataToSend = { ...formNewParam.values, compteId: id_compte, fileId: id_dossier, axeId: selectedRowAxeId[0] };
 
-            axios.post(`/paramCa/addOrUpdateSections`, dataToSend).then((response) => {
+            axiosPrivate.post(`/paramCa/addOrUpdateSections`, dataToSend).then((response) => {
                 const resData = response.data;
 
                 if (resData.state) {
@@ -410,12 +417,13 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
                 if (idToDelete < 0) {
                     setOpenDialogDeleteRow(false);
                     setSectionsData(sectionsData.filter((row) => row.id !== idToDelete));
+                    toast.success('Section supprimé avec succès');
                     return;
                 }
 
                 const dataToSend = { idToDelete };
 
-                axios.post(`/paramCa/deleteSections`, dataToSend).then((response) => {
+                axiosPrivate.post(`/paramCa/deleteSections`, dataToSend).then((response) => {
                     const resData = response.data;
                     if (resData.state) {
                         setOpenDialogDeleteRow(false);
@@ -527,14 +535,71 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
         setSelectedRowId(ids);
     }
 
+    const handleCellKeyDown = (params, event) => {
+        const api = apiRef.current;
+
+        const allCols = api.getAllColumns().filter(c => c.editable);
+        const sortedRowIds = api.getSortedRowIds();
+        const currentColIndex = allCols.findIndex(c => c.field === params.field);
+        const currentRowIndex = sortedRowIds.indexOf(params.id);
+
+        let nextColIndex = currentColIndex;
+        let nextRowIndex = currentRowIndex;
+
+        if (event.key === 'Tab' && !event.shiftKey) {
+            event.preventDefault();
+            nextColIndex = currentColIndex + 1;
+            if (nextColIndex >= allCols.length) {
+                nextColIndex = 0;
+                nextRowIndex = currentRowIndex + 1;
+            }
+        } else if (event.key === 'Tab' && event.shiftKey) {
+            event.preventDefault();
+            nextColIndex = currentColIndex - 1;
+            if (nextColIndex < 0) {
+                nextColIndex = allCols.length - 1;
+                nextRowIndex = currentRowIndex - 1;
+            }
+        } else if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            nextColIndex = currentColIndex + 1;
+            if (nextColIndex >= allCols.length) nextColIndex = allCols.length - 1;
+        } else if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            nextColIndex = currentColIndex - 1;
+            if (nextColIndex < 0) nextColIndex = 0;
+        }
+
+        const nextRowId = sortedRowIds[nextRowIndex];
+        const targetCol = allCols[nextColIndex];
+
+        if (!nextRowId || !targetCol) return;
+
+        try {
+            api.stopCellEditMode({ id: params.id, field: params.field });
+        } catch (err) {
+            console.warn('Erreur stopCellEditMode ignorée:', err);
+        }
+
+        setTimeout(() => {
+            const cellInput = document.querySelector(
+                `[data-id="${nextRowId}"] [data-field="${targetCol.field}"] input, 
+             [data-id="${nextRowId}"] [data-field="${targetCol.field}"] textarea`
+            );
+            if (cellInput) cellInput.focus();
+        }, 50);
+    };
+
     useEffect(() => {
-        handleGetSections();
+        if (canView) {
+            handleGetSections();
+        }
     }, [id_compte, id_dossier, isRefreshed, selectedRowAxeId])
 
     return (
         <>
             {
-                openDialogDeleteRow
+                (openDialogDeleteRow && canDelete)
                     ?
                     <PopupConfirmDelete
                         msg={"Voulez-vous vraiment supprimer la ligne sélectionnée ?"}
@@ -561,7 +626,7 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
                     <Tooltip title="Ajouter une ligne">
                         <Stack>
                             <IconButton
-                                disabled={disableAddRowBouton || !isCaActive}
+                                disabled={!canAdd || disableAddRowBouton || !isCaActive || !(selectedRowAxeId.length > 0)}
                                 variant="contained"
                                 onClick={handleOpenDialogAddNewRow}
                                 style={{
@@ -579,7 +644,7 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
                     <Tooltip title="Modifier la ligne sélectionnée">
                         <Stack>
                             <IconButton
-                                disabled={disableModifyBouton || !isCaActive}
+                                disabled={(!canModify && selectedRowId > 0) || disableModifyBouton || !isCaActive || !(selectedRowAxeId.length > 0)}
                                 variant="contained"
                                 onClick={handleEditClick(selectedRowId)}
                                 style={{
@@ -597,7 +662,7 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
                     <Tooltip title="Sauvegarder les modifications">
                         <Stack>
                             <IconButton
-                                disabled={disableSaveBouton || !formNewParam.isValid || !isCaActive}
+                                disabled={(!canAdd && !canModify) || disableSaveBouton || !formNewParam.isValid || !isCaActive || !(selectedRowAxeId.length > 0)}
                                 variant="contained"
                                 onClick={handleSaveClick(selectedRowId)}
                                 style={{
@@ -615,7 +680,7 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
                     <Tooltip title="Annuler les modifications">
                         <Stack>
                             <IconButton
-                                disabled={disableCancelBouton || !isCaActive}
+                                disabled={disableCancelBouton || !isCaActive || !(selectedRowAxeId.length > 0)}
                                 variant="contained"
                                 onClick={handleCancelClick(selectedRowId)}
                                 style={{
@@ -633,7 +698,7 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
                     <Tooltip title="Supprimer la ligne sélectionné">
                         <Stack>
                             <IconButton
-                                disabled={disableDeleteBouton || !isCaActive}
+                                disabled={!canDelete || disableDeleteBouton || !isCaActive || !(selectedRowAxeId.length > 0)}
                                 onClick={handleOpenDialogConfirmDeleteRow}
                                 variant="contained"
                                 style={{
@@ -656,6 +721,7 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
                     }}
                 >
                     <DataGrid
+                        apiRef={apiRef} F
                         disableMultipleSelection={DataGridStyle.disableMultipleSelection}
                         disableColumnSelector={DataGridStyle.disableColumnSelector}
                         disableDensitySelector={DataGridStyle.disableDensitySelector}
@@ -705,43 +771,46 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
                         }}
                         rowSelectionModel={selectedRowSectionId}
                         onRowEditStart={(params, event) => {
-                            if (!selectedRowSectionId.length || selectedRowSectionId[0] !== params.id) {
+                            const rowId = params.id;
+                            const rowData = params.row;
+
+                            const isNewRow = rowId < 0;
+
+                            if (!canModify && !isNewRow) {
                                 event.defaultMuiPrevented = true;
+                                return;
                             }
-                            if (selectedRowSectionId.includes(params.id)) {
-                                setDisableAddRowBouton(true);
-                                event.stopPropagation();
 
-                                const rowId = params.id;
-                                const rowData = params.row;
+                            event.stopPropagation();
 
-                                setSectionValidationColor('transparent');
-                                setIntituleValidationColor('transparent');
-                                setCompteValidationColor('transparent');
-                                setPourcentageValidationColor('transparent');
+                            setSectionValidationColor('transparent');
+                            setIntituleValidationColor('transparent');
+                            setCompteValidationColor('transparent');
+                            setPourcentageValidationColor('transparent');
 
-                                if (rowData.par_default) {
-                                    setDisableDefaultFieldModif(true);
-                                } else {
-                                    setDisableDefaultFieldModif(false);
-                                }
-
-                                formNewParam.setFieldValue("id", rowData.id ?? 0);
-                                formNewParam.setFieldValue("section", rowData.section ?? '');
-                                formNewParam.setFieldValue("intitule", rowData.intitule ?? '');
-                                formNewParam.setFieldValue("compte", rowData.compte ?? 0);
-                                formNewParam.setFieldValue("pourcentage", rowData.pourcentage ?? '');
-                                formNewParam.setFieldValue("par_defaut", rowData.par_defaut ?? false);
-                                formNewParam.setFieldValue("fermer", rowData.fermer ?? false);
-
-                                setRowModesModel((oldModel) => ({
-                                    ...oldModel,
-                                    [rowId]: { mode: GridRowModes.Edit },
-                                }));
-
-                                setDisableSaveBouton(false);
+                            if (rowData.par_default) {
+                                setDisableDefaultFieldModif(true);
+                            } else {
+                                setDisableDefaultFieldModif(false);
                             }
+
+                            formNewParam.setFieldValue("id", rowData.id ?? 0);
+                            formNewParam.setFieldValue("section", rowData.section ?? '');
+                            formNewParam.setFieldValue("intitule", rowData.intitule ?? '');
+                            formNewParam.setFieldValue("compte", rowData.compte ?? 0);
+                            formNewParam.setFieldValue("pourcentage", rowData.pourcentage ?? '');
+                            formNewParam.setFieldValue("par_defaut", rowData.par_defaut ?? false);
+                            formNewParam.setFieldValue("fermer", rowData.fermer ?? false);
+
+                            setRowModesModel((oldModel) => ({
+                                ...oldModel,
+                                [rowId]: { mode: GridRowModes.Edit },
+                            }));
+
+                            setDisableAddRowBouton(true);
+                            setDisableSaveBouton(false);
                         }}
+                        onCellKeyDown={handleCellKeyDown}
                     />
                 </Stack>
             </Box>

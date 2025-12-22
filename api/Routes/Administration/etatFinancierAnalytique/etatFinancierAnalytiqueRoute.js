@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 
+const verifyJWT = require('../../../Middlewares/verifyJWT');
+const verifyPermission = require('../../../Middlewares/verifyPermission');
+
 const etatFinancierControllerAnalytique = require('../../../Controllers/administration/etatFinancierAnalytique/etatFinancierAnalytiqueController');
 
 // Récupération des états financier global
@@ -10,13 +13,13 @@ router.post('/getEtatFinancierAnalytiqueGlobal/:id_compte/:id_dossier/:id_exerci
 router.post('/generateTableEtatFinancierAnalytique', etatFinancierControllerAnalytique.generateTableEtatFinancierAnalytique);
 
 // Ajout ou modification d'une ajustement externe
-router.post('/addModifyAjustementExterneAnalytique', etatFinancierControllerAnalytique.addModifyAjustementExterneAnalytique);
+router.post('/addModifyAjustementExterneAnalytique', verifyJWT, verifyPermission('ADD', 'EDIT'), etatFinancierControllerAnalytique.addModifyAjustementExterneAnalytique);
 
 // Récupération ajustement externe
 router.get('/getAjustementExterneAnalytique', etatFinancierControllerAnalytique.getAjustementExterneAnalytique);
 
 // Suppréssion ajustement externe
-router.delete('/deleteAjustementExterneAnalytique/:id', etatFinancierControllerAnalytique.deleteAjustementExterneAnalytique);
+router.delete('/deleteAjustementExterneAnalytique/:id', verifyJWT, verifyPermission('DELETE'), etatFinancierControllerAnalytique.deleteAjustementExterneAnalytique);
 
 // Exportation en pdf
 router.get('/exportEtatFinancierAnalytiqueToPdf/:id_compte/:id_dossier/:id_exercice/:id_etat', etatFinancierControllerAnalytique.exportEtatFinancierAnalytiqueToPdf);

@@ -66,7 +66,7 @@ const PopupConfirmDelete = ({ msg, confirmationState, type, presonalisedMessage 
 
                 <Stack sx={{ marginTop: 3 }} width={"98%"} height={"100px"} spacing={2} alignItems={'center'} alignContent={"center"}
                     direction={"column"} justifyContent={"center"} style={{ marginLeft: '10px' }}>
-                    <Typography sx={{ ml: 2, flex: 1, textAlign: "center" }} variant="h7" component="div" >
+                    <Typography sx={{ ml: 2, flex: 1, textAlign: "center", whiteSpace: 'pre-line' }} variant="h7" component="div" >
                         {msg}
                     </Typography>
 

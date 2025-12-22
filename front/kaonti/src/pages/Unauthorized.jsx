@@ -1,11 +1,10 @@
-import { useNavigate } from "react-router-dom";
 import { Box, Typography, Button } from "@mui/material";
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 
 const Unauthorized = () => {
-    const navigate = useNavigate();
-
-    const goBack = () => navigate(-1);
+    const handleReturnLogin = () => {
+        window.location.href = '/';
+    }
 
     return (
         <Box
@@ -34,7 +33,7 @@ const Unauthorized = () => {
                     textTransform: 'none',
                     outline: 'none',
                 }}
-                onClick={goBack}
+                onClick={handleReturnLogin}
             >
                 Retour en arrière
             </Button>

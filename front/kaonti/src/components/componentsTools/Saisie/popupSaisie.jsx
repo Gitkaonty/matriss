@@ -28,7 +28,6 @@ import FormatedInput from '../FormatedInput';
 import DropPDFUploader from '../FileUploader/DropPdfUploader';
 
 import toast from 'react-hot-toast';
-import axios from '../../../../config/axios';
 
 import useAuth from '../../../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
@@ -38,6 +37,8 @@ import { PiKeyboardDuotone } from "react-icons/pi";
 import PopupAddNewAccount from '../PlanComptable/PopupAddNewAccount';
 import { MdAccountBalance } from "react-icons/md";
 import PopupAjustCa from './popupAjustCa';
+
+import useAxiosPrivate from '../../../../config/axiosPrivate';
 
 let initial = init[0];
 
@@ -83,8 +84,19 @@ const PopupSaisie = ({
     setIsRefreshedPlanComptable,
     isCaActive,
     listCa,
-    setListCa
+    setListCa,
+    canView,
+    canAdd,
+    canDelete,
+    canModify
 }) => {
+
+    const defaultDeviseData = listeDevise.find(val => val.par_defaut === true);
+
+    const defaultDevise = defaultDeviseData.code === 'MGA' ? 'MGA' : 'Devises';
+
+    const axiosPrivate = useAxiosPrivate();
+
     const [taux, setTaux] = useState(rowsEdit[0]?.taux || 0);
     const selectRef = useRef();
 
@@ -158,9 +170,9 @@ const PopupSaisie = ({
             valSelectCodeJnl: parseInt(rowsEdit[0]?.id_journal) || "",
             valSelectMois: parseInt(rowsEdit[0]?.dateecriture?.split('-')[1]) || "",
             valSelectAnnee: rowsEdit[0]?.dateecriture?.split('-')[0] || "",
-            choixDevise: rowsEdit[0]?.devise || 'MGA',
+            choixDevise: rowsEdit[0]?.devise || defaultDevise,
             taux: rowsEdit[0]?.taux || taux,
-            currency: rowsEdit[0]?.devise || "",
+            currency: rowsEdit[0]?.devise || defaultDeviseData.code,
             tableRows: [],
             file: rowsEdit[0]?.fichier || null,
             id_dossier: fileId,
@@ -504,7 +516,11 @@ const PopupSaisie = ({
         });
 
         let id_devise = '';
-        if (formSaisie.values.choixDevise !== 'MGA') {
+
+        if (formSaisie.values.choixDevise === 'MGA') {
+            const devise = listeDevise.find((val) => val.code === 'MGA');
+            id_devise = devise?.id;
+        } else {
             const devise = listeDevise.find((val) => val.code === formSaisie.values.currency);
             id_devise = devise?.id;
         }
@@ -543,8 +559,11 @@ const PopupSaisie = ({
                     ? '/administration/traitementSaisie/ajoutJournal'
                     : '/administration/traitementSaisie/modificationJournal';
 
-            const response = await axios.post(url, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+            const response = await axiosPrivate.post(url, formData, {
+                headers: {
+                    ...axiosPrivate.defaults.headers,
+                    'Content-Type': 'multipart/form-data'
+                }
             });
 
             if (response?.data?.state) {
@@ -1071,11 +1090,13 @@ const PopupSaisie = ({
                                                                 '&:focus-visible': { outline: 'none' },
                                                             }}
                                                         >
-                                                            {listeDevise.map((value, index) => (
-                                                                <OptionJoy key={index} value={value.code}>
-                                                                    {`${value.code}`}
-                                                                </OptionJoy>
-                                                            ))}
+                                                            {listeDevise
+                                                                .filter(val => val.code !== 'MGA')
+                                                                .map((value, index) => (
+                                                                    <OptionJoy key={index} value={value.code}>
+                                                                        {`${value.code}`}
+                                                                    </OptionJoy>
+                                                                ))}
                                                         </SelectJoy>
                                                     </>
                                                 }

@@ -65,7 +65,9 @@ module.exports = (sequelize, DataTypes) => {
       references: {
         model: 'dossiers',
         key: 'id'
-      }
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     },
     id_compte: {
       type: DataTypes.INTEGER,
@@ -73,7 +75,9 @@ module.exports = (sequelize, DataTypes) => {
       references: {
         model: 'userscomptes',
         key: 'id'
-      }
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     }
   }, {
     tableName: 'personnels',

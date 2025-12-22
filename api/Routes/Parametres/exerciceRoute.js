@@ -1,7 +1,10 @@
 const express = require('express');
 const paramExerciceController = require('../../Controllers/Parametres/paramExerciceController');
 
-    const router = express.Router();
+const verifyJWT = require('../../Middlewares/verifyJWT');
+const verifyPermission = require('../../Middlewares/verifyPermission');
+
+const router = express.Router();
 
 //récupérer la liste de dossiers associé l'user et à son compte
 router.get('/listeExercice/:id', paramExerciceController.getListeExercice);
@@ -10,13 +13,13 @@ router.get('/listeExercice/:id', paramExerciceController.getListeExercice);
 router.get('/listeSituation/:id', paramExerciceController.getListeSituation);
 
 //création du premier exercice
-router.post('/createFirstExercice', paramExerciceController.createFirstExercice);
+router.post('/createFirstExercice', verifyJWT, verifyPermission('ADD'), paramExerciceController.createFirstExercice);
 
 //création de l'exercice suivant
-router.post('/createNextExercice', paramExerciceController.createNextExercice);
+router.post('/createNextExercice', verifyJWT, verifyPermission('ADD'), paramExerciceController.createNextExercice);
 
 //création de l'exercice précédent
-router.post('/createPreviewExercice', paramExerciceController.createPreviewExercice);
+router.post('/createPreviewExercice', verifyJWT, verifyPermission('ADD'), paramExerciceController.createPreviewExercice);
 
 //verrouiller un exercice
 router.post('/verrouillerExercice', paramExerciceController.verrouillerExercice);
@@ -25,7 +28,7 @@ router.post('/verrouillerExercice', paramExerciceController.verrouillerExercice)
 router.post('/deverrouillerExercice', paramExerciceController.deverrouillerExercice);
 
 //supprimer un exercice
-router.post('/deleteExercice', paramExerciceController.deleteExercice);
+router.post('/deleteExercice', verifyJWT, verifyPermission('DELETE'), paramExerciceController.deleteExercice);
 
 //récupérer une exercice par son identifiant
 router.get('/listeExerciceById/:id', paramExerciceController.getListeExerciceById);

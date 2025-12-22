@@ -104,9 +104,14 @@ db.etatsplp = require('./etatsPlpModel')(sequelize, DataTypes);
 db.etatsplpmatrices = require('./etatsPlpMatriceModel')(sequelize, DataTypes);
 db.resetToken = require('./resetTokenModel')(sequelize, DataTypes);
 db.isi = require('./isiModel')(sequelize, DataTypes);
+
+db.consolidationDossier = require('./consolidationDossierModel')(sequelize, DataTypes);
+db.consolidationCompte = require('./consolidationCompteModel')(sequelize, DataTypes);
+
 //
 db.compteRubriquesExternesMatrices = require('./compteRubriqueExterneMatriceModel')(sequelize, DataTypes);
 db.rubriquesExternesMatrices = require('./rubriquesExterneMatriceModel')(sequelize, DataTypes);
+//
 
 //
 db.caSections = require('./caSectionMolel')(sequelize, DataTypes);
@@ -144,6 +149,17 @@ db.etatsEtatFinancier = require('./etatsEtatFinancierModel')(sequelize, DataType
 db.etatsEtatFinancierMatrice = require('./etatsEtatFinancierMatriceModel')(sequelize, DataTypes);
 //
 
+//
+db.portefeuille = require('./portefeuilleModel')(sequelize, DataTypes);
+//
+
+//Gsetion rôle et permission
+db.roles = require('./rolesModel')(sequelize, DataTypes);
+db.permissions = require('./permissionsModel')(sequelize, DataTypes);
+db.userPermission = require('./userPermissionsModel')(sequelize, DataTypes);
+db.rolePermission = require('./rolePermissionsModel')(sequelize, DataTypes);
+//
+
 const Devise = require('./deviseModel')(sequelize, DataTypes);
 db.Devise = Devise;
 db.Devise.belongsTo(db.userscomptes, { foreignKey: 'id_compte' });
@@ -172,7 +188,7 @@ db.rubriques.hasMany(db.balances, { as: 'detailsTFTI', foreignKey: 'rubriquetfti
 db.rubriques.hasMany(db.balances, { as: 'detailsTFTD', foreignKey: 'rubriquetftd', sourceKey: 'id_rubrique' });
 
 //
-db.userscomptes.hasMany(db.devises, { foreignKey: 'compte_id', sourceKey: 'id' });
+db.userscomptes.hasMany(db.devises, { foreignKey: 'id_compte', sourceKey: 'id' });
 db.dossierplancomptable.hasMany(db.journals, { foreignKey: 'id_numcpt', sourceKey: 'id' });
 db.codejournals.hasMany(db.journals, { foreignKey: 'id_journal', sourceKey: 'id' });
 
@@ -195,9 +211,30 @@ db.liassesdrs.hasMany(db.ajustements, { as: 'ajustsSDR', foreignKey: 'id_rubriqu
 db.liasseses.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique', targetKey: 'id_rubrique' });
 
 //
-db.devises.belongsTo(db.userscomptes, { foreignKey: 'compte_id', targetKey: 'id' });
+db.devises.belongsTo(db.userscomptes, { foreignKey: 'id_compte', targetKey: 'id' });
 db.journals.belongsTo(db.dossierplancomptable, { foreignKey: 'id_numcpt', targetKey: 'id' });
 db.journals.belongsTo(db.codejournals, { foreignKey: 'id_journal', targetKey: 'id' });
+
+
+// Rôle et permission
+db.roles.hasMany(db.rolePermission, { foreignKey: 'role_id', sourceKey: 'id' });
+db.rolePermission.belongsTo(db.roles, { foreignKey: 'role_id', targetKey: 'id' });
+
+db.permissions.hasMany(db.rolePermission, { foreignKey: 'permission_id', sourceKey: 'id' });
+db.rolePermission.belongsTo(db.permissions, { foreignKey: 'permission_id', targetKey: 'id' });
+
+db.users.hasMany(db.userPermission, { foreignKey: 'user_id', sourceKey: 'id' });
+db.userPermission.belongsTo(db.users, { foreignKey: 'user_id', targetKey: 'id' });
+
+db.permissions.hasMany(db.userPermission, { foreignKey: 'permission_id', sourceKey: 'id' });
+db.userPermission.belongsTo(db.permissions, { foreignKey: 'permission_id', targetKey: 'id' });
+
+db.roles.hasMany(db.users, { foreignKey: 'role_id', sourceKey: 'id' });
+db.users.belongsTo(db.roles, { foreignKey: 'role_id', targetKey: 'id' });
+
+// Portefeuille
+// db.portefeuille.hasMany(db.dossiers, { foreignKey: 'id_portefeuille', sourceKey: 'id' });
+// db.dossiers.belongsTo(db.portefeuille, { foreignKey: 'id_portefeuille', targetKey: 'id' });
 
 // Droit de communication
 // Première table
@@ -217,7 +254,7 @@ db.droitcommas.belongsTo(db.dossierplancomptable, { foreignKey: 'id_numcpt', tar
 db.userscomptes.hasMany(db.droitcommbs, { foreignKey: 'id_compte', sourceKey: 'id' });
 db.droitcommbs.belongsTo(db.userscomptes, { foreignKey: 'id_compte', targetKey: 'id' });
 
-db.dossiers.hasMany(db.droitcommas, { foreignKey: 'id_dossier', sourceKey: 'id' });
+db.dossiers.hasMany(db.droitcommbs, { foreignKey: 'id_dossier', sourceKey: 'id' });
 db.droitcommbs.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id' });
 
 db.exercices.hasMany(db.droitcommbs, { foreignKey: 'id_exercice', sourceKey: 'id' });
@@ -444,6 +481,32 @@ db.irsa.belongsTo(db.personnels, { foreignKey: 'personnelId', as: 'personnel' })
 
 db.personnels.hasMany(db.paies, { foreignKey: 'personnelId' });
 db.paies.belongsTo(db.personnels, { foreignKey: 'personnelId', as: 'personnel' });
+
+// Consolidation dossier
+db.userscomptes.hasMany(db.consolidationDossier, { foreignKey: 'id_compte', sourceKey: 'id' });
+db.consolidationDossier.belongsTo(db.userscomptes, { foreignKey: 'id_compte', targetKey: 'id' });
+
+db.dossiers.hasMany(db.consolidationDossier, { foreignKey: 'id_dossier', sourceKey: 'id' });
+db.consolidationDossier.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id', as: 'dossierPrincipal', });
+
+db.dossiers.hasMany(db.consolidationDossier, { foreignKey: 'id_dossier_autre', sourceKey: 'id' });
+db.consolidationDossier.belongsTo(db.dossiers, { foreignKey: 'id_dossier_autre', targetKey: 'id', as: 'dossierAutre' });
+
+// Consolidation compte
+db.userscomptes.hasMany(db.consolidationCompte, { foreignKey: 'id_compte', sourceKey: 'id' });
+db.consolidationCompte.belongsTo(db.userscomptes, { foreignKey: 'id_compte', targetKey: 'id' });
+
+db.dossiers.hasMany(db.consolidationCompte, { foreignKey: 'id_dossier', sourceKey: 'id' });
+db.consolidationCompte.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id', as: 'dossierPrincipal' });
+
+db.dossiers.hasMany(db.consolidationCompte, { foreignKey: 'id_dossier_autre', sourceKey: 'id' });
+db.consolidationCompte.belongsTo(db.dossiers, { foreignKey: 'id_dossier_autre', targetKey: 'id', as: 'dossierAutre' });
+
+db.dossierplancomptable.hasMany(db.consolidationCompte, { foreignKey: 'id_numcpt', sourceKey: 'id' });
+db.consolidationCompte.belongsTo(db.dossierplancomptable, { foreignKey: 'id_numcpt', targetKey: 'id', as: 'numCptPrincipal' });
+
+db.dossierplancomptable.hasMany(db.consolidationCompte, { foreignKey: 'id_numcpt_autre', sourceKey: 'id' });
+db.consolidationCompte.belongsTo(db.dossierplancomptable, { foreignKey: 'id_numcpt_autre', targetKey: 'id', as: 'numCptAutre' });
 
 //etatsCentresFiscales
 db.etatsCentresFiscales.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id' });

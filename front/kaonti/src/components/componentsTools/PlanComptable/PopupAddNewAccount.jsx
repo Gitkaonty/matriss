@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import {
-    Typography, Stack, FormControl, InputLabel, Select, MenuItem, TextField, Box, Tab, Autocomplete
+    Typography, Stack, FormControl, InputLabel, Select, MenuItem, TextField, Box, Tab, Autocomplete,
+    FormControlLabel,
+    Radio,
+    RadioGroup
 } from '@mui/material';
 import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
@@ -22,6 +25,7 @@ import { init } from '../../../../init';
 import axios from '../../../../config/axios';
 import QuickFilter, { DataGridStyle } from '../DatagridToolsStyle';
 import PopupConfirmDelete from '../popupConfirmDelete';
+import useAxiosPrivate from '../../../../config/axiosPrivate';
 
 const initial = init[0];
 
@@ -65,6 +69,7 @@ const PopupAddNewAccount = ({
     onClose,
     stateAction,
 }) => {
+    const axiosPrivate = useAxiosPrivate();
     const [typeCptGeneral, setTypeCptGeneral] = useState(true);
     const [formulaireTier, setFormulaireTier] = useState('general');
     const [disableLocalites, setDisableLocalites] = useState(false);
@@ -131,7 +136,8 @@ const PopupAddNewAccount = ({
         province: '',
         region: '',
         district: '',
-        commune: ''
+        commune: '',
+        typecomptabilite: 'Français'
     };
 
     const normalizeCompte = (v) =>
@@ -387,7 +393,7 @@ const PopupAddNewAccount = ({
     //Ajouter ou modifier une dossier plan comptable
     const formAddCpthandleSubmit = (values) => {
         values.compte = normalizeCompte(values.compte);
-        axios.post(`/paramPlanComptable/AddCpt`, values).then((response) => {
+        axiosPrivate.post(`/paramPlanComptable/AddCpt`, values).then((response) => {
             const resData = response.data;
             if (resData.state === true) {
                 setSelectedProvince('');
@@ -692,6 +698,7 @@ const PopupAddNewAccount = ({
                             setFieldValue("region", selectedRow.region);
                             setFieldValue("district", selectedRow.district);
                             setFieldValue("commune", selectedRow.commune);
+                            setFieldValue("typecomptabilite", selectedRow.typecomptabilite || 'Français');
 
                             //Activer ou non la listbox base compte auxiliaire
                             if (selectedRow.nature === 'General' || selectedRow.nature === 'Collectif') {
@@ -1386,6 +1393,31 @@ const PopupAddNewAccount = ({
                                                                         )}
                                                                     />
                                                                     <ErrorMessage name='commune' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                </Stack>
+                                                            </Stack>
+
+                                                            <Stack spacing={1.5} style={{ marginTop: 15 }}>
+                                                                <label htmlFor="motcle" style={{ fontSize: 12, color: '#3FA2F6' }}>Type de comptabilité</label>
+
+                                                                <Stack direction="row" spacing={4} alignItems="center">
+                                                                    <RadioGroup
+                                                                        row
+                                                                        value={values.typecomptabilite}
+                                                                        onChange={(e) => setFieldValue("typecomptabilite", e.target.value)}
+                                                                        defaultValue={'Français'}
+                                                                    >
+                                                                        <FormControlLabel
+                                                                            value="Français"
+                                                                            control={<Radio />}
+                                                                            label="Français"
+                                                                        />
+                                                                        <FormControlLabel
+                                                                            value="Autres"
+                                                                            control={<Radio />}
+                                                                            label="Autres"
+                                                                        />
+                                                                    </RadioGroup>
+                                                                    <ErrorMessage name='typecomptabilite' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
                                                                 </Stack>
                                                             </Stack>
 

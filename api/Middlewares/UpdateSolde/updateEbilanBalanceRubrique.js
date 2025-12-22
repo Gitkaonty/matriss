@@ -33,7 +33,9 @@ const balanceColumnBilan = async (compte_id, dossier_id, exercice_id) => {
             {
                 rubriquebilanbrut: 0,
                 rubriquebilanamort: 0,
-                senscalculbilan: ''
+                senscalculbilan: '',
+                senscalculbilanamort: '',
+                senscalculbilanbrut: ''
             },
             {
                 where:
@@ -76,10 +78,12 @@ const balanceColumnBilan = async (compte_id, dossier_id, exercice_id) => {
                         for (let param of listeAssociatedCompte) {
                             const { listCpt } = await recupIdCompteFromPlanComptable(compte_id, dossier_id, param.compte);
                             let fieldToUpdate = (param.nature === 'AMORT') ? 'rubriquebilanamort' : 'rubriquebilanbrut';
+                            let sensFieldToUpdate = (param.nature === 'AMORT') ? 'senscalculbilanamort' : 'senscalculbilanbrut';
 
                             const fieldsToUpdate = {
                                 [fieldToUpdate]: item.id_rubrique,
-                                senscalculbilan: param.senscalcul
+                                senscalculbilan: param.senscalcul,
+                                [sensFieldToUpdate]: param.senscalcul
                             };
 
                             switch (param.condition) {

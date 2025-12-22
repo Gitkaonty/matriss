@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 
+const verifyJWT = require('../../../Middlewares/verifyJWT');
+const verifyPermission = require('../../../Middlewares/verifyPermission');
+
 const paramRubriquesExternesController = require('../../../Controllers/Parametres/RubriqueExternes/paramRubriquesExternesController');
 
 // Récupération des rubriques externes
@@ -13,19 +16,19 @@ router.post('/addRubriquesExternes', paramRubriquesExternesController.addRubriqu
 router.put('/updateRubriquesExternes/:id', paramRubriquesExternesController.updateRubriquesExternes);
 
 // Suppression rubtiques externes
-router.delete('/deleteRubriquesExternes/:id', paramRubriquesExternesController.deleteRubriquesExternes);
+router.delete('/deleteRubriquesExternes/:id', verifyJWT, verifyPermission('DELETE'), paramRubriquesExternesController.deleteRubriquesExternes);
 
 // Ajouter ou supprimer une rubriques externes
-router.post('/addOrUpdateRubriqueExterne', paramRubriquesExternesController.addOrUpdateRubriqueExterne);
+router.post('/addOrUpdateRubriqueExterne', verifyJWT, verifyPermission('ADD', 'EDIT'), paramRubriquesExternesController.addOrUpdateRubriqueExterne);
 
 // Récupération compte rubriques externes
 router.post('/getCompteRubriqueExterne', paramRubriquesExternesController.getCompteRubriqueExterne);
 
 // Suppréssion compte rubriques externes 
-router.delete('/deleteCompteRubriqueExterne/:id', paramRubriquesExternesController.deleteCompteRubriqueExterne);
+router.delete('/deleteCompteRubriqueExterne/:id', verifyJWT, verifyPermission('DELETE'), paramRubriquesExternesController.deleteCompteRubriqueExterne);
 
 // Ajouter ou supprimer une compte rubrique externes
-router.post('/addOrUpdateCompteRubriqueExterne', paramRubriquesExternesController.addOrUpdateCompteRubriqueExterne);
+router.post('/addOrUpdateCompteRubriqueExterne', verifyJWT, verifyPermission('ADD', 'EDIT'), paramRubriquesExternesController.addOrUpdateCompteRubriqueExterne);
 
 // Réstaurer les paramètres par défaut
 router.post('/restaureDefaultParameter', paramRubriquesExternesController.restaureDefaultParameter);

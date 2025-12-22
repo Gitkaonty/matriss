@@ -16,7 +16,7 @@ import { RiExchangeBoxFill } from "react-icons/ri";
 import PopupAjustRubriqueSDREbilan from '../FormulaireModifTableauEbilan/popupAjustRubriqueSDREbilan';
 import { FaRegPenToSquare } from "react-icons/fa6";
 
-const VirtualTableSDRbilan = ({ refreshTable, columns, rows, noCollapsible, state }) => {
+const VirtualTableSDRbilan = ({ refreshTable, columns, rows, noCollapsible, state, canModify, canAdd, canDelete, canView }) => {
   const initial = init[0];
   const targetColumnId = 'rubriquesmatrix.libelle';
   const [openRows, setOpenRows] = React.useState({});
@@ -100,7 +100,23 @@ const VirtualTableSDRbilan = ({ refreshTable, columns, rows, noCollapsible, stat
 
   return (
     <Box sx={{ width: '100%', padding: 0, margin: 0 }}>
-      {openTableDetail ? <PopupAjustRubriqueSDREbilan actionState={handleRefreshTableAjust} row={detailRow} column={detailColumnHeader} value={detailValue} dataAjust={[]} /> : null}
+      {
+        (openTableDetail && canView)
+          ?
+          <PopupAjustRubriqueSDREbilan
+            canView={canView}
+            canAdd={canAdd}
+            canDelete={canDelete}
+            canModify={canModify}
+            actionState={handleRefreshTableAjust}
+            row={detailRow}
+            column={detailColumnHeader}
+            value={detailValue}
+            dataAjust={[]}
+          />
+          :
+          null
+      }
       <TableContainer component={Paper} sx={{ width: '100%', overflowX: 'auto' }}>
         <Table sx={{ width: '100%', border: '1px solid #ddd', }} aria-label="simple table">
           <TableHead
@@ -254,12 +270,11 @@ const VirtualTableSDRbilan = ({ refreshTable, columns, rows, noCollapsible, stat
                               // borderRight: '1px solid #ddd', borderLeft: '1px solid #ddd' ,
                               backgroundColor: ((column.id === 'solde_imputable' || column.id === 'solde_non_imputable') && row.ordre > 8) ? 'white' : 'transparent',
                               fontSize: 15,
-                              cursor: 'pointer'
+                              cursor: `${(state || !canModify) || column.id === "libelle" ? '' : 'pointer'}`
                             }}
                             onClick={() => {
-                              if (!state) {
-                                handleCellClick(row, column.id, value);
-                              }
+                              if (state || !canModify) return;
+                              handleCellClick(row, column.id, value);
                             }}
                           >
                             {column.isNumber

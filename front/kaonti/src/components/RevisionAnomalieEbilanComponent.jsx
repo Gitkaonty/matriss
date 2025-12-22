@@ -18,6 +18,8 @@ import { format } from 'date-fns';
 import useAuth from '../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
 
+import usePermission from '../hooks/usePermission';
+
 const headCells = [
     {
         id: 'anomalie',
@@ -83,6 +85,8 @@ const buildOverviewRows = () => {
 };
 
 export default function RevisionAnomalieEbilanComponent() {
+    const { canAdd, canModify, canDelete, canView } = usePermission();
+
     // Alignement sur les pages existantes: dossier depuis route ou sessionStorage
     const { id } = useParams();
     const navigate = useNavigate();
@@ -100,7 +104,7 @@ export default function RevisionAnomalieEbilanComponent() {
     const [selectedExerciceId, setSelectedExerciceId] = useState(0);
 
     const [listeAnnee, setListeAnnee] = useState([])
-    const [overviewRows, setOverviewRows] = useState(buildOverviewRows());
+    const [overviewRows, setOverviewRows] = useState(canView ? buildOverviewRows() : []);
 
     // Helper: années entre 2 dates (sécurisé)
     const getAnneesEntreDeuxDates = (dateDebut, dateFin) => {
@@ -185,36 +189,38 @@ export default function RevisionAnomalieEbilanComponent() {
 
     // Charger l'overview (statuts/nombre anomalies) en fonction des ids
     useEffect(() => {
-        const exId = Number(selectedExerciceId);
-        const dossierId = Number(fileId);
-        const cId = Number(compteId);
-        if (!dossierId || !exId || !cId) { setOverviewRows(buildOverviewRows()); return; }
+        if (canView) {
+            const exId = Number(selectedExerciceId);
+            const dossierId = Number(fileId);
+            const cId = Number(compteId);
+            if (!dossierId || !exId || !cId) { setOverviewRows(buildOverviewRows()); return; }
 
-        const fetchOverview = async () => {
-            try {
-                const res = await axios.get(`/declaration/ebilan/overview/${cId}/${dossierId}/${exId}`);
-                const list = Array.isArray(res.data?.list) ? res.data.list : [];
-                // Fusionner avec la liste statique pour garder l'ordre et les libellés
-                const mapByLabel = new Map(list.map(x => [String(x.tableau).toUpperCase(), x]));
-                const merged = ebilanTabList.map(t => {
-                    const found = mapByLabel.get(String(t.label).toUpperCase());
-                    return {
-                        tableau: t.label,
-                        status: found?.status || 'Non validée',
-                        nbrAnomalies: Number(found?.nbrAnomalies || 0),
-                        anomaliesValidee: !!found?.anomaliesValidee,
-                        tabValue: t.value,
-                        nom: found?.nom || found?.etat || found?.etatName,
-                        details: [],
-                    };
-                });
-                setOverviewRows(merged);
-            } catch (e) {
-                // Fallback silencieux
-                setOverviewRows(buildOverviewRows());
-            }
-        };
-        fetchOverview();
+            const fetchOverview = async () => {
+                try {
+                    const res = await axios.get(`/declaration/ebilan/overview/${cId}/${dossierId}/${exId}`);
+                    const list = Array.isArray(res.data?.list) ? res.data.list : [];
+                    // Fusionner avec la liste statique pour garder l'ordre et les libellés
+                    const mapByLabel = new Map(list.map(x => [String(x.tableau).toUpperCase(), x]));
+                    const merged = ebilanTabList.map(t => {
+                        const found = mapByLabel.get(String(t.label).toUpperCase());
+                        return {
+                            tableau: t.label,
+                            status: found?.status || 'Non validée',
+                            nbrAnomalies: Number(found?.nbrAnomalies || 0),
+                            anomaliesValidee: !!found?.anomaliesValidee,
+                            tabValue: t.value,
+                            nom: found?.nom || found?.etat || found?.etatName,
+                            details: [],
+                        };
+                    });
+                    setOverviewRows(merged);
+                } catch (e) {
+                    // Fallback silencieux
+                    setOverviewRows(buildOverviewRows());
+                }
+            };
+            fetchOverview();
+        }
     }, [compteId, fileId, selectedExerciceId]);
 
     const handleExpandRow = async (row, index) => {
@@ -373,83 +379,84 @@ export default function RevisionAnomalieEbilanComponent() {
         navigate('/tab/home');
     };
     return (
-            <Box>
-                <Toaster position="top-right" toastOptions={{ duration: 2500 }} />
-                <TabContext value={"1"}>
-                    {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
-                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                        <TabList aria-label="tabs">
-                            <Tab
-                                style={{ textTransform: 'none', outline: 'none', border: 'none', margin: -5 }}
-                                label={InfoFileStyle(fileInfos?.dossier)} value="1"
-                            />
-                        </TabList>
-                    </Box>
-                    <TabPanel value="1">
-                        <Stack width={'100%'} spacing={2}>
-                            <Typography variant='h6' sx={{ color: 'black' }} align='left'>Révision anomalies Ebilan</Typography>
+        <Box>
+            <Toaster position="top-right" toastOptions={{ duration: 2500 }} />
+            <TabContext value={"1"}>
+                {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
+                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                    <TabList aria-label="tabs">
+                        <Tab
+                            style={{ textTransform: 'none', outline: 'none', border: 'none', margin: -5 }}
+                            label={InfoFileStyle(fileInfos?.dossier)} value="1"
+                        />
+                    </TabList>
+                </Box>
+                <TabPanel value="1">
+                    <Stack width={'100%'} spacing={2}>
+                        <Typography variant='h6' sx={{ color: 'black' }} align='left'>Révision anomalies Ebilan</Typography>
 
-                            <Stack width={'100%'} spacing={2} direction={'row'} alignItems={'center'}>
-                                <FormControl variant="standard" sx={{ m: 1, minWidth: 280 }} disabled={!fileId}>
-                                    <InputLabel id="select-exercice-label">Exercice</InputLabel>
-                                    <Select
-                                        labelId="select-exercice-label"
-                                        value={selectedExerciceId}
-                                        onChange={(e) => handleChangeExercice(e.target.value)}
-                                        sx={{ width: 340 }}
-                                    >
-                                        <MenuItem value=""><em>None</em></MenuItem>
-                                        {listeExercice.map((ex) => (
-                                            <MenuItem key={ex.id} value={ex.id}>
-                                                {ex.libelle_rang}: {format(new Date(ex.date_debut), 'dd/MM/yyyy')} - {format(new Date(ex.date_fin), 'dd/MM/yyyy')}
-                                            </MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
+                        <Stack width={'100%'} spacing={2} direction={'row'} alignItems={'center'}>
+                            <FormControl variant="standard" sx={{ m: 1, minWidth: 280 }} disabled={!fileId}>
+                                <InputLabel id="select-exercice-label">Exercice</InputLabel>
+                                <Select
+                                    labelId="select-exercice-label"
+                                    value={selectedExerciceId}
+                                    onChange={(e) => handleChangeExercice(e.target.value)}
+                                    sx={{ width: 340 }}
+                                >
+                                    <MenuItem value=""><em>None</em></MenuItem>
+                                    {listeExercice.map((ex) => (
+                                        <MenuItem key={ex.id} value={ex.id}>
+                                            {ex.libelle_rang}: {format(new Date(ex.date_debut), 'dd/MM/yyyy')} - {format(new Date(ex.date_fin), 'dd/MM/yyyy')}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
 
-                                <FormControl variant="standard" sx={{ minWidth: 150 }}>
-                                    <InputLabel>Période</InputLabel>
-                                    <Select
-                                        disabled
-                                        value={selectedPeriodeChoiceId}
-                                        onChange={(e) => handleChangePeriode(e.target.value)}
-                                    >
-                                        <MenuItem value={0}>Toutes</MenuItem>
-                                        <MenuItem value={1}>Situations</MenuItem>
-                                    </Select>
-                                </FormControl>
-                                <FormControl variant="standard" sx={{ minWidth: 250 }}>
-                                    <InputLabel>Du</InputLabel>
-                                    <Select
-                                        value={selectedPeriodeId}
-                                        onChange={(e) => handleChangeDateIntervalle(e.target.value)}
-                                    >
-                                        {listeSituation?.map((option) => (
-                                            <MenuItem key={option.id} value={option.id}>
-                                                {option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}
-                                            </MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
-                            </Stack>
-
-                            <TableRevisionDPOverviewModel
-                                rows={overviewRows}
-                                onExpand={handleExpandRow}
-                                onSaveComment={handleSaveComment}
-                                onToggleStatus={handleToggleStatus}
-                                onRowAction={(row) => {
-                                    try {
-                                        if (row?.tabValue) {
-                                            localStorage.setItem('tabEbilan', String(row.tabValue));
-                                        }
-                                    } catch { }
-                                    if (fileId) navigate(`/tab/declaration/declarationEbilan/${fileId}`);
-                                }}
-                            />
+                            <FormControl variant="standard" sx={{ minWidth: 150 }}>
+                                <InputLabel>Période</InputLabel>
+                                <Select
+                                    disabled
+                                    value={selectedPeriodeChoiceId}
+                                    onChange={(e) => handleChangePeriode(e.target.value)}
+                                >
+                                    <MenuItem value={0}>Toutes</MenuItem>
+                                    <MenuItem value={1}>Situations</MenuItem>
+                                </Select>
+                            </FormControl>
+                            <FormControl variant="standard" sx={{ minWidth: 250 }}>
+                                <InputLabel>Du</InputLabel>
+                                <Select
+                                    value={selectedPeriodeId}
+                                    onChange={(e) => handleChangeDateIntervalle(e.target.value)}
+                                >
+                                    {listeSituation?.map((option) => (
+                                        <MenuItem key={option.id} value={option.id}>
+                                            {option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
                         </Stack>
-                    </TabPanel>
-                </TabContext>
-            </Box>
-        )
-    }
+
+                        <TableRevisionDPOverviewModel
+                            rows={overviewRows}
+                            onExpand={handleExpandRow}
+                            onSaveComment={handleSaveComment}
+                            onToggleStatus={handleToggleStatus}
+                            onRowAction={(row) => {
+                                try {
+                                    if (row?.tabValue) {
+                                        localStorage.setItem('tabEbilan', String(row.tabValue));
+                                    }
+                                } catch { }
+                                if (fileId) navigate(`/tab/declaration/declarationEbilan/${fileId}`);
+                            }}
+                            canModify={canModify}
+                        />
+                    </Stack>
+                </TabPanel>
+            </TabContext>
+        </Box>
+    )
+}

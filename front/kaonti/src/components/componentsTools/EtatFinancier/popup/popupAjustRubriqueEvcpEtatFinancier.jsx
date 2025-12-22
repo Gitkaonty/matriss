@@ -11,7 +11,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import toast from 'react-hot-toast';
 import InputAdornment from '@mui/material/InputAdornment';
 import { TfiSave } from "react-icons/tfi";
-import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes } from '@mui/x-data-grid';
+import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes, useGridApiRef } from '@mui/x-data-grid';
 import { TbPlaylistAdd } from 'react-icons/tb';
 import { IoMdTrash } from 'react-icons/io';
 import { FaRegPenToSquare } from "react-icons/fa6";
@@ -21,6 +21,7 @@ import axios from '../../../../../config/axios';
 import FormatedInput from '../../FormatedInput';
 import QuickFilter, { DataGridStyle } from '../../DatagridToolsStyle';
 import PopupConfirmDelete from '../../popupConfirmDelete';
+import useAxiosPrivate from '../../../../../config/axiosPrivate';
 
 let initial = init[0];
 
@@ -33,7 +34,9 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     },
 }));
 
-const popupAjustRubriqueEvcpEtatFinancier = ({ actionState, row, column, setIsRefreshed }) => {
+const popupAjustRubriqueEvcpEtatFinancier = ({ actionState, row, column, setIsRefreshed, canModify, canAdd, canDelete, canView }) => {
+    const apiRef = useGridApiRef();
+    const axiosPrivate = useAxiosPrivate();
     const [selectedRowId, setSelectedRowId] = useState([]);
     const [rowModesModel, setRowModesModel] = useState({});
     const [disableModifyBouton, setDisableModifyBouton] = useState(true);
@@ -108,7 +111,9 @@ const popupAjustRubriqueEvcpEtatFinancier = ({ actionState, row, column, setIsRe
     };
 
     useEffect(() => {
-        setListAjust(row.ajusts.filter(item => item.nature === nature));
+        if (canView) {
+            setListAjust(row.ajusts.filter(item => item.nature === nature));
+        }
     }, [row]);
 
     const columnHeader = [
@@ -193,6 +198,9 @@ const popupAjustRubriqueEvcpEtatFinancier = ({ actionState, row, column, setIsRe
                         style={{
                             width: '100%',
                             textAlign: 'right',
+                        }}
+                        onFocus={(e) => {
+                            e.target.setSelectionRange(0, 0);
                         }}
                         InputProps={{
                             inputComponent: FormatedInput,
@@ -290,7 +298,7 @@ const popupAjustRubriqueEvcpEtatFinancier = ({ actionState, row, column, setIsRe
         });
 
         const newFormDataFinal = { ...formDataFinal, state: true };
-        axios.post(`/administration/etatFinancier/addModifyAjustementExterne`, newFormDataFinal).then((response) => {
+        axiosPrivate.post(`/administration/etatFinancier/addModifyAjustementExterne`, newFormDataFinal).then((response) => {
             const resData = response.data;
             if (resData.state) {
                 setIsRefreshed();
@@ -324,7 +332,7 @@ const popupAjustRubriqueEvcpEtatFinancier = ({ actionState, row, column, setIsRe
                     setOpenDialogDeleteRow(false);
                     return;
                 }
-                axios.delete(`/administration/etatFinancier/deleteAjustementExterne/${Number(idToDelete)}`).then((response) => {
+                axiosPrivate.delete(`/administration/etatFinancier/deleteAjustementExterne/${Number(idToDelete)}`).then((response) => {
                     const resData = response.data;
 
                     if (resData.state) {
@@ -447,9 +455,73 @@ const popupAjustRubriqueEvcpEtatFinancier = ({ actionState, row, column, setIsRe
         setSelectedRowId(ids);
     }
 
+    const handleCellKeyDown = (params, event) => {
+        const api = apiRef.current;
+
+        const allCols = api.getAllColumns().filter(c => c.editable);
+        const sortedRowIds = api.getSortedRowIds();
+        const currentColIndex = allCols.findIndex(c => c.field === params.field);
+        const currentRowIndex = sortedRowIds.indexOf(params.id);
+
+        let nextColIndex = currentColIndex;
+        let nextRowIndex = currentRowIndex;
+
+        if (event.key === 'Tab' && !event.shiftKey) {
+            event.preventDefault();
+            nextColIndex = currentColIndex + 1;
+            if (nextColIndex >= allCols.length) {
+                nextColIndex = 0;
+                nextRowIndex = currentRowIndex + 1;
+            }
+        } else if (event.key === 'Tab' && event.shiftKey) {
+            event.preventDefault();
+            nextColIndex = currentColIndex - 1;
+            if (nextColIndex < 0) {
+                nextColIndex = allCols.length - 1;
+                nextRowIndex = currentRowIndex - 1;
+            }
+        } else if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            nextColIndex = currentColIndex + 1;
+            if (nextColIndex >= allCols.length) nextColIndex = allCols.length - 1;
+        } else if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            nextColIndex = currentColIndex - 1;
+            if (nextColIndex < 0) nextColIndex = 0;
+        }
+
+        const nextRowId = sortedRowIds[nextRowIndex];
+        const targetCol = allCols[nextColIndex];
+
+        if (!nextRowId || !targetCol) return;
+
+        try {
+            api.stopCellEditMode({ id: params.id, field: params.field });
+        } catch (err) {
+            console.warn('Erreur stopCellEditMode ignorée:', err);
+        }
+
+        setTimeout(() => {
+            const cellInput = document.querySelector(
+                `[data-id="${nextRowId}"] [data-field="${targetCol.field}"] input, 
+             [data-id="${nextRowId}"] [data-field="${targetCol.field}"] textarea`
+            );
+            if (cellInput) cellInput.focus();
+        }, 50);
+    };
+
     return (
-        <div>
-            {openDialogDeleteRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer la ligne sélectionnée ?"} confirmationState={deleteRow} /> : null}
+        <>
+            {
+                (openDialogDeleteRow && canDelete)
+                    ?
+                    <PopupConfirmDelete
+                        msg={"Voulez-vous vraiment supprimer la ligne sélectionnée ?"}
+                        confirmationState={deleteRow}
+                    />
+                    :
+                    null
+            }
             <BootstrapDialog
                 onClose={handleClose}
                 aria-labelledby="customized-dialog-title"
@@ -486,7 +558,7 @@ const popupAjustRubriqueEvcpEtatFinancier = ({ actionState, row, column, setIsRe
                         >
                             <Tooltip title="Ajouter une ligne">
                                 <IconButton
-                                    disabled={disableAddRowBouton}
+                                    disabled={!canAdd || disableAddRowBouton}
                                     onClick={handleOpenDialogAddNew}
                                     variant="contained"
                                     style={{
@@ -502,7 +574,7 @@ const popupAjustRubriqueEvcpEtatFinancier = ({ actionState, row, column, setIsRe
 
                             <Tooltip title="Modifier la ligne sélectionnée">
                                 <IconButton
-                                    disabled={disableModifyBouton}
+                                    disabled={(!canModify && selectedRowId > 0) || disableModifyBouton}
                                     onClick={handleEditClick(selectedRowId)}
                                     variant="contained"
                                     style={{
@@ -520,7 +592,7 @@ const popupAjustRubriqueEvcpEtatFinancier = ({ actionState, row, column, setIsRe
                                 <span>
                                     <IconButton
                                         onClick={handleSaveClick(selectedRowId)}
-                                        disabled={disableSaveBouton}
+                                        disabled={(!canAdd && !canModify) || disableSaveBouton}
                                         variant="contained"
                                         style={{
                                             width: "35px", height: '35px',
@@ -556,7 +628,7 @@ const popupAjustRubriqueEvcpEtatFinancier = ({ actionState, row, column, setIsRe
                                 <span>
                                     <IconButton
                                         disabled={disableDeleteBouton}
-                                        onClick={handleOpenDialogConfirmDelete}
+                                        onClick={!canDelete || handleOpenDialogConfirmDelete}
                                         variant="contained"
                                         style={{
                                             width: "35px", height: '35px',
@@ -576,6 +648,7 @@ const popupAjustRubriqueEvcpEtatFinancier = ({ actionState, row, column, setIsRe
                             height={"420px"}
                         >
                             <DataGrid
+                                apiRef={apiRef}
                                 disableMultipleSelection={DataGridStyle.disableMultipleSelection}
                                 disableColumnSelector={DataGridStyle.disableColumnSelector}
                                 disableDensitySelector={DataGridStyle.disableDensitySelector}
@@ -623,37 +696,40 @@ const popupAjustRubriqueEvcpEtatFinancier = ({ actionState, row, column, setIsRe
                                 }}
                                 rowSelectionModel={selectedRow}
                                 onRowEditStart={(params, event) => {
-                                    if (!selectedRow.length || selectedRow[0] !== params.id) {
+                                    const rowId = params.id;
+                                    const rowData = params.row;
+
+                                    const isNewRow = rowId < 0;
+
+                                    if (!canModify && !isNewRow) {
                                         event.defaultMuiPrevented = true;
+                                        return;
                                     }
-                                    if (selectedRow.includes(params.id)) {
-                                        setDisableAddRowBouton(true);
-                                        event.stopPropagation();
 
-                                        const rowId = params.id;
-                                        const rowData = params.row;
+                                    event.stopPropagation();
 
-                                        setFormDataFinal((prev) => ({
-                                            ...prev,
-                                            id: rowId,
-                                            id_compte: rowData.id_compte,
-                                            id_dossier: rowData.id_dossier,
-                                            id_exercice: rowData.id_exercice,
-                                            id_rubrique: rowData.id_rubrique,
-                                            id_etat: rowData.id_etat,
-                                            nature: rowData.nature,
-                                            motif: rowData.motif,
-                                            montant: rowData.montant,
-                                        }));
+                                    setFormDataFinal((prev) => ({
+                                        ...prev,
+                                        id: rowId,
+                                        id_compte: rowData.id_compte,
+                                        id_dossier: rowData.id_dossier,
+                                        id_exercice: rowData.id_exercice,
+                                        id_rubrique: rowData.id_rubrique,
+                                        id_etat: rowData.id_etat,
+                                        nature: rowData.nature,
+                                        motif: rowData.motif,
+                                        montant: rowData.montant,
+                                    }));
 
-                                        setRowModesModel((oldModel) => ({
-                                            ...oldModel,
-                                            [rowId]: { mode: GridRowModes.Edit },
-                                        }));
+                                    setRowModesModel((oldModel) => ({
+                                        ...oldModel,
+                                        [rowId]: { mode: GridRowModes.Edit },
+                                    }));
 
-                                        setDisableSaveBouton(false);
-                                    }
+                                    setDisableAddRowBouton(true);
+                                    setDisableSaveBouton(false);
                                 }}
+                                onCellKeyDown={handleCellKeyDown}
                             />
                         </Stack>
 
@@ -726,7 +802,7 @@ const popupAjustRubriqueEvcpEtatFinancier = ({ actionState, row, column, setIsRe
                     </Button>
                 </DialogActions>
             </BootstrapDialog>
-        </div>
+        </>
 
     )
 }

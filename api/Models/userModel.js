@@ -17,9 +17,27 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: 0,
             unique: false,
             references: {
-                model: userscomptes,
+                model: 'userscomptes',
                 key: 'id'
-            }
+            },
+            onUpdate: 'CASCADE',
+            onDelete: 'CASCADE'
+        },
+        role_id: {
+            type: DataTypes.BIGINT,
+            allowNull: true,
+            defaultValue: 0,
+            unique: false,
+            references: {
+                model: 'roles',
+                key: 'id'
+            },
+            onUpdate: 'CASCADE',
+            onDelete: 'CASCADE'
+        },
+        id_portefeuille: {
+            type: DataTypes.ARRAY(DataTypes.BIGINT),
+            allowNull: true
         },
         username: {
             type: DataTypes.STRING(150),

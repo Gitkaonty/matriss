@@ -169,14 +169,15 @@ function calculateResultatChiffreAffaire(data) {
 function calculateResultatDepensesAchats(data) {
     const mappedData = data.filter(
         item => item.compte && item.journal &&
-            item.compte.toString().startsWith('401')
-            && item.journal === 'AC'
+            item.compte.toString().startsWith('61')
+            || item.compte.toString().startsWith('62')
+            || item.compte.toString().startsWith('63')
     );
 
     const total = mappedData.reduce((acc, entry) => {
         const debit = parseFloat(entry.debit) || 0;
         const credit = parseFloat(entry.credit) || 0;
-        return acc + (credit - debit);
+        return acc + (debit - credit);
     }, 0);
 
     return round2(total);

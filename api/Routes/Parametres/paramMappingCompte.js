@@ -1,6 +1,9 @@
 const express = require('express');
 const paramMappingCompteController = require('../../Controllers/Parametres/paramMappingCompteController');
 
+const verifyJWT = require('../../Middlewares/verifyJWT');
+const verifyPermission = require('../../Middlewares/verifyPermission');
+
 const router = express.Router();
 
 //récupérer liste des rubriques getListeCompteRubrique
@@ -10,10 +13,10 @@ router.post('/listeRubrique', paramMappingCompteController.getListeRubrique);
 router.post('/listeCompteRubrique', paramMappingCompteController.getListeCompteRubrique);
 
 //ajouter un nouveau paramétrage 
-router.post('/MappingCompteAdd', paramMappingCompteController.mappingCompteAdd);
+router.post('/MappingCompteAdd', verifyJWT, verifyPermission('ADD', 'EDIT'), paramMappingCompteController.mappingCompteAdd);
 
 //supprimer un paramétrage 
-router.post('/MappingCompteDelete', paramMappingCompteController.mappingCompteDelete);
+router.post('/MappingCompteDelete', verifyJWT, verifyPermission('DELETE'), paramMappingCompteController.mappingCompteDelete);
 
 //restauration paramétrages par défaut
 router.post('/restaureDefaultParameter', paramMappingCompteController.restaureDefaultParameter);

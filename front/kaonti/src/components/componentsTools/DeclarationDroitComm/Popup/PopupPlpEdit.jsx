@@ -10,10 +10,10 @@ import CloseIcon from '@mui/icons-material/Close';
 
 import { init } from '../../../../../init';
 import toast from 'react-hot-toast';
-import axios from '../../../../../config/axios';
 import InputAdornment from '@mui/material/InputAdornment';
 import { useFormik } from 'formik';
 import FormatedInput from '../../FormatedInput';
+import useAxiosPrivate from '../../../../../config/axiosPrivate';
 
 let initial = init[0];
 
@@ -30,6 +30,7 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
 }));
 
 const PopupPlpEdit = ({ confirmationState, rowToModify, setIsRefreshed }) => {
+    const axiosPrivate = useAxiosPrivate();
     const handleClose = () => {
         confirmationState(false);
         setIsRefreshed();
@@ -37,7 +38,7 @@ const PopupPlpEdit = ({ confirmationState, rowToModify, setIsRefreshed }) => {
 
     const handleUpdatePlp = () => {
         const id = rowToModify?.id;
-        axios.put(`/declaration/comm/updateDroitCommPlp/${id}`, {
+        axiosPrivate.put(`/declaration/comm/updateDroitCommPlp/${id}`, {
             formData: formData.values
         }).then((response => {
             if (response?.data?.state) {

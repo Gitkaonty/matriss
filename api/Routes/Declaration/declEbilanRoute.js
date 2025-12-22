@@ -1,4 +1,8 @@
 const express = require('express');
+
+const verifyJWT = require('../../Middlewares/verifyJWT');
+const verifyPermission = require('../../Middlewares/verifyPermission');
+
 const declEbilanController = require('../../Controllers/Declaration/Ebilan/declEbilanController');
 
 const router = express.Router();
@@ -17,13 +21,13 @@ router.post('/listeCompteRubrique', declEbilanController.getListeCompteRubrique)
 router.post('/activateCalcul', declEbilanController.activateCalcul);
 
 //ajouter ou modifier une ligne d'un tableau
-router.post('/addmodifyTableau', declEbilanController.addmodifyTableau);
+router.post('/addmodifyTableau', verifyJWT, verifyPermission('ADD', 'EDIT'), declEbilanController.addmodifyTableau);
 
 //supprimer une ligne d'un tableau
-router.post('/deleteTableOneRow', declEbilanController.deleteTableOneRow);
+router.post('/deleteTableOneRow', verifyJWT, verifyPermission('DELETE'), declEbilanController.deleteTableOneRow);
 
 //supprimer toutes les lignes d'un tableau
-router.post('/deleteTableAllRow', declEbilanController.deleteTableAllRow);
+router.post('/deleteTableAllRow', verifyJWT, verifyPermission('DELETE'), declEbilanController.deleteTableAllRow);
 
 //récupération des informations de vérrouillage des tableaux
 router.post('/infosVerrouillage', declEbilanController.infosVerrouillage);
@@ -32,13 +36,13 @@ router.post('/infosVerrouillage', declEbilanController.infosVerrouillage);
 router.post('/verrouillerTableau', declEbilanController.verrouillerTableau);
 
 //sauvegarder les ajouts ou modification des ajustements de rubriques
-router.post('/addModifyAjust', declEbilanController.addModifyAjustement);
+router.post('/addModifyAjust', verifyJWT, verifyPermission('ADD', 'EDIT'), declEbilanController.addModifyAjustement);
 
 //récupérer la liste des ajustements après mise à jour de la table
 router.get('/listeAjust', declEbilanController.listeAjustement);
 
 //supprimer un ajustement 
-router.post('/deleteAjust', declEbilanController.deleteAjustement);
+router.post('/deleteAjust', verifyJWT, verifyPermission('DELETE'), declEbilanController.deleteAjustement);
 
 //sauvegarder les modifications et commentaires sur les anomalies des tableaux
 router.put('/savemodifAnom/:id', declEbilanController.savemodifAnom);

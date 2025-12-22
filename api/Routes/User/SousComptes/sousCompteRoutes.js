@@ -35,4 +35,16 @@ router.post('/verifyResetToken', sousCompteController.verifyResetToken);
 // Modification du mot de passe oublié
 router.put('/updateForgotPassword/:id', sousCompteController.updateForgotPassword);
 
+// Récupération des permissions de l'utilisateur
+router.post('/getUserPermissions', sousCompteController.getUserPermissions);
+
+// Modification de permission
+router.post('/updateUserPermission', sousCompteController.updateUserPermission);
+
+// Récupération des permissions
+router.get('/getAllRoles', sousCompteController.getAllRoles);
+
+// Modification rôle 
+router.post('/updateUserRole', sousCompteController.updateUserRole);
+
 module.exports = router;

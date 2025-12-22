@@ -61,7 +61,7 @@ const exportBilanToExcel = async (id_compte, id_dossier, id_exercice, workbook, 
         { header: 'Montant net N-1', width: 20 }
     ];
 
-    generateTitle(sheetActif, 'Liste des Bilan actif', dossier, compte, date_debut, date_fin, 'F');
+    generateTitle(sheetActif, 'Bilan actif', dossier, compte, date_debut, date_fin, 'F');
 
     const headerActif = sheetActif.getRow(4);
     headerActif.eachCell((cell, colNumber) => {
@@ -124,7 +124,7 @@ const exportBilanToExcel = async (id_compte, id_dossier, id_exercice, workbook, 
         { header: 'Montant N-1', width: 20 }
     ];
 
-    generateTitle(sheetPassif, 'Liste des Bilan passif', dossier, compte, date_debut, date_fin, 'D');
+    generateTitle(sheetPassif, 'Bilan passif', dossier, compte, date_debut, date_fin, 'D');
 
     const headerPassif = sheetPassif.getRow(4);
     headerPassif.eachCell((cell, colNumber) => {
@@ -187,7 +187,7 @@ const exportCrnToExcel = async (id_compte, id_dossier, id_exercice, workbook, do
         { header: 'Montant net N-1', width: 20, style: { alignment: { horizontal: 'right', vertical: 'middle' } } }
     ];
 
-    generateTitle(sheetCrn, 'Liste des compte de résultats par fonction', dossier, compte, date_debut, date_fin, 'D');
+    generateTitle(sheetCrn, 'Compte de résultats par nature', dossier, compte, date_debut, date_fin, 'D');
 
     const headerCrn = sheetCrn.getRow(4);
     headerCrn.eachCell((cell, colNumber) => {
@@ -244,7 +244,7 @@ const exportCrfToExcel = async (id_compte, id_dossier, id_exercice, workbook, do
         { header: 'Montant net N-1', width: 20, style: { alignment: { horizontal: 'right', vertical: 'middle' } } }
     ];
 
-    generateTitle(sheetCrf, 'Liste des compte de résultats par fonction', dossier, compte, date_debut, date_fin, 'D');
+    generateTitle(sheetCrf, 'Compte de résultats par fonction', dossier, compte, date_debut, date_fin, 'D');
 
     const headerCrf = sheetCrf.getRow(4);
     headerCrf.eachCell((cell, colNumber) => {
@@ -305,7 +305,7 @@ const exportTftdToExcel = async (id_compte, id_dossier, id_exercice, workbook, d
         { header: 'Montant net N-1', width: 20, style: { alignment: { horizontal: 'right', vertical: 'middle' } } }
     ];
 
-    generateTitle(sheetTftd, 'Liste des Tableau de flux de trésoreries méthode directe', dossier, compte, date_debut, date_fin, 'E');
+    generateTitle(sheetTftd, 'Tableau de flux de trésoreries méthode directe', dossier, compte, date_debut, date_fin, 'E');
 
     // Style de l'entête
     const headerRow = sheetTftd.getRow(4);
@@ -368,7 +368,7 @@ const exportTftiToExcel = async (id_compte, id_dossier, id_exercice, workbook, d
         { header: 'Montant net N-1', width: 20, style: { alignment: { horizontal: 'right', vertical: 'middle' } } }
     ];
 
-    generateTitle(sheetTfti, 'Liste des Tableau de flux de trésoreries méthode indirecte', dossier, compte, date_debut, date_fin, 'D');
+    generateTitle(sheetTfti, 'Tableau de flux de trésoreries méthode indirecte', dossier, compte, date_debut, date_fin, 'D');
 
     // Style de l'entête
     const headerRow = sheetTfti.getRow(4);
@@ -431,7 +431,7 @@ const exportEvcpToExcel = async (id_compte, id_dossier, id_exercice, workbook, d
         { header: 'Total', width: 20, style: { alignment: { horizontal: 'right', vertical: 'middle' } } }
     ];
 
-    generateTitle(sheetEvcp, 'Liste des Etat de variation des capitaux propres', dossier, compte, date_debut, date_fin, 'H');
+    generateTitle(sheetEvcp, 'Etat de variation des capitaux propres', dossier, compte, date_debut, date_fin, 'H');
 
     // Style de l'entête
     const headerRow = sheetEvcp.getRow(4);
@@ -496,7 +496,7 @@ const exportDrfToExcel = async (id_compte, id_dossier, id_exercice, workbook, do
         { header: 'Montant', width: 20, style: { alignment: { horizontal: 'right', vertical: 'middle' } } }
     ];
 
-    generateTitle(sheetDrf, 'Liste des Détermination du résultat fiscal', dossier, compte, date_debut, date_fin, 'D');
+    generateTitle(sheetDrf, 'Détermination du résultat fiscal', dossier, compte, date_debut, date_fin, 'D');
 
     const sousTitreActif = sheetDrf.getRow(2);
 
@@ -645,7 +645,7 @@ const exportMpToExcel = async (id_compte, id_dossier, id_exercice, workbook, dos
         { header: 'TMP', width: 20, style: { alignment: { horizontal: 'right', vertical: 'middle' } } }
     ];
 
-    generateTitle(sheetMp, 'Liste des Marché public', dossier, compte, date_debut, date_fin, 'G');
+    generateTitle(sheetMp, 'Marché public', dossier, compte, date_debut, date_fin, 'G');
 
     // Style de l'entête
     const headerRow = sheetMp.getRow(4);
@@ -734,7 +734,7 @@ const exportDaToExcel = async (id_compte, id_dossier, id_exercice, workbook, dos
         { header: 'Valeur nette comptable (G) = (A)+(B)-(C)-(F)', width: 41, style: { alignment: { horizontal: 'right', vertical: 'middle' } } }
     ];
 
-    generateTitle(sheetDa, 'Liste des Détails amortissements', dossier, compte, date_debut, date_fin, 'K');
+    generateTitle(sheetDa, 'Détails amortissements', dossier, compte, date_debut, date_fin, 'K');
 
     // Style entête
     const headerRow = sheetDa.getRow(4);
@@ -888,7 +888,7 @@ const exportDpToExcel = async (id_compte, id_dossier, id_exercice, workbook, dos
         { header: 'Montant fin exercice (D) = (A)+(B)-(C)', width: 35, style: { alignment: { horizontal: 'right', vertical: 'middle' } } }
     ];
 
-    generateTitle(sheetDp, 'Liste des Détails provisions', dossier, compte, date_debut, date_fin, 'E');
+    generateTitle(sheetDp, 'Détails provisions', dossier, compte, date_debut, date_fin, 'E');
 
     // Style entête
     const headerRow = sheetDp.getRow(4);
@@ -1012,7 +1012,7 @@ const exportEiafncToExcel = async (id_compte, id_dossier, id_exercice, workbook,
         { header: 'Val. brut clôture (D) = (A)+(B)-(C)', width: 31, style: { alignment: { horizontal: 'right', vertical: 'middle' } } }
     ];
 
-    generateTitle(sheetEiafnc, 'Liste des Evolution des immobilisations et actifs financiers non courants', dossier, compte, date_debut, date_fin, 'F');
+    generateTitle(sheetEiafnc, 'Evolution des immobilisations et actifs financiers non courants', dossier, compte, date_debut, date_fin, 'F');
 
     // Style entête
     const headerRow = sheetEiafnc.getRow(4);
@@ -1142,7 +1142,7 @@ const exportSadToExcel = async (id_compte, id_dossier, id_exercice, workbook, do
         { header: 'Total imputation', width: 20, style: { alignment: { horizontal: 'right', vertical: 'middle' } } }
     ];
 
-    generateTitle(sheetSad, 'Liste des Suivi des amortissements différés', dossier, compte, date_debut, date_fin, 'I');
+    generateTitle(sheetSad, 'Suivi des amortissements différés', dossier, compte, date_debut, date_fin, 'I');
 
     // Style de l'entête
     const headerRow = sheetSad.getRow(4);
@@ -1203,7 +1203,7 @@ const exportSdrToExcel = async (id_compte, id_dossier, id_exercice, workbook, do
         { header: 'Solde non imp. sur ex. ultérieur', width: 30, style: { alignment: { horizontal: 'right', vertical: 'middle' } } }
     ];
 
-    generateTitle(sheetSdr, 'Liste des Suivi des déficits reportables', dossier, compte, date_debut, date_fin, 'K');
+    generateTitle(sheetSdr, 'Suivi des déficits reportables', dossier, compte, date_debut, date_fin, 'K');
 
     // Style de l'entête
     const headerRow = sheetSdr.getRow(4);
@@ -1283,7 +1283,7 @@ const exportSeToExcel = async (id_compte, id_dossier, id_exercice, workbook, dos
         { header: 'Solde non remb. fin d\'éxercice', width: 30, style: { alignment: { horizontal: 'right', vertical: 'middle' } } },
     ];
 
-    generateTitle(sheetSe, 'Liste des Suivi des emprunts', dossier, compte, date_debut, date_fin, 'K');
+    generateTitle(sheetSe, 'Suivi des emprunts', dossier, compte, date_debut, date_fin, 'K');
 
     // Style de l'entête
     const headerRow = sheetSe.getRow(4);
@@ -1382,7 +1382,7 @@ const exportNeToExcel = async (id_compte, id_dossier, id_exercice, workbook, dos
         { header: 'Commentaires', width: 100, height: 20, style: { alignment: { horizontal: 'left', vertical: 'middle' } } },
     ];
 
-    generateTitle(sheetNe, 'Liste des Notes explicatives', dossier, compte, date_debut, date_fin, 'C');
+    generateTitle(sheetNe, 'Notes explicatives', dossier, compte, date_debut, date_fin, 'C');
 
     // Style de l'entête
     const headerRow = sheetNe.getRow(4);

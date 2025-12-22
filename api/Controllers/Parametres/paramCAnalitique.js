@@ -139,8 +139,6 @@ exports.addOrUpdateAxes = async (req, res) => {
             }
         });
 
-        console.log('duplicate : ', duplicate);
-
         if (duplicate) {
             return res.json({ state: false, msg: 'Ce code Axe existe déjà dans ce dossier.' });
         }

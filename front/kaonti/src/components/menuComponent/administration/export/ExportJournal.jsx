@@ -195,7 +195,7 @@ export default function ExportJournal() {
 
   const exportPdf = async () => {
     if (!canExport()) {
-      return toast.error('Renseignez au moins un filtre et sélectionnez un exercice.');
+      return toast.error('Renseignez au moins un filtre et Sélectionnez un exercice.');
     }
     try {
       setExporting(true);
@@ -226,7 +226,7 @@ export default function ExportJournal() {
 
   const exportExcel = async () => {
     if (!canExport()) {
-      return toast.error('Renseignez au moins un filtre et sélectionnez un exercice.');
+      return toast.error('Renseignez au moins un filtre et Sélectionnez un exercice.');
     }
     try {
       setExporting(true);

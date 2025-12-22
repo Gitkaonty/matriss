@@ -7,8 +7,31 @@ const balances = db.balances;
 const compteRubriquesExternes = db.compteRubriquesExternes;
 const rubriquesExternes = db.rubriquesExternes;
 
+const reinitializeCompteCollectif = async (id_compte, id_dossier, id_exercice) => {
+
+    await balances.update({
+        rubriquebilanactifbrutexterne: 0,
+        rubriquebilanactifamortexterne: 0,
+        rubriquebilanpassifbrutexterne: 0,
+        rubriquecrnexterne: 0,
+        rubriquecrfexterne: 0,
+        rubriquetftdexterne: 0,
+        rubriquetftiexterne: 0,
+        rubriquesig: 0
+    }, {
+        where: {
+            nature: { [Op.in]: ['Collectif'] },
+            id_dossier,
+            id_compte,
+            id_exercice
+        }
+    })
+
+}
+
 const updateRubrique = async (id_compte, id_dossier, id_exercice, id_etat) => {
     try {
+        await reinitializeCompteCollectif(id_compte, id_dossier, id_exercice);
         const rubriqueExternesData = await rubriquesExternes.findAll({
             where: {
                 id_dossier,
@@ -76,24 +99,49 @@ const updateRubrique = async (id_compte, id_dossier, id_exercice, id_etat) => {
                     id_compte,
                     id_dossier,
                     id_exercice,
-                    id_numcompte: { [Op.in]: idsNumCompte }
+                    id_numcompte: { [Op.in]: idsNumCompte },
                 },
-                attributes: ['id_numcompte', 'soldedebit', 'soldecredit']
+                attributes: ['id_numcompte', 'soldedebit', 'soldecredit', 'soldedebittreso', 'soldecredittreso']
             });
 
-            for (const balance of balancesData) {
-                const { soldedebit, soldecredit } = balance;
+            let balancesForCalc = balancesData;
 
-                let solde = 0;
-
-                if (senscalcul === "D-C") {
-                    solde = soldedebit;
-                } else if (senscalcul === "C-D") {
-                    solde = soldecredit;
+            if (id_etat === 'TFTD') {
+                if (compteRubrique.condition === "SiD") {
+                    balancesForCalc.filter(b => Number(b.soldedebittreso) !== 0);
+                } else if (compteRubrique.condition === "SiC") {
+                    balancesForCalc.filter(b => Number(b.soldecredittreso) !== 0);
                 }
 
-                if (condition === "SiD" && solde <= 0) solde = 0;
-                else if (condition === "SiC" && solde >= 0) solde = 0;
+            } else {
+                if (compteRubrique.condition === "SiD") {
+                    balancesForCalc.filter(b => Number(b.soldedebit) !== 0);
+                } else if (compteRubrique.condition === "SiC") {
+                    balancesForCalc.filter(b => Number(b.soldecredit) !== 0);
+                }
+            }
+
+            for (const balance of balancesForCalc) {
+                const { soldedebit, soldecredit, soldedebittreso, soldecredittreso } = balance;
+                let solde = 0;
+
+                if (compteRubrique.senscalcul === "D-C") {
+                    if (id_etat === 'TFTD') {
+                        solde = soldedebittreso - soldecredittreso;
+                    } else {
+                        solde = soldedebit - soldecredit;
+                    }
+                    if (compteRubrique.condition === "SiD" && solde <= 0) solde = 0;
+                    else if (compteRubrique.condition === "SiC" && solde >= 0) solde = 0;
+                } else if (compteRubrique.senscalcul === "C-D") {
+                    if (id_etat === 'TFTD') {
+                        solde = soldecredittreso - soldedebittreso;
+                    } else {
+                        solde = soldecredit - soldedebit;
+                    }
+                    if (compteRubrique.condition === "SiD" && solde >= 0) solde = 0;
+                    else if (compteRubrique.condition === "SiC" && solde <= 0) solde = 0;
+                }
 
                 const rubriqueFinale = solde === 0 ? 0 : id_rubrique;
 
@@ -109,6 +157,7 @@ const updateRubrique = async (id_compte, id_dossier, id_exercice, id_etat) => {
                     }
                 );
             }
+
         }
     } catch (error) {
         console.error('Erreur lors de la mise à jour des rubriques externes :', error);

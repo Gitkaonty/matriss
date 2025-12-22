@@ -22,6 +22,7 @@ const createEtatsEtatFinancierIfNotExist = fonctionAjoutEtat.createEtatsEtatFina
 
 const rubriquesExternes = db.rubriquesExternes;
 const dossierplancomptableModel = db.dossierplancomptable;
+const compteRubriquesExternes = db.compteRubriquesExternes;
 const balances = db.balances;
 const ajustementExternes = db.ajustementExternes;
 const dossiers = db.dossiers;
@@ -128,6 +129,31 @@ exports.getEtatFinancierGlobal = async (req, res) => {
             return res.status(400).json({ state: false, message: 'Paramètres manquants' });
         }
 
+        const compteRubriquesData = await compteRubriquesExternes.findAll({
+            where: {
+                id_dossier,
+                id_exercice,
+                id_compte,
+                active: true
+            },
+            attributes: [
+                'id_rubrique',
+                'id_etat',
+                'compte',
+                'equation'
+            ],
+            raw: true
+        });
+
+        const compteRubriqueMap = new Map();
+
+        for (const cr of compteRubriquesData) {
+            compteRubriqueMap.set(
+                `${cr.id_rubrique}_${cr.id_etat}_${cr.compte}`,
+                cr.equation
+            );
+        }
+
         const rubriqueExterneData = (await rubriquesExternes.findAll({
             where: { id_dossier, id_compte, id_exercice, active: true },
             include: [
@@ -224,19 +250,34 @@ exports.getEtatFinancierGlobal = async (req, res) => {
                     );
 
                     const comptesValides = matches
-                        .filter(b => Number(b.soldedebit) !== 0 || Number(b.soldecredit) !== 0)
+                        .filter(b => r.id_etat === 'TFTD' ? Number(b.soldedebittreso) !== 0 || Number(b.soldecredittreso) !== 0 : Number(b.soldedebit) !== 0 || Number(b.soldecredit) !== 0)
                         .map(b => {
-                            const rubData = rubriqueMap.get(`${b[col]}_${r.id_etat}`);
+                            const compteNumero = comptesMap[b.id_numcompte]?.compte || '';
 
-                            const equation = rubData?.equation?.trim().toUpperCase() === 'SOUSTRACTIF'
-                                ? 'SOUSTRACTIF'
-                                : 'ADDITIF';
+                            const regle = compteRubriquesData.find(cr =>
+                                cr.id_rubrique === b[col] &&
+                                cr.id_etat === r.id_etat &&
+                                compteNumero.startsWith(cr.compte)
+                            );
+
+                            const equation =
+                                regle?.equation?.trim().toUpperCase() || 'ADDITIF';
+
+                            const signe = equation === 'SOUSTRACTIF' ? -1 : 1;
+
+                            const debitBrut = r.id_etat === 'TFTD'
+                                ? Number(b.soldedebittreso)
+                                : Number(b.soldedebit);
+
+                            const creditBrut = r.id_etat === 'TFTD'
+                                ? Number(b.soldecredittreso)
+                                : Number(b.soldecredit);
 
                             return {
                                 compte: comptesMap[b.id_numcompte]?.compte || null,
                                 libelle: comptesMap[b.id_numcompte]?.libelle || null,
-                                soldedebit: Number(Number(b.soldedebit).toFixed(2)),
-                                soldecredit: Number(Number(b.soldecredit).toFixed(2)),
+                                soldedebit: Number((debitBrut * signe).toFixed(2)),
+                                soldecredit: Number((creditBrut * signe).toFixed(2)),
                                 nature,
                                 equation
                             };

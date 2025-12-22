@@ -28,7 +28,7 @@ import { URL } from "../../../../../config/axios";
 
 const DATAGRID_HEIGHT = "490px"
 
-const PopupExportIsi = ({ open, onClose, compteId, fileId, selectedExerciceId, valSelectMois, valSelectAnnee, historiqueIsi, handleRefresheHistorique, setHistoriqueIsi }) => {
+const PopupExportIsi = ({ open, onClose, compteId, fileId, selectedExerciceId, valSelectMois, valSelectAnnee, historiqueIsi, handleRefresheHistorique, setHistoriqueIsi, canDelete }) => {
     const [selectedHisto, setSelectedHisto] = useState('XML');
 
     const Icon = selectedHisto === 'XML' ? <TbFileTypeXml size={20} />
@@ -165,6 +165,7 @@ const PopupExportIsi = ({ open, onClose, compteId, fileId, selectedExerciceId, v
                             rows={historiqueIsi}
                             DATAGRID_HEIGHT={DATAGRID_HEIGHT}
                             setHistoriqueIsi={setHistoriqueIsi}
+                            canDelete={canDelete}
                         />
                 }
             </DialogContent>

@@ -175,6 +175,7 @@ const VirtualTableModifiableExport = ({ columns, rows, type, rowsCa }) => {
                           if (column.isnumber && (value === null || value === undefined)) {
                             value = 0;
                           }
+
                           if (['mvtdebitanalytique', 'mvtcreditanalytique', 'soldedebitanalytique', 'soldecreditanalytique', 'compteLibelle.compte'].includes(column.id)) {
                             return (
                               <TableCell key={column.id} align={column.align} style={{ paddingTop: '10px', paddingBottom: '10px', fontSize: '13px', position: "sticky", top: 35 }}>

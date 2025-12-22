@@ -16,6 +16,7 @@ import Accordion from '@mui/material/Accordion';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import { MdExpandCircleDown } from "react-icons/md";
+import useAxiosPrivate from '../../../config/axiosPrivate';
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialogContent-root': {
@@ -27,6 +28,7 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
 }));
 
 const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_compte, id_dossier, id_exercice }) => {
+    const axiosPrivate = useAxiosPrivate();
     console.log(mois, annee);
     const [nbrEnfant, setNbrEnfant] = useState(0);
     const [personnels, setPersonnels] = useState([]);
@@ -180,10 +182,10 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
             let res;
             if (row && row.id) {
                 // édition
-                res = await axios.put(`/paie/paie/${row.id}`, dataToSend);
+                res = await axiosPrivate.put(`/paie/paie/${row.id}`, dataToSend);
             } else {
                 // ajout
-                res = await axios.post('/paie/paie', dataToSend);
+                res = await axiosPrivate.post('/paie/paie', dataToSend);
             }
             if (res.data.state) {
                 toast.success(row && row.id ? "Modification réussie !" : "Ajout réussi !");

@@ -190,7 +190,17 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING(255),
             allowNull: true,
             defaultValue: 0
-        }
+        },
+        senscalculbilanamort: {
+            type: DataTypes.STRING(3),
+            unique: false,
+            allowNull: true
+        },
+        senscalculbilanbrut: {
+            type: DataTypes.STRING(3),
+            unique: false,
+            allowNull: true
+        },
     }, { timestamps: true },)
 
     balances.associate = (models) => {

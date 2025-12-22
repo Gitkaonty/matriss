@@ -12,9 +12,9 @@ import { IoMdTrash } from "react-icons/io";
 import { IoMdCreate } from "react-icons/io";
 import { format } from 'date-fns';
 import { TiWarning } from "react-icons/ti";
-import { ExpandMore, ExpandLess, GroupAddRounded } from '@mui/icons-material';
+import { ExpandMore, ExpandLess } from '@mui/icons-material';
 
-const VirtualTableModifiableEbilan = ({ columns, rows, deleteState, modifyState, state, withFooter, withAnomalie, type }) => {
+const VirtualTableModifiableEbilan = ({ columns, rows, deleteState, modifyState, state, withFooter, withAnomalie, type, canModify, canAdd, canDelete, canView }) => {
   const [openRowsMp, setOpenRowsMp] = useState({});
   const [openRowsBhiapc, setOpenRowsBhiapc] = useState({});
   const initial = init[0];
@@ -70,9 +70,9 @@ const VirtualTableModifiableEbilan = ({ columns, rows, deleteState, modifyState,
 
     acc[row.nif].lignes.push(row);
 
-    acc[row.nif].sousTotal =
-      acc[row.nif].montant_charge +
-      acc[row.nif].montant_beneficiaire
+    acc[row.nif].sousTotal = parseFloat(
+      (acc[row.nif].montant_charge + acc[row.nif].montant_beneficiaire).toFixed(2)
+    );
 
     return acc;
   }, {})
@@ -289,7 +289,8 @@ const VirtualTableModifiableEbilan = ({ columns, rows, deleteState, modifyState,
                             if (column.isnumber && (value === null || value === undefined)) {
                               value = 0;
                             }
-                            if (['montant_charge', 'montant_beneficiaire'].includes(column.id)) {
+
+                            if (['montant_charge', 'montant_beneficiaire', 'nif', 'raison_sociale'].includes(column.id)) {
                               return (
                                 <TableCell key={column.id} align={column.align} style={{ paddingTop: '4px', paddingBottom: '4px', fontSize: '13px', position: "sticky", top: 35 }}>
                                   {column.renderCell
@@ -311,6 +312,7 @@ const VirtualTableModifiableEbilan = ({ columns, rows, deleteState, modifyState,
                               <TableCell align="center" style={{ paddingTop: '4px', paddingBottom: '4px', position: "sticky", top: 35 }}>
                                 <Stack direction="row" spacing={1} justifyContent="center" alignItems="center">
                                   <IconButton
+                                    disabled={!canModify}
                                     onClick={() => handleRowModifClick(group)}
                                     sx={{ p: 0, border: 'none', outline: 'none', '&:focus': { outline: 'none', boxShadow: 'none' } }}
                                     disableFocusRipple
@@ -318,6 +320,7 @@ const VirtualTableModifiableEbilan = ({ columns, rows, deleteState, modifyState,
                                     <IoMdCreate style={{ width: '22px', height: '22px', color: initial.theme }} />
                                   </IconButton>
                                   <IconButton
+                                    disabled={!canDelete}
                                     onClick={() => handleRowDeleteClick(group, 'group')}
                                     sx={{ p: 0, border: 'none', outline: 'none', '&:focus': { outline: 'none', boxShadow: 'none' } }}
                                     disableFocusRipple
@@ -344,6 +347,10 @@ const VirtualTableModifiableEbilan = ({ columns, rows, deleteState, modifyState,
                                 .map((column) => {
                                   if (!column.id) return null;
                                   let value = row[column.id];
+
+                                  if (["nif", "raison_sociale"].includes(column.id)) {
+                                    value = "";
+                                  }
 
                                   if (column.isnumber && (value === null || value === undefined)) {
                                     value = 0;
@@ -375,6 +382,7 @@ const VirtualTableModifiableEbilan = ({ columns, rows, deleteState, modifyState,
                                       >
                                       </Stack>
                                       <IconButton
+                                        disabled={!canDelete}
                                         onClick={() => handleRowDeleteClick(row, 'row')}
                                         sx={{ p: 0, border: 'none', outline: 'none', '&:focus': { outline: 'none', boxShadow: 'none' } }}
                                         disableFocusRipple
@@ -471,6 +479,7 @@ const VirtualTableModifiableEbilan = ({ columns, rows, deleteState, modifyState,
                               if (column.isnumber && (value === null || value === undefined)) {
                                 value = 0;
                               }
+
                               if (['montant_marche_ht', 'montant_paye', 'tmp', 'marche'].includes(column.id)) {
                                 return (
                                   <TableCell key={column.id} align={column.align} style={{ paddingTop: '10px', paddingBottom: '10px', fontSize: '13px', position: "sticky", top: 35, ...cellStyle }}>
@@ -537,6 +546,7 @@ const VirtualTableModifiableEbilan = ({ columns, rows, deleteState, modifyState,
                                         >
                                         </Stack>
                                         <IconButton
+                                          disabled={!canModify}
                                           onClick={() => handleRowModifClick(row)}
                                           sx={{ p: 0, border: 'none', outline: 'none', '&:focus': { outline: 'none', boxShadow: 'none' } }}
                                           disableFocusRipple
@@ -544,6 +554,7 @@ const VirtualTableModifiableEbilan = ({ columns, rows, deleteState, modifyState,
                                           <IoMdCreate style={{ width: '22px', height: '22px', color: initial.theme }} />
                                         </IconButton>
                                         <IconButton
+                                          disabled={!canDelete}
                                           onClick={() => handleRowDeleteClick(row, 'row')}
                                           sx={{ p: 0, border: 'none', outline: 'none', '&:focus': { outline: 'none', boxShadow: 'none' } }}
                                           disableFocusRipple
@@ -678,6 +689,7 @@ const VirtualTableModifiableEbilan = ({ columns, rows, deleteState, modifyState,
                             >
                               <Stack direction={'row'} alignItems={'center'} spacing={1}>
                                 <IconButton
+                                  disabled={!canModify}
                                   onClick={() => handleRowModifClick(row)}
                                   variant="contained"
                                   style={{
@@ -691,6 +703,7 @@ const VirtualTableModifiableEbilan = ({ columns, rows, deleteState, modifyState,
                                 </IconButton>
 
                                 <IconButton
+                                  disabled={!canDelete}
                                   onClick={() => handleRowDeleteClick(row)}
                                   variant="contained"
                                   style={{
@@ -781,7 +794,7 @@ const VirtualTableModifiableEbilan = ({ columns, rows, deleteState, modifyState,
                         column.id === "liste_emprunteur"
                           ? `${withAnomalie ? "" : "Total"}`
                           : column.isnumber
-                            ? totalColumn(rows, column.id).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                            ? column.format(totalColumn(rows, column.id))
                             : ""
                       }
                     </TableCell>

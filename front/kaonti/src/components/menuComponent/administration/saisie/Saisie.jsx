@@ -36,7 +36,16 @@ import { MdFilterAlt } from "react-icons/md";
 import { MdFilterAltOff } from "react-icons/md";
 import { URL } from '../../../../../config/axios';
 
+import usePermission from '../../../../hooks/usePermission';
+import useAxiosPrivate from '../../../../../config/axiosPrivate';
+
 export default function SaisieComponent() {
+    const { canAdd, canModify, canDelete, canView } = usePermission();
+
+    const [typeActionSaisie, setTypeActionSaisie] = useState('');
+    const axiosPrivate = useAxiosPrivate();
+    const canAddOrModify = typeActionSaisie === 'ajout' ? canAdd : canModify;
+
     let initial = init[0];
     const [fileInfos, setFileInfos] = useState('');
     const [fileId, setFileId] = useState(0);
@@ -46,6 +55,7 @@ export default function SaisieComponent() {
     const [listSaisie, setListSaisie] = useState([]);
     const [listCa, setListCa] = useState([]);
     const [filteredList, setFilteredList] = useState(null);
+    const [typeComptabilite, setTypeComptabilite] = useState(null);
 
     const [selectedRows, setSelectedRows] = useState([]);
     const [rowSelectionModel, setRowSelectionModel] = useState([]);
@@ -57,8 +67,6 @@ export default function SaisieComponent() {
     const [refreshListAxeSection, setRefreshListAxeSection] = useState(false);
 
     const [openDialogDeleteSaisie, setOpenDialogDeleteSaisie] = useState(false);
-
-    const [typeActionSaisie, setTypeActionSaisie] = useState('');
 
     //récupération infos de connexion
     const navigate = useNavigate();
@@ -91,6 +99,7 @@ export default function SaisieComponent() {
             if (resData.state) {
                 setFileInfos(resData.fileInfos[0]);
                 setIsCaActive(resData?.fileInfos[0]?.avecanalytique);
+                setTypeComptabilite(resData?.fileInfos[0]?.typecomptabilite);
                 setNoFile(false);
             } else {
                 setFileInfos([]);
@@ -165,14 +174,17 @@ export default function SaisieComponent() {
 
     //Récupération du plan comptable
     const getPc = () => {
-        axios.get(`/paramPlanComptable/PcIdLibelle/${compteId}/${fileId}`).then((response) => {
-            const resData = response.data;
-            if (resData.state) {
-                setListePlanComptable(resData.liste);
-            } else {
-                toast.error(resData.msg);
-            }
+        axios.get(`/paramPlanComptable/PcIdLibelle/${compteId}/${fileId}`, {
+            params: { typeComptabilite }
         })
+            .then((response) => {
+                const resData = response.data;
+                if (resData.state) {
+                    setListePlanComptable(resData.liste);
+                } else {
+                    toast.error(resData.msg);
+                }
+            })
     }
 
     //Choix période
@@ -190,7 +202,7 @@ export default function SaisieComponent() {
     const getListeSaisie = () => {
         axios.get(`/administration/traitementSaisie/getJournal/${compteId}/${id}/${selectedExerciceId}`).then((response) => {
             const resData = response.data;
-            setListSaisie(resData);
+            canView ? setListSaisie(resData) : setListSaisie([])
         })
     }
 
@@ -381,7 +393,7 @@ export default function SaisieComponent() {
             return toast.error('Veuillez sélectionner les filtres');
         }
 
-        axios.post('/administration/traitementSaisie/getJournalFiltered', {
+        axiosPrivate.post('/administration/traitementSaisie/getJournalFiltered', {
             ...formSaisieRecherche.values,
             id_dossier: Number(fileId),
             id_compte: Number(compteId),
@@ -457,7 +469,7 @@ export default function SaisieComponent() {
             return;
         }
 
-        axios.delete('/administration/traitementSaisie/deleteJournal', {
+        axiosPrivate.delete('/administration/traitementSaisie/deleteJournal', {
             data: { ids: rowIds }
         }).then((response) => {
             const resData = response.data;
@@ -560,12 +572,12 @@ export default function SaisieComponent() {
 
     // Liste code journaux
     useEffect(() => {
-        if (fileId && compteId) {
+        if (fileId && compteId && typeComptabilite !== null) {
             GetListeCodeJournaux();
             getPc();
             getListeDevises();
         }
-    }, [fileId, compteId, isRefreshedPlanComptable]);
+    }, [fileId, compteId, isRefreshedPlanComptable, selectedExerciceId]);
 
     useEffect(() => {
         const el = gridRef.current?.querySelector('.MuiDataGrid-virtualScroller');
@@ -592,49 +604,53 @@ export default function SaisieComponent() {
 
     return (
         <>
-            <Box
-            >
-                {
-                    noFile ?
-                        <PopupTestSelectedFile
-                            confirmationState={sendToHome}
-                        />
-                        :
-                        null}
 
-                {
-                    openSaisiePopup ?
-                        <PopupSaisie
-                            confirmationState={handleCloseSaisieAddPopup}
-                            fileId={fileId}
-                            selectedExerciceId={selectedExerciceId}
-                            rowsEdit={selectedRows}
-                            setRefresh={() => setRefresh(!refresh)}
-                            setRefreshListAxeSection={() => setRefreshListAxeSection(!refreshListAxeSection)}
-                            setRowSelectionModel={() => setRowSelectionModel([])}
-                            type={typeActionSaisie}
-                            listeCodeJournaux={listeCodeJournaux}
-                            listePlanComptable={listePlanComptable}
-                            listeAnnee={listeAnnee}
-                            listeDevise={listeDevise}
-                            setSelectedRowsSaisie={() => setSelectedRows([])}
-                            setIsRefreshedPlanComptable={setIsRefreshedPlanComptable}
-                            isCaActive={isCaActive}
-                            listCa={listCa}
-                            setListCa={setListCa}
-                        /> : null
-                }
-                {
-                    openDialogDeleteSaisie ?
-                        <PopupConfirmDelete
-                            msg={"Voulez-vous vraiment supprimer ces lignes sélectionnés ?"}
-                            confirmationState={handleDeleteSelectedSaisies}
-                            presonalisedMessage={true}
-                        />
-                        :
-                        null
-                }
+            {
+                noFile ?
+                    <PopupTestSelectedFile
+                        confirmationState={sendToHome}
+                    />
+                    :
+                    null
+            }
 
+            {
+                (openSaisiePopup && canAddOrModify) ?
+                    <PopupSaisie
+                        confirmationState={handleCloseSaisieAddPopup}
+                        fileId={fileId}
+                        selectedExerciceId={selectedExerciceId}
+                        rowsEdit={selectedRows}
+                        setRefresh={() => setRefresh(!refresh)}
+                        setRefreshListAxeSection={() => setRefreshListAxeSection(!refreshListAxeSection)}
+                        setRowSelectionModel={() => setRowSelectionModel([])}
+                        type={typeActionSaisie}
+                        listeCodeJournaux={listeCodeJournaux}
+                        listePlanComptable={listePlanComptable}
+                        listeAnnee={listeAnnee}
+                        listeDevise={listeDevise}
+                        setSelectedRowsSaisie={() => setSelectedRows([])}
+                        setIsRefreshedPlanComptable={setIsRefreshedPlanComptable}
+                        isCaActive={isCaActive}
+                        listCa={listCa}
+                        setListCa={setListCa}
+                        canView={canView}
+                        canAdd={canAdd}
+                        canDelete={canDelete}
+                        canModify={canModify}
+                    /> : null
+            }
+            {
+                (openDialogDeleteSaisie && canDelete) ?
+                    <PopupConfirmDelete
+                        msg={"Voulez-vous vraiment supprimer ces lignes sélectionnés ?"}
+                        confirmationState={handleDeleteSelectedSaisies}
+                        presonalisedMessage={true}
+                    />
+                    :
+                    null
+            }
+            <Box>
                 <TabContext value={"1"} >
                     <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                         <TabList aria-label="lab API tabs example">
@@ -732,7 +748,7 @@ export default function SaisieComponent() {
                                     }}>
                                     <Button
                                         onClick={() => handleOpenSaisiePopup('ajout')}
-                                        disabled={!listeExercice || listeExercice.length === 0}
+                                        disabled={!canAdd || !listeExercice || listeExercice.length === 0}
                                         variant="contained"
                                         style={{
                                             textTransform: 'none',
@@ -748,7 +764,7 @@ export default function SaisieComponent() {
                                     </Button>
                                     <Button
                                         onClick={() => handleOpenSaisiePopup('modification')}
-                                        disabled={selectedRows.length === 0}
+                                        disabled={!canModify || selectedRows.length === 0}
                                         variant="contained"
                                         style={{
                                             textTransform: 'none',
@@ -764,7 +780,7 @@ export default function SaisieComponent() {
                                     </Button>
                                     <Button
                                         onClick={handleOpenDialogConfirmDeleteSaisie}
-                                        disabled={selectedRows.length === 0}
+                                        disabled={!canDelete || selectedRows.length === 0}
                                         variant="contained"
                                         style={{
                                             textTransform: 'none',
@@ -913,6 +929,7 @@ export default function SaisieComponent() {
 
                                 <Stack direction="row" spacing={0.5}>
                                     <Button
+                                        disabled={!canView}
                                         onClick={handleSearch}
                                         style={{
                                             textTransform: 'none',
@@ -924,6 +941,7 @@ export default function SaisieComponent() {
                                         Appliquer le filtre
                                     </Button>
                                     <Button
+                                        disabled={!canView}
                                         onClick={handleReinitialize}
                                         style={{
                                             textTransform: 'none',

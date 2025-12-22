@@ -15,7 +15,7 @@ const formatAmount = (value) => {
 };
 
 const getRubriqueExterneAnalytiqueData = async (id_compte, id_dossier, id_exercice, id_etat) => {
-    return rubriquesExternesAnalytiques.findAll({
+    return await rubriquesExternesAnalytiques.findAll({
         where: {
             id_dossier,
             id_exercice,

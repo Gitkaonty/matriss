@@ -12,6 +12,7 @@ import { IoMdCreate } from "react-icons/io";
 import { IoMdTrash } from "react-icons/io";
 import { ExpandMore, ExpandLess } from '@mui/icons-material';
 import { init } from '../../../../../../../init';
+import { format } from 'date-fns';
 
 import { TiWarning } from "react-icons/ti";
 
@@ -81,6 +82,21 @@ const VirtualTableAnnexeDeclarationTable = ({ columns, deleteState, modifyState,
 
             return acc;
         }, {});
+
+    const excludedColumnIds = new Set([
+        'compte',
+        'nom',
+        'cin',
+        'nature_transaction',
+        'detail_transaction',
+        'date_transaction',
+        'province',
+        'region',
+        'district',
+        'commune',
+        'fokontany',
+        'validite'
+    ])
 
     return (
         <Box sx={{ width: '100%', padding: 0, margin: 0 }}>
@@ -247,7 +263,7 @@ const VirtualTableAnnexeDeclarationTable = ({ columns, deleteState, modifyState,
                                                 if (column.isnumber && (value === null || value === undefined)) {
                                                     value = 0;
                                                 }
-                                                if (['compte', 'montant_transaction', 'montant_isi'].includes(column.id)) {
+                                                if (['compte', 'montant_transaction', 'montant_isi', 'nom', 'cin', 'nature_transaction', 'detail_transaction', 'date_transaction', 'province', 'region', 'district', 'commune', 'fokontany', 'validite'].includes(column.id)) {
                                                     return (
                                                         <TableCell key={column.id} align={column.align} style={{ paddingTop: '4px', paddingBottom: '4px', fontSize: '13px', position: "sticky", top: 35 }}>
                                                             {column.renderCell
@@ -286,10 +302,14 @@ const VirtualTableAnnexeDeclarationTable = ({ columns, deleteState, modifyState,
                                                     <TableCell />
                                                     <TableCell />
                                                     {columns
-                                                        .filter(column => column.id !== 'compte')
+                                                        .filter(column => (column.id !== 'compte'))
                                                         .map((column) => {
                                                             if (!column.id) return null;
                                                             let value = row[column.id];
+
+                                                            if (excludedColumnIds.has(column.id)) {
+                                                                value = "";
+                                                            }
 
                                                             if (column.isnumber && (value === null || value === undefined)) {
                                                                 value = 0;

@@ -209,6 +209,11 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING(100),
             allowNull: true,
         },
+        typecomptabilite: {
+            type: DataTypes.STRING(20),
+            defaultValue: 'Français',
+            allowNull: true
+        }
     }, { timestamps: true },)
 
     dossierplancomptables.associate = (models) => {

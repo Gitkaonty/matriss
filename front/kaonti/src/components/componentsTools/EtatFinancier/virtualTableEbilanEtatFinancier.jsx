@@ -17,10 +17,10 @@ import PopupAjustRubriqueEbilanEtatFinancier from './popup/popupAjustRubriqueEbi
 import { FaRegPenToSquare } from "react-icons/fa6";
 import { init } from '../../../../init';
 
-const VirtualTableEbilanEtatFinaciere = ({ refreshTable, columns, rows, noCollapsible, state, setIsRefreshed, type }) => {
+const VirtualTableEbilanEtatFinaciere = ({ refreshTable, columns, rows, noCollapsible, state, setIsRefreshed, type, canModify, canAdd, canDelete, canView }) => {
   const initial = init[0];
   const targetColumnId = 'libelle';
-  const [openRows, setOpenRows] = React.useState({});
+  const [openRows, setOpenRows] = useState({});
   const [openTableDetail, setOpenTableDetail] = useState(false);
   const [detailRow, setDetailRow] = useState([]);
   const [detailColumnHeader, setDetailColumnHeader] = useState();
@@ -110,7 +110,21 @@ const VirtualTableEbilanEtatFinaciere = ({ refreshTable, columns, rows, noCollap
 
   return (
     <Box sx={{ width: '100%', padding: 0, margin: 0 }}>
-      {openTableDetail ? <PopupAjustRubriqueEbilanEtatFinancier actionState={handleRefreshTableAjust} row={detailRow} column={detailColumnHeader} setIsRefreshed={setIsRefreshed} /> : null}
+      {
+        (openTableDetail && canView) ?
+          <PopupAjustRubriqueEbilanEtatFinancier
+            actionState={handleRefreshTableAjust}
+            row={detailRow}
+            column={detailColumnHeader}
+            setIsRefreshed={setIsRefreshed}
+            canAdd={canAdd}
+            canModify={canModify}
+            canDelete={canDelete}
+            canView={canView}
+          />
+          :
+          null
+      }
 
       <TableContainer component={Paper} sx={{ width: '100%', overflowX: 'auto' }}>
         <Table sx={{ width: '100%', border: '1px solid #ddd', }} aria-label="simple table">
@@ -211,7 +225,7 @@ const VirtualTableEbilanEtatFinaciere = ({ refreshTable, columns, rows, noCollap
                         // borderLeft: '1px solid #ddd',
                         border: 'none',
                         fontSize: 15,
-                        color: 'white'
+                        color: 'white',
                       }}
                     >
                       {
@@ -249,12 +263,12 @@ const VirtualTableEbilanEtatFinaciere = ({ refreshTable, columns, rows, noCollap
                             paddingBottom: '5px',
                             fontWeight: row.type === "TITRE" ? 'bold' : 'normal',
                             fontSize: 15,
-                            cursor: `${(row.type === "TOTAL" || row.type === "TITRE" || row.type === 'TOTAL SOUS-RUBRIQUES' || row.type === 'SOUS-TOTAL' || column.id === "libelle" || column.id === "montantnetn1" || column.id === "variation" || (row.id_etat === "BILAN_ACTIF" && column.id === "montantnet")) || state ? "" : "pointer"}`
+                            cursor: `${(row.type === "TOTAL" || row.type === "TITRE" || row.type === 'TOTAL SOUS-RUBRIQUES' || row.type === 'SOUS-TOTAL' || column.id === "libelle" || column.id === "montantnetn1" || column.id === "variation" || (row.id_etat === "BILAN_ACTIF" && column.id === "montantnet")) || state || !canModify ? "" : "pointer"}`,
+                            ...(column.id !== 'variation' ? cellStyle : {})
                           }}
                           onClick={() => {
-                            if (!state) {
-                              handleCellClick(row, column.id, value);
-                            }
+                            if (state || !canModify) return;
+                            handleCellClick(row, column.id, value);
                           }}
                         >
                           {
