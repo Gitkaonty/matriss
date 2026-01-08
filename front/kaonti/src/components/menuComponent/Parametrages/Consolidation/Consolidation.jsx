@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Typography, Stack, IconButton, FormControl, Input } from '@mui/material';
+import { Typography, Stack, IconButton, FormControl, Input, Select, Autocomplete, TextField } from '@mui/material';
 import { TbPlaylistAdd } from "react-icons/tb";
 import { FaRegPenToSquare } from "react-icons/fa6";
 import { TfiSave } from "react-icons/tfi";
@@ -38,6 +38,8 @@ export default function Consolidation() {
     const [fileInfos, setFileInfos] = useState('');
     const [noFile, setNoFile] = useState(false);
     const [rows, setRows] = useState([]);
+    const [listCompteDossierPrincipal, setListCompteDossierPrincipal] = useState([]);
+    const [comptesParDossier, setComptesParDossier] = useState({});
     const [consolidationDossier, setConsolidationDossier] = useState([]);
 
     const { auth } = useAuth();
@@ -98,10 +100,7 @@ export default function Consolidation() {
     const formNewParam = useFormik({
         initialValues: {
             idConsolidationCompte: 0,
-            nom: '',
-            idCompte: '',
-            idNumcpt: '',
-            idDossier: '',
+            idNumCpt: '',
             idDossierAutre: '',
             idNumCptAutre: ''
         },
@@ -112,11 +111,6 @@ export default function Consolidation() {
         validateOnBlur: true,
     });
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        formNewParam.setFieldValue(name, value);
-    };
-
     const isRequiredEmpty = (name) => {
         const v = formNewParam.values[name];
         return submitAttempt && (v === '' || v === null || v === undefined);
@@ -124,86 +118,209 @@ export default function Consolidation() {
 
     const consolidationCompteColumns = [
         {
-            field: 'compte',
+            field: 'id_numcpt',
             headerName: 'Compte',
             flex: 1,
             editable: true,
             headerAlign: 'left',
             align: 'left',
             editableRow: editableRow,
+            renderCell: (params) => {
+                if (!listCompteDossierPrincipal || !Array.isArray(listCompteDossierPrincipal)) {
+                    return '';
+                }
+
+                const id = Number(params.value);
+                if (!id) return '';
+
+                const data = listCompteDossierPrincipal.find(val => val.id === id);
+                return data ? `${data.compte} - ${data.libelle}` : '';
+            },
             renderEditCell: (params) => {
+                const selectedCompte = listCompteDossierPrincipal.find(c => c.id === params.value) || null;
+
                 return (
-                    <FormControl fullWidth style={{ height: '100%', backgroundColor: isRequiredEmpty('idNumcpt') ? '#F8D7DA' : 'transparent', border: isRequiredEmpty('idNumcpt') ? '1px solid #F5C2C7' : '1px solid transparent', borderRadius: '4px' }}>
-                        <Input
-                            style={{
-                                height: '100%', alignItems: 'center',
-                                outline: 'none',
-                            }}
-                            name='idNumcpt'
-                            type="text"
-                            value={formNewParam.values.idNumcpt}
-                            onChange={handleChange}
-                            label="idNumcpt"
-                            disableUnderline={true}
-                        />
-                    </FormControl>
+                    <Autocomplete
+                        name='idNumCpt'
+                        key={params.id} autoHighlight
+                        autoComplete
+                        openOnFocus
+                        disableClearable={false}
+                        popperprops={{ disablePortal: true }}
+                        options={listCompteDossierPrincipal}
+                        getOptionLabel={(option) => `${option.compte} - ${option.libelle} (${option.dossier})`}
+                        value={selectedCompte}
+                        onChange={(event, newValue) => {
+                            formNewParam.setFieldValue('idNumCpt', newValue?.id);
+                            params.api.setEditCellValue({
+                                id: params.id,
+                                field: params.field,
+                                value: newValue?.id || null
+                            });
+                        }}
+                        style={{ width: '100%', height: '100%' }}
+                        noOptionsText="Aucune compte trouvé"
+                        renderOption={(props, option) => (
+                            <li {...props}>
+                                <span>
+                                    {option.compte} - {option.libelle}{' '}
+                                    <span style={{ color: '#1976d2', fontWeight: 600, fontSize : 14 }}>
+                                        ({option.dossier})
+                                    </span>
+                                </span>
+                            </li>
+                        )}
+                        renderInput={(paramsInput) => (
+                            <TextField
+                                {...paramsInput}
+                                variant="standard"
+                                placeholder="Choisir un compte"
+                                fullWidth
+                                InputProps={{
+                                    ...paramsInput.InputProps,
+                                    disableUnderline: true,
+                                }}
+                                style={{
+                                    width: 700,
+                                    transition: 'width 0.2s ease-in-out',
+                                    backgroundColor: isRequiredEmpty('idNumCpt') ? '#F8D7DA' : 'transparent',
+                                    border: isRequiredEmpty('idNumCpt') ? '1px solid #F5C2C7' : '1px solid transparent',
+                                }}
+                            />
+                        )}
+                    />
                 );
             },
         },
         {
-            field: 'dossier_autre',
-            headerName: 'Dossier consodé',
-            flex: 1,
+            field: 'id_dossier_autre',
+            headerName: 'Dossier consolidé',
+            flex: 0.5,
             editable: true,
             headerAlign: 'left',
             align: 'left',
             editableRow: editableRow,
+
+            renderCell: (params) => {
+                if (!consolidationDossier || !Array.isArray(consolidationDossier)) return '';
+
+                const id = params.value;
+                const data = consolidationDossier.find(d => d.id_dossier_autre === id);
+                return data ? data.dossier_autre : '';
+            },
+
             renderEditCell: (params) => {
+                const selectedDossier = consolidationDossier.find(d => d.id_dossier_autre === params.value) || null;
+
                 return (
-                    <FormControl fullWidth style={{ height: '100%', backgroundColor: isRequiredEmpty('idDossierAutre') ? '#F8D7DA' : 'transparent', border: isRequiredEmpty('idDossierAutre') ? '1px solid #F5C2C7' : '1px solid transparent', borderRadius: '4px' }}>
-                        <Input
-                            style={{
-                                height: '100%', alignItems: 'center',
-                                outline: 'none',
-                            }}
-                            name='idDossierAutre'
-                            type="text"
-                            value={formNewParam.values.idDossierAutre}
-                            onChange={handleChange}
-                            label="idDossierAutre"
-                            disableUnderline={true}
-                        />
-                    </FormControl>
+                    <Autocomplete
+                        name='idDossierAutre'
+                        key={params.id}
+                        options={consolidationDossier}
+                        getOptionLabel={(option) => option.dossier_autre || ''}
+                        value={selectedDossier}
+                        onChange={(event, newValue) => {
+                            formNewParam.setFieldValue('idDossierAutre', newValue?.id_dossier_autre || '');
+                            params.api.setEditCellValue({
+                                id: params.id,
+                                field: params.field,
+                                value: newValue?.id_dossier_autre || null
+                            });
+                        }}
+                        autoHighlight
+                        openOnFocus
+                        disableClearable={false}
+                        noOptionsText="Aucun dossier trouvé"
+                        style={{ width: '100%', height: '100%' }}
+                        renderInput={(paramsInput) => (
+                            <TextField
+                                {...paramsInput}
+                                variant="standard"
+                                placeholder="Choisir un dossier"
+                                fullWidth
+                                InputProps={{
+                                    ...paramsInput.InputProps,
+                                    disableUnderline: true,
+                                }}
+                                style={{
+                                    width: '100%',
+                                    backgroundColor: isRequiredEmpty('idDossierAutre') ? '#F8D7DA' : 'transparent',
+                                    border: isRequiredEmpty('idDossierAutre') ? '1px solid #F5C2C7' : '1px solid transparent',
+                                    borderRadius: '4px'
+                                }}
+                            />
+                        )}
+                    />
                 );
             },
         },
         {
-            field: 'compte_autre',
+            field: 'id_numcpt_autre',
             headerName: 'Compte associé',
             flex: 1,
             editable: true,
             headerAlign: 'left',
             align: 'left',
             editableRow: editableRow,
+
+            renderCell: (params) => {
+                const idDossier = params.row.id_dossier_autre;
+                const idCompte = params.value;
+                if (!idDossier || !idCompte) return '';
+                const comptes = comptesParDossier[idDossier] || [];
+                const compte = comptes.find(c => c.id === idCompte);
+                return compte ? `${compte.compte} - ${compte.libelle}` : '';
+            },
+
             renderEditCell: (params) => {
+                const idDossier = params.row.id_dossier_autre;
+                const comptes = comptesParDossier[idDossier] || [];
+
+                const selectedCompte = comptes.find(c => c.id === params.value) || null;
+
                 return (
-                    <FormControl fullWidth style={{ height: '100%', backgroundColor: isRequiredEmpty('idNumCptAutre') ? '#F8D7DA' : 'transparent', border: isRequiredEmpty('idNumCptAutre') ? '1px solid #F5C2C7' : '1px solid transparent', borderRadius: '4px' }}>
-                        <Input
-                            style={{
-                                height: '100%', alignItems: 'center',
-                                outline: 'none',
-                            }}
-                            name='idNumCptAutre'
-                            type="text"
-                            value={formNewParam.values.idNumCptAutre}
-                            onChange={handleChange}
-                            label="idNumCptAutre"
-                            disableUnderline={true}
-                        />
-                    </FormControl>
+                    <Autocomplete
+                        name='idNumCptAutre'
+                        key={params.id} autoHighlight
+                        autoComplete
+                        openOnFocus
+                        disableClearable={false}
+                        popperprops={{ disablePortal: true }}
+                        options={comptes}
+                        getOptionLabel={(option) => `${option.compte} - ${option.libelle}`}
+                        value={selectedCompte}
+                        onChange={(event, newValue) => {
+                            formNewParam.setFieldValue('idNumCptAutre', newValue?.id);
+                            params.api.setEditCellValue({
+                                id: params.id,
+                                field: params.field,
+                                value: newValue?.id || null
+                            });
+                        }}
+                        style={{ width: '100%', height: '100%' }}
+                        noOptionsText="Aucune compte trouvé"
+                        renderInput={(paramsInput) => (
+                            <TextField
+                                {...paramsInput}
+                                variant="standard"
+                                placeholder="Choisir un compte"
+                                fullWidth
+                                InputProps={{
+                                    ...paramsInput.InputProps,
+                                    disableUnderline: true,
+                                }}
+                                style={{
+                                    width: 700,
+                                    transition: 'width 0.2s ease-in-out',
+                                    backgroundColor: isRequiredEmpty('idNumCptAutre') ? '#F8D7DA' : 'transparent',
+                                    border: isRequiredEmpty('idNumCptAutre') ? '1px solid #F5C2C7' : '1px solid transparent',
+                                }}
+                            />
+                        )}
+                    />
                 );
             },
-        },
+        }
     ];
 
     const handleRowEditStop = (params, event) => {
@@ -230,12 +347,29 @@ export default function Consolidation() {
         })
     }
 
-    useEffect(() => {
-        if (canView && compteId && fileId) {
-            getAllConsolidationCompte();
-            getListeConsolidationDossier();
-        }
-    }, [isRefreshed, compteId, fileId]);
+    // Liste des compte associé sur le dossier
+    const getListeCompteAssocieDossier = () => {
+        axios.get(`/param/consolidation/getListeCompteAssocieDossier/${compteId}/${fileId}`).then((response) => {
+            const resData = response.data;
+            setListCompteDossierPrincipal(resData);
+        })
+    }
+
+    const getListeCompteInConsolidationDossier = () => {
+        axios.get(`/param/consolidation/getListeCompteInConsolidationDossier/${compteId}/${fileId}`)
+            .then((response) => {
+                const resData = response.data;
+
+                const map = {};
+                resData.forEach(c => {
+                    if (!map[c.id_dossier]) map[c.id_dossier] = [];
+                    map[c.id_dossier].push(c);
+                });
+
+                setComptesParDossier(map);
+            })
+            .catch(() => setComptesParDossier({}));
+    }
 
     // Sélection d'une ligne
     const saveSelectedRow = (ids) => {
@@ -271,9 +405,9 @@ export default function Consolidation() {
     const handleEditClick = (id) => () => {
         const selectedRowInfos = rows.find(r => r.id === id[0]);
         formNewParam.setFieldValue('idConsolidationCompte', selectedRowInfos.id ?? null);
-        formNewParam.setFieldValue('idNumCpt', selectedRowInfos.idNumCpt ?? '');
-        formNewParam.setFieldValue('idDossierAutre', selectedRowInfos.idDossierAutre ?? '');
-        formNewParam.setFieldValue('idNumCptAutre', selectedRowInfos.idNumCptAutre ?? '');
+        formNewParam.setFieldValue('idNumCpt', selectedRowInfos.id_numcpt ?? '');
+        formNewParam.setFieldValue('idDossierAutre', selectedRowInfos.id_dossier_autre ?? '');
+        formNewParam.setFieldValue('idNumCptAutre', selectedRowInfos.id_numcpt_autre ?? '');
 
         setRowModesModel({ ...rowModesModel, [id[0]]: { mode: GridRowModes.Edit } });
         setDisableSaveBouton(false);
@@ -326,7 +460,13 @@ export default function Consolidation() {
 
     // Sauvegarde
     const handleSaveClick = (id) => () => {
-        if ((!formNewParam.values.idNumcpt || formNewParam.values.idNumcpt.trim() === '') || (!formNewParam.values.idDossierAutre || formNewParam.values.idDossierAutre === '') || (!formNewParam.values.idNumCptAutre || formNewParam.values.idNumCptAutre === '')) {
+        const dataToSend = {
+            ...formNewParam.values,
+            idCompte: Number(compteId),
+            idDossier: Number(fileId)
+        };
+
+        if ((!formNewParam.values.idNumCpt || formNewParam.values.idNumCpt === '') || (!formNewParam.values.idDossierAutre || formNewParam.values.idDossierAutre === '') || (!formNewParam.values.idNumCptAutre || formNewParam.values.idNumCptAutre === '')) {
             setSubmitAttempt(true);
             toast.error('Les champs en surbrillances sont obligatoires');
             setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
@@ -334,12 +474,7 @@ export default function Consolidation() {
             return;
         }
 
-        const dataToSend = {
-            ...formNewParam.values,
-            id_compte: Number(compteId)
-        };
-
-        axiosPrivate.post(`/param/portefeuille/addOrUpdatePortefeuille`, dataToSend).then((response) => {
+        axiosPrivate.post(`/param/consolidation/addOrUpdateConsolidationCompte`, dataToSend).then((response) => {
             const resData = response.data;
             if (resData.state) {
                 setDisableAddRowBouton(false);
@@ -406,7 +541,7 @@ export default function Consolidation() {
                 setDataGridKey(prev => prev + 1);
                 return;
             }
-            axiosPrivate.delete(`/param/portefeuille/deletePortefeuille/${idToDelete}`)
+            axiosPrivate.delete(`/param/consolidation/deleteConsolidationCompte/${idToDelete}`)
                 .then(res => {
                     if (res.data && res.data.state) {
                         setRows(rows.filter((row) => row.id !== idToDelete));
@@ -503,6 +638,15 @@ export default function Consolidation() {
         }, 50);
     };
 
+    useEffect(() => {
+        if (canView && compteId && fileId) {
+            getAllConsolidationCompte();
+            getListeConsolidationDossier();
+            getListeCompteAssocieDossier();
+            getListeCompteInConsolidationDossier();
+        }
+    }, [isRefreshed, compteId, fileId]);
+
     return (
         <>
             {
@@ -541,7 +685,7 @@ export default function Consolidation() {
                         </TabList>
                     </Box>
                     <TabPanel value="1">
-                        <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages : Consilidation - Correpondance</Typography>
+                        <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages : Consolidation - Correpondance</Typography>
                         <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"}
                             direction={"column"} style={{ marginLeft: "0px", marginTop: "20px", justifyContent: "right" }}>
                             <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}

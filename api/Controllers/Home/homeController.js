@@ -18,6 +18,7 @@ const portefeuille = db.portefeuille;
 const users = db.users;
 const devises = db.devises;
 const consolidationDossier = db.consolidationDossier;
+const compteDossiers = db.compteDossiers;
 
 dombancaires.belongsTo(pays, { as: 'tablepays', foreignKey: 'pays', targetKey: 'code' });
 
@@ -39,6 +40,14 @@ const recupListDossier = async (req, res) => {
     const userData = await users.findByPk(userId, {
       attributes: ['id_portefeuille']
     });
+
+    const compteDossier = await compteDossiers.findAll({
+      where: {
+        user_id: userId
+      }
+    })
+
+    const id_dossier = [... new Set(compteDossier.map(val => Number(val.id_dossier)))];
 
     const portefeuillesIds = userData.id_portefeuille;
 
@@ -70,8 +79,10 @@ const recupListDossier = async (req, res) => {
         })
       );
 
+      const dossiersFiltres = dossiersAvecPortefeuille.filter(d => id_dossier.includes(d.id));
+
       resData.state = true;
-      resData.fileList = dossiersAvecPortefeuille;
+      resData.fileList = dossiersFiltres;
     }
 
     return res.json(resData);
@@ -85,6 +96,77 @@ const recupListDossier = async (req, res) => {
     });
   }
 };
+
+const getAllDossierByCompte = async (req, res) => {
+  try {
+    const { compteId } = req.params;
+
+    let resData = {
+      state: false,
+      msg: '',
+      fileList: []
+    };
+
+    const list = await dossier.findAll({
+      where: {
+        id_compte: compteId
+      },
+      attributes: ['id', 'dossier']
+    })
+
+    if (list) {
+      resData.state = true;
+      resData.fileList = list;
+    }
+
+    return res.json(resData);
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      state: false,
+      msg: 'Erreur serveur',
+      error: error.message
+    });
+  }
+}
+
+const getCompteDossier = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    let resData = {
+      state: false,
+      msg: '',
+      fileList: []
+    };
+    const list = (await compteDossiers.findAll({
+      where: {
+        user_id: userId
+      },
+      include: [
+        { model: dossier, attributes: ['dossier'] }
+      ]
+    })).map(val => {
+      const data = val.toJSON();
+      data.dossier = val?.dossier?.dossier || '';
+      data.id_dossier = Number(val?.id_dossier);
+      data.user_id = Number(val?.user_id);
+      return data;
+    })
+    if (list) {
+      resData.state = true;
+      resData.fileList = list;
+    }
+    return res.json(resData);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      state: false,
+      msg: 'Erreur serveur',
+      error: error.message
+    });
+  }
+}
 
 const createNewFile = async (req, res) => {
   try {
@@ -134,7 +216,8 @@ const createNewFile = async (req, res) => {
       typecomptabilite,
       devisepardefaut,
       listeConsolidation,
-      consolidation
+      consolidation,
+      pays
     } = req.body;
 
     if (action === 'new') {
@@ -172,7 +255,8 @@ const createNewFile = async (req, res) => {
         district: district,
         commune: commune,
         typecomptabilite,
-        consolidation
+        consolidation,
+        pays
       });
 
       //copie la liste des associés
@@ -662,24 +746,29 @@ const checkAccessDossier = async (req, res) => {
   try {
     const dossierId = Number(req.params.id);
     const compteId = Number(req.user.compteId);
+    const userId = Number(req.user.userId);
 
     const user = await users.findOne({
-      where: {
-        compte_id: compteId
-      },
+      where: { compte_id: compteId },
       attributes: ['id_portefeuille']
-    })
+    });
 
     if (!user || !user.id_portefeuille || user.id_portefeuille.length === 0) {
       return res.status(200).json({ state: false });
     }
 
+    const compteDossier = await compteDossiers.findAll({
+      where: { user_id: userId },
+      attributes: ['id_dossier']
+    });
+    const id_dossier_autorises = compteDossier.map(val => Number(val.id_dossier));
+
+    if (!id_dossier_autorises.includes(dossierId)) {
+      return res.status(200).json({ state: false });
+    }
+
     const dossierData = await dossier.findOne({
-      where: {
-        id: dossierId,
-        id_compte: compteId
-      }
-    }, {
+      where: { id: dossierId, id_compte: compteId },
       attributes: ['id_portefeuille']
     });
 
@@ -700,5 +789,7 @@ module.exports = {
   deleteCreatedFile,
   informationsFile,
   updateCentrefisc,
-  checkAccessDossier
+  checkAccessDossier,
+  getAllDossierByCompte,
+  getCompteDossier
 };

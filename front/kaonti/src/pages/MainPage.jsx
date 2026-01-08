@@ -21,10 +21,6 @@ import { Outlet } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import CloseIcon from '@mui/icons-material/Close';
-import TextField from '@mui/material/TextField';
 import useLogout from '../hooks/useLogout';
 import { BsEscape } from "react-icons/bs";
 import { TbPasswordUser } from "react-icons/tb";
@@ -150,6 +146,7 @@ export default function HomePage() {
   const compteId = decoded.UserInfo.compteId || null;
   const userId = decoded.UserInfo.userId || null;
   const username = decoded.UserInfo.username || null;
+  const comptename = decoded.UserInfo.compte || null;
 
   const [isButtonAddVisible, setIsButtonAddVisible] = useState(false);
   const [isOpenPopupAddCompte, setIsOpenAddCompte] = useState(false);
@@ -159,6 +156,7 @@ export default function HomePage() {
 
   const [activeMenu, setActiveMenu] = useState("");
   const [listePortefeuille, setListePortefeuille] = useState([]);
+  const [listeDossier, setListeDossier] = useState([]);
   const [listeRoles, setListeRoles] = useState([]);
   const [consolidation, setConsolidation] = useState([]);
   let idDossier = null;
@@ -340,6 +338,19 @@ export default function HomePage() {
       })
   };
 
+  // Charger la liste des dossier liés au compte
+  const getAllDossierByCompte = () => {
+    axios.get(`/home/getAllDossierByCompte/${compteId}`)
+      .then(response => {
+        const resData = response?.data;
+        if (resData?.state) {
+          setListeDossier(resData?.fileList);
+        } else {
+          toast.error(resData?.message);
+        }
+      })
+  }
+
   // Récupérer la liste des roles
   const getAllRoles = () => {
     axios.get('sous-compte/getAllRoles')
@@ -361,7 +372,7 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    if ([5150,3355].includes(roles)) {
+    if ([5150, 3355].includes(roles)) {
       setIsButtonAddVisible(true);
       setIsButtonRolePermissionVisible(true);
     }
@@ -369,6 +380,7 @@ export default function HomePage() {
 
   useEffect(() => {
     getAllPortefeuille();
+    getAllDossierByCompte();
     getAllRoles();
   }, [compteId]);
 
@@ -380,7 +392,7 @@ export default function HomePage() {
     <>
       {
         isButtonAddVisible && isOpenPopupAddCompte && (
-          <PopupAddCompte compteId={compteId} nom={username} confirmationState={setShowPopupAddCompte} listePortefeuille={listePortefeuille} listeRoles={listeRoles} />
+          <PopupAddCompte compteId={compteId} nom={username} confirmationState={setShowPopupAddCompte} listePortefeuille={listePortefeuille} listeRoles={listeRoles} listeDossier={listeDossier} />
         )
       }
 
@@ -435,7 +447,7 @@ export default function HomePage() {
                     fontSize: "16px", textAlign: "center", alignContent: "center"
                   }}
                 >
-                  {"Espace client non paramétré"}
+                  {`Espace client : ${comptename}`}
                 </Typography>
               </Stack>
 

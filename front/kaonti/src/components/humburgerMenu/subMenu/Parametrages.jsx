@@ -107,7 +107,7 @@ const socialesList = [
         text: 'Portefeuille',
         name: "portefeuille",
         path: "/tab/parametrages/paramPortefeuille",
-        urldynamic: true
+        urldynamic: false
     },
 ];
 

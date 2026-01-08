@@ -9,12 +9,17 @@ const dossierpcdetailcptchg = db.dossierpcdetailcptchg;
 const dossierpcdetailcpttva = db.dossierpcdetailcpttva;
 const dossiers = db.dossiers;
 const localites = db.localites;
+const consolidationDossier = db.consolidationDossier;
 
 dossierPlanComptable.belongsTo(dossierPlanComptableCopy, { as: 'BaseAux', foreignKey: 'baseaux_id', targetKey: 'id' });
 
 const recupPc = async (req, res) => {
   try {
-    const { fileId } = req.body;
+    const { fileId, compteId } = req.body;
+
+    if (!fileId || !compteId) {
+      return
+    }
 
     let resData = {
       state: false,
@@ -22,10 +27,11 @@ const recupPc = async (req, res) => {
       liste: []
     }
 
-    const listepc = await dossierPlanComptable.findAll({
+    const listepc = (await dossierPlanComptable.findAll({
       where:
       {
-        id_dossier: fileId
+        id_dossier: fileId,
+        id_compte: compteId
       },
       include: [
         {
@@ -39,10 +45,16 @@ const recupPc = async (req, res) => {
             id_dossier: fileId
           }
         },
+        { model: dossiers, attributes: ['dossier'] },
       ],
-      raw: true,
+      // raw: true,
       order: [['compte', 'ASC']]
-    });
+    })).map((val => {
+      const data = val.toJSON();
+      data.baseCompte = data?.BaseAux?.comptecentr;
+      data.dossier = data?.dossier?.dossier;
+      return data;
+    }))
 
     if (listepc) {
       resData.state = true;
@@ -107,8 +119,7 @@ const AddCptToPc = async (req, res) => {
     } = req.body;
 
     // return console.log(req.body);
-    console.log('baseCptCollectif : ', baseCptCollectif);
-
+    
     const DossierParam = await dossiers.findOne({
       where: {
         id: idDossier,
@@ -744,7 +755,7 @@ const AddCptToPc = async (req, res) => {
             }
           }
         );
-        
+
         await updateCompteAux(itemId, baseCptCollectif, nature);
 
         //Enregistrer les compte de charges et TVA associés au compte
@@ -1321,12 +1332,40 @@ const deleteItemPc = async (req, res) => {
 const recupPcIdLibelle = async (req, res) => {
   try {
     const { id_dossier, id_compte } = req.params;
+    const { typeComptabilite } = req.query;
+
+    const dossierData = await dossiers.findByPk(id_dossier);
+    const consolidation = dossierData?.consolidation || false;
+
+    let id_dossiers_a_utiliser = [Number(id_dossier)];
+
+    if (consolidation) {
+      const consolidationDossierData = await consolidationDossier.findAll({
+        where: {
+          id_dossier,
+          id_compte
+        }
+      });
+
+      if (!consolidationDossierData.length) {
+        return res.json({
+          state: true,
+          msg: "Consolidation de dossier vide",
+          liste: []
+        });
+      }
+
+      id_dossiers_a_utiliser = [...new Set(
+        consolidationDossierData.map(val => Number(val.id_dossier_autre))
+      ), id_dossier];
+    }
 
     const listepc = await dossierPlanComptable.findAll({
       where: {
-        id_dossier: id_dossier,
-        id_compte: id_compte,
-        libelle: { [Sequelize.Op.ne]: 'Collectif' }
+        id_dossier: { [Sequelize.Op.in]: id_dossiers_a_utiliser },
+        id_compte,
+        libelle: { [Sequelize.Op.ne]: 'Collectif' },
+        typecomptabilite: typeComptabilite
       },
       include: [
         {
@@ -1335,24 +1374,29 @@ const recupPcIdLibelle = async (req, res) => {
           attributes: ['compte'],
           required: false,
           where: {
-            id_dossier: id_dossier,
-            id_compte: id_compte
+            id_dossier: { [Sequelize.Op.in]: id_dossiers_a_utiliser },
+            id_compte
           }
+        },
+        {
+          model: dossiers,
+          attributes: ['dossier'],
         }
       ],
       order: [['compte', 'ASC']],
-      attributes: ['libelle', 'id']
+      attributes: ['libelle', 'id', 'id_dossier']
     });
 
     const mappedListe = listepc.map(item => ({
       id: item.id,
       libelle: item.libelle,
-      compte: item.BaseAux?.compte || null
+      compte: item.BaseAux?.compte || null,
+      id_dossier: Number(item?.id_dossier) || null,
+      dossier: item?.dossier.dossier || null,
     }));
 
     const uniqueListe = [];
     const seen = new Set();
-
     for (const item of mappedListe) {
       const key = `${item.libelle}-${item.compte}`;
       if (!seen.has(key)) {
@@ -1361,25 +1405,21 @@ const recupPcIdLibelle = async (req, res) => {
       }
     }
 
-    const resData = {
-      state: true,
-      msg: "Donnée reçues avec succes !",
+    return res.json({
+      state: uniqueListe.length > 0,
+      msg: uniqueListe.length > 0 ? "Données reçues avec succès !" : "Aucune donnée trouvée",
       liste: uniqueListe
-    };
+    });
 
-    if (listepc) {
-      resData.state = true;
-      resData.msg = "Donnée reçues avec succes !"
-    } else {
-      resData.state = false;
-      resData.msg = "Une erreur est survenue au moment du traitement des données";
-    }
-
-    return res.json(resData);
   } catch (error) {
-    console.log(error);
+    console.error(error);
+    return res.status(500).json({
+      state: false,
+      msg: "Erreur serveur",
+      error: error.message
+    });
   }
-}
+};
 
 const recupPcClasseSix = async (req, res) => {
   try {
@@ -1582,6 +1622,81 @@ const getCommunes = async (req, res) => {
   }
 };
 
+const recupPcConsolidation = async (req, res) => {
+  try {
+    const { fileId, compteId } = req.body;
+
+    let resData = {
+      state: false,
+      msg: 'une erreur est survenue',
+      liste: []
+    }
+
+    let id_dossiers_a_utiliser = [Number(fileId)];
+
+    const consolidationDossierData = await consolidationDossier.findAll({
+      where: {
+        id_dossier: fileId,
+        id_compte: compteId
+      }
+    });
+
+    if (!consolidationDossierData.length) {
+      return res.json({
+        state: true,
+        msg: "Consolidation de dossier vide",
+        liste: []
+      });
+    }
+
+    id_dossiers_a_utiliser = [...new Set(
+      consolidationDossierData.map(val => Number(val.id_dossier_autre))
+    )];
+
+    const listepc = (await dossierPlanComptable.findAll({
+      where:
+      {
+        id_dossier: id_dossiers_a_utiliser,
+        id_compte: compteId
+      },
+      include: [
+        {
+          model: dossierPlanComptable,
+          as: 'BaseAux',
+          attributes: [
+            ['compte', 'comptecentr']
+          ],
+          required: false,
+          where: {
+            id_dossier: id_dossiers_a_utiliser,
+            id_compte: compteId
+          }
+        },
+        { model: dossiers, attributes: ['dossier'] },
+      ],
+      // raw: true,
+      order: [['compte', 'ASC']]
+    })).map((val => {
+      const data = val.toJSON();
+      data.baseCompte = data?.BaseAux?.comptecentr;
+      data.dossier = data?.dossier?.dossier;
+      return data;
+    }))
+
+    if (listepc) {
+      resData.state = true;
+      resData.liste = listepc;
+    } else {
+      resData.state = false;
+      resData.msg = "Une erreur est survenue au moment du traitement des données";
+    }
+
+    return res.json(resData);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 module.exports = {
   recupPc,
   AddCptToPc,
@@ -1593,5 +1708,6 @@ module.exports = {
   getProvinces,
   getRegions,
   getDistricts,
-  getCommunes
+  getCommunes,
+  recupPcConsolidation
 };

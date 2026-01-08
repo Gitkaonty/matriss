@@ -153,7 +153,7 @@ export default function ConsultationComponent() {
 
     //Liste saisie
     const getListeSaisie = () => {
-        axios.get(`/administration/traitementSaisie/getJournal/${compteId}/${id}/${selectedExerciceId}`).then((response) => {
+        axios.get(`/administration/traitementSaisie/getAllJournal/${compteId}/${id}/${selectedExerciceId}`).then((response) => {
             const resData = response.data;
             canView ? setListSaisie(resData) : setListSaisie([]);
         })
@@ -161,7 +161,7 @@ export default function ConsultationComponent() {
 
     //Liste saisie with return statement
     const getListeSaisieReturn = async () => {
-        const response = await axios.get(`/administration/traitementSaisie/getJournal/${compteId}/${id}/${selectedExerciceId}`);
+        const response = await axios.get(`/administration/traitementSaisie/getAllJournal/${compteId}/${id}/${selectedExerciceId}`);
         const resData = response.data;
         canView ? setListSaisie(resData) : setListSaisie([]);
         return resData;
@@ -203,6 +203,16 @@ export default function ConsultationComponent() {
 
     //Header
     const ConsultationColumnHeader = [
+        {
+            field: 'dossier',
+            headerName: 'Dossier',
+            type: 'string',
+            sortable: true,
+            flex: 0.6,
+            headerAlign: 'left',
+            align: 'left',
+            headerClassName: 'HeaderbackColor',
+        },
         {
             field: 'dateecriture',
             headerName: 'Date',
@@ -382,8 +392,8 @@ export default function ConsultationComponent() {
 
         const compteSelectStr = compteSelect.compte.toString();
 
-        const filtered = listSaisie.filter((item) =>
-            item.compte?.toString().includes(compteSelectStr)
+        const filtered = listSaisie.filter(
+            (item) => item.compte?.toString() === compteSelectStr
         );
 
         setFilteredList(filtered);
@@ -620,6 +630,7 @@ export default function ConsultationComponent() {
             setListeDevise(response.data);
         })
     }
+
     //Recupérer l'année min et max de l'éxercice
     const getAnneesEntreDeuxDates = (dateDebut, dateFin) => {
         const debut = new Date(dateDebut).getFullYear();
@@ -811,7 +822,7 @@ export default function ConsultationComponent() {
                         setRowSelectionModel={() => setRowSelectionModel([])}
                         type={'modification'}
                         listeCodeJournaux={listeCodeJournaux}
-                        listePlanComptable={listePlanComptableInitiale}
+                        listePlanComptable={listePlanComptableInitiale.filter(val => Number(val.id_dossier) === Number(fileId))}
                         listeAnnee={listeAnnee}
                         listeDevise={listeDevise}
                         setSelectedRowsSaisie={() => setSelectedRows([])}
@@ -925,7 +936,7 @@ export default function ConsultationComponent() {
                                     }}>
                                     <Button
                                         onClick={handleOpenSaisiePopup}
-                                        disabled={!canModify || selectedRows.length === 0}
+                                        disabled={!canModify || selectedRows.length === 0 || selectedRows.every(row => Number(row.id_dossier) !== Number(fileId))}
                                         variant="contained"
                                         style={{
                                             textTransform: 'none',
@@ -972,6 +983,16 @@ export default function ConsultationComponent() {
                                                 onChange={(event, newValue) => {
                                                     setValSelectedCompte(newValue?.id || null);
                                                 }}
+                                                renderOption={(props, option) => (
+                                                    <li {...props}>
+                                                        <span>
+                                                            {option.compte} - {option.libelle}{' '}
+                                                            <span style={{ color: '#1976d2', fontWeight: 600, fontSize: 14 }}>
+                                                                ({option.dossier})
+                                                            </span>
+                                                        </span>
+                                                    </li>
+                                                )}
                                                 options={listePlanComptable}
                                                 getOptionLabel={(option) => `${option.compte || ''} - ${option.libelle || ''}`}
                                                 renderInput={(params) => <TextField {...params} label="Compte" variant="standard" />}
@@ -1076,7 +1097,7 @@ export default function ConsultationComponent() {
                                     borderRadius: "5px"
                                 }}>
                                 <Button
-                                    disabled={!canAdd || selectedRows.length === 0 || solde !== 0}
+                                    disabled={!canAdd || selectedRows.length === 0 || solde !== 0 || selectedRows.every(row => Number(row.id_dossier) !== Number(fileId))}
                                     variant="contained"
                                     style={{
                                         textTransform: 'none',
@@ -1092,7 +1113,7 @@ export default function ConsultationComponent() {
                                     Lettrer
                                 </Button>
                                 <Button
-                                    disabled={!canDelete || selectedRows.length === 0 || solde !== 0}
+                                    disabled={!canDelete || selectedRows.length === 0 || solde !== 0 || selectedRows.every(row => Number(row.id_dossier) !== Number(fileId))}
                                     variant="contained"
                                     style={{
                                         textTransform: 'none',

@@ -336,8 +336,9 @@ const PopupAddNewAccount = ({
 
     //Affichage du plan comptable
     const showPc = () => {
-        axios.post(`/paramPlanComptable/pc`, { fileId: Number(id_dossier) }).then((response) => {
+        axios.post(`/paramPlanComptable/pc`, { fileId: Number(id_dossier), compteId: Number(id_compte) }).then((response) => {
             const resData = response.data;
+            console.log('response.data : ', response.data);
             if (resData.state) {
                 let listePc = resData.liste;
                 setPc(listePc);
@@ -509,8 +510,10 @@ const PopupAddNewAccount = ({
     }
 
     useEffect(() => {
-        showPc();
-        recupererListeCptCollectif();
+        if (id_compte && id_dossier) {
+            showPc();
+            recupererListeCptCollectif();
+        }
     }, [id_dossier, id_compte]);
 
     // Charger les provinces

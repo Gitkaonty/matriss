@@ -183,7 +183,15 @@ module.exports = {
                 type: Sequelize.STRING(20),
                 allowNull: true,
                 defaultValue: 'Français',
-            }
+            },
+            consolidation: {
+                type: Sequelize.BOOLEAN,
+                defaultValue: false
+            },
+            pays: {
+                type: Sequelize.STRING(50),
+                allowNull: true
+            },
         },
             { timestamps: true }
         );

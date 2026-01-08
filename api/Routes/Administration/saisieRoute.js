@@ -69,6 +69,9 @@ router.get('/rapprochements/export/excel', exportRapprochementsController.export
 // Récupération de journal avec 10 lignes d'écriture
 router.get('/getJournal/:id_compte/:id_dossier/:id_exercice', saisieController.getJournal);
 
+// Récupération de toutes les journal
+router.get('/getAllJournal/:id_compte/:id_dossier/:id_exercice', saisieController.getAllJournal);
+
 // Récupération de journal filtré
 router.post('/getJournalFiltered', verifyJWT, verifyPermission('VIEW'), saisieController.getJournalFiltered);
 

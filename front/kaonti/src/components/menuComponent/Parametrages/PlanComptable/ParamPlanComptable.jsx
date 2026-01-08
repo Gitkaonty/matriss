@@ -29,6 +29,7 @@ import { useSearchParams } from "react-router-dom";
 import PopupAddNewAccount from '../../../componentsTools/PlanComptable/PopupAddNewAccount';
 import usePermission from '../../../../hooks/usePermission';
 import useAxiosPrivate from '../../../../../config/axiosPrivate';
+import { TbRefresh } from "react-icons/tb";
 
 export default function ParamPlanComptable() {
     const { canAdd, canModify, canDelete, canView } = usePermission();
@@ -55,6 +56,7 @@ export default function ParamPlanComptable() {
     const [noFile, setNoFile] = useState(false);
     const [rowCptInfos, setRowCptInfos] = useState([]);
     const [openInfos, setOpenInfos] = useState(false);
+    const [consolidation, setConsolidation] = useState(false);
 
     const [openDialogAddNewAccount, setOpenDialogAddNewAccount] = useState(false);
     const [typeAction, setTypeAction] = useState('');
@@ -70,6 +72,28 @@ export default function ParamPlanComptable() {
         setisRefresh(prev => !prev);
     }
 
+    const handleActualize = () => {
+        try {
+            axios.post(`/paramPlanComptable/recupPcConsolidation`, { fileId, compteId })
+                .then((response) => {
+                    const listePc = response?.data?.liste;
+                    const unique = Object.values(
+                        (Array.isArray(listePc) ? listePc : []).reduce((acc, r) => {
+                            const k = String(r.compte || '');
+                            if (!acc[k]) acc[k] = r;
+                            return acc;
+                        }, {})
+                    );
+
+                    setPc(unique);
+                    toast.success('Liste mis à jour avec succès')
+                })
+        } catch (error) {
+            const errMsg = error.response?.data?.message || error.message || "Erreur inconnue";
+            toast.error(errMsg);
+        }
+    }
+
     const columnHeaderDetail = [
         {
             field: 'id',
@@ -81,8 +105,18 @@ export default function ParamPlanComptable() {
             headerClassName: 'HeaderbackColor',
         },
         {
+            field: 'dossier',
+            headerName: 'Dossier',
+            type: 'string',
+            sortable: true,
+            width: 100,
+            headerAlign: 'left',
+            align: 'left',
+            headerClassName: 'HeaderbackColor',
+        },
+        {
             field: 'compte',
-            headerName: <strong>Compte</strong>,
+            headerName: 'Compte',
             type: 'string',
             sortable: true,
             width: 175,
@@ -101,7 +135,7 @@ export default function ParamPlanComptable() {
         },
         {
             field: 'typecomptabilite',
-            headerName: <strong>Type comptabilité</strong>,
+            headerName: 'Type comptabilité',
             type: 'string',
             sortable: true,
             width: 150,
@@ -110,7 +144,7 @@ export default function ParamPlanComptable() {
         },
         {
             field: 'libelle',
-            headerName: <strong>Libellé</strong>,
+            headerName: 'Libellé',
             type: 'string',
             sortable: true,
             width: 300,
@@ -119,7 +153,7 @@ export default function ParamPlanComptable() {
         },
         {
             field: 'nature',
-            headerName: <strong>Nature</strong>,
+            headerName: 'Nature',
             type: 'string',
             sortable: true,
             width: 130,
@@ -183,8 +217,8 @@ export default function ParamPlanComptable() {
             }
         },
         {
-            field: 'BaseAux.comptecentr',
-            headerName: <strong>Centr. / base aux.</strong>,
+            field: 'baseCompte',
+            headerName: 'Centr. / base aux.',
             type: 'string',
             sortable: true,
             width: 175,
@@ -193,7 +227,7 @@ export default function ParamPlanComptable() {
         },
         {
             field: 'cptcharge',
-            headerName: <strong>Cpt charge</strong>,
+            headerName: 'Cpt charge',
             type: 'string',
             sortable: true,
             width: 100,
@@ -238,7 +272,7 @@ export default function ParamPlanComptable() {
         },
         {
             field: 'cpttva',
-            headerName: <strong>Cpt TVA</strong>,
+            headerName: 'Cpt TVA',
             type: 'string',
             sortable: true,
             width: 100,
@@ -283,7 +317,7 @@ export default function ParamPlanComptable() {
         },
         {
             field: 'typetier',
-            headerName: <strong>Type de tier</strong>,
+            headerName: 'Type de tier',
             type: 'string',
             sortable: true,
             width: 130,
@@ -362,7 +396,7 @@ export default function ParamPlanComptable() {
         },
         {
             field: 'nif',
-            headerName: <strong>Nif</strong>,
+            headerName: 'Nif',
             type: 'string',
             sortable: true,
             width: 150,
@@ -371,7 +405,7 @@ export default function ParamPlanComptable() {
         },
         {
             field: 'statistique',
-            headerName: <strong>N° statistique</strong>,
+            headerName: 'N° statistique',
             type: 'string',
             sortable: true,
             width: 200,
@@ -380,7 +414,7 @@ export default function ParamPlanComptable() {
         },
         {
             field: 'adresse',
-            headerName: <strong>Adresse</strong>,
+            headerName: 'Adresse',
             type: 'string',
             sortable: true,
             width: 250,
@@ -389,7 +423,7 @@ export default function ParamPlanComptable() {
         },
         {
             field: 'cin',
-            headerName: <strong>CIN</strong>,
+            headerName: 'CIN',
             type: 'string',
             sortable: true,
             width: 150,
@@ -398,7 +432,7 @@ export default function ParamPlanComptable() {
         },
         {
             field: 'datecin',
-            headerName: <strong>date CIN</strong>,
+            headerName: 'Date CIN',
             type: 'text',
             sortable: true,
             width: 120,
@@ -416,7 +450,7 @@ export default function ParamPlanComptable() {
         },
         {
             field: 'autrepieceid',
-            headerName: <strong>Autre pièces Ident.</strong>,
+            headerName: 'Autre pièces Ident.',
             type: 'text',
             sortable: true,
             width: 200,
@@ -425,7 +459,7 @@ export default function ParamPlanComptable() {
         },
         {
             field: 'refpieceid',
-            headerName: <strong>Réf pièces Ident.</strong>,
+            headerName: 'Réf pièces Ident.',
             type: 'text',
             sortable: true,
             width: 200,
@@ -434,7 +468,7 @@ export default function ParamPlanComptable() {
         },
         {
             field: 'adressesansnif',
-            headerName: <strong>Adresse CIN</strong>,
+            headerName: 'Adresse CIN',
             type: 'text',
             sortable: true,
             width: 250,
@@ -443,7 +477,7 @@ export default function ParamPlanComptable() {
         },
         {
             field: 'nifrepresentant',
-            headerName: <strong>NIF représentant</strong>,
+            headerName: 'NIF représentant',
             type: 'text',
             sortable: true,
             width: 175,
@@ -452,7 +486,7 @@ export default function ParamPlanComptable() {
         },
         {
             field: 'addresseetranger',
-            headerName: <strong>adresse représentant</strong>,
+            headerName: 'Adresse représentant',
             type: 'text',
             sortable: true,
             width: 250,
@@ -461,7 +495,7 @@ export default function ParamPlanComptable() {
         },
         {
             field: 'pays',
-            headerName: <strong>Pays</strong>,
+            headerName: 'Pays',
             type: 'text',
             sortable: true,
             width: 150,
@@ -470,7 +504,7 @@ export default function ParamPlanComptable() {
         },
         {
             field: 'province',
-            headerName: <strong>Province</strong>,
+            headerName: 'Province',
             type: 'string',
             sortable: true,
             width: 150,
@@ -479,7 +513,7 @@ export default function ParamPlanComptable() {
         },
         {
             field: 'region',
-            headerName: <strong>Région</strong>,
+            headerName: 'Région',
             type: 'string',
             sortable: true,
             width: 150,
@@ -488,7 +522,7 @@ export default function ParamPlanComptable() {
         },
         {
             field: 'district',
-            headerName: <strong>District</strong>,
+            headerName: 'District',
             type: 'string',
             sortable: true,
             width: 150,
@@ -497,7 +531,7 @@ export default function ParamPlanComptable() {
         },
         {
             field: 'commune',
-            headerName: <strong>Commune</strong>,
+            headerName: 'Commune',
             type: 'string',
             sortable: true,
             width: 180,
@@ -506,7 +540,7 @@ export default function ParamPlanComptable() {
         },
         {
             field: 'motcle',
-            headerName: <strong>Mot clé</strong>,
+            headerName: 'Mot clé',
             type: 'string',
             sortable: true,
             width: 150,
@@ -556,6 +590,7 @@ export default function ParamPlanComptable() {
 
             if (resData.state) {
                 setFileInfos(resData.fileInfos[0]);
+                setConsolidation(resData.fileInfos[0].consolidation);
                 setNoFile(false);
             } else {
                 setFileInfos([]);
@@ -566,7 +601,7 @@ export default function ParamPlanComptable() {
 
     //Affichage du plan comptable
     const showPc = () => {
-        axios.post(`/paramPlanComptable/pc`, { fileId }).then((response) => {
+        axios.post(`/paramPlanComptable/pc`, { fileId, compteId }).then((response) => {
             const resData = response.data;
             if (resData.state) {
                 let listePc = resData.liste;
@@ -665,10 +700,10 @@ export default function ParamPlanComptable() {
     }, []);
 
     useEffect(() => {
-        if (canView) {
+        if (canView && fileId && compteId) {
             showPc();
         }
-    }, [fileId, compte, isRefresh]);
+    }, [fileId, compteId, compte, isRefresh]);
 
     return (
         <>
@@ -737,37 +772,62 @@ export default function ParamPlanComptable() {
 
                                 <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
                                     direction={"row"} justifyContent={"right"}>
+                                    {
+                                        consolidation && (
+                                            <Tooltip title="Actualiser les comptes">
+                                                <span>
+                                                    <IconButton
+                                                        // disabled={statutDeleteButton}  
+                                                        onClick={handleActualize}
+                                                        variant="contained"
+                                                        style={{
+                                                            width: "35px", height: '35px',
+                                                            borderRadius: "5px", borderColor: "transparent",
+                                                            backgroundColor: initial.theme,
+                                                            textTransform: 'none', outline: 'none'
+                                                        }}
+                                                    >
+                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
+                                                    </IconButton>
+                                                </span>
+                                            </Tooltip>
+                                        )
+                                    }
                                     <Tooltip title="Ajouter un nouveau compte">
-                                        <IconButton
-                                            disabled={!canAdd}
-                                            // disabled={statutDeleteButton}  
-                                            onClick={() => handleOpenDialogAddNewAccount('ajout')}
-                                            variant="contained"
-                                            style={{
-                                                width: "35px", height: '35px',
-                                                borderRadius: "5px", borderColor: "transparent",
-                                                backgroundColor: initial.theme,
-                                                textTransform: 'none', outline: 'none'
-                                            }}
-                                        >
-                                            <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                                        </IconButton>
+                                        <span>
+                                            <IconButton
+                                                disabled={!canAdd}
+                                                // disabled={statutDeleteButton}  
+                                                onClick={() => handleOpenDialogAddNewAccount('ajout')}
+                                                variant="contained"
+                                                style={{
+                                                    width: "35px", height: '35px',
+                                                    borderRadius: "5px", borderColor: "transparent",
+                                                    backgroundColor: initial.theme,
+                                                    textTransform: 'none', outline: 'none'
+                                                }}
+                                            >
+                                                <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
+                                            </IconButton>
+                                        </span>
                                     </Tooltip>
 
                                     <Tooltip title="Modifier le compte sélectionné">
-                                        <IconButton
-                                            disabled={(!canModify) || selectedRow.length === 0}
-                                            onClick={() => handleOpenDialogAddNewAccount('modification')}
-                                            variant="contained"
-                                            style={{
-                                                width: "35px", height: '35px',
-                                                borderRadius: "5px", borderColor: "transparent",
-                                                backgroundColor: initial.theme,
-                                                textTransform: 'none', outline: 'none'
-                                            }}
-                                        >
-                                            <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
-                                        </IconButton>
+                                        <span>
+                                            <IconButton
+                                                disabled={(!canModify) || selectedRow.length === 0}
+                                                onClick={() => handleOpenDialogAddNewAccount('modification')}
+                                                variant="contained"
+                                                style={{
+                                                    width: "35px", height: '35px',
+                                                    borderRadius: "5px", borderColor: "transparent",
+                                                    backgroundColor: initial.theme,
+                                                    textTransform: 'none', outline: 'none'
+                                                }}
+                                            >
+                                                <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
+                                            </IconButton>
+                                        </span>
                                     </Tooltip>
 
                                     <Tooltip title="Supprimer le compte sélectionné">

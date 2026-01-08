@@ -212,6 +212,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.BOOLEAN,
             defaultValue: false
         },
+        pays: {
+            type: DataTypes.STRING(50),
+            allowNull: true
+        },
     }, { timestamps: true },)
     return dossiers
 }

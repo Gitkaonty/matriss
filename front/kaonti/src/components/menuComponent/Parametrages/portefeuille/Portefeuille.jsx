@@ -442,15 +442,6 @@ export default function PortefeuilleComponent() {
     return (
         <>
             {
-                noFile
-                    ?
-                    <PopupTestSelectedFil
-                        e confirmationState={sendToHome}
-                    />
-                    :
-                    null
-            }
-            {
                 (openDialogDeleteRow && canDelete)
                     ?
                     <PopupConfirmDelete
@@ -463,19 +454,6 @@ export default function PortefeuilleComponent() {
             <Box>
 
                 <TabContext value={"1"}>
-                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                        <TabList aria-label="lab API tabs example">
-                            <Tab
-                                style={{
-                                    textTransform: 'none',
-                                    outline: 'none',
-                                    border: 'none',
-                                    margin: -5
-                                }}
-                                label={InfoFileStyle(fileInfos?.dossier)} value="1"
-                            />
-                        </TabList>
-                    </Box>
                     <TabPanel value="1">
                         <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages : Portefeuille</Typography>
                         <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"}

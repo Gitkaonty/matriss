@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { IconButton, Stack, Tooltip } from '@mui/material';
 
-import { MdOutlineAutoMode } from "react-icons/md";
 import { CiExport } from 'react-icons/ci';
 import { IoMdTrash } from "react-icons/io";
 

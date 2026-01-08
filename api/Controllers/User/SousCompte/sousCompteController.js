@@ -11,6 +11,8 @@ const userPermission = db.userPermission;
 const rolePermission = db.rolePermission;
 const roles = db.roles;
 const permissions = db.permissions;
+const compteDossiers = db.compteDossiers;
+const dossiers = db.dossiers;
 
 const transporter = require('../../../config/mailer');
 
@@ -38,12 +40,20 @@ exports.getAllSousComptesByIdCompte = async (req, res) => {
         if (!Array.isArray(compteIds)) {
             return res.status(409).json({ message: 'Ids des comptes non trouvé', state: false })
         }
-        const sousComptes = await users.findAll({
+        const sousComptes = (await users.findAll({
             where: {
                 compte_id: compteIds
             },
+            include: [{ model: roles, as: "role", attributes: ["nom"] }],
             order: [["compte_id", "ASC"], ["id", "ASC"]]
-        })
+        })).map(val => {
+            const data = val.toJSON();
+
+            return {
+                ...data,
+                role_nom: data?.role?.nom || ""
+            };
+        });
         if (!sousComptes) {
             return res.status(409).json({ message: 'Sous-comptes non trouvés', state: false })
         }
@@ -56,33 +66,68 @@ exports.getAllSousComptesByIdCompte = async (req, res) => {
 
 exports.addSousCompte = async (req, res) => {
     try {
-        const { username, email, password, compte_id, roles, portefeuille, role_id } = req.body;
+        const { username, email, password, compte_id, roles, portefeuille, role_id, dossier, action, user_id } = req.body;
 
-        const hashedPwd = await bcrypt.hash(password, 10);
+        if (action === 'Ajout') {
+            const hashedPwd = await bcrypt.hash(password, 10);
 
-        const sousCompteCreated = await users.create({
-            role_id,
-            username,
-            email,
-            password: hashedPwd,
-            compte_id,
-            roles,
-            id_portefeuille: portefeuille
-        });
+            const sousCompteCreated = await users.create({
+                role_id,
+                username,
+                email,
+                password: hashedPwd,
+                compte_id,
+                roles,
+                id_portefeuille: portefeuille
+            });
 
-        const user_id = sousCompteCreated.id;
+            const user_id = sousCompteCreated.id;
 
-        await createUserPermission(user_id, role_id);
+            await createUserPermission(user_id, role_id);
 
-        const compteParent = await userscomptes.findByPk(compte_id);
+            const dossiersExistants = await dossiers.findAll({
+                where: {
+                    id: { [Op.in]: dossier }
+                },
+                attributes: ['id']
+            });
 
-        if (compteParent && compteParent.email) {
-            transporter.sendMail({
-                from: `"Kaonti" <${process.env.MAIL_USER}>`,
-                to: compteParent.email,
-                subject: "Nouveau sous-compte créé",
-                text: `Bonjour, un nouveau sous-compte a été créé : Nom: ${username}, Email: ${email}`,
-                html: `<div style="font-family:Arial,sans-serif;">
+            const dossiersValides = dossiersExistants.map(d => d.id);
+
+            if (dossiersValides.length > 0) {
+                const dossiersDejaLies = await compteDossiers.findAll({
+                    where: {
+                        user_id,
+                        id_dossier: { [Op.in]: dossiersValides }
+                    },
+                    attributes: ['id_dossier']
+                });
+
+                const dossiersDejaLiesIds = dossiersDejaLies.map(d => d.id_dossier);
+
+                const dossiersAInserer = dossiersValides.filter(
+                    id => !dossiersDejaLiesIds.includes(id)
+                );
+
+                if (dossiersAInserer.length > 0) {
+                    await compteDossiers.bulkCreate(
+                        dossiersAInserer.map(id_dossier => ({
+                            user_id,
+                            id_dossier
+                        }))
+                    );
+                }
+            }
+
+            const compteParent = await userscomptes.findByPk(compte_id);
+
+            if (compteParent && compteParent.email) {
+                transporter.sendMail({
+                    from: `"Kaonti" <${process.env.MAIL_USER}>`,
+                    to: compteParent.email,
+                    subject: "Nouveau sous-compte créé",
+                    text: `Bonjour, un nouveau sous-compte a été créé : Nom: ${username}, Email: ${email}`,
+                    html: `<div style="font-family:Arial,sans-serif;">
                 <h2 style="color:#1976d2;">Nouveau sous-compte créé</h2>
                 <p>Bonjour,</p>
                 <p>Un nouveau sous-compte a été créé :</p>
@@ -92,15 +137,71 @@ exports.addSousCompte = async (req, res) => {
                 </ul>
                 <p>Cordialement,<br>L'équipe Kaonti</p>
                </div>`
-            })
-                .then(info => console.log("Email envoyé pour ajout de sous-compte :", info.messageId))
-                .catch(err => console.error("Erreur envoi mail :", err));
-        }
+                })
+                    .then(info => console.log("Email envoyé pour ajout de sous-compte :", info.messageId))
+                    .catch(err => console.error("Erreur envoi mail :", err));
+            }
 
-        return res.status(200).json({
-            message: "Sous-compte ajouté avec succès",
-            state: true
-        });
+            return res.status(200).json({
+                message: "Sous-compte ajouté avec succès",
+                state: true
+            });
+        } else {
+            await users.update({
+                role_id,
+                username,
+                email,
+                compte_id,
+                roles,
+                id_portefeuille: portefeuille
+            }, {
+                where: {
+                    id: user_id
+                }
+            });
+            await compteDossiers.destroy({
+                where: {
+                    user_id
+                }
+            })
+            const dossiersExistants = await dossiers.findAll({
+                where: {
+                    id: { [Op.in]: dossier }
+                },
+                attributes: ['id']
+            });
+
+            const dossiersValides = dossiersExistants.map(d => d.id);
+
+            if (dossiersValides.length > 0) {
+                const dossiersDejaLies = await compteDossiers.findAll({
+                    where: {
+                        user_id,
+                        id_dossier: { [Op.in]: dossiersValides }
+                    },
+                    attributes: ['id_dossier']
+                });
+
+                const dossiersDejaLiesIds = dossiersDejaLies.map(d => d.id_dossier);
+
+                const dossiersAInserer = dossiersValides.filter(
+                    id => !dossiersDejaLiesIds.includes(id)
+                );
+
+                if (dossiersAInserer.length > 0) {
+                    await compteDossiers.bulkCreate(
+                        dossiersAInserer.map(id_dossier => ({
+                            user_id,
+                            id_dossier
+                        }))
+                    );
+                }
+            }
+            return res.status(200).json({
+                message: "Sous-compte modifié avec succès",
+                state: true
+            });
+        }
 
     } catch (error) {
         console.error(error);
