@@ -74,7 +74,6 @@ const handleRefreshToken = async (req, res) => {
             })
 
             const permissioDataName = permissionData.map(val => val.code);
-
             const accessToken = jwt.sign(
                 {
                     'UserInfo': {

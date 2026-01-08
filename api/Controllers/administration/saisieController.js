@@ -1,4 +1,4 @@
-const db = require("../../Models");
+﻿const db = require("../../Models");
 require('dotenv').config();
 
 
@@ -539,6 +539,7 @@ exports.listDetailsImmoLignes = async (req, res) => {
 };
 
 // --- Immobilisations: aperçu calcul amortissement linéaire (sans sauvegarde) ---
+
 exports.previewImmoLineaire = async (req, res) => {
     try {
         const fileId = Number(req.query?.fileId);
@@ -559,19 +560,55 @@ exports.previewImmoLineaire = async (req, res) => {
             return res.status(404).json({ state: false, msg: 'Données introuvables' });
         }
 
+        // -----------------------------
+        // PARAMÈTRES DE BASE
+        // -----------------------------
         const baseJours = Number(dossier.immo_amort_base_jours) || 360;
         const montantHT = Number(detail.montant_ht) || Number(detail.montant) || 0;
         const dateMS = new Date(detail.date_mise_service);
+        const exoDebut = exo.date_debut ? new Date(exo.date_debut) : null;
         const exoFin = exo.date_fin ? new Date(exo.date_fin) : null;
 
-        const dureeComp = Math.max(1, Number(detail.duree_amort_mois) || 0);
+        const dureeCompInitiale = Math.max(1, Number(detail.duree_amort_mois) || 0);
         const dureeFisc = Math.max(0, Math.floor(Number(detail.duree_amort_mois_fisc) || 0));
 
+        // -----------------------------
+        // DONNÉES DE REPRISE (séparées comptable / fiscal)
+        // -----------------------------
+        const repriseActiveComp = Number(
+            detail.reprise_immobilisation_comp ?? detail.reprise_immobilisation
+        ) === 1;
+        const dateRepriseComp = (detail.date_reprise_comp || detail.date_reprise)
+            ? new Date(detail.date_reprise_comp || detail.date_reprise)
+            : null;
+        const amortAntComp = Number(detail.amort_ant_comp) || 0;
+
+        const repriseActiveFisc = Number(
+            detail.reprise_immobilisation_fisc ?? detail.reprise_immobilisation
+        ) === 1;
+        const dateRepriseFisc = (detail.date_reprise_fisc || detail.date_reprise)
+            ? new Date(detail.date_reprise_fisc || detail.date_reprise)
+            : null;
+        const amortAntFisc = Number(detail.amort_ant_fisc) || 0;
+
+        if (exoDebut && !isNaN(exoDebut.getTime()) && exoFin && !isNaN(exoFin.getTime())) {
+            if (repriseActiveComp && dateRepriseComp && !isNaN(dateRepriseComp.getTime()) && (dateRepriseComp < exoDebut || dateRepriseComp > exoFin)) {
+                return res.status(400).json({ state: false, msg: "Date de reprise comptable hors période de l'exercice" });
+            }
+            if (repriseActiveFisc && dateRepriseFisc && !isNaN(dateRepriseFisc.getTime()) && (dateRepriseFisc < exoDebut || dateRepriseFisc > exoFin)) {
+                return res.status(400).json({ state: false, msg: "Date de reprise fiscale hors période de l'exercice" });
+            }
+        }
+
+        // -----------------------------
+        // OUTILS
+        // -----------------------------
         const addMonths = (d, m) => { const nd = new Date(d); nd.setMonth(nd.getMonth() + m); return nd; };
         const addDays = (d, n) => { const nd = new Date(d); nd.setDate(nd.getDate() + n); return nd; };
         const minDate = (a, b) => (a <= b ? a : b);
         const toYMD = d => d.toISOString().substring(0, 10);
         const clamp = v => Math.round((v + 0.0000001) * 100) / 100;
+
         const nbJoursBetween = (debut, fin) => {
             if (baseJours === 360) {
                 const dStart = Math.min(debut.getDate(), 30);
@@ -583,96 +620,204 @@ exports.previewImmoLineaire = async (req, res) => {
             return Math.floor((fin - debut) / (1000 * 60 * 60 * 24)) + 1;
         };
 
-        // COMPTABLE
-        const tauxAnnuelComp = 12 / dureeComp;
-        let compLines = [];
-        let debutC = new Date(dateMS);
-        const finAmortComp = addDays(addMonths(debutC, dureeComp), -1);
-        let indexC = 1, cumulC = 0, vncC = montantHT, safetyC = 0;
+        // -----------------------------
+        // CALCUL DE LA REPRISE (COMPTABLE)
+        // -----------------------------
+        let dateDepartAmortComp = new Date(dateMS);
+        let dureeAmortCompEffective = dureeCompInitiale;
+        let cumulInitialComp = 0;
+
+        if (repriseActiveComp && dateRepriseComp && amortAntComp > 0) {
+            const finTheo = addDays(addMonths(dateMS, dureeCompInitiale), -1);
+            if (dateRepriseComp <= finTheo) {
+                const joursRestants = nbJoursBetween(dateRepriseComp, finTheo);
+                dureeAmortCompEffective = clamp((joursRestants / baseJours) * 12);
+                dateDepartAmortComp = new Date(dateRepriseComp);
+                cumulInitialComp = amortAntComp;
+            }
+        }
+
+        // -----------------------------
+        // AMORTISSEMENT COMPTABLE
+        // -----------------------------
+        const tauxAnnuelComp = 12 / dureeAmortCompEffective;
+        const baseRestanteComp = clamp(montantHT - cumulInitialComp);
+        const compLines = [];
+
+        let debutC = new Date(dateDepartAmortComp);
+        const finAmortComp = addDays(addMonths(dateDepartAmortComp, dureeAmortCompEffective), -1);
+        let indexC = 1;
+        let cumulC = cumulInitialComp;
+        let vncC = clamp(montantHT - cumulInitialComp);
+        let safetyC = 0;
+
         while (vncC > 0 && safetyC < 1000) {
             if (debutC > finAmortComp) break;
-            let fin = indexC === 1 ? (exoFin && exoFin < finAmortComp ? exoFin : finAmortComp)
+
+            let fin = indexC === 1
+                ? (exoFin && exoFin < finAmortComp ? exoFin : finAmortComp)
                 : addDays(addMonths(debutC, 12), -1);
+
             if (fin > finAmortComp) fin = finAmortComp;
+
             if (fin < debutC) {
                 fin = minDate(addDays(addMonths(debutC, 1), -1), finAmortComp);
                 if (fin < debutC) break;
             }
+
             const nbJours = nbJoursBetween(debutC, fin);
             if (!isFinite(nbJours) || nbJours <= 0) break;
+
             const anneeNombre = clamp(nbJours / baseJours);
-            let dot = Math.min(vncC, clamp(montantHT * tauxAnnuelComp * anneeNombre));
+            const dotTheorique = clamp(baseRestanteComp * tauxAnnuelComp * anneeNombre);
+
+            let dot;
+            if (fin >= finAmortComp || vncC - dotTheorique < 1) {
+                dot = vncC;
+            } else {
+                dot = Math.min(vncC, dotTheorique);
+            }
+
             compLines.push({
                 rang: indexC,
                 date_debut: toYMD(debutC),
                 date_fin: toYMD(fin),
                 nb_jours: nbJours,
                 annee_nombre: anneeNombre,
-                dotation_mensuelle: clamp(montantHT / dureeComp),
+                dotation_mensuelle: clamp(baseRestanteComp / dureeCompInitiale),
                 dot_ant: clamp(cumulC),
                 dotation_annuelle: dot,
                 cumul_amort: clamp(cumulC + dot),
                 vnc: clamp(vncC - dot),
             });
-            cumulC += dot; vncC -= dot; debutC = addDays(fin, 1); indexC++; safetyC++;
+
+            cumulC += dot;
+            vncC -= dot;
+            debutC = addDays(fin, 1);
+            indexC++;
+            safetyC++;
         }
 
-        // FISCAL (optionnel si durée > 0)
+        // -----------------------------
+        // AMORTISSEMENT FISCAL (avec reprise séparée)
+        // -----------------------------
         let fiscLines = [];
+        let dureeFiscEffectiveOut = null;
+        let finAmortFiscOut = null;
         if (dureeFisc > 0) {
-            const tauxAnnuelFisc = 12 / dureeFisc;
             let debutF = new Date(dateMS);
-            const finAmortFisc = addDays(addMonths(debutF, dureeFisc), -1);
-            let indexF = 1, cumulF = 0, vncF = montantHT, safetyF = 0;
+            let dureeFiscEffective = dureeFisc;
+            let cumulInitialFisc = 0;
+
+            if (repriseActiveFisc && dateRepriseFisc && amortAntFisc > 0) {
+                const finTheoF = addDays(addMonths(dateMS, dureeFisc), -1);
+                if (dateRepriseFisc <= finTheoF) {
+                    const joursRestantsF = nbJoursBetween(dateRepriseFisc, finTheoF);
+                    dureeFiscEffective = clamp((joursRestantsF / baseJours) * 12);
+                    debutF = new Date(dateRepriseFisc);
+                    cumulInitialFisc = amortAntFisc;
+                }
+            }
+
+            const tauxAnnuelFisc = 12 / dureeFiscEffective;
+            const baseRestanteFisc = clamp(montantHT - cumulInitialFisc);
+            const finAmortFisc = addDays(addMonths(debutF, dureeFiscEffective), -1);
+            dureeFiscEffectiveOut = dureeFiscEffective;
+            finAmortFiscOut = finAmortFisc;
+
+            let indexF = 1;
+            let cumulF = cumulInitialFisc;
+            let vncF = clamp(montantHT - cumulInitialFisc);
+            let safetyF = 0;
+
             while (vncF > 0 && safetyF < 1000) {
                 if (debutF > finAmortFisc) break;
-                let fin = indexF === 1 ? (exoFin && exoFin < finAmortFisc ? exoFin : finAmortFisc)
+
+                let fin = indexF === 1
+                    ? (exoFin && exoFin < finAmortFisc ? exoFin : finAmortFisc)
                     : addDays(addMonths(debutF, 12), -1);
+
                 if (fin > finAmortFisc) fin = finAmortFisc;
+
                 if (fin < debutF) {
                     fin = minDate(addDays(addMonths(debutF, 1), -1), finAmortFisc);
                     if (fin < debutF) break;
                 }
+
                 const nbJours = nbJoursBetween(debutF, fin);
                 if (!isFinite(nbJours) || nbJours <= 0) break;
+
                 const anneeNombre = clamp(nbJours / baseJours);
-                let dot = Math.min(vncF, clamp(montantHT * tauxAnnuelFisc * anneeNombre));
+                const dotTheorique = clamp(baseRestanteFisc * tauxAnnuelFisc * anneeNombre);
+
+                let dot;
+                if (fin >= finAmortFisc || vncF - dotTheorique < 1) {
+                    dot = vncF;
+                } else {
+                    dot = Math.min(vncF, dotTheorique);
+                }
+
                 fiscLines.push({
                     rang: indexF,
                     date_debut: toYMD(debutF),
                     date_fin: toYMD(fin),
                     nb_jours: nbJours,
                     annee_nombre: anneeNombre,
-                    dotation_mensuelle: clamp(montantHT / dureeFisc),
+                    dotation_mensuelle: clamp(baseRestanteFisc / dureeFisc),
                     dot_ant: clamp(cumulF),
                     dotation_annuelle: dot,
                     cumul_amort: clamp(cumulF + dot),
                     vnc: clamp(vncF - dot),
                 });
-                cumulF += dot; vncF -= dot; debutF = addDays(fin, 1); indexF++; safetyF++;
+
+                cumulF += dot;
+                vncF -= dot;
+                debutF = addDays(fin, 1);
+                indexF++;
+                safetyF++;
             }
         }
 
+        // -----------------------------
+        // RÉPONSE
+        // -----------------------------
         return res.json({
             state: true,
             meta: {
                 base_jours: baseJours,
                 montant_ht: montantHT,
-                duree_mois_comp: dureeComp,
-                duree_mois_fisc: dureeFisc || null,
                 date_mise_service: toYMD(dateMS),
-                fin_amort_comp: toYMD(addDays(addMonths(dateMS, dureeComp), -1)),
-                fin_amort_fisc: dureeFisc ? toYMD(addDays(addMonths(dateMS, dureeFisc), -1)) : null,
+                // Back-compat: reprise = reprise comptable
+                reprise: repriseActiveComp && dateRepriseComp ? {
+                    date_reprise: toYMD(dateRepriseComp),
+                    amort_ant: amortAntComp,
+                    duree_restante_mois: dureeAmortCompEffective
+                } : null,
+                reprise_comp: repriseActiveComp && dateRepriseComp ? {
+                    date_reprise: toYMD(dateRepriseComp),
+                    amort_ant: amortAntComp,
+                    duree_restante_mois: dureeAmortCompEffective
+                } : null,
+                reprise_fisc: repriseActiveFisc && dateRepriseFisc ? {
+                    date_reprise: toYMD(dateRepriseFisc),
+                    amort_ant: amortAntFisc,
+                    duree_restante_mois: dureeFiscEffectiveOut
+                } : null,
+                fin_amort_comp: toYMD(finAmortComp),
+                fin_amort_fisc: finAmortFiscOut ? toYMD(finAmortFiscOut) : null,
             },
+
             list_comp: compLines,
             list_fisc: fiscLines,
         });
+
     } catch (err) {
         console.error('[IMMO][LINEAIRE][PREVIEW] error:', err);
         return res.status(500).json({ state: false, msg: 'Erreur serveur' });
     }
 };
 
+// --- Immobilisations: aperçu calcul amortissement degressif (sans sauvegarde) ---
 exports.previewImmoDegressif = async (req, res) => {
     try {
         // 1. Récupération des paramètres depuis la requête
@@ -702,6 +847,34 @@ exports.previewImmoDegressif = async (req, res) => {
         if (!dateMS || isNaN(dateMS.getTime())) return res.status(400).json({ state: false, msg: 'date_mise_service invalide' });
         if (montantHT <= 0) return res.status(400).json({ state: false, msg: 'montant HT invalide' });
 
+        const exoDebut = exo.date_debut ? new Date(exo.date_debut) : null;
+        const exoFin = exo.date_fin ? new Date(exo.date_fin) : null;
+
+        const repriseActiveComp = Number(
+            detail.reprise_immobilisation_comp ?? detail.reprise_immobilisation
+        ) === 1;
+        const dateRepriseComp = (detail.date_reprise_comp || detail.date_reprise)
+            ? new Date(detail.date_reprise_comp || detail.date_reprise)
+            : null;
+        const amortAntComp = Number(detail.amort_ant_comp) || 0;
+
+        const repriseActiveFisc = Number(
+            detail.reprise_immobilisation_fisc ?? detail.reprise_immobilisation
+        ) === 1;
+        const dateRepriseFisc = (detail.date_reprise_fisc || detail.date_reprise)
+            ? new Date(detail.date_reprise_fisc || detail.date_reprise)
+            : null;
+        const amortAntFisc = Number(detail.amort_ant_fisc) || 0;
+
+        if (exoDebut && !isNaN(exoDebut.getTime()) && exoFin && !isNaN(exoFin.getTime())) {
+            if (repriseActiveComp && dateRepriseComp && !isNaN(dateRepriseComp.getTime()) && (dateRepriseComp < exoDebut || dateRepriseComp > exoFin)) {
+                return res.status(400).json({ state: false, msg: "Date de reprise comptable hors période de l'exercice" });
+            }
+            if (repriseActiveFisc && dateRepriseFisc && !isNaN(dateRepriseFisc.getTime()) && (dateRepriseFisc < exoDebut || dateRepriseFisc > exoFin)) {
+                return res.status(400).json({ state: false, msg: "Date de reprise fiscale hors période de l'exercice" });
+            }
+        }
+
         // 4. Durée d'amortissement en mois et en années
         const dureeMois = Math.max(1, Number(detail.duree_amort_mois) || 0);
         const dureeAnnees = Math.ceil(dureeMois / 12);
@@ -724,9 +897,7 @@ exports.previewImmoDegressif = async (req, res) => {
         const clamp = v => Math.round((v + 0.0000001) * 100) / 100; // arrondi à 2 décimales (optionnel)
 
         const nbJoursBetween = (debut, fin) => {
-            // calcule nombre de jours entre deux dates
             if (baseJours === 360) {
-                // Convention 30/360
                 const dStart = Math.min(debut.getDate(), 30);
                 const dEnd = Math.min(fin.getDate(), 30);
                 const monthsDiff = (fin.getFullYear() - debut.getFullYear()) * 12 + (fin.getMonth() - debut.getMonth());
@@ -734,43 +905,65 @@ exports.previewImmoDegressif = async (req, res) => {
                 return (30 - dStart + 1) + Math.max(0, monthsDiff - 1) * 30 + dEnd;
             }
             return Math.floor((fin - debut) / (1000 * 60 * 60 * 24)) + 1;
-        }; // calcule nombre de jours entre deux dates
+        };
+
+        const computeRepriseParams = (dureeMoisX, repriseActiveX, dateRepriseX, amortAntX) => {
+            const dureeM = Math.max(1, Number(dureeMoisX) || 0);
+            const finTheoX = addDays(addMonths(dateMS, dureeM), -1);
+
+            let dateDepartX = new Date(dateMS);
+            let dureeMEffective = dureeM;
+            let cumulInitialX = 0;
+
+            if (repriseActiveX && dateRepriseX && amortAntX > 0 && dateRepriseX <= finTheoX) {
+                const joursRestantsX = nbJoursBetween(dateRepriseX, finTheoX);
+                dureeMEffective = clamp((joursRestantsX / baseJours) * 12);
+                dateDepartX = new Date(dateRepriseX);
+                cumulInitialX = amortAntX;
+            }
+
+            const finAmortX = addDays(addMonths(dateDepartX, dureeMEffective), -1);
+            const baseRestanteX = clamp(montantHT - cumulInitialX);
+            return { dureeM, finTheoX, dateDepartX, dureeMEffective, cumulInitialX, finAmortX, baseRestanteX };
+        };
 
         // 8. Constructeur générique d'un tableau dégressif avec bascule linéaire
-        const buildDegSchedule = (dureeMoisX) => {
-            const dureeM = Math.max(1, Number(dureeMoisX) || 0);
-            const dureeA = Math.ceil(dureeM / 12);
-            // coefficient en fonction de la durée
+        const buildDegSchedule = (dureeMoisX, repriseActiveX, dateRepriseX, amortAntX, labelX) => {
+            const rp = computeRepriseParams(dureeMoisX, repriseActiveX, dateRepriseX, amortAntX);
+            const dureeA = Math.ceil(rp.dureeMEffective / 12);
+
             let coefX = 0;
             if (dureeA >= 1 && dureeA <= 4) coefX = 1.25;
             else if (dureeA >= 5 && dureeA <= 6) coefX = 1.75;
             else if (dureeA > 6) coefX = 2.25;
+
             const tauxLinX = 1 / dureeA;
             const tauxDegX = tauxLinX * coefX;
-
-            const finAmortX = addDays(addMonths(dateMS, dureeM), -1);
             const exoFin = exo.date_fin ? new Date(exo.date_fin) : null;
 
             const linesX = [];
-            let vncX = montantHT;
-            let cumulX = 0;
-            let debutX = new Date(dateMS);
+            let vncX = clamp(montantHT - rp.cumulInitialX);
+            let cumulX = clamp(rp.cumulInitialX);
+            let debutX = new Date(rp.dateDepartX);
             let anneeCumuleeX = 0;
             let indexX = 1;
             let safetyX = 0;
             let modeX = 'degressif';
+            let didSwitchLogX = false;
 
             while (vncX > 0 && safetyX < 1000) {
-                if (debutX > finAmortX) break;
+                if (debutX > rp.finAmortX) break;
 
-                let finX = indexX === 1 ? (exoFin && exoFin < finAmortX ? exoFin : finAmortX) : addDays(addMonths(debutX, 12), -1);
-                if (finX > finAmortX) finX = finAmortX;
+                let finX = indexX === 1
+                    ? (exoFin && exoFin < rp.finAmortX ? exoFin : rp.finAmortX)
+                    : addDays(addMonths(debutX, 12), -1);
+                if (finX > rp.finAmortX) finX = rp.finAmortX;
                 if (finX < debutX) {
-                    finX = minDate(addDays(addMonths(debutX, 1), -1), finAmortX);
+                    finX = minDate(addDays(addMonths(debutX, 1), -1), rp.finAmortX);
                     if (finX < debutX) break;
                 }
 
-                const isLastX = finX.getTime() === finAmortX.getTime();
+                const isLastX = finX.getTime() === rp.finAmortX.getTime();
                 const nbJoursX = nbJoursBetween(debutX, finX);
                 if (!isFinite(nbJoursX) || nbJoursX <= 0) break;
                 const prorataX = nbJoursX / baseJours;
@@ -778,12 +971,28 @@ exports.previewImmoDegressif = async (req, res) => {
                 const dureeRestanteX = Math.max(1e-9, dureeA - anneeCumuleeX);
                 const dotDegAnnX = vncX * tauxDegX;
                 const dotLinRestAnnX = vncX / dureeRestanteX;
-                if (modeX === 'degressif' && dotLinRestAnnX > dotDegAnnX) modeX = 'lineaire';
+                if (modeX === 'degressif' && dotLinRestAnnX > dotDegAnnX) {
+                    if (!didSwitchLogX) {
+                        console.log('[IMMO][DEGRESSIF][SWITCH->LINEAIRE]', {
+                            tab: labelX,
+                            rang: indexX,
+                            date_debut: toYMD(debutX),
+                            date_fin_prevue: toYMD(finX),
+                            vnc: clamp(vncX),
+                            duree_restante_annees: clamp(dureeRestanteX),
+                            dot_deg_annuel: clamp(dotDegAnnX),
+                            dot_lin_rest_annuel: clamp(dotLinRestAnnX),
+                        });
+                        didSwitchLogX = true;
+                    }
+                    modeX = 'lineaire';
+                }
 
-                let dotPeriodeX = modeX === 'degressif' ? (vncX * tauxDegX * prorataX) : (dotLinRestAnnX * prorataX);
-                if (isLastX) {
-                    dotPeriodeX = vncX;
-                } else if (vncX - dotPeriodeX < 0.01) {
+                let dotPeriodeX = modeX === 'degressif'
+                    ? (vncX * tauxDegX * prorataX)
+                    : (dotLinRestAnnX * prorataX);
+
+                if (isLastX || vncX - dotPeriodeX < 0.01) {
                     dotPeriodeX = vncX;
                 }
 
@@ -812,42 +1021,62 @@ exports.previewImmoDegressif = async (req, res) => {
                 safetyX++;
             }
 
-            return { coef: coefX, duree_mois: dureeM, duree_annees: dureeA, taux_lin_annuel: tauxLinX, taux_deg_annuel: tauxDegX, lines: linesX, finAmort: finAmortX };
+            return {
+                coef: coefX,
+                duree_mois: rp.dureeMEffective,
+                duree_annees: dureeA,
+                taux_lin_annuel: tauxLinX,
+                taux_deg_annuel: tauxDegX,
+                lines: linesX,
+                finAmort: rp.finAmortX,
+                reprise: repriseActiveX && dateRepriseX && rp.cumulInitialX > 0 ? {
+                    date_reprise: toYMD(dateRepriseX),
+                    amort_ant: rp.cumulInitialX,
+                    duree_restante_mois: rp.dureeMEffective,
+                } : null,
+            };
         };
 
         // 9. Constructeur linéaire (prorata jours, 30/360 pris en compte)
-        const buildLinSchedule = (dureeMoisX) => {
-            const dureeM = Math.max(1, Number(dureeMoisX) || 0);
-            const dureeA = Math.ceil(dureeM / 12);
+        const buildLinSchedule = (dureeMoisX, repriseActiveX, dateRepriseX, amortAntX) => {
+            const rp = computeRepriseParams(dureeMoisX, repriseActiveX, dateRepriseX, amortAntX);
+            const dureeA = Math.ceil(rp.dureeMEffective / 12);
             const tauxLinX = 1 / dureeA;
-            const finAmortX = addDays(addMonths(dateMS, dureeM), -1);
             const exoFin = exo.date_fin ? new Date(exo.date_fin) : null;
 
             const linesX = [];
-            let vncX = montantHT;
-            let cumulX = 0;
-            let debutX = new Date(dateMS);
+            let vncX = clamp(montantHT - rp.cumulInitialX);
+            let cumulX = clamp(rp.cumulInitialX);
+            let debutX = new Date(rp.dateDepartX);
             let indexX = 1;
             let safetyX = 0;
+
             while (vncX > 0 && safetyX < 1000) {
-                if (debutX > finAmortX) break;
-                let finX = indexX === 1 ? (exoFin && exoFin < finAmortX ? exoFin : finAmortX) : addDays(addMonths(debutX, 12), -1);
-                if (finX > finAmortX) finX = finAmortX;
+                if (debutX > rp.finAmortX) break;
+
+                let finX = indexX === 1
+                    ? (exoFin && exoFin < rp.finAmortX ? exoFin : rp.finAmortX)
+                    : addDays(addMonths(debutX, 12), -1);
+                if (finX > rp.finAmortX) finX = rp.finAmortX;
                 if (finX < debutX) {
-                    finX = minDate(addDays(addMonths(debutX, 1), -1), finAmortX);
+                    finX = minDate(addDays(addMonths(debutX, 1), -1), rp.finAmortX);
                     if (finX < debutX) break;
                 }
+
                 const nbJoursX = nbJoursBetween(debutX, finX);
                 if (!isFinite(nbJoursX) || nbJoursX <= 0) break;
                 const prorataX = nbJoursX / baseJours;
-                let dotPeriodeX = montantHT * tauxLinX * prorataX;
-                if (finX.getTime() === finAmortX.getTime() || vncX - dotPeriodeX < 0.01) {
+
+                let dotPeriodeX = rp.baseRestanteX * tauxLinX * prorataX;
+                if (finX.getTime() === rp.finAmortX.getTime() || vncX - dotPeriodeX < 0.01) {
                     dotPeriodeX = vncX;
                 }
+
                 dotPeriodeX = clamp(dotPeriodeX);
                 const antX = clamp(cumulX);
                 cumulX = clamp(cumulX + dotPeriodeX);
                 vncX = clamp(montantHT - cumulX);
+
                 linesX.push({
                     rang: indexX,
                     date_debut: toYMD(debutX),
@@ -860,34 +1089,58 @@ exports.previewImmoDegressif = async (req, res) => {
                     cumul_amort: cumulX,
                     vnc: vncX,
                 });
+
                 if (vncX <= 0) break;
                 debutX = addDays(finX, 1);
-                indexX++; safetyX++;
+                indexX++;
+                safetyX++;
             }
-            return { coef: 0, duree_mois: dureeM, duree_annees: dureeA, taux_lin_annuel: tauxLinX, taux_deg_annuel: 0, lines: linesX, finAmort: finAmortX };
+
+            return {
+                coef: 0,
+                duree_mois: rp.dureeMEffective,
+                duree_annees: dureeA,
+                taux_lin_annuel: tauxLinX,
+                taux_deg_annuel: 0,
+                lines: linesX,
+                finAmort: rp.finAmortX,
+                reprise: repriseActiveX && dateRepriseX && rp.cumulInitialX > 0 ? {
+                    date_reprise: toYMD(dateRepriseX),
+                    amort_ant: rp.cumulInitialX,
+                    duree_restante_mois: rp.dureeMEffective,
+                } : null,
+            };
         };
 
-        // 10. Calculer les tableaux comptable et fiscal séparément en fonction des types
         const normalizeNoAccent = (s) => String(s || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
         const typeComp = normalizeNoAccent(detail?.type_amort);
         const typeFisc = normalizeNoAccent(detail?.type_amort_fisc);
 
         const dureeMoisComp = Math.max(1, Number(detail.duree_amort_mois) || 0);
         const compIsDeg = typeComp.includes('degr');
-        const resComp = compIsDeg ? buildDegSchedule(dureeMoisComp) : buildLinSchedule(dureeMoisComp);
+        const resComp = compIsDeg
+            ? buildDegSchedule(dureeMoisComp, repriseActiveComp, dateRepriseComp, amortAntComp, 'comptable')
+            : buildLinSchedule(dureeMoisComp, repriseActiveComp, dateRepriseComp, amortAntComp);
 
         const dureeMoisFisc = Math.max(0, Math.floor(Number(detail.duree_amort_mois_fisc) || 0));
         const hasFisc = dureeMoisFisc > 0;
         const fiscIsDeg = typeFisc.includes('degr');
-        const resFisc = hasFisc ? (fiscIsDeg ? buildDegSchedule(dureeMoisFisc) : buildLinSchedule(dureeMoisFisc)) : null;
+        const resFisc = hasFisc
+            ? (fiscIsDeg
+                ? buildDegSchedule(dureeMoisFisc, repriseActiveFisc, dateRepriseFisc, amortAntFisc, 'fiscal')
+                : buildLinSchedule(dureeMoisFisc, repriseActiveFisc, dateRepriseFisc, amortAntFisc))
+            : null;
 
-        // 11. Retour du résultat avec 2 onglets (comptable/fiscal)
         return res.json({
             state: true,
             meta: {
                 base_jours: baseJours,
                 montant_ht: montantHT,
                 date_mise_service: toYMD(dateMS),
+                // Back-compat: reprise = reprise comptable
+                reprise: resComp.reprise,
+                reprise_comp: resComp.reprise,
+                reprise_fisc: resFisc ? resFisc.reprise : null,
                 comp: {
                     coef_degressif: resComp.coef,
                     duree_mois: resComp.duree_mois,
@@ -908,6 +1161,7 @@ exports.previewImmoDegressif = async (req, res) => {
             list_comp: resComp.lines,
             list_fisc: hasFisc ? resFisc.lines : [],
         });
+
     } catch (err) {
         console.error('[IMMO][DEGRESSIF][PREVIEW] error:', err);
         return res.status(500).json({ state: false, msg: 'Erreur serveur' });
@@ -1380,37 +1634,21 @@ exports.modificationJournal = async (req, res) => {
 
                 await journals.update(journalData, { where: { id: row.id } });
                 modification++;
-                const relevantCa = listCa?.filter(item => item.id_ligne_ecriture === journalData.id_temporaire) || [];
 
+                const relevantCa = listCa?.filter(item => item.id_ligne_ecriture === row.id) || [];
                 for (const item of relevantCa) {
-
-                    const exist = await analytiques.findOne({
-                        where: {
-                            id_ligne_ecriture: row.id,
-                            id_axe: item.id_axe,
-                            id_section: item.id_section
+                    await analytiques.update(
+                        {
+                            debit: item.debit || 0, credit: item.credit || 0, pourcentage: item.pourcentage || 0
+                        },
+                        {
+                            where: {
+                                id_ligne_ecriture: row.id,
+                                id_axe: item.id_axe,
+                                id_section: item.id_section
+                            }
                         }
-                    });
-
-                    if (exist) {
-                        await exist.update({
-                            debit: Number(item.debit).toFixed(2) || 0,
-                            credit: Number(item.credit).toFixed(2) || 0,
-                            pourcentage: Number(item.pourcentage).toFixed(2) || 0
-                        });
-                    } else {
-                        await analytiques.create({
-                            id_compte,
-                            id_dossier,
-                            id_exercice,
-                            id_ligne_ecriture: row.id,
-                            id_axe: item.id_axe,
-                            id_section: item.id_section,
-                            debit: Number(item.debit).toFixed(2) || 0,
-                            credit: Number(item.credit).toFixed(2) || 0,
-                            pourcentage: Number(item.pourcentage).toFixed(2) || 0
-                        });
-                    }
+                    );
                 }
             }
             else {
@@ -1420,7 +1658,7 @@ exports.modificationJournal = async (req, res) => {
 
                 const journalId = createdJournal.id;
 
-                const relevantCa = listCa?.filter(item => item.id_ligne_ecriture === journalData.id_temporaire) || [];
+                const relevantCa = listCa?.filter(item => item.id_ligne_ecriture === row.id_temporaire) || [];
 
                 if (relevantCa.length > 0) {
                     const listCaRows = relevantCa.map(item => ({
@@ -1430,9 +1668,9 @@ exports.modificationJournal = async (req, res) => {
                         id_ligne_ecriture: journalId,
                         id_axe: item.id_axe,
                         id_section: item.id_section,
-                        debit: Number(item.debit).toFixed(2) || 0,
-                        credit: Number(item.credit).toFixed(2) || 0,
-                        pourcentage: Number(item.pourcentage).toFixed(2) || 0
+                        debit: item.debit || 0,
+                        credit: item.credit || 0,
+                        pourcentage: item.pourcentage || 0
 
                     }));
 
@@ -1914,6 +2152,9 @@ exports.createDetailsImmo = async (req, res) => {
             code, intitule, lien_ecriture_id, fournisseur,
             date_acquisition, date_mise_service, duree_amort_mois, type_amort,
             montant, taux_tva, montant_tva, montant_ht,
+            reprise_immobilisation, date_reprise,
+            reprise_immobilisation_comp, date_reprise_comp,
+            reprise_immobilisation_fisc, date_reprise_fisc,
             // legacy (back-compat)
             amort_ant, dotation_periode, amort_exceptionnel, total_amortissement, derogatoire,
             // new comptable suffix
@@ -1927,6 +2168,39 @@ exports.createDetailsImmo = async (req, res) => {
         if (!fileId || !compteId || !exerciceId || !pcId || !code) {
             return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
         }
+
+        const exo = await db.exercices.findByPk(Number(exerciceId));
+        if (!exo) {
+            return res.status(404).json({ state: false, msg: 'Exercice introuvable' });
+        }
+        const exoDebut = exo.date_debut ? new Date(exo.date_debut) : null;
+        const exoFin = exo.date_fin ? new Date(exo.date_fin) : null;
+        
+        if (exoDebut && !isNaN(exoDebut.getTime()) && exoFin && !isNaN(exoFin.getTime())) {
+            const dAcq = date_acquisition ? new Date(String(date_acquisition).substring(0, 10)) : null;
+            const dMs = date_mise_service ? new Date(String(date_mise_service).substring(0, 10)) : null;
+            const dRepriseLegacy = date_reprise ? new Date(String(date_reprise).substring(0, 10)) : null;
+            const dRepriseComp = date_reprise_comp ? new Date(String(date_reprise_comp).substring(0, 10)) : null;
+            const dRepriseFisc = date_reprise_fisc ? new Date(String(date_reprise_fisc).substring(0, 10)) : null;
+
+            if (dAcq && !isNaN(dAcq.getTime()) && dAcq < exoDebut) {
+                return res.status(400).json({ state: false, msg: "Date d'acquisition avant la date de début de l'exercice" });
+            }
+            if (dMs && !isNaN(dMs.getTime()) && dMs < exoDebut) {
+                return res.status(400).json({ state: false, msg: "Date de mise en service avant la date de début de l'exercice" });
+            }
+
+            if (dRepriseLegacy && !isNaN(dRepriseLegacy.getTime()) && (dRepriseLegacy < exoDebut || dRepriseLegacy > exoFin)) {
+                return res.status(400).json({ state: false, msg: "Date de reprise hors période de l'exercice" });
+            }
+            if (dRepriseComp && !isNaN(dRepriseComp.getTime()) && (dRepriseComp < exoDebut || dRepriseComp > exoFin)) {
+                return res.status(400).json({ state: false, msg: "Date de reprise comptable hors période de l'exercice" });
+            }
+            if (dRepriseFisc && !isNaN(dRepriseFisc.getTime()) && (dRepriseFisc < exoDebut || dRepriseFisc > exoFin)) {
+                return res.status(400).json({ state: false, msg: "Date de reprise fiscale hors période de l'exercice" });
+            }
+        }
+
         // Validate that amortisation account is provided (front derives one from compte)
         if (!compte_amortissement || String(compte_amortissement).trim() === '') {
             return res.status(400).json({ state: false, msg: "Veuillez ajouter un compte d'amort" });
@@ -1939,6 +2213,9 @@ exports.createDetailsImmo = async (req, res) => {
                 date_acquisition, date_mise_service, duree_amort_mois, type_amort,
                 montant, taux_tva, montant_tva, montant_ht,
                 compte_amortissement, vnc, date_sortie, prix_vente,
+                reprise_immobilisation, date_reprise,
+                reprise_immobilisation_comp, date_reprise_comp,
+                reprise_immobilisation_fisc, date_reprise_fisc,
                 amort_ant_comp, dotation_periode_comp, amort_exceptionnel_comp, total_amortissement_comp, derogatoire_comp,
                 amort_ant_fisc, dotation_periode_fisc, amort_exceptionnel_fisc, total_amortissement_fisc, derogatoire_fisc,
                 duree_amort_mois_fisc, type_amort_fisc,
@@ -1949,6 +2226,9 @@ exports.createDetailsImmo = async (req, res) => {
                 :date_acquisition, :date_mise_service, :duree_amort_mois, :type_amort,
                 :montant, :taux_tva, :montant_tva, :montant_ht,
                 :compte_amortissement, :vnc, :date_sortie, :prix_vente,
+                :reprise_immobilisation, :date_reprise,
+                :reprise_immobilisation_comp, :date_reprise_comp,
+                :reprise_immobilisation_fisc, :date_reprise_fisc,
                 :amort_ant_comp, :dotation_periode_comp, :amort_exceptionnel_comp, :total_amortissement_comp, :derogatoire_comp,
                 :amort_ant_fisc, :dotation_periode_fisc, :amort_exceptionnel_fisc, :total_amortissement_fisc, :derogatoire_fisc,
                 :duree_amort_mois_fisc, :type_amort_fisc,
@@ -1966,6 +2246,12 @@ exports.createDetailsImmo = async (req, res) => {
                 compte_amortissement: compte_amortissement ?? null,
                 vnc: Number(vnc) || 0,
                 date_sortie: date_sortie ? String(date_sortie).substring(0, 10) : null, prix_vente: prix_vente ?? null,
+                reprise_immobilisation: Number(reprise_immobilisation) === 1 || reprise_immobilisation === true,
+                date_reprise: date_reprise ? String(date_reprise).substring(0, 10) : null,
+                reprise_immobilisation_comp: Number(reprise_immobilisation_comp) === 1 || reprise_immobilisation_comp === true,
+                date_reprise_comp: date_reprise_comp ? String(date_reprise_comp).substring(0, 10) : null,
+                reprise_immobilisation_fisc: Number(reprise_immobilisation_fisc) === 1 || reprise_immobilisation_fisc === true,
+                date_reprise_fisc: date_reprise_fisc ? String(date_reprise_fisc).substring(0, 10) : null,
                 amort_ant_comp: Number(amort_ant_comp) || 0,
                 dotation_periode_comp: Number(dotation_periode_comp) || 0,
                 amort_exceptionnel_comp: Number(amort_exceptionnel_comp) || 0,
@@ -2021,6 +2307,9 @@ exports.updateDetailsImmo = async (req, res) => {
             code, intitule, lien_ecriture_id, fournisseur,
             date_acquisition, date_mise_service, duree_amort_mois, type_amort,
             montant, taux_tva, montant_tva, montant_ht,
+            reprise_immobilisation, date_reprise,
+            reprise_immobilisation_comp, date_reprise_comp,
+            reprise_immobilisation_fisc, date_reprise_fisc,
             // new comptable suffix
             amort_ant_comp, dotation_periode_comp, amort_exceptionnel_comp, total_amortissement_comp, derogatoire_comp,
             // new fiscale suffix
@@ -2031,6 +2320,39 @@ exports.updateDetailsImmo = async (req, res) => {
         if (!id || !fileId || !compteId || !exerciceId || !pcId || !code) {
             return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
         }
+
+        const exo = await db.exercices.findByPk(Number(exerciceId));
+        if (!exo) {
+            return res.status(404).json({ state: false, msg: 'Exercice introuvable' });
+        }
+        const exoDebut = exo.date_debut ? new Date(exo.date_debut) : null;
+        const exoFin = exo.date_fin ? new Date(exo.date_fin) : null;
+        
+        if (exoDebut && !isNaN(exoDebut.getTime()) && exoFin && !isNaN(exoFin.getTime())) {
+            const dAcq = date_acquisition ? new Date(String(date_acquisition).substring(0, 10)) : null;
+            const dMs = date_mise_service ? new Date(String(date_mise_service).substring(0, 10)) : null;
+            const dRepriseLegacy = date_reprise ? new Date(String(date_reprise).substring(0, 10)) : null;
+            const dRepriseComp = date_reprise_comp ? new Date(String(date_reprise_comp).substring(0, 10)) : null;
+            const dRepriseFisc = date_reprise_fisc ? new Date(String(date_reprise_fisc).substring(0, 10)) : null;
+
+            if (dAcq && !isNaN(dAcq.getTime()) && dAcq < exoDebut) {
+                return res.status(400).json({ state: false, msg: "Date d'acquisition avant la date de début de l'exercice" });
+            }
+            if (dMs && !isNaN(dMs.getTime()) && dMs < exoDebut) {
+                return res.status(400).json({ state: false, msg: "Date de mise en service avant la date de début de l'exercice" });
+            }
+
+            if (dRepriseLegacy && !isNaN(dRepriseLegacy.getTime()) && (dRepriseLegacy < exoDebut || dRepriseLegacy > exoFin)) {
+                return res.status(400).json({ state: false, msg: "Date de reprise hors période de l'exercice" });
+            }
+            if (dRepriseComp && !isNaN(dRepriseComp.getTime()) && (dRepriseComp < exoDebut || dRepriseComp > exoFin)) {
+                return res.status(400).json({ state: false, msg: "Date de reprise comptable hors période de l'exercice" });
+            }
+            if (dRepriseFisc && !isNaN(dRepriseFisc.getTime()) && (dRepriseFisc < exoDebut || dRepriseFisc > exoFin)) {
+                return res.status(400).json({ state: false, msg: "Date de reprise fiscale hors période de l'exercice" });
+            }
+        }
+
         const updateSql = `
             UPDATE details_immo SET
                 pc_id = :pcId,
@@ -2050,6 +2372,12 @@ exports.updateDetailsImmo = async (req, res) => {
                 vnc = :vnc,
                 date_sortie = :date_sortie,
                 prix_vente = :prix_vente,
+                reprise_immobilisation = :reprise_immobilisation,
+                date_reprise = :date_reprise,
+                reprise_immobilisation_comp = :reprise_immobilisation_comp,
+                date_reprise_comp = :date_reprise_comp,
+                reprise_immobilisation_fisc = :reprise_immobilisation_fisc,
+                date_reprise_fisc = :date_reprise_fisc,
                 amort_ant_comp = :amort_ant_comp,
                 dotation_periode_comp = :dotation_periode_comp,
                 amort_exceptionnel_comp = :amort_exceptionnel_comp,
@@ -2060,7 +2388,7 @@ exports.updateDetailsImmo = async (req, res) => {
                 amort_exceptionnel_fisc = :amort_exceptionnel_fisc,
                 total_amortissement_fisc = :total_amortissement_fisc,
                 derogatoire_fisc = :derogatoire_fisc,
-                duree_amort_mois_fisc = :duree_amort_mois_fisc,
+                duree_amort_mois_fisc = :duree_amort_mois_fisc, 
                 type_amort_fisc = :type_amort_fisc,
                 updated_at = NOW()
             WHERE id = :id AND id_dossier = :fileId AND id_compte = :compteId AND id_exercice = :exerciceId
@@ -2077,6 +2405,12 @@ exports.updateDetailsImmo = async (req, res) => {
                 compte_amortissement: compte_amortissement ?? null,
                 vnc: Number(vnc) || 0,
                 date_sortie: date_sortie ? String(date_sortie).substring(0, 10) : null, prix_vente: prix_vente ?? null,
+                reprise_immobilisation: Number(reprise_immobilisation) === 1 || reprise_immobilisation === true,
+                date_reprise: date_reprise ? String(date_reprise).substring(0, 10) : null,
+                reprise_immobilisation_comp: Number(reprise_immobilisation_comp) === 1 || reprise_immobilisation_comp === true,
+                date_reprise_comp: date_reprise_comp ? String(date_reprise_comp).substring(0, 10) : null,
+                reprise_immobilisation_fisc: Number(reprise_immobilisation_fisc) === 1 || reprise_immobilisation_fisc === true,
+                date_reprise_fisc: date_reprise_fisc ? String(date_reprise_fisc).substring(0, 10) : null,
                 amort_ant_comp: Number(amort_ant_comp) || 0,
                 dotation_periode_comp: Number(dotation_periode_comp) || 0,
                 amort_exceptionnel_comp: Number(amort_exceptionnel_comp) || 0,

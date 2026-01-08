@@ -12,7 +12,7 @@ module.exports = (sequelize, DataTypes) => {
     lien_ecriture_id: { type: DataTypes.INTEGER },
     fournisseur: { type: DataTypes.STRING(255) },
 
-    date_acquisition: { type: DataTypes.DATEONLY },
+    date_acquisition: { type: DataTypes.DATEONLY }, 
     date_mise_service: { type: DataTypes.DATEONLY },
 
     // Comptables (généraux)
@@ -29,6 +29,15 @@ module.exports = (sequelize, DataTypes) => {
 
     date_sortie: { type: DataTypes.DATEONLY },
     prix_vente: { type: DataTypes.DECIMAL(18, 2) },
+
+    reprise_immobilisation: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+    date_reprise: { type: DataTypes.DATEONLY },
+
+    reprise_immobilisation_comp: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+    date_reprise_comp: { type: DataTypes.DATEONLY },
+
+    reprise_immobilisation_fisc: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+    date_reprise_fisc: { type: DataTypes.DATEONLY },
 
     // Comptables (suffixes)
     amort_ant_comp: { type: DataTypes.DECIMAL(18, 2) },
