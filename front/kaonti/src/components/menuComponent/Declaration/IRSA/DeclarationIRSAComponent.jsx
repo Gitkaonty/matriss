@@ -47,8 +47,6 @@ import { AiTwotoneFileText } from "react-icons/ai";
 import { MdImportExport } from "react-icons/md";
 import { MdOutlineAutoMode } from "react-icons/md";
 import { init } from "../../../../../init";
-import { MdOutlineAutoMode } from "react-icons/md";
-import { init } from "../../../../../init";
 import PopupActionConfirm from '../../../componentsTools/popupActionConfirm';
 import PopupConfirmDelete from '../../../componentsTools/popupConfirmDelete';
 import usePermission from '../../../../hooks/usePermission';
@@ -2670,124 +2668,116 @@ export default function DeclarationIRSAComponent() {
                         outline: "none",
                       }}
                     >
-                    <CiImport style={{ width: '25px', height: '25px', color: 'rgba(5,96,116,0.60)' }} />  
-                  </IconButton>
-                </span>
-              </Tooltip>
-            </Box>
-                      }}
-                      startIcon={<MdImportExport size={20} />}
-                    >
-                      Importer | Exporter
-                    </Button>
+                      <CiImport style={{ width: '25px', height: '25px', color: 'rgba(5,96,116,0.60)' }} />
+                    </IconButton>
                   </span>
                 </Tooltip>
               </Box>
 
-            <Tooltip title="Ajouter">
-              <span>
-                <IconButton
+              <Tooltip title="Ajouter">
+                <span>
+                  <IconButton
                     disabled={!canAdd}
-                  variant="contained"
-                  onClick={() => { setEditRowPaieModal(null); setOpenModalPaie(true); }}
-                  style={{ width: "35px", height: '35px', borderRadius: "2px", borderColor: "transparent", backgroundColor: '#1A5276', textTransform: 'none', outline: 'none', marginLeft: 4 }}
-                >
-                  <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                </IconButton>
-              </span>
-            </Tooltip>
+                    variant="contained"
+                    onClick={() => { setEditRowPaieModal(null); setOpenModalPaie(true); }}
+                    style={{ width: "35px", height: '35px', borderRadius: "2px", borderColor: "transparent", backgroundColor: '#1A5276', textTransform: 'none', outline: 'none', marginLeft: 4 }}
+                  >
+                    <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
+                  </IconButton>
+                </span>
+              </Tooltip>
 
-            <Tooltip title="Modifier via formulaire">
-              <span>
-                <IconButton
-                  disabled={!canModify || disableModifyBouton || selectedRowId.length !== 1}
-                  variant="contained"
-                  onClick={() => {
-                    const rowToEdit = paieData.find(row => row.id === selectedRowId[0]);
-                    if (rowToEdit) {
-                      modifyRowPaie(rowToEdit);
-                    }
-                  }}
-                  style={{ width: "35px", height: '35px', borderRadius: "2px", borderColor: "transparent", backgroundColor: '#1A5276', textTransform: 'none', outline: 'none' }}
-                >
-                  <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
-                </IconButton>
-              </span>
-            </Tooltip>
+              <Tooltip title="Modifier via formulaire">
+                <span>
+                  <IconButton
+                    disabled={!canModify || disableModifyBouton || selectedRowId.length !== 1}
+                    variant="contained"
+                    onClick={() => {
+                      const rowToEdit = paieData.find(row => row.id === selectedRowId[0]);
+                      if (rowToEdit) {
+                        modifyRowPaie(rowToEdit);
+                      }
+                    }}
+                    style={{ width: "35px", height: '35px', borderRadius: "2px", borderColor: "transparent", backgroundColor: '#1A5276', textTransform: 'none', outline: 'none' }}
+                  >
+                    <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
+                  </IconButton>
+                </span>
+              </Tooltip>
 
-            <Tooltip title="Sauvegarder">
-              <span>
-                <IconButton
-                  disabled={(!canAdd && !canModify) || disableSaveBouton}
-                  variant="contained"
-                  onClick={handleSaveClickPaie(selectedRowId)}
-                  style={{ width: "35px", height: '35px', borderRadius: "2px", borderColor: "transparent", backgroundColor: '#1A5276', textTransform: 'none', outline: 'none' }}
-                >
-                  <TfiSave style={{ width: '25px', height: '25px', color: 'white' }} />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title="Annuler">
-              <span>
-                <IconButton
-                  disabled={disableCancelBouton}
-                  variant="contained"
-                  onClick={handleCancelClick(selectedRowId)}
-                  style={{ width: "35px", height: '35px', borderRadius: "2px", borderColor: "transparent", backgroundColor: '#d32f2f', textTransform: 'none', outline: 'none' }}
-                >
-                  <VscClose style={{ width: '25px', height: '25px', color: 'white' }} />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title="Supprimer toutes les lignes PAIE">
-              <span>
-                <IconButton
+              <Tooltip title="Sauvegarder">
+                <span>
+                  <IconButton
+                    disabled={(!canAdd && !canModify) || disableSaveBouton}
+                    variant="contained"
+                    onClick={handleSaveClickPaie(selectedRowId)}
+                    style={{ width: "35px", height: '35px', borderRadius: "2px", borderColor: "transparent", backgroundColor: '#1A5276', textTransform: 'none', outline: 'none' }}
+                  >
+                    <TfiSave style={{ width: '25px', height: '25px', color: 'white' }} />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title="Annuler">
+                <span>
+                  <IconButton
+                    disabled={disableCancelBouton}
+                    variant="contained"
+                    onClick={handleCancelClick(selectedRowId)}
+                    style={{ width: "35px", height: '35px', borderRadius: "2px", borderColor: "transparent", backgroundColor: '#d32f2f', textTransform: 'none', outline: 'none' }}
+                  >
+                    <VscClose style={{ width: '25px', height: '25px', color: 'white' }} />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title="Supprimer toutes les lignes PAIE">
+                <span>
+                  <IconButton
                     disabled={!canDelete}
-                  variant="contained"
-                  style={{ width: "35px", height: '35px', borderRadius: "2px", borderColor: "transparent", backgroundColor: '#EE4E4E', textTransform: 'none', outline: 'none' }}
-                  onClick={() => {
-                    setConfirmDeletePaie(true);
-                  }}
-                >
-                  <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
-                </IconButton>
-              </span>
-            </Tooltip>
-          </Stack>
-          <Stack>
-            <VirtualTablePaie
-              columns={paieColumns}
-              rows={canView ? paieFilters.reduce((rows, filter) => {
-                const col = filter.column;
-                const colDef = paieColumns.find(c => c.id === col);
-                return rows.filter(row => {
-                  let val = '';
-                  if (colDef && typeof colDef.valueGetter === 'function') {
-                    val = (colDef.valueGetter({ row }) || '').toString().toLowerCase();
-                  } else {
-                    val = (row[col] || '').toString().toLowerCase();
-                  }
-                  const search = (filter.value || '').toString().toLowerCase();
-                  if (filter.operator === 'contains') return val.includes(search);
-                  if (filter.operator === 'equals') return val === search;
-                  return true;
-                });
-              }, paieDataByPeriod) : []}
-              deleteState={deleteOneRowPaie}
-              modifyState={modifyRowPaie}
-              setEditRowPaieModal={setEditRowPaieModal}
-              personnels={personnels}
-              selectedRowId={selectedRowId}
-              onRowSelectionModelChange={saveSelectedRow}
-              onSort={handleSortPaie}
-              onFilter={setPaieFilters}
-              filters={paieFilters}
-            />
-          </Stack>
-        </TabPanel>
+                    variant="contained"
+                    style={{ width: "35px", height: '35px', borderRadius: "2px", borderColor: "transparent", backgroundColor: '#EE4E4E', textTransform: 'none', outline: 'none' }}
+                    onClick={() => {
+                      setConfirmDeletePaie(true);
+                    }}
+                  >
+                    <IoMdTrash style={{ width: '25px', height: '25px', color: 'white' }} />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            </Stack >
+            <Stack>
+              <VirtualTablePaie
+                columns={paieColumns}
+                rows={canView ? paieFilters.reduce((rows, filter) => {
+                  const col = filter.column;
+                  const colDef = paieColumns.find(c => c.id === col);
+                  return rows.filter(row => {
+                    let val = '';
+                    if (colDef && typeof colDef.valueGetter === 'function') {
+                      val = (colDef.valueGetter({ row }) || '').toString().toLowerCase();
+                    } else {
+                      val = (row[col] || '').toString().toLowerCase();
+                    }
+                    const search = (filter.value || '').toString().toLowerCase();
+                    if (filter.operator === 'contains') return val.includes(search);
+                    if (filter.operator === 'equals') return val === search;
+                    return true;
+                  });
+                }, paieDataByPeriod) : []}
+                deleteState={deleteOneRowPaie}
+                modifyState={modifyRowPaie}
+                setEditRowPaieModal={setEditRowPaieModal}
+                personnels={personnels}
+                selectedRowId={selectedRowId}
+                onRowSelectionModelChange={saveSelectedRow}
+                onSort={handleSortPaie}
+                onFilter={setPaieFilters}
+                filters={paieFilters}
+              />
+            </Stack>
+          </TabPanel >
 
-      </TabContext>
-    </Paper >
+        </TabContext >
+      </Paper >
     </>
   );
 }

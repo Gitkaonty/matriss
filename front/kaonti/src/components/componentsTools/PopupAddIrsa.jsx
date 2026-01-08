@@ -25,13 +25,12 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
 }));
 
 const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null, onAddIrsa, onEditIrsa, id_compte, id_dossier, id_exercice }) => {
-    const axiosPrivate = useAxiosPrivate();
 
     const initial = init[0];
     console.log(mois, annee);
     const [nbrEnfant, setNbrEnfant] = useState(0);
     const [personnels, setPersonnels] = useState([]);
-
+    
     const menuProps = {
         PaperProps: {
             style: {
@@ -179,7 +178,7 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
             let res;
             if (row && row.id > 0) {
                 // Modification : PUT
-                res = await axiosPrivate.put(`/irsa/irsa/${row.id}`, dataToSend);
+                res = await useAxiosPrivate.put(`/irsa/irsa/${row.id}`, dataToSend);
                 if (res.data.state) {
                     toast.success("Modification réussie !");
                     if (onEditIrsa) {
@@ -193,7 +192,7 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                 }
             } else {
                 // Ajout : POST
-                res = await axiosPrivate.post('/irsa/irsa', dataToSend);
+                res = await useAxiosPrivate.post('/irsa/irsa', dataToSend);
                 if (res.data.state) {
                     toast.success("Ajout réussi !");
                     if (onAddIrsa) {
@@ -220,7 +219,7 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
             })
             .catch(() => setPersonnels([]));
     }, []);
-
+    
     useEffect(() => {
         if (
             personnels.length > 0 &&
@@ -324,28 +323,6 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                                         disabled
                                         sx={{
                                             width: 400,
-                                            borderBottom: '1px solid rgba(0, 0, 0, 0.42)', // 👉 imite la ligne du TextField standard
-                                        }}
-                                    >
-                                        <span style={{ marginRight: 8 }}>Chargement des matricules...</span>
-                                        <span
-                                            className="MuiCircularProgress-root MuiCircularProgress-colorPrimary"
-                                            style={{
-                                                width: 20,
-                                                height: 20,
-                                                variant: 'standard',
-                                                display: 'inline-block',
-                                                verticalAlign: 'middle',
-                                                border: '2px solid #1976d2',
-                                                borderRadius: '50%',
-                                                borderTop: '2px solid transparent',
-                                                animation: 'spin 0.8s linear infinite',
-                                            }}
-                                        />
-                                        <style>
-                                            {`@keyframes spin { 100% { transform: rotate(360deg); } }`}
-                                        </style>
-                                    </Box>
                                             '& .MuiInputBase-root': { fontSize: '13px' },
                                             '& .MuiInputLabel-root': { color: '#1976d2', fontSize: '13px' },
                                         }}
@@ -1044,7 +1021,7 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                 </Box>
             </DialogContent>
             <DialogActions sx={{ p: 2, backgroundColor: '#f5f5f5' }}>
-                <Button 
+            <Button 
             onClick={handleClose} 
             variant='outlined'
                         style={{
@@ -1055,23 +1032,23 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
                             //outline: 'none',
                         }}
             >
-                    Annuler
-                </Button>
+                Annuler
+            </Button>
 
-                <Button autoFocus
-                    type="submit"
-                    style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
-                    onClick={() => {
-                        const allTouched = Object.keys(formDataFormik.values).reduce((acc, key) => {
-                            acc[key] = true;
-                            return acc;
-                        }, {});
-                        formDataFormik.setTouched(allTouched, true);
-                        formDataFormik.handleSubmit();
-                    }}
-                >
-                    Enregistrer
-                </Button>
+            <Button autoFocus
+                type="submit"
+                style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
+                onClick={() => {
+                    const allTouched = Object.keys(formDataFormik.values).reduce((acc, key) => {
+                      acc[key] = true;
+                      return acc;
+                    }, {});
+                    formDataFormik.setTouched(allTouched, true);
+                    formDataFormik.handleSubmit();
+                  }}
+            >
+                Enregistrer
+            </Button>
             </DialogActions>
         </BootstrapDialog>
     )

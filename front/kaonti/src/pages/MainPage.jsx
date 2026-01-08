@@ -361,7 +361,7 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    if ([5150].includes(roles)) {
+    if ([5150,3355].includes(roles)) {
       setIsButtonAddVisible(true);
       setIsButtonRolePermissionVisible(true);
     }
