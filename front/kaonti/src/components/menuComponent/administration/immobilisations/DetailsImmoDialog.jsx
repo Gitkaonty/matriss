@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 
 import {
     Dialog, DialogTitle, DialogContent, DialogActions,
-    Stack, TextField, Button, InputAdornment, MenuItem, Typography, Box, Tab, IconButton
+    Stack, TextField, Button, InputAdornment, MenuItem, Typography, Box, Tab, IconButton, Checkbox, FormControlLabel
 } from '@mui/material';
 import { TabContext, TabList, TabPanel } from '@mui/lab';
 
@@ -183,6 +183,11 @@ const DetailsImmoDialog = ({ open, mode = 'add', form = {}, onChange, onClose, o
     const hasInputs = Boolean(numOrZero(form.montant) || ht0 || numOrZero(form.amort_ant_comp) || numOrZero(form.dotation_periode_comp) || numOrZero(form.amort_exceptionnel_comp) || der0);
     const vncDisplay = hasInputs ? (form.vnc ?? round2(ht0 - tot0 - der0)) : 0;
 
+    const repriseComp = Boolean(form.reprise_immobilisation_comp ?? form.reprise_immobilisation);
+    const repriseFisc = Boolean(form.reprise_immobilisation_fisc ?? form.reprise_immobilisation);
+    const amortDisabledComp = !repriseComp;
+    const amortDisabledFisc = !repriseFisc;
+
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
             <DialogTitle>{mode === 'add' ? 'Ajouter une immobilisation' : 'Modifier une immobilisation'}</DialogTitle>
@@ -362,10 +367,43 @@ const DetailsImmoDialog = ({ open, mode = 'add', form = {}, onChange, onClose, o
                                     </TextField>
                                 </Box>
                                 <Box display="flex" flexWrap="wrap" gap={2} mt={2}>
-                                    <TextField label="Amort ant" type="text" value={form.amort_ant_comp ?? ''} onChange={handleAmortComp('amort_ant_comp')} variant="standard" size="small" sx={{ width: '23%', input: { textAlign: 'right' }, ...commonSx }} InputProps={{ ...moneyAdornment, inputComponent: FormatedInput }} />
-                                    <TextField label="Dotation période" type="text" value={form.dotation_periode_comp ?? ''} onChange={handleAmortComp('dotation_periode_comp')} variant="standard" size="small" sx={{ width: '23%', input: { textAlign: 'right' }, ...commonSx }} InputProps={{ ...moneyAdornment, inputComponent: FormatedInput }} />
-                                    <TextField label="Amort exceptionnel" type="text" value={form.amort_exceptionnel_comp ?? ''} onChange={handleAmortComp('amort_exceptionnel_comp')} variant="standard" size="small" sx={{ width: '23%', input: { textAlign: 'right' }, ...commonSx }} InputProps={{ ...moneyAdornment, inputComponent: FormatedInput }} />
-                                    <TextField label="Dérogatoire" type="text" value={form.derogatoire_comp ?? ''} onChange={handleDerogComp} variant="standard" size="small" sx={{ width: '23%', input: { textAlign: 'right' }, ...commonSx }} InputProps={{ ...moneyAdornment, inputComponent: FormatedInput }} />
+                                    <FormControlLabel
+                                        control={
+                                            <Checkbox
+                                                checked={repriseComp}
+                                                onChange={(e) => {
+                                                    const checked = e.target.checked;
+                                                    const next = { ...form, reprise_immobilisation_comp: checked };
+                                                    if (!checked) {
+                                                        next.date_reprise_comp = '';
+                                                    }
+                                                    onChange(next);
+                                                }}
+                                                sx={{ p: 0.5 }}
+                                            />
+                                        }
+                                        label="Reprise immobilisation"
+                                        sx={{ alignItems: 'center', mt: 0.5, mr: 2 }}
+                                    />
+                                    {repriseComp ? (
+                                        <TextField
+                                            label="Date de reprise"
+                                            placeholder="jj/mm/aaaa"
+                                            value={form.date_reprise_comp ? String(form.date_reprise_comp).substring(0, 10) : ''}
+                                            onChange={handleDate('date_reprise_comp')}
+                                            variant="standard"
+                                            InputLabelProps={{ shrink: true }}
+                                            size="small"
+                                            type="date"
+                                            sx={commonSx}
+                                        />
+                                    ) : null}
+                                </Box>
+                                <Box display="flex" flexWrap="wrap" gap={2} mt={2}>
+                                    <TextField disabled={amortDisabledComp} label="Amort ant" type="text" value={form.amort_ant_comp ?? ''} onChange={handleAmortComp('amort_ant_comp')} variant="standard" size="small" sx={{ width: '23%', input: { textAlign: 'right' }, ...commonSx }} InputProps={{ ...moneyAdornment, inputComponent: FormatedInput }} />
+                                    <TextField disabled={amortDisabledComp} label="Dotation période" type="text" value={form.dotation_periode_comp ?? ''} onChange={handleAmortComp('dotation_periode_comp')} variant="standard" size="small" sx={{ width: '23%', input: { textAlign: 'right' }, ...commonSx }} InputProps={{ ...moneyAdornment, inputComponent: FormatedInput }} />
+                                    <TextField disabled={amortDisabledComp} label="Amort exceptionnel" type="text" value={form.amort_exceptionnel_comp ?? ''} onChange={handleAmortComp('amort_exceptionnel_comp')} variant="standard" size="small" sx={{ width: '23%', input: { textAlign: 'right' }, ...commonSx }} InputProps={{ ...moneyAdornment, inputComponent: FormatedInput }} />
+                                    <TextField disabled={amortDisabledComp} label="Dérogatoire" type="text" value={form.derogatoire_comp ?? ''} onChange={handleDerogComp} variant="standard" size="small" sx={{ width: '23%', input: { textAlign: 'right' }, ...commonSx }} InputProps={{ ...moneyAdornment, inputComponent: FormatedInput }} />
                                     <TextField label="Total amortissement" type="text" value={form.total_amortissement_comp ?? ''} onChange={handleNumber('total_amortissement_comp')} variant="standard" size="small" sx={{ width: '23%', input: { textAlign: 'right' }, ...commonSx }} InputProps={{ ...moneyAdornment, inputComponent: FormatedInput }} />
 
                                 </Box>
@@ -382,6 +420,7 @@ const DetailsImmoDialog = ({ open, mode = 'add', form = {}, onChange, onClose, o
                                         size="small"
                                         sx={{ width: '23%', input: { textAlign: 'right' }, ...commonSx }}
                                     />
+
                                     <TextField
                                         label="Type d'amortissement"
                                         select
@@ -397,10 +436,43 @@ const DetailsImmoDialog = ({ open, mode = 'add', form = {}, onChange, onClose, o
                                     </TextField>
                                 </Box>
                                 <Box display="flex" flexWrap="wrap" gap={2} mt={2}>
-                                    <TextField label="Amort ant" type="text" value={form.amort_ant_fisc ?? ''} onChange={handleAmortFisc('amort_ant_fisc')} variant="standard" size="small" sx={{ width: '23%', input: { textAlign: 'right' }, ...commonSx }} InputProps={{ ...moneyAdornment, inputComponent: FormatedInput }} />
-                                    <TextField label="Dotation période" type="text" value={form.dotation_periode_fisc ?? ''} onChange={handleAmortFisc('dotation_periode_fisc')} variant="standard" size="small" sx={{ width: '23%', input: { textAlign: 'right' }, ...commonSx }} InputProps={{ ...moneyAdornment, inputComponent: FormatedInput }} />
-                                    <TextField label="Amort exceptionnel" type="text" value={form.amort_exceptionnel_fisc ?? ''} onChange={handleAmortFisc('amort_exceptionnel_fisc')} variant="standard" size="small" sx={{ width: '23%', input: { textAlign: 'right' }, ...commonSx }} InputProps={{ ...moneyAdornment, inputComponent: FormatedInput }} />
-                                    <TextField label="Dérogatoire" type="text" value={form.derogatoire_fisc ?? ''} onChange={handleNumber('derogatoire_fisc')} variant="standard" size="small" sx={{ width: '23%', input: { textAlign: 'right' }, ...commonSx }} InputProps={{ ...moneyAdornment, inputComponent: FormatedInput }} />
+                                    <FormControlLabel
+                                        control={
+                                            <Checkbox
+                                                checked={repriseFisc}
+                                                onChange={(e) => {
+                                                    const checked = e.target.checked;
+                                                    const next = { ...form, reprise_immobilisation_fisc: checked };
+                                                    if (!checked) {
+                                                        next.date_reprise_fisc = '';
+                                                    }
+                                                    onChange(next);
+                                                }}
+                                                sx={{ p: 0.5 }}
+                                            />
+                                        }
+                                        label="Reprise immobilisation"
+                                        sx={{ alignItems: 'center', mt: 0.5, mr: 2 }}
+                                    />
+                                    {repriseFisc ? (
+                                        <TextField
+                                            label="Date de reprise"
+                                            placeholder="jj/mm/aaaa"
+                                            value={form.date_reprise_fisc ? String(form.date_reprise_fisc).substring(0, 10) : ''}
+                                            onChange={handleDate('date_reprise_fisc')}
+                                            variant="standard"
+                                            InputLabelProps={{ shrink: true }}
+                                            size="small"
+                                            type="date"
+                                            sx={commonSx}
+                                        />
+                                    ) : null}
+                                </Box>
+                                <Box display="flex" flexWrap="wrap" gap={2} mt={2}>
+                                    <TextField disabled={amortDisabledFisc} label="Amort ant" type="text" value={form.amort_ant_fisc ?? ''} onChange={handleAmortFisc('amort_ant_fisc')} variant="standard" size="small" sx={{ width: '23%', input: { textAlign: 'right' }, ...commonSx }} InputProps={{ ...moneyAdornment, inputComponent: FormatedInput }} />
+                                    <TextField disabled={amortDisabledFisc} label="Dotation période" type="text" value={form.dotation_periode_fisc ?? ''} onChange={handleAmortFisc('dotation_periode_fisc')} variant="standard" size="small" sx={{ width: '23%', input: { textAlign: 'right' }, ...commonSx }} InputProps={{ ...moneyAdornment, inputComponent: FormatedInput }} />
+                                    <TextField disabled={amortDisabledFisc} label="Amort exceptionnel" type="text" value={form.amort_exceptionnel_fisc ?? ''} onChange={handleAmortFisc('amort_exceptionnel_fisc')} variant="standard" size="small" sx={{ width: '23%', input: { textAlign: 'right' }, ...commonSx }} InputProps={{ ...moneyAdornment, inputComponent: FormatedInput }} />
+                                    <TextField disabled={amortDisabledFisc} label="Dérogatoire" type="text" value={form.derogatoire_fisc ?? ''} onChange={handleNumber('derogatoire_fisc')} variant="standard" size="small" sx={{ width: '23%', input: { textAlign: 'right' }, ...commonSx }} InputProps={{ ...moneyAdornment, inputComponent: FormatedInput }} />
 
                                     <TextField label="Total amortissement" type="text" value={form.total_amortissement_fisc ?? ''} onChange={handleNumber('total_amortissement_fisc')} variant="standard" size="small" sx={{ width: '23%', input: { textAlign: 'right' }, ...commonSx }} InputProps={{ ...moneyAdornment, inputComponent: FormatedInput }} />
 
@@ -411,7 +483,6 @@ const DetailsImmoDialog = ({ open, mode = 'add', form = {}, onChange, onClose, o
 
                     {/* -------------------------------------------------- */}
                     {/* GROUPE 04 : VNC */}
-                    {/* -------------------------------------------------- */}
                     <Box sx={{ backgroundColor: '#edf4f8ff', }}>
                         <Typography style={{ fontWeight: 'normal', fontSize: '19px', marginBottom: '10px' }}>Valeur Nette Comptable</Typography>
 
@@ -436,6 +507,7 @@ const DetailsImmoDialog = ({ open, mode = 'add', form = {}, onChange, onClose, o
                         <Typography style={{ fontWeight: 'normal', fontSize: '16px', marginBottom: '10px' }}>Autres</Typography>
 
                         <Box display="flex" flexWrap="wrap" gap={2} mt={2}>
+
                             <TextField
                                 label="Date de sortie"
                                 placeholder="jj/mm/aaaa"
