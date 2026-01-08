@@ -119,8 +119,7 @@ const AddCptToPc = async (req, res) => {
     } = req.body;
 
     // return console.log(req.body);
-    console.log('baseCptCollectif : ', baseCptCollectif);
-
+    
     const DossierParam = await dossiers.findOne({
       where: {
         id: idDossier,
