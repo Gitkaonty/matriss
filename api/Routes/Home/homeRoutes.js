@@ -24,4 +24,10 @@ router.put('/FileCentrefisc/:id', homeController.updateCentrefisc);
 // Vérification d'accès à une dossier
 router.get('/checkAccessDossier/:id', verifyJWT, homeController.checkAccessDossier);
 
+// Récupération de toutes les dossier liés au compte
+router.get('/getAllDossierByCompte/:compteId', homeController.getAllDossierByCompte);
+
+// Récupération des dossiers qu'une compte a accès
+router.get('/getCompteDossier/:userId', homeController.getCompteDossier);
+
 module.exports = router;

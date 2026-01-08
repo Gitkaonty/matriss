@@ -132,7 +132,7 @@ export default function ParamCRM() {
 
     const [crm, setCrm] = useState([]);
     const [selectedRowDomBank, setSelectedRowDomBank] = useState([]);
-    
+
 
     const [typeValidationColor, setTypeValidationColor] = useState('transparent');
     const [nomValidationColor, setNomValidationColor] = useState('transparent');
@@ -358,6 +358,7 @@ export default function ParamCRM() {
         devisepardefaut: 0,
         consolidation: false,
         listeConsolidation: [],
+        pays: ''
     };
 
     const formInfosNewFileValidationSchema = Yup.object({
@@ -371,6 +372,7 @@ export default function ParamCRM() {
         portefeuille: Yup.array()
             .required("Sélectionnez un portefeuille"),
         typecomptabilite: Yup.string().required("Veuillez sélectioner le type de comptablilité"),
+        pays: Yup.string().required("Sélectionnez une pays"),
     });
 
     const sendToHome = (value) => {
@@ -2334,6 +2336,7 @@ export default function ParamCRM() {
 
                                         setFieldValue('devisepardefaut', deviseParDefaut.id);
                                         setFieldValue('consolidation', crmData.consolidation || false);
+                                        setFieldValue('pays', crmData.pays || '');
                                     } else {
                                         setCrm([]);
                                     }
@@ -2765,6 +2768,41 @@ export default function ParamCRM() {
                                                                             }}
                                                                         />
                                                                         <ErrorMessage name='telephone' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                    </Stack>
+
+                                                                    <Stack spacing={1}>
+                                                                        <label htmlFor="pays" style={{ fontSize: 12, color: '#3FA2F6' }}>Pays</label>
+                                                                        <Autocomplete
+                                                                            options={listPays}
+                                                                            autoHighlight
+                                                                            getOptionLabel={(option) => option.nompays || ''}
+                                                                            isOptionEqualToValue={(option, value) =>
+                                                                                option.code === value.code
+                                                                            }
+                                                                            value={
+                                                                                listPays.find(p => p.code === values.pays) || null
+                                                                            }
+                                                                            onChange={(event, newValue) => {
+                                                                                setFieldValue('pays', newValue ? newValue.code : '');
+                                                                            }}
+                                                                            renderInput={(params) => (
+                                                                                <TextField
+                                                                                    {...params}
+                                                                                    name="pays"
+                                                                                    variant="standard"
+                                                                                    sx={{
+                                                                                        width: 400,
+                                                                                        '& .MuiInput-underline:before': {
+                                                                                            borderBottomWidth: '0.5px'
+                                                                                        },
+                                                                                        '& .MuiInput-underline:after': {
+                                                                                            borderBottomWidth: '0.5px'
+                                                                                        }
+                                                                                    }}
+                                                                                />
+                                                                            )}
+                                                                        />
+                                                                        <ErrorMessage name='pays' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
                                                                     </Stack>
                                                                 </Stack>
 

@@ -89,6 +89,7 @@ export default function App() {
                 <Route path='/tab/revision/revisionPrecontrolFiscal' element={<RevisionPrecontroleFiscalComponent />} />
                 <Route path='/tab/parametrages/paramPlanComptableModele' element={<ParamPCModele />} />
                 <Route path='/tab/administration/importAnnexeDeclarationFiscale' element={<ImportAnnexeDeclarationFiscaleComponent />} />
+                <Route path='/tab/parametrages/paramPortefeuille' element={<PortefeuilleComponent />} />
 
                 <Route element={<RequireAuth allowedRoles={[ROLES.Admin, ROLES.SuperAdmin]} />} >
                   <Route path='/tab/parametrages/role-permission' element={<RolePermission />} />
@@ -126,7 +127,6 @@ export default function App() {
                   <Route path='/tab/parametrages/paramFonctions/:id' element={<FonctionsComponent />} />
                   <Route path='/tab/parametrages/chiffreDaffaires/:id' element={<ParamChiffreAffaires />} />
                   <Route path='/tab/parametrages/paramMapping-externe/:id' element={<ParamMappingExterne />} />
-                  <Route path='/tab/parametrages/paramPortefeuille/:id' element={<PortefeuilleComponent />} />
 
                   <Route element={<ProtectedDossierConsolidation />}>
                     <Route path='/tab/parametrages/consolidation-correpondance/:id' element={<Consolidation />} />

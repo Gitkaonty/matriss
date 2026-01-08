@@ -39,15 +39,12 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialogActions-root': {
         padding: theme.spacing(1),
     },
-    // '& .MuiPaper-root': {
-    //     minHeight: '370px',
-    // },
     '& .MuiPaper-root': {
         minHeight: '350px',
     },
 }));
 
-const PopupAddCompte = ({ compteId, confirmationState, nom, listePortefeuille, listeRoles }) => {
+const PopupAddCompte = ({ compteId, confirmationState, nom, listePortefeuille, listeRoles, listeDossier }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false);
 
@@ -77,7 +74,11 @@ const PopupAddCompte = ({ compteId, confirmationState, nom, listePortefeuille, l
         roles: Yup.string()
             .required("Sélectionnez un rôle"),
         portefeuille: Yup.array()
+            .min(1, "Sélectionnez un portefeuille")
             .required("Sélectionnez un portefeuille"),
+        dossier: Yup.array()
+            .min(1, "Sélectionnez un portefeuille")
+            .required("Sélectionnez un dossier"),
     });
 
     const formData = useFormik({
@@ -88,7 +89,8 @@ const PopupAddCompte = ({ compteId, confirmationState, nom, listePortefeuille, l
             passwordConfirmation: '',
             roles: '',
             compte_id: compteId,
-            portefeuille: []
+            portefeuille: [],
+            dossier: []
         },
         validationSchema,
         onSubmit: (values) => {
@@ -98,6 +100,7 @@ const PopupAddCompte = ({ compteId, confirmationState, nom, listePortefeuille, l
             };
 
             const portefeuilleIds = values.portefeuille.map(val => val.id);
+            const dossierIds = values.dossier.map(val => val.id);
 
             axios.post('/sous-compte/addSousCompte', {
                 username: values.username,
@@ -106,7 +109,8 @@ const PopupAddCompte = ({ compteId, confirmationState, nom, listePortefeuille, l
                 role_id: Number(values.roles),
                 compte_id: values.compte_id,
                 roles: formattedRoles,
-                portefeuille: portefeuilleIds
+                portefeuille: portefeuilleIds,
+                dossier: dossierIds
             })
                 .then((response) => {
                     if (response?.data?.state) {
@@ -496,6 +500,9 @@ const PopupAddCompte = ({ compteId, confirmationState, nom, listePortefeuille, l
                                         {...params}
                                         variant="standard"
                                         label="Portefeuille"
+                                        InputLabelProps={{
+                                            style: { fontSize: "13px", marginTop: "-2px" },
+                                        }}
                                     />
                                 )}
                             />
@@ -508,6 +515,73 @@ const PopupAddCompte = ({ compteId, confirmationState, nom, listePortefeuille, l
                                     }}
                                 >
                                     {formData.errors.portefeuille}
+                                </FormHelperText>
+                            )}
+                        </FormControl>
+
+                        <FormControl
+                            component="fieldset"
+                            size="small"
+                            fullWidth
+                            style={{ width: "100%" }}
+                            error={Boolean(formData.touched.dossier && formData.errors.dossier)}
+                        >
+                            <Autocomplete
+                                multiple
+                                id="checkboxes-tags-demo"
+                                options={listeDossier}
+                                disableCloseOnSelect
+                                getOptionLabel={(option) => option.dossier}
+                                onChange={(_event, newValue) => {
+                                    formData.setFieldValue("dossier", newValue);
+                                }}
+                                value={formData.values.dossier || []}
+                                renderOption={(props, option, { selected }) => {
+                                    const { key, ...optionProps } = props;
+                                    return (
+                                        <li
+                                            key={key}
+                                            {...optionProps}
+                                            style={{
+                                                paddingTop: 2,
+                                                paddingBottom: 2,
+                                                paddingLeft: 4,
+                                                paddingRight: 4,
+                                                fontSize: "0.8rem",
+                                                display: "flex",
+                                                alignItems: "center"
+                                            }}
+                                        >
+                                            <Checkbox
+                                                icon={icon}
+                                                checkedIcon={checkedIcon}
+                                                style={{ marginRight: 8 }}
+                                                checked={selected}
+                                            />
+                                            {option.dossier}
+                                        </li>
+                                    );
+                                }}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        variant="standard"
+                                        label="Dossier"
+                                        InputLabelProps={{
+                                            style: { fontSize: "13px", marginTop: "-2px" },
+                                        }}
+                                    />
+                                )}
+                            />
+
+                            {formData.touched.dossier && formData.errors.dossier && (
+                                <FormHelperText
+                                    style={{
+                                        marginLeft: 0,
+                                        fontSize: "12px",
+                                    }}
+                                >
+                                    {formData.errors.dossier}
                                 </FormHelperText>
                             )}
                         </FormControl>

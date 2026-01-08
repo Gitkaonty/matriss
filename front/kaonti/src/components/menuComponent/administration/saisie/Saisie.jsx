@@ -217,6 +217,16 @@ export default function SaisieComponent() {
     //Header
     const SaisieColumnHeader = [
         {
+            field: 'dossier',
+            headerName: 'Dossier',
+            type: 'string',
+            sortable: true,
+            flex: 0.6,
+            headerAlign: 'left',
+            align: 'left',
+            headerClassName: 'HeaderbackColor',
+        },
+        {
             field: 'dateecriture',
             headerName: 'Date',
             type: 'string',
@@ -626,7 +636,7 @@ export default function SaisieComponent() {
                         setRowSelectionModel={() => setRowSelectionModel([])}
                         type={typeActionSaisie}
                         listeCodeJournaux={listeCodeJournaux}
-                        listePlanComptable={listePlanComptable}
+                        listePlanComptable={listePlanComptable.filter(val => Number(val.id_dossier) === Number(fileId))}
                         listeAnnee={listeAnnee}
                         listeDevise={listeDevise}
                         setSelectedRowsSaisie={() => setSelectedRows([])}
@@ -764,7 +774,7 @@ export default function SaisieComponent() {
                                     </Button>
                                     <Button
                                         onClick={() => handleOpenSaisiePopup('modification')}
-                                        disabled={!canModify || selectedRows.length === 0}
+                                        disabled={!canModify || selectedRows.length === 0 || (selectedRows.filter(val => val.id_dossier === fileId)).length === 0}
                                         variant="contained"
                                         style={{
                                             textTransform: 'none',
@@ -780,7 +790,7 @@ export default function SaisieComponent() {
                                     </Button>
                                     <Button
                                         onClick={handleOpenDialogConfirmDeleteSaisie}
-                                        disabled={!canDelete || selectedRows.length === 0}
+                                        disabled={!canDelete || selectedRows.length === 0 || (selectedRows.filter(val => val.id_dossier === fileId)).length === 0}
                                         variant="contained"
                                         style={{
                                             textTransform: 'none',
@@ -846,12 +856,22 @@ export default function SaisieComponent() {
                                             getOptionLabel={(option) => `${option.compte || ''} - ${option.libelle || ''}`}
                                             isOptionEqualToValue={(option, value) => option.id === value.id}
                                             PaperComponent={(props) => (
-                                                <div {...props} style={{ width: 500, backgroundColor: 'white' }} />
+                                                <div {...props} style={{ width: 600, backgroundColor: 'white' }} />
                                             )}
                                             value={formSaisieRecherche.values.compte}
                                             onChange={(e, value) => {
                                                 formSaisieRecherche.setFieldValue('compte', value);
                                             }}
+                                            renderOption={(props, option) => (
+                                                <li {...props}>
+                                                    <span>
+                                                        {option.compte} - {option.libelle}{' '}
+                                                        <span style={{ color: '#1976d2', fontWeight: 600, fontSize: 14 }}>
+                                                            ({option.dossier})
+                                                        </span>
+                                                    </span>
+                                                </li>
+                                            )}
                                             renderInput={(params) => (
                                                 <TextField
                                                     {...params}

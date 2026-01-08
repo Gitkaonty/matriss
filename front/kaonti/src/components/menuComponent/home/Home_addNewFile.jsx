@@ -195,6 +195,7 @@ export default function AddNewFile({ confirmationState }) {
         devisepardefaut: 'MGA',
         consolidation: false,
         listeConsolidation: [],
+        pays: ''
     };
 
     const formInfosNewFileValidationSchema = Yup.object({
@@ -206,8 +207,8 @@ export default function AddNewFile({ confirmationState }) {
         longueurcptaux: Yup.number().moreThan(1, 'Taper une longueur de compte supérieur à 1'),
         tauxir: Yup.number().moreThan(0, 'Taper votre taux IR'),
         portefeuille: Yup.array()
-            .min(1, "Sélectionnez au moins un portefeuille")
-
+            .min(1, "Sélectionnez au moins un portefeuille"),
+        pays: Yup.string().required("Sélectionnez une pays"),
     });
 
     //GESTION DU TABLEAU ASSOCIE-------------------------------------------------------------------------------
@@ -2203,6 +2204,41 @@ export default function AddNewFile({ confirmationState }) {
                                                                         ))}
                                                                     </Field>
                                                                     <ErrorMessage name='commune' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                </Stack>
+
+                                                                <Stack spacing={1}>
+                                                                    <label htmlFor="pays" style={{ fontSize: 12, color: '#3FA2F6' }}>Pays</label>
+                                                                    <Autocomplete
+                                                                        options={listPays}
+                                                                        autoHighlight
+                                                                        getOptionLabel={(option) => option.nompays || ''}
+                                                                        isOptionEqualToValue={(option, value) =>
+                                                                            option.code === value.code
+                                                                        }
+                                                                        value={
+                                                                            listPays.find(p => p.code === values.pays) || null
+                                                                        }
+                                                                        onChange={(event, newValue) => {
+                                                                            setFieldValue('pays', newValue ? newValue.code : '');
+                                                                        }}
+                                                                        renderInput={(params) => (
+                                                                            <TextField
+                                                                                {...params}
+                                                                                name="pays"
+                                                                                variant="standard"
+                                                                                sx={{
+                                                                                    width: 400,
+                                                                                    '& .MuiInput-underline:before': {
+                                                                                        borderBottomWidth: '0.5px'
+                                                                                    },
+                                                                                    '& .MuiInput-underline:after': {
+                                                                                        borderBottomWidth: '0.5px'
+                                                                                    }
+                                                                                }}
+                                                                            />
+                                                                        )}
+                                                                    />
+                                                                    <ErrorMessage name='pays' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
                                                                 </Stack>
                                                             </Stack>
                                                         </Stack>

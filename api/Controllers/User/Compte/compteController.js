@@ -2,6 +2,7 @@ require('dotenv').config();
 const db = require("../../../Models");
 
 const userscomptes = db.userscomptes;
+const users = db.users;
 const abonnements = db.abonnements;
 const paiements = db.paiements;
 
@@ -64,6 +65,12 @@ exports.deleteSelectedCompte = async (req, res) => {
         const result = await userscomptes.destroy({
             where: {
                 id: compteIds
+            }
+        })
+
+        await users.destroy({
+            where: {
+                compte_id: compteIds
             }
         })
 

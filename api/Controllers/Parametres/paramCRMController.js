@@ -125,7 +125,8 @@ const modifyingInfos = async (req, res) => {
       portefeuille,
       typecomptabilite,
       devisepardefaut,
-      consolidation
+      consolidation,
+      pays
     } = req.body;
 
     const modify = await dossiers.update(
@@ -162,7 +163,8 @@ const modifyingInfos = async (req, res) => {
         compteisi: compteisi,
         immo_amort_base_jours: Number(immo_amort_base_jours) || 365,
         typecomptabilite: typecomptabilite,
-        consolidation
+        consolidation,
+        pays
       },
       {
         where: { id: idDossier }

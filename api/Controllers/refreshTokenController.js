@@ -64,7 +64,7 @@ const handleRefreshToken = async (req, res) => {
                 permissionUser = userPermissionCreated.filter(val => val.allowed === true);
             }
 
-            const permissionId = permissionUser.map(val => Number(val.id));
+            const permissionId = permissionUser.map(val => Number(val.permission_id));
 
             const permissionData = await permissions.findAll({
                 where: {
@@ -83,7 +83,7 @@ const handleRefreshToken = async (req, res) => {
                         'roles': role,
                         'permission': permissioDataName,
                         'compteId': foundUser.compte_id,
-                        'compte': foundUser.nom,
+                        'compte': foundUser?.userscompte?.nom,
                         'userId': foundUser.id,
                         'portefeuille': foundUser.id_portefeuille
                     }

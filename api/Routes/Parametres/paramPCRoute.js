@@ -37,4 +37,7 @@ router.get('/getDistricts/:province/:region', paramPCController.getDistricts);
 // Récupérer les communes
 router.get('/getCommunes/:province/:region/:district', paramPCController.getCommunes);
 
+// Récupération des dossier plan comptable avec les consolidation des dossier
+router.post('/recupPcConsolidation',paramPCController.recupPcConsolidation);
+
 module.exports = router;

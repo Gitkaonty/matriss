@@ -1,5 +1,7 @@
 const db = require("../../Models");
 require('dotenv').config();
+
+
 const devises = db.devises;
 const journals = db.journals;
 const dossierplancomptable = db.dossierplancomptable;
@@ -7,6 +9,9 @@ const codejournals = db.codejournals;
 const rapprochements = db.rapprochements;
 const analytiques = db.analytiques;
 const balances = db.balances;
+const consolidationDossier = db.consolidationDossier;
+const dossiers = db.dossiers;
+const exercices = db.exercices;
 
 const fonctionUpdateBalanceSold = require("../../Middlewares/UpdateSolde/updateBalanceSold");
 
@@ -58,7 +63,7 @@ exports.updateEcrituresRapprochement = async (req, res) => {
         const payload = {
             rapprocher: !!rapprocher,
             // store as 'YYYY-MM-DD' to avoid TZ shift
-            date_rapprochement: !!rapprocher ? (dateRapprochement ? String(dateRapprochement).substring(0,10) : null) : null,
+            date_rapprochement: !!rapprocher ? (dateRapprochement ? String(dateRapprochement).substring(0, 10) : null) : null,
             modifierpar: Number(compteId) || 0,
         };
         if (rapprocher && !payload.date_rapprochement) {
@@ -94,12 +99,12 @@ exports.computeSoldesRapprochement = async (req, res) => {
         }
         const exo = await db.exercices.findByPk(exerciceId);
         if (!exo) return res.status(404).json({ state: false, msg: 'Exercice introuvable' });
-        const dateDebut = exo.date_debut ? String(exo.date_debut).substring(0,10) : null;
-        const dateFin = endDateParam ? String(endDateParam).substring(0,10) : null;
+        const dateDebut = exo.date_debut ? String(exo.date_debut).substring(0, 10) : null;
+        const dateFin = endDateParam ? String(endDateParam).substring(0, 10) : null;
         if (!dateDebut || !dateFin) return res.status(400).json({ state: false, msg: 'Dates invalides' });
         try {
             console.debug('[RAPPRO][COMPUTE][INPUT]', { fileId, compteId, exerciceId, pcId, rapproId, endDateParam, dateDebut, dateFin, soldeBancaireParam });
-        } catch {}
+        } catch { }
 
         const sqlAggBase = `
             FROM journals j
@@ -151,7 +156,7 @@ exports.computeSoldesRapprochement = async (req, res) => {
         const payload = { state: true, solde_comptable, solde_non_rapproche, solde_bancaire, ecart };
         try {
             console.debug('[RAPPRO][COMPUTE][RESULT]', { totals: { totAll, totNonRapp, totalAll, totalNonRapp }, payload });
-        } catch {}
+        } catch { }
 
         // Persister immédiatement les soldes sur la ligne de rapprochement concernée
         try {
@@ -228,8 +233,8 @@ exports.createRapprochement = async (req, res) => {
             id_exercice: Number(exerciceId),
             pc_id: Number(pcId),
             // Store as provided date-only strings to avoid timezone issues
-            date_debut: date_debut ? String(date_debut).substring(0,10) : null,
-            date_fin: date_fin ? String(date_fin).substring(0,10) : null,
+            date_debut: date_debut ? String(date_debut).substring(0, 10) : null,
+            date_fin: date_fin ? String(date_fin).substring(0, 10) : null,
             solde_comptable: Number(solde_comptable) || 0,
             solde_bancaire: Number(solde_bancaire) || 0,
             solde_non_rapproche: Number(solde_non_rapproche) || 0,
@@ -254,8 +259,8 @@ exports.updateRapprochement = async (req, res) => {
             return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
         }
         const [affected] = await rapprochements.update({
-            date_debut: date_debut ? String(date_debut).substring(0,10) : null,
-            date_fin: date_fin ? String(date_fin).substring(0,10) : null,
+            date_debut: date_debut ? String(date_debut).substring(0, 10) : null,
+            date_fin: date_fin ? String(date_fin).substring(0, 10) : null,
             solde_comptable: Number(solde_comptable) || 0,
             solde_bancaire: Number(solde_bancaire) || 0,
             solde_non_rapproche: Number(solde_non_rapproche) || 0,
@@ -691,7 +696,7 @@ exports.previewImmoDegressif = async (req, res) => {
         }
 
         // 3. Initialisation des variables principales
-    const baseJours = Number(dossier.immo_amort_base_jours) || 360; // base de calcul (par défaut 360 jours)
+        const baseJours = Number(dossier.immo_amort_base_jours) || 360; // base de calcul (par défaut 360 jours)
         const montantHT = Number(detail.montant_ht) || Number(detail.montant) || 0; // valeur de l'immobilisation
         const dateMS = detail.date_mise_service ? new Date(detail.date_mise_service) : null;
         if (!dateMS || isNaN(dateMS.getTime())) return res.status(400).json({ state: false, msg: 'date_mise_service invalide' });
@@ -1152,7 +1157,6 @@ exports.addJournal = async (req, res) => {
             fichierCheminRelatif = path.join(dossierRelatif, nomFichier).replace(/\\/g, '/');
         }
 
-        // Use a single id_ecriture for the whole batch so lines belong to the same entry
         const idEcritureCommun = getDateSaisieNow(id_compte);
 
         const newTableRows = await Promise.all(tableRows.map(async (row) => {
@@ -1457,8 +1461,9 @@ exports.getJournal = async (req, res) => {
     try {
         const { id_compte, id_dossier, id_exercice } = req.params;
 
-        if (!id_dossier) return res.status(400).json({ state: false, message: 'Id_dossier non trouvé' });
-        if (!id_exercice) return res.status(400).json({ state: false, message: 'Id_exercice non trouvé' });
+        if (!id_dossier) return res.status(400).json({ state: false, message: 'Dossier non trouvé' });
+        if (!id_exercice) return res.status(400).json({ state: false, message: 'Exercice non trouvé' });
+        if (!id_compte) return res.status(400).json({ state: false, message: 'Compte non trouvé' });
 
         const firstTenIds = await journals.findAll({
             attributes: ['id_ecriture', 'createdAt'],
@@ -1480,7 +1485,8 @@ exports.getJournal = async (req, res) => {
             },
             include: [
                 { model: dossierplancomptable, attributes: ['compte'] },
-                { model: codejournals, attributes: ['code'] }
+                { model: codejournals, attributes: ['code'] },
+                { model: dossiers, attributes: ['dossier'] },
             ],
             order: [
                 // ['id_ecriture', 'ASC'],
@@ -1491,11 +1497,12 @@ exports.getJournal = async (req, res) => {
         });
 
         const mappedData = journalData.map(journal => {
-            const { dossierplancomptable, codejournal, ...rest } = journal.toJSON();
+            const { dossierplancomptable, codejournal, dossier, ...rest } = journal.toJSON();
             return {
                 ...rest,
                 compte: dossierplancomptable?.compte || null,
-                journal: codejournal?.code || null
+                journal: codejournal?.code || null,
+                dossier: dossier?.dossier || null
             };
         });
 
@@ -1506,25 +1513,165 @@ exports.getJournal = async (req, res) => {
     }
 }
 
+exports.getAllJournal = async (req, res) => {
+    try {
+        const { id_compte, id_dossier, id_exercice } = req.params;
+
+        if (!id_dossier) return res.status(400).json({ state: false, message: 'Dossier non trouvé' });
+        if (!id_exercice) return res.status(400).json({ state: false, message: 'Exercice non trouvé' });
+        if (!id_compte) return res.status(400).json({ state: false, message: 'Compte non trouvé' });
+
+        const dossierData = await dossiers.findByPk(id_dossier);
+        const exerciceData = await exercices.findByPk(id_exercice);
+
+        const consolidation = dossierData?.consolidation || false;
+        const date_debut_exercice = new Date(exerciceData?.date_debut);
+        const date_fin_exercice = new Date(exerciceData?.date_fin);
+
+        let id_dossiers_a_utiliser = [Number(id_dossier)];
+
+        if (consolidation) {
+            const consolidationDossierData = await consolidationDossier.findAll({
+                where: {
+                    id_dossier,
+                    id_compte
+                }
+            });
+
+            if (!consolidationDossierData.length) {
+                return res.json({
+                    state: true,
+                    msg: "Consolidation de dossier vide",
+                    liste: []
+                });
+            }
+
+            id_dossiers_a_utiliser = [...new Set(
+                consolidationDossierData.map(val => Number(val.id_dossier_autre))
+            ), Number(id_dossier)];
+        }
+
+        const exerciceDataToUse = await exercices.findAll({
+            where: {
+                id_compte,
+                id_dossier: { [Op.in]: id_dossiers_a_utiliser },
+                [Op.and]: [
+                    { date_debut: { [Op.lte]: date_fin_exercice } },
+                    { date_fin: { [Op.gte]: date_debut_exercice } }
+                ]
+            }
+        })
+
+        const id_exercices_a_utiliser = [...new Set(exerciceDataToUse.map(val => Number(val.id)))];
+
+        const whereClause = {
+            id_compte,
+            id_dossier: { [Op.in]: id_dossiers_a_utiliser },
+            id_exercice: { [Op.in]: id_exercices_a_utiliser }
+        };
+
+        const journalData = await journals.findAll({
+            where: whereClause,
+            include: [
+                { model: dossierplancomptable, attributes: ['compte'] },
+                { model: codejournals, attributes: ['code'] },
+                { model: dossiers, attributes: ['dossier'] },
+            ],
+            order: [
+                // ['id_ecriture', 'ASC'],
+                // ['dateecriture', 'ASC'],
+                // ['id', 'ASC']
+                ['createdAt', 'DESC']
+            ]
+        });
+
+        const mappedData = journalData.map(journal => {
+            const { dossierplancomptable, codejournal, dossier, ...rest } = journal.toJSON();
+            return {
+                ...rest,
+                compte: dossierplancomptable?.compte || null,
+                journal: codejournal?.code || null,
+                dossier: dossier?.dossier || null
+            };
+        });
+
+        return res.json(mappedData);
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ state: false, msg: 'Erreur serveur', error: error.message });
+    }
+}
+
 exports.getJournalFiltered = async (req, res) => {
     try {
         const { id_compte, id_dossier, id_exercice, journal, compte, piece, libelle, debut, fin } = req.body;
         const id_numcpt = compte?.id;
 
-        if (!id_dossier) return res.status(400).json({ state: false, message: 'Id_dossier non trouvé' });
-        if (!id_exercice) return res.status(400).json({ state: false, message: 'Id_exercice non trouvé' });
+        if (!id_dossier) return res.status(400).json({ state: false, message: 'Dossier non trouvé' });
+        if (!id_exercice) return res.status(400).json({ state: false, message: 'Exercice non trouvé' });
+        if (!id_compte) return res.status(400).json({ state: false, message: 'Compte non trouvé' });
+
+        const dossierData = await dossiers.findByPk(id_dossier);
+        const exerciceData = await exercices.findByPk(id_exercice);
+
+        const consolidation = dossierData?.consolidation || false;
+        const date_debut_exercice = new Date(exerciceData?.date_debut);
+        const date_fin_exercice = new Date(exerciceData?.date_fin);
+
+        let id_dossiers_a_utiliser = [Number(id_dossier)];
+
+        if (consolidation) {
+            const consolidationDossierData = await consolidationDossier.findAll({
+                where: {
+                    id_dossier,
+                    id_compte
+                }
+            });
+
+            if (!consolidationDossierData.length) {
+                return res.json({
+                    state: true,
+                    msg: "Consolidation de dossier vide",
+                    liste: []
+                });
+            }
+
+            id_dossiers_a_utiliser = [...new Set(
+                consolidationDossierData.map(val => Number(val.id_dossier_autre))
+            ), Number(id_dossier)];
+        }
+
+        const exerciceDataToUse = await exercices.findAll({
+            where: {
+                id_compte,
+                id_dossier: { [Op.in]: id_dossiers_a_utiliser },
+                [Op.and]: [
+                    { date_debut: { [Op.lte]: date_fin_exercice } },
+                    { date_fin: { [Op.gte]: date_debut_exercice } }
+                ]
+            }
+        })
+
+        const id_exercices_a_utiliser = [...new Set(exerciceDataToUse.map(val => Number(val.id)))];
 
         const whereClause = {
             id_compte,
-            id_dossier,
-            id_exercice
+            id_dossier: { [Op.in]: id_dossiers_a_utiliser },
+            id_exercice: { [Op.in]: id_exercices_a_utiliser }
         };
 
         if (piece) whereClause.piece = { [Op.iLike]: `%${piece}%` };
         if (libelle) whereClause.libelle = { [Op.iLike]: `%${libelle}%` };
-        if (debut && fin) whereClause.dateecriture = { [Op.between]: [debut, fin] };
-        else if (debut) whereClause.dateecriture = { [Op.gte]: debut };
-        else if (fin) whereClause.dateecriture = { [Op.lte]: fin };
+        if (debut && fin) {
+            whereClause.dateecriture = { [Op.between]: [debut, fin] };
+        } else if (debut) {
+            whereClause.dateecriture = { [Op.gte]: debut };
+        } else if (fin) {
+            whereClause.dateecriture = { [Op.lte]: fin };
+        } else if (date_debut_exercice && date_fin_exercice && consolidation) {
+            whereClause.dateecriture = { [Op.between]: [date_debut_exercice, date_fin_exercice] };
+        }
 
         const journalData = await journals.findAll({
             where: whereClause,
@@ -1555,12 +1702,13 @@ exports.getJournalFiltered = async (req, res) => {
             where: {
                 id_ecriture: id_ecritures,
                 id_compte,
-                id_dossier,
-                id_exercice
+                id_dossier: { [Op.in]: id_dossiers_a_utiliser },
+                id_exercice: { [Op.in]: id_exercices_a_utiliser }
             },
             include: [
                 { model: dossierplancomptable, attributes: ['compte'] },
-                { model: codejournals, attributes: ['code'] }
+                { model: codejournals, attributes: ['code'] },
+                { model: dossiers, attributes: ['dossier'] },
             ],
             order: [
                 // ['id_ecriture', 'ASC'],
@@ -1571,11 +1719,12 @@ exports.getJournalFiltered = async (req, res) => {
         })
 
         const mappedData = journalFinal.map(journal => {
-            const { dossierplancomptable, codejournal, ...rest } = journal.toJSON();
+            const { dossierplancomptable, codejournal, dossier, ...rest } = journal.toJSON();
             return {
                 ...rest,
                 compte: dossierplancomptable?.compte || null,
-                journal: codejournal?.code || null
+                journal: codejournal?.code || null,
+                dossier: dossier?.dossier || null,
             };
         });
 
