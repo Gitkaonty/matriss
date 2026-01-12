@@ -60,7 +60,13 @@ router.get('/immobilisations/details/lignes', saisieController.listDetailsImmoLi
 router.get('/immobilisations/details/lineaire/preview', saisieController.previewImmoLineaire);
 router.get('/immobilisations/details/degresif/preview', saisieController.previewImmoDegressif);
 router.post('/immobilisations/details/lineaire/save', saisieController.saveImmoLineaire);
-// router.post('/immobilisations/details/degresif/save', saisieController.saveImmoDegressif);
+router.post('/immobilisations/details/degresif/save', saisieController.saveImmoDegressif);
+
+// Immobilisations: génération écritures comptables (journal Imau)
+router.post('/immobilisations/ecritures/generate', saisieController.generateImmoEcritures);
+
+// Immobilisations: annuler écritures comptables (journal Imau)
+router.post('/immobilisations/ecritures/cancel', saisieController.cancelImmoEcritures);
 
 // Rapprochements exports
 router.get('/rapprochements/export/pdf', exportRapprochementsController.exportPdf); // query: fileId, compteId, exerciceId, pcId, rapproId

@@ -219,7 +219,8 @@ db.liasseses.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique', target
 
 //
 db.devises.belongsTo(db.userscomptes, { foreignKey: 'id_compte', targetKey: 'id' });
-db.journals.belongsTo(db.dossierplancomptable, { foreignKey: 'id_numcptcentralise', targetKey: 'id' });
+db.journals.belongsTo(db.dossierplancomptable, { foreignKey: 'id_numcpt', targetKey: 'id' });
+db.journals.belongsTo(db.dossierplancomptable, { foreignKey: 'id_numcptcentralise', targetKey: 'id', as: 'compteCentralise' });
 db.journals.belongsTo(db.codejournals, { foreignKey: 'id_journal', targetKey: 'id' });
 db.journals.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id' });
 
