@@ -18,7 +18,7 @@ export default function UnauthorizedDossier() {
             <LockIcon style={{ fontSize: 60, color: '#f44336', marginBottom: 20 }} />
 
             <h2 style={{ margin: 0, fontSize: '2rem', color: '#333' }}>
-                Vous n'avez pas accès à cette page
+                Vous n'avez pas accès à ce dossier
             </h2>
 
             <p style={{ marginTop: 10, fontSize: '1rem', color: '#666' }}>

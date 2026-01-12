@@ -1,31 +1,42 @@
-import { useParams, Navigate, Outlet } from 'react-router-dom';
+import { useParams, Navigate, Outlet, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import useAxiosPrivate from '../../config/axiosPrivate';
+import useAuth from '../hooks/useAuth';
+import { jwtDecode } from 'jwt-decode';
 
 export default function ProtectedDossier({ type }) {
+    const navigate = useNavigate();
+    const { auth } = useAuth();
     const { id } = useParams();
     const [access, setAccess] = useState(null);
     const axiosPrivate = useAxiosPrivate();
+
+    const decoded = auth?.accessToken
+        ? jwtDecode(auth.accessToken)
+        : undefined
+
+    const userId = decoded.UserInfo.userId || null;
 
     useEffect(() => {
         const verifyAccess = () => {
             try {
                 axiosPrivate.get(`/home/checkAccessDossier/${id}`).then((response) => {
                     if (response?.data?.state) {
-                        setAccess(true);
+                        // setAccess(true);
                     } else {
-                        setAccess(false);
+                        // setAccess(false);
+                        navigate(`/tab/home`);
                     }
                 })
             } catch {
-                setAccess(false);
+                // setAccess(false);
             }
         };
 
         verifyAccess();
-    }, [id]);
+    }, [id, userId]);
 
-    if (access === false) return <Navigate to="/tab/unauthorized-dossier" replace />;
+    // if (access === false) return <Navigate to="/tab/unauthorized-dossier" replace />;
 
     return <Outlet />;
 }

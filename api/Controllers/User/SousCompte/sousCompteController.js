@@ -144,7 +144,8 @@ exports.addSousCompte = async (req, res) => {
 
             return res.status(200).json({
                 message: "Sous-compte ajouté avec succès",
-                state: true
+                state: true,
+                compte: {}
             });
         } else {
             await users.update({
@@ -159,11 +160,13 @@ exports.addSousCompte = async (req, res) => {
                     id: user_id
                 }
             });
+
             await compteDossiers.destroy({
                 where: {
                     user_id
                 }
             })
+
             const dossiersExistants = await dossiers.findAll({
                 where: {
                     id: { [Op.in]: dossier }
@@ -197,9 +200,13 @@ exports.addSousCompte = async (req, res) => {
                     );
                 }
             }
+
+            const compteUpdated = await users.findByPk(user_id);
+
             return res.status(200).json({
                 message: "Sous-compte modifié avec succès",
-                state: true
+                state: true,
+                compte: compteUpdated
             });
         }
 

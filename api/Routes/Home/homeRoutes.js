@@ -30,4 +30,10 @@ router.get('/getAllDossierByCompte/:compteId', homeController.getAllDossierByCom
 // Récupération des dossiers qu'une compte a accès
 router.get('/getCompteDossier/:userId', homeController.getCompteDossier);
 
+// Vérification du mot de passe du dossier
+router.post('/verifyFilePassword', homeController.verifyFilePassword);
+
+// Suppréssion de password access dossier par utilisateur
+router.post('/deleteDossierPasswordAccess', homeController.deleteDossierPasswordAccess);
+
 module.exports = router;

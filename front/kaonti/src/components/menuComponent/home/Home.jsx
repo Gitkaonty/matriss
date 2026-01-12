@@ -23,6 +23,7 @@ import { FcFile } from "react-icons/fc";
 import useFileInfos from '../../../hooks/useFileInfos';
 import usePermission from '../../../hooks/usePermission';
 import useAxiosPrivate from '../../../../config/axiosPrivate';
+import PopupConfirmPasswordDossier from '../../componentsTools/Dossier/PopupConfirmPasswordDossier';
 
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="right" ref={ref} {...props} />;
@@ -38,9 +39,11 @@ export default function Home() {
   let [listeDossier, setListeDossier] = useState([]);
   let [finalListeDossier, setFinalListeDossier] = useState([]);
   let [findText, setFindText] = useState('');
+  const [selectedIdDossier, setSelectedIdDossier] = useState(null);
   const [openDialogDeleteDossier, setOpenDialogDeleteDossier] = useState(false);
   const [selectedDossierRow, setSelectedDossierRow] = useState([]);
   const { setIdDossier, setNomDossier } = useFileInfos();
+  const [showPopupConfirmPassword, setShowPopupConfirmPassword] = useState(false);
 
   //récupération des informations de connexion
   const { auth } = useAuth();
@@ -135,10 +138,22 @@ export default function Home() {
 
   const selectFile = (row) => {
     const id = row.id;
-    setIdDossier(id);
-    setNomDossier(row.dossier);
-    navigate(`/tab/dashboard/${id}`);
-    sessionStorage.setItem("fileId", id);
+    const avecMotDePasse = row.avecmotdepasse;
+    if (avecMotDePasse) {
+      setSelectedIdDossier(id);
+      setShowPopupConfirmPassword(true);
+    } else {
+      axios.post('/home/deleteDossierPasswordAccess', { user_id: userId })
+      setIdDossier(id);
+      setNomDossier(row.dossier);
+      navigate(`/tab/dashboard/${id}`);
+      sessionStorage.setItem("fileId", id);
+    }
+  }
+
+  const handleClosePopupConfirmPassword = () => {
+    setShowPopupConfirmPassword(false);
+    setSelectedIdDossier(null);
   }
 
   const tableheader = [
@@ -251,6 +266,14 @@ export default function Home() {
           />
           :
           null
+      }
+      {
+        showPopupConfirmPassword && (
+          <PopupConfirmPasswordDossier
+            onClose={handleClosePopupConfirmPassword}
+            id_dossier={selectedIdDossier}
+          />
+        )
       }
       {open ?
         <Dialog
