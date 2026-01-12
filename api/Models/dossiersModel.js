@@ -216,6 +216,14 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING(50),
             allowNull: true
         },
+        avecmotdepasse: {
+            type: DataTypes.BOOLEAN,
+            allowNull: true
+        },
+        motdepasse: {
+            type: DataTypes.STRING(255),
+            allowNull: true
+        }
     }, { timestamps: true },)
     return dossiers
 }

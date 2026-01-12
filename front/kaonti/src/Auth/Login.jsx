@@ -71,95 +71,76 @@ const Login = () => {
         height: '100vh',
       }}
     >
-      <Stack
-        alignItems="center"
-        justifyContent="center"
-        width={isMobile ? '80%' : '400px'}
-        maxWidth="90vw"
-        bgcolor="white"
-        borderRadius={2}
-        boxShadow={3}
-        py={4}
-        px={3}
-        mt={2}
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSubmit();
+        }}
       >
-        <Box width="100%">
-          <Stack
-            direction="column"
-            spacing={3}
-            alignItems="center"
-            justifyContent="center"
-          >
-            <img
-              src="/src/img/Logo Kaonty_2.png"
-              alt="Logo Kaonty"
-              style={{
-                border: '1px solid #FFF',
-                borderRadius: '8px',
-                width: '40px',
-                height: '40px',
-                marginTop: '10px'
-              }}
-            />
-
-            <Typography
-              variant="h4"
-              fontFamily="Bahnschrift Condensed"
-              fontWeight="light"
-              color="rgba(112, 112, 112, 0.96)"
-              mt={-1}
+        <Stack
+          alignItems="center"
+          justifyContent="center"
+          width={isMobile ? '80%' : '400px'}
+          maxWidth="90vw"
+          bgcolor="white"
+          borderRadius={2}
+          boxShadow={3}
+          py={4}
+          px={3}
+          mt={2}
+        >
+          <Box width="100%">
+            <Stack
+              direction="column"
+              spacing={3}
+              alignItems="center"
+              justifyContent="center"
             >
-              Kaonty
-            </Typography>
+              <img
+                src="/src/img/Logo Kaonty_2.png"
+                alt="Logo Kaonty"
+                style={{
+                  border: '1px solid #FFF',
+                  borderRadius: '8px',
+                  width: '40px',
+                  height: '40px',
+                  marginTop: '10px'
+                }}
+              />
 
-            <Typography
-              variant="body1"
-              fontFamily="Bahnschrift"
-              fontWeight="light"
-              fontSize="16px"
-              color="rgba(33, 33, 33, 0.9)"
-              mt={-2}
-            >
-              Connectez-vous à votre compte
-            </Typography>
+              <Typography
+                variant="h4"
+                fontFamily="Bahnschrift Condensed"
+                fontWeight="light"
+                color="rgba(112, 112, 112, 0.96)"
+                mt={-1}
+              >
+                Kaonty
+              </Typography>
 
-            <TextField
-              ref={userRef}
-              type='email'
-              onChange={e => setEmail(e.target.value)}
-              id="standard-basic01"
-              label="Adresse mail"
-              name='email'
-              variant="standard"
-              fullWidth
-              size='small'
-              required
-              sx={{
-                '& .MuiInputBase-input': {
-                  fontSize: 15.3,
-                  py: 1,
-                  pl: 0.5,
-                },
-                '& .MuiInputBase-input:-webkit-autofill': {
-                  fontSize: '15.3px !important',
-                  WebkitTextFillColor: '#000',
-                  WebkitBoxShadow: '0 0 0 1000px #fff inset',
-                  transition: 'background-color 9999s ease-in-out 0s',
-                  caretColor: '#000',
-                },
-                '& .MuiInputBase-root': {
-                  fontSize: 15.3,
-                },
-              }}
-            />
+              <Typography
+                variant="body1"
+                fontFamily="Bahnschrift"
+                fontWeight="light"
+                fontSize="16px"
+                color="rgba(33, 33, 33, 0.9)"
+                mt={-2}
+              >
+                Connectez-vous à votre compte
+              </Typography>
 
-            <FormControl variant="standard" fullWidth>
-              <InputLabel htmlFor="standard-adornment-password" >Mot de passe *</InputLabel>
-              <Input
-                onChange={e => setPassword(e.target.value)}
-                id="standard-adornment-password"
-                type={showPassword ? 'text' : 'password'}
-                name='password'
+              <TextField
+                ref={userRef}
+                type='email'
+                onChange={e => setEmail(e.target.value)}
+                id="standard-basic01"
+                label="Adresse mail"
+                name='email'
+                variant="standard"
+                fullWidth
+                size='small'
+                required
                 sx={{
                   '& .MuiInputBase-input': {
                     fontSize: 15.3,
@@ -177,57 +158,84 @@ const Login = () => {
                     fontSize: 15.3,
                   },
                 }}
-                required
-                endAdornment={
-                  <InputAdornment position="end">
-                    <IconButton
-                      disableRipple
-                      sx={{
-                        backgroundColor: 'transparent',
-                        '&:hover': { backgroundColor: 'transparent' },
-                        '&:active': { backgroundColor: 'transparent' }
-                      }}
-                      aria-label="toggle password visibility"
-                      onClick={handleClickShowPassword}
-                      style={{
-                        textTransform: 'none',
-                        outline: 'none',
-                      }}
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                }
               />
-            </FormControl>
 
-            <Button
-              type="submit"
-              onClick={handleSubmit}
-              variant="contained"
-              fullWidth
-              sx={{ mt: 1 }}
-              style={{
-                textTransform: 'none',
-                outline: 'none',
-              }}
-            >
-              Se connecter
-            </Button>
-          </Stack>
+              <FormControl variant="standard" fullWidth>
+                <InputLabel htmlFor="standard-adornment-password" >Mot de passe *</InputLabel>
+                <Input
+                  onChange={e => setPassword(e.target.value)}
+                  id="standard-adornment-password"
+                  type={showPassword ? 'text' : 'password'}
+                  name='password'
+                  sx={{
+                    '& .MuiInputBase-input': {
+                      fontSize: 15.3,
+                      py: 1,
+                      pl: 0.5,
+                    },
+                    '& .MuiInputBase-input:-webkit-autofill': {
+                      fontSize: '15.3px !important',
+                      WebkitTextFillColor: '#000',
+                      WebkitBoxShadow: '0 0 0 1000px #fff inset',
+                      transition: 'background-color 9999s ease-in-out 0s',
+                      caretColor: '#000',
+                    },
+                    '& .MuiInputBase-root': {
+                      fontSize: 15.3,
+                    },
+                  }}
+                  required
+                  endAdornment={
+                    <InputAdornment position="end">
+                      <IconButton
+                        disableRipple
+                        sx={{
+                          backgroundColor: 'transparent',
+                          '&:hover': { backgroundColor: 'transparent' },
+                          '&:active': { backgroundColor: 'transparent' }
+                        }}
+                        aria-label="toggle password visibility"
+                        onClick={handleClickShowPassword}
+                        style={{
+                          textTransform: 'none',
+                          outline: 'none',
+                        }}
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  }
+                />
+              </FormControl>
 
-          <Stack direction="row" alignItems="center" justifyContent="flex-start" mt={2}>
-            <Checkbox defaultChecked />
-            <Typography
-              variant="body2"
-              fontSize="14px"
-              color="rgba(0, 0, 0, 0.96)"
-            >
-              J'ai lu et j'accepte les conditions générales d'utilisation
-            </Typography>
-          </Stack>
-        </Box>
-      </Stack>
+              <Button
+                type="submit"
+                onClick={handleSubmit}
+                variant="contained"
+                fullWidth
+                sx={{ mt: 1 }}
+                style={{
+                  textTransform: 'none',
+                  outline: 'none',
+                }}
+              >
+                Se connecter
+              </Button>
+            </Stack>
+
+            <Stack direction="row" alignItems="center" justifyContent="flex-start" mt={2}>
+              <Checkbox defaultChecked />
+              <Typography
+                variant="body2"
+                fontSize="14px"
+                color="rgba(0, 0, 0, 0.96)"
+              >
+                J'ai lu et j'accepte les conditions générales d'utilisation
+              </Typography>
+            </Stack>
+          </Box>
+        </Stack>
+      </form>
 
       <Typography variant="caption" color="white" mt={2}>
         © Kaonty v1.0.0.0

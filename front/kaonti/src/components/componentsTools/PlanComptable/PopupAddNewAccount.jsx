@@ -147,6 +147,11 @@ const PopupAddNewAccount = ({
             .replace(/[\s\.\-]/g, '')
             .trim();
 
+
+    const closePopup = () => {
+        onClose();
+    }
+
     const formAddCptValidationSchema = Yup.object({
         compte: Yup.string()
             .required("Veuillez tapez un numéro de compte")
@@ -321,7 +326,7 @@ const PopupAddNewAccount = ({
     //Gestion tableau ajout compte de TVA associé au nouveau compte à créer
     const recupererListeCptCollectif = () => {
         // const result = pc?.filter(item => item.nature === 'Collectif');
-        axios.post(`/paramPlanComptable/pc`, { fileId: Number(id_dossier) }).then((response) => {
+        axios.post(`/paramPlanComptable/pc`, { fileId: Number(id_dossier), compteId: Number(id_compte) }).then((response) => {
             const resData = response.data;
             if (resData.state) {
                 let listePc = resData.liste;
@@ -409,7 +414,7 @@ const PopupAddNewAccount = ({
             } else {
                 toast.error(resData.msg);
             }
-            onClose();
+            closePopup();
         });
     }
 
@@ -834,7 +839,10 @@ const PopupAddNewAccount = ({
 
                                 <BootstrapDialog
                                     open={open}
-                                    onClose={onClose}
+                                    onClose={() => {
+                                        resetForm();
+                                        closePopup();
+                                    }}
                                     // disableEnforceFocus
                                     // disableRestoreFocus
                                     fullWidth
@@ -852,7 +860,10 @@ const PopupAddNewAccount = ({
                                     <IconButton
                                         style={{ color: 'red', textTransform: 'none', outline: 'none' }}
                                         aria-label="close"
-                                        onClick={onClose}
+                                        onClose={() => {
+                                            resetForm();
+                                            closePopup();
+                                        }}
                                         sx={{
                                             position: 'absolute',
                                             right: 8,
@@ -1597,7 +1608,10 @@ const PopupAddNewAccount = ({
                                                 // outline: 'none'
                                             }}
                                             type='submit'
-                                            onClick={onClose}
+                                            onClose={() => {
+                                                resetForm();
+                                                closePopup();
+                                            }}
                                         >
                                             Annuler
                                         </Button>

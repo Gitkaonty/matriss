@@ -15,7 +15,7 @@ import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
-import { Stack, Menu, MenuItem, Button, Tooltip, DialogActions, Divider } from '@mui/material';
+import { Stack, Menu, MenuItem, Divider } from '@mui/material';
 import { init } from '../../init';
 import { Outlet } from 'react-router-dom';
 import { useFormik } from 'formik';
@@ -35,7 +35,6 @@ import { useLocation } from "react-router-dom";
 import { MdAccountBox } from "react-icons/md";
 import { RiAccountBoxLine } from "react-icons/ri";
 
-import PopupAddCompte from '../components/menuComponent/Compte/PopupAddCompte';
 import PopupDisconnectCompte from '../components/menuComponent/Compte/PopupDisconnectCompte';
 import PopupPasswordChange from '../components/menuComponent/Compte/PopupPasswordChange';
 import axios from '../../config/axios';
@@ -283,40 +282,6 @@ export default function HomePage() {
   //Creation de la liste du menu-------------------------------------------------
   const MenuSide = humburgerMenu;
 
-  //gestion formulaire pour le change de mot de passe
-  const mdpChangeFormikInitialValues = {
-    oldPassword: '',
-    newPassword: '',
-    passwordConfirmation: ''
-  };
-
-  const validationSchema = Yup.object().shape({
-    oldPassword: Yup.string().required("Veuillez taper ici votre ancien mot de passe"),
-    newPassword: Yup.string().required("Veuillez taper ici votre nouveau mot de passe")
-      .min(6, "Le mot de passe doit avoir au moin 6 caractères")
-      .max(25, "Le mot de passe ne doit pas dépasser les 25 caractères"),
-    passwordConfirmation: Yup.string().required("Veuillez confirmer ici votre nouveau mot de passe")
-      .oneOf([Yup.ref("newPassword")], "Les mots de passes ne se correspondent pas"),
-  })
-
-  const mdpChangeFormik = useFormik({
-    initialValues: mdpChangeFormikInitialValues,
-    onSubmit: handleSubmitMdpChangeFormik,
-    validationSchema,
-  });
-
-  function handleSubmitMdpChangeFormik(formValues, onSubmittingProps) {
-    try {
-      onSubmittingProps.resetForm();
-    } catch (error) {
-      console.error(error);
-    }
-  }
-
-  const setShowPopupAddCompte = (value) => {
-    setIsOpenAddCompte(value);
-  }
-
   const setShowPopupDisconnect = (value) => {
     setIsOpenPopupDisconnect(value);
   }
@@ -391,12 +356,6 @@ export default function HomePage() {
   return (
     <>
       {
-        isButtonAddVisible && isOpenPopupAddCompte && (
-          <PopupAddCompte compteId={compteId} nom={username} confirmationState={setShowPopupAddCompte} listePortefeuille={listePortefeuille} listeRoles={listeRoles} listeDossier={listeDossier} />
-        )
-      }
-
-      {
         isOpenPopupDisconnect && (
           <PopupDisconnectCompte open={isOpenPopupDisconnect} handleClose={() => setShowPopupDisconnect(false)} handleDisconnect={disconnect} />
         )
@@ -447,7 +406,7 @@ export default function HomePage() {
                     fontSize: "16px", textAlign: "center", alignContent: "center"
                   }}
                 >
-                  {`Espace client : ${comptename}`}
+                  {`${comptename}`}
                 </Typography>
               </Stack>
 
@@ -518,21 +477,6 @@ export default function HomePage() {
                     </Stack>
                   </MenuItem>
                   {
-                    isButtonAddVisible && (
-                      <MenuItem onClick={() => { handleClose(); setShowPopupAddCompte(true) }}>
-                        <Stack direction={"row"} alignItems={'center'} alignContent={'center'}>
-                          <IconButton
-                            style={{ color: initial.button_exit_color, borderRadius: "50px", borderColor: "transparent", backgroundColor: 'transparent' }}
-                            aria-label="close"
-                          >
-                            <RiAccountBoxLine style={{ width: "20px", height: "20px", color: "gray" }} />
-                          </IconButton>
-                          <Typography>Mon compte</Typography>
-                        </Stack>
-                      </MenuItem>
-                    )
-                  }
-                  {
                     isButtonRolePermissionVisible && (
                       <MenuItem onClick={() => { handleClose(); handleNavigateToRolePermission() }}>
                         <Stack direction={"row"} alignItems={'center'} alignContent={'center'}>
@@ -542,7 +486,7 @@ export default function HomePage() {
                           >
                             <RiAccountBoxLine style={{ width: "20px", height: "20px", color: "gray" }} />
                           </IconButton>
-                          <Typography>Rôle & permission</Typography>
+                          <Typography>Gestion de compte</Typography>
                         </Stack>
                       </MenuItem>
                     )

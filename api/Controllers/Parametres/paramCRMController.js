@@ -126,7 +126,9 @@ const modifyingInfos = async (req, res) => {
       typecomptabilite,
       devisepardefaut,
       consolidation,
-      pays
+      pays,
+      avecMotDePasse,
+      motDePasse
     } = req.body;
 
     const modify = await dossiers.update(
@@ -164,7 +166,9 @@ const modifyingInfos = async (req, res) => {
         immo_amort_base_jours: Number(immo_amort_base_jours) || 365,
         typecomptabilite: typecomptabilite,
         consolidation,
-        pays
+        pays,
+        motdepasse: motDePasse,
+        avecmotdepasse: avecMotDePasse
       },
       {
         where: { id: idDossier }

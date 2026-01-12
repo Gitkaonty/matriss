@@ -11,6 +11,7 @@ const useLogout = () => {
             await axios('/logout', {
                 withCredentials: true
             });
+            sessionStorage.clear();
         }
         catch (err) {
             console.error(err);

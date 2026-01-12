@@ -42,6 +42,7 @@ import CheckBoxIcon from '@mui/icons-material/CheckBox';
 
 import usePermission from '../../../../hooks/usePermission';
 import useAxiosPrivate from '../../../../../config/axiosPrivate';
+import PasswordField from '../../home/Field/PasswordField';
 
 const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
 const checkedIcon = <CheckBoxIcon fontSize="small" />;
@@ -53,7 +54,7 @@ export default function ParamCRM() {
     // État pour le type de centre fiscal (DGE ou centre fiscale)
     const [typeCentre, setTypeCentre] = useState('DGE');
     //Choix TAB value-------------------------------------------------------------------------------------
-    const [valueEbilan, setValueEbilan] = useState('0');
+    const [valueEbilan, setValueEbilan] = useState('1');
 
     const navigate = useNavigate();
     //récupération information du dossier sélectionné
@@ -61,6 +62,7 @@ export default function ParamCRM() {
     const [fileId, setFileId] = useState(0);
     const [fileInfos, setFileInfos] = useState('');
     const [noFile, setNoFile] = useState(false);
+    const [password, setPassword] = useState('');
 
     const [listModel, setListModel] = useState([]);
     const [listAssocie, setListAssocie] = useState([]);
@@ -358,7 +360,10 @@ export default function ParamCRM() {
         devisepardefaut: 0,
         consolidation: false,
         listeConsolidation: [],
-        pays: ''
+        pays: '',
+        avecMotDePasse: false,
+        motDePasse: '',
+        motDePasseConfirmation: ''
     };
 
     const formInfosNewFileValidationSchema = Yup.object({
@@ -369,11 +374,50 @@ export default function ParamCRM() {
         longueurcptstd: Yup.number().moreThan(1, 'Taper une longueur de compte supérieur à 1'),
         longueurcptaux: Yup.number().moreThan(1, 'Taper une longueur de compte supérieur à 1'),
         tauxir: Yup.number().moreThan(0, 'Taper votre taux IR'),
-        portefeuille: Yup.array()
-            .required("Sélectionnez un portefeuille"),
-        typecomptabilite: Yup.string().required("Veuillez sélectioner le type de comptablilité"),
+        portefeuille: Yup.array().min(1, "Sélectionnez au moins un portefeuille"),
         pays: Yup.string().required("Sélectionnez une pays"),
+
+        motDePasse: Yup.string().when('avecMotDePasse', {
+            is: true,
+            then: (schema) =>
+                schema
+                    .required("Le mot de passe est obligatoire")
+                    .min(8, "Le mot de passe doit contenir au moins 8 caractères")
+                    .max(30, "Le mot de passe est trop long")
+                    .matches(/[A-Z]/, "Doit contenir une majuscule")
+                    .matches(/[a-z]/, "Doit contenir une minuscule")
+                    .matches(/[0-9]/, "Doit contenir un chiffre")
+                    .matches(/[^a-zA-Z0-9]/, "Doit contenir un caractère spécial"),
+            otherwise: (schema) => schema.notRequired()
+        }),
+
+        motDePasseConfirmation: Yup.string().when('avecMotDePasse', {
+            is: true,
+            then: (schema) =>
+                schema
+                    .oneOf([Yup.ref('motDePasse')], "Les mots de passe ne correspondent pas")
+                    .required("Le mot de passe de confirmation est obligatoire"),
+            otherwise: (schema) => schema.notRequired()
+        }),
     });
+
+    const fieldOrder = [
+        'nomdossier',
+        'raisonsociale',
+        'forme',
+        'activite',
+        'longueurcptstd',
+        'longueurcptaux',
+        'tauxir',
+        'portefeuille',
+        'pays',
+        'motDePasse',
+        'motDePasseConfirmation'
+    ]
+
+    const getFirstErrorField = (errors, fieldOrder) => {
+        return fieldOrder.find(field => errors[field]);
+    };
 
     const sendToHome = (value) => {
         setNoFile(!value);
@@ -2268,7 +2312,7 @@ export default function ParamCRM() {
                             handlSubmitModification(values);
                         }}
                     >
-                        {({ handleChange, handleSubmit, setFieldValue, resetForm, values }) => {
+                        {({ handleChange, handleSubmit, setFieldValue, resetForm, values, isValid, errors, setTouched }) => {
 
                             const calculateValeurPart = (capital, nbrPart) => {
                                 const numCapital = parseFloat(capital?.toString().replace(/\s/g, '').replace(',', '.')) || 0;
@@ -2334,9 +2378,13 @@ export default function ParamCRM() {
                                         setFieldValue('typecomptabilite', crmData.typecomptabilite || 'Français');
                                         setFieldValue('portefeuille', mappedPortefeuille);
 
-                                        setFieldValue('devisepardefaut', deviseParDefaut.id);
+                                        setFieldValue('devisepardefaut', deviseParDefaut?.id || 0);
                                         setFieldValue('consolidation', crmData.consolidation || false);
                                         setFieldValue('pays', crmData.pays || '');
+                                        setFieldValue('avecMotDePasse', crmData.avecmotdepasse);
+                                        setFieldValue('motDePasse', crmData.motdepasse || '');
+                                        setFieldValue('motDePasseConfirmation', crmData.motdepasse || '');
+                                        setPassword(crmData.motdepasse || '');
                                     } else {
                                         setCrm([]);
                                     }
@@ -2353,7 +2401,28 @@ export default function ParamCRM() {
                                             <Typography variant='h6' sx={{ color: "black", width: 'calc(100% - 120px)' }} align='left'>Paramétrages: CRM</Typography>
                                             <Button variant="contained"
                                                 disabled={!canModify}
-                                                onClick={handleSubmit}
+                                                onClick={() => {
+                                                    if (!isValid) {
+                                                        const touchedFields = Object.keys(errors).reduce((acc, field) => {
+                                                            acc[field] = true;
+                                                            return acc;
+                                                        }, {});
+
+                                                        setTouched(touchedFields);
+
+                                                        const firstErrorField = fieldOrder.find(
+                                                            field => errors[field]
+                                                        );
+
+                                                        if (firstErrorField) {
+                                                            toast.error(errors[firstErrorField]);
+                                                        }
+
+                                                        return;
+                                                    }
+
+                                                    handleSubmit();
+                                                }}
                                                 style={{
                                                     borderRadius: "0",
                                                     height: '43px', marginLeft: "5px", width: '120px',
@@ -2804,6 +2873,26 @@ export default function ParamCRM() {
                                                                         />
                                                                         <ErrorMessage name='pays' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
                                                                     </Stack>
+                                                                </Stack>
+
+                                                            </AccordionDetails>
+                                                        </Accordion>
+                                                        <Accordion elevation={0} style={{ width: "100%", borderBlockColor: "transparent" }}>
+                                                            <AccordionSummary
+                                                                expandIcon={<MdExpandCircleDown style={{ width: "25px", height: "25px", color: '#44D5F0' }} />}
+                                                                aria-controls="panel1-content"
+                                                                id="panel1-header"
+                                                                style={{ flexDirection: "row-reverse" }}
+                                                            >
+                                                                <Typography style={{ fontWeight: 'normal', fontSize: "20px", marginLeft: "10px" }}>Sécurité</Typography>
+                                                            </AccordionSummary>
+
+                                                            <AccordionDetails>
+                                                                <Stack width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"}
+                                                                    alignContent={"flex-start"} justifyContent={"stretch"} direction={"column"}
+                                                                    style={{ marginLeft: "50px" }}
+                                                                >
+                                                                    <PasswordField handleChange={handleChange} values={values} setFieldValue={setFieldValue} type={'EDIT'} password={password} />
                                                                 </Stack>
 
                                                             </AccordionDetails>

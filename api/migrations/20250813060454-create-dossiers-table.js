@@ -192,6 +192,14 @@ module.exports = {
                 type: Sequelize.STRING(50),
                 allowNull: true
             },
+            avecmotdepasse: {
+                type: Sequelize.BOOLEAN,
+                allowNull: true
+            },
+            motdepasse: {
+                type: Sequelize.STRING(255),
+                allowNull: true
+            }
         },
             { timestamps: true }
         );

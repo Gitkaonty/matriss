@@ -364,6 +364,10 @@ export default function SaisieComponent() {
 
     //afficher ou non le popup du saisie
     const handleOpenSaisiePopup = (type) => {
+        const defaultDeviseData = listeDevise.find(val => val.par_defaut === true);
+        if (!defaultDeviseData) {
+            return toast.error('Veuillez sélectionner une devise par défaut dans le paramétrage CRM de ce dossier')
+        }
         setOpenSaisiePopup(true);
         setTypeActionSaisie(type);
     }
