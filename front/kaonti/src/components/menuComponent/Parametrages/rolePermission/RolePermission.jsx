@@ -1,5 +1,5 @@
 import { TabContext, TabList, TabPanel } from '@mui/lab';
-import { Autocomplete, Box, Button, Checkbox, Chip, FormControl, MenuItem, Paper, Select, Stack, Tab, TextField, Typography } from '@mui/material';
+import { Box, Checkbox, Chip, MenuItem, Select, Stack, Tab, Typography } from '@mui/material';
 import axios from '../../../../../config/axios';
 import useAuth from '../../../../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
@@ -40,6 +40,11 @@ const RolePermission = () => {
     const { auth } = useAuth();
     const decoded = auth?.accessToken ? jwtDecode(auth.accessToken) : undefined;
     const compteId = decoded.UserInfo.compteId || null;
+    const comptename = decoded.UserInfo.compte || null;
+
+    const infoCompte = {
+        nom: comptename
+    }
 
     const [value, setValue] = useState(tabRolePermission || "1");
 
@@ -52,6 +57,7 @@ const RolePermission = () => {
 
     const [selectedCompteId, setSelectedCompteId] = useState(null);
     const [selectedSousCompteId, setSelectedSousCompteId] = useState([]);
+    const [isRefreshedSousCompte, setIsRefreshedSousCompte] = useState(false);
 
     const handleChangeTAB = (event, newValue) => {
         setValue(newValue);
@@ -81,7 +87,8 @@ const RolePermission = () => {
     // Récupération des sous-comptes
     const getAllSousComptesByIdCompte = () => {
         axios.post('/sous-compte/getAllSousComptesByIdCompte', {
-            compteIds: [selectedCompteId?.id]
+            // compteIds: [selectedCompteId?.id]
+            compteIds: [compteId]
         })
             .then((response) => {
                 if (response?.data?.state) {
@@ -101,7 +108,6 @@ const RolePermission = () => {
 
     const handleSearch = () => {
         if (selectedSousCompteId.length === 0) {
-            // toast.error('Veuillez sélectionner une sous-compte s\'il vous plaît');
             return;
         }
         const sousCompteId = selectedSousCompteId.map(val => val.id);
@@ -147,7 +153,7 @@ const RolePermission = () => {
 
     useEffect(() => {
         getAllSousComptesByIdCompte();
-    }, [selectedCompteId])
+    }, [selectedCompteId, isRefreshedSousCompte])
 
     const columnRolePermissions = [
         { field: 'username', headerName: 'Utilisateur', flex: 2 },
@@ -266,7 +272,7 @@ const RolePermission = () => {
                             }}
                             align='left'
                         >
-                            Gestion rôle & permission
+                            Gestion de compte utilisateur
                         </Typography>
                         <Box sx={{
                             width: '100%',
@@ -286,7 +292,12 @@ const RolePermission = () => {
                                 <TabPanel value="1">
                                     <CompteTab
                                         rows={listSousCompte}
+                                        setRows={setListSousCompte}
                                         columns={columnCompte}
+                                        selectedRowCompteIds={compteId}
+                                        infoCompte={infoCompte}
+                                        isRefreshedSousCompte={isRefreshedSousCompte}
+                                        setIsRefreshedSousCompte={setIsRefreshedSousCompte}
                                     />
                                 </TabPanel>
                                 <TabPanel value="2">

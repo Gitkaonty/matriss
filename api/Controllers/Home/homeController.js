@@ -19,6 +19,7 @@ const users = db.users;
 const devises = db.devises;
 const consolidationDossier = db.consolidationDossier;
 const compteDossiers = db.compteDossiers;
+const dossierPasswordAccess = db.dossierPasswordAccess;
 
 dombancaires.belongsTo(pays, { as: 'tablepays', foreignKey: 'pays', targetKey: 'code' });
 
@@ -54,9 +55,19 @@ const recupListDossier = async (req, res) => {
     const list = await dossier.findAll({
       where: {
         id_compte: compteId,
-        id_portefeuille: {
-          [Op.overlap]: portefeuillesIds
-        }
+        [Op.or]: [
+          {
+            id_portefeuille: {
+              [Op.overlap]: portefeuillesIds
+            }
+          },
+          {
+            id: {
+              [Op.in]: id_dossier
+            }
+          }
+        ]
+
       }
     });
 
@@ -79,10 +90,8 @@ const recupListDossier = async (req, res) => {
         })
       );
 
-      const dossiersFiltres = dossiersAvecPortefeuille.filter(d => id_dossier.includes(d.id));
-
       resData.state = true;
-      resData.fileList = dossiersFiltres;
+      resData.fileList = dossiersAvecPortefeuille;
     }
 
     return res.json(resData);
@@ -217,7 +226,9 @@ const createNewFile = async (req, res) => {
       devisepardefaut,
       listeConsolidation,
       consolidation,
-      pays
+      pays,
+      avecMotDePasse,
+      motDePasse
     } = req.body;
 
     if (action === 'new') {
@@ -256,7 +267,9 @@ const createNewFile = async (req, res) => {
         commune: commune,
         typecomptabilite,
         consolidation,
-        pays
+        pays,
+        motdepasse: motDePasse,
+        avecmotdepasse: avecMotDePasse
       });
 
       //copie la liste des associés
@@ -750,38 +763,98 @@ const checkAccessDossier = async (req, res) => {
 
     const user = await users.findOne({
       where: { compte_id: compteId },
-      attributes: ['id_portefeuille']
+      attributes: ['id_portefeuille'],
     });
 
     if (!user || !user.id_portefeuille || user.id_portefeuille.length === 0) {
       return res.status(200).json({ state: false });
     }
 
-    const compteDossier = await compteDossiers.findAll({
-      where: { user_id: userId },
-      attributes: ['id_dossier']
+    const dossierData = await dossier.findByPk(dossierId, {
+      attributes: ['id_portefeuille', 'avecmotdepasse'],
     });
-    const id_dossier_autorises = compteDossier.map(val => Number(val.id_dossier));
 
-    if (!id_dossier_autorises.includes(dossierId)) {
+    if (!dossierData) {
       return res.status(200).json({ state: false });
     }
 
-    const dossierData = await dossier.findOne({
-      where: { id: dossierId, id_compte: compteId },
-      attributes: ['id_portefeuille']
-    });
+    if (dossierData.avecmotdepasse) {
+      const dossierPasswordAccessData = await dossierPasswordAccess.findOne({
+        where: { user_id: userId, id_dossier: dossierId, expiresAt: { [Op.gt]: new Date() } },
+      });
 
-    if (!dossierData) return res.status(404).json({ state: false });
+      if (!dossierPasswordAccessData) {
+        return res.status(200).json({ state: false });
+      }
+    }
 
-    const hasAccess = user.id_portefeuille.some(id => dossierData.id_portefeuille.includes(id));
+    const hasAccess = user.id_portefeuille.some(id =>
+      dossierData.id_portefeuille.includes(id)
+    );
 
-    return res.status(200).json({ state: hasAccess });
+    if (!hasAccess) {
+      return res.status(200).json({ state: false });
+    }
+
+    return res.status(200).json({ state: true });
+
   } catch (error) {
     console.error(error);
     return res.status(500).json({ state: false, message: 'Erreur serveur' });
   }
 };
+
+const verifyFilePassword = async (req, res) => {
+  try {
+    const { motDePasse, id_dossier, user_id } = req.body;
+    if (!user_id) {
+      return res.json({ state: false, message: 'Utilisateur non trouvé' });
+    }
+    if (!id_dossier) {
+      return res.json({ state: false, message: 'Aucun dossier sélectionné' });
+    }
+    if (!motDePasse) {
+      return res.json({ state: false, message: 'Le mot de passe est vide' });
+    }
+    const id = Number(id_dossier);
+    const dossierData = await dossier.findByPk(id);
+    if (!dossierData) {
+      return res.json({ state: false, message: 'Aucun dossier trouvé' });
+    }
+    const motDePasseDossier = dossierData.motdepasse;
+    if (motDePasseDossier === motDePasse) {
+      await dossierPasswordAccess.destroy({
+        where: { user_id }
+      })
+      await dossierPasswordAccess.create({
+        id_dossier,
+        user_id,
+        expiresAt: new Date(Date.now() + 12 * 60 * 60 * 1000)
+      })
+      return res.json({ state: true, message: 'Mot de passe correcte' });
+    } else {
+      return res.json({ state: false, message: 'Mot de passe incorrecte' });
+    }
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ state: false, message: 'Erreur serveur' });
+  }
+}
+
+const deleteDossierPasswordAccess = async (req, res) => {
+  try {
+    const { user_id } = req.body;
+    if (!user_id) {
+      return res.json({ state: false, message: 'Utilisateur non trouvé' });
+    }
+    await dossierPasswordAccess.destroy({
+      where: { user_id }
+    })
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ state: false, message: 'Erreur serveur' });
+  }
+}
 
 module.exports = {
   recupListDossier,
@@ -791,5 +864,7 @@ module.exports = {
   updateCentrefisc,
   checkAccessDossier,
   getAllDossierByCompte,
-  getCompteDossier
+  getCompteDossier,
+  verifyFilePassword,
+  deleteDossierPasswordAccess
 };

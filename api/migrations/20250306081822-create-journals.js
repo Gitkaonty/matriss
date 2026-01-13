@@ -98,25 +98,25 @@ module.exports = {
                 allowNull: false,
                 defaultValue: 0
             },
-            // id_devise: {
-            //     type: Sequelize.BIGINT,
-            //     allowNull: false
-            // },
-            // taux: {
-            //     type: Sequelize.DOUBLE,
-            //     allowNull: false,
-            //     defaultValue: 0
-            // },
-            // montant_devise: {
-            //     type: Sequelize.DOUBLE,
-            //     allowNull: false,
-            //     defaultValue: 0
-            // },
-            // num_facture: {
-            //     type: Sequelize.CHAR,
-            //     allowNull: false,
-            //     defaultValue: ''
-            // }
+            id_devise: {
+                type: Sequelize.BIGINT,
+                allowNull: false
+            },
+            taux: {
+                type: Sequelize.DOUBLE,
+                allowNull: false,
+                defaultValue: 0
+            },
+            montant_devise: {
+                type: Sequelize.DOUBLE,
+                allowNull: false,
+                defaultValue: 0
+            },
+            num_facture: {
+                type: Sequelize.CHAR,
+                allowNull: false,
+                defaultValue: ''
+            }
         },
             { timestamps: true }
         );

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Typography, Stack, TextField, FormHelperText, RadioGroup, Radio, Autocomplete, Checkbox } from '@mui/material';
-import { FormControl, FormControlLabel, FormLabel } from "@mui/material";
+import { Typography, Stack, TextField, FormHelperText, RadioGroup, Radio, Autocomplete } from '@mui/material';
+import { FormControl, FormControlLabel, Checkbox, FormLabel } from "@mui/material";
 import Button from '@mui/material/Button';
 import { styled } from '@mui/material/styles';
 import InputAdornment from '@mui/material/InputAdornment';
@@ -16,16 +16,16 @@ import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 
 import toast from 'react-hot-toast';
+
 import { useFormik } from 'formik';
 import * as Yup from "yup";
 
-import { init } from '../../../../init';
-import axios from '../../../../config/axios';
-import roleMapping from '../../../../config/rolesMappin';
-import { inputAutoFill } from '../../inputStyle/inputAutoFill';
-
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
+import { init } from '../../../../init';
+import axios from '../../../../config/axios';
+import { inputAutoFill } from '../../inputStyle/inputAutoFill';
+import roleMapping from '../../../../config/rolesMappin';
 
 const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
 const checkedIcon = <CheckBoxIcon fontSize="small" />;
@@ -39,62 +39,93 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialogActions-root': {
         padding: theme.spacing(1),
     },
+    // '& .MuiPaper-root': {
+    //     minHeight: '370px',
+    // },
     '& .MuiPaper-root': {
         minHeight: '350px',
     },
 }));
 
-const PopupAddCompte = ({ compteId, confirmationState, nom, listePortefeuille, listeRoles, listeDossier }) => {
+const PopupAddSousCompte = ({ selectedRowCompteIds, confirmationState, isRefreshedSousCompte, setIsRefreshedSousCompte, rowSelectedData, listeRoles, listePortefeuille, listeDossier, selectedRow, setSelectedRow, listeCompteDossier, actionSousCompte }) => {
+    const editSousCompte = actionSousCompte === 'Ajout';
+
     const [showPassword, setShowPassword] = useState(false);
     const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false);
 
     const handleClose = () => {
         confirmationState(false);
+        setIsRefreshedSousCompte(!isRefreshedSousCompte);
     }
 
-    const validationSchema = Yup.object({
-        username: Yup.string()
-            .required("Le nom est obligatoire")
-            .min(2, "Le nom doit contenir au moins 2 caractères")
-            .max(50, "Le nom est trop long"),
-        email_add: Yup.string()
-            .email("L'email est invalide")
-            .required("L'email est obligatoire"),
-        password: Yup.string()
-            .required("Le mot de passe est obligatoire")
-            .min(8, "Le mot de passe doit contenir au moins 8 caractères")
-            .max(30, "Le mot de passe est trop long")
-            .matches(/[A-Z]/, "Doit contenir une majuscule")
-            .matches(/[a-z]/, "Doit contenir une minuscule")
-            .matches(/[0-9]/, "Doit contenir un chiffre")
-            .matches(/[^a-zA-Z0-9]/, "Doit contenir un caractère spécial"),
-        passwordConfirmation: Yup.string()
-            .oneOf([Yup.ref('password'), null], "Les mots de passe ne correspondent pas")
-            .required("Le mot de passe de confirmation est obligatoire"),
-        roles: Yup.string()
-            .required("Sélectionnez un rôle"),
-        portefeuille: Yup.array()
-            .min(1, "Sélectionnez un portefeuille")
-            .required("Sélectionnez un portefeuille"),
-        dossier: Yup.array()
-            .min(1, "Sélectionnez un portefeuille")
-            .required("Sélectionnez un dossier"),
-    });
+    const getValidationSchema = (action, hasPortefeuille, hasDossier) =>
+        Yup.object({
+            username: Yup.string()
+                .required("Le nom est obligatoire")
+                .min(2, "Le nom doit contenir au moins 2 caractères")
+                .max(50, "Le nom est trop long"),
+            email_add: Yup.string()
+                .email("L'email est invalide")
+                .required("L'email est obligatoire"),
+            password: Yup.string().when([], {
+                is: () => action === 'Ajout',
+                then: schema =>
+                    schema
+                        .required("Le mot de passe est obligatoire")
+                        .min(8, "Le mot de passe doit contenir au moins 8 caractères")
+                        .max(30, "Le mot de passe est trop long")
+                        .matches(/[A-Z]/, "Doit contenir une majuscule")
+                        .matches(/[a-z]/, "Doit contenir une minuscule")
+                        .matches(/[0-9]/, "Doit contenir un chiffre")
+                        .matches(/[^a-zA-Z0-9]/, "Doit contenir un caractère spécial"),
+                otherwise: schema => schema.notRequired()
+            }),
+            passwordConfirmation: Yup.string().when([], {
+                is: () => action === 'Ajout',
+                then: schema =>
+                    schema
+                        .oneOf([Yup.ref('password'), null], "Les mots de passe ne correspondent pas")
+                        .required("Le mot de passe de confirmation est obligatoire"),
+                otherwise: schema => schema.notRequired()
+            }),
+            roles: Yup.string().required("Sélectionnez un rôle"),
+            portefeuille: Yup.array().when([], {
+                is: () => hasPortefeuille,
+                then: schema => schema.min(1, "Sélectionnez un portefeuille").required("Sélectionnez un portefeuille"),
+                otherwise: schema => schema.notRequired()
+            }),
+            dossier: Yup.array().when([], {
+                is: () => hasDossier,
+                then: schema => schema.min(1, "Sélectionnez un dossier").required("Sélectionnez un dossier"),
+                otherwise: schema => schema.notRequired()
+            }),
+        });
+
 
     const formData = useFormik({
+        validateOnChange: true,
+        validateOnBlur: true,
         initialValues: {
-            username: '',
-            email_add: '',
+            username: !editSousCompte ? selectedRow?.username : '',
+            email_add: !editSousCompte ? selectedRow?.email : '',
             password: '',
             passwordConfirmation: '',
-            roles: '',
-            compte_id: compteId,
-            portefeuille: [],
-            dossier: []
+            roles: !editSousCompte ? selectedRow?.role_id : '',
+            compte_id: selectedRowCompteIds,
+            portefeuille: !editSousCompte ? listePortefeuille.filter(p =>
+                selectedRow?.id_portefeuille?.map(Number).includes(p.id)
+            ) : [],
+            dossier: !editSousCompte ? listeDossier.filter(d =>
+                listeCompteDossier.some(cd => cd.id_dossier === d.id)
+            ) : []
         },
-        validationSchema,
+        validationSchema: getValidationSchema(actionSousCompte, listePortefeuille.length > 0, listeDossier.length > 0),
+        context: {
+            hasPortefeuille: listePortefeuille?.length > 0,
+            hasDossier: listeDossier?.length > 0,
+            action: actionSousCompte
+        },
         onSubmit: (values) => {
-
             const formattedRoles = {
                 [values.roles]: roleMapping[values.roles]
             };
@@ -110,10 +141,13 @@ const PopupAddCompte = ({ compteId, confirmationState, nom, listePortefeuille, l
                 compte_id: values.compte_id,
                 roles: formattedRoles,
                 portefeuille: portefeuilleIds,
-                dossier: dossierIds
+                dossier: dossierIds,
+                action: actionSousCompte,
+                user_id: selectedRow?.id
             })
                 .then((response) => {
                     if (response?.data?.state) {
+                        setSelectedRow(response?.data?.compte);
                         handleClose();
                         toast.success(response?.data?.message);
                     } else {
@@ -127,7 +161,7 @@ const PopupAddCompte = ({ compteId, confirmationState, nom, listePortefeuille, l
                         toast.error(err.message || "Erreur inconnue");
                     }
                 })
-        }
+        },
     })
 
     const handleClickShowPassword = () => {
@@ -182,7 +216,7 @@ const PopupAddCompte = ({ compteId, confirmationState, nom, listePortefeuille, l
                     }}
                 >
                     <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', fontSize: 16 }}>
-                        Ajout d'une nouvelle compte
+                        {editSousCompte === false ? 'Modification d\'une sous-compte' : 'Ajout d\'une nouvelle sous-compte'}
                     </Typography>
                 </DialogTitle>
 
@@ -199,6 +233,7 @@ const PopupAddCompte = ({ compteId, confirmationState, nom, listePortefeuille, l
                 >
                     <CloseIcon />
                 </IconButton>
+
                 <DialogContent>
                     <Stack alignItems={'left'}
                         direction={"column"} spacing={2} style={{ marginLeft: '0px' }}
@@ -212,7 +247,7 @@ const PopupAddCompte = ({ compteId, confirmationState, nom, listePortefeuille, l
                                 fullWidth
                                 variant='standard'
                                 disabled={true}
-                                value={nom}
+                                value={rowSelectedData?.nom}
                                 InputProps={{
                                     style: {
                                         fontSize: '13px',
@@ -332,12 +367,14 @@ const PopupAddCompte = ({ compteId, confirmationState, nom, listePortefeuille, l
                                         fontSize: '13px',
                                         padding: '2px 4px',
                                         height: '30px',
+                                        pointerEvents: !editSousCompte ? 'none' : 'auto'
                                     },
                                     sx: {
                                         '& input': {
                                             height: '30px',
                                         },
                                     },
+                                    readOnly: !editSousCompte,
                                     endAdornment: (
                                         <InputAdornment position="end">
                                             <IconButton
@@ -382,12 +419,14 @@ const PopupAddCompte = ({ compteId, confirmationState, nom, listePortefeuille, l
                                         fontSize: '13px',
                                         padding: '2px 4px',
                                         height: '30px',
+                                        pointerEvents: !editSousCompte ? 'none' : 'auto'
                                     },
                                     sx: {
                                         '& input': {
                                             height: '30px',
                                         },
                                     },
+                                    readOnly: !editSousCompte,
                                     endAdornment: (
                                         <InputAdornment position="end">
                                             <IconButton
@@ -427,11 +466,15 @@ const PopupAddCompte = ({ compteId, confirmationState, nom, listePortefeuille, l
                                 row
                                 name="roles"
                                 value={formData.values.roles || ""}
-                                onChange={(e) => formData.setFieldValue("roles", e.target.value)}
+                                onChange={(e) => {
+                                    formData.setFieldValue("roles", e.target.value)
+                                }
+                                }
                                 onBlur={() => formData.setFieldTouched("roles", true)}
                             >
                                 {listeRoles.map((role) => (
                                     <FormControlLabel
+                                        // disabled={!editSousCompte}
                                         key={role.id}
                                         value={role.id}
                                         control={<Radio size="small" />}
@@ -460,11 +503,13 @@ const PopupAddCompte = ({ compteId, confirmationState, nom, listePortefeuille, l
                             error={Boolean(formData.touched.portefeuille && formData.errors.portefeuille)}
                         >
                             <Autocomplete
+                                // disabled={!editSousCompte}
                                 multiple
-                                id="checkboxes-tags-demo"
+                                id="checkboxes-tags-demo-portefeuille"
                                 options={listePortefeuille}
                                 disableCloseOnSelect
                                 getOptionLabel={(option) => option.nom}
+                                isOptionEqualToValue={(option, value) => option.id === value.id}
                                 onChange={(_event, newValue) => {
                                     formData.setFieldValue("portefeuille", newValue);
                                 }}
@@ -527,11 +572,13 @@ const PopupAddCompte = ({ compteId, confirmationState, nom, listePortefeuille, l
                             error={Boolean(formData.touched.dossier && formData.errors.dossier)}
                         >
                             <Autocomplete
+                                // disabled={!editSousCompte}
                                 multiple
-                                id="checkboxes-tags-demo"
+                                id="checkboxes-tags-demo-dossier"
                                 options={listeDossier}
                                 disableCloseOnSelect
                                 getOptionLabel={(option) => option.dossier}
+                                isOptionEqualToValue={(option, value) => option.id === value.id}
                                 onChange={(_event, newValue) => {
                                     formData.setFieldValue("dossier", newValue);
                                 }}
@@ -608,7 +655,7 @@ const PopupAddCompte = ({ compteId, confirmationState, nom, listePortefeuille, l
                         onClick={formData.handleSubmit}
                         style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
                     >
-                        Ajouter
+                        {`${editSousCompte === false ? 'Modifier' : 'Ajouter'}`}
                     </Button>
                 </DialogActions>
             </BootstrapDialog>
@@ -616,4 +663,4 @@ const PopupAddCompte = ({ compteId, confirmationState, nom, listePortefeuille, l
     )
 }
 
-export default PopupAddCompte
+export default PopupAddSousCompte

@@ -37,6 +37,7 @@ import useAxiosPrivate from '../../../../config/axiosPrivate';
 
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
+import PasswordField from './Field/PasswordField';
 
 const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
 const checkedIcon = <CheckBoxIcon fontSize="small" />;
@@ -195,7 +196,10 @@ export default function AddNewFile({ confirmationState }) {
         devisepardefaut: 'MGA',
         consolidation: false,
         listeConsolidation: [],
-        pays: ''
+        pays: '',
+        avecMotDePasse: false,
+        motDePasse: '',
+        motDePasseConfirmation: ''
     };
 
     const formInfosNewFileValidationSchema = Yup.object({
@@ -206,10 +210,50 @@ export default function AddNewFile({ confirmationState }) {
         longueurcptstd: Yup.number().moreThan(1, 'Taper une longueur de compte supérieur à 1'),
         longueurcptaux: Yup.number().moreThan(1, 'Taper une longueur de compte supérieur à 1'),
         tauxir: Yup.number().moreThan(0, 'Taper votre taux IR'),
-        portefeuille: Yup.array()
-            .min(1, "Sélectionnez au moins un portefeuille"),
+        portefeuille: Yup.array().min(1, "Sélectionnez au moins un portefeuille"),
         pays: Yup.string().required("Sélectionnez une pays"),
+
+        motDePasse: Yup.string().when('avecMotDePasse', {
+            is: true,
+            then: (schema) =>
+                schema
+                    .required("Le mot de passe est obligatoire")
+                    .min(8, "Le mot de passe doit contenir au moins 8 caractères")
+                    .max(30, "Le mot de passe est trop long")
+                    .matches(/[A-Z]/, "Doit contenir une majuscule")
+                    .matches(/[a-z]/, "Doit contenir une minuscule")
+                    .matches(/[0-9]/, "Doit contenir un chiffre")
+                    .matches(/[^a-zA-Z0-9]/, "Doit contenir un caractère spécial"),
+            otherwise: (schema) => schema.notRequired()
+        }),
+
+        motDePasseConfirmation: Yup.string().when('avecMotDePasse', {
+            is: true,
+            then: (schema) =>
+                schema
+                    .oneOf([Yup.ref('motDePasse')], "Les mots de passe ne correspondent pas")
+                    .required("Le mot de passe de confirmation est obligatoire"),
+            otherwise: (schema) => schema.notRequired()
+        }),
     });
+
+    const fieldOrder = [
+        'nomdossier',
+        'raisonsociale',
+        'forme',
+        'activite',
+        'longueurcptstd',
+        'longueurcptaux',
+        'tauxir',
+        'portefeuille',
+        'pays',
+        'motDePasse',
+        'motDePasseConfirmation'
+    ]
+
+    const getFirstErrorField = (errors, fieldOrder) => {
+        return fieldOrder.find(field => errors[field]);
+    };
 
     //GESTION DU TABLEAU ASSOCIE-------------------------------------------------------------------------------
     const TypesOptions = [
@@ -1597,7 +1641,7 @@ export default function AddNewFile({ confirmationState }) {
                     handlSubmitNewFile(payload);
                 }}
             >
-                {({ handleChange, handleSubmit, setFieldValue, resetForm, values }) => {
+                {({ handleChange, handleSubmit, setFieldValue, resetForm, values, isValid, errors, setTouched }) => {
 
                     const calculateValeurPart = (capital, nbrPart) => {
                         const numCapital = parseFloat(capital?.toString().replace(/\s/g, '').replace(',', '.')) || 0;
@@ -1616,7 +1660,28 @@ export default function AddNewFile({ confirmationState }) {
                                 >
                                     <Typography variant='h6' sx={{ color: "black", width: 'calc(100% - 120px)' }} align='left'>Paramétrages: CRM</Typography>
                                     <Button variant="contained"
-                                        onClick={handleSubmit}
+                                        onClick={() => {
+                                            if (!isValid) {
+                                                const touchedFields = Object.keys(errors).reduce((acc, field) => {
+                                                    acc[field] = true;
+                                                    return acc;
+                                                }, {});
+
+                                                setTouched(touchedFields);
+
+                                                const firstErrorField = fieldOrder.find(
+                                                    field => errors[field]
+                                                );
+
+                                                if (firstErrorField) {
+                                                    toast.error(errors[firstErrorField]);
+                                                }
+
+                                                return;
+                                            }
+
+                                            handleSubmit();
+                                        }}
                                         style={{
                                             borderRadius: "0",
                                             height: '43px', marginLeft: "5px", width: '120px',
@@ -2241,6 +2306,27 @@ export default function AddNewFile({ confirmationState }) {
                                                                     <ErrorMessage name='pays' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
                                                                 </Stack>
                                                             </Stack>
+                                                        </Stack>
+
+                                                    </AccordionDetails>
+                                                </Accordion>
+
+                                                <Accordion elevation={0} style={{ width: "100%", borderBlockColor: "transparent" }}>
+                                                    <AccordionSummary
+                                                        expandIcon={<MdExpandCircleDown style={{ width: "25px", height: "25px", color: '#44D5F0' }} />}
+                                                        aria-controls="panel1-content"
+                                                        id="panel1-header"
+                                                        style={{ flexDirection: "row-reverse" }}
+                                                    >
+                                                        <Typography style={{ fontWeight: 'normal', fontSize: "20px", marginLeft: "10px" }}>Sécurité</Typography>
+                                                    </AccordionSummary>
+
+                                                    <AccordionDetails>
+                                                        <Stack width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"}
+                                                            alignContent={"flex-start"} justifyContent={"stretch"} direction={"column"}
+                                                            style={{ marginLeft: "50px" }}
+                                                        >
+                                                            <PasswordField handleChange={handleChange} values={values} setFieldValue={setFieldValue} type={'ADD'} password={password} />
                                                         </Stack>
 
                                                     </AccordionDetails>

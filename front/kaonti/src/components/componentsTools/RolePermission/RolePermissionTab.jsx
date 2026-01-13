@@ -42,9 +42,9 @@ const RolePermissionTab = ({
                     alignContent={"center"}
                 >
 
-                    <FormControl variant="standard" sx={{ width: '10%' }}>
+                    <FormControl variant="standard" sx={{ width: '12%' }}>
                         <Autocomplete
-                            // disabled
+                            disabled
                             options={listCompte}
                             getOptionLabel={(option) => `${option.nom || ''}`}
                             isOptionEqualToValue={(option, value) => option.id === value.id}
@@ -62,7 +62,7 @@ const RolePermissionTab = ({
                         />
                     </FormControl>
 
-                    <FormControl variant="standard" sx={{ width: '89%' }}>
+                    <FormControl variant="standard" sx={{ width: '87%' }}>
                         <Autocomplete
                             multiple
                             disableCloseOnSelect
@@ -91,7 +91,6 @@ const RolePermissionTab = ({
 
                                 setSelectedSousCompteId(value);
                                 if (value.length === 0) {
-                                    console.log("Reset triggered");
                                     setUserPermissions([]);
                                 }
                             }}

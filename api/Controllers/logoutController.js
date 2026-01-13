@@ -2,6 +2,7 @@ const db = require("../Models");
 require('dotenv').config();
 
 const User = db.users;
+const dossierPasswordAccess = db.dossierPasswordAccess;
 
 const handleLogout = async (req, res) => {
     const cookies = req.cookies;
@@ -15,6 +16,8 @@ const handleLogout = async (req, res) => {
         return res.sendStatus(204);
     }
 
+    const user_id = Number(foundUser.id);
+
     //delete refreshToken in db
     await User.update(
         { refresh_token: null },
@@ -23,6 +26,13 @@ const handleLogout = async (req, res) => {
         }
 
     );
+
+    await dossierPasswordAccess.destroy({
+        where: {
+            user_id
+        }
+    })
+
     res.clearCookie('jwt', { httpOnly: true, sameSite: 'Lax' });
     res.sendStatus(204);
 }

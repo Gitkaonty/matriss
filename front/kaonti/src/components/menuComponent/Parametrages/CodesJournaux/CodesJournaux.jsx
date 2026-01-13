@@ -179,7 +179,7 @@ export default function ParamCodeJournalComponent() {
     }
 
     useEffect(() => {
-        if (canView) {
+        if (canView && fileId) {
             showPc();
             GetListeCodeJournaux(fileId);
         }

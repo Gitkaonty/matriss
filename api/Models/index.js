@@ -110,6 +110,7 @@ db.compteDossiers = require('./compteDossierModel')(sequelize, DataTypes);
 
 db.consolidationDossier = require('./consolidationDossierModel')(sequelize, DataTypes);
 db.consolidationCompte = require('./consolidationCompteModel')(sequelize, DataTypes);
+db.dossierPasswordAccess = require('./dossiersMotDePasseAcces')(sequelize, DataTypes);
 
 //
 db.compteRubriquesExternesMatrices = require('./compteRubriqueExterneMatriceModel')(sequelize, DataTypes);
@@ -219,7 +220,8 @@ db.liasseses.belongsTo(db.rubriquesmatrices, { foreignKey: 'id_rubrique', target
 
 //
 db.devises.belongsTo(db.userscomptes, { foreignKey: 'id_compte', targetKey: 'id' });
-db.journals.belongsTo(db.dossierplancomptable, { foreignKey: 'id_numcptcentralise', targetKey: 'id' });
+db.journals.belongsTo(db.dossierplancomptable, { foreignKey: 'id_numcpt', targetKey: 'id' });
+db.journals.belongsTo(db.dossierplancomptable, { foreignKey: 'id_numcptcentralise', targetKey: 'id', as: 'compteCentralise' });
 db.journals.belongsTo(db.codejournals, { foreignKey: 'id_journal', targetKey: 'id' });
 db.journals.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id' });
 
@@ -249,11 +251,18 @@ db.users.belongsTo(db.roles, { foreignKey: 'role_id', targetKey: 'id' });
 // db.users.belongsToMany(db.dossiers, { through: db.compteDossiers, foreignKey: 'user_id', otherKey: 'id_dossier'});
 // db.dossiers.belongsToMany(db.users, { through: db.compteDossiers, foreignKey: 'id_dossier',otherKey: 'user_id'});
 
-db.users.belongsToMany(db.dossiers, { through: db.compteDossiers, foreignKey: 'user_id', otherKey: 'id_dossier'});
-db.dossiers.belongsToMany(db.users, {  through: db.compteDossiers, foreignKey: 'id_dossier', otherKey: 'user_id'});
+db.users.belongsToMany(db.dossiers, { through: db.compteDossiers, foreignKey: 'user_id', otherKey: 'id_dossier' });
+db.dossiers.belongsToMany(db.users, { through: db.compteDossiers, foreignKey: 'id_dossier', otherKey: 'user_id' });
 
-db.compteDossiers.belongsTo(db.users, {  foreignKey: 'user_id'});
-db.compteDossiers.belongsTo(db.dossiers, {  foreignKey: 'id_dossier'});
+db.compteDossiers.belongsTo(db.users, { foreignKey: 'user_id' });
+db.compteDossiers.belongsTo(db.dossiers, { foreignKey: 'id_dossier' });
+
+// Dossier password access
+db.users.hasMany(db.dossierPasswordAccess, { foreignKey: 'user_id', sourceKey: 'id' });
+db.dossierPasswordAccess.belongsTo(db.users, { foreignKey: 'user_id', targetKey: 'id' });
+
+db.dossiers.hasMany(db.dossierPasswordAccess, { foreignKey: 'id_dossier', sourceKey: 'id' });
+db.dossierPasswordAccess.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id' });
 
 // Portefeuille
 // db.portefeuille.hasMany(db.dossiers, { foreignKey: 'id_portefeuille', sourceKey: 'id' });

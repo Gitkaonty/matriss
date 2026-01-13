@@ -200,10 +200,24 @@ async function listJournalsByCompte(req, res) {
 
     const rows = await Journals.findAll({
       where,
+      include: [
+        { model: db.dossierplancomptable, attributes: ['compte'] },
+        { model: db.codejournals, attributes: ['code'] }
+      ],
       order: [['dateecriture', 'ASC'], ['id', 'ASC']],
       attributes: ['id','dateecriture','id_journal','piece','libelle','debit','credit','decltvamois','decltvaannee','decltva']
     });
-    return res.json({ state: true, list: rows, msg: 'OK' });
+    
+    const mappedRows = rows.map(journal => {
+      const { dossierplancomptable, codejournal, ...rest } = journal.toJSON();
+      return {
+        ...rest,
+        compte: dossierplancomptable?.compte || null,
+        journal: codejournal?.code || null
+      };
+    });
+    
+    return res.json({ state: true, list: mappedRows, msg: 'OK' });
   } catch (error) {
     console.log('[paramTva] listJournalsByCompte error', error);
     return res.json({ state: false, list: [], msg: 'Erreur serveur' });

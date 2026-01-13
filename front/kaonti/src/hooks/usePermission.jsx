@@ -6,7 +6,6 @@ const usePermission = () => {
     const decoded = auth?.accessToken ? jwtDecode(auth.accessToken) : undefined;
 
     const permission = decoded?.UserInfo?.permission || [];
-    console.log('permission : ', permission)
     return {
         canAdd: permission.includes("ADD"),
         canModify: permission.includes("EDIT"),

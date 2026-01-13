@@ -543,6 +543,10 @@ export default function ConsultationComponent() {
     }
 
     const handleOpenSaisiePopup = () => {
+        const defaultDeviseData = listeDevise.find(val => val.par_defaut === true);
+        if (!defaultDeviseData) {
+            return toast.error('Veuillez sélectionner une devise par défaut dans le paramétrage CRM de ce dossier')
+        }
         let id_ecriture = '';
         if (selectedRows.length === 1) {
             id_ecriture = selectedRows[0].id_ecriture;
