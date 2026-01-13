@@ -889,15 +889,14 @@ exports.generateImmoEcritures = async (req, res) => {
                     if (montantMois > 0) {
                         const idEcriture = String(Date.now() + Math.floor(Math.random() * 1000));
                         const libelle = `Dot amort ${libelleCompteImmo}`.trim();
-                        const monthKey = currentDate.toISOString().substring(0, 7);
-
+                        
                         const common = {
                             id_compte: compteId,
                             id_dossier: fileId,
                             id_exercice: exerciceId,
                             id_ecriture: idEcriture,
                             datesaisie: new Date(),
-                            dateecriture: new Date(monthKey + '-01'),
+                            dateecriture: dateFinMois,
                             id_journal: imau.id,
                             piece: null,
                             piecedate: null,
@@ -944,7 +943,6 @@ exports.generateImmoEcritures = async (req, res) => {
             }
         } else {
             // Mode simple : une écriture par compte classe 2 (compte_immo)
-            // Regrouper les immobilisations par compte_immo et compte_amortissement
             const groupedByCompte = new Map();
 
             for (const [detailId, schedule] of lignesByDetailId.entries()) {
@@ -952,7 +950,6 @@ exports.generateImmoEcritures = async (req, res) => {
                 if (!detail) continue;
 
                 // Utiliser la somme des dotations de l'exercice (lignes sauvegardées)
-                // au lieu de recalculer pour éviter les différences
                 let montant = 0;
                 
                 // Trouver la ligne correspondant à la fin de l'exercice
@@ -1039,7 +1036,7 @@ exports.generateImmoEcritures = async (req, res) => {
                     piecedate: null,
                     libelle: libelle || 'Dot amort',
                     devise: 'MGA',
-                    id_immob: null, // Null car c'est un regroupement
+                    id_immob: null,
                 };
 
                 const [lDebit, lCredit] = await Promise.all([
@@ -1982,8 +1979,6 @@ exports.saveImmoDegressif = async (req, res) => {
         return res.status(500).json({ state: false, msg: 'Erreur serveur' });
     }
 };
-
-
 
 exports.getAllDevises = async (req, res) => {
     try {
