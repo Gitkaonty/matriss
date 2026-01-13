@@ -1,8 +1,6 @@
-import { Typography, Stack, Button, Dialog, DialogContent, DialogActions, IconButton, CircularProgress, Checkbox, FormControlLabel } from '@mui/material';
+import { Typography, Stack, Button, Dialog, DialogContent, DialogActions, IconButton, CircularProgress, Radio, RadioGroup, FormControlLabel } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import CloseIcon from '@mui/icons-material/Close';
-import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { IoIosWarning } from 'react-icons/io';
 import { useState } from 'react';
 import { init } from '../../../init';
@@ -23,7 +21,7 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
 }));
 
 const PopupActionConfirmWithCheckbox = ({ msg, confirmationState, isLoading }) => {
-    const [detailedByMonth, setDetailedByMonth] = useState(false);
+    const [detailedByMonth, setDetailedByMonth] = useState('non');
 
     const handleConfirm = () => confirmationState(true, detailedByMonth);
     const handleClose = () => { isLoading ? null : confirmationState(false, detailedByMonth); };
@@ -52,44 +50,72 @@ const PopupActionConfirmWithCheckbox = ({ msg, confirmationState, isLoading }) =
             </IconButton>
 
             <DialogContent>
-                <Stack alignItems="center" spacing={2} textAlign="center">
-                    <IoIosWarning style={{ width: 70, height: 70, color: '#FF8A8A' }} />
-                    <Typography
-                        fontWeight={550}
-                        color="text.primary"
-                        sx={{ mt: 1, fontSize: '17px' }}
-                    >
-                        {msg}
-                    </Typography>
+                <Stack spacing={2}>
+                    {/* Partie centrée */}
+                    <Stack alignItems="center" textAlign="center" spacing={2}>
+                        <IoIosWarning style={{ width: 70, height: 70, color: '#FF8A8A' }} />
 
-                    <FormControlLabel
-                        sx={{
-                            ml: -3.5, // décale tout le bloc vers la gauche
-                        }}
-                        control={
-                            <Checkbox
-                                checked={detailedByMonth}
-                                onChange={(e) => setDetailedByMonth(e.target.checked)}
-                                disabled={isLoading}
-                                icon={<RadioButtonUncheckedIcon />}
-                                checkedIcon={<CheckCircleIcon />}
-                                sx={{
-                                    p: 0.5,
-                                    borderRadius: '50%',
-                                    '&:hover': {
-                                        backgroundColor: 'rgba(0,0,0,0.04)',
-                                    },
-                                    '&.Mui-checked': {
-                                        color: initial.theme,
-                                    },
-                                }}
+                        <Typography
+                            fontWeight={550}
+                            color="text.primary"
+                            sx={{ fontSize: '17px' }}
+                        >
+                            {msg}
+                        </Typography>
+                    </Stack>
+
+                    {/* Partie alignée à gauche */}
+                    <Stack
+                        alignSelf="flex-start"
+                        spacing={1}
+                        sx={{ pl: 1 }}
+                    >
+                        <Typography variant="body2" sx={{ fontSize: '15px', fontWeight: 500 }}>
+                            Détaillées par mois
+                        </Typography>
+
+                        <RadioGroup
+                            row
+                            value={detailedByMonth}
+                            onChange={(e) => setDetailedByMonth(e.target.value)}
+                            sx={{ pl: 1 }}
+                        >
+                            <FormControlLabel
+                                value="oui"
+                                control={
+                                    <Radio
+                                        disabled={isLoading}
+                                        sx={{
+                                            '&.Mui-checked': {
+                                                color: initial.theme,
+                                            },
+                                        }}
+                                    />
+                                }
+                                label="Oui"
+                                sx={{ mr: 3 }}
                             />
 
-                        }
-                        label={'détaillées par mois'}
-                    />
+                            <FormControlLabel
+                                value="non"
+                                control={
+                                    <Radio
+                                        disabled={isLoading}
+                                        sx={{
+                                            '&.Mui-checked': {
+                                                color: initial.theme,
+                                            },
+                                        }}
+                                    />
+                                }
+                                label="Non"
+                            />
+                        </RadioGroup>
+                    </Stack>
+
                 </Stack>
             </DialogContent>
+
 
             <DialogActions>
                 <Button
