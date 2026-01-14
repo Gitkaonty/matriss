@@ -1431,8 +1431,6 @@ module.exports = {
   paramTvaDelete,
   listJournalsByCompte,
   createJournal,
-  // updateJournalsDeclaration,
-  // updateJournalsUndeclare,
   updateJournalsDeclFlag,
   getJournalsSelectionLigne,
   recupPcClasseSix,

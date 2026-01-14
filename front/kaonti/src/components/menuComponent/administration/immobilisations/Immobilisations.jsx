@@ -23,6 +23,7 @@ import { useCallback } from 'react';
 import DetailsImmoDialog from './DetailsImmoDialog';
 import { GoLink } from "react-icons/go";
 import PopupActionConfirmWithCheckbox from '../../../componentsTools/popupActionConfirmWithCheckbox';
+import PopupConfirmDelete from '../../../componentsTools/popupConfirmDelete';
 
 const keepTotalBottomComparator = (v1, v2, cellParams1, cellParams2) => {
   const r1 = cellParams1?.row;
@@ -99,6 +100,7 @@ const Immobilisations = () => {
 
   const [openConfirmGenerateEcritures, setOpenConfirmGenerateEcritures] = useState(false);
   const [openConfirmCancelEcritures, setOpenConfirmCancelEcritures] = useState(false);
+  const [openConfirmDelete, setOpenConfirmDelete] = useState(false);
 
   const [loadingEcritures, setLoadingEcritures] = useState(false);
 
@@ -556,9 +558,19 @@ const Immobilisations = () => {
 
   const handleDetailsCancel = () => { setDetailsDialogOpen(false); };
 
-  const handleDetailsDelete = async () => {
+  const handleDetailsDelete = () => {
     const idSel = Array.isArray(detailsSelectionModel) && detailsSelectionModel.length > 0 ? detailsSelectionModel[detailsSelectionModel.length - 1] : null;
     if (!idSel) { toast('Sélectionnez une ligne détail', { icon: 'ℹ️' }); return; }
+    setOpenConfirmDelete(true);
+  };
+
+  const confirmDetailsDelete = async (confirmed) => {
+    setOpenConfirmDelete(false);
+    if (!confirmed) return;
+
+    const idSel = Array.isArray(detailsSelectionModel) && detailsSelectionModel.length > 0 ? detailsSelectionModel[detailsSelectionModel.length - 1] : null;
+    if (!idSel) return;
+
     try {
       const fid = Number(id) || 0; const exoId = Number(selectedExerciceId) || 0;
       const onePcId = Array.isArray(selectedPcIds) && selectedPcIds.length > 0 ? Number(selectedPcIds[0]) : null;
@@ -807,6 +819,12 @@ const Immobilisations = () => {
   return (
     <Box>
       {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
+      {openConfirmDelete && (
+        <PopupConfirmDelete
+          msg="Voulez-vous vraiment supprimer cette immobilisation ?"
+          confirmationState={confirmDetailsDelete}
+        />
+      )}
       {openConfirmGenerateEcritures && (
         <PopupActionConfirmWithCheckbox
           msg={"Voulez-vous vraiment générer l'écriture comptable des immobilisations pour l'exercice sélectionné ?"}
@@ -833,7 +851,7 @@ const Immobilisations = () => {
               });
               const { data } = await axios.post(
                 '/administration/traitementSaisie/immobilisations/ecritures/generate',
-                { fileId: fid, compteId, exerciceId: exoId, detailedByMonth },
+                { fileId: fid, compteId, exerciceId: exoId, detailedByMonth: detailedByMonth === 'oui' },
                 { timeout: 60000 }
               );
               console.log('[IMMO][FRONTEND] Réponse du serveur:', data);
@@ -852,14 +870,12 @@ const Immobilisations = () => {
         />
       )}
       {openConfirmCancelEcritures && (
-        <PopupActionConfirmWithCheckbox
-          msg={"Voulez-vous vraiment annuler les écritures comptables des immobilisations pour l'exercice sélectionné ?"}
-          isLoading={loadingEcritures}
-          confirmationState={async (val, detailedByMonth) => {
-            if (!val) {
-              if (!loadingEcritures) setOpenConfirmCancelEcritures(false);
-              return;
-            }
+        <PopupConfirmDelete
+          msg="Voulez-vous vraiment supprimer les écritures comptables des immobilisations pour l'exercice sélectionné ?"
+          confirmationState={async (confirmed) => {
+            setOpenConfirmCancelEcritures(false);
+            if (!confirmed) return;
+
             try {
               const fid = Number(id) || 0;
               const exoId = Number(selectedExerciceId) || 0;
@@ -871,12 +887,11 @@ const Immobilisations = () => {
               setLoadingEcritures(true);
               const { data } = await axios.post(
                 '/administration/traitementSaisie/immobilisations/ecritures/cancel',
-                { fileId: fid, compteId, exerciceId: exoId, detailedByMonth },
+                { fileId: fid, compteId, exerciceId: exoId },
                 { timeout: 60000 }
               );
               if (data?.state) {
                 toast.success(`${data?.msg || 'Écritures supprimées'} (${Number(data?.deleted_lignes) || 0} lignes)`);
-                setOpenConfirmCancelEcritures(false);
               } else {
                 toast.error(data?.msg || 'Erreur lors de la suppression');
               }
