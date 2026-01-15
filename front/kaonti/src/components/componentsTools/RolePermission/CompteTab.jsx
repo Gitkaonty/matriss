@@ -22,7 +22,8 @@ const CompteTab = ({
     selectedRowCompteIds,
     infoCompte,
     isRefreshedSousCompte,
-    setIsRefreshedSousCompte
+    setIsRefreshedSousCompte,
+    userId
 }) => {
     const [selectedRowSousCompteIds, setSelectedRowSousCompteIds] = useState([]);
     const [rowSelectionModel, setRowSelectionModel] = useState([]);
@@ -32,6 +33,7 @@ const CompteTab = ({
     const [listePortefeuille, setListePortefeuille] = useState([]);
     const [listeDossier, setListeDossier] = useState([]);
     const [listeCompteDossier, setListeCompteDossier] = useState([]);
+    const [listeComptePortefeuille, setListeComptePortefeuille] = useState([]);
     const [actionSousCompte, setActionSousCompte] = useState('');
 
     const [openDialogDeleteSousCompte, setOpenDialogDeleteSousCompte] = useState(false);
@@ -96,6 +98,19 @@ const CompteTab = ({
             })
     }
 
+    // Charger la liste des comptes au portefeuille
+    const getAllComptePortefeuilles = () => {
+        axios.get(`/sous-compte/getAllComptePortefeuilles/${selectedRow.id}`)
+            .then(response => {
+                const resData = response?.data;
+                if (resData?.state) {
+                    setListeComptePortefeuille(resData?.walletlist);
+                } else {
+                    toast.error(resData?.message);
+                }
+            })
+    }
+
     // Récupérer la liste des roles
     const getAllRoles = () => {
         axios.get('sous-compte/getAllRoles')
@@ -145,6 +160,7 @@ const CompteTab = ({
     useEffect(() => {
         if (selectedRow?.id) {
             getCompteDossier();
+            getAllComptePortefeuilles();
         } else {
             setListeCompteDossier([]);
         }
@@ -175,8 +191,12 @@ const CompteTab = ({
                         listeDossier={listeDossier}
                         selectedRow={selectedRow}
                         setSelectedRow={setSelectedRow}
-                        listeCompteDossier={listeCompteDossier}
                         actionSousCompte={actionSousCompte}
+                        listeCompteDossier={listeCompteDossier}
+                        setListeCompteDossier={setListeCompteDossier}
+                        userId={userId}
+                        listeComptePortefeuille={listeComptePortefeuille}
+                        setListeComptePortefeuille={setListeComptePortefeuille}
                     />
                     :
                     null
@@ -191,8 +211,7 @@ const CompteTab = ({
                 }}
             >
                 <Tooltip title="Ajouter une ligne">
-                    <Stack
-                    >
+                    <Stack>
                         <IconButton
                             disabled={selectedRowCompteIds.length !== 1}
                             onClick={() => handleOpenDialogConfirmAddSousCompte('Ajout')}

@@ -275,8 +275,6 @@ export default function PortefeuilleComponent() {
             id_compte: Number(compteId)
         };
 
-        console.log('dataToSend : ', dataToSend);
-
         axiosPrivate.post(`/param/portefeuille/addOrUpdatePortefeuille`, dataToSend).then((response) => {
             const resData = response.data;
             if (resData.state) {

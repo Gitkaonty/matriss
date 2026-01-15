@@ -14,8 +14,10 @@ import { TbPlaylistAdd } from "react-icons/tb";
 import { FaRegPenToSquare } from "react-icons/fa6";
 import { VscClose } from "react-icons/vsc";
 import { TfiSave } from "react-icons/tfi";
+import { MdOutlineFileUpload } from "react-icons/md";
 import PopupConfirmDelete from '../../../componentsTools/popupConfirmDelete';
 import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFile';
+import PopupImportCodeJournaux from '../../administration/import/PopupImportCodeJournaux';
 import { init } from '../../../../../init';
 import { DataGridStyle } from '../../../componentsTools/DatagridToolsStyle';
 import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes, useGridApiRef } from '@mui/x-data-grid';
@@ -56,6 +58,7 @@ export default function ParamCodeJournalComponent() {
     const [disableSaveBouton, setDisableSaveBouton] = useState(true);
     const [disableDeleteBouton, setDisableDeleteBouton] = useState(true);
     const [disableAddRowBouton, setDisableAddRowBouton] = useState(false);
+    const [openImportDialog, setOpenImportDialog] = useState(false);
 
     const [editableRow, setEditableRow] = useState(true);
     const [openDialogDeleteRow, setOpenDialogDeleteRow] = useState(false);
@@ -1084,6 +1087,13 @@ export default function ParamCodeJournalComponent() {
                     :
                     null
             }
+            <PopupImportCodeJournaux
+                open={openImportDialog}
+                onClose={() => setOpenImportDialog(false)}
+                fileId={fileId}
+                compteId={compteId}
+                onImportSuccess={() => GetListeCodeJournaux(fileId)}
+            />
             <Box>
 
                 <TabContext value={"1"}>
@@ -1108,6 +1118,22 @@ export default function ParamCodeJournalComponent() {
 
                             <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
                                 direction={"row"} justifyContent={"right"}>
+                                <Tooltip title="Importer des codes journaux">
+                                    <IconButton
+                                        disabled={!canAdd}
+                                        variant="contained"
+                                        onClick={() => setOpenImportDialog(true)}
+                                        style={{
+                                            width: "35px", height: '35px',
+                                            borderRadius: "2px", borderColor: "transparent",
+                                            backgroundColor: initial.theme,
+                                            textTransform: 'none', outline: 'none'
+                                        }}
+                                    >
+                                        <MdOutlineFileUpload style={{ width: '25px', height: '25px', color: 'white' }} />
+                                    </IconButton>
+                                </Tooltip>
+
                                 <Tooltip title="Ajouter une ligne">
                                     <IconButton
                                         disabled={!canAdd || disableAddRowBouton}
