@@ -860,8 +860,10 @@ export default function ImportJournal() {
                         const ListeCodeJnlParams = [...new Set(codeJournal.map(item => normalizeCode(item.code)))];
                         const ListeCompteParams = [...new Set(planComptable.map(item => item.compte))];
 
-                        const codeJournalNotInParams = existance(ListeCodeJnlParams, listeUniqueCodeJnl);
-                        const compteNotInParams = existance(ListeCompteParams, listeUniqueCompte);
+                        //const codeJournalNotInParams = existance(ListeCodeJnlParams, listeUniqueCodeJnl);
+                        const codeJournalNotInParams = [];
+                        //const compteNotInParams = existance(ListeCompteParams, listeUniqueCompte);
+                        const compteNotInParams = [];
                         const compteNotInParamsGen = existance(ListeCompteParams, listeUniqueCompteGen);
                         const compteNotInParamsAux = existance(ListeCompteParams, listeUniqueCompteAux);
 
@@ -869,7 +871,8 @@ export default function ImportJournal() {
                         const listeUniqueDevisesInitial = [...new Set(result.data.map(item => (item.Idevise || '').trim()))];
                         const listeUniqueDevises = listeUniqueDevisesInitial.filter(item => item !== '');
                         const listeDevisesParams = [...new Set((devises || []).map(d => d.code))];
-                        const devisesNotInParams = existance(listeDevisesParams, listeUniqueDevises);
+                        //const devisesNotInParams = existance(listeDevisesParams, listeUniqueDevises);
+                        const devisesNotInParams = [];
                         const numberOfEmptyDevises = result.data.filter(row => !row.Idevise || row.Idevise.trim() === '').length;
 
                         if (codeJournalNotInParams.length > 0) {
