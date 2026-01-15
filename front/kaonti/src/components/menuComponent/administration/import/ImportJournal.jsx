@@ -1,9 +1,6 @@
-import { React, useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Typography, Stack, Paper, Box, Tab, Tooltip, IconButton, FormHelperText, Button, Badge, Divider } from '@mui/material';
-import RadioGroup from '@mui/material/RadioGroup';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Radio from '@mui/material/Radio';
+import { Typography, Stack, Box, Tab, FormHelperText, Button, Badge } from '@mui/material';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
@@ -14,7 +11,6 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import SaveAltIcon from '@mui/icons-material/SaveAlt';
 import LogoutIcon from '@mui/icons-material/Logout';
-import TableImportJournalModel from '../../../../model/TableImportJournalModel';
 import useAuth from '../../../../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
 import axios from '../../../../../config/axios';
@@ -25,24 +21,18 @@ import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
 import { TabContext, TabPanel } from '@mui/lab';
 import TabList from '@mui/lab/TabList';
 import { format } from 'date-fns';
-import { TfiSave } from 'react-icons/tfi';
 import { useFormik } from 'formik';
 import * as Yup from "yup";
 import Papa from 'papaparse';
-import { DataGrid, frFR, GridFooter, GridFooterContainer, GridRowEditStopReasons, GridRowModes } from '@mui/x-data-grid';
-import QuickFilter from '../../../componentsTools/DatagridToolsStyle';
-import { DataGridStyle } from '../../../componentsTools/DatagridToolsStyle';
 import PopupViewDetailsImportJournal from '../../../componentsTools/popupViewDetailsImportJournal';
 import PopupActionConfirm from '../../../componentsTools/popupActionConfirm';
-import CircularProgressWithValueLabel from '../../../componentsTools/CircularProgressWithValueLabel';
 import CircularProgress from '@mui/material/CircularProgress';
-import VirtualTableModifiableImportJnl from '../../../componentsTools/DeclarationEbilan/virtualTableModifiableImportJnl';
+import VirtualTableImportJournal from '../../../componentsTools/Administration/VirtualTableImportJournal';
+import usePermission from '../../../../hooks/usePermission';
 
 export default function ImportJournal() {
-    //Valeur du listbox choix exercice ou situation-----------------------------------------------------
-    const [valSelect, setValSelect] = useState('');
-    const [valSelectType, setValSelectType] = useState('CSV');
     const [valSelectCptDispatch, setValSelectCptDispatch] = useState('None');
+    const { canAdd, canModify, canDelete, canView } = usePermission();
 
     let initial = init[0];
     const [fileInfos, setFileInfos] = useState('');
@@ -74,9 +64,6 @@ export default function ImportJournal() {
     const [traitementJournalMsg, setTraitementJournalMsg] = useState('');
     const [longeurCompteStd, setLongeurCompteStd] = useState(0);
 
-    const [totalDebit, setTotalDebit] = useState("0,00");
-    const [totalCredit, setTotalCredit] = useState("0,00");
-
     //récupération infos de connexion
     const { auth } = useAuth();
     const decoded = auth?.accessToken ? jwtDecode(auth.accessToken) : undefined;
@@ -105,7 +92,7 @@ export default function ImportJournal() {
 
         GetInfosIdDossier(idFile);
         GetListeExercice(idFile);
-    }, []);
+    }, [id]);
 
     const GetInfosIdDossier = (id) => {
         axios.get(`/home/FileInfos/${id}`).then((response) => {
@@ -122,208 +109,17 @@ export default function ImportJournal() {
         })
     }
 
-    console.log('longeurCompteStd : ', longeurCompteStd);
-
     const sendToHome = (value) => {
         setNoFile(!value);
         navigate('/tab/home');
     }
 
-    // const columnHeaderJournalData = [
-    //     {
-    //         field: 'EcritureNum', 
-    //         headerName: 'ID', 
-    //         type: 'string', 
-    //         sortable : true, 
-    //         width: 120, 
-    //         headerAlign: 'right',
-    //         align: 'right',
-    //         headerClassName: 'MuiDataGrid-ColumnHeader'
-    //     },
-    //     {
-    //         field: 'datesaisie', 
-    //         headerName: "Date saisie", 
-    //         type: 'string', 
-    //         sortable : true, 
-    //         width: 150, 
-    //         headerAlign: 'center',
-    //         align: 'center',
-    //         headerClassName: 'MuiDataGrid-ColumnHeader'
-    //     },
-    //     {
-    //         field: 'EcritureDate', 
-    //         headerName: "Date écriture", 
-    //         type: 'string', 
-    //         sortable : true, 
-    //         width: 150, 
-    //         headerAlign: 'center',
-    //         align: 'center',
-    //         headerClassName: 'MuiDataGrid-ColumnHeader'
-    //     },
-    //     {
-    //         field: 'JournalCode', 
-    //         headerName: "Journal", 
-    //         type: 'string', 
-    //         sortable : true, 
-    //         width: 80, 
-    //         headerAlign: 'left',
-    //         align: 'left',
-    //         headerClassName: 'MuiDataGrid-ColumnHeader'
-    //     },
-    //     {
-    //         field: 'CompteNum', 
-    //         headerName: "Compte", 
-    //         type: 'string', 
-    //         sortable : true, 
-    //         width: 150, 
-    //         headerAlign: 'left',
-    //         align: 'left',
-    //         headerClassName: 'MuiDataGrid-ColumnHeader'
-    //     },
-    //     {
-    //         field: 'CompAuxNum', 
-    //         headerName: "Compte aux", 
-    //         type: 'string', 
-    //         sortable : true, 
-    //         width: 150, 
-    //         headerAlign: 'left',
-    //         align: 'left',
-    //         headerClassName: 'MuiDataGrid-ColumnHeader'
-    //     },
-    //     {
-    //         field: 'PieceRef', 
-    //         headerName: "Pièces", 
-    //         type: 'string', 
-    //         sortable : true, 
-    //         width: 150, 
-    //         headerAlign: 'left',
-    //         align: 'left',
-    //         headerClassName: 'MuiDataGrid-ColumnHeader'
-    //     },
-    //     {
-    //         field: 'PieceDate', 
-    //         headerName: "Pièces date", 
-    //         type: 'string', 
-    //         sortable : true, 
-    //         width: 150, 
-    //         headerAlign: 'left',
-    //         align: 'left',
-    //         headerClassName: 'MuiDataGrid-ColumnHeader'
-    //     },
-    //     {
-    //         field: 'EcritureLib', 
-    //         headerName: "Libellé", 
-    //         type: 'string', 
-    //         sortable : true, 
-    //         width: 300, 
-    //         headerAlign: 'left',
-    //         align: 'left',
-    //         headerClassName: 'MuiDataGrid-ColumnHeader'
-    //     },
-    //     {
-    //         field: 'Debit', 
-    //         headerName: "Débit", 
-    //         type: 'number', 
-    //         sortable : true, 
-    //         width: 150, 
-    //         headerAlign: 'right', 
-    //         align: 'right',
-    //         headerClassName: 'MuiDataGrid-ColumnHeader',
-    //         renderCell: (params) => {
-    //             const montant = new Intl.NumberFormat('fr-FR',
-    //                 {
-    //                     minimumFractionDigits: 2,
-    //                     maximumFractionDigits: 2,
-    //                 }
-    //             ).format(params.row.Debit.replace(',','.')) ;
-    //             return (
-    //                 <div>
-    //                     {montant}
-    //                 </div>
-    //             )
-    //         }
-    //     },
-    //     {
-    //         field: 'Credit', 
-    //         headerName: "Crédit", 
-    //         type: 'number', 
-    //         sortable : true, 
-    //         width: 150, 
-    //         headerAlign: 'right',
-    //         align: 'right',
-    //         headerClassName: 'MuiDataGrid-ColumnHeader',
-    //         renderCell: (params) => {
-    //             const montant = new Intl.NumberFormat('fr-FR',
-    //                 {
-    //                     minimumFractionDigits: 2,
-    //                     maximumFractionDigits: 2,
-    //                 }
-    //             ).format(params.row.Credit.replace(',','.')) ;
-    //             return (
-    //                 <div>
-    //                     {montant}
-    //                 </div>
-    //             )
-    //         }
-    //     },
-    //     {
-    //         field: 'Idevise', 
-    //         headerName: "Devise", 
-    //         type: 'string', 
-    //         sortable : true, 
-    //         width: 70, 
-    //         headerAlign: 'center',
-    //         align: 'center',
-    //         headerClassName: 'MuiDataGrid-ColumnHeader'
-    //     },
-    //     {
-    //         field: 'EcritureLet', 
-    //         headerName: "Lettrage", 
-    //         type: 'string', 
-    //         sortable : true, 
-    //         width: 90, 
-    //         headerAlign: 'left',
-    //         align: 'left',
-    //         headerClassName: 'MuiDataGrid-ColumnHeader'
-    //     },
-    //     {
-    //         field: 'DateLet', 
-    //         headerName: "Date Let", 
-    //         type: 'string', 
-    //         sortable : true, 
-    //         width: 100, 
-    //         headerAlign: 'left',
-    //         align: 'left',
-    //         headerClassName: 'MuiDataGrid-ColumnHeader'
-    //     },
-    //     {
-    //         field: 'ModeRglt', 
-    //         headerName: "Mode règl.", 
-    //         type: 'string', 
-    //         sortable : true, 
-    //         width: 150, 
-    //         headerAlign: 'left',
-    //         align: 'left',
-    //         headerClassName: 'MuiDataGrid-ColumnHeader'
-    //     },
-    //     {
-    //         field: 'DateRglt', 
-    //         headerName: "Date règl.", 
-    //         type: 'string', 
-    //         sortable : true, 
-    //         width: 100, 
-    //         headerAlign: 'left',
-    //         align: 'left',
-    //         headerClassName: 'MuiDataGrid-ColumnHeader'
-    //     },
-    //   ];
-
-    const columns = [
+    const columnsTable = [
         {
             id: 'EcritureNum',
             label: 'ID',
-            minWidth: 120,
-            align: 'right',
+            minWidth: 50,
+            align: 'left',
             isnumber: false
         },
         {
@@ -349,7 +145,7 @@ export default function ImportJournal() {
         },
         {
             id: 'CompteNum',
-            label: 'Journal',
+            label: 'Compte',
             minWidth: 150,
             align: 'left',
             isnumber: false
@@ -378,7 +174,7 @@ export default function ImportJournal() {
         {
             id: 'EcritureLib',
             label: 'Libellé',
-            minWidth: 300,
+            minWidth: 380,
             align: 'left',
             isnumber: false
         },
@@ -387,7 +183,12 @@ export default function ImportJournal() {
             label: 'Débit',
             minWidth: 150,
             align: 'right',
-            format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            format: (value) => {
+                const num = Number(value?.toString().replace(',', '.'));
+                return !isNaN(num)
+                    ? num.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    : '';
+            },
             isnumber: true
         },
         {
@@ -395,7 +196,12 @@ export default function ImportJournal() {
             label: 'Crédit',
             minWidth: 150,
             align: 'right',
-            format: (value) => value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            format: (value) => {
+                const num = Number(value?.toString().replace(',', '.'));
+                return !isNaN(num)
+                    ? num.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    : '';
+            },
             isnumber: true
         },
         {
@@ -434,140 +240,6 @@ export default function ImportJournal() {
             isnumber: false
         },
     ];
-
-    //   const footerRow = {
-    //     id: 'footer', // ID unique pour la ligne footer
-    //     EcritureNum: 'Total',
-    //     datesaisie : '',
-    //     EcritureDate : '',
-    //     JournalCode : '',
-    //     CompteNum : '',
-    //     CompAuxNum : '',
-    //     PieceRef : '',
-    //     PieceDate : '',
-    //     EcritureLib : '',
-    //     Debit : '0,00',
-    //     Credit : '0,00',
-    //     Idevise : '',
-    //     EcritureLet : '',
-    //     DateLet : '',
-    //     ModeRglt : '',
-    //     DateRglt : '',
-    //   };
-
-    const footerRef = useRef(null);  // Référence pour le footer
-    const dataGridRef = useRef(null); // Référence pour le DataGrid
-
-    // Fonction pour synchroniser le défilement
-    const syncScroll = () => {
-        if (dataGridRef.current && footerRef.current) {
-            footerRef.current.scrollLeft = dataGridRef.current.scrollLeft;
-        }
-    };
-
-    // Fonction qui sera appelée lors du défilement dans le DataGrid
-    // Fonction qui gère le défilement
-    const handleDataGridScroll = (event) => {
-        //toast.success("ok");
-        // Détecter le défilement horizontal
-        // if (event.target.scrollLeft) {
-        // if (footerRef.current) {
-        //     footerRef.current.scrollLeft = event.target.scrollLeft;
-        // }
-        // }
-
-        // // Détecter le défilement vertical
-        // if (event.target.scrollTop) {
-        // if (footerRef.current) {
-        //     footerRef.current.scrollTop = event.target.scrollTop;
-        // }
-        // }
-    };
-
-    useEffect(() => {
-        const dataGridElement = dataGridRef.current?.querySelector('.MuiDataGrid-viewport');
-        if (dataGridElement) {
-            dataGridElement.addEventListener('scroll', handleDataGridScroll);
-        }
-
-        // Nettoyage du listener lorsque le composant est démonté
-        return () => {
-            const dataGridElement = dataGridRef.current?.querySelector('.MuiDataGrid-viewport');
-            if (dataGridElement) {
-                dataGridElement.removeEventListener('scroll', handleDataGridScroll);
-            }
-        };
-    }, []);
-
-    // const CustomFooter = () => {
-
-    //     const styleTextLeft = (width) => ({
-    //         marginLeft:5, 
-    //         color:'white', 
-    //         width: width, 
-    //         fontWeight:'bold',
-    //         marginRight:5,
-    //         textAlign:'left',
-    //         flexShrink: 0,
-    //     });
-
-    //     const style = (width) => ({
-    //         marginLeft:5, 
-    //         color:'white', 
-    //         width: width, 
-    //         fontWeight:'bold',
-    //         marginRight:5,
-    //         textAlign:'right',
-    //         flexShrink: 0,
-    //         fontSize: '15px'
-    //     });
-
-    //     const style2 = {
-    //         height:"25px", 
-    //         border: '1px solid white',
-    //         flexShrink: 0,
-    //     };
-
-    //     return (
-    //         <div>
-    //             <div ref={footerRef} onScroll={handleDataGridScroll} style={{overflowX: 'auto',whiteSpace: 'nowrap', width: "100%"}}>
-    //                 <Stack direction={'row'} 
-    //                 backgroundColor={initial.theme} 
-    //                 height={"35px"} 
-    //                 alignItems={'center'}
-    //                 alignContent={'center'}
-    //                 justifyItems={'center'}
-    //                 width={"100%"}
-    //                 spacing={0}
-    //                 >
-    //                     <Typography style={styleTextLeft(40)}></Typography>
-    //                     <Divider orientation="vertical" style={style2}/>
-    //                     <Typography style={styleTextLeft(100)}>Total débit: </Typography>
-    //                     <Typography style={style(150)}>{totalDebit}</Typography>
-    //                     <Divider orientation="vertical" style={style2}/>
-    //                     <Typography style={styleTextLeft(100)}>Total crédit:</Typography>
-    //                     <Typography style={style(150)}>{totalCredit}</Typography>
-    //                     <Divider orientation="vertical" style={style2}/>
-    //                     {/* <Typography style={style(135)}>{totalDebit}</Typography>
-    //                     <Divider orientation="vertical" style={style2}/>
-    //                     <Typography style={style(135)}>{totalCredit}</Typography>
-    //                     <Divider orientation="vertical" style={style2}/>
-    //                     <Typography style={style(5)}></Typography> */}
-    //                 </Stack>
-    //                 </div>
-    //                 <GridFooterContainer >
-    //                     <GridFooter sx={{ border: 'none' }}>
-
-    //                     </GridFooter>
-    //                 </GridFooterContainer>
-
-    //         </div>
-
-
-
-
-    //     );
-    // };                    
 
     //Récupérer la liste des exercices
     const GetListeExercice = (id) => {
@@ -629,9 +301,10 @@ export default function ImportJournal() {
     }
 
     //Récupération du plan comptable
-    const recupPlanComptable = () => {
-        axios.post(`/paramPlanComptable/pc`, { fileId }).then((response) => {
+    const recupPlanComptable = (fileId, compteId) => {
+        axios.post(`/paramPlanComptable/pc`, { fileId, compteId }).then((response) => {
             const resData = response.data;
+            console.log('resData : ', resData);
             if (resData.state) {
                 const list = Array.isArray(resData.liste) ? resData.liste : [];
                 const unique = Object.values(
@@ -671,15 +344,16 @@ export default function ImportJournal() {
     }
 
     useEffect(() => {
-        GetListeCodeJournaux(fileId);
-        recupPlanComptable();
-        GetListeDevises(fileId);
-    }, [fileId]);
+        if (fileId && selectedExerciceId && compteId) {
+            GetListeCodeJournaux(fileId);
+            recupPlanComptable(fileId, compteId);
+            GetListeDevises(fileId);
+        }
+    }, [fileId, selectedExerciceId, compteId]);
 
     //Valeur du listbox choix Type exercice-----------------------------------------------------
     const handleChangeType = (event) => {
         formikImport.setFieldValue('type', event.target.value);
-        setValSelectType(event.target.value);
 
         if (event.target.value === 'CSV') {
             setFileTypeCSV(true);
@@ -727,7 +401,7 @@ export default function ImportJournal() {
     const validateHeaders = (headers) => {
 
         let expectedHeaders = [];
-        const expectedHeadersCSV = ["EcritureNum", "datesaisie", "EcritureDate", "JournalCode", "CompteNum", "CompAuxNum", "PieceRef", "PieceDate", "EcritureLib", "Debit", "Credit", "Idevise", "EcritureLet", "DateLet", "ModeRglt", "DateRglt"];
+        const expectedHeadersCSV = ["EcritureNum", "datesaisie", "EcritureDate", "JournalCode", "CompteNum", "CompAuxNum", "PieceRef", "PieceDate", "EcritureLib", "Debit", "Credit", "Idevise", "EcritureLet", "DateLet", "ModeRglt"];
         const expectedHeadersFEC = ["EcritureNum", "EcritureDate", "JournalCode", "CompteNum", "CompAuxNum", "PieceRef", "PieceDate", "EcritureLib", "Debit", "Credit", "Idevise", "EcritureLet", "DateLet"];
 
         if (fileTypeCSV) {
@@ -745,37 +419,6 @@ export default function ImportJournal() {
         return true;
     };
 
-    //Calcul solde débit et solde crédit
-    const calculTotal = (array) => {
-
-        const totDebit0 = array.reduce((acc, item) => {
-            const Value = parseFloat(item["Debit"].replace(',', '.')) || 0; // Convertir en nombre
-            return acc + Value;
-        }, 0);
-
-        const totCredit0 = array.reduce((acc, item) => {
-            const Value = parseFloat(item["Credit"].replace(',', '.')) || 0; // Convertir en nombre
-            return acc + Value;
-        }, 0);
-
-        const totDebit = new Intl.NumberFormat('fr-FR',
-            {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-            }
-        ).format(totDebit0);
-
-        const totCredit = new Intl.NumberFormat('fr-FR',
-            {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-            }
-        ).format(totCredit0);
-
-        setTotalDebit(totDebit);
-        setTotalCredit(totCredit);
-    };
-
     //Test d'existance de code journal ou de compte par rapport aux données dans paramétrage
     const existance = (param, liste) => {
         const missingCode = liste.filter(item => !param.includes(item));
@@ -789,7 +432,18 @@ export default function ImportJournal() {
         return s.padEnd(longeurCompteStd, "0").slice(0, longeurCompteStd);
     };
 
-    //charger le fichier à partir de FileDialog
+    const parseCSVNumber = (value) => {
+        if (!value) return 0;
+
+        const cleaned = value.toString()
+            .replace(/\s/g, '')
+            .replace(/\./g, '')
+            .replace(',', '.');
+
+        const num = Number(cleaned);
+        return isNaN(num) ? 0 : num;
+    };
+
     const handleFileSelect = (event) => {
         const file = event.target.files[0];
 
@@ -829,6 +483,27 @@ export default function ImportJournal() {
                         const compteNonValideStd = result.data.some(item => {
                             return item.CompteNum && item.CompteNum.length !== longeurCompteStd;
                         });
+
+
+                        let DataWithId = [];
+                        if (fileTypeCSV) {
+                            DataWithId = result.data.map((row, index) => ({ ...row, id: index, CompteLib: '', CompAuxLib: '' }));
+                        } else {
+                            DataWithId = result.data;
+                        }
+
+                        const totalDebit = DataWithId.reduce((acc, item) => acc + Number(item.Debit), 0);
+                        const totalCredit = DataWithId.reduce((acc, item) => acc + Number(item.Credit), 0);
+
+                        const ecart = totalDebit - totalCredit;
+
+                        if (ecart !== 0) {
+                            if (ecart > 0) {
+                                msg.push(`Le journal n'est pas équilibré : Débit supérieur au Crédit de ${ecart.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`)
+                            } else {
+                                msg.push(`Le journal n'est pas équilibré : Crédit supérieur au Débit de ${Math.abs(ecart).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`)
+                            }
+                        }
 
                         if (compteNonValideStd) {
                             msg.push('Attention, la longueur des comptes dans le fichier csv est différente de celle des comptes dans le paramétrage CRM du dossier.');
@@ -919,12 +594,6 @@ export default function ImportJournal() {
                         }
 
                         setMsgAnomalie(msg);
-                        let DataWithId = [];
-                        if (fileTypeCSV) {
-                            DataWithId = result.data.map((row, index) => ({ ...row, id: index, CompteLib: '', CompAuxLib: '' }));
-                        } else {
-                            DataWithId = result.data;
-                        }
 
                         // Déterminer la période de l'exercice sélectionné (période active)
                         const getExerciseRange = () => {
@@ -952,7 +621,7 @@ export default function ImportJournal() {
                                 d = new Date(str);
                             }
                             if (isNaN(d.getTime())) return null;
-                            d.setHours(0,0,0,0);
+                            d.setHours(0, 0, 0, 0);
                             return d;
                         };
 
@@ -996,7 +665,6 @@ export default function ImportJournal() {
 
                         //const dataWithFooter = [...finalData, footerRow];
                         setJournalData(finalData);
-                        calculTotal(finalData);
                         formikImport.setFieldValue('journalData', finalData);
 
                         const mapGen = new Map();
@@ -1037,7 +705,6 @@ export default function ImportJournal() {
                         setCompteToCreateGen(cptToCreateGen);
                         setCompteToCreateAux(cptToCreateAux);
 
-                        // Mettre à jour les messages d'anomalies agrégés
                         setMsgAnomalie(msg);
 
                         event.target.value = null;
@@ -1046,8 +713,8 @@ export default function ImportJournal() {
                         handleOpenAnomalieDetails();
                     }
                 },
-                header: true, // Si tu veux que la première ligne soit utilisée comme clé d'objet (si le CSV a des en-têtes)
-                skipEmptyLines: true, // Ignore les lignes vides
+                header: true,
+                skipEmptyLines: true,
             });
         }
     }
@@ -1083,8 +750,6 @@ export default function ImportJournal() {
 
     //création des comptes qui n'existe pas encore avant import journal
     const createCompteNotExisting = async () => {
-        console.log("compteToCreateGen : ", compteToCreateGen);
-        console.log("compteToCreateAux : ", compteToCreateAux);
         const response = await axios.post(`/administration/importJournal/createNotExistingCompte`, { compteId, fileId, compteToCreateGen, compteToCreateAux });
         const resData = response.data;
         const list = Array.isArray(resData.list) ? resData.list : [];
@@ -1153,9 +818,35 @@ export default function ImportJournal() {
 
     return (
         <Box>
-            {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
-            {openDialogConfirmImport ? <PopupActionConfirm msg={"Voulez-vous vraiment importer le journal en cours?"} confirmationState={handleImportJournal} /> : null}
-            {openDetailsAnomalie ? <PopupViewDetailsImportJournal msg={msgAnomalie} confirmationState={handleCloseAnomalieDetails} /> : null}
+            {
+                noFile
+                    ?
+                    <PopupTestSelectedFile
+                        confirmationState={sendToHome}
+                    />
+                    :
+                    null
+            }
+            {
+                openDialogConfirmImport
+                    ?
+                    <PopupActionConfirm
+                        msg={"Voulez-vous vraiment importer le journal en cours?"}
+                        confirmationState={handleImportJournal}
+                    />
+                    :
+                    null
+            }
+            {
+                openDetailsAnomalie
+                    ?
+                    <PopupViewDetailsImportJournal
+                        msg={msgAnomalie}
+                        confirmationState={handleCloseAnomalieDetails}
+                    />
+                    :
+                    null
+            }
 
             <TabContext value={"1"}>
                 <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -1230,7 +921,7 @@ export default function ImportJournal() {
                             </Stack>
 
                             <Stack width={"100%"} height={"60px"} spacing={2} alignItems={"center"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                <FormControl variant="standard" sx={{ m: 0, minWidth: 250 }}>
+                                <FormControl variant="standard" sx={{ m: 0 }}>
                                     <InputLabel id="demo-simple-select-standard-label">Type de fichier</InputLabel>
                                     <Select
                                         labelId="demo-simple-select-standard-label"
@@ -1240,9 +931,6 @@ export default function ImportJournal() {
                                         onChange={handleChangeType}
                                         sx={{ width: "140px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
                                     >
-                                        {/* <MenuItem key="None" value="">
-                                        <em>None</em>
-                                    </MenuItem> */}
                                         <MenuItem key={"CSV"} value={"CSV"}>CSV</MenuItem>
                                         <MenuItem key={"FEC"} value={"FEC"}>FEC</MenuItem>
                                     </Select>
@@ -1332,31 +1020,6 @@ export default function ImportJournal() {
                                     </List>
                                 </Stack>
 
-                                <Tooltip title="Importer le fichier">
-                                    <span>
-
-                                        {/* <IconButton 
-                                    variant="contained"
-                                    style={{width:"130px", height:'50px', 
-                                        borderRadius:"2px", borderColor: "transparent",
-                                        backgroundColor: initial.theme,
-                                        textTransform: 'none', outline: 'none',
-                                        display: 'flex',
-                                        justifyContent: 'center',
-                                        alignItems: 'center',
-                                    }}
-                                    >
-                                        <Box style={{marginLeft: '5px', marginRight: '15px' }}>
-                                            <TfiSave style={{width:'25px', height:'25px',color: 'white'}}/>
-                                        </Box>
-                                        
-                                        <Typography style={{color:'white', fontWeight:'bold'}}>Importer</Typography>
-                                    </IconButton> */}
-
-
-                                    </span>
-                                </Tooltip>
-
                                 <Badge badgeContent={nbrAnomalie} color="warning">
                                     <Button
                                         onClick={handleOpenAnomalieDetails}
@@ -1392,106 +1055,27 @@ export default function ImportJournal() {
                                 ? <Stack spacing={2} direction={'row'} width={"100%"} alignItems={'center'} justifyContent={'center'}>
                                     <CircularProgress />
                                     <Typography variant='h6' style={{ color: '#2973B2' }}>{traitementJournalMsg}</Typography>
-                                    {/* <CircularProgressWithValueLabel value={50} msg={"Traitement du journal en cours..."} /> */}
                                 </Stack>
                                 : null
                             }
 
-                            <Stack width={"100%"} height={'70vh'} >
-                                <VirtualTableModifiableImportJnl columns={columns} rows={journalData} state={true} />
-                                {/* <DataGrid
-                                ref={dataGridRef}
-                                disableMultipleSelection = {DataGridStyle.disableMultipleSelection}
-                                disableColumnSelector = {DataGridStyle.disableColumnSelector}
-                                disableDensitySelector = {DataGridStyle.disableDensitySelector}
-                                localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
-                                disableRowSelectionOnClick
-                                disableSelectionOnClick={true}
-                                slots={{toolbar : QuickFilter, footer: CustomFooter}}
-                                sx={{ 
-                                    m: 0,
-                                    border:'0px',
-                                    
-                                    "& .MuiDataGrid-columnHeader.MuiDataGrid-ColumnHeader": {
-                                        fontSize:'14px',
-                                        fontFamily:'Arial Black',
-                                        fontWeight:'bold',
-                                        },
-                                        "& .MuiDataGrid-columnSeparator": {
-                                            display: 'flex',
-                                            visibility: 'visible',
-                                        },
-                                        "& .MuiDataGrid-columnHeader" : {
-                                            borderBottom: "2px solid #1A5276",
-                                        },
-                                    
-                                        "& .MuiDataGrid-row:nth-of-type(even)" : {
-                                        backgroundColor: "#F4F9F9",
-                                        // borderBottom: "0px",
-                                        // borderTop: "0px"
-                                        },
-                                        
-                                        "& .MuiDataGrid-row:nth-of-type(odd)": {
-                                        backgroundColor: "#ffffff",
-                                        // borderBottom: "0px",
-                                        // borderTop: "0px"
-                                        },
-                            
-                                        "& .MuiDataGrid-cell": {
-                                            borderBottom: "none",
-                                            '&:focus': {
-                                            outline: 'none',
-                                            },
-                                        },
-                                        "& .MuiDataGrid-row": {
-                                            borderBottom: "none",
-                                        },
-                                        "& .MuiDataGrid-footer": {
-                                            display: 'none',
-                                        },
-                                        '& .MuiDataGrid-columnHeaderCheckbox': {
-                                            justifyContent: 'left', // Centre le contenu de la checkbox
-                                            marginLeft:'0px'
-                                        },
-                                        '& .highlight-separator': {
-                                            borderTop: '1px solid red'
-                                        },
-
-                                        checkboxSelection: true,
-                                        pagination: true
+                            {/* <div style={{ width: '100%', height: '70vh', overflow: 'auto' }}>
+                                <DataGrid
+                                    rows={journalData}
+                                    columns={columnsDatagrid}
+                                    pageSize={100}
+                                    rowsPerPageOptions={[100]}
+                                    disableSelectionOnClick
+                                    autoHeight={false}
+                                    sx={{
+                                        width: '100%',
+                                        minWidth: '1200px',
                                     }}
+                                />
+                            </div> */}
 
-                                rowHeight= {DataGridStyle.rowHeight}
-                                columnHeaderHeight= {DataGridStyle.columnHeaderHeight}
-                                rows={journalData}
-                                columns={columnHeaderJournalData}
-                                initialState={{
-                                    pagination: {
-                                        paginationModel: { page: 0, pageSize: 100 },
-                                    },
-                                }}
-                                pageSizeOptions={[50, 100]}
-                                pagination={DataGridStyle.pagination}
-                                checkboxSelection = {DataGridStyle.checkboxSelection}
-                                columnVisibilityModel={{
-                                    id: false,
-                                }}
-                                getRowClassName={(params) => {
-                                    const currentIndex = params.row.id - 1;
-                                    const nextIndex = currentIndex + 1;
-                                    
-                                    if (nextIndex < journalData.length && journalData[currentIndex] && journalData[nextIndex]){
-                                        // Vérifier si le `ids` de la ligne actuelle est différent de la ligne suivante
-                                        if (nextIndex < journalData.length && journalData[currentIndex].EcritureNum !== journalData[nextIndex].EcritureNum) {
-                                            return 'highlight-separator'; // Ajouter une classe si la valeur change
-                                        }
-                                            return ''; // Sinon, aucune classe
-                                        }
-                                    }
-                                }
-                                
-                            /> */}
-                            </Stack>
+                            <VirtualTableImportJournal tableHeader={columnsTable} tableRow={journalData} />
+
                         </Stack>
                     </form>
                 </TabPanel>

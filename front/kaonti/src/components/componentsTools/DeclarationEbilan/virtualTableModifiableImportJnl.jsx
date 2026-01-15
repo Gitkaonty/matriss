@@ -33,7 +33,7 @@ const VirtualTableModifiableImportJnl = ({ columns, rows, deleteState, modifySta
   const totalColumn = (rows, columnId) => {
 
     const total = rows.reduce((acc, item) => {
-      const Value = parseFloat(item[columnId].replace(',', '.')) || 0; // Convertir en nombre
+      const Value = parseFloat(item[columnId].replace(',', '.')) || 0;
       return acc + Value;
     }, 0);
 

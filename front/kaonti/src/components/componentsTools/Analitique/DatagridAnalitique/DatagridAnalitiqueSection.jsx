@@ -6,6 +6,7 @@ import { IoMdTrash } from "react-icons/io";
 import { TbPlaylistAdd } from "react-icons/tb";
 import { FaRegPenToSquare } from "react-icons/fa6";
 import { VscClose } from 'react-icons/vsc';
+import { MdFileUpload } from 'react-icons/md';
 
 import { init } from '../../../../../init';
 import axios from '../../../../../config/axios';
@@ -21,6 +22,7 @@ import * as Yup from "yup";
 import PopupConfirmDelete from '../../popupConfirmDelete';
 import FormatedInput from '../../FormatedInput';
 import useAxiosPrivate from '../../../../../config/axiosPrivate';
+import PopupImportAnalitique from '../../PopupImportAnalitique';
 
 const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, isCaActive, canModify, canAdd, canDelete, canView }) => {
     const apiRef = useGridApiRef();
@@ -48,6 +50,7 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
     const [disableAddRowBouton, setDisableAddRowBouton] = useState(false);
 
     const [openDialogDeleteRow, setOpenDialogDeleteRow] = useState(false);
+    const [openImportPopup, setOpenImportPopup] = useState(false);
     const [disableDefaultFieldModif, setDisableDefaultFieldModif] = useState(false);
 
     //formulaire pour la sauvegarde
@@ -598,6 +601,19 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
 
     return (
         <>
+            {openImportPopup && (
+                <PopupImportAnalitique
+                    open={openImportPopup}
+                    onClose={() => setOpenImportPopup(false)}
+                    fileId={id_dossier}
+                    compteId={id_compte}
+                    axeId={selectedRowAxeId[0]}
+                    onImportSuccess={() => {
+                        setIsRefreshed(prev => !prev);
+                        setOpenImportPopup(false);
+                    }}
+                />
+            )}
             {
                 (openDialogDeleteRow && canDelete)
                     ?
@@ -623,6 +639,24 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
                     direction={'row'}
                     spacing={0.5}
                 >
+                    <Tooltip title="Importer des sections">
+                        <Stack>
+                            <IconButton
+                                disabled={!canAdd || !isCaActive || !(selectedRowAxeId.length > 0)}
+                                variant="contained"
+                                onClick={() => setOpenImportPopup(true)}
+                                style={{
+                                    width: "35px", height: '35px',
+                                    borderRadius: "2px", borderColor: "transparent",
+                                    backgroundColor: initial.theme,
+                                    textTransform: 'none', outline: 'none'
+                                }}
+                            >
+                                <MdFileUpload style={{ width: '25px', height: '25px', color: 'white' }} />
+                            </IconButton>
+                        </Stack>
+                    </Tooltip>
+
                     <Tooltip title="Ajouter une ligne">
                         <Stack>
                             <IconButton
