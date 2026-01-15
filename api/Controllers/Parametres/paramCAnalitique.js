@@ -432,6 +432,104 @@ exports.getListAxeSection = async (req, res) => {
     }
 }
 
+exports.importSections = async (req, res) => {
+    try {
+        const { compteId, fileId, axeId, sectionsData } = req.body;
+
+        let resData = {
+            state: false,
+            msg: 'Une erreur est survenue au moment du traitement.',
+            anomalies: []
+        };
+
+        if (!compteId || !fileId || !axeId || !sectionsData || !Array.isArray(sectionsData)) {
+            return res.status(400).json({
+                state: false,
+                msg: "Données manquantes ou invalides"
+            });
+        }
+
+        const id_compte = parseInt(compteId);
+        const id_dossier = parseInt(fileId);
+        const id_axe = parseInt(axeId);
+
+        if (isNaN(id_compte) || isNaN(id_dossier) || isNaN(id_axe)) {
+            return res.status(400).json({
+                state: false,
+                msg: "Compte, dossier ou axe invalide"
+            });
+        }
+
+        if (sectionsData.length === 0) {
+            return res.status(400).json({
+                state: false,
+                msg: "Aucune donnée à importer"
+            });
+        }
+
+        const totalPourcentage = sectionsData.reduce((sum, item) => sum + (parseFloat(item.pourcentage) || 0), 0);
+        
+        if (Math.abs(totalPourcentage - 100) > 0.1) {
+            return res.json({
+                state: false,
+                msg: `Le total des pourcentages doit être égal à 100%. Total actuel: ${totalPourcentage.toFixed(2)}%`
+            });
+        }
+
+        const sectionsToCreate = [];
+        const anomalies = [];
+
+        for (let i = 0; i < sectionsData.length; i++) {
+            const item = sectionsData[i];
+            
+            if (!item.section || !item.intitule || !item.compte) {
+                anomalies.push(`Ligne ${i + 1}: Données manquantes (section, intitulé ou compte)`);
+                continue;
+            }
+
+            sectionsToCreate.push({
+                id_compte,
+                id_dossier,
+                id_axe,
+                section: item.section,
+                intitule: item.intitule,
+                compte: item.compte,
+                pourcentage: parseFloat(item.pourcentage).toFixed(2),
+                fermer: false,
+                par_defaut: false
+            });
+        }
+
+        if (anomalies.length > 0) {
+            return res.json({
+                state: false,
+                msg: "Des anomalies ont été détectées dans les données",
+                anomalies: anomalies
+            });
+        }
+
+        const createdSections = await caSections.bulkCreate(sectionsToCreate);
+
+        if (createdSections && createdSections.length > 0) {
+            resData.state = true;
+            resData.msg = `${createdSections.length} section(s) importée(s) avec succès.`;
+        } else {
+            resData.state = false;
+            resData.msg = "Aucune section n'a pu être importée";
+        }
+
+        return res.json(resData);
+
+    } catch (error) {
+        console.error('Erreur lors de l\'import des sections:', error);
+        return res.status(500).json({
+            state: false,
+            msg: "Erreur serveur lors de l'import",
+            error: error.message
+        });
+    }
+};
+
 exports.getRepartitionCA = async (req, res) => {
     const { id_journal } = req.params;
 
