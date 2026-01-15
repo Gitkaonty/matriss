@@ -1,5 +1,3 @@
-//importing modules
-const bcrypt = require("bcrypt");
 const db = require("../../Models");
 const { Op } = require("sequelize");
 
@@ -15,17 +13,13 @@ const dossierpcdetailcpttva = db.dossierpcdetailcpttva;
 const dombancaires = db.dombancaires;
 const pays = db.pays;
 const portefeuille = db.portefeuille;
-const users = db.users;
 const devises = db.devises;
 const consolidationDossier = db.consolidationDossier;
 const compteDossiers = db.compteDossiers;
 const dossierPasswordAccess = db.dossierPasswordAccess;
+const comptePortefeuilles = db.comptePortefeuilles;
 
 dombancaires.belongsTo(pays, { as: 'tablepays', foreignKey: 'pays', targetKey: 'code' });
-
-function isValidDate(date) {
-  return date instanceof Date && !isNaN(date);
-}
 
 const recupListDossier = async (req, res) => {
   try {
@@ -38,9 +32,11 @@ const recupListDossier = async (req, res) => {
       fileList: []
     };
 
-    const userData = await users.findByPk(userId, {
-      attributes: ['id_portefeuille']
-    });
+    const userPortefeuille = await comptePortefeuilles.findAll({
+      where: {
+        user_id: userId
+      }
+    })
 
     const compteDossier = await compteDossiers.findAll({
       where: {
@@ -49,8 +45,7 @@ const recupListDossier = async (req, res) => {
     })
 
     const id_dossier = [... new Set(compteDossier.map(val => Number(val.id_dossier)))];
-
-    const portefeuillesIds = userData.id_portefeuille;
+    const id_portefeuille = [...new Set(userPortefeuille.map(val => Number(val.id_portefeuille)))];
 
     const list = await dossier.findAll({
       where: {
@@ -58,7 +53,7 @@ const recupListDossier = async (req, res) => {
         [Op.or]: [
           {
             id_portefeuille: {
-              [Op.overlap]: portefeuillesIds
+              [Op.overlap]: id_portefeuille
             }
           },
           {
@@ -67,7 +62,6 @@ const recupListDossier = async (req, res) => {
             }
           }
         ]
-
       }
     });
 
@@ -758,17 +752,23 @@ const updateCentrefisc = async (req, res) => {
 const checkAccessDossier = async (req, res) => {
   try {
     const dossierId = Number(req.params.id);
-    const compteId = Number(req.user.compteId);
     const userId = Number(req.user.userId);
 
-    const user = await users.findOne({
-      where: { compte_id: compteId },
-      attributes: ['id_portefeuille'],
-    });
+    const userPortefeuilleData = (await comptePortefeuilles.findAll({
+      where: {
+        user_id: userId
+      }
+    })).map(val => {
+      const data = val.toJSON();
+      data.id = Number(val.id);
+      data.id_portefeuille = Number(val.id_portefeuille);
+      data.user_id = Number(val.user_id);
+      return data;
+    })
 
-    if (!user || !user.id_portefeuille || user.id_portefeuille.length === 0) {
-      return res.status(200).json({ state: false });
-    }
+    const userPortefeuilleIds = userPortefeuilleData.map(p =>
+      Number(p.id_portefeuille)
+    );
 
     const dossierData = await dossier.findByPk(dossierId, {
       attributes: ['id_portefeuille', 'avecmotdepasse'],
@@ -788,8 +788,10 @@ const checkAccessDossier = async (req, res) => {
       }
     }
 
-    const hasAccess = user.id_portefeuille.some(id =>
-      dossierData.id_portefeuille.includes(id)
+    const dossierPortefeuilleIds = (dossierData.id_portefeuille || []).map(Number);
+
+    const hasAccess = userPortefeuilleIds.some(id =>
+      dossierPortefeuilleIds.includes(id)
     );
 
     if (!hasAccess) {

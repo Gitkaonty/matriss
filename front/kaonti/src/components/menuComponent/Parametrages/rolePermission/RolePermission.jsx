@@ -41,6 +41,7 @@ const RolePermission = () => {
     const decoded = auth?.accessToken ? jwtDecode(auth.accessToken) : undefined;
     const compteId = decoded.UserInfo.compteId || null;
     const comptename = decoded.UserInfo.compte || null;
+    const userId = decoded.UserInfo.userId || null;
 
     const infoCompte = {
         nom: comptename
@@ -298,6 +299,7 @@ const RolePermission = () => {
                                         infoCompte={infoCompte}
                                         isRefreshedSousCompte={isRefreshedSousCompte}
                                         setIsRefreshedSousCompte={setIsRefreshedSousCompte}
+                                        userId={userId}
                                     />
                                 </TabPanel>
                                 <TabPanel value="2">
