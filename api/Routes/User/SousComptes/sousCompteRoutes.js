@@ -24,8 +24,6 @@ router.post('/sendCodeToEmail', sousCompteController.sendCodeToEmail);
 // Modification du mot de passe
 router.put('/updatePassword/:id', sousCompteController.updatePassword);
 
-// Router pour le mot de passe oublié
-
 // Vérification du mot de passe
 router.post('/verifyEmail', sousCompteController.verifyEmail);
 
@@ -46,5 +44,20 @@ router.get('/getAllRoles', sousCompteController.getAllRoles);
 
 // Modification rôle 
 router.post('/updateUserRole', sousCompteController.updateUserRole);
+
+// Récupération de dossiers par compte
+router.get('/getAllCompteDossiers/:userId', sousCompteController.getAllCompteDossiers);
+
+// Récupération de portefeuilles par compte
+router.get('/getAllComptePortefeuilles/:userId', sousCompteController.getAllComptePortefeuilles);
+
+// Suppréssion d'une dosssier par compte
+router.delete('/deleteCompteDossiers/:id', sousCompteController.deleteCompteDossiers);
+
+// Ajout d'une dossier par compte
+router.post('/addCompteDossiers', sousCompteController.addCompteDossiers);
+
+// Ajout ou suppression d'une dossier par compte
+router.post('/addOrUpdateCompteDossier', sousCompteController.addOrUpdateCompteDossier);
 
 module.exports = router;

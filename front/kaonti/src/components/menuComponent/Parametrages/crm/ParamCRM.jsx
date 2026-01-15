@@ -2044,8 +2044,6 @@ export default function ParamCRM() {
         //charger dans le formik les données de la ligne
         const selectedRowInfos = listConsolidation?.filter((item) => item.id === id[0]);
 
-        console.log('selectedRowInfos : ', selectedRowInfos);
-
         useFormikConsolidation.setFieldValue("idCompte", compteId);
         useFormikConsolidation.setFieldValue("idDossier", fileId);
         useFormikConsolidation.setFieldValue("idDossierAutre", selectedRowInfos[0].id_dossier_autre);

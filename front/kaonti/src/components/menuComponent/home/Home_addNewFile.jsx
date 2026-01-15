@@ -2326,7 +2326,7 @@ export default function AddNewFile({ confirmationState }) {
                                                             alignContent={"flex-start"} justifyContent={"stretch"} direction={"column"}
                                                             style={{ marginLeft: "50px" }}
                                                         >
-                                                            <PasswordField handleChange={handleChange} values={values} setFieldValue={setFieldValue} type={'ADD'} password={password} />
+                                                            <PasswordField handleChange={handleChange} values={values} setFieldValue={setFieldValue} type={'ADD'} password={""} />
                                                         </Stack>
 
                                                     </AccordionDetails>

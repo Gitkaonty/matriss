@@ -1,17 +1,17 @@
 module.exports = (sequelize, DataTypes) => {
-    const compteDossier = sequelize.define("comptedossiers", {
+    const comptePortefeuille = sequelize.define("compteportefeuilles", {
         id: {
             type: DataTypes.BIGINT,
             primaryKey: true,
             autoIncrement: true
         },
-        id_dossier: {
+        id_portefeuille: {
             type: DataTypes.BIGINT,
             allowNull: false,
             defaultValue: 0,
             unique: false,
             references: {
-                model: 'dossiers',
+                model: 'portefeuilles',
                 key: 'id'
             },
             onUpdate: 'CASCADE',
@@ -30,5 +30,5 @@ module.exports = (sequelize, DataTypes) => {
             onDelete: 'CASCADE'
         },
     }, { timestamps: true })
-    return compteDossier
+    return comptePortefeuille
 }

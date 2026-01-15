@@ -107,6 +107,7 @@ db.etatsplpmatrices = require('./etatsPlpMatriceModel')(sequelize, DataTypes);
 db.resetToken = require('./resetTokenModel')(sequelize, DataTypes);
 db.isi = require('./isiModel')(sequelize, DataTypes);
 db.compteDossiers = require('./compteDossierModel')(sequelize, DataTypes);
+db.comptePortefeuilles = require('./comptePortefeuilleModel')(sequelize, DataTypes);
 
 db.consolidationDossier = require('./consolidationDossierModel')(sequelize, DataTypes);
 db.consolidationCompte = require('./consolidationCompteModel')(sequelize, DataTypes);
@@ -255,6 +256,14 @@ db.dossiers.belongsToMany(db.users, { through: db.compteDossiers, foreignKey: 'i
 
 db.compteDossiers.belongsTo(db.users, { foreignKey: 'user_id' });
 db.compteDossiers.belongsTo(db.dossiers, { foreignKey: 'id_dossier' });
+
+// Compte portefeuille
+db.users.belongsToMany(db.portefeuille, { through: db.comptePortefeuilles, foreignKey: 'user_id', otherKey: 'id_portefeuille' });
+db.portefeuille.belongsToMany(db.users, { through: db.comptePortefeuilles, foreignKey: 'id_portefeuille', otherKey: 'user_id' });
+
+db.comptePortefeuilles.belongsTo(db.users, { foreignKey: 'user_id' });
+db.comptePortefeuilles.belongsTo(db.portefeuille, { foreignKey: 'id_portefeuille' });
+
 
 // Dossier password access
 db.users.hasMany(db.dossierPasswordAccess, { foreignKey: 'user_id', sourceKey: 'id' });
