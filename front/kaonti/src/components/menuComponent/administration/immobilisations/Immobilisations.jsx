@@ -22,6 +22,8 @@ import { VscClose } from "react-icons/vsc";
 import { useCallback } from 'react';
 import DetailsImmoDialog from './DetailsImmoDialog';
 import { GoLink } from "react-icons/go";
+import PopupActionConfirmWithCheckbox from '../../../componentsTools/popupActionConfirmWithCheckbox';
+import PopupConfirmDelete from '../../../componentsTools/popupConfirmDelete';
 
 const keepTotalBottomComparator = (v1, v2, cellParams1, cellParams2) => {
   const r1 = cellParams1?.row;
@@ -95,6 +97,12 @@ const Immobilisations = () => {
   const navigate = useNavigate();
   const { auth } = useAuth();
   const compteId = auth?.accessToken ? (jwtDecode(auth.accessToken)?.UserInfo?.compteId || null) : null;
+
+  const [openConfirmGenerateEcritures, setOpenConfirmGenerateEcritures] = useState(false);
+  const [openConfirmCancelEcritures, setOpenConfirmCancelEcritures] = useState(false);
+  const [openConfirmDelete, setOpenConfirmDelete] = useState(false);
+
+  const [loadingEcritures, setLoadingEcritures] = useState(false);
 
   const [fileInfos, setFileInfos] = useState('');
   const [noFile, setNoFile] = useState(false);
@@ -433,26 +441,32 @@ const Immobilisations = () => {
         toast('Sélectionnez une immobilisation dans le tableau du milieu', { icon: 'ℹ️' });
         return;
       }
-      // Détecter le mode comme dans le chargement
+      
+      // Récupérer les lignes affichées selon l'onglet actuel
+      const lignesAEnvoyer = ligneTab === 'fisc' ? ligneRowsFisc : ligneRowsComp;
+      if (!lignesAEnvoyer || lignesAEnvoyer.length === 0) {
+        toast.error('Aucune ligne d\'amortissement à enregistrer. Prévisualisez d\'abord les calculs.');
+        return;
+      }
+
+      // Détecter le mode selon l'onglet actuel
       const detailRow = detailsRows.find(r => Number(r.id) === Number(selectedDetailId)) || {};
-      let autoMode = 'comp';
-      const fiscHints = [
-        Number(detailRow?.duree_amort_mois_fisc) || 0,
-        Number(detailRow?.amort_ant_fisc) || 0,
-        Number(detailRow?.dotation_periode_fisc) || 0,
-        Number(detailRow?.amort_exceptionnel_fisc) || 0,
-        Number(detailRow?.derogatoire_fisc) || 0,
-        Number(detailRow?.total_amortissement_fisc) || 0,
-      ];
-      if (detailRow.__amortTab === 'fisc') autoMode = 'fisc';
-      else if (detailRow.__amortTab === 'comp') autoMode = 'comp';
-      else if ((detailRow?.type_amort_fisc && String(detailRow.type_amort_fisc).length > 0)) autoMode = 'fisc';
-      else if (fiscHints.some(v => v > 0)) autoMode = 'fisc';
-      else autoMode = 'comp';
+      const autoMode = ligneTab === 'fisc' ? 'fisc' : 'comp';
 
       setSavingLignes(true);
-      await axios.post('/administration/traitementSaisie/immobilisations/details/lineaire/save',
-        { fileId: fid, compteId: compteId, exerciceId: exoId, detailId: selectedDetailId, mode: autoMode },
+      const useDeg = (ligneTab === 'comp' ? isCompDegTab : isFiscDegTab);
+      const url = useDeg
+        ? '/administration/traitementSaisie/immobilisations/details/degresif/save'
+        : '/administration/traitementSaisie/immobilisations/details/lineaire/save';
+      await axios.post(url,
+        { 
+          fileId: fid, 
+          compteId: compteId, 
+          exerciceId: exoId, 
+          detailId: selectedDetailId, 
+          mode: autoMode,
+          lignes: lignesAEnvoyer
+        },
         { timeout: 60000 }
       );
       toast.success('Lignes d\'amortissement enregistrées');
@@ -463,23 +477,16 @@ const Immobilisations = () => {
 
   // Fetch details_immo from backend and filter by selected PCs
   const fetchDetails = useCallback(async () => {
-    try {
-      const fid = Number(id) || 0;
-      const exoId = Number(selectedExerciceId) || 0;
-      if (!fid || !compteId || !exoId) { setDetailsRows([]); return; }
-      const onePcId = Array.isArray(selectedPcIds) && selectedPcIds.length > 0 ? Number(selectedPcIds[0]) : null;
-      const { data } = await axios.get('/administration/traitementSaisie/immobilisations/details', {
-        params: { fileId: fid, compteId: onePcId ?? compteId, exerciceId: exoId, pcId: onePcId || undefined }, timeout: 60000,
-      });
+    if (!id || !compteId || !selectedExerciceId) { setDetailsRows([]); return; }
+    const onePcId = Array.isArray(selectedPcIds) && selectedPcIds.length > 0 ? Number(selectedPcIds[0]) : null;
+    const { data } = await axios.get('/administration/traitementSaisie/immobilisations/details', {
+      params: { fileId: id, compteId: onePcId ?? compteId, exerciceId: selectedExerciceId, pcId: onePcId || undefined }, timeout: 60000,
+    });
 
-      const list = Array.isArray(data?.list) ? data.list : [];
-      const sel = selectedPcIds;
-      const filtered = sel && sel.length > 0 ? list.filter(d => sel.includes(d.pc_id)) : list;
-      setDetailsRows(filtered);
-    } catch (e) {
-      setDetailsRows([]);
-      toast.error(`Erreur lors du chargement des détails immobilisations: ${getErrMsg(e)}`);
-    }
+    const list = Array.isArray(data?.list) ? data.list : [];
+    const sel = selectedPcIds;
+    const filtered = sel && sel.length > 0 ? list.filter(d => sel.includes(d.pc_id)) : list;
+    setDetailsRows(filtered);
   }, [id, compteId, selectedExerciceId, selectedPcIds]);
 
   useEffect(() => { fetchDetails(); }, [fetchDetails]);
@@ -551,9 +558,19 @@ const Immobilisations = () => {
 
   const handleDetailsCancel = () => { setDetailsDialogOpen(false); };
 
-  const handleDetailsDelete = async () => {
+  const handleDetailsDelete = () => {
     const idSel = Array.isArray(detailsSelectionModel) && detailsSelectionModel.length > 0 ? detailsSelectionModel[detailsSelectionModel.length - 1] : null;
     if (!idSel) { toast('Sélectionnez une ligne détail', { icon: 'ℹ️' }); return; }
+    setOpenConfirmDelete(true);
+  };
+
+  const confirmDetailsDelete = async (confirmed) => {
+    setOpenConfirmDelete(false);
+    if (!confirmed) return;
+
+    const idSel = Array.isArray(detailsSelectionModel) && detailsSelectionModel.length > 0 ? detailsSelectionModel[detailsSelectionModel.length - 1] : null;
+    if (!idSel) return;
+
     try {
       const fid = Number(id) || 0; const exoId = Number(selectedExerciceId) || 0;
       const onePcId = Array.isArray(selectedPcIds) && selectedPcIds.length > 0 ? Number(selectedPcIds[0]) : null;
@@ -783,9 +800,109 @@ const Immobilisations = () => {
     loadImmobilisations();
   }, [id, compteId, selectedExerciceId]);
 
+  const handleOpenConfirmGenerateEcritures = () => {
+    if (!selectedExerciceId) {
+      toast('Sélectionnez un exercice', { icon: 'ℹ️' });
+      return;
+    }
+    setOpenConfirmGenerateEcritures(true);
+  };
+
+  const handleOpenConfirmCancelEcritures = () => {
+    if (!selectedExerciceId) {
+      toast('Sélectionnez un exercice', { icon: 'ℹ️' });
+      return;
+    }
+    setOpenConfirmCancelEcritures(true);
+  };
+
   return (
     <Box>
       {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
+      {openConfirmDelete && (
+        <PopupConfirmDelete
+          msg="Voulez-vous vraiment supprimer cette immobilisation ?"
+          confirmationState={confirmDetailsDelete}
+        />
+      )}
+      {openConfirmGenerateEcritures && (
+        <PopupActionConfirmWithCheckbox
+          msg={"Voulez-vous vraiment générer l'écriture comptable des immobilisations pour l'exercice sélectionné ?"}
+          isLoading={loadingEcritures}
+          confirmationState={async (val, detailedByMonth) => {
+            if (!val) {
+              if (!loadingEcritures) setOpenConfirmGenerateEcritures(false);
+              return;
+            }
+            try {
+              const fid = Number(id) || 0;
+              const exoId = Number(selectedExerciceId) || 0;
+              if (!fid || !compteId || !exoId) {
+                toast('Sélectionnez un exercice', { icon: 'ℹ️' });
+                return;
+              }
+
+              setLoadingEcritures(true);
+              console.log('[IMMO][FRONTEND] Envoi de la requête de génération:', {
+                fileId: fid, 
+                compteId, 
+                exerciceId: exoId, 
+                detailedByMonth
+              });
+              const { data } = await axios.post(
+                '/administration/traitementSaisie/immobilisations/ecritures/generate',
+                { fileId: fid, compteId, exerciceId: exoId, detailedByMonth: detailedByMonth === 'oui' },
+                { timeout: 60000 }
+              );
+              console.log('[IMMO][FRONTEND] Réponse du serveur:', data);
+              if (data?.state) {
+                toast.success(`${data?.msg || 'Écritures générées'} (${Number(data?.created_lignes) || 0} lignes)`);
+                setOpenConfirmGenerateEcritures(false);
+              } else {
+                toast.error(data?.msg || 'Erreur lors de la génération');
+              }
+            } catch (e) {
+              toast.error(`Erreur lors de la génération: ${getErrMsg(e)}`);
+            } finally {
+              setLoadingEcritures(false);
+            }
+          }}
+        />
+      )}
+      {openConfirmCancelEcritures && (
+        <PopupConfirmDelete
+          msg="Voulez-vous vraiment supprimer les écritures comptables des immobilisations pour l'exercice sélectionné ?"
+          confirmationState={async (confirmed) => {
+            setOpenConfirmCancelEcritures(false);
+            if (!confirmed) return;
+
+            try {
+              const fid = Number(id) || 0;
+              const exoId = Number(selectedExerciceId) || 0;
+              if (!fid || !compteId || !exoId) {
+                toast('Sélectionnez un exercice', { icon: 'ℹ️' });
+                return;
+              }
+
+              setLoadingEcritures(true);
+              const { data } = await axios.post(
+                '/administration/traitementSaisie/immobilisations/ecritures/cancel',
+                { fileId: fid, compteId, exerciceId: exoId },
+                { timeout: 60000 }
+              );
+              if (data?.state) {
+                toast.success(`${data?.msg || 'Écritures supprimées'} (${Number(data?.deleted_lignes) || 0} lignes)`);
+              } else {
+                toast.error(data?.msg || 'Erreur lors de la suppression');
+              }
+            } catch (e) {
+              toast.error(`Erreur lors de la suppression: ${getErrMsg(e)}`);
+            } finally {
+              setLoadingEcritures(false);
+            }
+          }}
+        />
+      )}
       <TabContext value={'1'}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <TabList aria-label="immobilisations tabs">
@@ -852,6 +969,23 @@ const Immobilisations = () => {
                     })}
                   </Select>
                 </FormControl>
+              </Stack>
+
+              <Stack direction="row" spacing={1} alignItems="center" justifyContent="flex-end" sx={{ pr: 1 }}>
+                <Button
+                  onClick={handleOpenConfirmGenerateEcritures}
+                  variant="contained"
+                  sx={{ backgroundColor: initial.theme, textTransform: 'none', whiteSpace: 'nowrap' }}
+                >
+                  Générer écriture
+                </Button>
+                <Button
+                  onClick={handleOpenConfirmCancelEcritures}
+                  variant="contained"
+                  sx={{ backgroundColor: initial.button_delete_color, textTransform: 'none', whiteSpace: 'nowrap' }}
+                >
+                  Supprimer écritures
+                </Button>
               </Stack>
             </Stack>
 
@@ -1026,8 +1160,7 @@ const Immobilisations = () => {
                           disabled={
                             savingLignes ||
                             ligneLoading ||
-                            !(Array.isArray(detailsSelectionModel) && detailsSelectionModel.length > 0) ||
-                            (ligneTab === 'comp' ? isCompDegTab : isFiscDegTab)
+                            !(Array.isArray(detailsSelectionModel) && detailsSelectionModel.length > 0)
                           }
                           style={{ backgroundColor: initial.theme, color: 'white', textTransform: 'none' }}
                         >

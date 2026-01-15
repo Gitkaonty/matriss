@@ -33,17 +33,17 @@ router.post('/ajoutJournal', verifyJWT, verifyPermission('ADD'), upload.single('
 router.delete('/deleteJournal', verifyJWT, verifyPermission('DELETE'), saisieController.deleteJournal);
 
 // Rapprochements bancaires
-router.get('/rapprochements', saisieController.listRapprochements); // expects query: fileId, compteId, exerciceId, pcId
-router.get('/rapprochements/pcs', saisieController.listEligiblePc512); // expects query: fileId, compteId, exerciceId
-router.get('/rapprochements/ecritures', saisieController.listEcrituresForRapprochement); // expects query: fileId, compteId, exerciceId, pcId, endDate?
-router.post('/rapprochements/ecritures/mark', saisieController.updateEcrituresRapprochement); // body: { ids[], fileId, compteId, exerciceId, rapprocher:boolean, dateRapprochement? }
-router.get('/rapprochements/soldes', saisieController.computeSoldesRapprochement); // query: fileId, compteId, exerciceId, pcId, endDate, soldeBancaire?
+router.get('/rapprochements', saisieController.listRapprochements);
+router.get('/rapprochements/pcs', saisieController.listEligiblePc512); 
+router.get('/rapprochements/ecritures', saisieController.listEcrituresForRapprochement);
+router.post('/rapprochements/ecritures/mark', saisieController.updateEcrituresRapprochement);
+router.get('/rapprochements/soldes', saisieController.computeSoldesRapprochement); 
 router.post('/rapprochements', saisieController.createRapprochement);
 router.put('/rapprochements/:id', saisieController.updateRapprochement);
 router.delete('/rapprochements/:id', saisieController.deleteRapprochement);
 
 // Immobilisations: liste des comptes de classe 2 (hors 28, 29)
-router.get('/immobilisations/pcs', saisieController.listImmobilisationsPc2); // expects query: fileId, compteId
+router.get('/immobilisations/pcs', saisieController.listImmobilisationsPc2);
 
 // Immobilisations: détails (details_immo)
 // GET list for a selected PC (pcId is the plan comptable id), filtered by fileId, compteId, exerciceId
@@ -60,11 +60,17 @@ router.get('/immobilisations/details/lignes', saisieController.listDetailsImmoLi
 router.get('/immobilisations/details/lineaire/preview', saisieController.previewImmoLineaire);
 router.get('/immobilisations/details/degresif/preview', saisieController.previewImmoDegressif);
 router.post('/immobilisations/details/lineaire/save', saisieController.saveImmoLineaire);
-// router.post('/immobilisations/details/degresif/save', saisieController.saveImmoDegressif);
+router.post('/immobilisations/details/degresif/save', saisieController.saveImmoDegressif);
+
+// Immobilisations: génération écritures comptables (journal Imau)
+router.post('/immobilisations/ecritures/generate', saisieController.generateImmoEcritures);
+
+// Immobilisations: annuler écritures comptables (journal Imau)
+router.post('/immobilisations/ecritures/cancel', saisieController.cancelImmoEcritures);
 
 // Rapprochements exports
-router.get('/rapprochements/export/pdf', exportRapprochementsController.exportPdf); // query: fileId, compteId, exerciceId, pcId, rapproId
-router.get('/rapprochements/export/excel', exportRapprochementsController.exportExcel); // query: fileId, compteId, exerciceId, pcId, rapproId
+router.get('/rapprochements/export/pdf', exportRapprochementsController.exportPdf);
+router.get('/rapprochements/export/excel', exportRapprochementsController.exportExcel);
 
 // Récupération de journal avec 10 lignes d'écriture
 router.get('/getJournal/:id_compte/:id_dossier/:id_exercice', saisieController.getJournal);
