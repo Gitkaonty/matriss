@@ -60,7 +60,7 @@ const handleRefreshToken = async (req, res) => {
             })
 
             if (permissionUser.length === 0) {
-                const userPermissionCreated = await createUserPermission(foundUser.compte_id, id_role);
+                const userPermissionCreated = await createUserPermission(foundUser.id, id_role);
                 permissionUser = userPermissionCreated.filter(val => val.allowed === true);
             }
 

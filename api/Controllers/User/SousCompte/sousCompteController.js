@@ -11,8 +11,11 @@ const userPermission = db.userPermission;
 const rolePermission = db.rolePermission;
 const roles = db.roles;
 const permissions = db.permissions;
+
 const compteDossiers = db.compteDossiers;
+const comptePortefeuilles = db.comptePortefeuilles;
 const dossiers = db.dossiers;
+const portefeuilles = db.portefeuille;
 
 const transporter = require('../../../config/mailer');
 
@@ -92,7 +95,15 @@ exports.addSousCompte = async (req, res) => {
                 attributes: ['id']
             });
 
+            const portefeuillesExistants = await portefeuilles.findAll({
+                where: {
+                    id: { [Op.in]: portefeuille }
+                },
+                attributes: ['id']
+            })
+
             const dossiersValides = dossiersExistants.map(d => d.id);
+            const portefeuillesValides = portefeuillesExistants.map(d => d.id);
 
             if (dossiersValides.length > 0) {
                 const dossiersDejaLies = await compteDossiers.findAll({
@@ -114,6 +125,31 @@ exports.addSousCompte = async (req, res) => {
                         dossiersAInserer.map(id_dossier => ({
                             user_id,
                             id_dossier
+                        }))
+                    );
+                }
+            }
+
+            if (portefeuillesValides.length > 0) {
+                const portefeuillesDejaLies = await comptePortefeuilles.findAll({
+                    where: {
+                        user_id,
+                        id_portefeuille: { [Op.in]: portefeuillesValides }
+                    },
+                    attributes: ['id_portefeuille']
+                });
+
+                const portefeuillesDejaLiesIds = portefeuillesDejaLies.map(d => d.id_portefeuille);
+
+                const portefeuillesAInserer = portefeuillesValides.filter(
+                    id => !portefeuillesDejaLiesIds.includes(id)
+                );
+
+                if (portefeuillesAInserer.length > 0) {
+                    await comptePortefeuilles.bulkCreate(
+                        portefeuillesAInserer.map(id_portefeuille => ({
+                            user_id,
+                            id_portefeuille
                         }))
                     );
                 }
@@ -147,6 +183,7 @@ exports.addSousCompte = async (req, res) => {
                 state: true,
                 compte: {}
             });
+
         } else {
             await users.update({
                 role_id,
@@ -167,6 +204,12 @@ exports.addSousCompte = async (req, res) => {
                 }
             })
 
+            await comptePortefeuilles.destroy({
+                where: {
+                    user_id
+                }
+            })
+
             const dossiersExistants = await dossiers.findAll({
                 where: {
                     id: { [Op.in]: dossier }
@@ -174,7 +217,15 @@ exports.addSousCompte = async (req, res) => {
                 attributes: ['id']
             });
 
+            const portefeuillesExistants = await portefeuilles.findAll({
+                where: {
+                    id: { [Op.in]: portefeuille }
+                },
+                attributes: ['id']
+            })
+
             const dossiersValides = dossiersExistants.map(d => d.id);
+            const portefeuillesValides = portefeuillesExistants.map(d => d.id);
 
             if (dossiersValides.length > 0) {
                 const dossiersDejaLies = await compteDossiers.findAll({
@@ -196,6 +247,31 @@ exports.addSousCompte = async (req, res) => {
                         dossiersAInserer.map(id_dossier => ({
                             user_id,
                             id_dossier
+                        }))
+                    );
+                }
+            }
+
+            if (portefeuillesValides.length > 0) {
+                const portefeuillesDejaLies = await comptePortefeuilles.findAll({
+                    where: {
+                        user_id,
+                        id_portefeuille: { [Op.in]: portefeuillesValides }
+                    },
+                    attributes: ['id_portefeuille']
+                });
+
+                const portefeuillesDejaLiesIds = portefeuillesDejaLies.map(d => d.id_portefeuille);
+
+                const portefeuillesAInserer = portefeuillesValides.filter(
+                    id => !portefeuillesDejaLiesIds.includes(id)
+                );
+
+                if (portefeuillesAInserer.length > 0) {
+                    await comptePortefeuilles.bulkCreate(
+                        portefeuillesAInserer.map(id_portefeuille => ({
+                            user_id,
+                            id_portefeuille
                         }))
                     );
                 }
@@ -466,7 +542,6 @@ exports.verifyEmail = async (req, res) => {
         });
 
         // Envoi de l'email de réinitialisation
-        // const resetUrl = `http://localhost:5173/reset-password/token=${token}`;
         const resetUrl = `${process.env.FRONT_END_ADMIN_LINK}=${token}`;
         await transporter.sendMail({
             from: `"Kaonti" <${process.env.MAIL_USER}>`,
@@ -703,7 +778,7 @@ exports.updateUserRole = async (req, res) => {
         const { userId, roleId } = req.body;
 
         if (!userId || !roleId) {
-            return res.status(409).json({ message: 'Réponse non trouvée', state: false });
+            return res.status(409).json({ message: 'Données incomplet', state: false });
         }
 
         await users.update(
@@ -727,6 +802,188 @@ exports.getAllRoles = async (req, res) => {
     try {
         const rolesData = await roles.findAll({ order: [['id', 'ASC']] });
         return res.status(200).json(rolesData);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Erreur serveur', state: false, error: error.message });
+    }
+}
+
+exports.getAllCompteDossiers = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        if (!userId) {
+            return res.status(409).json({ message: 'Utilisateur non trouvé', state: false });
+        }
+        const user_id = Number(userId);
+        const compteDossierData = (await compteDossiers.findAll({
+            where: {
+                user_id
+            },
+            include: [
+                { model: dossiers, attributes: ['dossier'] }
+            ]
+        })).map(val => {
+            const data = val.toJSON();
+            data.id_dossier = Number(val.id_dossier);
+            data.user_id = Number(val.user_id);
+            data.dossier = val?.dossier?.dossier;
+            return data;
+        })
+        return res.status(200).json(compteDossierData);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Erreur serveur', state: false, error: error.message });
+    }
+}
+
+exports.deleteCompteDossiers = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!id) {
+            return res.status(409).json({ message: 'Identifiant non trouvé', state: false })
+        }
+        const compteDossiersData = await compteDossiers.findByPk(id);
+        if (compteDossiersData) {
+            await compteDossiersData.destroy();
+            return res.status(200).json({ message: 'Supprimé avec succès', state: true })
+        } else {
+            return res.status(409).json({ message: 'Données non trouvé', state: false })
+        }
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Erreur serveur', state: false, error: error.message });
+    }
+}
+
+exports.addCompteDossiers = async (req, res) => {
+    try {
+        const { idDossier, userId } = req.body;
+        if (!idDossier || !userId) {
+            return res.status(409).json({ message: 'Paramètres manquantes', state: false });
+        }
+        const id_dossier = Number(idDossier);
+        const user_id = Number(userId);
+
+        const testIfExist = await compteDossiers.findOne({
+            where: {
+                id_dossier,
+                user_id
+            }
+        })
+
+        if (testIfExist) {
+            return res.status(200).json({ message: 'Ces données existes déjà', state: false })
+        }
+
+        const compteDossierCreated = await compteDossiers.create({
+            id_dossier,
+            user_id
+        });
+
+        if (compteDossierCreated) {
+            return res.status(200).json({ message: 'Ajouté avec succès', state: true })
+        } else {
+            return res.status(400).json({ message: 'Erreur lors de l\'ajout', state: false })
+        }
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Erreur serveur', state: false, error: error.message });
+    }
+}
+
+exports.addOrUpdateCompteDossier = async (req, res) => {
+    try {
+        const { userId, idCompteDossier, idDossier } = req.body;
+
+        if (!userId || !idDossier) {
+            return res.status(400).json({
+                state: false,
+                msg: 'Champs obligatoires manquants'
+            });
+        }
+
+        const user_id = Number(userId);
+        const id_dossier = Number(idDossier);
+        const id_compte_dossier = Number(idCompteDossier);
+
+        if ([user_id, id_dossier, id_compte_dossier].some(isNaN)) {
+            return res.status(400).json({
+                state: false,
+                msg: "Identifiants invalides"
+            });
+        }
+
+        let resData = { state: false, msg: '' };
+
+        if (!id_compte_dossier || id_compte_dossier <= 0) {
+            await compteDossiers.create({
+                user_id,
+                id_dossier,
+            });
+
+            resData.state = true;
+            resData.msg = "Nouvelle ligne sauvegardée avec succès.";
+        }
+        else {
+            const exist = await compteDossiers.findOne({
+                where: {
+                    id: id_compte_dossier,
+                    user_id,
+                    id_dossier
+                }
+            });
+
+            if (!exist) {
+                return res.status(404).json({
+                    state: false,
+                    msg: "Consolidation introuvable"
+                });
+            }
+
+            await compteDossiers.update(
+                { id_dossier },
+                { where: { id: id_compte_dossier } }
+            );
+
+            resData.state = true;
+            resData.msg = "Modification effectuée avec succès.";
+        }
+
+        return res.json(resData);
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            state: false,
+            msg: "Erreur serveur",
+            error: error.message
+        });
+    }
+};
+
+exports.getAllComptePortefeuilles = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        if (!userId) {
+            return res.status(409).json({ message: 'Utilisateur non trouvé', state: false });
+        }
+        const user_id = Number(userId);
+        const comptePortefeuilleData = (await comptePortefeuilles.findAll({
+            where: {
+                user_id
+            },
+            include: [
+                { model: portefeuilles, attributes: ['nom'] }
+            ]
+        })).map(val => {
+            const data = val.toJSON();
+            data.id = Number(val.id);
+            data.id_portefeuille = Number(val.id_portefeuille);
+            data.user_id = Number(val.user_id);
+            data.portefeuille = val?.portefeuille?.nom;
+            return data;
+        })
+        return res.status(200).json({ state: true, walletlist: comptePortefeuilleData });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: 'Erreur serveur', state: false, error: error.message });

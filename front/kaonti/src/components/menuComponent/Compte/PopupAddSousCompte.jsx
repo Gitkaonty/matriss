@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Typography, Stack, TextField, FormHelperText, RadioGroup, Radio, Autocomplete } from '@mui/material';
-import { FormControl, FormControlLabel, Checkbox, FormLabel } from "@mui/material";
+import { useEffect, useState } from 'react';
+import { Typography, Stack, TextField, FormHelperText, RadioGroup, Radio, Box, Tab } from '@mui/material';
+import { FormControl, FormControlLabel, FormLabel } from "@mui/material";
 import Button from '@mui/material/Button';
 import { styled } from '@mui/material/styles';
 import InputAdornment from '@mui/material/InputAdornment';
@@ -20,15 +20,14 @@ import toast from 'react-hot-toast';
 import { useFormik } from 'formik';
 import * as Yup from "yup";
 
-import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
-import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import { init } from '../../../../init';
 import axios from '../../../../config/axios';
 import { inputAutoFill } from '../../inputStyle/inputAutoFill';
 import roleMapping from '../../../../config/rolesMappin';
+import { TabContext, TabList, TabPanel } from '@mui/lab';
 
-const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
-const checkedIcon = <CheckBoxIcon fontSize="small" />;
+import TabDossier from './TabDossier';
+import TabPortefeuille from './TabPortefeuille';
 
 let initial = init[0];
 
@@ -39,26 +38,24 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialogActions-root': {
         padding: theme.spacing(1),
     },
-    // '& .MuiPaper-root': {
-    //     minHeight: '370px',
-    // },
     '& .MuiPaper-root': {
-        minHeight: '350px',
+        minHeight: '450px',
     },
 }));
 
-const PopupAddSousCompte = ({ selectedRowCompteIds, confirmationState, isRefreshedSousCompte, setIsRefreshedSousCompte, rowSelectedData, listeRoles, listePortefeuille, listeDossier, selectedRow, setSelectedRow, listeCompteDossier, actionSousCompte }) => {
+const PopupAddSousCompte = ({ selectedRowCompteIds, confirmationState, isRefreshedSousCompte, setIsRefreshedSousCompte, rowSelectedData, listeRoles, listePortefeuille, listeDossier, selectedRow, setSelectedRow, listeCompteDossier, setListeCompteDossier, actionSousCompte, listeComptePortefeuille, setListeComptePortefeuille }) => {
     const editSousCompte = actionSousCompte === 'Ajout';
 
     const [showPassword, setShowPassword] = useState(false);
     const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false);
+    const [value, setValue] = useState("1");
 
     const handleClose = () => {
         confirmationState(false);
         setIsRefreshedSousCompte(!isRefreshedSousCompte);
     }
 
-    const getValidationSchema = (action, hasPortefeuille, hasDossier) =>
+    const getValidationSchema = (action) =>
         Yup.object({
             username: Yup.string()
                 .required("Le nom est obligatoire")
@@ -89,18 +86,7 @@ const PopupAddSousCompte = ({ selectedRowCompteIds, confirmationState, isRefresh
                 otherwise: schema => schema.notRequired()
             }),
             roles: Yup.string().required("Sélectionnez un rôle"),
-            portefeuille: Yup.array().when([], {
-                is: () => hasPortefeuille,
-                then: schema => schema.min(1, "Sélectionnez un portefeuille").required("Sélectionnez un portefeuille"),
-                otherwise: schema => schema.notRequired()
-            }),
-            dossier: Yup.array().when([], {
-                is: () => hasDossier,
-                then: schema => schema.min(1, "Sélectionnez un dossier").required("Sélectionnez un dossier"),
-                otherwise: schema => schema.notRequired()
-            }),
         });
-
 
     const formData = useFormik({
         validateOnChange: true,
@@ -112,17 +98,10 @@ const PopupAddSousCompte = ({ selectedRowCompteIds, confirmationState, isRefresh
             passwordConfirmation: '',
             roles: !editSousCompte ? selectedRow?.role_id : '',
             compte_id: selectedRowCompteIds,
-            portefeuille: !editSousCompte ? listePortefeuille.filter(p =>
-                selectedRow?.id_portefeuille?.map(Number).includes(p.id)
-            ) : [],
-            dossier: !editSousCompte ? listeDossier.filter(d =>
-                listeCompteDossier.some(cd => cd.id_dossier === d.id)
-            ) : []
         },
         validationSchema: getValidationSchema(actionSousCompte, listePortefeuille.length > 0, listeDossier.length > 0),
         context: {
             hasPortefeuille: listePortefeuille?.length > 0,
-            hasDossier: listeDossier?.length > 0,
             action: actionSousCompte
         },
         onSubmit: (values) => {
@@ -130,8 +109,8 @@ const PopupAddSousCompte = ({ selectedRowCompteIds, confirmationState, isRefresh
                 [values.roles]: roleMapping[values.roles]
             };
 
-            const portefeuilleIds = values.portefeuille.map(val => val.id);
-            const dossierIds = values.dossier.map(val => val.id);
+            const dossierIds = listeCompteDossier.map(val => val.id_dossier);
+            const portefeuillesIds = listeComptePortefeuille.map(val => val.id_portefeuille);
 
             axios.post('/sous-compte/addSousCompte', {
                 username: values.username,
@@ -140,10 +119,10 @@ const PopupAddSousCompte = ({ selectedRowCompteIds, confirmationState, isRefresh
                 role_id: Number(values.roles),
                 compte_id: values.compte_id,
                 roles: formattedRoles,
-                portefeuille: portefeuilleIds,
-                dossier: dossierIds,
                 action: actionSousCompte,
-                user_id: selectedRow?.id
+                user_id: selectedRow?.id,
+                dossier: dossierIds,
+                portefeuille: portefeuillesIds,
             })
                 .then((response) => {
                     if (response?.data?.state) {
@@ -188,6 +167,20 @@ const PopupAddSousCompte = ({ selectedRowCompteIds, confirmationState, isRefresh
         event.preventDefault();
     };
 
+    const handleChangeTAB = (event, newValue) => {
+        setValue(newValue);
+    };
+
+    useEffect(() => {
+        if (editSousCompte) {
+            setListeCompteDossier([]);
+            setListeComptePortefeuille([]);
+        } else {
+            setListeCompteDossier(listeCompteDossier);
+            setListeComptePortefeuille(listeComptePortefeuille);
+        }
+    }, [editSousCompte])
+
     return (
         <form
             onSubmit={formData.handleSubmit}
@@ -196,13 +189,12 @@ const PopupAddSousCompte = ({ selectedRowCompteIds, confirmationState, isRefresh
                 onClose={handleClose}
                 aria-labelledby="customized-dialog-title"
                 open={true}
+                maxWidth={false}
                 PaperProps={{
                     sx: {
                         width: 800,
-                        // maxWidth: '500px',
                     }
                 }}
-                fullWidth={true}
             >
 
                 <DialogTitle
@@ -216,7 +208,13 @@ const PopupAddSousCompte = ({ selectedRowCompteIds, confirmationState, isRefresh
                     }}
                 >
                     <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', fontSize: 16 }}>
-                        {editSousCompte === false ? 'Modification d\'une sous-compte' : 'Ajout d\'une nouvelle sous-compte'}
+                        {
+                            editSousCompte === false
+                                ?
+                                'Modification d\'un sous-compte'
+                                :
+                                'Ajout d\'un nouvau sous-compte'
+                        }
                     </Typography>
                 </DialogTitle>
 
@@ -234,406 +232,323 @@ const PopupAddSousCompte = ({ selectedRowCompteIds, confirmationState, isRefresh
                     <CloseIcon />
                 </IconButton>
 
-                <DialogContent>
-                    <Stack alignItems={'left'}
-                        direction={"column"} spacing={2} style={{ marginLeft: '0px' }}
+                <DialogContent
+                    sx={{
+                        height: 600
+                    }}
+                >
+                    <TabContext
+                        value={value}
                     >
-
-                        <FormControl size="small" fullWidth style={{ width: '100%' }}>
-                            <TextField
-                                size="small"
-                                name="nom-sous-compte"
-                                label="Nom du compte"
-                                fullWidth
-                                variant='standard'
-                                disabled={true}
-                                value={rowSelectedData?.nom}
-                                InputProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        padding: '2px 4px',
-                                        height: '30px',
-                                    },
-                                    sx: {
-                                        '& input': {
-                                            height: '30px',
-                                        },
-                                    },
-                                }}
-                                InputLabelProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        marginTop: '-2px',
-                                    },
-                                }}
-                                sx={{
-                                    ...inputAutoFill
-                                }}
-                            />
-                        </FormControl>
-
-                        <FormControl size="small" fullWidth style={{ width: '100%' }}>
-                            <TextField
-                                size="small"
-                                name="username"
-                                label="Nom d'utilisateur"
-                                fullWidth
-                                variant='standard'
-                                required
-                                value={formData.values.username}
-                                onChange={formData.handleChange}
-                                onBlur={formData.handleBlur}
-                                error={Boolean(formData.touched.username && formData.errors.username)}
-                                helperText={formData.touched.username && formData.errors.username}
-                                InputProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        padding: '2px 4px',
-                                        height: '30px',
-                                    },
-                                    sx: {
-                                        '& input': {
-                                            height: '30px',
-                                        },
-                                    },
-                                }}
-                                InputLabelProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        marginTop: '-2px',
-                                    },
-                                }}
-                                sx={{
-                                    ...inputAutoFill
-                                }}
-                            />
-                        </FormControl>
-
-                        <input
-                            type="text"
-                            name="fake_email"
-                            autoComplete="username"
-                            style={{ display: "none" }}
-                        />
-
-                        <FormControl size="small" fullWidth>
-                            <TextField
-                                size="small"
-                                label="Email"
-                                name="email_add"
-                                fullWidth
-                                variant="standard"
-                                required
-                                value={formData.values.email_add ?? ""}
-                                onChange={formData.handleChange}
-                                onBlur={formData.handleBlur}
-                                error={Boolean(formData.touched.email_add && formData.errors.email_add)}
-                                helperText={formData.touched.email_add && formData.errors.email_add}
-                                autoComplete="new-email"
-                                InputProps={{
-                                    style: { fontSize: "13px", padding: "2px 4px", height: "30px" },
-                                    sx: { "& input": { height: "30px" } },
-                                }}
-                                InputLabelProps={{
-                                    style: { fontSize: "13px", marginTop: "-2px" },
-                                }}
-                            />
-                        </FormControl>
-
-                        <input
-                            type="password"
-                            name="fake_password"
-                            autoComplete="new-password"
-                            style={{ display: "none" }}
-                        />
-
-                        <FormControl size="small" fullWidth style={{ width: '100%' }}>
-                            <TextField
-                                size="small"
-                                label="Mot de passe"
-                                name="password"
-                                fullWidth
-                                variant='standard'
-                                type={showPassword ? 'text' : 'password'}
-                                required
-                                value={formData.values.password || ""}
-                                onChange={formData.handleChange}
-                                onBlur={formData.handleBlur}
-                                error={Boolean(formData.touched.password && formData.errors.password)}
-                                helperText={formData.touched.password && formData.errors.password}
-                                autoComplete="new-password"
-                                InputProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        padding: '2px 4px',
-                                        height: '30px',
-                                        pointerEvents: !editSousCompte ? 'none' : 'auto'
-                                    },
-                                    sx: {
-                                        '& input': {
-                                            height: '30px',
-                                        },
-                                    },
-                                    readOnly: !editSousCompte,
-                                    endAdornment: (
-                                        <InputAdornment position="end">
-                                            <IconButton
-                                                aria-label={showPassword ? 'hide password' : 'show password'}
-                                                onClick={handleClickShowPassword}
-                                                onMouseDown={handleMouseDownPassword}
-                                                onMouseUp={handleMouseUpPassword}
-                                            >
-                                                {showPassword ? <VisibilityOff /> : <Visibility />}
-                                            </IconButton>
-                                        </InputAdornment>
-                                    ),
-                                }}
-                                InputLabelProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        marginTop: '-2px',
-                                    },
-                                }}
-                                sx={{
-                                    ...inputAutoFill
-                                }}
-                            />
-                        </FormControl>
-
-                        <FormControl size="small" fullWidth style={{ width: '100%' }}>
-                            <TextField
-                                size="small"
-                                label="Confirmation du mot de passe"
-                                name="passwordConfirmation"
-                                fullWidth
-                                variant='standard'
-                                type={showPasswordConfirmation ? 'text' : 'password'}
-                                required
-                                value={formData.values.passwordConfirmation || ""}
-                                onChange={formData.handleChange}
-                                onBlur={formData.handleBlur}
-                                error={Boolean(formData.touched.passwordConfirmation && formData.errors.passwordConfirmation)}
-                                helperText={formData.touched.passwordConfirmation && formData.errors.passwordConfirmation}
-                                InputProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        padding: '2px 4px',
-                                        height: '30px',
-                                        pointerEvents: !editSousCompte ? 'none' : 'auto'
-                                    },
-                                    sx: {
-                                        '& input': {
-                                            height: '30px',
-                                        },
-                                    },
-                                    readOnly: !editSousCompte,
-                                    endAdornment: (
-                                        <InputAdornment position="end">
-                                            <IconButton
-                                                aria-label={showPasswordConfirmation ? 'hide password' : 'show password'}
-                                                onClick={handleClickShowPasswordConfirmation}
-                                                onMouseDown={handleMouseDownPasswordConfirmation}
-                                                onMouseUp={handleMouseUpPasswordConfirmation}
-                                            >
-                                                {showPasswordConfirmation ? <VisibilityOff /> : <Visibility />}
-                                            </IconButton>
-                                        </InputAdornment>
-                                    ),
-                                }}
-                                InputLabelProps={{
-                                    style: {
-                                        fontSize: '13px',
-                                        marginTop: '-2px',
-                                    },
-                                }}
-                                sx={{
-                                    ...inputAutoFill
-                                }}
-                            />
-                        </FormControl>
-
-                        <FormControl
-                            component="fieldset"
-                            size="small"
-                            fullWidth
-                            style={{ width: "100%" }}
-                            error={Boolean(formData.touched.roles && formData.errors.roles)}
+                        <Box
+                            sx={{
+                                padding: 0,
+                                marginTop: -2
+                            }}
                         >
-                            <FormLabel component="legend" style={{ fontSize: "13px" }}>
-                                Rôle de l'utilisateur
-                            </FormLabel>
-                            <RadioGroup
-                                row
-                                name="roles"
-                                value={formData.values.roles || ""}
-                                onChange={(e) => {
-                                    formData.setFieldValue("roles", e.target.value)
-                                }
-                                }
-                                onBlur={() => formData.setFieldTouched("roles", true)}
+                            <TabList onChange={handleChangeTAB} aria-label="lab API tabs example" variant='scrollable'>
+                                <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Compte" value="1" />
+                                <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Portefeuille" value="2" />
+                                <Tab style={{ textTransform: 'none', outline: 'none', border: 'none', }} label="Dossier" value="3" />
+                            </TabList>
+                            <TabPanel
+                                value="1"
+                                sx={{
+                                    padding: 2
+                                }}
                             >
-                                {listeRoles.map((role) => (
-                                    <FormControlLabel
-                                        // disabled={!editSousCompte}
-                                        key={role.id}
-                                        value={role.id}
-                                        control={<Radio size="small" />}
-                                        label={role.nom}
-                                        sx={{ "& .MuiFormControlLabel-label": { fontSize: "13px" } }}
-                                    />
-                                ))}
-                            </RadioGroup>
-                            {formData.touched.roles && formData.errors.roles && (
-                                <FormHelperText
+                                <Stack
+                                    alignItems={'left'}
+                                    direction={"column"}
+                                    spacing={2}
                                     style={{
-                                        marginLeft: 0,
-                                        fontSize: "12px",
+                                        marginLeft: '0px',
+                                        marginTop: '10px'
                                     }}
                                 >
-                                    {formData.errors.roles}
-                                </FormHelperText>
-                            )}
-                        </FormControl>
-
-                        <FormControl
-                            component="fieldset"
-                            size="small"
-                            fullWidth
-                            style={{ width: "100%" }}
-                            error={Boolean(formData.touched.portefeuille && formData.errors.portefeuille)}
-                        >
-                            <Autocomplete
-                                // disabled={!editSousCompte}
-                                multiple
-                                id="checkboxes-tags-demo-portefeuille"
-                                options={listePortefeuille}
-                                disableCloseOnSelect
-                                getOptionLabel={(option) => option.nom}
-                                isOptionEqualToValue={(option, value) => option.id === value.id}
-                                onChange={(_event, newValue) => {
-                                    formData.setFieldValue("portefeuille", newValue);
-                                }}
-                                value={formData.values.portefeuille || []}
-                                renderOption={(props, option, { selected }) => {
-                                    const { key, ...optionProps } = props;
-                                    return (
-                                        <li
-                                            key={key}
-                                            {...optionProps}
-                                            style={{
-                                                paddingTop: 2,
-                                                paddingBottom: 2,
-                                                paddingLeft: 4,
-                                                paddingRight: 4,
-                                                fontSize: "0.8rem",
-                                                display: "flex",
-                                                alignItems: "center"
+                                    <FormControl size="small" fullWidth style={{ width: '100%' }}>
+                                        <TextField
+                                            size="small"
+                                            name="nom-sous-compte"
+                                            label="Nom du compte"
+                                            fullWidth
+                                            variant='standard'
+                                            disabled={true}
+                                            value={rowSelectedData?.nom}
+                                            InputProps={{
+                                                style: {
+                                                    fontSize: '13px',
+                                                    padding: '2px 4px',
+                                                    height: '30px',
+                                                },
+                                                sx: {
+                                                    '& input': {
+                                                        height: '30px',
+                                                    },
+                                                },
                                             }}
-                                        >
-                                            <Checkbox
-                                                icon={icon}
-                                                checkedIcon={checkedIcon}
-                                                style={{ marginRight: 8 }}
-                                                checked={selected}
-                                            />
-                                            {option.nom}
-                                        </li>
-                                    );
-                                }}
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        variant="standard"
-                                        label="Portefeuille"
-                                        InputLabelProps={{
-                                            style: { fontSize: "13px", marginTop: "-2px" },
-                                        }}
-                                    />
-                                )}
-                            />
-
-                            {formData.touched.portefeuille && formData.errors.portefeuille && (
-                                <FormHelperText
-                                    style={{
-                                        marginLeft: 0,
-                                        fontSize: "12px",
-                                    }}
-                                >
-                                    {formData.errors.portefeuille}
-                                </FormHelperText>
-                            )}
-                        </FormControl>
-
-                        <FormControl
-                            component="fieldset"
-                            size="small"
-                            fullWidth
-                            style={{ width: "100%" }}
-                            error={Boolean(formData.touched.dossier && formData.errors.dossier)}
-                        >
-                            <Autocomplete
-                                // disabled={!editSousCompte}
-                                multiple
-                                id="checkboxes-tags-demo-dossier"
-                                options={listeDossier}
-                                disableCloseOnSelect
-                                getOptionLabel={(option) => option.dossier}
-                                isOptionEqualToValue={(option, value) => option.id === value.id}
-                                onChange={(_event, newValue) => {
-                                    formData.setFieldValue("dossier", newValue);
-                                }}
-                                value={formData.values.dossier || []}
-                                renderOption={(props, option, { selected }) => {
-                                    const { key, ...optionProps } = props;
-                                    return (
-                                        <li
-                                            key={key}
-                                            {...optionProps}
-                                            style={{
-                                                paddingTop: 2,
-                                                paddingBottom: 2,
-                                                paddingLeft: 4,
-                                                paddingRight: 4,
-                                                fontSize: "0.8rem",
-                                                display: "flex",
-                                                alignItems: "center"
+                                            InputLabelProps={{
+                                                style: {
+                                                    fontSize: '13px',
+                                                    marginTop: '-2px',
+                                                },
                                             }}
-                                        >
-                                            <Checkbox
-                                                icon={icon}
-                                                checkedIcon={checkedIcon}
-                                                style={{ marginRight: 8 }}
-                                                checked={selected}
-                                            />
-                                            {option.dossier}
-                                        </li>
-                                    );
-                                }}
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        variant="standard"
-                                        label="Dossier"
-                                        InputLabelProps={{
-                                            style: { fontSize: "13px", marginTop: "-2px" },
-                                        }}
+                                            sx={{
+                                                ...inputAutoFill
+                                            }}
+                                        />
+                                    </FormControl>
+
+                                    <FormControl size="small" fullWidth style={{ width: '100%' }}>
+                                        <TextField
+                                            size="small"
+                                            name="username"
+                                            label="Nom d'utilisateur"
+                                            fullWidth
+                                            variant='standard'
+                                            required
+                                            value={formData.values.username}
+                                            onChange={formData.handleChange}
+                                            onBlur={formData.handleBlur}
+                                            error={Boolean(formData.touched.username && formData.errors.username)}
+                                            helperText={formData.touched.username && formData.errors.username}
+                                            InputProps={{
+                                                style: {
+                                                    fontSize: '13px',
+                                                    padding: '2px 4px',
+                                                    height: '30px',
+                                                },
+                                                sx: {
+                                                    '& input': {
+                                                        height: '30px',
+                                                    },
+                                                },
+                                            }}
+                                            InputLabelProps={{
+                                                style: {
+                                                    fontSize: '13px',
+                                                    marginTop: '-2px',
+                                                },
+                                            }}
+                                            sx={{
+                                                ...inputAutoFill
+                                            }}
+                                        />
+                                    </FormControl>
+
+                                    <input
+                                        type="text"
+                                        name="fake_email"
+                                        autoComplete="username"
+                                        style={{ display: "none" }}
                                     />
-                                )}
-                            />
 
-                            {formData.touched.dossier && formData.errors.dossier && (
-                                <FormHelperText
-                                    style={{
-                                        marginLeft: 0,
-                                        fontSize: "12px",
-                                    }}
-                                >
-                                    {formData.errors.dossier}
-                                </FormHelperText>
-                            )}
-                        </FormControl>
+                                    <FormControl size="small" fullWidth>
+                                        <TextField
+                                            size="small"
+                                            label="Email"
+                                            name="email_add"
+                                            fullWidth
+                                            variant="standard"
+                                            required
+                                            value={formData.values.email_add ?? ""}
+                                            onChange={formData.handleChange}
+                                            onBlur={formData.handleBlur}
+                                            error={Boolean(formData.touched.email_add && formData.errors.email_add)}
+                                            helperText={formData.touched.email_add && formData.errors.email_add}
+                                            autoComplete="new-email"
+                                            InputProps={{
+                                                style: { fontSize: "13px", padding: "2px 4px", height: "30px" },
+                                                sx: { "& input": { height: "30px" } },
+                                            }}
+                                            InputLabelProps={{
+                                                style: { fontSize: "13px", marginTop: "-2px" },
+                                            }}
+                                        />
+                                    </FormControl>
 
-                    </Stack>
+                                    <input
+                                        type="password"
+                                        name="fake_password"
+                                        autoComplete="new-password"
+                                        style={{ display: "none" }}
+                                    />
+
+                                    <FormControl size="small" fullWidth style={{ width: '100%' }}>
+                                        <TextField
+                                            size="small"
+                                            label="Mot de passe"
+                                            name="password"
+                                            fullWidth
+                                            variant='standard'
+                                            type={showPassword ? 'text' : 'password'}
+                                            required
+                                            value={formData.values.password || ""}
+                                            onChange={formData.handleChange}
+                                            onBlur={formData.handleBlur}
+                                            error={Boolean(formData.touched.password && formData.errors.password)}
+                                            helperText={formData.touched.password && formData.errors.password}
+                                            autoComplete="new-password"
+                                            InputProps={{
+                                                style: {
+                                                    fontSize: '13px',
+                                                    padding: '2px 4px',
+                                                    height: '30px',
+                                                    pointerEvents: !editSousCompte ? 'none' : 'auto'
+                                                },
+                                                sx: {
+                                                    '& input': {
+                                                        height: '30px',
+                                                    },
+                                                },
+                                                readOnly: !editSousCompte,
+                                                endAdornment: (
+                                                    <InputAdornment position="end">
+                                                        <IconButton
+                                                            aria-label={showPassword ? 'hide password' : 'show password'}
+                                                            onClick={handleClickShowPassword}
+                                                            onMouseDown={handleMouseDownPassword}
+                                                            onMouseUp={handleMouseUpPassword}
+                                                        >
+                                                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                                                        </IconButton>
+                                                    </InputAdornment>
+                                                ),
+                                            }}
+                                            InputLabelProps={{
+                                                style: {
+                                                    fontSize: '13px',
+                                                    marginTop: '-2px',
+                                                },
+                                            }}
+                                            sx={{
+                                                ...inputAutoFill
+                                            }}
+                                        />
+                                    </FormControl>
+
+                                    <FormControl size="small" fullWidth style={{ width: '100%' }}>
+                                        <TextField
+                                            size="small"
+                                            label="Confirmation du mot de passe"
+                                            name="passwordConfirmation"
+                                            fullWidth
+                                            variant='standard'
+                                            type={showPasswordConfirmation ? 'text' : 'password'}
+                                            required
+                                            value={formData.values.passwordConfirmation || ""}
+                                            onChange={formData.handleChange}
+                                            onBlur={formData.handleBlur}
+                                            error={Boolean(formData.touched.passwordConfirmation && formData.errors.passwordConfirmation)}
+                                            helperText={formData.touched.passwordConfirmation && formData.errors.passwordConfirmation}
+                                            InputProps={{
+                                                style: {
+                                                    fontSize: '13px',
+                                                    padding: '2px 4px',
+                                                    height: '30px',
+                                                    pointerEvents: !editSousCompte ? 'none' : 'auto'
+                                                },
+                                                sx: {
+                                                    '& input': {
+                                                        height: '30px',
+                                                    },
+                                                },
+                                                readOnly: !editSousCompte,
+                                                endAdornment: (
+                                                    <InputAdornment position="end">
+                                                        <IconButton
+                                                            aria-label={showPasswordConfirmation ? 'hide password' : 'show password'}
+                                                            onClick={handleClickShowPasswordConfirmation}
+                                                            onMouseDown={handleMouseDownPasswordConfirmation}
+                                                            onMouseUp={handleMouseUpPasswordConfirmation}
+                                                        >
+                                                            {showPasswordConfirmation ? <VisibilityOff /> : <Visibility />}
+                                                        </IconButton>
+                                                    </InputAdornment>
+                                                ),
+                                            }}
+                                            InputLabelProps={{
+                                                style: {
+                                                    fontSize: '13px',
+                                                    marginTop: '-2px',
+                                                },
+                                            }}
+                                            sx={{
+                                                ...inputAutoFill
+                                            }}
+                                        />
+                                    </FormControl>
+
+                                    <FormControl
+                                        component="fieldset"
+                                        size="small"
+                                        fullWidth
+                                        style={{ width: "100%" }}
+                                        error={Boolean(formData.touched.roles && formData.errors.roles)}
+                                    >
+                                        <FormLabel component="legend" style={{ fontSize: "13px" }}>
+                                            Rôle de l'utilisateur
+                                        </FormLabel>
+                                        <RadioGroup
+                                            row
+                                            name="roles"
+                                            value={formData.values.roles || ""}
+                                            onChange={(e) => {
+                                                formData.setFieldValue("roles", e.target.value)
+                                            }
+                                            }
+                                            onBlur={() => formData.setFieldTouched("roles", true)}
+                                        >
+                                            {listeRoles.map((role) => (
+                                                <FormControlLabel
+                                                    key={role.id}
+                                                    value={role.id}
+                                                    control={<Radio size="small" />}
+                                                    label={role.nom}
+                                                    sx={{ "& .MuiFormControlLabel-label": { fontSize: "13px" } }}
+                                                />
+                                            ))}
+                                        </RadioGroup>
+                                        {formData.touched.roles && formData.errors.roles && (
+                                            <FormHelperText
+                                                style={{
+                                                    marginLeft: 0,
+                                                    fontSize: "12px",
+                                                }}
+                                            >
+                                                {formData.errors.roles}
+                                            </FormHelperText>
+                                        )}
+                                    </FormControl>
+
+                                </Stack>
+                            </TabPanel>
+                            <TabPanel
+                                value="2"
+                                sx={{
+                                    padding: 2
+                                }}
+                            >
+                                <TabPortefeuille
+                                    listeComptePortefeuille={listeComptePortefeuille}
+                                    listePortefeuille={listePortefeuille}
+                                    setListeComptePortefeuille={setListeComptePortefeuille}
+                                />
+                            </TabPanel>
+                            <TabPanel
+                                value="3"
+                                sx={{
+                                    padding: 2
+                                }}
+                            >
+                                <TabDossier
+                                    listeCompteDossier={listeCompteDossier}
+                                    listeDossier={listeDossier}
+                                    setListeCompteDossier={setListeCompteDossier}
+                                />
+                            </TabPanel>
+                        </Box>
+                    </TabContext>
                 </DialogContent>
 
                 <DialogActions>
