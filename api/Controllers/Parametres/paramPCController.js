@@ -888,6 +888,9 @@ const AddCptToPc = async (req, res) => {
           typecomptabilite
         };
 
+        console.log('[AddCptToPc] UPDATE avec-nif - itemId:', itemId, 'compte:', compteFormated);
+        console.log('[AddCptToPc] UPDATE avec-nif - NIF:', nif, 'STAT:', stat, 'Adresse:', adresse);
+
         const NewCptAdded = await dossierPlanComptable.update(
           updateData,
           {

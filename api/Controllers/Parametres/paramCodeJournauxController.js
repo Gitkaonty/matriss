@@ -6,6 +6,7 @@ const Sequelize = require('sequelize');
 const codejournals = db.codejournals;
 const Dossier = db.dossiers;
 const journals = db.journals;
+const dossierplancomptable = db.dossierplancomptable;
 
 const getListeCodeJournaux = async (req, res) => {
   try {
@@ -196,8 +197,156 @@ const codeJournauxDelete = async (req, res) => {
   }
 }
 
+const importCodeJournaux = async (req, res) => {
+  try {
+    const { idCompte, idDossier, codeJournauxData } = req.body;
+
+    let resData = {
+      state: false,
+      msg: 'Une erreur est survenue au moment du traitement.',
+      anomalies: []
+    }
+
+    const validTypes = ['ACHAT', 'BANQUE', 'CAISSE', 'OD', 'RAN', 'VENTE', 'A_NOUVEAU'];
+    let anomalies = [];
+    let validData = [];
+
+    const existingCodes = await codejournals.findAll({
+      where: { id_dossier: idDossier },
+      attributes: ['code']
+    });
+    const existingCodesSet = new Set(existingCodes.map(c => c.code.trim().toUpperCase()));
+
+    // Récupérer tous les comptes du plan comptable pour validation
+    const planComptable = await dossierplancomptable.findAll({
+      where: { id_dossier: idDossier },
+      attributes: ['id', 'compte', 'nif', 'statistique', 'adresse']
+    });
+    console.log('[importCodeJournaux] Plan comptable count:', planComptable.length);
+    const planComptableMap = new Map();
+    planComptable.forEach(pc => {
+      const compteKey = pc.compte.trim().toUpperCase();
+      const compteData = {
+        id: pc.id,
+        nif: pc.nif || '',
+        stat: pc.statistique || '',
+        adresse: pc.adresse || ''
+      };
+      planComptableMap.set(compteKey, compteData);
+      // Log quelques exemples pour déboguer
+      if (compteKey.startsWith('512')) {
+        console.log('[importCodeJournaux] Compte 512xxx:', compteKey, compteData);
+      }
+    });
+
+    for (let i = 0; i < codeJournauxData.length; i++) {
+      const row = codeJournauxData[i];
+      const lineNum = i + 1;
+      let hasError = false;
+      let compteInfo = null;
+
+      if (!row.code || row.code.trim() === '') {
+        anomalies.push(`Ligne ${lineNum}: Le code journal est obligatoire.`);
+        hasError = true;
+      }
+
+      if (!row.libelle || row.libelle.trim() === '') {
+        anomalies.push(`Ligne ${lineNum}: Le libellé est obligatoire.`);
+        hasError = true;
+      }
+
+      if (!row.type || row.type.trim() === '') {
+        anomalies.push(`Ligne ${lineNum}: Le type est obligatoire.`);
+        hasError = true;
+      } else {
+        const typeUpper = row.type.toUpperCase();
+        if (!validTypes.includes(typeUpper)) {
+          anomalies.push(`Ligne ${lineNum}: Le type "${row.type}" n'existe pas dans le modèle. Types valides: ${validTypes.join(', ')}`);
+          hasError = true;
+        } else {
+          if (typeUpper === 'BANQUE' || typeUpper === 'CAISSE') {
+            if (!row.compteassocie || row.compteassocie.trim() === '') {
+              anomalies.push(`Ligne ${lineNum}: Le compte associé est obligatoire pour le type ${typeUpper}.`);
+              hasError = true;
+            } else {
+              // Vérifier si le compte existe dans le plan comptable
+              const compteKey = row.compteassocie.trim().toUpperCase();
+              console.log(`[importCodeJournaux] Ligne ${lineNum}: Recherche compte "${compteKey}"`);
+              if (planComptableMap.has(compteKey)) {
+                compteInfo = planComptableMap.get(compteKey);
+                console.log(`[importCodeJournaux] Ligne ${lineNum}: Compte trouvé:`, compteInfo);
+              } else {
+                console.log(`[importCodeJournaux] Ligne ${lineNum}: Compte "${compteKey}" NON TROUVÉ`);
+                anomalies.push(`Ligne ${lineNum}: Le compte associé "${row.compteassocie}" n'existe pas dans le plan comptable.`);
+                hasError = true;
+              }
+            }
+          }
+        }
+      }
+
+      if (row.code && existingCodesSet.has(row.code.trim().toUpperCase())) {
+        anomalies.push(`Ligne ${lineNum}: Le code journal "${row.code}" existe déjà dans la base de données.`);
+        hasError = true;
+      }
+
+      if (!hasError) {
+        // Si compteInfo existe, utiliser les informations du plan comptable
+        const nifValue = compteInfo ? compteInfo.nif : (row.nif ? row.nif.trim() : '');
+        const statValue = compteInfo ? compteInfo.stat : (row.stat ? row.stat.trim() : '');
+        const adresseValue = compteInfo ? compteInfo.adresse : (row.adresse ? row.adresse.trim() : '');
+        
+        validData.push({
+          id_compte: idCompte,
+          id_dossier: idDossier,
+          code: row.code.trim(),
+          libelle: row.libelle.trim(),
+          type: row.type.toUpperCase(),
+          compteassocie: row.compteassocie ? row.compteassocie.trim() : '',
+          nif: nifValue,
+          stat: statValue,
+          adresse: adresseValue
+        });
+      }
+    }
+
+    if (anomalies.length > 0) {
+      resData.state = false;
+      resData.msg = `${anomalies.length} anomalie(s) détectée(s). Veuillez corriger les erreurs.`;
+      resData.anomalies = anomalies;
+      return res.json(resData);
+    }
+
+    if (validData.length === 0) {
+      resData.state = false;
+      resData.msg = "Aucune donnée valide à importer.";
+      return res.json(resData);
+    }
+
+    const imported = await codejournals.bulkCreate(validData);
+
+    if (imported) {
+      resData.state = true;
+      resData.msg = `${imported.length} code(s) journal(aux) importé(s) avec succès.`;
+    } else {
+      resData.state = false;
+      resData.msg = "Une erreur est survenue lors de l'import.";
+    }
+
+    return res.json(resData);
+  } catch (error) {
+    console.error('[importCodeJournaux] Error', error);
+    return res.json({
+      state: false,
+      msg: 'Une erreur est survenue lors du traitement.',
+      anomalies: []
+    });
+  }
+}
+
 module.exports = {
   getListeCodeJournaux,
   addCodeJournal,
-  codeJournauxDelete
+  codeJournauxDelete,
+  importCodeJournaux
 };
