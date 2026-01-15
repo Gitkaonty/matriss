@@ -55,6 +55,7 @@ export default function Home() {
   const GetListeDossier = () => {
     axios.get(`/home/file/${compteId}`, { params: { userId: userId } }).then((response) => {
       const resData = response.data;
+      console.log('resData : ', resData);
       setListeDossier(resData.fileList);
       canView ? setFinalListeDossier(resData.fileList) : setFinalListeDossier([]);
     })
@@ -249,10 +250,22 @@ export default function Home() {
   ];
 
   useEffect(() => {
-    if (compteId) {
-      GetListeDossier();
-    }
-  }, [compteId]);
+    const fetchData = async () => {
+      if (compteId && userId) {
+        try {
+          const response = await axios.get(`/home/file/${compteId}`, { params: { userId } });
+          const resData = response.data;
+          console.log('resData : ', resData);
+          setListeDossier(resData.fileList);
+          canView ? setFinalListeDossier(resData.fileList) : setFinalListeDossier([]);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    };
+
+    fetchData();
+  }, [compteId, userId, canView]);
 
   return (
     <>
