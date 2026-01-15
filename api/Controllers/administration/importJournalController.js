@@ -3,6 +3,9 @@ const db = require("../../Models");
 require('dotenv').config();
 const Sequelize = require('sequelize');
 const { Op } = require('sequelize');
+const Papa = require("papaparse");
+const fs = require("fs");
+
 const fonctionUpdateBalanceSold = require('../../Middlewares/UpdateSolde/updateBalanceSold');
 
 const journals = db.journals;
@@ -462,8 +465,86 @@ const importJournal = async (req, res) => {
   }
 }
 
+const parseToDate = (str) => {
+  if (!str) return null;
+  if (typeof str === "string") str = str.trim();
+
+  let d = null;
+
+  if (typeof str === "string") {
+    if (str.includes("/")) {
+      const [day, month, year] = str.split("/").map(s => s.trim());
+      d = new Date(`${year}-${month}-${day}`);
+    } else if (/^\d{8}$/.test(str)) {
+      d = new Date(`${str.slice(0, 4)}-${str.slice(4, 6)}-${str.slice(6, 8)}`);
+    } else {
+      d = new Date(str);
+    }
+  } else {
+    d = new Date(str);
+  }
+
+  if (isNaN(d.getTime())) return null;
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+const recupListeImporte = async (req, res) => {
+  try {
+    const { startDate, endDate, fileTypeCSV } = req.body;
+
+    const dStart = parseToDate(startDate);
+    const dEnd = parseToDate(endDate);
+
+    const csvFile = fs.readFileSync(req.file.path, "utf8");
+
+    Papa.parse(csvFile, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (result) => {
+
+        const baseData = fileTypeCSV === "true"
+          ? result.data.map((row, index) => ({
+            ...row,
+            id: index,
+            CompteLib: "",
+            CompAuxLib: ""
+          }))
+          : result.data;
+
+        const finalData = [];
+
+        for (const row of baseData) {
+          const d = parseToDate(row.EcritureDate);
+
+          if (!d) continue;
+          if (dStart && d < dStart) continue;
+          if (dEnd && d > dEnd) continue;
+
+          finalData.push(row);
+        }
+
+        fs.unlinkSync(req.file.path);
+
+        return res.json({
+          success: true,
+          data: finalData
+        });
+      }
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Erreur lors de l'import du fichier"
+    });
+  }
+}
+
 module.exports = {
   createNotExistingCodeJournal,
   createNotExistingCompte,
-  importJournal
+  importJournal,
+  recupListeImporte
 };
