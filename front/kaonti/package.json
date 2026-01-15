@@ -53,6 +53,7 @@
     "sequelize": "^6.37.6",
     "toaster": "^0.1.2",
     "uuid": "^9.0.1",
+    "xlsx": "^0.18.5",
     "yup": "^1.0.0"
   },
   "resolutions": {

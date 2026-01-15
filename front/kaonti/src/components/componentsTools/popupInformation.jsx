@@ -1,5 +1,5 @@
 import React from 'react';
-import { Typography, Stack } from '@mui/material';
+import { Typography, Stack, List, ListItem, ListItemText } from '@mui/material';
 import Button from '@mui/material/Button';
 import { styled } from '@mui/material/styles';
 import Dialog from '@mui/material/Dialog';
@@ -61,11 +61,31 @@ const PopupInformation = ({msg, confirmationState}) =>{
                 <IoIosWarning style={{width: '75px', height:'75px', color: '#FF8A8A'}}/>
             </Stack>
             
-            <Stack width={"90%"} height={"100px"} spacing={0} alignItems={'center'} alignContent={"center"} 
-            direction={"column"} justifyContent={"center"} style={{marginLeft:'10px'}}>
-                <Typography sx={{ ml: 2, flex: 1 }} variant="h7" component="div" >
-                    {msg}
-                </Typography>
+            <Stack width={"100%"} spacing={2} style={{marginTop:'20px'}}>
+                {Array.isArray(msg) ? (
+                    <>
+                        <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#FF8A8A' }}>
+                            {msg.length} anomalie{msg.length > 1 ? 's' : ''} détectée{msg.length > 1 ? 's' : ''}
+                        </Typography>
+                        <List sx={{ maxHeight: '400px', overflow: 'auto' }}>
+                            {msg.map((anomalie, index) => (
+                                <ListItem key={index} sx={{ py: 0.5 }}>
+                                    <ListItemText 
+                                        primary={`• ${anomalie}`}
+                                        primaryTypographyProps={{ 
+                                            variant: 'body2',
+                                            sx: { color: '#333' }
+                                        }}
+                                    />
+                                </ListItem>
+                            ))}
+                        </List>
+                    </>
+                ) : (
+                    <Typography sx={{ ml: 2, flex: 1 }} variant="h7" component="div" >
+                        {msg}
+                    </Typography>
+                )}
             </Stack>
 
             </DialogContent>
