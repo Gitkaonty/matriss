@@ -1,4 +1,6 @@
 const express = require('express');
+const multer = require("multer");
+const upload = multer({ dest: "uploads/" });
 const importJournalController = require('../../Controllers/administration/importJournalController');
 
 const router = express.Router();
@@ -11,5 +13,8 @@ router.post('/createNotExistingCompte', importJournalController.createNotExistin
 
 //import du journal excel csv ou FEC
 router.post('/importJournal', importJournalController.importJournal);
+
+// Récupération de la liste des journals importés
+router.post('/recupListeImporte', upload.single("file"), importJournalController.recupListeImporte);
 
 module.exports = router;
