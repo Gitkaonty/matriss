@@ -304,7 +304,6 @@ export default function ImportJournal() {
     const recupPlanComptable = (fileId, compteId) => {
         axios.post(`/paramPlanComptable/pc`, { fileId, compteId }).then((response) => {
             const resData = response.data;
-            console.log('resData : ', resData);
             if (resData.state) {
                 const list = Array.isArray(resData.liste) ? resData.liste : [];
                 const unique = Object.values(
@@ -788,17 +787,20 @@ export default function ImportJournal() {
                         if (resData.state) {
                             setTraitementJournalMsg('');
                             setTraitementJournalWaiting(false);
-                            toast.success(resData.msg);
+                            toast.success(resData.msg, {
+                                duration: 15000
+                            });
                             setJournalData([]);
                             setNbrAnomalie(0);
                             setMsgAnomalie([]);
                             setOpenDetailsAnomalie(false);
-                            // rafraîchir le plan comptable après import
                             recupPlanComptable();
                         } else {
                             setTraitementJournalMsg('');
                             setTraitementJournalWaiting(false);
-                            toast.error(resData.msg || "Import non effectué");
+                            toast.error(resData.msg || "Import non effectué", {
+                                duration: 15000
+                            });
                         }
                     })
                     .catch((err) => {
@@ -1048,28 +1050,14 @@ export default function ImportJournal() {
                                 </Button>
                             </Stack>
 
-                            {traitementJournalWaiting
-                                ? <Stack spacing={2} direction={'row'} width={"100%"} alignItems={'center'} justifyContent={'center'}>
-                                    <CircularProgress />
-                                    <Typography variant='h6' style={{ color: '#2973B2' }}>{traitementJournalMsg}</Typography>
-                                </Stack>
-                                : null
+                            {
+                                traitementJournalWaiting
+                                    ? <Stack spacing={2} direction={'row'} width={"100%"} alignItems={'center'} justifyContent={'center'}>
+                                        <CircularProgress />
+                                        <Typography variant='h6' style={{ color: '#2973B2' }}>{traitementJournalMsg}</Typography>
+                                    </Stack>
+                                    : null
                             }
-
-                            {/* <div style={{ width: '100%', height: '70vh', overflow: 'auto' }}>
-                                <DataGrid
-                                    rows={journalData}
-                                    columns={columnsDatagrid}
-                                    pageSize={100}
-                                    rowsPerPageOptions={[100]}
-                                    disableSelectionOnClick
-                                    autoHeight={false}
-                                    sx={{
-                                        width: '100%',
-                                        minWidth: '1200px',
-                                    }}
-                                />
-                            </div> */}
 
                             <VirtualTableImportJournal tableHeader={columnsTable} tableRow={journalData} />
 

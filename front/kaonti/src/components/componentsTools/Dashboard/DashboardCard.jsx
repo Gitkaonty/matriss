@@ -12,7 +12,8 @@ const DashboardCard = ({
     variationN,
     variationN1,
     evolutionN,
-    evolutionN1
+    evolutionN1,
+    devise
 }) => {
     const [flipped, setFlipped] = useState(false);
     return (
@@ -79,6 +80,7 @@ const DashboardCard = ({
                         variation={variationN}
                         evolution={evolutionN}
                         exercice={'Exercice actuel'}
+                        devise={devise}
                     />
                 </Stack>
 
@@ -123,6 +125,7 @@ const DashboardCard = ({
                         evolution={evolutionN1}
                         exercice={'Exercice précédent'}
                         color={'#292724ff'}
+                        devise={devise}
                     />
                 </Stack>
             </Box>

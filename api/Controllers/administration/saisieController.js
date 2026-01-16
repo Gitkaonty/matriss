@@ -648,7 +648,7 @@ exports.generateImmoEcritures = async (req, res) => {
             lignesByDetailId.get(did).push(l);
         }
 
-        console.log('[IMMO][DEBUG] Lignes groupées par détail:', 
+        console.log('[IMMO][DEBUG] Lignes groupées par détail:',
             Array.from(lignesByDetailId.entries()).map(([id, lignes]) => ({
                 detailId: id,
                 nbLignes: lignes.length,
@@ -659,11 +659,11 @@ exports.generateImmoEcritures = async (req, res) => {
         // Solution de secours : si pas de détails mais des lignes, créer des détails factices
         if (detailsById.size === 0 && lignesByDetailId.size > 0) {
             console.log('[IMMO][DEBUG] Utilisation de la solution de secours - création de détails factices');
-            
+
             // Récupérer les IDs des immobilisations depuis les lignes
             const detailImmoIds = Array.from(lignesByDetailId.keys());
             console.log('[IMMO][DEBUG] IDs des immobilisations à récupérer:', detailImmoIds);
-            
+
             // Charger les immobilisations depuis details_immo (sans filtre exercice, dossier, compte)
             const missingDetails = await db.sequelize.query(`
                 SELECT 
@@ -678,7 +678,7 @@ exports.generateImmoEcritures = async (req, res) => {
                 replacements: { detailIds: detailImmoIds },
                 type: db.Sequelize.QueryTypes.SELECT,
             });
-            
+
             console.log('[IMMO][DEBUG] Requête SQL exécutée (sans filtre dossier/compte):', {
                 detailIds: detailImmoIds
             });
@@ -697,7 +697,7 @@ exports.generateImmoEcritures = async (req, res) => {
             } else {
                 console.log('[IMMO][DEBUG] AUCUNE immobilisation trouvée avec id=29 - elle n\'existe pas dans details_immo');
             }
-            
+
             // Ajouter les immobilisations récupérées à la map
             for (const detail of missingDetails) {
                 detailsById.set(Number(detail.id), detail);
@@ -709,7 +709,7 @@ exports.generateImmoEcritures = async (req, res) => {
                     libelle_compte_immo: detail.libelle_compte_immo
                 });
             }
-            
+
             // Si certaines immobilisations n'ont toujours pas été trouvées, créer des détails factices
             for (const [detailId, lignes] of lignesByDetailId.entries()) {
                 if (!detailsById.has(detailId)) {
@@ -726,7 +726,7 @@ exports.generateImmoEcritures = async (req, res) => {
                     });
                 }
             }
-            
+
             console.log('[IMMO][DEBUG] Détails finaux créés:', detailsById.size);
         }
 
@@ -791,7 +791,7 @@ exports.generateImmoEcritures = async (req, res) => {
                 const montantHT = Number(detail?.montant_ht || detail?.montant) || 0;
                 const dureeMois = Number(detail?.duree_amort_mois) || 0;
                 const dateMiseService = detail?.date_mise_service ? new Date(detail.date_mise_service) : null;
-                
+
                 console.log('[IMMO][DEBUG][MONTHLY] Données immobilisation:', {
                     detailId,
                     montantHT,
@@ -799,7 +799,7 @@ exports.generateImmoEcritures = async (req, res) => {
                     dateMiseService: dateMiseService?.toISOString(),
                     compteAmort
                 });
-                
+
                 if (!dateMiseService || isNaN(dateMiseService.getTime()) || montantHT <= 0 || dureeMois <= 0) {
                     console.log('[IMMO][DEBUG][MONTHLY] Immobilisation ignorée:', {
                         detailId,
@@ -854,7 +854,7 @@ exports.generateImmoEcritures = async (req, res) => {
                     }
                     let montantMois = 0;
                     let dateFinMois = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0); // Dernier jour du mois
-                    
+
                     if (dateFinMois > exoFin) dateFinMois = new Date(exoFin);
                     if (dateFinMois > finAmort) dateFinMois = new Date(finAmort);
 
@@ -889,7 +889,7 @@ exports.generateImmoEcritures = async (req, res) => {
                     if (montantMois > 0) {
                         const idEcriture = String(Date.now() + Math.floor(Math.random() * 1000));
                         const libelle = `Dot amort ${libelleCompteImmo}`.trim();
-                        
+
                         const common = {
                             id_compte: compteId,
                             id_dossier: fileId,
@@ -951,12 +951,12 @@ exports.generateImmoEcritures = async (req, res) => {
 
                 // Utiliser la somme des dotations de l'exercice (lignes sauvegardées)
                 let montant = 0;
-                
+
                 // Trouver la ligne correspondant à la fin de l'exercice
                 const exactLine = exoFinYMD
                     ? schedule.find(x => String(x.date_fin_exercice || '').substring(0, 10) === exoFinYMD)
                     : null;
-                
+
                 if (exactLine) {
                     // Utiliser la dotation de la ligne exacte
                     montant = Number(exactLine.dotation_periode_comp) || 0;
@@ -972,12 +972,12 @@ exports.generateImmoEcritures = async (req, res) => {
                 const compteAmort = String(detail?.compte_amortissement || '').trim();
                 const compteImmo = String(detail?.compte_immo || '').trim();
                 const libelleCompteImmo = detail?.libelle_compte_immo || detail?.intitule || detail?.code || '';
-                
+
                 if (!compteAmort || !compteImmo) continue;
 
                 // Clé de regroupement : compte_immo + compte_amortissement
                 const groupKey = `${compteImmo}|${compteAmort}`;
-                
+
                 if (!groupedByCompte.has(groupKey)) {
                     groupedByCompte.set(groupKey, {
                         compteImmo,
@@ -987,7 +987,7 @@ exports.generateImmoEcritures = async (req, res) => {
                         immobilisations: []
                     });
                 }
-                
+
                 const group = groupedByCompte.get(groupKey);
                 group.montantTotal += montant;
                 group.immobilisations.push({ detailId, montant });
@@ -1755,7 +1755,7 @@ exports.saveImmoLineaire = async (req, res) => {
         const compteId = Number(req.body?.compteId ?? req.query?.compteId);
         const exerciceId = Number(req.body?.exerciceId ?? req.query?.exerciceId);
         const detailImmoId = Number(req.body?.detailId ?? req.query?.detailId);
-        
+
         // Récupérer les lignes pré-calculées depuis le frontend
         const { lignes } = req.body || {};
 
@@ -1829,7 +1829,7 @@ exports.saveImmoDegressif = async (req, res) => {
         const compteId = Number(req.body?.compteId ?? req.query?.compteId);
         const exerciceId = Number(req.body?.exerciceId ?? req.query?.exerciceId);
         const detailImmoId = Number(req.body?.detailId ?? req.query?.detailId);
-        
+
         // Récupérer les lignes pré-calculées depuis le frontend
         const { lignes } = req.body || {};
 
@@ -1850,18 +1850,18 @@ exports.saveImmoDegressif = async (req, res) => {
             console.log('[IMMO][SAVE] ERREUR: Lignes calculées manquantes pour amortissement DEGRESSIF');
             console.log('[IMMO][SAVE] MAIS: Le frontend a appelé la fonction dégressive pour un amortissement linéaire');
             console.log('[IMMO][SAVE] SOLUTION: On essaie avec la fonction linéaire en fallback');
-            
+
             // Fallback : essayer de traiter comme un amortissement linéaire
             try {
                 console.log('[IMMO][SAVE] ===== TENTATIVE FALLBACK LINEAIRE =====');
-                
+
                 // Charger les données nécessaires pour le calcul linéaire
                 const [dossier, exo, detail] = await Promise.all([
                     db.dossiers.findByPk(fileId),
                     db.exercices.findByPk(exerciceId),
                     db.detailsimmo.findByPk(detailImmoId),
                 ]);
-                
+
                 if (!dossier || !exo || !detail) {
                     console.log('[IMMO][SAVE] Fallback impossible: données manquantes');
                     return res.status(404).json({ state: false, msg: 'Données introuvables' });
@@ -1873,7 +1873,7 @@ exports.saveImmoDegressif = async (req, res) => {
                 const dateMiseService = detail.date_mise_service ? new Date(detail.date_mise_service) : null;
                 const exoFin = exo.date_fin ? new Date(exo.date_fin) : null;
                 const dureeComp = Math.max(1, Math.floor(Number(detail.duree_amort_mois) || 0));
-                
+
                 if (montantHT <= 0) {
                     console.log('[IMMO][SAVE] Fallback impossible: montant invalide');
                     return res.status(400).json({ state: false, msg: 'montant HT invalide' });
@@ -1881,22 +1881,22 @@ exports.saveImmoDegressif = async (req, res) => {
 
                 const dotMensComp = montantHT / dureeComp;
                 const dotAnnComp = dotMensComp * 12;
-                
+
                 const out = [];
                 let debut = new Date(dateMiseService);
                 let index = 1;
-                let cumulComp = 0; 
+                let cumulComp = 0;
                 let vncComp = montantHT;
-                
+
                 while (vncComp > 0 && index <= 50) {
                     const fin = index === 1 ? (exoFin || new Date(debut.getFullYear() + 1, debut.getMonth(), debut.getDate() - 1)) : new Date(debut.getFullYear() + 1, debut.getMonth(), debut.getDate() - 1);
                     const nbJours = Math.floor((fin - debut) / (1000 * 60 * 60 * 24)) + 1;
                     const anneeNombre = nbJours / baseJours;
                     const dotComp = Math.min(vncComp, Math.round(dotAnnComp * anneeNombre * 100) / 100);
-                    
+
                     cumulComp += dotComp;
                     vncComp = montantHT - cumulComp;
-                    
+
                     out.push({
                         id_dossier: fileId,
                         id_compte: compteId,
@@ -1916,13 +1916,13 @@ exports.saveImmoDegressif = async (req, res) => {
                         cumul_amort_fisc: 0,
                         dot_derogatoire: 0,
                     });
-                    
+
                     debut = new Date(fin.getTime() + 24 * 60 * 60 * 1000);
                     index++;
                 }
 
                 console.log(`[IMMO][SAVE] FALLBACK REUSSI: ${out.length} lignes calculées (linéaire)`);
-                
+
                 await db.detailsImmoLignes.destroy({
                     where: { id_dossier: fileId, id_compte: compteId, id_exercice: exerciceId, id_detail_immo: detailImmoId },
                 });
@@ -1930,12 +1930,12 @@ exports.saveImmoDegressif = async (req, res) => {
 
                 console.log('[IMMO][SAVE] ===== SAUVEGARDE FALLBACK LINEAIRE TERMINEE =====');
                 return res.json({ state: true, saved: out.length, fallback: 'linear' });
-                
+
             } catch (fallbackError) {
                 console.error('[IMMO][SAVE] Erreur fallback:', fallbackError);
-                return res.status(400).json({ 
-                    state: false, 
-                    msg: 'Lignes calculées manquantes - utilisez d\'abord previewImmoDegressif ou corrigez le frontend pour utiliser saveImmoLineaire' 
+                return res.status(400).json({
+                    state: false,
+                    msg: 'Lignes calculées manquantes - utilisez d\'abord previewImmoDegressif ou corrigez le frontend pour utiliser saveImmoLineaire'
                 });
             }
         }
@@ -2836,7 +2836,7 @@ exports.createDetailsImmo = async (req, res) => {
         }
         const exoDebut = exo.date_debut ? new Date(exo.date_debut) : null;
         const exoFin = exo.date_fin ? new Date(exo.date_fin) : null;
-        
+
         if (exoDebut && !isNaN(exoDebut.getTime()) && exoFin && !isNaN(exoFin.getTime())) {
             const dAcq = date_acquisition ? new Date(String(date_acquisition).substring(0, 10)) : null;
             const dMs = date_mise_service ? new Date(String(date_mise_service).substring(0, 10)) : null;
@@ -2988,7 +2988,7 @@ exports.updateDetailsImmo = async (req, res) => {
         }
         const exoDebut = exo.date_debut ? new Date(exo.date_debut) : null;
         const exoFin = exo.date_fin ? new Date(exo.date_fin) : null;
-        
+
         if (exoDebut && !isNaN(exoDebut.getTime()) && exoFin && !isNaN(exoFin.getTime())) {
             const dAcq = date_acquisition ? new Date(String(date_acquisition).substring(0, 10)) : null;
             const dMs = date_mise_service ? new Date(String(date_mise_service).substring(0, 10)) : null;
