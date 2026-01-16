@@ -2737,6 +2737,23 @@ exports.deleteJournal = async (req, res) => {
             return res.status(400).json({ state: false, msg: "Aucun ID fourni" });
         }
 
+        // Vérifier si les écritures appartiennent à un journal de type RAN
+        const journalsToDelete = await journals.findAll({
+            where: { id: ids },
+            include: [{
+                model: codejournals,
+                attributes: ['type']
+            }]
+        });
+
+        const hasRanType = journalsToDelete.some(j => j.codejournal?.type === 'RAN');
+        if (hasRanType) {
+            return res.status(403).json({
+                state: false,
+                msg: "Impossible de supprimer des écritures de type RAN (Report à nouveau)"
+            });
+        }
+
         const journal = await journals.findOne({
             where: { id: ids[0] }
         });
@@ -2769,7 +2786,7 @@ exports.deleteJournal = async (req, res) => {
         console.error("Erreur deleteJournal :", error);
         return res.status(500).json({
             state: false,
-            message: "Erreur serveur",
+            msg: "Une erreur est survenue lors de la suppression des écritures. Veuillez réessayer.",
             error: error.message
         });
     }

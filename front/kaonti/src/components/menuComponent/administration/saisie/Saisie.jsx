@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Typography, Stack, Box, Tab, Button } from '@mui/material';
 
@@ -213,6 +213,14 @@ export default function SaisieComponent() {
             setListCa(resData);
         })
     }
+
+    // Vérifier si la sélection contient un type RAN
+    const isRanTypeSelected = useMemo(() => {
+        if (selectedRows.length === 0 || listeCodeJournaux.length === 0) return false;
+        const selectedJournalId = Number(selectedRows[0].id_journal);
+        const codeJournal = listeCodeJournaux.find(cj => Number(cj.id) === selectedJournalId);
+        return codeJournal?.type === 'RAN';
+    }, [selectedRows, listeCodeJournaux]);
 
     //Header
     const SaisieColumnHeader = [
@@ -524,8 +532,9 @@ export default function SaisieComponent() {
             } else {
                 toast.error(resData.msg);
             }
-        }).catch(() => {
-            toast.error("Erreur lors de la suppression");
+        }).catch((error) => {
+            const errorMsg = error.response?.data?.msg || error.response?.data?.message || "Erreur lors de la suppression";
+            toast.error(errorMsg);
         });
 
         setOpenDialogDeleteSaisie(false);
@@ -811,11 +820,7 @@ export default function SaisieComponent() {
                                             !canModify || 
                                             selectedRows.length === 0 || 
                                             (selectedRows.filter(val => val.id_dossier === fileId)).length === 0 ||
-                                            (selectedRows.length > 0 && (() => {
-                                                const selectedJournalId = selectedRows[0].id_journal;
-                                                const codeJournal = listeCodeJournaux.find(cj => cj.id === selectedJournalId);
-                                                return codeJournal && codeJournal.type === 'RAN';
-                                            })())
+                                            isRanTypeSelected
                                         }
                                         variant="contained"
                                         style={{
@@ -836,11 +841,7 @@ export default function SaisieComponent() {
                                             !canDelete || 
                                             selectedRows.length === 0 || 
                                             (selectedRows.filter(val => val.id_dossier === fileId)).length === 0 ||
-                                            (selectedRows.length > 0 && (() => {
-                                                const selectedJournalId = selectedRows[0].id_journal;
-                                                const codeJournal = listeCodeJournaux.find(cj => cj.id === selectedJournalId);
-                                                return codeJournal && codeJournal.type === 'RAN';
-                                            })())
+                                            isRanTypeSelected
                                         }
                                         variant="contained"
                                         style={{
