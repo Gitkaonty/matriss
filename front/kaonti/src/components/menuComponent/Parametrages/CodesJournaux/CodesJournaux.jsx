@@ -200,7 +200,7 @@ export default function ParamCodeJournalComponent() {
     useEffect(() => {
         if (pc && pc.length > 0 && formikNewCodeJournal.values.type) {
             console.log('[useEffect pc] Plan comptable chargé, mise à jour de listeCptAssocie pour type:', formikNewCodeJournal.values.type);
-            const listBank = pc.filter((row) => row.compte.startsWith('512'));
+            const listBank = pc.filter((row) => row.compte.startsWith('512') || row.compte.startsWith('52'));
             const listCash = pc.filter((row) => row.compte.startsWith('53'));
             
             if (formikNewCodeJournal.values.type === 'BANQUE') {
@@ -229,10 +229,10 @@ export default function ParamCodeJournalComponent() {
         console.log('[recupListeCptBanqueCaisse] Type sélectionné:', typeTreso);
         console.log('[recupListeCptBanqueCaisse] Plan comptable (pc) length:', pc?.length);
         
-        const listBank = pc?.filter((row) => row.compte.startsWith('512'));
+        const listBank = pc?.filter((row) => row.compte.startsWith('512') || row.compte.startsWith('52'));
         const listCash = pc?.filter((row) => row.compte.startsWith('53'));
         
-        console.log('[recupListeCptBanqueCaisse] Comptes BANQUE (512) trouvés:', listBank?.length);
+        console.log('[recupListeCptBanqueCaisse] Comptes BANQUE (512 ou 52) trouvés:', listBank?.length);
         console.log('[recupListeCptBanqueCaisse] Comptes CAISSE (53) trouvés:', listCash?.length);
 
         formikNewCodeJournal.setFieldValue("type", typeTreso);
