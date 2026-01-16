@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Autocomplete, Typography, Stack, Box, Tab, Button, TextField, Tooltip } from '@mui/material';
 import RadioGroup from '@mui/material/RadioGroup';
@@ -86,6 +86,14 @@ export default function ConsultationComponent() {
     const [selectedLigneDesequilibre, setSelectedLigneDesequilibre] = useState([]);
     const [openLettrageDesequilibrePopup, setOpenLettrageDesequilibrePopup] = useState(false);
     const [messageLettrageDesequlibre, setMessageLettrageDesequilibre] = useState('');
+
+    // Vérifier si la sélection contient un type RAN
+    const isRanTypeSelected = useMemo(() => {
+        if (selectedRows.length === 0 || listeCodeJournaux.length === 0) return false;
+        const selectedJournalId = Number(selectedRows[0].id_journal);
+        const codeJournal = listeCodeJournaux.find(cj => Number(cj.id) === selectedJournalId);
+        return codeJournal?.type === 'RAN';
+    }, [selectedRows, listeCodeJournaux]);
 
     //Valeur du listbox choix compte
     const [valSelectedCompte, setValSelectedCompte] = useState('')
@@ -549,13 +557,6 @@ export default function ConsultationComponent() {
         }
         let id_ecriture = '';
         if (selectedRows.length === 1) {
-            const selectedJournalId = selectedRows[0].id_journal;
-            const codeJournal = listeCodeJournaux.find(cj => cj.id === selectedJournalId);
-            
-            if (codeJournal && codeJournal.type === 'RAN') {
-                return toast.error('Impossible de modifier une écriture de type RAN');
-            }
-            
             id_ecriture = selectedRows[0].id_ecriture;
             const rows = listSaisie
                 .filter((row) => row.id_ecriture === id_ecriture)
@@ -951,11 +952,7 @@ export default function ConsultationComponent() {
                                             !canModify || 
                                             selectedRows.length === 0 || 
                                             selectedRows.every(row => Number(row.id_dossier) !== Number(fileId)) ||
-                                            (selectedRows.length > 0 && (() => {
-                                                const selectedJournalId = selectedRows[0].id_journal;
-                                                const codeJournal = listeCodeJournaux.find(cj => cj.id === selectedJournalId);
-                                                return codeJournal && codeJournal.type === 'RAN';
-                                            })())
+                                            isRanTypeSelected
                                         }
                                         variant="contained"
                                         style={{
