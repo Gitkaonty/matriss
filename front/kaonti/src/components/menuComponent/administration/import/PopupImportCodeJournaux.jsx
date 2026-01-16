@@ -143,10 +143,10 @@ export default function PopupImportCodeJournaux({ open, onClose, fileId, compteI
             nbrAnom = nbrAnom + 1;
         }
 
-        const expectedTypeValues = ["ACHAT", "BANQUE", "CAISSE", "OD", "RAN", "VENTE", "A_NOUVEAU"];
+        const expectedTypeValues = ["ACHAT", "BANQUE", "CAISSE", "OD", "RAN", "VENTE"];
         const invalidTypes = data.filter(item => item.type && !expectedTypeValues.includes(item.type.toUpperCase()));
         if (invalidTypes.length > 0) {
-            msg.push(`Certains types sont invalides. Types acceptés : ACHAT, BANQUE, CAISSE, OD, RAN, VENTE, A_NOUVEAU`);
+            msg.push(`Certains types sont invalides. Types acceptés : ACHAT, BANQUE, CAISSE, OD, RAN, VENTE`);
             nbrAnom = nbrAnom + 1;
         }
 

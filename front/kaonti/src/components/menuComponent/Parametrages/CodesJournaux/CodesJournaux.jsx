@@ -221,7 +221,6 @@ export default function ParamCodeJournalComponent() {
         { value: 'OD', label: 'OD' },
         { value: 'RAN', label: 'RAN' },
         { value: 'VENTE', label: 'VENTE' },
-        { value: 'A_NOUVEAU', label: 'A NOUVEAU' },
     ];
 
     //liste compte banque et caisse
@@ -547,24 +546,24 @@ export default function ParamCodeJournalComponent() {
                         </Stack>
                     )
                 }
-                if (params.value === 'A_NOUVEAU') {
-                    return (
-                        <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-                            <Chip
-                                icon={<MdOutlineSyncLock style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
-                                label={params.value}
+                // if (params.value === 'RAN') {
+                //     return (
+                //         <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
+                //             <Chip
+                //                 icon={<MdOutlineSyncLock style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
+                //                 label={params.value}
 
-                                style={{
-                                    width: "100%",
-                                    display: 'flex', // ou block, selon le rendu souhaité
-                                    justifyContent: 'space-between',
-                                    backgroundColor: '#FFA62F',
-                                    color: 'white'
-                                }}
-                            />
-                        </Stack>
-                    )
-                }
+                //                 style={{
+                //                     width: "100%",
+                //                     display: 'flex', // ou block, selon le rendu souhaité
+                //                     justifyContent: 'space-between',
+                //                     backgroundColor: '#FFA62F',
+                //                     color: 'white'
+                //                 }}
+                //             />
+                //         </Stack>
+                //     )
+                // }
             }
         },
         {

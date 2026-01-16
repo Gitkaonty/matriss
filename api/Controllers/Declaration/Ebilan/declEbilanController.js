@@ -1996,7 +1996,7 @@ const generateBhiapcAuto = async (req, res) => {
 
               case 'OD':
               case 'CAISSE':
-              case 'A_NOUVEAU':
+              case 'RAN':
               case 'VENTE': {
                 const journalOthersData = journalCodeMappedData.filter(
                   item => item.compte && item.compte.toString().startsWith(compteData.compte)

@@ -207,7 +207,7 @@ const importCodeJournaux = async (req, res) => {
       anomalies: []
     }
 
-    const validTypes = ['ACHAT', 'BANQUE', 'CAISSE', 'OD', 'RAN', 'VENTE', 'A_NOUVEAU'];
+    const validTypes = ['ACHAT', 'BANQUE', 'CAISSE', 'OD', 'RAN', 'VENTE'];
     let anomalies = [];
     let validData = [];
 
