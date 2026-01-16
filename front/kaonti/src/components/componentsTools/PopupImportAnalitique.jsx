@@ -1,34 +1,35 @@
 import { React, useState } from 'react';
 import { Typography, Stack, Button, Dialog, DialogTitle, DialogContent, DialogActions, Badge, Box, CircularProgress, IconButton } from '@mui/material';
-import { init } from '../../../../../init';
+import { init } from '../../../init';
 import toast from 'react-hot-toast';
 import Papa from 'papaparse';
 import { DataGrid, frFR } from '@mui/x-data-grid';
-import QuickFilter from '../../../componentsTools/DatagridToolsStyle';
-import { DataGridStyle } from '../../../componentsTools/DatagridToolsStyle';
-import PopupInformation from '../../../componentsTools/popupInformation';
+import QuickFilter from './DatagridToolsStyle';
+import { DataGridStyle } from './DatagridToolsStyle';
+import PopupInformation from './popupInformation';
 import SaveAltIcon from '@mui/icons-material/SaveAlt';
+import DownloadIcon from '@mui/icons-material/Download';
 import { VscClose } from 'react-icons/vsc';
 import { IoWarningOutline } from 'react-icons/io5';
 import { MdOutlineFileUpload } from 'react-icons/md';
 import { FaFileImport } from 'react-icons/fa';
-import useAxiosPrivate from '../../../../../config/axiosPrivate';
+import useAxiosPrivate from '../../../config/axiosPrivate';
 
-export default function PopupImportCodeJournaux({ open, onClose, fileId, compteId, onImportSuccess }) {
+export default function PopupImportAnalitique({ open, onClose, fileId, compteId, axeId, onImportSuccess }) {
     let initial = init[0];
     const axiosPrivate = useAxiosPrivate();
     const [nbrAnomalie, setNbrAnomalie] = useState(0);
     const [openDetailsAnomalie, setOpenDetailsAnomalie] = useState(false);
     const [couleurBoutonAnomalie, setCouleurBoutonAnomalie] = useState('white');
-    const [codeJournauxData, setCodeJournauxData] = useState([]);
+    const [sectionsData, setSectionsData] = useState([]);
     const [msgAnomalie, setMsgAnomalie] = useState([]);
     const [traitementWaiting, setTraitementWaiting] = useState(false);
     const [traitementMsg, setTraitementMsg] = useState('');
 
     const columns = [
         {
-            field: 'code',
-            headerName: 'Code',
+            field: 'section',
+            headerName: 'Section',
             type: 'string',
             sortable: true,
             flex: 1,
@@ -37,18 +38,18 @@ export default function PopupImportCodeJournaux({ open, onClose, fileId, compteI
             headerClassName: 'HeaderbackColor',
         },
         {
-            field: 'libelle',
-            headerName: 'Libellé',
+            field: 'intitule',
+            headerName: 'Intitulé',
             type: 'string',
             sortable: true,
-            flex: 3,
+            flex: 2,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
         },
         {
-            field: 'type',
-            headerName: 'Type',
+            field: 'compte',
+            headerName: 'Compte',
             type: 'string',
             sortable: true,
             flex: 1.5,
@@ -57,49 +58,27 @@ export default function PopupImportCodeJournaux({ open, onClose, fileId, compteI
             headerClassName: 'HeaderbackColor',
         },
         {
-            field: 'compteassocie',
-            headerName: 'Compte associé',
+            field: 'pourcentage',
+            headerName: 'Pourcentage',
             type: 'string',
             sortable: true,
-            flex: 2,
+            flex: 1,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
-        },
-        {
-            field: 'nif',
-            headerName: 'NIF',
-            type: 'string',
-            sortable: true,
-            flex: 2,
-            headerAlign: 'left',
-            align: 'left',
-            headerClassName: 'HeaderbackColor',
-        },
-        {
-            field: 'stat',
-            headerName: 'STAT',
-            type: 'string',
-            sortable: true,
-            flex: 2,
-            headerAlign: 'left',
-            align: 'left',
-            headerClassName: 'HeaderbackColor',
-        },
-        {
-            field: 'adresse',
-            headerName: 'Adresse',
-            type: 'string',
-            sortable: true,
-            flex: 3,
-            headerAlign: 'left',
-            align: 'left',
-            headerClassName: 'HeaderbackColor',
+            renderCell: (params) => {
+                const value = params.value || 0;
+                const formatted = Number(value).toLocaleString('fr-FR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                });
+                return `${formatted.replace(/\u202f/g, ' ')}%`;
+            },
         },
     ];
 
     const validateHeaders = (headers) => {
-        const expectedHeaders = ["code", "libelle", "type", "compteassocie", "nif", "stat", "adresse"];
+        const expectedHeaders = ["section", "intitule", "compte"];
 
         const normalize = (s) => (s || "")
             .toString()
@@ -122,40 +101,24 @@ export default function PopupImportCodeJournaux({ open, onClose, fileId, compteI
         let nbrAnom = 0;
         let msg = [];
 
-        const missingCode = data.filter(item => !item.code || item.code.trim() === '');
-        if (missingCode.length > 0) {
-            msg.push(`Certaines lignes ne contiennent pas de code journal.`);
+        const missingSection = data.filter(item => !item.section || item.section.trim() === '');
+        if (missingSection.length > 0) {
+            msg.push(`Certaines lignes ne contiennent pas de section.`);
             nbrAnom = nbrAnom + 1;
         }
 
-        const missingLibelle = data.filter(item => {
-            const libelle = item.libelle;
-            return !libelle || (typeof libelle === 'string' && libelle.trim() === '');
+        const missingIntitule = data.filter(item => {
+            const intitule = item.intitule;
+            return !intitule || (typeof intitule === 'string' && intitule.trim() === '');
         });
-        if (missingLibelle.length > 0) {
-            msg.push(`Certaines lignes ne contiennent pas de libellé.`);
+        if (missingIntitule.length > 0) {
+            msg.push(`Certaines lignes ne contiennent pas d'intitulé.`);
             nbrAnom = nbrAnom + 1;
         }
 
-        const missingType = data.filter(item => !item.type || item.type.trim() === '');
-        if (missingType.length > 0) {
-            msg.push(`Certaines lignes ne contiennent pas de type.`);
-            nbrAnom = nbrAnom + 1;
-        }
-
-        const expectedTypeValues = ["ACHAT", "BANQUE", "CAISSE", "OD", "RAN", "VENTE", "A_NOUVEAU"];
-        const invalidTypes = data.filter(item => item.type && !expectedTypeValues.includes(item.type.toUpperCase()));
-        if (invalidTypes.length > 0) {
-            msg.push(`Certains types sont invalides. Types acceptés : ACHAT, BANQUE, CAISSE, OD, RAN, VENTE, A_NOUVEAU`);
-            nbrAnom = nbrAnom + 1;
-        }
-
-        const banqueOrCaisse = data.filter(item => 
-            item.type && (item.type.toUpperCase() === 'BANQUE' || item.type.toUpperCase() === 'CAISSE')
-        );
-        const missingCompteAssocie = banqueOrCaisse.filter(item => !item.compteassocie || item.compteassocie.trim() === '');
-        if (missingCompteAssocie.length > 0) {
-            msg.push(`Les codes journaux de type BANQUE ou CAISSE doivent avoir un compte associé.`);
+        const missingCompte = data.filter(item => !item.compte || item.compte.trim() === '');
+        if (missingCompte.length > 0) {
+            msg.push(`Certaines lignes ne contiennent pas de compte.`);
             nbrAnom = nbrAnom + 1;
         }
 
@@ -181,48 +144,19 @@ export default function PopupImportCodeJournaux({ open, onClose, fileId, compteI
                             setCouleurBoutonAnomalie('white');
                             setNbrAnomalie(0);
 
-                            const normalizedData = result.data.map(row => {
-                                const cleanRow = {};
-                                Object.keys(row).forEach(key => {
-                                    const cleanKey = key.trim().toLowerCase();
-                                    cleanRow[cleanKey] = row[key];
-                                });
-                                return cleanRow;
-                            });
+                            const totalLines = result.data.length;
+                            const percentagePerLine = totalLines > 0 ? 100 / totalLines : 0;
 
-                            const DataWithId = normalizedData.map((row, index) => {
-                                const getValue = (value) => {
-                                    if (value === null || value === undefined) return '';
-                                    return String(value).trim();
-                                };
-                                
-                                const mappedRow = {
-                                    id: index,
-                                    code: getValue(row.code),
-                                    libelle: getValue(row.libelle),
-                                    type: getValue(row.type).toUpperCase(),
-                                    compteassocie: getValue(row.compteassocie),
-                                    nif: getValue(row.nif),
-                                    stat: getValue(row.stat),
-                                    adresse: getValue(row.adresse)
-                                };
-                                
-                                // Debug: log first 3 rows to see what's being read
-                                if (index < 3) {
-                                    console.log(`Row ${index}:`, {
-                                        original: row,
-                                        mapped: mappedRow
-                                    });
-                                }
-                                
-                                return mappedRow;
-                            });
-
-                            console.log('Headers found:', headers);
-                            console.log('Total rows:', DataWithId.length);
+                            const DataWithId = result.data.map((row, index) => ({
+                                id: index,
+                                section: row.section || '',
+                                intitule: row.intitule || '',
+                                compte: row.compte || '',
+                                pourcentage: Number(percentagePerLine.toFixed(2))
+                            }));
 
                             validationData(DataWithId);
-                            setCodeJournauxData(DataWithId);
+                            setSectionsData(DataWithId);
 
                             event.target.value = null;
                             setTraitementWaiting(false);
@@ -246,22 +180,14 @@ export default function PopupImportCodeJournaux({ open, onClose, fileId, compteI
         }
     }
 
-    const handleOpenAnomalieDetails = () => {
-        setOpenDetailsAnomalie(true);
-    }
-
-    const handleCloseAnomalieDetails = (value) => {
-        setOpenDetailsAnomalie(value);
-    }
-
     const handleDownloadModel = () => {
-        const csvContent = "code,libelle,type,compteassocie,nif,stat,adresse\n";
+        const csvContent = "section,intitule,compte\n";
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         
         link.setAttribute('href', url);
-        link.setAttribute('download', 'modele_import_code_journaux.csv');
+        link.setAttribute('download', 'modele_import_analytique.csv');
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
@@ -270,22 +196,31 @@ export default function PopupImportCodeJournaux({ open, onClose, fileId, compteI
         toast.success('Modèle téléchargé avec succès');
     }
 
+    const handleOpenAnomalieDetails = () => {
+        setOpenDetailsAnomalie(true);
+    }
+
+    const handleCloseAnomalieDetails = (value) => {
+        setOpenDetailsAnomalie(value);
+    }
+
     const handleImport = () => {
         if (nbrAnomalie > 0) {
             toast.error('Veuillez corriger les anomalies avant d\'importer les données.');
             return;
         }
 
-        setTraitementMsg('Import des codes journaux en cours...');
+        setTraitementMsg('Import des sections analytiques en cours...');
         setTraitementWaiting(true);
 
         const dataToSend = {
-            idCompte: compteId,
-            idDossier: fileId,
-            codeJournauxData: codeJournauxData
+            compteId: compteId,
+            fileId: fileId,
+            axeId: axeId,
+            sectionsData: sectionsData
         };
 
-        axiosPrivate.post('/paramCodeJournaux/importCodeJournaux', dataToSend)
+        axiosPrivate.post('/paramCa/importSections', dataToSend)
             .then((response) => {
                 const resData = response.data;
                 setTraitementWaiting(false);
@@ -313,7 +248,7 @@ export default function PopupImportCodeJournaux({ open, onClose, fileId, compteI
     }
 
     const handleClose = () => {
-        setCodeJournauxData([]);
+        setSectionsData([]);
         setMsgAnomalie([]);
         setNbrAnomalie(0);
         setCouleurBoutonAnomalie('white');
@@ -345,7 +280,7 @@ export default function PopupImportCodeJournaux({ open, onClose, fileId, compteI
                     <Box display="flex" alignItems="center" justifyContent="space-between">
                         <Box display="flex" alignItems="center" gap={1}>
                             <Typography sx={{ fontWeight: 700, color: 'black' }}>
-                                Importation des codes journaux :
+                                Importation des sections analytiques :
                             </Typography>
                             {nbrAnomalie > 0 && (
                                 <Button
@@ -437,10 +372,10 @@ export default function PopupImportCodeJournaux({ open, onClose, fileId, compteI
                             </Box>
                         )}
 
-                        {codeJournauxData.length > 0 && (
+                        {sectionsData.length > 0 && (
                             <Box>
                                 <Typography variant='subtitle1' sx={{ mb: 2, fontWeight: 'bold' }}>
-                                    Aperçu des données ({codeJournauxData.length} lignes)
+                                    Aperçu des données ({sectionsData.length} lignes - Pourcentage par ligne: {(100 / sectionsData.length).toFixed(2)}%)
                                 </Typography>
                                 <Box sx={{ height: 400, width: '100%' }}>
                                     <DataGrid
@@ -450,7 +385,7 @@ export default function PopupImportCodeJournaux({ open, onClose, fileId, compteI
                                         rowHeight={DataGridStyle.rowHeight}
                                         columnHeaderHeight={DataGridStyle.columnHeaderHeight}
                                         columns={columns}
-                                        rows={codeJournauxData}
+                                        rows={sectionsData}
                                         initialState={{
                                             pagination: {
                                                 paginationModel: { page: 0, pageSize: 50 },
@@ -480,7 +415,7 @@ export default function PopupImportCodeJournaux({ open, onClose, fileId, compteI
                         variant="contained"
                         // startIcon={<SaveAltIcon />}
                         onClick={handleImport}
-                        disabled={codeJournauxData.length === 0 || nbrAnomalie > 0 || traitementWaiting}
+                        disabled={sectionsData.length === 0 || nbrAnomalie > 0 || traitementWaiting}
                         sx={{
                             minWidth: 110,
                             backgroundColor: initial.theme,
