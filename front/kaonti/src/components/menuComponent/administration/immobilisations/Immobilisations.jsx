@@ -19,11 +19,13 @@ import { TfiSave } from "react-icons/tfi";
 import { FaRegPenToSquare } from "react-icons/fa6";
 import { IoMdTrash } from "react-icons/io";
 import { VscClose } from "react-icons/vsc";
+import { TbFileImport } from "react-icons/tb";
 import { useCallback } from 'react';
 import DetailsImmoDialog from './DetailsImmoDialog';
 import { GoLink } from "react-icons/go";
 import PopupActionConfirmWithCheckbox from '../../../componentsTools/popupActionConfirmWithCheckbox';
 import PopupConfirmDelete from '../../../componentsTools/popupConfirmDelete';
+import PopupImportImmobilisations from '../import/PopupImportImmobilisations';
 
 const keepTotalBottomComparator = (v1, v2, cellParams1, cellParams2) => {
   const r1 = cellParams1?.row;
@@ -101,6 +103,7 @@ const Immobilisations = () => {
   const [openConfirmGenerateEcritures, setOpenConfirmGenerateEcritures] = useState(false);
   const [openConfirmCancelEcritures, setOpenConfirmCancelEcritures] = useState(false);
   const [openConfirmDelete, setOpenConfirmDelete] = useState(false);
+  const [openImportDialog, setOpenImportDialog] = useState(false);
 
   const [loadingEcritures, setLoadingEcritures] = useState(false);
 
@@ -477,15 +480,23 @@ const Immobilisations = () => {
 
   // Fetch details_immo from backend and filter by selected PCs
   const fetchDetails = useCallback(async () => {
-    if (!id || !compteId || !selectedExerciceId) { setDetailsRows([]); return; }
+    if (!id || !compteId || !selectedExerciceId) { 
+      console.log('[FETCH_DETAILS] Paramètres manquants:', { id, compteId, selectedExerciceId });
+      setDetailsRows([]); 
+      return; 
+    }
     const onePcId = Array.isArray(selectedPcIds) && selectedPcIds.length > 0 ? Number(selectedPcIds[0]) : null;
+    console.log('[FETCH_DETAILS] Requête avec params:', { fileId: id, compteId: onePcId ?? compteId, exerciceId: selectedExerciceId, pcId: onePcId, selectedPcIds });
     const { data } = await axios.get('/administration/traitementSaisie/immobilisations/details', {
       params: { fileId: id, compteId: onePcId ?? compteId, exerciceId: selectedExerciceId, pcId: onePcId || undefined }, timeout: 60000,
     });
 
+    console.log('[FETCH_DETAILS] Réponse du backend:', data);
     const list = Array.isArray(data?.list) ? data.list : [];
+    console.log('[FETCH_DETAILS] Liste extraite:', list, 'Longueur:', list.length);
     const sel = selectedPcIds;
-    const filtered = sel && sel.length > 0 ? list.filter(d => sel.includes(d.pc_id)) : list;
+   // const filtered = sel && sel.length > 0 ? list.filter(d => sel.includes(d.pc_id)) : list;
+    const filtered = list; // Temporaire : afficher toutes les immobilisations sans filtrage
     setDetailsRows(filtered);
   }, [id, compteId, selectedExerciceId, selectedPcIds]);
 
@@ -569,16 +580,24 @@ const Immobilisations = () => {
     if (!confirmed) return;
 
     const idSel = Array.isArray(detailsSelectionModel) && detailsSelectionModel.length > 0 ? detailsSelectionModel[detailsSelectionModel.length - 1] : null;
+    console.log('[DELETE] idSel:', idSel, 'detailsSelectionModel:', detailsSelectionModel);
     if (!idSel) return;
 
     try {
       const fid = Number(id) || 0; const exoId = Number(selectedExerciceId) || 0;
       const onePcId = Array.isArray(selectedPcIds) && selectedPcIds.length > 0 ? Number(selectedPcIds[0]) : null;
-      await axios.delete(`/administration/traitementSaisie/immobilisations/details/${idSel}`, { params: { fileId: fid, compteId: onePcId ?? compteId, exerciceId: exoId } });
+      const url = `/administration/traitementSaisie/immobilisations/details/${idSel}`;
+      const params = { fileId: fid, compteId: onePcId ?? compteId, exerciceId: exoId };
+      console.log('[DELETE] URL:', url, 'Params:', params);
+      
+      await axios.delete(url, { params });
 
       toast.success('Détail supprimé');
+      // Vider la sélection pour éviter les erreurs 404 sur les lignes d'amortissement
+      setDetailsSelectionModel([]);
       await fetchDetails();
     } catch (e) {
+      console.error('[DELETE] Erreur:', e);
       toast.error(`Suppression échouée: ${getErrMsg(e)}`);
     }
   };
@@ -777,7 +796,6 @@ const Immobilisations = () => {
         });
         if (data?.state) {
           const list = Array.isArray(data.list) ? data.list : (data.list ? [data.list] : []);
-          // dédoublonner côté front: une seule ligne par N° de compte
           const mapByCompte = list.reduce((acc, row) => {
             const key = row.compte ?? row.id;
             if (key && !acc[key]) acc[key] = row;
@@ -903,6 +921,61 @@ const Immobilisations = () => {
           }}
         />
       )}
+      {openImportDialog && (
+        <PopupImportImmobilisations
+          open={openImportDialog}
+          onClose={() => setOpenImportDialog(false)}
+          fileId={id}
+          compteId={compteId}
+          exerciceId={selectedExerciceId}
+          onImportSuccess={async () => {
+            const fid = Number(id) || 0;
+            const exoId = Number(selectedExerciceId) || 0;
+            if (fid && compteId && exoId) {
+              try {
+                // Recharger les comptes d'immobilisations
+                const { data } = await axios.get('/administration/traitementSaisie/immobilisations/pcs', {
+                  params: { fileId: fid, compteId, exerciceId: exoId },
+                  timeout: 60000,
+                });
+                if (data?.state) {
+                  const list = Array.isArray(data.list) ? data.list : (data.list ? [data.list] : []);
+                  const mapByCompte = list.reduce((acc, row) => {
+                    const key = row.compte ?? row.id;
+                    if (key && !acc[key]) acc[key] = row;
+                    return acc;
+                  }, {});
+                  const uniqueList = Object.values(mapByCompte);
+                  setRows(uniqueList);
+                  
+                  // Sélectionner automatiquement le premier compte pour afficher les détails
+                  if (uniqueList.length > 0) {
+                    const firstRow = uniqueList[0];
+                    setSelectionModel([firstRow.id]);
+                    
+                    // Attendre un peu pour que la sélection soit prise en compte
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                    // Forcer le rechargement des détails avec le bon pcId
+                    const { data: detailsData } = await axios.get('/administration/traitementSaisie/immobilisations/details', {
+                      params: { fileId: fid, compteId: firstRow.id, exerciceId: exoId, pcId: firstRow.id },
+                      timeout: 60000,
+                    });
+                    console.log('[IMPORT_SUCCESS] Détails rechargés:', detailsData);
+                    const detailsList = Array.isArray(detailsData?.list) ? detailsData.list : [];
+                    setDetailsRows(detailsList);
+                  }
+                }
+                
+                // Recharger les détails
+                await fetchDetails();
+              } catch (e) {
+                console.error('Erreur rechargement après import:', e);
+              }
+            }
+          }}
+        />
+      )}
       <TabContext value={'1'}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <TabList aria-label="immobilisations tabs">
@@ -972,6 +1045,14 @@ const Immobilisations = () => {
               </Stack>
 
               <Stack direction="row" spacing={1} alignItems="center" justifyContent="flex-end" sx={{ pr: 1 }}>
+                <Button
+                  onClick={() => setOpenImportDialog(true)}
+                  variant="contained"
+                  startIcon={<TbFileImport />}
+                  sx={{ backgroundColor: '#28a745', textTransform: 'none', whiteSpace: 'nowrap' }}
+                >
+                  Importer
+                </Button>
                 <Button
                   onClick={handleOpenConfirmGenerateEcritures}
                   variant="contained"
