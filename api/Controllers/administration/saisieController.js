@@ -2799,23 +2799,29 @@ exports.listDetailsImmo = async (req, res) => {
         const compteId = Number(req.query?.compteId);
         const exerciceId = Number(req.query?.exerciceId);
         const pcId = req.query?.pcId ? Number(req.query.pcId) : null;
-        if (!fileId || !compteId || !exerciceId) {
+        if (!fileId || !exerciceId) {
             return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
         }
-        const wherePc = pcId ? 'AND d.pc_id = :pcId' : '';
+        
+        // Si pcId est fourni, on filtre par pc_id (ID du plan comptable)
+        // Sinon on filtre par id_compte (ID du compte utilisateur)
+        const whereClause = pcId 
+            ? 'AND d.pc_id = :pcId' 
+            : (compteId ? 'AND d.id_compte = :compteId' : '');
+        
         const sql = `
             SELECT d.*
             FROM details_immo d
             WHERE d.id_dossier = :fileId
-              AND d.id_compte = :compteId
               AND d.id_exercice = :exerciceId
-              ${wherePc}
+              ${whereClause}
             ORDER BY d.id ASC
         `;
         const rows = await db.sequelize.query(sql, {
             replacements: { fileId, compteId, exerciceId, pcId },
             type: db.Sequelize.QueryTypes.SELECT,
         });
+        console.log('[IMMO][DETAILS][LIST] Query params:', { fileId, compteId, exerciceId, pcId }, 'Results:', rows.length);
         return res.json({ state: true, list: rows || [] });
     } catch (err) {
         console.error('[IMMO][DETAILS][LIST] error:', err);
@@ -3141,17 +3147,251 @@ exports.deleteDetailsImmo = async (req, res) => {
         const fileId = Number(req.query?.fileId);
         const compteId = Number(req.query?.compteId);
         const exerciceId = Number(req.query?.exerciceId);
-        if (!id || !fileId || !compteId || !exerciceId) {
+        if (!id || !fileId || !exerciceId) {
             return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
         }
-        const sql = `DELETE FROM details_immo WHERE id = :id AND id_dossier = :fileId AND id_compte = :compteId AND id_exercice = :exerciceId`;
-        await db.sequelize.query(sql, {
+        
+        // Utiliser pc_id si compteId est fourni (car c'est l'ID du plan comptable)
+        // Sinon utiliser id_compte
+        const whereClause = compteId 
+            ? 'AND pc_id = :compteId' 
+            : 'AND id_compte = :compteId';
+        
+        const sql = `DELETE FROM details_immo WHERE id = :id AND id_dossier = :fileId AND id_exercice = :exerciceId ${whereClause}`;
+        const result = await db.sequelize.query(sql, {
             replacements: { id, fileId, compteId, exerciceId },
             type: db.Sequelize.QueryTypes.DELETE,
         });
+        console.log('[IMMO][DETAILS][DELETE] Suppression effectuée:', { id, fileId, compteId, exerciceId, result });
         return res.json({ state: true, id });
     } catch (err) {
         console.error('[IMMO][DETAILS][DELETE] error:', err);
         return res.status(500).json({ state: false, msg: 'Erreur serveur' });
+    }
+};
+
+exports.importImmobilisations = async (req, res) => {
+    try {
+        const { data, id_dossier, id_compte, id_exercice } = req.body;
+
+        if (!data || !Array.isArray(data) || data.length === 0) {
+            return res.status(400).json({ state: false, msg: 'Aucune donnée à importer' });
+        }
+
+        if (!id_dossier || !id_compte || !id_exercice) {
+            return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
+        }
+
+        // Récupérer les dates de l'exercice
+        const exercice = await db.exercices.findByPk(Number(id_exercice));
+        if (!exercice) {
+            return res.status(404).json({ state: false, msg: 'Exercice introuvable' });
+        }
+        const dateDebutExercice = exercice.date_debut ? new Date(exercice.date_debut) : null;
+        const dateFinExercice = exercice.date_fin ? new Date(exercice.date_fin) : null;
+
+        const anomalies = [];
+        const immobilisationsToInsert = [];
+
+        // Récupérer le plan comptable pour valider les comptes
+        const planComptable = await db.sequelize.query(
+            `SELECT id, compte FROM dossierplancomptables WHERE id_dossier = :id_dossier AND id_compte = :id_compte`,
+            {
+                replacements: { id_dossier: Number(id_dossier), id_compte: Number(id_compte) },
+                type: db.Sequelize.QueryTypes.SELECT
+            }
+        );
+
+        const pcMap = new Map();
+        planComptable.forEach(pc => {
+            pcMap.set(pc.compte.trim(), pc.id);
+        });
+
+        // Valider et préparer les données
+        for (let i = 0; i < data.length; i++) {
+            const row = data[i];
+            const ligneNum = i + 1;
+
+            // Validation des champs obligatoires
+            if (!row.numero_compte || row.numero_compte.trim() === '') {
+                anomalies.push(`Ligne ${ligneNum}: Le numéro de compte est obligatoire`);
+                continue;
+            }
+            if (!row.code || row.code.trim() === '') {
+                anomalies.push(`Ligne ${ligneNum}: Le code est obligatoire`);
+                continue;
+            }
+            if (!row.intitule || row.intitule.trim() === '') {
+                anomalies.push(`Ligne ${ligneNum}: L'intitulé est obligatoire`);
+                continue;
+            }
+            if (!row.date_acquisition || row.date_acquisition.trim() === '') {
+                anomalies.push(`Ligne ${ligneNum}: La date d'acquisition est obligatoire`);
+                continue;
+            }
+            if (!row.duree_amort || row.duree_amort.trim() === '') {
+                anomalies.push(`Ligne ${ligneNum}: La durée d'amortissement est obligatoire`);
+                continue;
+            }
+            if (!row.type_amort || row.type_amort.trim() === '') {
+                anomalies.push(`Ligne ${ligneNum}: Le type d'amortissement est obligatoire`);
+                continue;
+            }
+            if (!row.montant_ht || row.montant_ht.trim() === '') {
+                anomalies.push(`Ligne ${ligneNum}: Le montant HT est obligatoire`);
+                continue;
+            }
+
+            // Vérifier que la date d'acquisition est dans les limites de l'exercice
+            if (dateDebutExercice && dateFinExercice) {
+                const dateAcq = new Date(row.date_acquisition.trim());
+                if (!isNaN(dateAcq.getTime())) {
+                    if (dateAcq > dateFinExercice) {
+                        const dateFinStr = `${dateFinExercice.getDate().toString().padStart(2, '0')}/${(dateFinExercice.getMonth() + 1).toString().padStart(2, '0')}/${dateFinExercice.getFullYear()}`;
+                        anomalies.push(`Ligne ${ligneNum}: La date d'acquisition (${row.date_acquisition.trim()}) est supérieure à la date de fin de l'exercice (${dateFinStr})`);
+                        continue;
+                    }
+                }
+            }
+
+            // Vérifier que le compte existe dans le plan comptable
+            const numeroCompte = row.numero_compte ? row.numero_compte.trim() : '';
+            if (!numeroCompte) {
+                anomalies.push(`Ligne ${ligneNum}: Le numéro de compte est vide`);
+                continue;
+            }
+            const pc_id = pcMap.get(numeroCompte);
+            if (!pc_id) {
+                anomalies.push(`Ligne ${ligneNum}: Le compte "${numeroCompte}" n'existe pas dans le plan comptable`);
+                continue;
+            }
+
+            // Calculer le compte d'amortissement (ajouter 8 après le premier chiffre et enlever le dernier)
+            const deriveCompteAmort = (compte) => {
+                if (!compte) return '';
+                const s = String(compte);
+                if (s.length < 3) return s;
+                return s[0] + '8' + s.substring(1, s.length - 1);
+            };
+
+            const compte_amortissement = deriveCompteAmort(numeroCompte);
+
+            // Déterminer si c'est une reprise en fonction de la position de la date d'acquisition
+            let isReprise = false;
+            let dateReprise = null;
+            let amortAnt = 0;
+
+            // Vérifier d'abord la position de la date d'acquisition par rapport à l'exercice
+            if (dateDebutExercice) {
+                const dateAcq = new Date(row.date_acquisition.trim());
+                
+                if (!isNaN(dateAcq.getTime()) && dateAcq < dateDebutExercice) {
+                    // Date d'acquisition AVANT le début de l'exercice → REPRISE
+                    isReprise = true;
+                    
+                    // Si date_reprise est fournie dans le CSV, on l'utilise
+                    if (row.date_reprise && row.date_reprise.trim() !== '') {
+                        dateReprise = row.date_reprise.trim();
+                        
+                        // amort_ant est obligatoire si date_reprise est fournie
+                        if (!row.amort_ant || row.amort_ant.trim() === '') {
+                            anomalies.push(`Ligne ${ligneNum}: L'amortissement antérieur est obligatoire pour une reprise`);
+                            continue;
+                        }
+                        amortAnt = Number(row.amort_ant.replace(/,/g, '.'));
+                    } else {
+                        // Sinon, reprise automatique avec date_reprise = date début exercice
+                        const year = dateDebutExercice.getFullYear();
+                        const month = String(dateDebutExercice.getMonth() + 1).padStart(2, '0');
+                        const day = String(dateDebutExercice.getDate()).padStart(2, '0');
+                        dateReprise = `${year}-${month}-${day}`;
+                        
+                        // Utiliser amort_ant du CSV s'il est fourni, sinon 0
+                        amortAnt = (row.amort_ant && row.amort_ant.trim() !== '') 
+                            ? Number(row.amort_ant.replace(/,/g, '.')) 
+                            : 0;
+                    }
+                }
+            }
+
+            // Préparer l'objet à insérer
+            const immobData = {
+                id_dossier: Number(id_dossier),
+                id_compte: Number(id_compte),
+                id_exercice: Number(id_exercice),
+                pc_id: pc_id,
+                code: row.code.trim(),
+                intitule: row.intitule.trim(),
+                fournisseur: row.fournisseur ? row.fournisseur.trim() : null,
+                date_acquisition: row.date_acquisition.trim(),
+                date_mise_service: row.date_acquisition.trim(), // Même date que l'acquisition
+                duree_amort_mois: Number(row.duree_amort),
+                type_amort: row.type_amort.trim(),
+                montant_ht: Number(row.montant_ht.replace(/,/g, '.')),
+                compte_amortissement: compte_amortissement,
+                reprise_immobilisation: isReprise,
+                date_reprise: dateReprise,
+                reprise_immobilisation_comp: isReprise,
+                date_reprise_comp: dateReprise,
+                reprise_immobilisation_fisc: isReprise,
+                date_reprise_fisc: dateReprise,
+                amort_ant_comp: amortAnt,
+                amort_ant_fisc: amortAnt,
+                date_sortie: row.date_sortie && row.date_sortie.trim() !== '' ? row.date_sortie.trim() : null,
+                duree_amort_mois_fisc: Number(row.duree_amort),
+                type_amort_fisc: row.type_amort.trim(),
+            };
+
+            immobilisationsToInsert.push(immobData);
+        }
+
+        // Si des anomalies, retourner les erreurs
+        if (anomalies.length > 0) {
+            return res.json({
+                state: false,
+                msg: `${anomalies.length} anomalie(s) détectée(s)`,
+                anomalies: anomalies
+            });
+        }
+
+        // Insérer les immobilisations
+        let insertedCount = 0;
+        for (const immobData of immobilisationsToInsert) {
+            await db.sequelize.query(
+                `INSERT INTO details_immo (
+                    id_dossier, id_compte, id_exercice, pc_id, code, intitule, fournisseur,
+                    date_acquisition, date_mise_service, duree_amort_mois, type_amort, montant_ht,
+                    compte_amortissement, reprise_immobilisation, date_reprise,
+                    reprise_immobilisation_comp, date_reprise_comp, reprise_immobilisation_fisc, date_reprise_fisc,
+                    amort_ant_comp, amort_ant_fisc, date_sortie, duree_amort_mois_fisc, type_amort_fisc,
+                    created_at, updated_at
+                ) VALUES (
+                    :id_dossier, :id_compte, :id_exercice, :pc_id, :code, :intitule, :fournisseur,
+                    :date_acquisition, :date_mise_service, :duree_amort_mois, :type_amort, :montant_ht,
+                    :compte_amortissement, :reprise_immobilisation, :date_reprise,
+                    :reprise_immobilisation_comp, :date_reprise_comp, :reprise_immobilisation_fisc, :date_reprise_fisc,
+                    :amort_ant_comp, :amort_ant_fisc, :date_sortie, :duree_amort_mois_fisc, :type_amort_fisc,
+                    NOW(), NOW()
+                )`,
+                {
+                    replacements: immobData,
+                    type: db.Sequelize.QueryTypes.INSERT
+                }
+            );
+            insertedCount++;
+        }
+
+        return res.json({
+            state: true,
+            msg: `${insertedCount} immobilisation(s) importée(s) avec succès`
+        });
+
+    } catch (err) {
+        console.error('[IMMO][IMPORT] error:', err);
+        return res.status(500).json({
+            state: false,
+            msg: 'Erreur serveur lors de l\'import',
+            error: err.message
+        });
     }
 };
