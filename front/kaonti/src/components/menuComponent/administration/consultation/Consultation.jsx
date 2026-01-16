@@ -549,6 +549,13 @@ export default function ConsultationComponent() {
         }
         let id_ecriture = '';
         if (selectedRows.length === 1) {
+            const selectedJournalId = selectedRows[0].id_journal;
+            const codeJournal = listeCodeJournaux.find(cj => cj.id === selectedJournalId);
+            
+            if (codeJournal && codeJournal.type === 'RAN') {
+                return toast.error('Impossible de modifier une écriture de type RAN');
+            }
+            
             id_ecriture = selectedRows[0].id_ecriture;
             const rows = listSaisie
                 .filter((row) => row.id_ecriture === id_ecriture)
@@ -940,7 +947,16 @@ export default function ConsultationComponent() {
                                     }}>
                                     <Button
                                         onClick={handleOpenSaisiePopup}
-                                        disabled={!canModify || selectedRows.length === 0 || selectedRows.every(row => Number(row.id_dossier) !== Number(fileId))}
+                                        disabled={
+                                            !canModify || 
+                                            selectedRows.length === 0 || 
+                                            selectedRows.every(row => Number(row.id_dossier) !== Number(fileId)) ||
+                                            (selectedRows.length > 0 && (() => {
+                                                const selectedJournalId = selectedRows[0].id_journal;
+                                                const codeJournal = listeCodeJournaux.find(cj => cj.id === selectedJournalId);
+                                                return codeJournal && codeJournal.type === 'RAN';
+                                            })())
+                                        }
                                         variant="contained"
                                         style={{
                                             textTransform: 'none',

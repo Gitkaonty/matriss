@@ -207,7 +207,7 @@ const importCodeJournaux = async (req, res) => {
       anomalies: []
     }
 
-    const validTypes = ['ACHAT', 'BANQUE', 'CAISSE', 'OD', 'RAN', 'VENTE', 'A_NOUVEAU'];
+    const validTypes = ['ACHAT', 'BANQUE', 'CAISSE', 'OD', 'RAN', 'VENTE'];
     let anomalies = [];
     let validData = [];
 
@@ -234,8 +234,8 @@ const importCodeJournaux = async (req, res) => {
       };
       planComptableMap.set(compteKey, compteData);
       // Log quelques exemples pour déboguer
-      if (compteKey.startsWith('512')) {
-        console.log('[importCodeJournaux] Compte 512xxx:', compteKey, compteData);
+      if (compteKey.startsWith('512') || compteKey.startsWith('52')) {
+        console.log('[importCodeJournaux] Compte 512xxx ou 52xxx:', compteKey, compteData);
       }
     });
 

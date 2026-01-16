@@ -387,11 +387,11 @@ exports.listImmobilisationsPc2 = async (req, res) => {
                   AND j1.id_dossier = :fileId
                   AND j1.id_exercice = :exerciceId
               ) AS solde,
-              -- Amortissement antérieur: compte d'amort, journaux type A_NOUVEAU
+              -- Amortissement antérieur: compte d'amort, journaux type RAN
               (
                 SELECT
-                  COALESCE(SUM(CASE WHEN cj1.type = 'A_NOUVEAU' THEN ja1.credit ELSE 0 END), 0)
-                  - COALESCE(SUM(CASE WHEN cj1.type = 'A_NOUVEAU' THEN ja1.debit ELSE 0 END), 0)
+                  COALESCE(SUM(CASE WHEN cj1.type = 'RAN' THEN ja1.credit ELSE 0 END), 0)
+                  - COALESCE(SUM(CASE WHEN cj1.type = 'RAN' THEN ja1.debit ELSE 0 END), 0)
                 FROM journals ja1
                 LEFT JOIN codejournals cj1 ON cj1.id = ja1.id_journal
                 WHERE ja1.id_numcpt = pc_amort.id
@@ -399,11 +399,11 @@ exports.listImmobilisationsPc2 = async (req, res) => {
                   AND ja1.id_dossier = :fileId
                   AND ja1.id_exercice = :exerciceId
               ) AS amort_ant,
-              -- Dotation: compte d'amort, journaux type <> A_NOUVEAU (ou sans type)
+              -- Dotation: compte d'amort, journaux type <> RAN (ou sans type)
               (
                 SELECT
-                  COALESCE(SUM(CASE WHEN cj2.type <> 'A_NOUVEAU' OR cj2.type IS NULL THEN ja2.credit ELSE 0 END), 0)
-                  - COALESCE(SUM(CASE WHEN cj2.type <> 'A_NOUVEAU' OR cj2.type IS NULL THEN ja2.debit ELSE 0 END), 0)
+                  COALESCE(SUM(CASE WHEN cj2.type <> 'RAN' OR cj2.type IS NULL THEN ja2.credit ELSE 0 END), 0)
+                  - COALESCE(SUM(CASE WHEN cj2.type <> 'RAN' OR cj2.type IS NULL THEN ja2.debit ELSE 0 END), 0)
                 FROM journals ja2
                 LEFT JOIN codejournals cj2 ON cj2.id = ja2.id_journal
                 WHERE ja2.id_numcpt = pc_amort.id
@@ -423,8 +423,8 @@ exports.listImmobilisationsPc2 = async (req, res) => {
                 )
                 - (
                   SELECT
-                    COALESCE(SUM(CASE WHEN cj1.type = 'A_NOUVEAU' THEN ja1.credit ELSE 0 END), 0)
-                    - COALESCE(SUM(CASE WHEN cj1.type = 'A_NOUVEAU' THEN ja1.debit ELSE 0 END), 0)
+                    COALESCE(SUM(CASE WHEN cj1.type = 'RAN' THEN ja1.credit ELSE 0 END), 0)
+                    - COALESCE(SUM(CASE WHEN cj1.type = 'RAN' THEN ja1.debit ELSE 0 END), 0)
                   FROM journals ja1
                   LEFT JOIN codejournals cj1 ON cj1.id = ja1.id_journal
                   WHERE ja1.id_numcpt = pc_amort.id
@@ -434,8 +434,8 @@ exports.listImmobilisationsPc2 = async (req, res) => {
                 )
                 - (
                   SELECT
-                    COALESCE(SUM(CASE WHEN cj2.type <> 'A_NOUVEAU' OR cj2.type IS NULL THEN ja2.credit ELSE 0 END), 0)
-                    - COALESCE(SUM(CASE WHEN cj2.type <> 'A_NOUVEAU' OR cj2.type IS NULL THEN ja2.debit ELSE 0 END), 0)
+                    COALESCE(SUM(CASE WHEN cj2.type <> 'RAN' OR cj2.type IS NULL THEN ja2.credit ELSE 0 END), 0)
+                    - COALESCE(SUM(CASE WHEN cj2.type <> 'RAN' OR cj2.type IS NULL THEN ja2.debit ELSE 0 END), 0)
                   FROM journals ja2
                   LEFT JOIN codejournals cj2 ON cj2.id = ja2.id_journal
                   WHERE ja2.id_numcpt = pc_amort.id
@@ -455,8 +455,8 @@ exports.listImmobilisationsPc2 = async (req, res) => {
                 )
                 - (
                   SELECT
-                    COALESCE(SUM(CASE WHEN cj1.type = 'A_NOUVEAU' THEN ja1.credit ELSE 0 END), 0)
-                    - COALESCE(SUM(CASE WHEN cj1.type = 'A_NOUVEAU' THEN ja1.debit ELSE 0 END), 0)
+                    COALESCE(SUM(CASE WHEN cj1.type = 'RAN' THEN ja1.credit ELSE 0 END), 0)
+                    - COALESCE(SUM(CASE WHEN cj1.type = 'RAN' THEN ja1.debit ELSE 0 END), 0)
                   FROM journals ja1
                   LEFT JOIN codejournals cj1 ON cj1.id = ja1.id_journal
                   WHERE ja1.id_numcpt = pc_amort.id
@@ -466,8 +466,8 @@ exports.listImmobilisationsPc2 = async (req, res) => {
                 )
                 - (
                   SELECT
-                    COALESCE(SUM(CASE WHEN cj2.type <> 'A_NOUVEAU' OR cj2.type IS NULL THEN ja2.credit ELSE 0 END), 0)
-                    - COALESCE(SUM(CASE WHEN cj2.type <> 'A_NOUVEAU' OR cj2.type IS NULL THEN ja2.debit ELSE 0 END), 0)
+                    COALESCE(SUM(CASE WHEN cj2.type <> 'RAN' OR cj2.type IS NULL THEN ja2.credit ELSE 0 END), 0)
+                    - COALESCE(SUM(CASE WHEN cj2.type <> 'RAN' OR cj2.type IS NULL THEN ja2.debit ELSE 0 END), 0)
                   FROM journals ja2
                   LEFT JOIN codejournals cj2 ON cj2.id = ja2.id_journal
                   WHERE ja2.id_numcpt = pc_amort.id

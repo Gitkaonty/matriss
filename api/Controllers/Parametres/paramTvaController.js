@@ -1011,7 +1011,7 @@ const generateAnnexeDeclarationAuto = async (req, res) => {
                 montant_ht = 0;
                 notesAlgo.push('ligne non associée à un tier');
               }
-            } else if (['VENTE', 'CAISSE', 'OD', 'ANOUVEAU'].includes(journalTypeUpper)) {
+            } else if (['VENTE', 'CAISSE', 'OD', 'RAN'].includes(journalTypeUpper)) {
               montant_ht = 0;
               notesAlgo.push('ligne non associée à un tier');
             } else if (journalTypeUpper === 'BANQUE') {
@@ -1033,7 +1033,7 @@ const generateAnnexeDeclarationAuto = async (req, res) => {
                 montant_ht = 0;
                 notesAlgo.push('ligne non associée à un tier');
               }
-            } else if (['ACHAT', 'CAISSE', 'OD', 'ANOUVEAU', 'BANQUE'].includes(journalTypeUpper)) {
+            } else if (['ACHAT', 'CAISSE', 'OD', 'RAN', 'BANQUE'].includes(journalTypeUpper)) {
               montant_ht = 0;
               notesAlgo.push('ligne non associée à un tier');
             }

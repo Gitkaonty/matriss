@@ -200,7 +200,7 @@ export default function ParamCodeJournalComponent() {
     useEffect(() => {
         if (pc && pc.length > 0 && formikNewCodeJournal.values.type) {
             console.log('[useEffect pc] Plan comptable chargé, mise à jour de listeCptAssocie pour type:', formikNewCodeJournal.values.type);
-            const listBank = pc.filter((row) => row.compte.startsWith('512'));
+            const listBank = pc.filter((row) => row.compte.startsWith('512') || row.compte.startsWith('52'));
             const listCash = pc.filter((row) => row.compte.startsWith('53'));
             
             if (formikNewCodeJournal.values.type === 'BANQUE') {
@@ -221,7 +221,6 @@ export default function ParamCodeJournalComponent() {
         { value: 'OD', label: 'OD' },
         { value: 'RAN', label: 'RAN' },
         { value: 'VENTE', label: 'VENTE' },
-        { value: 'A_NOUVEAU', label: 'A NOUVEAU' },
     ];
 
     //liste compte banque et caisse
@@ -229,10 +228,10 @@ export default function ParamCodeJournalComponent() {
         console.log('[recupListeCptBanqueCaisse] Type sélectionné:', typeTreso);
         console.log('[recupListeCptBanqueCaisse] Plan comptable (pc) length:', pc?.length);
         
-        const listBank = pc?.filter((row) => row.compte.startsWith('512'));
+        const listBank = pc?.filter((row) => row.compte.startsWith('512') || row.compte.startsWith('52'));
         const listCash = pc?.filter((row) => row.compte.startsWith('53'));
         
-        console.log('[recupListeCptBanqueCaisse] Comptes BANQUE (512) trouvés:', listBank?.length);
+        console.log('[recupListeCptBanqueCaisse] Comptes BANQUE (512 ou 52) trouvés:', listBank?.length);
         console.log('[recupListeCptBanqueCaisse] Comptes CAISSE (53) trouvés:', listCash?.length);
 
         formikNewCodeJournal.setFieldValue("type", typeTreso);
@@ -547,24 +546,24 @@ export default function ParamCodeJournalComponent() {
                         </Stack>
                     )
                 }
-                if (params.value === 'A_NOUVEAU') {
-                    return (
-                        <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-                            <Chip
-                                icon={<MdOutlineSyncLock style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
-                                label={params.value}
+                // if (params.value === 'RAN') {
+                //     return (
+                //         <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
+                //             <Chip
+                //                 icon={<MdOutlineSyncLock style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
+                //                 label={params.value}
 
-                                style={{
-                                    width: "100%",
-                                    display: 'flex', // ou block, selon le rendu souhaité
-                                    justifyContent: 'space-between',
-                                    backgroundColor: '#FFA62F',
-                                    color: 'white'
-                                }}
-                            />
-                        </Stack>
-                    )
-                }
+                //                 style={{
+                //                     width: "100%",
+                //                     display: 'flex', // ou block, selon le rendu souhaité
+                //                     justifyContent: 'space-between',
+                //                     backgroundColor: '#FFA62F',
+                //                     color: 'white'
+                //                 }}
+                //             />
+                //         </Stack>
+                //     )
+                // }
             }
         },
         {

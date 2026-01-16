@@ -1,50 +1,29 @@
-import { React, useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Typography, Stack, Paper, Box, Tab, Badge, Button, Divider, TextField, FormHelperText } from '@mui/material';
-import RadioGroup from '@mui/material/RadioGroup';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Radio from '@mui/material/Radio';
-import InputLabel from '@mui/material/InputLabel';
-import MenuItem from '@mui/material/MenuItem';
+import { Typography, Stack, Box, Badge, Button, TextField, FormHelperText } from '@mui/material';
 import FormControl from '@mui/material/FormControl';
-import Select from '@mui/material/Select';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import SaveAltIcon from '@mui/icons-material/SaveAlt';
 import LogoutIcon from '@mui/icons-material/Logout';
-import TableImportBalanceModel from '../../../../model/TableImportBalanceModel';
-import TableImportModelePlanComptableModel from '../../../../model/TableImportModelePlanComptableModel';
 import { init } from '../../../../../init';
 import useAuth from '../../../../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
 import axios from '../../../../../config/axios';
 import toast from 'react-hot-toast';
-import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
-import { TabContext, TabList, TabPanel } from '@mui/lab';
-import { format } from 'date-fns';
 import { useFormik } from 'formik';
 import * as Yup from "yup";
 import Papa from 'papaparse';
-import { DataGrid, frFR, GridFooter, GridFooterContainer, GridRowEditStopReasons, GridRowModes } from '@mui/x-data-grid';
-import QuickFilter from '../../../componentsTools/DatagridToolsStyle';
-import { DataGridStyle } from '../../../componentsTools/DatagridToolsStyle';
 import PopupViewDetailsImportModelePc from '../../../componentsTools/popupViewDetailsImportModelePc';
-import PopupActionConfirm from '../../../componentsTools/popupActionConfirm';
 import CircularProgress from '@mui/material/CircularProgress';
 import PopupInformation from '../../../componentsTools/popupInformation';
 import VirtualTableModifiableImportJnl from '../../../componentsTools/DeclarationEbilan/virtualTableModifiableImportJnl';
+import VirtualTableImportModelPC from '../../../componentsTools/Paramettage/VirtualTableImportModelPC';
 
 export default function PopupImportModelePlanComptable({ onSuccess }) {
-
-    const [valSelectType, setValSelectType] = useState('');
-
     let initial = init[0];
-    const [fileInfos, setFileInfos] = useState('');
-    const [fileId, setFileId] = useState(0);
-    const { id } = useParams();
-    const [noFile, setNoFile] = useState(false);
     const [nbrAnomalie, setNbrAnomalie] = useState(0);
     const [openDetailsAnomalie, setOpenDetailsAnomalie] = useState(false);
     const [couleurBoutonAnomalie, setCouleurBoutonAnomalie] = useState('white');
@@ -53,7 +32,6 @@ export default function PopupImportModelePlanComptable({ onSuccess }) {
     const [msgAnomalie, setMsgAnomalie] = useState([]);
     const [traitementModelePcWaiting, setTraitementModelePcWaiting] = useState(false);
     const [traitementModelePcMsg, setTraitementModelePcMsg] = useState('');
-    const [openDialogConfirmImport, setOpenDialogConfirmImport] = useState(false);
     const [anomaliePersiste, setAnomaliePersiste] = useState(false);
     const [nameExist, setNameExist] = useState(false);
 
@@ -62,7 +40,7 @@ export default function PopupImportModelePlanComptable({ onSuccess }) {
         { id: 'libelle', label: 'Libellé', minWidth: 350, align: 'left', isnumber: false },
         { id: 'nature', label: 'Nature', minWidth: 150, align: 'left', isnumber: false },
         { id: 'baseaux', label: 'Centr./base aux.', minWidth: 160, align: 'left', isnumber: false },
-        { id: 'typetier', label: 'Type de tier', minWidth: 120, align: 'left', isnumber: false },
+        { id: 'typetier', label: 'Type de tier', minWidth: 150, align: 'left', isnumber: false },
         { id: 'nif', label: 'Nif', minWidth: 150, align: 'left', isnumber: false },
         { id: 'statistique', label: 'N° Statistique', minWidth: 175, align: 'left', isnumber: false },
         { id: 'adresse', label: 'Adresse de la société', minWidth: 300, align: 'left', isnumber: false },
@@ -84,7 +62,6 @@ export default function PopupImportModelePlanComptable({ onSuccess }) {
     const decoded = auth?.accessToken ? jwtDecode(auth.accessToken) : undefined;
     const compteId = decoded.UserInfo.compteId || null;
     const userId = decoded.UserInfo.userId || null;
-    const navigate = useNavigate();
 
     const formikImport = useFormik({
         initialValues: {
@@ -337,24 +314,23 @@ export default function PopupImportModelePlanComptable({ onSuccess }) {
     }
 
     return (
-        <Box sx={{ 
-            width: 'calc(100% - 40px)', 
+        <Box sx={{
+            width: 'calc(100% - 40px)',
             maxWidth: 'calc(100vw - 100px)',
             padding: '0 0 0 30px',
             boxSizing: 'border-box'
         }}>
             {openDetailsAnomalie ? <PopupViewDetailsImportModelePc msg={msgAnomalie} confirmationState={handleCloseAnomalieDetails} /> : null}
-            {openDialogConfirmImport ? <PopupActionConfirm msg={"Voulez-vous vraiment importer le modèle de plan comptable en cours?"} confirmationState={handleImportModelePc} /> : null}
             {anomaliePersiste ? <PopupInformation msg={"Veuillez corriger toutes les anomalies pour pouvoir importer le modèle."} confirmationState={handleCloseInformation} /> : null}
             {nameExist ? <PopupInformation msg={"Le nom du modèle existe déjà. Veuillez spécifier un autre."} confirmationState={handleCloseInformationNameExist} /> : null}
 
             <form onSubmit={formikImport.handleSubmit}>
-                <Stack 
-                    width={"100%"} 
-                    height={"100%"} 
-                    spacing={2} 
-                    alignItems={"flex-start"} 
-                    alignContent={"flex-start"} 
+                <Stack
+                    width={"100%"}
+                    height={"100%"}
+                    spacing={2}
+                    alignItems={"flex-start"}
+                    alignContent={"flex-start"}
                     justifyContent={"stretch"}
                 >
 
@@ -451,7 +427,7 @@ export default function PopupImportModelePlanComptable({ onSuccess }) {
                     }
 
                     <Stack width={"100%"} height={'70vh'}>
-                        <VirtualTableModifiableImportJnl columns={columns} rows={modelePc} state={true} />
+                        <VirtualTableImportModelPC tableHeader={columns} tableRow={modelePc} />
                     </Stack>
                 </Stack>
             </form>

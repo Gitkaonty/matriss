@@ -405,7 +405,7 @@ const generateDComAuto = async (res, nature, list, id_compte, id_dossier, id_exe
 
                             case 'OD':
                             case 'CAISSE':
-                            case 'A_NOUVEAU':
+                            case 'RAN':
                             case 'VENTE': {
                                 const journalOthers = journalCodeMappedData.filter(
                                     item => item.compte && item.compte.toString().startsWith(compteData.compte)
