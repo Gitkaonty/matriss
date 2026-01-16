@@ -213,7 +213,15 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING(20),
             defaultValue: 'Français',
             allowNull: true
-        }
+        },
+        compteautre: {
+            type: DataTypes.STRING(50),
+            allowNull: true
+        },
+        libelleautre: {
+            type: DataTypes.STRING(150),
+            allowNull: true
+        },
     }, { timestamps: true },)
 
     dossierplancomptables.associate = (models) => {

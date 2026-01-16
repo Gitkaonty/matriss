@@ -115,11 +115,13 @@ const AddCptToPc = async (req, res) => {
       region,
       district,
       commune,
-      typecomptabilite
+      typecomptabilite,
+      compteautre,
+      libelleautre,
     } = req.body;
 
     // return console.log(req.body);
-    
+
     const DossierParam = await dossiers.findOne({
       where: {
         id: idDossier,
@@ -173,23 +175,28 @@ const AddCptToPc = async (req, res) => {
         }
 
         let compteFormated = '';
+        let compteFormattedAutre = '';
         let baseAux = '';
 
         // Formatage compte & baseaux selon les règles métier
         if (autocompletion) {
           if (nature === "Aux") {
             compteFormated = compte.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
+            compteFormattedAutre = compteautre.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
             baseAux = baseauxiliaire.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux) || '';
           } else {
             compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
+            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
             baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
           }
         } else {
           if (nature !== "Aux") {
             compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
+            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
             baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
           } else {
             compteFormated = compte;
+            compteFormattedAutre = compteautre;
             baseAux = baseauxiliaire;
           }
         }
@@ -208,6 +215,8 @@ const AddCptToPc = async (req, res) => {
           id_compte: idCompte,
           id_dossier: idDossier,
           compte: compteFormated,
+          compteautre: compteFormattedAutre,
+          libelleautre: libelleautre,
           libelle: libelle,
           nature: nature,
           baseaux: baseAux,
@@ -302,23 +311,28 @@ const AddCptToPc = async (req, res) => {
         }
 
         let compteFormated = '';
+        let compteFormattedAutre = '';
         let baseAux = '';
 
         // Formatage compte & baseaux selon les règles métier
         if (autocompletion) {
           if (nature === "Aux") {
             compteFormated = compte.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
+            compteFormattedAutre = compteautre.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux0);
             baseAux = baseauxiliaire.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux) || '';
           } else {
             compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
+            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
             baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
           }
         } else {
           if (nature !== "Aux") {
             compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
+            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
             baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
           } else {
             compteFormated = compte;
+            compteFormattedAutre = compteautre;
             baseAux = baseauxiliaire;
           }
         }
@@ -337,7 +351,9 @@ const AddCptToPc = async (req, res) => {
           id_compte: idCompte,
           id_dossier: idDossier,
           compte: compteFormated,
+          compteautre: compteFormattedAutre,
           libelle: libelle,
+          libelleautre: libelleautre,
           nature: nature,
           baseaux: baseAux,
           cptcharge: cptChNb,
@@ -429,23 +445,28 @@ const AddCptToPc = async (req, res) => {
         }
 
         let compteFormated = '';
+        let compteFormattedAutre = '';
         let baseAux = '';
 
         // Formatage compte & baseaux selon les règles métier
         if (autocompletion) {
           if (nature === "Aux") {
             compteFormated = compte.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
+            compteFormattedAutre = compteautre.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
             baseAux = baseauxiliaire.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux) || '';
           } else {
             compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
+            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
             baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
           }
         } else {
           if (nature !== "Aux") {
             compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
+            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
             baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
           } else {
             compteFormated = compte;
+            compteFormattedAutre = compteautre;
             baseAux = baseauxiliaire;
           }
         }
@@ -464,7 +485,9 @@ const AddCptToPc = async (req, res) => {
           id_compte: idCompte,
           id_dossier: idDossier,
           compte: compteFormated,
+          compteautre: compteFormattedAutre,
           libelle: libelle,
+          libelleautre: libelleautre,
           nature: nature,
           baseaux: baseAux,
           cptcharge: cptChNb,
@@ -555,23 +578,28 @@ const AddCptToPc = async (req, res) => {
         }
 
         let compteFormated = '';
+        let compteFormattedAutre = '';
         let baseAux = '';
 
         // Formatage compte & baseaux selon les règles métier
         if (autocompletion) {
           if (nature === "Aux") {
             compteFormated = compte.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
+            compteFormattedAutre = compteautre.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
             baseAux = baseauxiliaire.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux) || '';
           } else {
             compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
+            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
             baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
           }
         } else {
           if (nature !== "Aux") {
             compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
+            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
             baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
           } else {
             compteFormated = compte;
+            compteFormattedAutre = compteautre;
             baseAux = baseauxiliaire;
           }
         }
@@ -590,7 +618,9 @@ const AddCptToPc = async (req, res) => {
           id_compte: idCompte,
           id_dossier: idDossier,
           compte: compteFormated,
+          compteautre: compteFormattedAutre,
           libelle: libelle,
+          libelleautre: libelleautre,
           nature: nature,
           baseaux: baseAux,
           cptcharge: cptChNb,
@@ -649,7 +679,8 @@ const AddCptToPc = async (req, res) => {
     } else {
       let resData = {
         state: false,
-        msg: ''
+        msg: '',
+        dataModified: {}
       };
 
       if (typeTier === "sans-nif") {
@@ -690,23 +721,28 @@ const AddCptToPc = async (req, res) => {
         }
 
         let compteFormated = '';
+        let compteFormattedAutre = '';
         let baseAux = '';
 
         // Formatage compte & baseaux selon les règles métier
         if (autocompletion) {
           if (nature === "Aux") {
             compteFormated = compte.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
+            compteFormattedAutre = compteautre.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
             baseAux = baseauxiliaire.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux) || '';
           } else {
             compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
+            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
             baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
           }
         } else {
           if (nature !== "Aux") {
             compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
+            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
             baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
           } else {
             compteFormated = compte;
+            compteFormattedAutre = compteautre;
             baseAux = baseauxiliaire;
           }
         }
@@ -725,7 +761,9 @@ const AddCptToPc = async (req, res) => {
           id_compte: idCompte,
           id_dossier: idDossier,
           compte: compteFormated,
+          compteautre: compteFormattedAutre,
           libelle: libelle,
+          libelleautre: libelleautre,
           nature: nature,
           baseaux: baseAux,
           cptcharge: cptChNb,
@@ -833,23 +871,28 @@ const AddCptToPc = async (req, res) => {
         }
 
         let compteFormated = '';
+        let compteFormattedAutre = '';
         let baseAux = '';
 
         // Formatage compte & baseaux selon les règles métier
         if (autocompletion) {
           if (nature === "Aux") {
             compteFormated = compte.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
+            compteFormattedAutre = compteautre.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
             baseAux = baseauxiliaire.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux) || '';
           } else {
             compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
+            compteFormattedAutre = compteautre.toString().padEnd(longueurcptdstd, "0").slice(0, longueurcptstd);
             baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
           }
         } else {
           if (nature !== "Aux") {
             compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
+            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
             baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
           } else {
             compteFormated = compte;
+            compteFormattedAutre = compteautre;
             baseAux = baseauxiliaire;
           }
         }
@@ -868,7 +911,9 @@ const AddCptToPc = async (req, res) => {
           id_compte: idCompte,
           id_dossier: idDossier,
           compte: compteFormated,
+          compteautre: compteFormattedAutre,
           libelle: libelle,
+          libelleautre: libelleautre,
           nature: nature,
           baseaux: baseAux,
           cptcharge: cptChNb,
@@ -973,23 +1018,28 @@ const AddCptToPc = async (req, res) => {
         }
 
         let compteFormated = '';
+        let compteFormattedAutre = '';
         let baseAux = '';
 
         // Formatage compte & baseaux selon les règles métier
         if (autocompletion) {
           if (nature === "Aux") {
             compteFormated = compte.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
+            compteFormattedAutre = compteautre.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
             baseAux = baseauxiliaire.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux) || '';
           } else {
             compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
+            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
             baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
           }
         } else {
           if (nature !== "Aux") {
             compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
+            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
             baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
           } else {
             compteFormated = compte;
+            compteFormattedAutre = compteautre;
             baseAux = baseauxiliaire;
           }
         }
@@ -1008,7 +1058,9 @@ const AddCptToPc = async (req, res) => {
           id_compte: idCompte,
           id_dossier: idDossier,
           compte: compteFormated,
+          compteautre: compteFormattedAutre,
           libelle: libelle,
+          libelleautre: libelleautre,
           nature: nature,
           baseaux: baseAux,
           cptcharge: cptChNb,
@@ -1110,23 +1162,28 @@ const AddCptToPc = async (req, res) => {
         }
 
         let compteFormated = '';
+        let compteFormattedAutre = '';
         let baseAux = '';
 
         // Formatage compte & baseaux selon les règles
         if (autocompletion) {
           if (nature === "Aux") {
             compteFormated = compte.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
+            compteFormattedAutre = compteautre.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
             baseAux = baseauxiliaire.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux) || '';
           } else {
             compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
+            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
             baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
           }
         } else {
           if (nature !== "Aux") {
             compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
+            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstc, "0").slice(0, longueurcptstd);
             baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
           } else {
             compteFormated = compte;
+            compteFormattedAutre = compteautre;
             baseAux = baseauxiliaire;
           }
         }
@@ -1145,7 +1202,9 @@ const AddCptToPc = async (req, res) => {
           id_compte: idCompte,
           id_dossier: idDossier,
           compte: compteFormated,
+          compteautre: compteFormattedAutre,
           libelle: libelle,
+          libelleautre: libelleautre,
           nature: nature,
           baseaux: baseAux,
           cptcharge: cptChNb,
@@ -1203,9 +1262,12 @@ const AddCptToPc = async (req, res) => {
           });
         }
 
+
         resData.state = true;
         resData.msg = "Les modifications ont été enregistrées avec succès";
       }
+      const dpcUpdated = await dossierPlanComptable.findByPk(itemId);
+      resData.dataModified = dpcUpdated;
 
       res.json(resData);
     }

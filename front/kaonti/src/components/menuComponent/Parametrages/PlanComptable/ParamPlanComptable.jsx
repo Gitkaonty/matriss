@@ -57,6 +57,7 @@ export default function ParamPlanComptable() {
     const [rowCptInfos, setRowCptInfos] = useState([]);
     const [openInfos, setOpenInfos] = useState(false);
     const [consolidation, setConsolidation] = useState(false);
+    const [isTypeComptaAutre, setIsTypeComptaAutre] = useState(false);
 
     const [openDialogAddNewAccount, setOpenDialogAddNewAccount] = useState(false);
     const [typeAction, setTypeAction] = useState('');
@@ -134,20 +135,20 @@ export default function ParamPlanComptable() {
             }
         },
         {
-            field: 'typecomptabilite',
-            headerName: 'Type comptabilité',
-            type: 'string',
-            sortable: true,
-            width: 150,
-            headerAlign: 'left',
-            headerClassName: 'HeaderbackColor',
-        },
-        {
             field: 'libelle',
             headerName: 'Libellé',
             type: 'string',
             sortable: true,
             width: 300,
+            headerAlign: 'left',
+            headerClassName: 'HeaderbackColor',
+        },
+        {
+            field: 'typecomptabilite',
+            headerName: 'Type comptabilité',
+            type: 'string',
+            sortable: true,
+            width: 150,
             headerAlign: 'left',
             headerClassName: 'HeaderbackColor',
         },
@@ -549,6 +550,34 @@ export default function ParamPlanComptable() {
         }
     ]
 
+    const typeIndex = columnHeaderDetail.findIndex(c => c.field === 'libelle');
+
+    const typeComptabiliteAutre = [
+        {
+            field: 'compteautre',
+            headerName: 'Compte (Autre)',
+            type: 'number',
+            sortable: true,
+            width: 175,
+            headerAlign: 'right',
+            headerClassName: 'HeaderbackColor',
+        },
+        {
+            field: 'libelleautre',
+            headerName: 'Libelle (Autre)',
+            type: 'string',
+            sortable: true,
+            width: 300,
+            headerAlign: 'left',
+            align: 'left',
+            headerClassName: 'HeaderbackColor',
+        },
+    ]
+
+    if (isTypeComptaAutre && typeIndex !== -1) {
+        columnHeaderDetail.splice(typeIndex + 1, 0, ...typeComptabiliteAutre)
+    }
+
     //paramètres de connexion------------------------------------
     const decoded = auth?.accessToken
         ? jwtDecode(auth.accessToken)
@@ -589,8 +618,10 @@ export default function ParamPlanComptable() {
             const resData = response.data;
 
             if (resData.state) {
+                const isTypeComptaAutre = resData.fileInfos[0].typecomptabilite === 'Autres';
                 setFileInfos(resData.fileInfos[0]);
                 setConsolidation(resData.fileInfos[0].consolidation);
+                setIsTypeComptaAutre(isTypeComptaAutre)
                 setNoFile(false);
             } else {
                 setFileInfos([]);
@@ -606,12 +637,10 @@ export default function ParamPlanComptable() {
             if (resData.state) {
                 let listePc = resData.liste;
 
-                // Filtrer si compteParam existe
                 if (compte) {
                     listePc = listePc.filter((row) => row.compte === compte);
                 }
 
-                // Déduplication par numéro de compte pour éviter les doublons visuels
                 const unique = Object.values(
                     (Array.isArray(listePc) ? listePc : []).reduce((acc, r) => {
                         const k = String(r.compte || '');
@@ -736,6 +765,8 @@ export default function ParamPlanComptable() {
                         open={openDialogAddNewAccount}
                         onClose={handleCloseDialogAddNewAccount}
                         stateAction={typeAction}
+                        isTypeComptaAutre={isTypeComptaAutre}
+                        setSelectedRow={setSelectedRow}
                     />
                 )
             }
