@@ -368,16 +368,16 @@ export default function SaisieComponent() {
         if (!defaultDeviseData) {
             return toast.error('Veuillez sélectionner une devise par défaut dans le paramétrage CRM de ce dossier')
         }
-        
+
         if (type === 'modification' && selectedRows.length > 0) {
             const selectedJournalId = selectedRows[0].id_journal;
             const codeJournal = listeCodeJournaux.find(cj => cj.id === selectedJournalId);
-            
+
             if (codeJournal && codeJournal.type === 'RAN') {
                 return toast.error('Impossible de modifier une écriture de type RAN');
             }
         }
-        
+
         setOpenSaisiePopup(true);
         setTypeActionSaisie(type);
     }
@@ -492,11 +492,11 @@ export default function SaisieComponent() {
             setOpenDialogDeleteSaisie(false);
             return;
         }
-        
+
         if (selectedRows.length > 0) {
             const selectedJournalId = selectedRows[0].id_journal;
             const codeJournal = listeCodeJournaux.find(cj => cj.id === selectedJournalId);
-            
+
             if (codeJournal && codeJournal.type === 'RAN') {
                 toast.error('Impossible de supprimer une écriture de type RAN');
                 setOpenDialogDeleteSaisie(false);
@@ -536,7 +536,7 @@ export default function SaisieComponent() {
         if (selectedRows.length > 0) {
             const selectedJournalId = selectedRows[0].id_journal;
             const codeJournal = listeCodeJournaux.find(cj => cj.id === selectedJournalId);
-            
+
             if (codeJournal && codeJournal.type === 'RAN') {
                 return toast.error('Impossible de supprimer une écriture de type RAN');
             }
@@ -808,8 +808,8 @@ export default function SaisieComponent() {
                                     <Button
                                         onClick={() => handleOpenSaisiePopup('modification')}
                                         disabled={
-                                            !canModify || 
-                                            selectedRows.length === 0 || 
+                                            !canModify ||
+                                            selectedRows.length === 0 ||
                                             (selectedRows.filter(val => val.id_dossier === fileId)).length === 0 ||
                                             (selectedRows.length > 0 && (() => {
                                                 const selectedJournalId = selectedRows[0].id_journal;
@@ -833,8 +833,8 @@ export default function SaisieComponent() {
                                     <Button
                                         onClick={handleOpenDialogConfirmDeleteSaisie}
                                         disabled={
-                                            !canDelete || 
-                                            selectedRows.length === 0 || 
+                                            !canDelete ||
+                                            selectedRows.length === 0 ||
                                             (selectedRows.filter(val => val.id_dossier === fileId)).length === 0 ||
                                             (selectedRows.length > 0 && (() => {
                                                 const selectedJournalId = selectedRows[0].id_journal;

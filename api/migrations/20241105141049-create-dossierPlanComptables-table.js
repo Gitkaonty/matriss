@@ -218,6 +218,14 @@ module.exports = {
                 type: Sequelize.BOOLEAN,
                 defaultValue: false
             },
+            compteautre: {
+                type: Sequelize.STRING(50),
+                allowNull: true
+            },
+            libelleautre: {
+                type: Sequelize.STRING(150),
+                allowNull: true
+            },
         },
             { timestamps: true }
         );
