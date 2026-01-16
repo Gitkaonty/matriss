@@ -88,7 +88,8 @@ export const getSaisieColumnHeader = ({
     isDatagridEditing,
     ajouterNouvelleLigne,
     isCaActive,
-    handleOpenPopupCa
+    handleOpenPopupCa,
+    listeCodeJournaux
 }) => {
 
     const columns = [
@@ -924,7 +925,12 @@ export const getSaisieColumnHeader = ({
                             <span>
                                 <Button
                                     onClick={() => handleOpenDialogConfirmDeleteSaisie(params.id)}
-                                    disabled={tableRows.length === 1 || isDatagridEditing()}
+                                    disabled={(() => {
+                                        if (tableRows.length === 1 || isDatagridEditing()) return true;
+                                        const selectedJournalId = formSaisie.values.valSelectCodeJnl;
+                                        const codeJournal = listeCodeJournaux?.find(cj => cj.id === selectedJournalId);
+                                        return codeJournal && codeJournal.type === 'RAN';
+                                    })()}
                                     color="error"
                                     sx={{
                                         outline: 'none',
@@ -938,7 +944,12 @@ export const getSaisieColumnHeader = ({
                                             boxShadow: 'none',
                                         },
                                         ml: 0,
-                                        pointerEvents: tableRows.length === 1 ? 'none' : 'auto',
+                                        pointerEvents: (() => {
+                                            if (tableRows.length === 1) return 'none';
+                                            const selectedJournalId = formSaisie.values.valSelectCodeJnl;
+                                            const codeJournal = listeCodeJournaux?.find(cj => cj.id === selectedJournalId);
+                                            return (codeJournal && codeJournal.type === 'RAN') ? 'none' : 'auto';
+                                        })(),
                                     }}
                                 >
                                     <GoX style={{ width: '30px', height: '30px' }} />
