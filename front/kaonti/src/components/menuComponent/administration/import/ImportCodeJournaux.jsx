@@ -204,7 +204,7 @@ export default function ImportCodeJournaux() {
             nbrAnom = nbrAnom + 1;
         }
 
-        const expectedTypeValues = ["ACHAT", "BANQUE", "CAISSE", "OD", "RAN", "VENTE", "A_NOUVEAU"];
+        const expectedTypeValues = ["ACHAT", "BANQUE", "CAISSE", "OD", "RAN", "VENTE"];
         const invalidTypes = data.filter(item => item.type && !expectedTypeValues.includes(item.type.toUpperCase()));
         if (invalidTypes.length > 0) {
             msg.push(`Certains types sont invalides. Types acceptés : ${expectedTypeValues.join(', ')}`);
@@ -396,7 +396,7 @@ export default function ImportCodeJournaux() {
                                     Format accepté : CSV avec les colonnes suivantes : code, libelle, type, compteassocie, nif, stat, adresse
                                 </Typography>
                                 <Typography variant='body2' sx={{ mb: 2, color: 'gray' }}>
-                                    Types acceptés : ACHAT, BANQUE, CAISSE, OD, RAN, VENTE, A_NOUVEAU
+                                    Types acceptés : ACHAT, BANQUE, CAISSE, OD, RAN, VENTE
                                 </Typography>
                                 <input
                                     accept=".csv"

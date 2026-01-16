@@ -188,6 +188,13 @@ const PopupSaisie = ({
 
     //supprimer un saisie
     const handleOpenDialogConfirmDeleteSaisie = (id) => {
+        const selectedJournalId = formSaisie.values.valSelectCodeJnl;
+        const codeJournal = listeCodeJournaux.find(cj => cj.id === selectedJournalId);
+        
+        if (codeJournal && codeJournal.type === 'RAN') {
+            return toast.error('Impossible de supprimer une ligne d\'une écriture de type RAN');
+        }
+        
         setOpenDialogDeleteSaisie(true);
         setSelectedIdToDelete(id);
     }
@@ -397,7 +404,8 @@ const PopupSaisie = ({
         isDatagridEditing,
         ajouterNouvelleLigne,
         isCaActive,
-        handleOpenPopupCa
+        handleOpenPopupCa,
+        listeCodeJournaux
     });
 
     //Supprimer la ligne pour ajout
