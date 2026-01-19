@@ -1,8 +1,8 @@
-compte;libelle;nature;baseaux;typetier;nif;statistique;adresse;cin;datecin;autrepieceidentite;refpieceidentite;adressesansnif;nifrepresentant;adresserepresentant;pays;province;region;district;commune
-431000;organisme;General;431000;general;;;;;;;;;;;Madagascar;;;;
-401rabe;frns rabe;Aux;401000;sans-nif;;;;1,02E+11;14/09/2025;;;;;;Madagascar;;;;
-401test;frns test;Aux;401000;avec-nif;2000414745;1,11E+16;Lot A 217 Analakely;;;;;;;;Madagascar;;;;
-401soc;frns soc;Aux;401000;sans-nif;;;;;;passeport;x75841352;Lot 44 ankorondrano;;;Madagascar;;;;
-401fnac;frns fnac;Aux;401000;etranger;;;;;;;;;4,57E+14;42 rue de la paie;France;;;;
-401000;fournisseur;Collectif;401000;general;;;;;;;;;;;Madagascar;;;;
-607000;marchandises;General;607000;general;;;;;;;;;;;Madagascar;;;;
+compte;libelle;comptecorrespondance;libelleautre;nature;baseaux;typetier;nif;statistique;adresse;cin;datecin;autrepieceidentite;refpieceidentite;adressesansnif;nifrepresentant;adresserepresentant;pays;province;region;district;commune
+431000;organisme;;;General;431000;general;;;;;;;;;;;Madagascar;;;;
+401rabe;frns rabe;;;Aux;401000;sans-nif;;;;1,02E+11;14/09/2025;;;;;;Madagascar;;;;
+401test;frns test;;;Aux;401000;avec-nif;2000414745;1,11E+16;Lot A 217 Analakely;;;;;;;;Madagascar;;;;
+401soc;frns soc;;;Aux;401000;sans-nif;;;;;;passeport;x75841352;Lot 44 ankorondrano;;;Madagascar;;;;
+401fnac;frns fnac;;;Aux;401000;etranger;;;;;;;;;4,57E+14;42 rue de la paie;France;;;;
+401000;fournisseur;;;Collectif;401000;general;;;;;;;;;;;Madagascar;;;;
+607000;marchandises;;;General;607000;general;;;;;;;;;;;Madagascar;;;;

@@ -8,7 +8,10 @@ const router = express.Router();
 
 //récupérer le tableau du plan comptable
 router.post('/pc', paramPCController.recupPc);
-router.get('/PcIdLibelle/:id_compte/:id_dossier', paramPCController.recupPcIdLibelle)
+router.get('/PcIdLibelle/:id_compte/:id_dossier', paramPCController.recupPcIdLibelle);
+
+// Récupérer la liste des plan comptable pour les actions de journals
+router.get('/recupPcIdLibelleForJournal/:id_compte/:id_dossier', paramPCController.recupPcIdLibelleForJournal);
 
 //Afficher les détails du modèl sélectionné
 router.post('/AddCpt', verifyJWT, verifyPermission('ADD', 'EDIT'), paramPCController.AddCptToPc);
@@ -38,6 +41,6 @@ router.get('/getDistricts/:province/:region', paramPCController.getDistricts);
 router.get('/getCommunes/:province/:region/:district', paramPCController.getCommunes);
 
 // Récupération des dossier plan comptable avec les consolidation des dossier
-router.post('/recupPcConsolidation',paramPCController.recupPcConsolidation);
+router.post('/recupPcConsolidation', paramPCController.recupPcConsolidation);
 
 module.exports = router;
