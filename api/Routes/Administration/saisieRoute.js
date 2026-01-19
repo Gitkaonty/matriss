@@ -69,7 +69,7 @@ router.post('/immobilisations/ecritures/generate', saisieController.generateImmo
 router.post('/immobilisations/ecritures/cancel', saisieController.cancelImmoEcritures);
 
 // Immobilisations: import CSV
-router.post('/importImmobilisations', saisieController.importImmobilisations);
+router.post('/importImmobilisations', verifyJWT, verifyPermission('ADD'), saisieController.importImmobilisations);
 
 // Rapprochements exports
 router.get('/rapprochements/export/pdf', exportRapprochementsController.exportPdf);
