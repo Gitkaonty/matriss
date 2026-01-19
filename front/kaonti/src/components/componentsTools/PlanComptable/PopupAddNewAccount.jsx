@@ -1078,7 +1078,7 @@ const PopupAddNewAccount = ({
                                                                     style={{ backgroundColor: 'transparent', width: '800px' }}
                                                                 >
                                                                     <Stack spacing={1}>
-                                                                        <label htmlFor="compteautre" style={{ fontSize: 12, color: '#3FA2F6' }}>Compte (autre)</label>
+                                                                        <label htmlFor="compteautre" style={{ fontSize: 12, color: '#3FA2F6' }}>Corréspondace ce compte</label>
                                                                         <Field
                                                                             name='compteautre'
                                                                             onChange={handleChange}
