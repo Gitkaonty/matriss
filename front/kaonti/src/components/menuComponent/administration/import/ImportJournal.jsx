@@ -491,17 +491,32 @@ export default function ImportJournal() {
                             DataWithId = result.data;
                         }
 
-                        const totalDebit = DataWithId.reduce((acc, item) => acc + Number(item.Debit), 0);
-                        const totalCredit = DataWithId.reduce((acc, item) => acc + Number(item.Credit), 0);
+                        const totalDebit = DataWithId.reduce((acc, item) => acc + parseCSVNumber(item.Debit), 0);
+                        const totalCredit = DataWithId.reduce((acc, item) => acc + parseCSVNumber(item.Credit), 0);
 
                         const ecart = totalDebit - totalCredit;
 
-                        if (ecart !== 0) {
+                        const EPSILON = 0.00001;
+
+                        if (Math.abs(ecart) > EPSILON) {
                             if (ecart > 0) {
-                                msg.push(`Le journal n'est pas équilibré : Débit supérieur au Crédit de ${ecart.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`)
+                                msg.push(
+                                    `Le journal n'est pas équilibré : Débit supérieur au Crédit de ${ecart.toLocaleString('fr-FR', {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2
+                                    })}`
+                                );
                             } else {
-                                msg.push(`Le journal n'est pas équilibré : Crédit supérieur au Débit de ${Math.abs(ecart).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`)
+                                msg.push(
+                                    `Le journal n'est pas équilibré : Crédit supérieur au Débit de ${Math.abs(ecart).toLocaleString('fr-FR', {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2
+                                    })}`
+                                );
                             }
+
+                            nbrAnom += 1;
+                            setNbrAnomalie(nbrAnom);
                         }
 
                         if (compteNonValideStd) {

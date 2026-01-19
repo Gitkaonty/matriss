@@ -90,4 +90,7 @@ router.post('/modificationJournal', verifyJWT, verifyPermission('EDIT'), upload.
 
 router.put('/deleteLettrage', verifyJWT, verifyPermission('DELETE'), saisieController.deleteLettrage);
 
+// Léttrage avec écart
+router.post('/addEcriture', saisieController.addEcriture);
+
 module.exports = router;

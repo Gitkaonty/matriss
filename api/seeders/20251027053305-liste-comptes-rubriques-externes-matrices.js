@@ -3482,7 +3482,7 @@ module.exports = {
         tableau: 'CRN',
         compte: '77',
         nature: 'BRUT',
-        senscalcul: 'D-C',
+        senscalcul: 'C-D',
         condition: 'SOLDE',
         equation: 'ADDITIF',
         par_default: true,

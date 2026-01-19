@@ -69,6 +69,8 @@ const PopupAddNewAccount = ({
     open,
     onClose,
     stateAction,
+    isTypeComptaAutre,
+    setSelectedRow
 }) => {
     const axiosPrivate = useAxiosPrivate();
     const [typeCptGeneral, setTypeCptGeneral] = useState(true);
@@ -138,7 +140,9 @@ const PopupAddNewAccount = ({
         region: '',
         district: '',
         commune: '',
-        typecomptabilite: 'Français'
+        typecomptabilite: 'Français',
+        compteautre: '',
+        libelleautre: ''
     };
 
     const normalizeCompte = (v) =>
@@ -153,7 +157,7 @@ const PopupAddNewAccount = ({
         onClose();
     }
 
-    const formAddCptValidationSchema = Yup.object({
+    const formAddCptValidationSchema = (typeComptaAutre) => Yup.object({
         compte: Yup.string()
             .required("Veuillez tapez un numéro de compte")
             .test('unique-compte', 'Ce compte existe déjà', function (value) {
@@ -176,6 +180,39 @@ const PopupAddNewAccount = ({
                 return !exists;
             }),
         libelle: Yup.string().required("Veuillez insérer un libellé pour le numéro de compte"),
+        compteautre: Yup.string().when([], {
+            is: () => typeComptaAutre === true,
+            then: schema =>
+                schema
+                    .required("Veuillez tapez un numéro de compte")
+                    .test('unique-compte', 'Ce compte existe déjà', function (value) {
+                        const list = Array.isArray(pc) ? pc : [];
+                        const v = normalizeCompte(value);
+
+                        const action = this.parent?.action;
+                        const itemId = Number(this.parent?.itemId);
+
+                        if (!v) return false;
+
+                        // En modification: autoriser si la valeur n’a pas changé
+                        if (action === 'modify') {
+                            const current = list.find(r => Number(r.id) === itemId)?.compte;
+                            if (normalizeCompte(current) === v) return true;
+                        }
+
+                        // En création (ou compte modifié): bloquer si existe déjà
+                        const exists = list.some(r => Number(r.id) !== itemId && normalizeCompte(r.compte) === v);
+                        return !exists;
+                    }),
+            otherwise: schema => schema.notRequired()
+        }),
+        libelleautre: Yup.string().when([], {
+            is: () => typeComptaAutre === true,
+            then: schema =>
+                schema
+                    .required("Veuillez insérer un libellé pour le numéro de compte"),
+            otherwise: schema => schema.notRequired()
+        }),
         nature: Yup.string().required("Veuillez séléctionner dans la liste la nature du compte"),
         baseCptCollectif: Yup.string()
             .when('nature', {
@@ -344,7 +381,6 @@ const PopupAddNewAccount = ({
     const showPc = () => {
         axios.post(`/paramPlanComptable/pc`, { fileId: Number(id_dossier), compteId: Number(id_compte) }).then((response) => {
             const resData = response.data;
-            console.log('response.data : ', response.data);
             if (resData.state) {
                 let listePc = resData.liste;
                 setPc(listePc);
@@ -412,6 +448,9 @@ const PopupAddNewAccount = ({
                 setCommunes([]);
                 showPc();
                 toast.success(resData.msg);
+                if (stateAction === "modification") {
+                    setSelectedRow(resData?.dataModified);
+                }
             } else {
                 toast.error(resData.msg);
             }
@@ -601,7 +640,7 @@ const PopupAddNewAccount = ({
                 initialValues={formAddCptInitialValues}
                 enableReinitialize
                 validateOnBlur={false}
-                validationSchema={formAddCptValidationSchema}
+                validationSchema={() => formAddCptValidationSchema(isTypeComptaAutre)}
                 onSubmit={(values) => {
                     formAddCpthandleSubmit(values);
                 }}
@@ -707,7 +746,15 @@ const PopupAddNewAccount = ({
                             setFieldValue("region", selectedRow.region);
                             setFieldValue("district", selectedRow.district);
                             setFieldValue("commune", selectedRow.commune);
+
+                            setSelectedProvince(selectedRow.province);
+                            setSelectedRegion(selectedRow.region);
+                            setSelectedDistrict(selectedRow.district);
+                            setSelectedCommune(selectedRow.commune);
+
                             setFieldValue("typecomptabilite", selectedRow.typecomptabilite || 'Français');
+                            setFieldValue("compteautre", selectedRow?.compteautre);
+                            setFieldValue("libelleautre", selectedRow?.libelleautre);
 
                             //Activer ou non la listbox base compte auxiliaire
                             if (selectedRow.nature === 'General' || selectedRow.nature === 'Collectif') {
@@ -716,7 +763,7 @@ const PopupAddNewAccount = ({
                                 setTypeCptGeneral(false);
                             }
                         }
-                    }, [stateAction])
+                    }, [stateAction, selectedRow])
 
                     return (
                         <>
@@ -841,7 +888,9 @@ const PopupAddNewAccount = ({
                                 <BootstrapDialog
                                     open={open}
                                     onClose={() => {
-                                        resetForm();
+                                        if (stateAction === "ajout") {
+                                            resetForm();
+                                        }
                                         closePopup();
                                     }}
                                     // disableEnforceFocus
@@ -861,8 +910,10 @@ const PopupAddNewAccount = ({
                                     <IconButton
                                         style={{ color: 'red', textTransform: 'none', outline: 'none' }}
                                         aria-label="close"
-                                        onClose={() => {
-                                            resetForm();
+                                        onClick={() => {
+                                            if (stateAction === "ajout") {
+                                                resetForm();
+                                            }
                                             closePopup();
                                         }}
                                         sx={{
@@ -1020,6 +1071,42 @@ const PopupAddNewAccount = ({
                                                                     <ErrorMessage name='libelle' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
                                                                 </Stack>
                                                             </Stack>
+
+                                                            {isTypeComptaAutre && (
+                                                                <Stack direction={'row'} alignContent={'start'}
+                                                                    alignItems={'start'} spacing={5}
+                                                                    style={{ backgroundColor: 'transparent', width: '800px' }}
+                                                                >
+                                                                    <Stack spacing={1}>
+                                                                        <label htmlFor="compteautre" style={{ fontSize: 12, color: '#3FA2F6' }}>Corréspondace ce compte</label>
+                                                                        <Field
+                                                                            name='compteautre'
+                                                                            onChange={handleChange}
+                                                                            type='text'
+                                                                            placeholder=""
+                                                                            style={{
+                                                                                height: 22, borderTop: 'none',
+                                                                                borderLeft: 'none', borderRight: 'none',
+                                                                                outline: 'none', fontSize: 14, borderWidth: '0.5px',
+                                                                                width: 200,
+                                                                            }}
+                                                                        />
+                                                                        <ErrorMessage name='compteautre' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                    </Stack>
+
+                                                                    <Stack spacing={1}>
+                                                                        <label htmlFor="libelleautre" style={{ fontSize: 12, color: '#3FA2F6' }}>libellé / raison sociale (autre)</label>
+                                                                        <Field
+                                                                            name='libelleautre'
+                                                                            onChange={handleChange}
+                                                                            type='text'
+                                                                            placeholder=""
+                                                                            style={{ width: 500, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
+                                                                        />
+                                                                        <ErrorMessage name='libelleautre' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                    </Stack>
+                                                                </Stack>
+                                                            )}
 
                                                             <Stack spacing={-0.5} style={{ marginTop: 25 }}>
                                                                 <label htmlFor="typeTier" style={{ fontSize: 12, color: '#3FA2F6' }}>Type du tier</label>
@@ -1284,7 +1371,7 @@ const PopupAddNewAccount = ({
                                                                     <Autocomplete
                                                                         disabled={disableLocalites}
                                                                         options={regions}
-                                                                        value={selectedRegion || null}
+                                                                        value={selectedRegion || values.region}
                                                                         onChange={(event, newValue) => {
                                                                             setFieldValue('region', newValue);
                                                                             setSelectedRegion(newValue);
@@ -1327,7 +1414,7 @@ const PopupAddNewAccount = ({
                                                                     <Autocomplete
                                                                         disabled={disableLocalites}
                                                                         options={districts}
-                                                                        value={selectedDistrict || null}
+                                                                        value={selectedDistrict || values.district}
                                                                         onChange={(event, newValue) => {
                                                                             setFieldValue('district', newValue);
                                                                             setSelectedDistrict(newValue);
@@ -1370,7 +1457,7 @@ const PopupAddNewAccount = ({
                                                                     <Autocomplete
                                                                         disabled={disableLocalites}
                                                                         options={communes}
-                                                                        value={selectedCommune || null}
+                                                                        value={selectedCommune || values.commune}
                                                                         onChange={(event, newValue) => {
                                                                             setFieldValue('commune', newValue);
                                                                             setSelectedCommune(newValue);
@@ -1609,8 +1696,10 @@ const PopupAddNewAccount = ({
                                                 // outline: 'none'
                                             }}
                                             type='submit'
-                                            onClose={() => {
-                                                resetForm();
+                                            onClick={() => {
+                                                if (stateAction === "ajout") {
+                                                    resetForm();
+                                                }
                                                 closePopup();
                                             }}
                                         >
