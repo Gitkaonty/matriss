@@ -107,6 +107,14 @@ module.exports = {
                 allowNull: false,
                 defaultValue: 0
             },
+            compteautre: {
+                type: Sequelize.STRING(50),
+                allowNull: true
+            },
+            libelleautre: {
+                type: Sequelize.STRING(150),
+                allowNull: true
+            },
         },
             { timestamps: true }
         );
