@@ -1,14 +1,14 @@
 module.exports = (sequelize, DataTypes) => {
-    const modeleplancomptabledetail = sequelize.define( "modeleplancomptabledetail", {
+    const modeleplancomptabledetail = sequelize.define("modeleplancomptabledetail", {
         id_compte: {
             type: DataTypes.BIGINT,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         id_modeleplancomptable: {
             type: DataTypes.BIGINT,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
         compte: {
             type: DataTypes.STRING(50),
@@ -29,7 +29,7 @@ module.exports = (sequelize, DataTypes) => {
         cptcharge: {
             type: DataTypes.INTEGER,
             allowNull: true,
-            defaultValue:0
+            defaultValue: 0
         },
         typetier: {
             type: DataTypes.STRING(15),
@@ -38,7 +38,7 @@ module.exports = (sequelize, DataTypes) => {
         cpttva: {
             type: DataTypes.INTEGER,
             allowNull: true,
-            defaultValue:0
+            defaultValue: 0
         },
         nif: {
             type: DataTypes.STRING(20),
@@ -107,10 +107,18 @@ module.exports = (sequelize, DataTypes) => {
         baseaux_id: {
             type: DataTypes.BIGINT,
             allowNull: false,
-            defaultValue:0
+            defaultValue: 0
         },
-       
-    }, {timestamps: true}, )
+        compteautre: {
+            type: DataTypes.STRING(50),
+            allowNull: true
+        },
+        libelleautre: {
+            type: DataTypes.STRING(150),
+            allowNull: true
+        },
+
+    }, { timestamps: true },)
 
     modeleplancomptabledetail.associate = (models) => {
         modeleplancomptabledetail.belongsTo(models.modeleplancomptabledetail, {
@@ -120,4 +128,4 @@ module.exports = (sequelize, DataTypes) => {
     };
 
     return modeleplancomptabledetail
- }
+}
