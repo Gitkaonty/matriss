@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Typography, Stack, Box, Tab, Button } from '@mui/material';
 
@@ -214,6 +214,14 @@ export default function SaisieComponent() {
         })
     }
 
+    // Vérifier si la sélection contient un type RAN
+    const isRanTypeSelected = useMemo(() => {
+        if (selectedRows.length === 0 || listeCodeJournaux.length === 0) return false;
+        const selectedJournalId = Number(selectedRows[0].id_journal);
+        const codeJournal = listeCodeJournaux.find(cj => Number(cj.id) === selectedJournalId);
+        return codeJournal?.type === 'RAN';
+    }, [selectedRows, listeCodeJournaux]);
+
     //Header
     const SaisieColumnHeader = [
         {
@@ -368,16 +376,16 @@ export default function SaisieComponent() {
         if (!defaultDeviseData) {
             return toast.error('Veuillez sélectionner une devise par défaut dans le paramétrage CRM de ce dossier')
         }
-        
+
         if (type === 'modification' && selectedRows.length > 0) {
             const selectedJournalId = selectedRows[0].id_journal;
             const codeJournal = listeCodeJournaux.find(cj => cj.id === selectedJournalId);
-            
+
             if (codeJournal && codeJournal.type === 'RAN') {
                 return toast.error('Impossible de modifier une écriture de type RAN');
             }
         }
-        
+
         setOpenSaisiePopup(true);
         setTypeActionSaisie(type);
     }
@@ -492,11 +500,11 @@ export default function SaisieComponent() {
             setOpenDialogDeleteSaisie(false);
             return;
         }
-        
+
         if (selectedRows.length > 0) {
             const selectedJournalId = selectedRows[0].id_journal;
             const codeJournal = listeCodeJournaux.find(cj => cj.id === selectedJournalId);
-            
+
             if (codeJournal && codeJournal.type === 'RAN') {
                 toast.error('Impossible de supprimer une écriture de type RAN');
                 setOpenDialogDeleteSaisie(false);
@@ -524,8 +532,9 @@ export default function SaisieComponent() {
             } else {
                 toast.error(resData.msg);
             }
-        }).catch(() => {
-            toast.error("Erreur lors de la suppression");
+        }).catch((error) => {
+            const errorMsg = error.response?.data?.msg || error.response?.data?.message || "Erreur lors de la suppression";
+            toast.error(errorMsg);
         });
 
         setOpenDialogDeleteSaisie(false);
@@ -536,7 +545,7 @@ export default function SaisieComponent() {
         if (selectedRows.length > 0) {
             const selectedJournalId = selectedRows[0].id_journal;
             const codeJournal = listeCodeJournaux.find(cj => cj.id === selectedJournalId);
-            
+
             if (codeJournal && codeJournal.type === 'RAN') {
                 return toast.error('Impossible de supprimer une écriture de type RAN');
             }
@@ -808,14 +817,10 @@ export default function SaisieComponent() {
                                     <Button
                                         onClick={() => handleOpenSaisiePopup('modification')}
                                         disabled={
-                                            !canModify || 
-                                            selectedRows.length === 0 || 
+                                            !canModify ||
+                                            selectedRows.length === 0 ||
                                             (selectedRows.filter(val => val.id_dossier === fileId)).length === 0 ||
-                                            (selectedRows.length > 0 && (() => {
-                                                const selectedJournalId = selectedRows[0].id_journal;
-                                                const codeJournal = listeCodeJournaux.find(cj => cj.id === selectedJournalId);
-                                                return codeJournal && codeJournal.type === 'RAN';
-                                            })())
+                                            isRanTypeSelected
                                         }
                                         variant="contained"
                                         style={{
@@ -833,14 +838,10 @@ export default function SaisieComponent() {
                                     <Button
                                         onClick={handleOpenDialogConfirmDeleteSaisie}
                                         disabled={
-                                            !canDelete || 
-                                            selectedRows.length === 0 || 
+                                            !canDelete ||
+                                            selectedRows.length === 0 ||
                                             (selectedRows.filter(val => val.id_dossier === fileId)).length === 0 ||
-                                            (selectedRows.length > 0 && (() => {
-                                                const selectedJournalId = selectedRows[0].id_journal;
-                                                const codeJournal = listeCodeJournaux.find(cj => cj.id === selectedJournalId);
-                                                return codeJournal && codeJournal.type === 'RAN';
-                                            })())
+                                            isRanTypeSelected
                                         }
                                         variant="contained"
                                         style={{

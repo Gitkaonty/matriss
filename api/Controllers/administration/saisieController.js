@@ -12,6 +12,7 @@ const balances = db.balances;
 const consolidationDossier = db.consolidationDossier;
 const dossiers = db.dossiers;
 const exercices = db.exercices;
+const sequelize = db.sequelize;
 
 const fonctionUpdateBalanceSold = require("../../Middlewares/UpdateSolde/updateBalanceSold");
 
@@ -648,7 +649,7 @@ exports.generateImmoEcritures = async (req, res) => {
             lignesByDetailId.get(did).push(l);
         }
 
-        console.log('[IMMO][DEBUG] Lignes groupées par détail:', 
+        console.log('[IMMO][DEBUG] Lignes groupées par détail:',
             Array.from(lignesByDetailId.entries()).map(([id, lignes]) => ({
                 detailId: id,
                 nbLignes: lignes.length,
@@ -659,11 +660,11 @@ exports.generateImmoEcritures = async (req, res) => {
         // Solution de secours : si pas de détails mais des lignes, créer des détails factices
         if (detailsById.size === 0 && lignesByDetailId.size > 0) {
             console.log('[IMMO][DEBUG] Utilisation de la solution de secours - création de détails factices');
-            
+
             // Récupérer les IDs des immobilisations depuis les lignes
             const detailImmoIds = Array.from(lignesByDetailId.keys());
             console.log('[IMMO][DEBUG] IDs des immobilisations à récupérer:', detailImmoIds);
-            
+
             // Charger les immobilisations depuis details_immo (sans filtre exercice, dossier, compte)
             const missingDetails = await db.sequelize.query(`
                 SELECT 
@@ -678,7 +679,7 @@ exports.generateImmoEcritures = async (req, res) => {
                 replacements: { detailIds: detailImmoIds },
                 type: db.Sequelize.QueryTypes.SELECT,
             });
-            
+
             console.log('[IMMO][DEBUG] Requête SQL exécutée (sans filtre dossier/compte):', {
                 detailIds: detailImmoIds
             });
@@ -697,7 +698,7 @@ exports.generateImmoEcritures = async (req, res) => {
             } else {
                 console.log('[IMMO][DEBUG] AUCUNE immobilisation trouvée avec id=29 - elle n\'existe pas dans details_immo');
             }
-            
+
             // Ajouter les immobilisations récupérées à la map
             for (const detail of missingDetails) {
                 detailsById.set(Number(detail.id), detail);
@@ -709,7 +710,7 @@ exports.generateImmoEcritures = async (req, res) => {
                     libelle_compte_immo: detail.libelle_compte_immo
                 });
             }
-            
+
             // Si certaines immobilisations n'ont toujours pas été trouvées, créer des détails factices
             for (const [detailId, lignes] of lignesByDetailId.entries()) {
                 if (!detailsById.has(detailId)) {
@@ -726,7 +727,7 @@ exports.generateImmoEcritures = async (req, res) => {
                     });
                 }
             }
-            
+
             console.log('[IMMO][DEBUG] Détails finaux créés:', detailsById.size);
         }
 
@@ -791,7 +792,7 @@ exports.generateImmoEcritures = async (req, res) => {
                 const montantHT = Number(detail?.montant_ht || detail?.montant) || 0;
                 const dureeMois = Number(detail?.duree_amort_mois) || 0;
                 const dateMiseService = detail?.date_mise_service ? new Date(detail.date_mise_service) : null;
-                
+
                 console.log('[IMMO][DEBUG][MONTHLY] Données immobilisation:', {
                     detailId,
                     montantHT,
@@ -799,7 +800,7 @@ exports.generateImmoEcritures = async (req, res) => {
                     dateMiseService: dateMiseService?.toISOString(),
                     compteAmort
                 });
-                
+
                 if (!dateMiseService || isNaN(dateMiseService.getTime()) || montantHT <= 0 || dureeMois <= 0) {
                     console.log('[IMMO][DEBUG][MONTHLY] Immobilisation ignorée:', {
                         detailId,
@@ -854,7 +855,7 @@ exports.generateImmoEcritures = async (req, res) => {
                     }
                     let montantMois = 0;
                     let dateFinMois = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0); // Dernier jour du mois
-                    
+
                     if (dateFinMois > exoFin) dateFinMois = new Date(exoFin);
                     if (dateFinMois > finAmort) dateFinMois = new Date(finAmort);
 
@@ -889,7 +890,7 @@ exports.generateImmoEcritures = async (req, res) => {
                     if (montantMois > 0) {
                         const idEcriture = String(Date.now() + Math.floor(Math.random() * 1000));
                         const libelle = `Dot amort ${libelleCompteImmo}`.trim();
-                        
+
                         const common = {
                             id_compte: compteId,
                             id_dossier: fileId,
@@ -951,12 +952,12 @@ exports.generateImmoEcritures = async (req, res) => {
 
                 // Utiliser la somme des dotations de l'exercice (lignes sauvegardées)
                 let montant = 0;
-                
+
                 // Trouver la ligne correspondant à la fin de l'exercice
                 const exactLine = exoFinYMD
                     ? schedule.find(x => String(x.date_fin_exercice || '').substring(0, 10) === exoFinYMD)
                     : null;
-                
+
                 if (exactLine) {
                     // Utiliser la dotation de la ligne exacte
                     montant = Number(exactLine.dotation_periode_comp) || 0;
@@ -972,12 +973,12 @@ exports.generateImmoEcritures = async (req, res) => {
                 const compteAmort = String(detail?.compte_amortissement || '').trim();
                 const compteImmo = String(detail?.compte_immo || '').trim();
                 const libelleCompteImmo = detail?.libelle_compte_immo || detail?.intitule || detail?.code || '';
-                
+
                 if (!compteAmort || !compteImmo) continue;
 
                 // Clé de regroupement : compte_immo + compte_amortissement
                 const groupKey = `${compteImmo}|${compteAmort}`;
-                
+
                 if (!groupedByCompte.has(groupKey)) {
                     groupedByCompte.set(groupKey, {
                         compteImmo,
@@ -987,7 +988,7 @@ exports.generateImmoEcritures = async (req, res) => {
                         immobilisations: []
                     });
                 }
-                
+
                 const group = groupedByCompte.get(groupKey);
                 group.montantTotal += montant;
                 group.immobilisations.push({ detailId, montant });
@@ -1755,7 +1756,7 @@ exports.saveImmoLineaire = async (req, res) => {
         const compteId = Number(req.body?.compteId ?? req.query?.compteId);
         const exerciceId = Number(req.body?.exerciceId ?? req.query?.exerciceId);
         const detailImmoId = Number(req.body?.detailId ?? req.query?.detailId);
-        
+
         // Récupérer les lignes pré-calculées depuis le frontend
         const { lignes } = req.body || {};
 
@@ -1829,7 +1830,7 @@ exports.saveImmoDegressif = async (req, res) => {
         const compteId = Number(req.body?.compteId ?? req.query?.compteId);
         const exerciceId = Number(req.body?.exerciceId ?? req.query?.exerciceId);
         const detailImmoId = Number(req.body?.detailId ?? req.query?.detailId);
-        
+
         // Récupérer les lignes pré-calculées depuis le frontend
         const { lignes } = req.body || {};
 
@@ -1850,18 +1851,18 @@ exports.saveImmoDegressif = async (req, res) => {
             console.log('[IMMO][SAVE] ERREUR: Lignes calculées manquantes pour amortissement DEGRESSIF');
             console.log('[IMMO][SAVE] MAIS: Le frontend a appelé la fonction dégressive pour un amortissement linéaire');
             console.log('[IMMO][SAVE] SOLUTION: On essaie avec la fonction linéaire en fallback');
-            
+
             // Fallback : essayer de traiter comme un amortissement linéaire
             try {
                 console.log('[IMMO][SAVE] ===== TENTATIVE FALLBACK LINEAIRE =====');
-                
+
                 // Charger les données nécessaires pour le calcul linéaire
                 const [dossier, exo, detail] = await Promise.all([
                     db.dossiers.findByPk(fileId),
                     db.exercices.findByPk(exerciceId),
                     db.detailsimmo.findByPk(detailImmoId),
                 ]);
-                
+
                 if (!dossier || !exo || !detail) {
                     console.log('[IMMO][SAVE] Fallback impossible: données manquantes');
                     return res.status(404).json({ state: false, msg: 'Données introuvables' });
@@ -1873,7 +1874,7 @@ exports.saveImmoDegressif = async (req, res) => {
                 const dateMiseService = detail.date_mise_service ? new Date(detail.date_mise_service) : null;
                 const exoFin = exo.date_fin ? new Date(exo.date_fin) : null;
                 const dureeComp = Math.max(1, Math.floor(Number(detail.duree_amort_mois) || 0));
-                
+
                 if (montantHT <= 0) {
                     console.log('[IMMO][SAVE] Fallback impossible: montant invalide');
                     return res.status(400).json({ state: false, msg: 'montant HT invalide' });
@@ -1881,22 +1882,22 @@ exports.saveImmoDegressif = async (req, res) => {
 
                 const dotMensComp = montantHT / dureeComp;
                 const dotAnnComp = dotMensComp * 12;
-                
+
                 const out = [];
                 let debut = new Date(dateMiseService);
                 let index = 1;
-                let cumulComp = 0; 
+                let cumulComp = 0;
                 let vncComp = montantHT;
-                
+
                 while (vncComp > 0 && index <= 50) {
                     const fin = index === 1 ? (exoFin || new Date(debut.getFullYear() + 1, debut.getMonth(), debut.getDate() - 1)) : new Date(debut.getFullYear() + 1, debut.getMonth(), debut.getDate() - 1);
                     const nbJours = Math.floor((fin - debut) / (1000 * 60 * 60 * 24)) + 1;
                     const anneeNombre = nbJours / baseJours;
                     const dotComp = Math.min(vncComp, Math.round(dotAnnComp * anneeNombre * 100) / 100);
-                    
+
                     cumulComp += dotComp;
                     vncComp = montantHT - cumulComp;
-                    
+
                     out.push({
                         id_dossier: fileId,
                         id_compte: compteId,
@@ -1916,13 +1917,13 @@ exports.saveImmoDegressif = async (req, res) => {
                         cumul_amort_fisc: 0,
                         dot_derogatoire: 0,
                     });
-                    
+
                     debut = new Date(fin.getTime() + 24 * 60 * 60 * 1000);
                     index++;
                 }
 
                 console.log(`[IMMO][SAVE] FALLBACK REUSSI: ${out.length} lignes calculées (linéaire)`);
-                
+
                 await db.detailsImmoLignes.destroy({
                     where: { id_dossier: fileId, id_compte: compteId, id_exercice: exerciceId, id_detail_immo: detailImmoId },
                 });
@@ -1930,12 +1931,12 @@ exports.saveImmoDegressif = async (req, res) => {
 
                 console.log('[IMMO][SAVE] ===== SAUVEGARDE FALLBACK LINEAIRE TERMINEE =====');
                 return res.json({ state: true, saved: out.length, fallback: 'linear' });
-                
+
             } catch (fallbackError) {
                 console.error('[IMMO][SAVE] Erreur fallback:', fallbackError);
-                return res.status(400).json({ 
-                    state: false, 
-                    msg: 'Lignes calculées manquantes - utilisez d\'abord previewImmoDegressif ou corrigez le frontend pour utiliser saveImmoLineaire' 
+                return res.status(400).json({
+                    state: false,
+                    msg: 'Lignes calculées manquantes - utilisez d\'abord previewImmoDegressif ou corrigez le frontend pour utiliser saveImmoLineaire'
                 });
             }
         }
@@ -2007,145 +2008,6 @@ const getDateSaisieNow = (id) => {
     const min = String(now.getMinutes()).padStart(2, '0');
     const ss = String(now.getSeconds()).padStart(2, '0');
     return `${dd}${mm}${yyyy}${hh}${min}${ss}${id}`;
-};
-
-exports.addJournal = async (req, res) => {
-    try {
-        const jsonData = JSON.parse(req.body.data);
-        const file = req.file;
-
-        if (!jsonData) {
-            return res.status(400).json({ message: "Données ou fichier manquant" });
-        }
-
-        const id_compte = Number(jsonData.id_compte);
-        const id_dossier = Number(jsonData.id_dossier);
-        const id_exercice = Number(jsonData.id_exercice);
-        const id_journal = Number(jsonData.valSelectCodeJnl);
-        const id_devise = Number(jsonData.id_devise);
-
-        const codeJournal = await codejournals.findByPk(id_journal);
-        if (!codeJournal) {
-            return res.status(404).json({ message: "Code journal introuvable" });
-        }
-
-        const typeCodeJournal = codeJournal.type;
-
-        const mois = jsonData.valSelectMois;
-        const annee = jsonData.valSelectAnnee;
-        const currency = jsonData.currency;
-        const devise = jsonData.choixDevise === 'MGA' ? jsonData.choixDevise : currency;
-        const tableRows = jsonData.tableRows;
-        const listCa = jsonData.listCa;
-        const taux = jsonData.taux;
-
-        let fichierCheminRelatif = null;
-
-        if (file) {
-            const dossierRelatif = path.join(
-                "public",
-                "ScanEcriture",
-                id_compte.toString(),
-                id_dossier.toString(),
-                id_exercice.toString(),
-                typeCodeJournal
-            );
-
-            const dossierAbsolu = path.resolve(dossierRelatif);
-            fs.mkdirSync(dossierAbsolu, { recursive: true });
-
-            const nomFichier = `journal_${Date.now()}${path.extname(file.originalname)}`;
-            const cheminComplet = path.join(dossierAbsolu, nomFichier);
-
-            fs.renameSync(file.path, cheminComplet);
-
-            fichierCheminRelatif = path.join(dossierRelatif, nomFichier).replace(/\\/g, '/');
-        }
-
-        const idEcritureCommun = getDateSaisieNow(id_compte);
-
-        const newTableRows = await Promise.all(tableRows.map(async (row) => {
-            const dossierPc = await dossierplancomptable.findByPk(row.compte);
-            const comptebaseaux = dossierPc?.baseaux_id;
-
-            let id_numcptcentralise = null;
-            if (comptebaseaux) {
-                const cpt = await dossierplancomptable.findByPk(comptebaseaux);
-                id_numcptcentralise = cpt?.id || null;
-            }
-
-            const dateecriture = new Date(
-                annee,
-                mois - 1,
-                row.jour + 1
-            );
-
-            if (!isValidDate(dateecriture)) {
-                throw new Error(`Date invalide pour la ligne ${JSON.stringify(row)}`);
-            }
-
-            return {
-                id_temporaire: row.id,
-                id_compte,
-                id_dossier,
-                id_exercice,
-                id_numcpt: row.compte,
-                id_journal,
-                id_devise,
-                taux,
-                devise,
-                saisiepar: id_compte,
-                id_ecriture: idEcritureCommun,
-                debit: row.debit === "" ? 0 : row.debit,
-                num_facture: row.num_facture,
-                credit: row.credit === "" ? 0 : row.credit,
-                montant_devise: row.montant_devise || 0,
-                dateecriture: dateecriture,
-
-                id_numcptcentralise,
-                libelle: row.libelle || '',
-                piece: row.piece || '',
-                piecedate: row.piecedate || null,
-                fichier: fichierCheminRelatif
-            };
-        }));
-
-        let count = 0;
-        for (const row of newTableRows) {
-            const createdJournal = await journals.create({ ...row });
-            count++;
-
-            const journalId = createdJournal.id;
-
-            const relevantCa = listCa?.filter(item => item.id_ligne_ecriture === row.id_temporaire) || [];
-
-            if (relevantCa.length > 0) {
-                const listCaRows = relevantCa.map(item => ({
-                    id_compte,
-                    id_dossier,
-                    id_exercice,
-                    id_ligne_ecriture: journalId,
-                    id_axe: item.id_axe,
-                    id_section: item.id_section,
-                    debit: item.debit || 0,
-                    credit: item.credit || 0,
-                    pourcentage: item.pourcentage || 0
-                }));
-
-                await analytiques.bulkCreate(listCaRows);
-            }
-        }
-
-        return res.json({
-            message: `${count} ${pluralize(count, 'ligne')} ${pluralize(count, 'ajoutée')} avec succès`,
-            data: newTableRows,
-            state: true
-        });
-
-    } catch (error) {
-        console.error(error);
-        return res.status(400).json({ state: false, message: error.message });
-    }
 };
 
 exports.modificationJournal = async (req, res) => {
@@ -2737,6 +2599,23 @@ exports.deleteJournal = async (req, res) => {
             return res.status(400).json({ state: false, msg: "Aucun ID fourni" });
         }
 
+        // Vérifier si les écritures appartiennent à un journal de type RAN
+        const journalsToDelete = await journals.findAll({
+            where: { id: ids },
+            include: [{
+                model: codejournals,
+                attributes: ['type']
+            }]
+        });
+
+        const hasRanType = journalsToDelete.some(j => j.codejournal?.type === 'RAN');
+        if (hasRanType) {
+            return res.status(403).json({
+                state: false,
+                msg: "Impossible de supprimer des écritures de type RAN (Report à nouveau)"
+            });
+        }
+
         const journal = await journals.findOne({
             where: { id: ids[0] }
         });
@@ -2769,7 +2648,7 @@ exports.deleteJournal = async (req, res) => {
         console.error("Erreur deleteJournal :", error);
         return res.status(500).json({
             state: false,
-            message: "Erreur serveur",
+            msg: "Une erreur est survenue lors de la suppression des écritures. Veuillez réessayer.",
             error: error.message
         });
     }
@@ -2782,23 +2661,29 @@ exports.listDetailsImmo = async (req, res) => {
         const compteId = Number(req.query?.compteId);
         const exerciceId = Number(req.query?.exerciceId);
         const pcId = req.query?.pcId ? Number(req.query.pcId) : null;
-        if (!fileId || !compteId || !exerciceId) {
+        if (!fileId || !exerciceId) {
             return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
         }
-        const wherePc = pcId ? 'AND d.pc_id = :pcId' : '';
+
+        // Si pcId est fourni, on filtre par pc_id (ID du plan comptable)
+        // Sinon on filtre par id_compte (ID du compte utilisateur)
+        const whereClause = pcId
+            ? 'AND d.pc_id = :pcId'
+            : (compteId ? 'AND d.id_compte = :compteId' : '');
+
         const sql = `
             SELECT d.*
             FROM details_immo d
             WHERE d.id_dossier = :fileId
-              AND d.id_compte = :compteId
               AND d.id_exercice = :exerciceId
-              ${wherePc}
+              ${whereClause}
             ORDER BY d.id ASC
         `;
         const rows = await db.sequelize.query(sql, {
             replacements: { fileId, compteId, exerciceId, pcId },
             type: db.Sequelize.QueryTypes.SELECT,
         });
+        console.log('[IMMO][DETAILS][LIST] Query params:', { fileId, compteId, exerciceId, pcId }, 'Results:', rows.length);
         return res.json({ state: true, list: rows || [] });
     } catch (err) {
         console.error('[IMMO][DETAILS][LIST] error:', err);
@@ -2836,7 +2721,7 @@ exports.createDetailsImmo = async (req, res) => {
         }
         const exoDebut = exo.date_debut ? new Date(exo.date_debut) : null;
         const exoFin = exo.date_fin ? new Date(exo.date_fin) : null;
-        
+
         if (exoDebut && !isNaN(exoDebut.getTime()) && exoFin && !isNaN(exoFin.getTime())) {
             const dAcq = date_acquisition ? new Date(String(date_acquisition).substring(0, 10)) : null;
             const dMs = date_mise_service ? new Date(String(date_mise_service).substring(0, 10)) : null;
@@ -2988,7 +2873,7 @@ exports.updateDetailsImmo = async (req, res) => {
         }
         const exoDebut = exo.date_debut ? new Date(exo.date_debut) : null;
         const exoFin = exo.date_fin ? new Date(exo.date_fin) : null;
-        
+
         if (exoDebut && !isNaN(exoDebut.getTime()) && exoFin && !isNaN(exoFin.getTime())) {
             const dAcq = date_acquisition ? new Date(String(date_acquisition).substring(0, 10)) : null;
             const dMs = date_mise_service ? new Date(String(date_mise_service).substring(0, 10)) : null;
@@ -3124,17 +3009,559 @@ exports.deleteDetailsImmo = async (req, res) => {
         const fileId = Number(req.query?.fileId);
         const compteId = Number(req.query?.compteId);
         const exerciceId = Number(req.query?.exerciceId);
-        if (!id || !fileId || !compteId || !exerciceId) {
+        if (!id || !fileId || !exerciceId) {
             return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
         }
-        const sql = `DELETE FROM details_immo WHERE id = :id AND id_dossier = :fileId AND id_compte = :compteId AND id_exercice = :exerciceId`;
-        await db.sequelize.query(sql, {
+
+        // Utiliser pc_id si compteId est fourni (car c'est l'ID du plan comptable)
+        // Sinon utiliser id_compte
+        const whereClause = compteId
+            ? 'AND pc_id = :compteId'
+            : 'AND id_compte = :compteId';
+
+        const sql = `DELETE FROM details_immo WHERE id = :id AND id_dossier = :fileId AND id_exercice = :exerciceId ${whereClause}`;
+        const result = await db.sequelize.query(sql, {
             replacements: { id, fileId, compteId, exerciceId },
             type: db.Sequelize.QueryTypes.DELETE,
         });
+        console.log('[IMMO][DETAILS][DELETE] Suppression effectuée:', { id, fileId, compteId, exerciceId, result });
         return res.json({ state: true, id });
     } catch (err) {
         console.error('[IMMO][DETAILS][DELETE] error:', err);
         return res.status(500).json({ state: false, msg: 'Erreur serveur' });
+    }
+};
+
+exports.importImmobilisations = async (req, res) => {
+    try {
+        const { data, id_dossier, id_compte, id_exercice } = req.body;
+
+        if (!data || !Array.isArray(data) || data.length === 0) {
+            return res.status(400).json({ state: false, msg: 'Aucune donnée à importer' });
+        }
+        if (!id_dossier || !id_compte || !id_exercice) {
+            return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
+        }
+
+        // Récupérer les dates de l'exercice sélectionné
+        const exercice = await db.exercices.findByPk(Number(id_exercice));
+        if (!exercice) {
+            return res.status(404).json({ state: false, msg: 'Exercice introuvable' });
+        }
+        const dateDebutExercice = exercice.date_debut ? new Date(exercice.date_debut) : null;
+        const dateFinExercice = exercice.date_fin ? new Date(exercice.date_fin) : null;
+
+        // Récupérer tous les exercices du dossier pour vérifier l'existence d'exercices futurs
+        const tousLesExercices = await db.sequelize.query(
+            `SELECT id, date_debut, date_fin FROM exercices WHERE id_dossier = :id_dossier ORDER BY date_debut ASC`,
+            {
+                replacements: { id_dossier: Number(id_dossier) },
+                type: db.Sequelize.QueryTypes.SELECT
+            }
+        );
+
+        const anomalies = [];
+        const immobilisationsToInsert = [];
+
+        // Récupérer le plan comptable pour valider les comptes
+        const planComptable = await db.sequelize.query(
+            `SELECT id, compte FROM dossierplancomptables WHERE id_dossier = :id_dossier AND id_compte = :id_compte`,
+            {
+                replacements: { id_dossier: Number(id_dossier), id_compte: Number(id_compte) },
+                type: db.Sequelize.QueryTypes.SELECT
+            }
+        );
+
+        const pcMap = new Map();
+        planComptable.forEach(pc => {
+            pcMap.set(pc.compte.trim(), pc.id);
+        });
+
+        // Valider et préparer les données
+        for (let i = 0; i < data.length; i++) {
+            const row = data[i];
+            const ligneNum = i + 1;
+
+            // Validation des champs obligatoires
+            if (!row.numero_compte || row.numero_compte.trim() === '') {
+                anomalies.push(`Ligne ${ligneNum}: Le numéro de compte est obligatoire`);
+                continue;
+            }
+            if (!row.code || row.code.trim() === '') {
+                anomalies.push(`Ligne ${ligneNum}: Le code est obligatoire`);
+                continue;
+            }
+            if (!row.intitule || row.intitule.trim() === '') {
+                anomalies.push(`Ligne ${ligneNum}: L'intitulé est obligatoire`);
+                continue;
+            }
+            if (!row.date_acquisition || row.date_acquisition.trim() === '') {
+                anomalies.push(`Ligne ${ligneNum}: La date d'acquisition est obligatoire`);
+                continue;
+            }
+            if (!row.duree_amort || row.duree_amort.trim() === '') {
+                anomalies.push(`Ligne ${ligneNum}: La durée d'amortissement est obligatoire`);
+                continue;
+            }
+            if (!row.type_amort || row.type_amort.trim() === '') {
+                anomalies.push(`Ligne ${ligneNum}: Le type d'amortissement est obligatoire`);
+                continue;
+            }
+            if (!row.montant_ht || row.montant_ht.trim() === '') {
+                anomalies.push(`Ligne ${ligneNum}: Le montant HT est obligatoire`);
+                continue;
+            }
+
+            // Trouver l'exercice correspondant à la date d'acquisition
+            const dateAcq = new Date(row.date_acquisition.trim());
+            if (isNaN(dateAcq.getTime())) {
+                anomalies.push(`Ligne ${ligneNum}: La date d'acquisition est invalide`);
+                continue;
+            }
+
+            // Chercher l'exercice qui contient cette date
+            const exerciceCorrespondant = tousLesExercices.find(exo => {
+                const debut = exo.date_debut ? new Date(exo.date_debut) : null;
+                const fin = exo.date_fin ? new Date(exo.date_fin) : null;
+                return debut && fin && dateAcq >= debut && dateAcq <= fin;
+            });
+
+            if (!exerciceCorrespondant) {
+                // Aucun exercice trouvé pour cette date
+                const annee = dateAcq.getFullYear();
+                const dateStr = `${dateAcq.getDate().toString().padStart(2, '0')}/${(dateAcq.getMonth() + 1).toString().padStart(2, '0')}/${annee}`;
+                anomalies.push(`Ligne ${ligneNum}: Veuillez créer d'abord l'exercice ${annee} pour importer cette immobilisation (date d'acquisition: ${dateStr})`);
+                continue;
+            }
+
+            // Utiliser l'exercice trouvé pour cette immobilisation
+            const exerciceIdPourCetteLigne = exerciceCorrespondant.id;
+            const dateDebutExerciceTrouve = exerciceCorrespondant.date_debut ? new Date(exerciceCorrespondant.date_debut) : null;
+            const dateFinExerciceTrouve = exerciceCorrespondant.date_fin ? new Date(exerciceCorrespondant.date_fin) : null;
+
+            // Vérifier que le compte existe dans le plan comptable
+            const numeroCompte = row.numero_compte ? row.numero_compte.trim() : '';
+            if (!numeroCompte) {
+                anomalies.push(`Ligne ${ligneNum}: Le numéro de compte est vide`);
+                continue;
+            }
+            const pc_id = pcMap.get(numeroCompte);
+            if (!pc_id) {
+                anomalies.push(`Ligne ${ligneNum}: Le compte "${numeroCompte}" n'existe pas dans le plan comptable`);
+                continue;
+            }
+
+            // Calculer le compte d'amortissement (ajouter 8 après le premier chiffre et enlever le dernier)
+            const deriveCompteAmort = (compte) => {
+                if (!compte) return '';
+                const s = String(compte);
+                if (s.length < 3) return s;
+                return s[0] + '8' + s.substring(1, s.length - 1);
+            };
+
+            const compte_amortissement = deriveCompteAmort(numeroCompte);
+
+            // Déterminer si c'est une reprise en fonction de la position de la date d'acquisition
+            let isReprise = false;
+            let dateReprise = null;
+            let amortAnt = 0;
+
+            // Vérifier d'abord la position de la date d'acquisition par rapport à l'exercice
+            if (dateDebutExercice) {
+                const dateAcq = new Date(row.date_acquisition.trim());
+
+                if (!isNaN(dateAcq.getTime()) && dateAcq < dateDebutExercice) {
+                    // Date d'acquisition AVANT le début de l'exercice → REPRISE
+                    isReprise = true;
+
+                    // Si date_reprise est fournie dans le CSV, on l'utilise
+                    if (row.date_reprise && row.date_reprise.trim() !== '') {
+                        dateReprise = row.date_reprise.trim();
+
+                        // amort_ant est obligatoire si date_reprise est fournie
+                        if (!row.amort_ant || row.amort_ant.trim() === '') {
+                            anomalies.push(`Ligne ${ligneNum}: L'amortissement antérieur est obligatoire pour une reprise`);
+                            continue;
+                        }
+                        amortAnt = Number(row.amort_ant.replace(/,/g, '.'));
+                    } else {
+                        // Sinon, reprise automatique avec date_reprise = date début exercice trouvé
+                        const year = dateDebutExerciceTrouve.getFullYear();
+                        const month = String(dateDebutExerciceTrouve.getMonth() + 1).padStart(2, '0');
+                        const day = String(dateDebutExerciceTrouve.getDate()).padStart(2, '0');
+                        dateReprise = `${year}-${month}-${day}`;
+
+                        // Utiliser amort_ant du CSV s'il est fourni, sinon 0
+                        amortAnt = (row.amort_ant && row.amort_ant.trim() !== '')
+                            ? Number(row.amort_ant.replace(/,/g, '.'))
+                            : 0;
+                    }
+                }
+            }
+
+            // Préparer l'objet à insérer avec l'exercice trouvé automatiquement
+            const immobData = {
+                id_dossier: Number(id_dossier),
+                id_compte: Number(id_compte),
+                id_exercice: exerciceIdPourCetteLigne, // Utiliser l'exercice trouvé automatiquement
+                pc_id: pc_id,
+                code: row.code.trim(),
+                intitule: row.intitule.trim(),
+                fournisseur: row.fournisseur ? row.fournisseur.trim() : null,
+                date_acquisition: row.date_acquisition.trim(),
+                date_mise_service: row.date_acquisition.trim(), // Même date que l'acquisition
+                duree_amort_mois: Number(row.duree_amort),
+                type_amort: row.type_amort.trim(),
+                montant_ht: Number(row.montant_ht.replace(/,/g, '.')),
+                compte_amortissement: compte_amortissement,
+                reprise_immobilisation: isReprise,
+                date_reprise: dateReprise,
+                reprise_immobilisation_comp: isReprise,
+                date_reprise_comp: dateReprise,
+                reprise_immobilisation_fisc: isReprise,
+                date_reprise_fisc: dateReprise,
+                amort_ant_comp: amortAnt,
+                amort_ant_fisc: amortAnt,
+                date_sortie: row.date_sortie && row.date_sortie.trim() !== '' ? row.date_sortie.trim() : null,
+                duree_amort_mois_fisc: Number(row.duree_amort),
+                type_amort_fisc: row.type_amort.trim(),
+            };
+
+            immobilisationsToInsert.push(immobData);
+        }
+
+        // Si des anomalies, retourner les erreurs
+        if (anomalies.length > 0) {
+            return res.json({
+                state: false,
+                msg: `${anomalies.length} anomalie(s) détectée(s)`,
+                anomalies: anomalies
+            });
+        }
+
+        // Insérer les immobilisations
+        let insertedCount = 0;
+        for (const immobData of immobilisationsToInsert) {
+            await db.sequelize.query(
+                `INSERT INTO details_immo (
+                    id_dossier, id_compte, id_exercice, pc_id, code, intitule, fournisseur,
+                    date_acquisition, date_mise_service, duree_amort_mois, type_amort, montant_ht,
+                    compte_amortissement, reprise_immobilisation, date_reprise,
+                    reprise_immobilisation_comp, date_reprise_comp, reprise_immobilisation_fisc, date_reprise_fisc,
+                    amort_ant_comp, amort_ant_fisc, date_sortie, duree_amort_mois_fisc, type_amort_fisc,
+                    created_at, updated_at
+                ) VALUES (
+                    :id_dossier, :id_compte, :id_exercice, :pc_id, :code, :intitule, :fournisseur,
+                    :date_acquisition, :date_mise_service, :duree_amort_mois, :type_amort, :montant_ht,
+                    :compte_amortissement, :reprise_immobilisation, :date_reprise,
+                    :reprise_immobilisation_comp, :date_reprise_comp, :reprise_immobilisation_fisc, :date_reprise_fisc,
+                    :amort_ant_comp, :amort_ant_fisc, :date_sortie, :duree_amort_mois_fisc, :type_amort_fisc,
+                    NOW(), NOW()
+                )`,
+                {
+                    replacements: immobData,
+                    type: db.Sequelize.QueryTypes.INSERT
+                }
+            );
+            insertedCount++;
+        }
+
+        return res.json({
+            state: true,
+            msg: `${insertedCount} immobilisation(s) importée(s) avec succès`
+        });
+
+    } catch (err) {
+        console.error('[IMMO][IMPORT] error:', err);
+        return res.status(500).json({
+            state: false,
+            msg: 'Erreur serveur lors de l\'import',
+            error: err.message
+        });
+    }
+};
+
+exports.addJournal = async (req, res) => {
+    try {
+        const jsonData = JSON.parse(req.body.data);
+        const file = req.file;
+
+        if (!jsonData) {
+            return res.status(400).json({ message: "Données ou fichier manquant" });
+        }
+
+        const id_compte = Number(jsonData.id_compte);
+        const id_dossier = Number(jsonData.id_dossier);
+        const id_exercice = Number(jsonData.id_exercice);
+        const id_journal = Number(jsonData.valSelectCodeJnl);
+        const id_devise = Number(jsonData.id_devise);
+
+        const codeJournal = await codejournals.findByPk(id_journal);
+        if (!codeJournal) {
+            return res.status(404).json({ message: "Code journal introuvable" });
+        }
+
+        const typeCodeJournal = codeJournal.type;
+
+        const mois = jsonData.valSelectMois;
+        const annee = jsonData.valSelectAnnee;
+        const currency = jsonData.currency;
+        const devise = jsonData.choixDevise === 'MGA' ? jsonData.choixDevise : currency;
+        const tableRows = jsonData.tableRows;
+        const listCa = jsonData.listCa;
+        const taux = jsonData.taux;
+
+        let fichierCheminRelatif = null;
+
+        if (file) {
+            const dossierRelatif = path.join(
+                "public",
+                "ScanEcriture",
+                id_compte.toString(),
+                id_dossier.toString(),
+                id_exercice.toString(),
+                typeCodeJournal
+            );
+
+            const dossierAbsolu = path.resolve(dossierRelatif);
+            fs.mkdirSync(dossierAbsolu, { recursive: true });
+
+            const nomFichier = `journal_${Date.now()}${path.extname(file.originalname)}`;
+            const cheminComplet = path.join(dossierAbsolu, nomFichier);
+
+            fs.renameSync(file.path, cheminComplet);
+
+            fichierCheminRelatif = path.join(dossierRelatif, nomFichier).replace(/\\/g, '/');
+        }
+
+        const idEcritureCommun = getDateSaisieNow(id_compte);
+
+        const newTableRows = await Promise.all(tableRows.map(async (row) => {
+            const dossierPc = await dossierplancomptable.findByPk(row.compte);
+            const comptebaseaux = dossierPc?.baseaux_id;
+
+            let id_numcptcentralise = null;
+            if (comptebaseaux) {
+                const cpt = await dossierplancomptable.findByPk(comptebaseaux);
+                id_numcptcentralise = cpt?.id || null;
+            }
+
+            const dateecriture = new Date(
+                annee,
+                mois - 1,
+                row.jour + 1
+            );
+
+            if (!isValidDate(dateecriture)) {
+                throw new Error(`Date invalide pour la ligne ${JSON.stringify(row)}`);
+            }
+
+            return {
+                id_temporaire: row.id,
+                id_compte,
+                id_dossier,
+                id_exercice,
+                id_numcpt: row.compte,
+                id_journal,
+                id_devise,
+                taux,
+                devise,
+                saisiepar: id_compte,
+                id_ecriture: idEcritureCommun,
+                debit: row.debit === "" ? 0 : row.debit,
+                num_facture: row.num_facture,
+                credit: row.credit === "" ? 0 : row.credit,
+                montant_devise: row.montant_devise || 0,
+                dateecriture: dateecriture,
+
+                id_numcptcentralise,
+                libelle: row.libelle || '',
+                piece: row.piece || '',
+                piecedate: row.piecedate || null,
+                fichier: fichierCheminRelatif
+            };
+        }));
+
+        let count = 0;
+        for (const row of newTableRows) {
+            const createdJournal = await journals.create({ ...row });
+            count++;
+
+            const journalId = createdJournal.id;
+
+            const relevantCa = listCa?.filter(item => item.id_ligne_ecriture === row.id_temporaire) || [];
+
+            if (relevantCa.length > 0) {
+                const listCaRows = relevantCa.map(item => ({
+                    id_compte,
+                    id_dossier,
+                    id_exercice,
+                    id_ligne_ecriture: journalId,
+                    id_axe: item.id_axe,
+                    id_section: item.id_section,
+                    debit: item.debit || 0,
+                    credit: item.credit || 0,
+                    pourcentage: item.pourcentage || 0
+                }));
+
+                await analytiques.bulkCreate(listCaRows);
+            }
+        }
+
+        return res.json({
+            message: `${count} ${pluralize(count, 'ligne')} ${pluralize(count, 'ajoutée')} avec succès`,
+            data: newTableRows,
+            state: true
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(400).json({ state: false, message: error.message });
+    }
+};
+
+exports.addEcriture = async (req, res) => {
+    const transaction = await sequelize.transaction();
+
+    try {
+        const {
+            id_dossier,
+            id_exercice,
+            id_compte,
+            id_plan_comptable,
+            id_contre_partie,
+            solde
+        } = req.body;
+
+        const id_ecriture = getDateSaisieNow(id_compte);
+        const isCrediteur = solde < 0;
+
+        let debit_pc = 0, credit_pc = 0, debit_cp = 0, credit_cp = 0;
+        let id_journal = null;
+        let id_devise = null;
+
+        const dossierPc_pc = await dossierplancomptable.findByPk(id_plan_comptable);
+        const dossierPc_cp = await dossierplancomptable.findByPk(id_contre_partie);
+
+        if (!dossierPc_pc || !dossierPc_cp) {
+            throw new Error("Compte ou contrepartie introuvable");
+        }
+
+        const comptebaseaux_pc = dossierPc_pc?.baseaux_id;
+        const comptebaseaux_cp = dossierPc_cp?.baseaux_id;
+
+        let id_numcptcentralise_pc = null;
+        if (comptebaseaux_pc) {
+            const cpt = await dossierplancomptable.findByPk(comptebaseaux_pc);
+            id_numcptcentralise_pc = cpt?.id || null;
+        }
+
+        let id_numcptcentralise_cp = null;
+        if (comptebaseaux_cp) {
+            const cpt = await dossierplancomptable.findByPk(comptebaseaux_cp);
+            id_numcptcentralise_cp = cpt?.id || null;
+        }
+
+        const libelle = `Ecart de lettrage du compte ${dossierPc_pc?.compte}`;
+
+        let codeOD = await codejournals.findOne({
+            where: { id_dossier, id_compte, code: 'OD' },
+            transaction
+        });
+
+        if (!codeOD) {
+            codeOD = await codejournals.create({
+                id_compte,
+                id_dossier,
+                code: 'OD',
+                libelle: 'Opérations diverses',
+                type: 'OD'
+            }, { transaction });
+        }
+
+        id_journal = codeOD.id;
+
+        let devise = await devises.findOne({
+            where: { id_dossier, id_compte, par_defaut: true },
+            transaction
+        });
+
+        if (!devise) {
+            devise = await devises.findOne({
+                where: { id_dossier, id_compte, code: 'MGA' },
+                transaction
+            });
+
+            if (!devise) {
+                devise = await devises.create({
+                    id_compte,
+                    id_dossier,
+                    code: 'MGA',
+                    libelle: 'Madagascar',
+                    par_defaut: true
+                }, { transaction });
+            }
+        }
+
+        id_devise = devise.id;
+
+        const montant = Math.abs(solde);
+
+        if (isCrediteur) {
+            debit_pc = montant;
+            credit_cp = montant;
+        } else {
+            credit_pc = montant;
+            debit_cp = montant;
+        }
+
+        await journals.create({
+            id_compte,
+            id_dossier,
+            id_exercice,
+            id_numcpt: id_plan_comptable,
+            id_ecriture,
+            id_journal,
+            id_devise,
+            debit: debit_pc,
+            credit: credit_pc,
+            libelle,
+            dateecriture: new Date(),
+            saisiepar: id_compte,
+            devise: 'MGA',
+            id_numcptcentralise: id_numcptcentralise_pc
+        }, { transaction });
+
+        await journals.create({
+            id_compte,
+            id_dossier,
+            id_exercice,
+            id_numcpt: id_contre_partie,
+            id_ecriture,
+            id_journal,
+            id_devise,
+            debit: debit_cp,
+            credit: credit_cp,
+            libelle,
+            dateecriture: new Date(),
+            saisiepar: id_compte,
+            devise: 'MGA',
+            id_numcptcentralise: id_numcptcentralise_cp
+        }, { transaction });
+
+        await transaction.commit();
+
+        return res.status(200).json({
+            state: true,
+            message: "Écriture comptable générée avec succès"
+        });
+
+    } catch (error) {
+        await transaction.rollback();
+        console.error(error);
+        return res.status(400).json({
+            state: false,
+            message: error.message
+        });
     }
 };

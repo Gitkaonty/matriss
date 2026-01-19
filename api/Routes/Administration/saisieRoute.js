@@ -68,6 +68,9 @@ router.post('/immobilisations/ecritures/generate', saisieController.generateImmo
 // Immobilisations: annuler écritures comptables (journal Imau)
 router.post('/immobilisations/ecritures/cancel', saisieController.cancelImmoEcritures);
 
+// Immobilisations: import CSV
+router.post('/importImmobilisations', verifyJWT, verifyPermission('ADD'), saisieController.importImmobilisations);
+
 // Rapprochements exports
 router.get('/rapprochements/export/pdf', exportRapprochementsController.exportPdf);
 router.get('/rapprochements/export/excel', exportRapprochementsController.exportExcel);
@@ -86,5 +89,8 @@ router.post('/addLettrage', verifyJWT, verifyPermission('ADD'), saisieController
 router.post('/modificationJournal', verifyJWT, verifyPermission('EDIT'), upload.single('file'), saisieController.modificationJournal);
 
 router.put('/deleteLettrage', verifyJWT, verifyPermission('DELETE'), saisieController.deleteLettrage);
+
+// Léttrage avec écart
+router.post('/addEcriture', saisieController.addEcriture);
 
 module.exports = router;

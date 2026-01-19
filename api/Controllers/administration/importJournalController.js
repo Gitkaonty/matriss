@@ -1,12 +1,26 @@
-const bcrypt = require("bcrypt");
 const db = require("../../Models");
 require('dotenv').config();
-const Sequelize = require('sequelize');
 const { Op } = require('sequelize');
 const Papa = require("papaparse");
 const fs = require("fs");
+const crypto = require('crypto');
 
 const fonctionUpdateBalanceSold = require('../../Middlewares/UpdateSolde/updateBalanceSold');
+
+function buildIdEcriture(item) {
+  const key = [
+    item.JournalCode?.trim(),
+    item.EcritureNum,
+    item.EcritureDate,
+    item.PieceRef?.trim()
+  ].join('|');
+
+  return crypto
+    .createHash('sha1')
+    .update(key)
+    .digest('hex')
+    .substring(0, 25);
+}
 
 const journals = db.journals;
 const codejournals = db.codejournals;
@@ -188,10 +202,8 @@ const importJournal = async (req, res) => {
     let skippedCount = 0;
     const skippedDetails = [];
 
-    try { console.log('[IMPORT][START]', { compteId, fileId, selectedPeriodeId, rows: Array.isArray(journalData) ? journalData.length : 0, longeurCompteStd, action: valSelectCptDispatch }); } catch { }
-
     if (valSelectCptDispatch === 'ECRASER') {
-      journals.destroy({
+      await journals.destroy({
         where:
         {
           id_compte: Number(compteId),
@@ -199,7 +211,6 @@ const importJournal = async (req, res) => {
           id_exercice: Number(selectedPeriodeId),
         }
       });
-      try { console.log('[IMPORT][ECRASER] existing rows deleted for exercice', selectedPeriodeId); } catch { }
     }
 
     if (journalData.length > 0) {
@@ -210,7 +221,6 @@ const importJournal = async (req, res) => {
         .map(r => (r.Idevise || '').trim())
         .filter(v => v))];
       if (!deviseCodes.includes('MGA')) deviseCodes.push('MGA');
-      try { console.log('[IMPORT][DEVISES] found codes', deviseCodes); } catch { }
       for (const code of deviseCodes) {
         const existing = await db.Devise.findOne({ where: { id_compte: compteId, id_dossier: fileId, code } });
         if (!existing) await db.Devise.create({ id_compte: compteId, id_dossier: fileId, code, libelle: code });
@@ -228,7 +238,6 @@ const importJournal = async (req, res) => {
         acc[key].push(item);
         return acc;
       }, {});
-      try { console.log('[IMPORT][GROUPED] ecritures', Object.keys(grouped).length); } catch { }
 
       // Pour chaque groupe
       // bornes d'exercice si fournies
@@ -238,9 +247,8 @@ const importJournal = async (req, res) => {
 
       for (let ecritureNum in grouped) {
         const lines = grouped[ecritureNum];
-        const newIdEcriture = Date.now() + Math.floor(Math.random() * 1000);
-
-        try { console.log('[IMPORT][ECRITURE]', ecritureNum, 'nbLines=', lines.length); } catch { }
+        // const newIdEcriture = Date.now() + Math.floor(Math.random() * 1000);
+        const newIdEcriture = buildIdEcriture(lines[0]);
 
         // Traiter chaque ligne du groupe
         for (let item of lines) {
@@ -250,7 +258,6 @@ const importJournal = async (req, res) => {
             const rawGen = String(item.CompteNum || '').trim();
             const isGenDigits = /^\d+$/.test(rawGen);
             const paddedGen = isGenDigits ? rawGen.padEnd(longeurCompteStd, '0').slice(0, longeurCompteStd) : rawGen;
-            try { console.log('[IMPORT][LINE][ACCOUNTS]', { ecriture: ecritureNum, rawGen, paddedGen, rawAux, isGenDigits }); } catch { }
 
             const normCode = String(item.JournalCode || '').trim().toUpperCase();
             let idCodeJournal = await codejournals.findOne({
@@ -259,7 +266,6 @@ const importJournal = async (req, res) => {
             if (!idCodeJournal && normCode) {
               // créer à la volée si nécessaire
               idCodeJournal = await codejournals.create({ id_compte: compteId, id_dossier: fileId, code: normCode, libelle: normCode, type: 'OD' });
-              try { console.log('[IMPORT][JOURNAL][CREATED]', normCode); } catch { }
             }
             const codeJournalId = idCodeJournal?.id || 0;
 
@@ -269,7 +275,6 @@ const importJournal = async (req, res) => {
             let foundGen = null;
             if (rawAux) {
               foundAux = await dossierPlanComptable.findOne({ where: { id_compte: compteId, id_dossier: fileId, compte: rawAux } });
-              if (foundAux) { try { console.log('[IMPORT][ACCOUNT][FOUND_AUX]', rawAux, 'id=', foundAux.id); } catch { } }
             }
             // chercher le général (brut/pad)
             foundGen = await dossierPlanComptable.findOne({
@@ -279,7 +284,6 @@ const importJournal = async (req, res) => {
                 [Op.or]: [{ compte: rawGen }, { compte: paddedGen }]
               },
             });
-            if (foundGen) { try { console.log('[IMPORT][ACCOUNT][FOUND_GEN]', foundGen.compte, 'id=', foundGen.id); } catch { } }
             foundCompte = foundAux || foundGen;
 
             if (!foundCompte) {
@@ -303,7 +307,6 @@ const importJournal = async (req, res) => {
                     `UPDATE dossierplancomptables SET baseaux_id = id WHERE id = :id`,
                     { replacements: { id: genCompte.id }, type: db.Sequelize.QueryTypes.UPDATE }
                   );
-                  try { console.log('[IMPORT][ACCOUNT][CREATED_GEN]', paddedGen, 'id=', genCompte.id); } catch { }
                 }
               }
               if (rawAux) {
@@ -320,7 +323,6 @@ const importJournal = async (req, res) => {
                     pays: 'Madagascar',
                     baseaux: genCompte?.id || 0,
                   });
-                  try { console.log('[IMPORT][ACCOUNT][CREATED_AUX]', rawAux, 'id=', createdAux.id, 'base=', genCompte?.id || 0); } catch { }
                 }
                 foundCompte = createdAux || genCompte;
               } else if (genCompte) {
@@ -329,7 +331,6 @@ const importJournal = async (req, res) => {
               if (!foundCompte) {
                 importSuccess = importSuccess * 0; skippedCount++;
                 skippedDetails.push({ reason: 'compte_introuvable', ecriture: ecritureNum, compAux: rawAux, compGen: rawGen });
-                try { console.warn('[IMPORT][SKIP][NO_ACCOUNT]', { ecriture: ecritureNum, rawGen, rawAux }); } catch { }
                 continue;
               }
             }
@@ -348,7 +349,6 @@ const importJournal = async (req, res) => {
                   pays: 'Madagascar',
                   baseaux: foundGen.id,
                 });
-                try { console.log('[IMPORT][ACCOUNT][CREATED_AUX_LATE]', rawAux, 'id=', createdAux.id, 'base=', foundGen.id); } catch { }
               }
               foundCompte = createdAux;
             }
@@ -420,13 +420,11 @@ const importJournal = async (req, res) => {
 
             importSuccess = importSuccess * 1;
             importedCount++;
-            try { console.log('[IMPORT][INSERTED]', { ecriture: ecritureNum, id_numcpt: compteNumId, id_journal: codeJournalId, debit, credit }); } catch { }
           } catch (error) {
             importSuccess = importSuccess * 0;
             resData.msg = error;
             skippedDetails.push({ reason: 'exception', ecriture: ecritureNum, message: String(error?.message || error) });
             skippedCount++;
-            try { console.warn('[IMPORT][SKIP][EXCEPTION]', ecritureNum, error?.message || error); } catch { }
           }
         }
       }
@@ -447,14 +445,12 @@ const importJournal = async (req, res) => {
       resData.ignored = skippedCount;
       resData.state = true;
       if (skippedDetails.length) resData.skippedDetails = skippedDetails;
-      try { console.log('[IMPORT][END][SUCCESS]', { importedCount, skippedCount }); if (skippedDetails.length) console.log('[IMPORT][END][SKIPPED_DETAILS]', skippedDetails.slice(0, 5)); } catch { }
     } else {
       resData.state = false;
       resData.msg = 'Aucune ligne importée (comptes introuvables ou données hors exercice)';
       resData.nbrligne = 0;
       resData.ignored = journalData.length;
       if (skippedDetails.length) resData.skippedDetails = skippedDetails;
-      try { console.warn('[IMPORT][END][FAIL]', { importedCount, skippedCount }); if (skippedDetails.length) console.log('[IMPORT][END][SKIPPED_DETAILS]', skippedDetails.slice(0, 5)); } catch { }
     }
 
     return res.json(resData);

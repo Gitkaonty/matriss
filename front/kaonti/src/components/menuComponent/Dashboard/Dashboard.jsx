@@ -97,6 +97,7 @@ export default function DashboardComponent() {
   const [selectedExerciceId, setSelectedExerciceId] = useState(0);
   const [selectedPeriodeId, setSelectedPeriodeId] = useState(0);
   const [selectedPeriodeChoiceId, setSelectedPeriodeChoiceId] = useState(0);
+  const [deviseParDefaut, setDeviseParDefaut] = useState([]);
 
   const [chiffresAffairesNGraph, setChiffresAffairesNGraph] = useState([]);
   const [chiffresAffairesN1Graph, setChiffresAffairesN1Graph] = useState([]);
@@ -296,6 +297,15 @@ export default function DashboardComponent() {
       });
   }
 
+  // Récupération de la liste des devises
+  const getParDefaut = async () => {
+    await axios.get(`/devises/devise/compte/${compteId}/${fileId}`).then((reponse => {
+      const resData = reponse.data;
+      const deviseParDefaut = resData.find(val => val.par_defaut === true);
+      setDeviseParDefaut(deviseParDefaut?.code || 'MGA');
+    }))
+  }
+
   const getListeJournalEnAttente = () => {
     axios.get(`/dashboard/getListeJournalEnAttente/${Number(compteId)}/${Number(fileId)}/${Number(selectedExerciceId)}`)
       .then((response) => {
@@ -338,6 +348,7 @@ export default function DashboardComponent() {
   useEffect(() => {
     if (compteId && fileId && selectedExerciceId && canView) {
       getAllInfo();
+      getParDefaut();
       getListeJournalEnAttente();
     }
   }, [compteId, fileId, selectedExerciceId]);
@@ -533,6 +544,7 @@ export default function DashboardComponent() {
                       variationN1={variationResultatN1}
                       evolutionN={evolutionResultatN}
                       evolutionN1={evolutionResultatN1}
+                      devise={deviseParDefaut}
                     />
                     <DashboardCard
                       text={'Chiffre d\'affaires'}
@@ -545,6 +557,7 @@ export default function DashboardComponent() {
                       variationN1={variationChiffreAffaireN1}
                       evolutionN={evolutionChiffreAffaireN}
                       evolutionN1={evolutionChiffreAffaireN1}
+                      devise={deviseParDefaut}
                     />
                   </Stack>
                   <Stack
@@ -564,6 +577,7 @@ export default function DashboardComponent() {
                       variationN1={variationDepenseAchatN1}
                       evolutionN={evolutionDepenseAchatN}
                       evolutionN1={evolutionDepenseAchatN1}
+                      devise={deviseParDefaut}
                     />
                     <DashboardCard
                       text={'Dépenses salariales'}
@@ -575,6 +589,7 @@ export default function DashboardComponent() {
                       variationN1={variationDepenseSalarialeN1}
                       evolutionN={evolutionDepenseSalarialeN}
                       evolutionN1={evolutionDepenseSalarialeN1}
+                      devise={deviseParDefaut}
                     />
                   </Stack>
                   <Stack
@@ -594,6 +609,7 @@ export default function DashboardComponent() {
                       variationN1={variationTresorerieBanqueN1}
                       evolutionN={evolutionTresorerieBanqueN}
                       evolutionN1={evolutionTresorerieBanqueN1}
+                      devise={deviseParDefaut}
                     />
                     <DashboardCard
                       text={'Trésoreries (Caisse)'}
@@ -605,6 +621,7 @@ export default function DashboardComponent() {
                       variationN1={variationTresorerieCaisseN1}
                       evolutionN={evolutionTresorerieCaisseN}
                       evolutionN1={evolutionTresorerieCaisseN1}
+                      devise={deviseParDefaut}
                     />
                   </Stack>
                 </Stack>

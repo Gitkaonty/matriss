@@ -9,7 +9,8 @@ const TextCard = ({
     variation,
     exercice,
     evolution,
-    color
+    color,
+    devise
 }) => {
 
     const IconVariation = () => {
@@ -30,7 +31,7 @@ const TextCard = ({
 
     const formatMontant = (num) => {
         if (num === null || num === undefined || isNaN(num)) return '-';
-        return num.toLocaleString('fr-FR') + ' MGA';
+        return num.toLocaleString('fr-FR') + ` ${devise}`;
     };
 
     return (

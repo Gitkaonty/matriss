@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Autocomplete, Typography, Stack, Box, Tab, Button, TextField, Tooltip } from '@mui/material';
 import RadioGroup from '@mui/material/RadioGroup';
@@ -41,6 +41,7 @@ import PopupInfoAnalytique from '../../../componentsTools/Saisie/PopupInfoAnalyt
 import usePermission from '../../../../hooks/usePermission';
 import useAxiosPrivate from '../../../../../config/axiosPrivate';
 import PopupConfirmDelete from '../../../componentsTools/popupConfirmDelete';
+import PopupAddSaisieFromConsultation from '../../../componentsTools/Saisie/PopupAddSaisieFromConsultation';
 
 export default function ConsultationComponent() {
     let initial = init[0];
@@ -60,6 +61,7 @@ export default function ConsultationComponent() {
 
     const [openSaisiePopup, setOpenSaisiePopup] = useState(false);
     const [openAnalytiquePopup, setOpenAnalytiquePopup] = useState(false);
+    const [openPopupAddEcriture, setOpenPopupAddEcriture] = useState(false);
     const [idJournal, setIdJournal] = useState(null);
 
     const [selectedRows, setSelectedRows] = useState([]);
@@ -76,6 +78,7 @@ export default function ConsultationComponent() {
     const [filteredList, setFilteredList] = useState(null);
     const [listePlanComptable, setListePlanComptable] = useState([]);
     const [listePlanComptableInitiale, setListePlanComptableInitiale] = useState([]);
+    const [listePlanComptablePourAjout, setListePlanComptablePourAjout] = useState([]);
     const [listeCodeJournaux, setListeCodeJournaux] = useState([]);
     const [listeDevise, setListeDevise] = useState([]);
     const [listeAnnee, setListeAnnee] = useState([]);
@@ -86,6 +89,14 @@ export default function ConsultationComponent() {
     const [selectedLigneDesequilibre, setSelectedLigneDesequilibre] = useState([]);
     const [openLettrageDesequilibrePopup, setOpenLettrageDesequilibrePopup] = useState(false);
     const [messageLettrageDesequlibre, setMessageLettrageDesequilibre] = useState('');
+
+    // Vérifier si la sélection contient un type RAN
+    const isRanTypeSelected = useMemo(() => {
+        if (selectedRows.length === 0 || listeCodeJournaux.length === 0) return false;
+        const selectedJournalId = Number(selectedRows[0].id_journal);
+        const codeJournal = listeCodeJournaux.find(cj => Number(cj.id) === selectedJournalId);
+        return codeJournal?.type === 'RAN';
+    }, [selectedRows, listeCodeJournaux]);
 
     //Valeur du listbox choix compte
     const [valSelectedCompte, setValSelectedCompte] = useState('')
@@ -182,6 +193,18 @@ export default function ConsultationComponent() {
                 }
             })
     }
+
+    // const getPcForAjout = () => {
+    //     axios.get(`/paramPlanComptable/recupPcIdLibelleForJournal/${compteId}/${fileId}`)
+    //         .then((response) => {
+    //             const resData = response.data;
+    //             if (resData.state) {
+    //                 setListePlanComptablePourAjout(resData.liste);
+    //             } else {
+    //                 toast.error(resData.msg);
+    //             }
+    //         })
+    // }
 
     //Liste des sections avec ses axes
     const getListAxeSection = () => {
@@ -517,6 +540,18 @@ export default function ConsultationComponent() {
         }
     };
 
+    const handleOpenPopupAddEcriture = () => {
+        setOpenPopupAddEcriture(true);
+    }
+
+    const createEcriture = (value) => {
+        if (value) {
+            setOpenPopupAddEcriture(false);
+        } else {
+            setOpenPopupAddEcriture(false);
+        }
+    }
+
     const supprimerLettrageDesequilibre = (value) => {
         if (value) {
             const ids = selectedLigneDesequilibre.map(row => row.id);
@@ -549,13 +584,6 @@ export default function ConsultationComponent() {
         }
         let id_ecriture = '';
         if (selectedRows.length === 1) {
-            const selectedJournalId = selectedRows[0].id_journal;
-            const codeJournal = listeCodeJournaux.find(cj => cj.id === selectedJournalId);
-            
-            if (codeJournal && codeJournal.type === 'RAN') {
-                return toast.error('Impossible de modifier une écriture de type RAN');
-            }
-            
             id_ecriture = selectedRows[0].id_ecriture;
             const rows = listSaisie
                 .filter((row) => row.id_ecriture === id_ecriture)
@@ -865,6 +893,20 @@ export default function ConsultationComponent() {
                     />
                 )
             }
+            {
+                openPopupAddEcriture && (
+                    <PopupAddSaisieFromConsultation
+                        confirmationState={createEcriture}
+                        listePlanComptable={listePlanComptableInitiale}
+                        valSelectedCompte={valSelectedCompte}
+                        id_dossier={Number(fileId)}
+                        id_exercice={Number(selectedExerciceId)}
+                        id_compte={Number(compteId)}
+                        solde={solde}
+                        refresh={() => setIsRefreshed(prev => !prev)}
+                    />
+                )
+            }
             <Box >
                 <TabContext value={"1"} >
                     <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -948,14 +990,10 @@ export default function ConsultationComponent() {
                                     <Button
                                         onClick={handleOpenSaisiePopup}
                                         disabled={
-                                            !canModify || 
-                                            selectedRows.length === 0 || 
+                                            !canModify ||
+                                            selectedRows.length === 0 ||
                                             selectedRows.every(row => Number(row.id_dossier) !== Number(fileId)) ||
-                                            (selectedRows.length > 0 && (() => {
-                                                const selectedJournalId = selectedRows[0].id_journal;
-                                                const codeJournal = listeCodeJournaux.find(cj => cj.id === selectedJournalId);
-                                                return codeJournal && codeJournal.type === 'RAN';
-                                            })())
+                                            isRanTypeSelected
                                         }
                                         variant="contained"
                                         style={{
@@ -993,7 +1031,7 @@ export default function ConsultationComponent() {
                                     <Stack direction={'row'} alignContent={'center'}>
                                         <Stack
                                             sx={{
-                                                width: 500,
+                                                width: 600,
                                                 mr: 2
                                             }}
                                         >
@@ -1097,10 +1135,10 @@ export default function ConsultationComponent() {
                                     }}
                                     value={filtrageCompte}
                                 >
-                                    <FormControlLabel value="0" control={<Radio disabled={!canView} />} label="Tous" style={{ marginLeft: "20px" }} />
-                                    <FormControlLabel value="1" control={<Radio disabled={!canView} />} label="Comptes mouvementés" style={{ marginLeft: "20px" }} />
-                                    <FormControlLabel value="2" control={<Radio disabled={!canView} />} label="Comptes soldés" style={{ marginLeft: "20px" }} />
-                                    <FormControlLabel value="3" control={<Radio disabled={!canView} />} label="Comptes non soldés" style={{ marginLeft: "20px" }} />
+                                    <FormControlLabel value="0" control={<Radio disabled={!canView} />} label="Tous" style={{ marginLeft: "5px" }} />
+                                    <FormControlLabel value="1" control={<Radio disabled={!canView} />} label="Comptes mouvementés" style={{ marginLeft: "5px" }} />
+                                    <FormControlLabel value="2" control={<Radio disabled={!canView} />} label="Comptes soldés" style={{ marginLeft: "5px" }} />
+                                    <FormControlLabel value="3" control={<Radio disabled={!canView} />} label="Comptes non soldés" style={{ marginLeft: "5px" }} />
                                 </RadioGroup>
                             </Stack>
 
@@ -1116,6 +1154,23 @@ export default function ConsultationComponent() {
                                     marginTop: "20px",
                                     borderRadius: "5px"
                                 }}>
+
+                                <Button
+                                    disabled={!canAdd || selectedRows.length === 0 || !valSelectedCompte || selectedRows.every(row => Number(row.id_dossier) !== Number(fileId))}
+                                    variant="contained"
+                                    style={{
+                                        textTransform: 'none',
+                                        outline: 'none',
+                                        backgroundColor: initial.theme,
+                                        color: "white",
+                                        height: "39px",
+                                        marginTop: '10px'
+                                    }}
+                                    onClick={handleOpenPopupAddEcriture}
+                                    startIcon={<TbPlugConnected size={20} />}
+                                >
+                                    Créer
+                                </Button>
                                 <Button
                                     disabled={!canAdd || selectedRows.length === 0 || solde !== 0 || selectedRows.every(row => Number(row.id_dossier) !== Number(fileId))}
                                     variant="contained"

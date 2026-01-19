@@ -395,6 +395,8 @@ const createNewFile = async (req, res) => {
               id_dossier: newFile.id,
               compte: compteFormated,
               libelle: item.libelle,
+              compteautre: item.compteautre,
+              libelleautre: item.libelleautre,
               nature: item.nature,
               baseaux: baseAux,
               cptcharge: item.cptcharge,

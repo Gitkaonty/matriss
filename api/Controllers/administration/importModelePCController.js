@@ -78,6 +78,8 @@ const importModelePc = async (req, res) => {
         id_modeleplancomptable: modeleName.id,
         compte: item.compte?.trim(),
         libelle: item.libelle?.trim(),
+        compteautre: item?.comptecorrespondance?.trim(),
+        libelleautre: item.libelleautre?.trim(),
         nature: item.nature,
         baseaux: item.baseaux,
         typetier: item.typetier,
