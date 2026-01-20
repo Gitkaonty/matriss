@@ -1,5 +1,6 @@
-import { React, useState } from 'react';
-import { Typography, Stack, Button, Dialog, DialogTitle, DialogContent, DialogActions, Badge, Box, CircularProgress, IconButton } from '@mui/material';
+import { React, useState, useEffect } from 'react';
+import { Typography, Stack, Button, Dialog, DialogTitle, DialogContent, DialogActions, Badge, Box, IconButton } from '@mui/material';
+import ImportProgressBar from '../../../componentsTools/ImportProgressBar';
 import { init } from '../../../../../init';
 import toast from 'react-hot-toast';
 import Papa from 'papaparse';
@@ -13,6 +14,7 @@ import { IoWarningOutline } from 'react-icons/io5';
 import { MdOutlineFileUpload } from 'react-icons/md';
 import { FaFileImport } from 'react-icons/fa';
 import useAxiosPrivate from '../../../../../config/axiosPrivate';
+import useSSEImport from '../../../../hooks/useSSEImport';
 
 export default function PopupImportImmobilisations({ open, onClose, fileId, compteId, exerciceId, onImportSuccess }) {
     let initial = init[0];
@@ -23,6 +25,22 @@ export default function PopupImportImmobilisations({ open, onClose, fileId, comp
     const [immobilisationsData, setImmobilisationsData] = useState([]);
     const [msgAnomalie, setMsgAnomalie] = useState([]);
     const [traitementWaiting, setTraitementWaiting] = useState(false);
+    const [traitementMsg, setTraitementMsg] = useState('');
+    const [progressValue, setProgressValue] = useState(0);
+
+    // Hook SSE pour la progression en temps réel
+    const { isImporting, progress: sseProgress, message: sseMessage, currentLine, totalLines, startImport } = useSSEImport();
+
+    // Synchroniser les valeurs SSE avec l'affichage
+    useEffect(() => {
+        if (isImporting) {
+            setProgressValue(sseProgress);
+            const displayMessage = currentLine > 0 && totalLines > 0 
+                ? `${sseMessage} (${currentLine}/${totalLines} lignes)`
+                : sseMessage;
+            setTraitementMsg(displayMessage);
+        }
+    }, [isImporting, sseProgress, sseMessage, currentLine, totalLines]);
 
     const columns = [
         {
@@ -201,38 +219,56 @@ export default function PopupImportImmobilisations({ open, onClose, fileId, comp
             return;
         }
 
+        setTraitementMsg('Import des immobilisations en cours...');
         setTraitementWaiting(true);
+        setProgressValue(0);
 
-        axiosPrivate.post('/administration/traitementSaisie/importImmobilisations', {
-            data: immobilisationsData,
-            id_dossier: Number(fileId),
-            id_compte: Number(compteId),
-            id_exercice: Number(exerciceId)
-        }).then((response) => {
-            const resData = response.data;
-            setTraitementWaiting(false);
-            
-            if (resData.state) {
-                toast.success(resData.msg || 'Import réussi');
-                setImmobilisationsData([]);
-                setNbrAnomalie(0);
-                setMsgAnomalie([]);
-                setCouleurBoutonAnomalie('white');
-                if (onImportSuccess) onImportSuccess();
-                onClose();
-            } else {
-                toast.error(resData.msg || 'Erreur lors de l\'import');
-                if (resData.anomalies && resData.anomalies.length > 0) {
-                    setMsgAnomalie(resData.anomalies);
-                    setNbrAnomalie(resData.anomalies.length);
-                    setCouleurBoutonAnomalie('#ff6b6b');
+        // Utiliser SSE pour la progression en temps réel
+        startImport(
+            '/administration/traitementSaisie/importImmobilisationsWithProgress',
+            {
+                data: immobilisationsData,
+                id_dossier: Number(fileId),
+                id_compte: Number(compteId),
+                id_exercice: Number(exerciceId)
+            },
+            (eventData) => {
+                // Succès
+                setTimeout(() => {
+                    setTraitementWaiting(false);
+                    setProgressValue(0);
+                    toast.success(eventData.message || 'Import réussi');
+                    setImmobilisationsData([]);
+                    setNbrAnomalie(0);
+                    setMsgAnomalie([]);
+                    setCouleurBoutonAnomalie('white');
+                    if (onImportSuccess) onImportSuccess();
+                    onClose();
+                }, 800);
+            },
+            (error) => {
+                // Erreur
+                setTraitementWaiting(false);
+                setProgressValue(0);
+                
+                // Parser les anomalies si elles sont présentes dans le message d'erreur
+                if (typeof error === 'string' && error.includes('anomalie(s) détectée(s)')) {
+                    const lines = error.split('\n');
+                    const anomaliesArray = lines.slice(1); // Ignorer la première ligne (résumé)
+                    
+                    if (anomaliesArray.length > 0) {
+                        setMsgAnomalie(anomaliesArray);
+                        setNbrAnomalie(anomaliesArray.length);
+                        setCouleurBoutonAnomalie('#ff6b6b');
+                        setOpenDetailsAnomalie(true);
+                    }
+                    
+                    toast.error(lines[0] || error);
+                } else {
+                    toast.error(error || "Erreur lors de l'import");
                 }
             }
-        }).catch((error) => {
-            setTraitementWaiting(false);
-            const errorMsg = error.response?.data?.msg || error.response?.data?.message || "Erreur lors de l'import";
-            toast.error(errorMsg);
-        });
+        );
     };
 
     const handleClose = () => {
@@ -334,6 +370,13 @@ export default function PopupImportImmobilisations({ open, onClose, fileId, comp
                                 </Button>
                             </label>
                         </Stack>
+
+                        <ImportProgressBar 
+                            isVisible={traitementWaiting}
+                            message={traitementMsg}
+                            variant="determinate"
+                            progress={progressValue}
+                        />
 
                         {immobilisationsData.length > 0 && (
                             <Box>

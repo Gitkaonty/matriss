@@ -11,8 +11,11 @@ router.post('/createNotExistingCodeJournal', importJournalController.createNotEx
 //création des comptes qui n'existent pas encore avant import journal
 router.post('/createNotExistingCompte', importJournalController.createNotExistingCompte);
 
-//import du journal excel csv ou FEC
+//import du journal excel csv ou FEC (version classique)
 router.post('/importJournal', importJournalController.importJournal);
+
+//import du journal avec progression en temps réel (SSE)
+router.post('/importJournalWithProgress', importJournalController.importJournalWithProgress);
 
 // Récupération de la liste des journals importés
 router.post('/recupListeImporte', upload.single("file"), importJournalController.recupListeImporte);
