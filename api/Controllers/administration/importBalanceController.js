@@ -3,6 +3,7 @@ const db = require("../../Models");
 require('dotenv').config();
 const Sequelize = require('sequelize');
 const { Op } = require('sequelize');
+const { withSSEProgress } = require('../../Middlewares/sseProgressMiddleware');
 
 const journals = db.journals;
 const codejournals = db.codejournals;
@@ -147,7 +148,100 @@ const importBalance = async (req, res)  => {
   }
 }
 
+// Version avec progression SSE en temps réel
+const importBalanceWithProgressLogic = async (req, res, progress) => {
+  try {
+    const { compteId, userId, fileId, selectedPeriodeId, balanceData } = req.body;
+
+    if (!Array.isArray(balanceData) || balanceData.length === 0) {
+      progress.error("Aucune donnée à importer");
+      return;
+    }
+
+    const totalLines = balanceData.length;
+    progress.update(0, totalLines, 'Démarrage...', 0);
+
+    // Étape 1: Suppression des données existantes (5%)
+    progress.step('Suppression des données existantes...', 5);
+    
+    await balanceimportees.destroy({
+      where: {
+        id_compte: compteId,
+        id_dossier: fileId,
+        id_exercice: selectedPeriodeId,
+      }
+    });
+
+    // Étape 2: Préparation des données (10%)
+    progress.step('Préparation des données...', 10);
+
+    const preparedData = balanceData.map(item => {
+      let mvtdebit = 0;
+      if (item.mvtdebit !== null && item.mvtdebit !== "") {
+        mvtdebit = item.mvtdebit.replace(',', '.');
+      }
+
+      let mvtcredit = 0;
+      if (item.mvtcredit !== null && item.mvtcredit !== "") {
+        mvtcredit = item.mvtcredit.replace(',', '.');
+      }
+
+      let soldedebit = 0;
+      if (item.soldedebit !== null && item.soldedebit !== "") {
+        soldedebit = item.soldedebit.replace(',', '.');
+      }
+
+      let soldecredit = 0;
+      if (item.soldecredit !== null && item.soldecredit !== "") {
+        soldecredit = item.soldecredit.replace(',', '.');
+      }
+
+      return {
+        id_compte: compteId,
+        id_dossier: fileId,
+        id_exercice: selectedPeriodeId,
+        compte: item.compte,
+        libelle: item.libelle,
+        mvtdebit: mvtdebit,
+        mvtcredit: mvtcredit,
+        soldedebit: soldedebit,
+        soldecredit: soldecredit,
+      };
+    });
+
+    // Étape 3: Import par lots (10% à 90%)
+    await progress.processBatch(
+      preparedData,
+      async (batch) => {
+        await balanceimportees.bulkCreate(batch);
+      },
+      10,
+      90,
+      'Importation en cours...'
+    );
+
+    // Étape 4: Finalisation (95%)
+    progress.step('Finalisation...', 95);
+
+    // Succès
+    progress.complete(
+      `${totalLines} lignes ont été importées avec succès`,
+      { nbrligne: totalLines }
+    );
+
+  } catch (error) {
+    console.error("Erreur import balance :", error);
+    progress.error("Erreur lors de l'import de la balance", error);
+  }
+};
+
+// Wrapper SSE
+const importBalanceWithProgress = withSSEProgress(importBalanceWithProgressLogic, {
+  batchSize: 50
+});
+
 module.exports = {
   createNotExistingCompte,
-  importBalance
+  importBalance,
+  importBalanceWithProgress
 };

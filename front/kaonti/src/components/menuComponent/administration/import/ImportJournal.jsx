@@ -26,9 +26,10 @@ import * as Yup from "yup";
 import Papa from 'papaparse';
 import PopupViewDetailsImportJournal from '../../../componentsTools/popupViewDetailsImportJournal';
 import PopupActionConfirm from '../../../componentsTools/popupActionConfirm';
-import CircularProgress from '@mui/material/CircularProgress';
+import ImportProgressBar from '../../../componentsTools/ImportProgressBar';
 import VirtualTableImportJournal from '../../../componentsTools/Administration/VirtualTableImportJournal';
 import usePermission from '../../../../hooks/usePermission';
+import useSSEImport from '../../../../hooks/useSSEImport';
 
 export default function ImportJournal() {
     const [valSelectCptDispatch, setValSelectCptDispatch] = useState('None');
@@ -62,6 +63,7 @@ export default function ImportJournal() {
 
     const [traitementJournalWaiting, setTraitementJournalWaiting] = useState(false);
     const [traitementJournalMsg, setTraitementJournalMsg] = useState('');
+    const [progressValue, setProgressValue] = useState(0);
     const [longeurCompteStd, setLongeurCompteStd] = useState(0);
 
     //récupération infos de connexion
@@ -70,6 +72,20 @@ export default function ImportJournal() {
     const compteId = decoded.UserInfo.compteId || null;
     const userId = decoded.UserInfo.userId || null;
     const navigate = useNavigate();
+
+    // Hook SSE pour la progression en temps réel
+    const { isImporting, progress: sseProgress, message: sseMessage, currentLine, totalLines, startImport } = useSSEImport();
+
+    // Synchroniser les valeurs SSE avec l'affichage
+    useEffect(() => {
+        if (isImporting) {
+            setProgressValue(sseProgress);
+            const displayMessage = currentLine > 0 && totalLines > 0 
+                ? `${sseMessage} (${currentLine}/${totalLines} lignes)`
+                : sseMessage;
+            setTraitementJournalMsg(displayMessage);
+        }
+    }, [isImporting, sseProgress, sseMessage, currentLine, totalLines]);
 
     //récupérer les informations du dossier sélectionné
     useEffect(() => {
@@ -455,6 +471,7 @@ export default function ImportJournal() {
                     if (validateHeaders(headers)) {
                         setTraitementJournalMsg('Traitement du journal en cours...');
                         setTraitementJournalWaiting(true);
+                        setProgressValue(0);
 
                         //réinitialiser les compteurs d'anomalies
                         const couleurAnom = "#EB5B00";
@@ -719,7 +736,11 @@ export default function ImportJournal() {
                         setMsgAnomalie(msg);
 
                         event.target.value = null;
-                        setTraitementJournalWaiting(false);
+                        setProgressValue(100);
+                        setTimeout(() => {
+                            setTraitementJournalWaiting(false);
+                            setProgressValue(0);
+                        }, 800);
 
                         handleOpenAnomalieDetails();
                     }
@@ -791,18 +812,23 @@ export default function ImportJournal() {
             if (Array.isArray(UpdatedCodeJournal) && Array.isArray(UpdatedPlanComptable)) {
                 setTraitementJournalMsg('Importation du journal en cours...');
                 setTraitementJournalWaiting(true);
+                setProgressValue(0);
                 // transmettre les bornes de l'exercice sélectionné pour filtrer côté backend
                 const allPeriods = [...(listeSituation || []), ...(listeExercice || [])];
                 const selectedObj = allPeriods.find(x => x.id === selectedPeriodeId) || {};
                 const periodeStart = selectedObj.datedebut || selectedObj.date_debut || selectedObj.debut || selectedObj.startDate || null;
                 const periodeEnd = selectedObj.datefin || selectedObj.date_fin || selectedObj.fin || selectedObj.endDate || null;
-                axios.post(`/administration/importJournal/importJournal`, { compteId, userId, fileId, selectedPeriodeId, fileTypeCSV, valSelectCptDispatch, journalData, longeurCompteStd, periodeStart, periodeEnd })
-                    .then((response) => {
-                        const resData = response.data;
-                        if (resData.state) {
+                // Utiliser SSE pour la progression en temps réel
+                startImport(
+                    '/administration/importJournal/importJournalWithProgress',
+                    { compteId, userId, fileId, selectedPeriodeId, fileTypeCSV, valSelectCptDispatch, journalData, longeurCompteStd, periodeStart, periodeEnd },
+                    (eventData) => {
+                        // Succès
+                        setTimeout(() => {
                             setTraitementJournalMsg('');
                             setTraitementJournalWaiting(false);
-                            toast.success(resData.msg, {
+                            setProgressValue(0);
+                            toast.success(eventData.message, {
                                 duration: 15000
                             });
                             setJournalData([]);
@@ -810,18 +836,18 @@ export default function ImportJournal() {
                             setMsgAnomalie([]);
                             setOpenDetailsAnomalie(false);
                             recupPlanComptable();
-                        } else {
-                            setTraitementJournalMsg('');
-                            setTraitementJournalWaiting(false);
-                            toast.error(resData.msg || "Import non effectué", {
-                                duration: 15000
-                            });
-                        }
-                    })
-                    .catch((err) => {
-                        console.error(err);
-                        toast.error(err?.response?.data?.message || err?.message || "Erreur inconnue");
-                    });
+                        }, 800);
+                    },
+                    (error) => {
+                        // Erreur
+                        setTraitementJournalMsg('');
+                        setTraitementJournalWaiting(false);
+                        setProgressValue(0);
+                        toast.error(error || "Import non effectué", {
+                            duration: 15000
+                        });
+                    }
+                );
             }
 
             handleCloseDialogConfirmImport();
@@ -1065,14 +1091,12 @@ export default function ImportJournal() {
                                 </Button>
                             </Stack>
 
-                            {
-                                traitementJournalWaiting
-                                    ? <Stack spacing={2} direction={'row'} width={"100%"} alignItems={'center'} justifyContent={'center'}>
-                                        <CircularProgress />
-                                        <Typography variant='h6' style={{ color: '#2973B2' }}>{traitementJournalMsg}</Typography>
-                                    </Stack>
-                                    : null
-                            }
+                            <ImportProgressBar 
+                                isVisible={traitementJournalWaiting}
+                                message={traitementJournalMsg}
+                                variant="determinate"
+                                progress={progressValue}
+                            />
 
                             <VirtualTableImportJournal tableHeader={columnsTable} tableRow={journalData} />
 

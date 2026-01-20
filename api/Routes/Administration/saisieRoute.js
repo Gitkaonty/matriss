@@ -68,8 +68,11 @@ router.post('/immobilisations/ecritures/generate', saisieController.generateImmo
 // Immobilisations: annuler écritures comptables (journal Imau)
 router.post('/immobilisations/ecritures/cancel', saisieController.cancelImmoEcritures);
 
-// Immobilisations: import CSV
+// Immobilisations: import CSV (version classique)
 router.post('/importImmobilisations', saisieController.importImmobilisations);
+
+// Immobilisations: import CSV avec progression en temps réel (SSE)
+router.post('/importImmobilisationsWithProgress', saisieController.importImmobilisationsWithProgress);
 
 // Rapprochements exports
 router.get('/rapprochements/export/pdf', exportRapprochementsController.exportPdf);
