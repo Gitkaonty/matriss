@@ -142,6 +142,7 @@ const VirtualTableModifiableExport = ({ columns, rows, type, rowsCa }) => {
                           zIndex: 2,
                           backgroundColor: "#f5f5f5"
                         }}
+                        key={key}
                       >
                         {
                           <>
@@ -233,11 +234,11 @@ const VirtualTableModifiableExport = ({ columns, rows, type, rowsCa }) => {
             </TableBody>
             :
             <TableBody>
-              {rowsBalance.map((row) => {
+              {rowsBalance.map((row, key) => {
 
                 return (
                   <TableRow hover
-                    role="checkbox" tabIndex={-1} key={row.id}
+                    role="checkbox" tabIndex={-1} key={key}
                     style={{ height: '20px' }}
 
                   >

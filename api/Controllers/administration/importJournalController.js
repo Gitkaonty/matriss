@@ -1,9 +1,10 @@
 const db = require("../../Models");
 require('dotenv').config();
-const { Op } = require('sequelize');
+const { Op, Sequelize } = require('sequelize');
 const Papa = require("papaparse");
 const fs = require("fs");
 const crypto = require('crypto');
+const { withSSEProgress } = require('../../Middlewares/sseProgressMiddleware');
 
 const fonctionUpdateBalanceSold = require('../../Middlewares/UpdateSolde/updateBalanceSold');
 
@@ -25,6 +26,9 @@ function buildIdEcriture(item) {
 const journals = db.journals;
 const codejournals = db.codejournals;
 const dossierPlanComptable = db.dossierplancomptable;
+const caaxes = db.caAxes;
+const casections = db.caSections;
+const analytiques = db.analytiques;
 
 const createNotExistingCodeJournal = async (req, res) => {
   try {
@@ -416,6 +420,9 @@ const importJournal = async (req, res) => {
               lettragedate: datelettrage || null,
               saisiepar: userId,
               modifierpar: userId || 0,
+              comptegen: rawGen,
+              compteaux: rawAux,
+              libelleaux: item.EcritureLibAux
             });
 
             importSuccess = importSuccess * 1;
@@ -461,6 +468,7 @@ const importJournal = async (req, res) => {
   }
 }
 
+
 const parseToDate = (str) => {
   if (!str) return null;
   if (typeof str === "string") str = str.trim();
@@ -504,7 +512,6 @@ const recupListeImporte = async (req, res) => {
             ...row,
             id: index,
             CompteLib: "",
-            CompAuxLib: ""
           }))
           : result.data;
 
@@ -538,9 +545,380 @@ const recupListeImporte = async (req, res) => {
   }
 }
 
+const importJournalWithProgressLogic = async (req, res, progress) => {
+  try {
+    const { compteId, userId, fileId, selectedPeriodeId, fileTypeCSV, valSelectCptDispatch, journalData, longeurCompteStd, periodeStart, periodeEnd } = req.body;
+
+    if (!Array.isArray(journalData) || journalData.length === 0) {
+      progress.error("Aucune donnée à importer");
+      return;
+    }
+
+    const totalLines = journalData.length;
+    progress.update(0, totalLines, 'Démarrage...', 0);
+
+    progress.step('Préparation de l\'import...', 5);
+
+    if (valSelectCptDispatch === 'ECRASER') {
+      await journals.destroy({
+        where: {
+          id_compte: Number(compteId),
+          id_dossier: Number(fileId),
+          id_exercice: Number(selectedPeriodeId),
+        }
+      });
+    }
+
+    progress.step('Vérification des devises...', 10);
+
+    const deviseCodes = [...new Set((journalData || [])
+      .map(r => (r.Idevise || '').trim())
+      .filter(v => v))];
+    if (!deviseCodes.includes('MGA')) deviseCodes.push('MGA');
+
+    for (const code of deviseCodes) {
+      const existing = await db.Devise.findOne({ where: { id_compte: compteId, id_dossier: fileId, code } });
+      if (!existing) await db.Devise.create({ id_compte: compteId, id_dossier: fileId, code, libelle: code });
+    }
+
+    const allDevises = await db.Devise.findAll({ where: { id_compte: compteId, id_dossier: fileId }, raw: true });
+    const deviseMap = new Map(allDevises.map(dv => [dv.code, dv.id]));
+    const defaultDeviseId = deviseMap.get('MGA');
+
+    progress.step('Traitement des écritures...', 15);
+
+    const grouped = journalData.reduce((acc, item) => {
+      const key = item.EcritureNum;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(item);
+      return acc;
+    }, {});
+
+    const toMidnight = (d) => { if (!d) return null; const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+    const debutExo = toMidnight(periodeStart);
+    const finExo = toMidnight(periodeEnd);
+
+    let importedCount = 0;
+    const ecritureKeys = Object.keys(grouped);
+
+    const normalizeAnalytiqueDisplay = (v) => String(v || '').trim().replace(/\s+/g, ' ');
+    const normalizeAnalytiqueKey = (v) => normalizeAnalytiqueDisplay(v).toUpperCase();
+
+    // Récupérer toutes les sections uniques de la colonne Analytique (insensible à la casse)
+    const analytiqueUniqueByKey = new Map();
+    for (const row of (journalData || [])) {
+      const display = normalizeAnalytiqueDisplay(row.Analytique);
+      if (!display) continue;
+      const key = normalizeAnalytiqueKey(display);
+      if (!analytiqueUniqueByKey.has(key)) {
+        analytiqueUniqueByKey.set(key, display);
+      }
+    }
+    const allAnalytiqueValues = Array.from(analytiqueUniqueByKey.values());
+
+    // Créer ou récupérer l'axe "axe1"
+    let axe = await caaxes.findOne({
+      where: {
+        code: 'axe1',
+        id_compte: Number(compteId),
+        id_dossier: Number(fileId)
+      }
+    });
+
+    if (!axe) {
+      axe = await caaxes.create({
+        code: 'axe1',
+        libelle: 'axe1',
+        id_compte: Number(compteId),
+        id_dossier: Number(fileId)
+      });
+    }
+
+    // Créer les sections uniques si elles n'existent pas
+    // sectionMap est indexé par clé normalisée (upper + trim)
+    const sectionMap = new Map();
+    const pourcentageParSection = allAnalytiqueValues.length > 0 ? (100 / allAnalytiqueValues.length) : 100;
+    let firstCompteFound = null;
+    let createdInAxe1 = false;
+
+    for (const analytiqueValue of allAnalytiqueValues) {
+      const analytiqueKey = normalizeAnalytiqueKey(analytiqueValue);
+      let section = await casections.findOne({
+        where: {
+          [Op.and]: [
+            Sequelize.where(
+              Sequelize.fn('upper', Sequelize.col('section')),
+              analytiqueKey
+            )
+          ],
+          id_compte: Number(compteId),
+          id_dossier: Number(fileId)
+        }
+      });
+
+      if (!section) {
+        section = await casections.create({
+          section: analytiqueValue,
+          intitule: analytiqueValue,
+          compte: firstCompteFound || '', // Utiliser le premier compte trouvé
+          pourcentage: pourcentageParSection,
+          par_defaut: false,
+          fermer: false,
+          id_compte: Number(compteId),
+          id_dossier: Number(fileId),
+          id_axe: axe.id
+        });
+        createdInAxe1 = true;
+      }
+
+      sectionMap.set(analytiqueKey, section);
+    }
+
+    // Recalculer les pourcentages sur l'ensemble des sections de axe1
+    // uniquement si on a créé au moins une nouvelle section dans axe1 pendant cet import
+    if (createdInAxe1) {
+      const allSectionsForAxe = await casections.findAll({
+        where: {
+          id_axe: axe.id,
+          id_compte: Number(compteId),
+          id_dossier: Number(fileId)
+        }
+      });
+
+      if (Array.isArray(allSectionsForAxe) && allSectionsForAxe.length > 0) {
+        const pct = Number((100 / allSectionsForAxe.length).toFixed(2));
+        await Promise.all(
+          allSectionsForAxe.map((s) => s.update({ pourcentage: pct }))
+        );
+      }
+    }
+
+    // Traiter par lots d'écritures, mais afficher la progression en lignes
+    const batchSize = 20;
+    let processedLines = 0;
+
+    for (let i = 0; i < ecritureKeys.length; i += batchSize) {
+      const batch = ecritureKeys.slice(i, i + batchSize);
+
+      for (let ecritureNum of batch) {
+        const lines = grouped[ecritureNum];
+        const newIdEcriture = buildIdEcriture(lines[0]);
+
+        for (let item of lines) {
+          try {
+            const rawAux = String(item.CompAuxNum || '').trim();
+            const rawGen = String(item.CompteNum || '').trim();
+            const isGenDigits = /^\d+$/.test(rawGen);
+            const paddedGen = isGenDigits ? rawGen.padEnd(longeurCompteStd, '0').slice(0, longeurCompteStd) : rawGen;
+
+            const normCode = String(item.JournalCode || '').trim().toUpperCase();
+            let idCodeJournal = await codejournals.findOne({
+              where: { id_compte: compteId, id_dossier: fileId, code: normCode },
+            });
+            if (!idCodeJournal && normCode) {
+              idCodeJournal = await codejournals.create({ id_compte: compteId, id_dossier: fileId, code: normCode, libelle: normCode, type: 'OD' });
+            }
+            const codeJournalId = idCodeJournal?.id || 0;
+
+            let foundCompte = null;
+            let foundAux = null;
+            let foundGen = null;
+
+            if (rawAux) {
+              foundAux = await dossierPlanComptable.findOne({ where: { id_compte: compteId, id_dossier: fileId, compte: rawAux } });
+            }
+
+            foundGen = await dossierPlanComptable.findOne({
+              where: {
+                id_compte: compteId,
+                id_dossier: fileId,
+                [Op.or]: [{ compte: rawGen }, { compte: paddedGen }]
+              },
+            });
+            foundCompte = foundAux || foundGen;
+
+            if (!foundCompte) {
+              let genCompte = null;
+              if (isGenDigits && paddedGen) {
+                genCompte = await dossierPlanComptable.findOne({ where: { id_compte: compteId, id_dossier: fileId, compte: paddedGen } });
+                if (!genCompte) {
+                  genCompte = await dossierPlanComptable.create({
+                    id_compte: compteId,
+                    id_dossier: fileId,
+                    compte: paddedGen,
+                    libelle: '',
+                    nature: 'General',
+                    typetier: 'general',
+                    baseaux: paddedGen,
+                    pays: 'Madagascar',
+                  });
+                  await db.sequelize.query(
+                    `UPDATE dossierplancomptables SET baseaux_id = id WHERE id = :id`,
+                    { replacements: { id: genCompte.id }, type: db.Sequelize.QueryTypes.UPDATE }
+                  );
+                }
+              }
+              if (rawAux) {
+                let createdAux = await dossierPlanComptable.findOne({ where: { id_compte: compteId, id_dossier: fileId, compte: rawAux } });
+                if (!createdAux) {
+                  createdAux = await dossierPlanComptable.create({
+                    id_compte: compteId,
+                    id_dossier: fileId,
+                    compte: rawAux,
+                    libelle: '',
+                    nature: 'Aux',
+                    typetier: 'sans-nif',
+                    pays: 'Madagascar',
+                    baseaux: genCompte?.id || 0,
+                  });
+                }
+                foundCompte = createdAux || genCompte;
+              } else if (genCompte) {
+                foundCompte = genCompte;
+              }
+              if (!foundCompte) continue;
+            }
+
+            if (rawAux && !foundAux && foundGen) {
+              let createdAux = await dossierPlanComptable.findOne({ where: { id_compte: compteId, id_dossier: fileId, compte: rawAux } });
+              if (!createdAux) {
+                createdAux = await dossierPlanComptable.create({
+                  id_compte: compteId,
+                  id_dossier: fileId,
+                  compte: rawAux,
+                  libelle: '',
+                  nature: 'Aux',
+                  typetier: 'sans-nif',
+                  pays: 'Madagascar',
+                  baseaux: foundGen.id,
+                });
+              }
+              foundCompte = createdAux;
+            }
+
+            const compteNumId = foundCompte.id;
+            const IdCompAuxNum = foundCompte.baseaux_id || foundCompte.id;
+
+            const normalizeAmount = (val) => {
+              if (val == null) return 0;
+              let s = String(val).trim();
+              if (!s) return 0;
+              s = s.replace(/\s+/g, '');
+              if (s.includes(',') && s.includes('.')) {
+                s = s.replace(/\./g, '').replace(/,/g, '.');
+              } else if (s.includes(',')) {
+                s = s.replace(/,/g, '.');
+              }
+              const n = parseFloat(s);
+              return isNaN(n) ? 0 : n;
+            };
+            const debit = normalizeAmount(item.Debit);
+            const credit = normalizeAmount(item.Credit);
+
+            const dateEcrit = toMidnight(parseDate(item.EcritureDate));
+            const datePiece = toMidnight(parseDate(item.PieceDate));
+            const datelettrage = toMidnight(parseDate(item.DateLet));
+
+            // Ignorer les lignes sans date d'écriture
+            if (!dateEcrit) {
+              processedLines++;
+              continue;
+            }
+
+            if (debutExo || finExo) {
+              const afterStart = debutExo ? (dateEcrit && dateEcrit >= debutExo) : true;
+              const beforeEnd = finExo ? (dateEcrit && dateEcrit <= finExo) : true;
+              if (!(afterStart && beforeEnd)) {
+                processedLines++;
+                continue;
+              }
+            }
+
+            const devCode = String(item.Idevise || '').trim() || 'MGA';
+            const devId = deviseMap.get(devCode) || defaultDeviseId || 0;
+
+            const journalEntry = await journals.create({
+              id_compte: Number(compteId),
+              id_dossier: Number(fileId),
+              id_exercice: Number(selectedPeriodeId),
+              id_ecriture: newIdEcriture,
+              dateecriture: dateEcrit,
+              id_journal: codeJournalId,
+              id_numcpt: compteNumId,
+              id_numcptcentralise: IdCompAuxNum,
+              piece: item.PieceRef || '',
+              piecedate: datePiece,
+              libelle: String(item.EcritureLib || '').substring(0, 100),
+              debit: debit,
+              credit: credit,
+              id_devise: devId || 0,
+              devise: devCode,
+              lettrage: item.EcritureLet || null,
+              lettragedate: datelettrage || null,
+              saisiepar: Number(userId),
+              modifierpar: Number(userId) || 0,
+            });
+
+            // Gestion de la colonne analytique
+            const analytiqueValue = normalizeAnalytiqueDisplay(item.Analytique);
+            if (analytiqueValue && (debit !== 0 || credit !== 0)) {
+              // Récupérer la section existante dans le sectionMap
+              const section = sectionMap.get(normalizeAnalytiqueKey(analytiqueValue));
+              
+              if (section) {
+                // Insérer dans analytiques en utilisant l'ID de la section existante
+                await analytiques.create({
+                  id_compte: Number(compteId),
+                  id_exercice: Number(selectedPeriodeId),
+                  id_dossier: Number(fileId),
+                  id_axe: section.id_axe,
+                  id_section: section.id,
+                  id_ligne_ecriture: journalEntry.id,
+                  debit: debit,
+                  credit: credit,
+                  pourcentage: 100
+                });
+              }
+            }
+
+            importedCount++;
+            processedLines++;
+          } catch (error) {
+            console.error('Erreur ligne:', error);
+            processedLines++;
+          }
+        }
+      }
+
+      // Mettre à jour la progression après chaque lot
+      const batchProgress = 15 + Math.floor((processedLines / totalLines) * 70);
+      progress.update(processedLines, totalLines, 'Importation des écritures...', batchProgress);
+    }
+
+    progress.step('Mise à jour des soldes...', 90);
+    fonctionUpdateBalanceSold.updateSold(compteId, fileId, selectedPeriodeId, [], true);
+
+    progress.step('Finalisation...', 95);
+
+    progress.complete(
+      `${importedCount} lignes ont été importées avec succès`,
+      { nbrligne: importedCount }
+    );
+
+  } catch (error) {
+    console.error("Erreur import journal :", error);
+    progress.error("Erreur lors de l'import du journal", error);
+  }
+};
+
+const importJournalWithProgress = withSSEProgress(importJournalWithProgressLogic, {
+  batchSize: 20
+});
+
 module.exports = {
   createNotExistingCodeJournal,
   createNotExistingCompte,
   importJournal,
+  importJournalWithProgress,
   recupListeImporte
 };

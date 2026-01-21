@@ -26,7 +26,7 @@ const PopupAddSaisieFromConsultation = ({ confirmationState, listePlanComptable,
     const [valSelectedCompteContrepartie, setValSelectedCompteConterpartie] = useState('');
 
     const addEcriture = () => {
-        if (!valSelectedCompte) {
+        if (!valSelectedCompteContrepartie) {
             return toast.error("Veuillez sélectionner le compte de contre partie s\'il vous plaît");
         }
         axios.post('/administration/traitementSaisie/addEcriture', {

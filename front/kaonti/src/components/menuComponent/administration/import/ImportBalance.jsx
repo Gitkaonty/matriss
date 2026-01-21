@@ -31,9 +31,10 @@ import QuickFilter from '../../../componentsTools/DatagridToolsStyle';
 import { DataGridStyle } from '../../../componentsTools/DatagridToolsStyle';
 import PopupViewDetailsImportBalance from '../../../componentsTools/popupViewDetailsImportBalance';
 import PopupActionConfirm from '../../../componentsTools/popupActionConfirm';
-import CircularProgress from '@mui/material/CircularProgress';
+import ImportProgressBar from '../../../componentsTools/ImportProgressBar';
 import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFile';
 import VirtualTableModifiableImportJnl from '../../../componentsTools/DeclarationEbilan/virtualTableModifiableImportJnl';
+import useSSEImport from '../../../../hooks/useSSEImport';
 
 export default function ImportBalance() {
     //Valeur du listbox choix exercice ou situation-----------------------------------------------------
@@ -52,6 +53,20 @@ export default function ImportBalance() {
     const userId = decoded.UserInfo.userId || null;
     const navigate = useNavigate();
 
+    // Hook SSE pour la progression en temps réel
+    const { isImporting, progress: sseProgress, message: sseMessage, currentLine, totalLines, startImport } = useSSEImport();
+
+    // Synchroniser les valeurs SSE avec l'affichage
+    useEffect(() => {
+        if (isImporting) {
+            setProgressValue(sseProgress);
+            const displayMessage = currentLine > 0 && totalLines > 0 
+                ? `${sseMessage} (${currentLine}/${totalLines} lignes)`
+                : sseMessage;
+            setTraitementBalanceMsg(displayMessage);
+        }
+    }, [isImporting, sseProgress, sseMessage, currentLine, totalLines]);
+
     const [selectedExerciceId, setSelectedExerciceId] = useState(0);
     const [selectedPeriodeId, setSelectedPeriodeId] = useState(0);
     const [selectedPeriodeChoiceId, setSelectedPeriodeChoiceId] = useState(0);
@@ -67,6 +82,7 @@ export default function ImportBalance() {
     const [msgAnomalie, setMsgAnomalie] = useState([]);
     const [traitementBalanceWaiting, setTraitementBalanceWaiting] = useState(false);
     const [traitementBalanceMsg, setTraitementBalanceMsg] = useState('');
+    const [progressValue, setProgressValue] = useState(0);
     const [compteToCreate, setCompteToCreate] = useState([]);
     const [balanceDesequilibre, setBalanceDesequilibre] = useState(false);
     const [openDialogConfirmImport, setOpenDialogConfirmImport] = useState(false);
@@ -569,6 +585,7 @@ export default function ImportBalance() {
                     if (validateHeaders(headers)) {
                         setTraitementBalanceMsg('Traitement des données de la balance en cours...');
                         setTraitementBalanceWaiting(true);
+                        setProgressValue(0);
 
                         //réinitialiser les compteurs d'anomalies
                         const couleurAnom = "#EB5B00";
@@ -617,7 +634,11 @@ export default function ImportBalance() {
                         setCompteToCreate(cptToCreate);
 
                         event.target.value = null;
-                        setTraitementBalanceWaiting(false);
+                        setProgressValue(100);
+                        setTimeout(() => {
+                            setTraitementBalanceWaiting(false);
+                            setProgressValue(0);
+                        }, 800);
 
                         handleOpenAnomalieDetails();
                     }
@@ -660,22 +681,32 @@ export default function ImportBalance() {
             if (UpdatedPlanComptable.length > 0) {
                 setTraitementBalanceMsg('Import de la balance en cours...');
                 setTraitementBalanceWaiting(true);
+                setProgressValue(0);
 
-                axios.post(`/administration/importBalance/importBalance`, { compteId, userId, fileId, selectedPeriodeId, balanceData }).then((response) => {
-                    const resData = response.data;
-                    if (resData.state) {
+                // Utiliser SSE pour la progression en temps réel
+                startImport(
+                    '/administration/importBalance/importBalanceWithProgress',
+                    { compteId, userId, fileId, selectedPeriodeId, balanceData },
+                    (eventData) => {
+                        // Succès
+                        setTimeout(() => {
+                            setTraitementBalanceMsg('');
+                            setTraitementBalanceWaiting(false);
+                            setProgressValue(0);
+                            toast.success(eventData.message);
+                            setBalanceData([]);
+                            setNbrAnomalie(0);
+                            setMsgAnomalie([]);
+                        }, 800);
+                    },
+                    (error) => {
+                        // Erreur
                         setTraitementBalanceMsg('');
                         setTraitementBalanceWaiting(false);
-                        toast.success(resData.msg);
-                        setBalanceData([]);
-                        setNbrAnomalie(0);
-                        setMsgAnomalie([]);
-                    } else {
-                        setTraitementBalanceMsg('');
-                        setTraitementBalanceWaiting(false);
-                        toast.error(resData.msg);
+                        setProgressValue(0);
+                        toast.error(error || "Erreur lors de l'import");
                     }
-                });
+                );
             }
 
             handleCloseDialogConfirmImport();
@@ -841,14 +872,12 @@ export default function ImportBalance() {
                                 </Button>
                             </Stack>
 
-                            {traitementBalanceWaiting
-                                ? <Stack spacing={2} direction={'row'} width={"100%"} alignItems={'center'} justifyContent={'center'}>
-                                    <CircularProgress />
-                                    <Typography variant='h6' style={{ color: '#2973B2' }}>{traitementBalanceMsg}</Typography>
-                                    {/* <CircularProgressWithValueLabel value={50} msg={"Traitement du journal en cours..."} /> */}
-                                </Stack>
-                                : null
-                            }
+                            <ImportProgressBar 
+                                isVisible={traitementBalanceWaiting}
+                                message={traitementBalanceMsg}
+                                variant="determinate"
+                                progress={progressValue}
+                            />
 
                             <Stack width={"85%"} height={'50vh'}>
                                 <VirtualTableModifiableImportJnl columns={columns} rows={balanceData} state={true} />

@@ -71,6 +71,9 @@ router.post('/immobilisations/ecritures/cancel', saisieController.cancelImmoEcri
 // Immobilisations: import CSV
 router.post('/importImmobilisations', verifyJWT, verifyPermission('ADD'), saisieController.importImmobilisations);
 
+// Immobilisations: import CSV avec progression en temps réel (SSE)
+router.post('/importImmobilisationsWithProgress', saisieController.importImmobilisationsWithProgress);
+
 // Rapprochements exports
 router.get('/rapprochements/export/pdf', exportRapprochementsController.exportPdf);
 router.get('/rapprochements/export/excel', exportRapprochementsController.exportExcel);

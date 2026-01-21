@@ -26,9 +26,10 @@ import * as Yup from "yup";
 import Papa from 'papaparse';
 import PopupViewDetailsImportJournal from '../../../componentsTools/popupViewDetailsImportJournal';
 import PopupActionConfirm from '../../../componentsTools/popupActionConfirm';
-import CircularProgress from '@mui/material/CircularProgress';
+import ImportProgressBar from '../../../componentsTools/ImportProgressBar';
 import VirtualTableImportJournal from '../../../componentsTools/Administration/VirtualTableImportJournal';
 import usePermission from '../../../../hooks/usePermission';
+import useSSEImport from '../../../../hooks/useSSEImport';
 
 export default function ImportJournal() {
     const [valSelectCptDispatch, setValSelectCptDispatch] = useState('None');
@@ -62,6 +63,7 @@ export default function ImportJournal() {
 
     const [traitementJournalWaiting, setTraitementJournalWaiting] = useState(false);
     const [traitementJournalMsg, setTraitementJournalMsg] = useState('');
+    const [progressValue, setProgressValue] = useState(0);
     const [longeurCompteStd, setLongeurCompteStd] = useState(0);
 
     //récupération infos de connexion
@@ -70,6 +72,20 @@ export default function ImportJournal() {
     const compteId = decoded.UserInfo.compteId || null;
     const userId = decoded.UserInfo.userId || null;
     const navigate = useNavigate();
+
+    // Hook SSE pour la progression en temps réel
+    const { isImporting, progress: sseProgress, message: sseMessage, currentLine, totalLines, startImport } = useSSEImport();
+
+    // Synchroniser les valeurs SSE avec l'affichage
+    useEffect(() => {
+        if (isImporting) {
+            setProgressValue(sseProgress);
+            const displayMessage = currentLine > 0 && totalLines > 0 
+                ? `${sseMessage} (${currentLine}/${totalLines} lignes)`
+                : sseMessage;
+            setTraitementJournalMsg(displayMessage);
+        }
+    }, [isImporting, sseProgress, sseMessage, currentLine, totalLines]);
 
     //récupérer les informations du dossier sélectionné
     useEffect(() => {
@@ -137,43 +153,22 @@ export default function ImportJournal() {
             isnumber: false
         },
         {
-            id: 'JournalCode',
-            label: 'Journal',
-            minWidth: 80,
-            align: 'left',
-            isnumber: false
-        },
-        {
             id: 'CompteNum',
-            label: 'Compte',
+            label: 'Compte gen.',
             minWidth: 150,
             align: 'left',
             isnumber: false
         },
         {
             id: 'CompAuxNum',
-            label: 'Compte aux',
+            label: 'Compte centr.',
             minWidth: 150,
             align: 'left',
-            isnumber: false
-        },
-        {
-            id: 'PieceRef',
-            label: 'Pièces',
-            minWidth: 150,
-            align: 'left',
-            isnumber: false
-        },
-        {
-            id: 'PieceDate',
-            label: 'Pièce date',
-            minWidth: 150,
-            align: 'center',
             isnumber: false
         },
         {
             id: 'EcritureLib',
-            label: 'Libellé',
+            label: 'Libellé gen.',
             minWidth: 380,
             align: 'left',
             isnumber: false
@@ -203,6 +198,27 @@ export default function ImportJournal() {
                     : '';
             },
             isnumber: true
+        },
+        {
+            id: 'JournalCode',
+            label: 'Journal',
+            minWidth: 80,
+            align: 'left',
+            isnumber: false
+        },
+        {
+            id: 'PieceRef',
+            label: 'Pièces',
+            minWidth: 150,
+            align: 'left',
+            isnumber: false
+        },
+        {
+            id: 'PieceDate',
+            label: 'Pièce date',
+            minWidth: 150,
+            align: 'center',
+            isnumber: false
         },
         {
             id: 'Idevise',
@@ -237,6 +253,13 @@ export default function ImportJournal() {
             label: 'Date règl.',
             minWidth: 120,
             align: 'center',
+            isnumber: false
+        },
+        {
+            id: 'Analytique',
+            label: 'Analytique',
+            minWidth: 150,
+            align: 'left',
             isnumber: false
         },
     ];
@@ -400,8 +423,8 @@ export default function ImportJournal() {
     const validateHeaders = (headers) => {
 
         let expectedHeaders = [];
-        const expectedHeadersCSV = ["EcritureNum", "datesaisie", "EcritureDate", "JournalCode", "CompteNum", "CompAuxNum", "PieceRef", "PieceDate", "EcritureLib", "Debit", "Credit", "Idevise", "EcritureLet", "DateLet", "ModeRglt"];
-        const expectedHeadersFEC = ["EcritureNum", "EcritureDate", "JournalCode", "CompteNum", "CompAuxNum", "PieceRef", "PieceDate", "EcritureLib", "Debit", "Credit", "Idevise", "EcritureLet", "DateLet"];
+        const expectedHeadersCSV = ["EcritureNum", "datesaisie", "EcritureDate", "JournalCode", "CompteNum", "CompAuxNum", "PieceRef", "PieceDate", "EcritureLib", "Debit", "Credit", "Idevise", "EcritureLet", "DateLet", "ModeRglt", "Analytique"];
+        const expectedHeadersFEC = ["EcritureNum", "EcritureDate", "JournalCode", "CompteNum", "CompAuxNum", "PieceRef", "PieceDate", "EcritureLib", "Debit", "Credit", "Idevise", "EcritureLet", "DateLet", "Analytique"];
 
         if (fileTypeCSV) {
             expectedHeaders = expectedHeadersCSV;
@@ -409,8 +432,9 @@ export default function ImportJournal() {
             expectedHeaders = expectedHeadersFEC;
         }
 
-        // Comparer les en-têtes du CSV aux en-têtes attendus
-        const missingHeaders = expectedHeaders.filter(header => !headers.includes(header));
+        // Comparer les en-têtes du CSV aux en-têtes attendus (sauf Analytique qui est optionnelle)
+        const requiredHeaders = expectedHeaders.filter(h => h !== 'Analytique');
+        const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
         if (missingHeaders.length > 0) {
             toast.error(`Les en-têtes du modèle d'import suivants sont manquants : ${missingHeaders.join(', ')}`);
             return false;
@@ -455,6 +479,7 @@ export default function ImportJournal() {
                     if (validateHeaders(headers)) {
                         setTraitementJournalMsg('Traitement du journal en cours...');
                         setTraitementJournalWaiting(true);
+                        setProgressValue(0);
 
                         //réinitialiser les compteurs d'anomalies
                         const couleurAnom = "#EB5B00";
@@ -657,13 +682,13 @@ export default function ImportJournal() {
                             });
 
                             if (missingDate.length > 0) {
-                                msg.push("Certaines lignes n'ont pas de date d'écriture valide: elles seront ignorées");
+                                msg.push("Certaines lignes n'ont pas de date d'écriture valide: elles seront ignorées.");
                                 nbrAnom = nbrAnom + 1;
                                 setNbrAnomalie(nbrAnom);
                                 setCouleurBoutonAnomalie(couleurAnom);
                             }
                             if (outOfRange.length > 0) {
-                                msg.push("Certaines lignes ne seront pas importées car leur date d'écriture est en dehors de l'exercice");
+                                msg.push("Certaines lignes ne seront pas importées car leur date d'écriture est en dehors de l'exercice.");
                                 nbrAnom = nbrAnom + 1;
                                 setNbrAnomalie(nbrAnom);
                                 setCouleurBoutonAnomalie(couleurAnom);
@@ -677,9 +702,15 @@ export default function ImportJournal() {
                             });
                         }
 
+                        const finalDataCompteFormatted = finalData.map(item => ({
+                            ...item,
+                            CompteNum: padCompte(item.CompteNum),
+                            CompAuxNum: padCompte(item.CompAuxNum)
+                        }));
+
                         //const dataWithFooter = [...finalData, footerRow];
-                        setJournalData(finalData);
-                        formikImport.setFieldValue('journalData', finalData);
+                        setJournalData(finalDataCompteFormatted);
+                        formikImport.setFieldValue('journalData', finalDataCompteFormatted);
 
                         const mapGen = new Map();
 
@@ -691,7 +722,7 @@ export default function ImportJournal() {
                             if (compteNotInParamsGen.includes(compte) && !mapGen.has(compte)) {
                                 mapGen.set(compte, {
                                     CompteNum: compte,
-                                    CompteLib: item.CompteLib
+                                    CompteLib: item.EcritureLib
                                 });
                             }
                         });
@@ -708,7 +739,7 @@ export default function ImportJournal() {
                             if (compteNotInParamsAux.includes(compte) && !mapAux.has(compte)) {
                                 mapAux.set(compte, {
                                     CompAuxNum: compte,
-                                    CompAuxLib: item.CompAuxLib,
+                                    CompAuxLib: item.EcritureLib,
                                     CompteNum: item.CompteNum?.toString()?.padEnd(longeurCompteStd, "0")?.slice(0, longeurCompteStd) || ''
                                 });
                             }
@@ -722,7 +753,11 @@ export default function ImportJournal() {
                         setMsgAnomalie(msg);
 
                         event.target.value = null;
-                        setTraitementJournalWaiting(false);
+                        setProgressValue(100);
+                        setTimeout(() => {
+                            setTraitementJournalWaiting(false);
+                            setProgressValue(0);
+                        }, 800);
 
                         handleOpenAnomalieDetails();
                     }
@@ -780,8 +815,8 @@ export default function ImportJournal() {
 
     const handleImportJournal = async (value) => {
         if (value) {
-            const UpdatedCodeJournal = await createCodeJournalNotExisting();
             const UpdatedPlanComptable = await createCompteNotExisting();
+            const UpdatedCodeJournal = await createCodeJournalNotExisting();
 
             if (!Array.isArray(UpdatedCodeJournal)) {
                 toast.error("Un problème est survenu lors de la création des codes journaux manquants.");
@@ -794,18 +829,23 @@ export default function ImportJournal() {
             if (Array.isArray(UpdatedCodeJournal) && Array.isArray(UpdatedPlanComptable)) {
                 setTraitementJournalMsg('Importation du journal en cours...');
                 setTraitementJournalWaiting(true);
+                setProgressValue(0);
                 // transmettre les bornes de l'exercice sélectionné pour filtrer côté backend
                 const allPeriods = [...(listeSituation || []), ...(listeExercice || [])];
                 const selectedObj = allPeriods.find(x => x.id === selectedPeriodeId) || {};
                 const periodeStart = selectedObj.datedebut || selectedObj.date_debut || selectedObj.debut || selectedObj.startDate || null;
                 const periodeEnd = selectedObj.datefin || selectedObj.date_fin || selectedObj.fin || selectedObj.endDate || null;
-                axios.post(`/administration/importJournal/importJournal`, { compteId, userId, fileId, selectedPeriodeId, fileTypeCSV, valSelectCptDispatch, journalData, longeurCompteStd, periodeStart, periodeEnd })
-                    .then((response) => {
-                        const resData = response.data;
-                        if (resData.state) {
+                // Utiliser SSE pour la progression en temps réel
+                startImport(
+                    '/administration/importJournal/importJournalWithProgress',
+                    { compteId, userId, fileId, selectedPeriodeId, fileTypeCSV, valSelectCptDispatch, journalData, longeurCompteStd, periodeStart, periodeEnd },
+                    (eventData) => {
+                        // Succès
+                        setTimeout(() => {
                             setTraitementJournalMsg('');
                             setTraitementJournalWaiting(false);
-                            toast.success(resData.msg, {
+                            setProgressValue(0);
+                            toast.success(eventData.message, {
                                 duration: 15000
                             });
                             setJournalData([]);
@@ -813,18 +853,18 @@ export default function ImportJournal() {
                             setMsgAnomalie([]);
                             setOpenDetailsAnomalie(false);
                             recupPlanComptable();
-                        } else {
-                            setTraitementJournalMsg('');
-                            setTraitementJournalWaiting(false);
-                            toast.error(resData.msg || "Import non effectué", {
-                                duration: 15000
-                            });
-                        }
-                    })
-                    .catch((err) => {
-                        console.error(err);
-                        toast.error(err?.response?.data?.message || err?.message || "Erreur inconnue");
-                    });
+                        }, 800);
+                    },
+                    (error) => {
+                        // Erreur
+                        setTraitementJournalMsg('');
+                        setTraitementJournalWaiting(false);
+                        setProgressValue(0);
+                        toast.error(error || "Import non effectué", {
+                            duration: 15000
+                        });
+                    }
+                );
             }
 
             handleCloseDialogConfirmImport();
@@ -1068,14 +1108,12 @@ export default function ImportJournal() {
                                 </Button>
                             </Stack>
 
-                            {
-                                traitementJournalWaiting
-                                    ? <Stack spacing={2} direction={'row'} width={"100%"} alignItems={'center'} justifyContent={'center'}>
-                                        <CircularProgress />
-                                        <Typography variant='h6' style={{ color: '#2973B2' }}>{traitementJournalMsg}</Typography>
-                                    </Stack>
-                                    : null
-                            }
+                            <ImportProgressBar 
+                                isVisible={traitementJournalWaiting}
+                                message={traitementJournalMsg}
+                                variant="determinate"
+                                progress={progressValue}
+                            />
 
                             <VirtualTableImportJournal tableHeader={columnsTable} tableRow={journalData} />
 
