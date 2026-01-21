@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Stack, Box, FormControl, Input, TextField } from '@mui/material';
+import { Stack, Box, FormControl, Input, TextField, Dialog, DialogContent, DialogActions, Button, Typography } from '@mui/material';
 import { IconButton, Tooltip, Checkbox } from '@mui/material';
 
 import { IoMdTrash } from "react-icons/io";
@@ -52,6 +52,11 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
     const [openDialogDeleteRow, setOpenDialogDeleteRow] = useState(false);
     const [openImportPopup, setOpenImportPopup] = useState(false);
     const [disableDefaultFieldModif, setDisableDefaultFieldModif] = useState(false);
+
+    const [openRecalcPopup, setOpenRecalcPopup] = useState(false);
+    const [pendingSavePayload, setPendingSavePayload] = useState(null);
+    const [pendingAction, setPendingAction] = useState(null); // 'add'
+    const [recalcChoiceForNewRow, setRecalcChoiceForNewRow] = useState(null); // 'oui' | 'non'
 
     //formulaire pour la sauvegarde
     const formNewParam = useFormik({
@@ -340,6 +345,7 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
     };
 
     const handleSaveClick = (id) => async () => {
+
         let saveBoolSection = false;
         let saveBoolIntitule = false;
         let saveBoolCompte = false;
@@ -388,7 +394,15 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
                 [id]: { mode: GridRowModes.View, ignoreModifications: true },
             });
 
-            const dataToSend = { ...formNewParam.values, compteId: id_compte, fileId: id_dossier, axeId: selectedRowAxeId[0] };
+            const isNewRow = Array.isArray(id) && id.length === 1 && Number(id[0]) < 0;
+
+            const dataToSend = {
+                ...formNewParam.values,
+                compteId: id_compte,
+                fileId: id_dossier,
+                axeId: selectedRowAxeId[0],
+                ...(isNewRow && recalcChoiceForNewRow ? { recalcPourcentages: recalcChoiceForNewRow } : {})
+            };
 
             axiosPrivate.post(`/paramCa/addOrUpdateSections`, dataToSend).then((response) => {
                 const resData = response.data;
@@ -406,6 +420,89 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
         } else {
             toast.error('Les champs en surbrillances sont obligatoires');
         }
+    };
+
+    const confirmRecalcPourcentages = (choice) => {
+        const payload = pendingSavePayload;
+        setOpenRecalcPopup(false);
+        setPendingSavePayload(null);
+        const action = pendingAction;
+        setPendingAction(null);
+
+        if (action === 'add') {
+            setRecalcChoiceForNewRow(choice);
+            const newId = -Date.now();
+
+            // Si on choisit Oui => on recalcul immédiatement les % dans la grille
+            if (choice === 'oui') {
+                const existingCount = Array.isArray(sectionsData) ? sectionsData.length : 0;
+                const nextCount = existingCount + 1;
+                const pct = nextCount > 0 ? Number((100 / nextCount).toFixed(2)) : 100;
+
+                const updatedExisting = (sectionsData || []).map((row) => ({
+                    ...row,
+                    pourcentage: pct
+                }));
+
+                const newRow = {
+                    id: newId,
+                    section: '',
+                    intitule: '',
+                    compte: '',
+                    pourcentage: pct,
+                    par_defaut: false,
+                    fermer: false
+                };
+
+                setSectionsData([...updatedExisting, newRow]);
+                formNewParam.setFieldValue("id", newId);
+                formNewParam.setFieldValue("pourcentage", pct);
+                setSelectedRowId([newId]);
+                setSelectedRowSectionId([newId]);
+                setDisableAddRowBouton(true);
+                return;
+            }
+
+            // Si Non => on ajoute la ligne, l'utilisateur saisit les % à la main
+            const newRow = {
+                id: newId,
+                section: '',
+                intitule: '',
+                compte: '',
+                pourcentage: '',
+                par_defaut: false,
+                fermer: false
+            };
+
+            setSectionsData([...(sectionsData || []), newRow]);
+            formNewParam.setFieldValue("id", newId);
+            formNewParam.setFieldValue("pourcentage", '');
+            setSelectedRowId([newId]);
+            setSelectedRowSectionId([newId]);
+            setDisableAddRowBouton(true);
+            return;
+        }
+
+        if (!payload) return;
+
+        const dataToSend = {
+            ...payload,
+            recalcPourcentages: choice
+        };
+
+        axiosPrivate.post(`/paramCa/addOrUpdateSections`, dataToSend).then((response) => {
+            const resData = response.data;
+
+            if (resData.state) {
+                setDisableAddRowBouton(false);
+                setDisableSaveBouton(true);
+                formNewParam.resetForm();
+                setIsRefreshed(prev => !prev);
+                toast.success(resData.msg);
+            } else {
+                toast.error(resData.msg);
+            }
+        });
     };
 
     const handleOpenDialogConfirmDeleteRow = () => {
@@ -432,7 +529,10 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
                         setOpenDialogDeleteRow(false);
                         setDisableAddRowBouton(false);
                         setSelectedRowSectionId([]);
-                        setSectionsData(sectionsData.filter((row) => row.id !== selectedRowId[0]));
+                        const updatedRows = sectionsData.filter((row) => row.id !== selectedRowId[0]);
+                        const nb = updatedRows.length;
+                        const pct = nb > 0 ? Number((100 / nb).toFixed(2)) : 100;
+                        setSectionsData(updatedRows.map(r => ({ ...r, pourcentage: nb > 0 ? pct : r.pourcentage })));
                         toast.success(resData.msg);
                     } else {
                         setOpenDialogDeleteRow(false);
@@ -441,6 +541,7 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
                     }
                 });
             }
+
             setOpenDialogDeleteRow(false);
         } else {
             setOpenDialogDeleteRow(false);
@@ -494,22 +595,10 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
         setDisableCancelBouton(false);
         setDisableDeleteBouton(false);
 
-        const newId = -Date.now();
-        formNewParam.setFieldValue("id", newId);
-        const newRow = {
-            id: newId,
-            section: '',
-            intitule: '',
-            compte: '',
-            pourcentage: '',
-            par_defaut: false,
-            fermer: false
-        };
-        setSectionsData([...sectionsData, newRow]);
-        setSelectedRowId([newRow.id]);
-        setSelectedRowSectionId([newRow.id]);
-
-        setDisableAddRowBouton(true);
+        // Ouvrir le popup au moment du clic sur Ajouter
+        setPendingAction('add');
+        setPendingSavePayload(null);
+        setOpenRecalcPopup(true);
     }
 
     const handleGetSections = () => {
@@ -601,6 +690,37 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
 
     return (
         <>
+            {openRecalcPopup ? (
+                <Dialog
+                    open={true}
+                    onClose={() => {
+                        setOpenRecalcPopup(false);
+                        setPendingSavePayload(null);
+                    }}
+                    maxWidth="xs"
+                    fullWidth
+                >
+                    <DialogContent>
+                        <Typography fontWeight={550} color="text.primary" sx={{ mt: 1, fontSize: '17px' }}>
+                            Voulez-vous recalculer les pourcentages de toutes les sections ?
+                        </Typography>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button
+                            style={{ backgroundColor: initial.button_delete_color, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
+                            onClick={() => confirmRecalcPourcentages('non')}
+                        >
+                            Non
+                        </Button>
+                        <Button
+                            style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
+                            onClick={() => confirmRecalcPourcentages('oui')}
+                        >
+                            Oui
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+            ) : null}
             {openImportPopup && (
                 <PopupImportAnalitique
                     open={openImportPopup}
@@ -755,10 +875,11 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
                     }}
                 >
                     <DataGrid
-                        apiRef={apiRef} F
+                        apiRef={apiRef}
                         disableMultipleSelection={DataGridStyle.disableMultipleSelection}
                         disableColumnSelector={DataGridStyle.disableColumnSelector}
                         disableDensitySelector={DataGridStyle.disableDensitySelector}
+
                         localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
                         disableRowSelectionOnClick
                         disableSelectionOnClick={true}
