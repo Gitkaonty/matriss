@@ -1,6 +1,6 @@
 const db = require("../../Models");
 require('dotenv').config();
-const { Op } = require('sequelize');
+const { Op, Sequelize } = require('sequelize');
 const Papa = require("papaparse");
 const fs = require("fs");
 const crypto = require('crypto');
@@ -26,6 +26,9 @@ function buildIdEcriture(item) {
 const journals = db.journals;
 const codejournals = db.codejournals;
 const dossierPlanComptable = db.dossierplancomptable;
+const caaxes = db.caAxes;
+const casections = db.caSections;
+const analytiques = db.analytiques;
 
 const createNotExistingCodeJournal = async (req, res) => {
   try {
@@ -465,6 +468,7 @@ const importJournal = async (req, res) => {
   }
 }
 
+
 const parseToDate = (str) => {
   if (!str) return null;
   if (typeof str === "string") str = str.trim();
@@ -554,7 +558,7 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
     progress.update(0, totalLines, 'Démarrage...', 0);
 
     progress.step('Préparation de l\'import...', 5);
-    
+
     if (valSelectCptDispatch === 'ECRASER') {
       await journals.destroy({
         where: {
@@ -566,12 +570,12 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
     }
 
     progress.step('Vérification des devises...', 10);
-    
+
     const deviseCodes = [...new Set((journalData || [])
       .map(r => (r.Idevise || '').trim())
       .filter(v => v))];
     if (!deviseCodes.includes('MGA')) deviseCodes.push('MGA');
-    
+
     for (const code of deviseCodes) {
       const existing = await db.Devise.findOne({ where: { id_compte: compteId, id_dossier: fileId, code } });
       if (!existing) await db.Devise.create({ id_compte: compteId, id_dossier: fileId, code, libelle: code });
@@ -582,7 +586,7 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
     const defaultDeviseId = deviseMap.get('MGA');
 
     progress.step('Traitement des écritures...', 15);
-    
+
     const grouped = journalData.reduce((acc, item) => {
       const key = item.EcritureNum;
       if (!acc[key]) acc[key] = [];
@@ -597,13 +601,105 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
     let importedCount = 0;
     const ecritureKeys = Object.keys(grouped);
 
+    const normalizeAnalytiqueDisplay = (v) => String(v || '').trim().replace(/\s+/g, ' ');
+    const normalizeAnalytiqueKey = (v) => normalizeAnalytiqueDisplay(v).toUpperCase();
+
+    // Récupérer toutes les sections uniques de la colonne Analytique (insensible à la casse)
+    const analytiqueUniqueByKey = new Map();
+    for (const row of (journalData || [])) {
+      const display = normalizeAnalytiqueDisplay(row.Analytique);
+      if (!display) continue;
+      const key = normalizeAnalytiqueKey(display);
+      if (!analytiqueUniqueByKey.has(key)) {
+        analytiqueUniqueByKey.set(key, display);
+      }
+    }
+    const allAnalytiqueValues = Array.from(analytiqueUniqueByKey.values());
+
+    // Créer ou récupérer l'axe "axe1"
+    let axe = await caaxes.findOne({
+      where: {
+        code: 'axe1',
+        id_compte: Number(compteId),
+        id_dossier: Number(fileId)
+      }
+    });
+
+    if (!axe) {
+      axe = await caaxes.create({
+        code: 'axe1',
+        libelle: 'axe1',
+        id_compte: Number(compteId),
+        id_dossier: Number(fileId)
+      });
+    }
+
+    // Créer les sections uniques si elles n'existent pas
+    // sectionMap est indexé par clé normalisée (upper + trim)
+    const sectionMap = new Map();
+    const pourcentageParSection = allAnalytiqueValues.length > 0 ? (100 / allAnalytiqueValues.length) : 100;
+    let firstCompteFound = null;
+    let createdInAxe1 = false;
+
+    for (const analytiqueValue of allAnalytiqueValues) {
+      const analytiqueKey = normalizeAnalytiqueKey(analytiqueValue);
+      let section = await casections.findOne({
+        where: {
+          [Op.and]: [
+            Sequelize.where(
+              Sequelize.fn('upper', Sequelize.col('section')),
+              analytiqueKey
+            )
+          ],
+          id_compte: Number(compteId),
+          id_dossier: Number(fileId)
+        }
+      });
+
+      if (!section) {
+        section = await casections.create({
+          section: analytiqueValue,
+          intitule: analytiqueValue,
+          compte: firstCompteFound || '', // Utiliser le premier compte trouvé
+          pourcentage: pourcentageParSection,
+          par_defaut: false,
+          fermer: false,
+          id_compte: Number(compteId),
+          id_dossier: Number(fileId),
+          id_axe: axe.id
+        });
+        createdInAxe1 = true;
+      }
+
+      sectionMap.set(analytiqueKey, section);
+    }
+
+    // Recalculer les pourcentages sur l'ensemble des sections de axe1
+    // uniquement si on a créé au moins une nouvelle section dans axe1 pendant cet import
+    if (createdInAxe1) {
+      const allSectionsForAxe = await casections.findAll({
+        where: {
+          id_axe: axe.id,
+          id_compte: Number(compteId),
+          id_dossier: Number(fileId)
+        }
+      });
+
+      if (Array.isArray(allSectionsForAxe) && allSectionsForAxe.length > 0) {
+        const pct = Number((100 / allSectionsForAxe.length).toFixed(2));
+        await Promise.all(
+          allSectionsForAxe.map((s) => s.update({ pourcentage: pct }))
+        );
+      }
+    }
+
     // Traiter par lots d'écritures, mais afficher la progression en lignes
     const batchSize = 20;
     let processedLines = 0;
-    
+
     for (let i = 0; i < ecritureKeys.length; i += batchSize) {
       const batch = ecritureKeys.slice(i, i + batchSize);
-      
+
       for (let ecritureNum of batch) {
         const lines = grouped[ecritureNum];
         const newIdEcriture = buildIdEcriture(lines[0]);
@@ -627,11 +723,11 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
             let foundCompte = null;
             let foundAux = null;
             let foundGen = null;
-            
+
             if (rawAux) {
               foundAux = await dossierPlanComptable.findOne({ where: { id_compte: compteId, id_dossier: fileId, compte: rawAux } });
             }
-            
+
             foundGen = await dossierPlanComptable.findOne({
               where: {
                 id_compte: compteId,
@@ -741,7 +837,7 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
             const devCode = String(item.Idevise || '').trim() || 'MGA';
             const devId = deviseMap.get(devCode) || defaultDeviseId || 0;
 
-            await journals.create({
+            const journalEntry = await journals.create({
               id_compte: Number(compteId),
               id_dossier: Number(fileId),
               id_exercice: Number(selectedPeriodeId),
@@ -752,7 +848,7 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
               id_numcptcentralise: IdCompAuxNum,
               piece: item.PieceRef || '',
               piecedate: datePiece,
-              libelle: item.EcritureLib || '',
+              libelle: String(item.EcritureLib || '').substring(0, 100),
               debit: debit,
               credit: credit,
               id_devise: devId || 0,
@@ -763,6 +859,28 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
               modifierpar: Number(userId) || 0,
             });
 
+            // Gestion de la colonne analytique
+            const analytiqueValue = normalizeAnalytiqueDisplay(item.Analytique);
+            if (analytiqueValue && (debit !== 0 || credit !== 0)) {
+              // Récupérer la section existante dans le sectionMap
+              const section = sectionMap.get(normalizeAnalytiqueKey(analytiqueValue));
+              
+              if (section) {
+                // Insérer dans analytiques en utilisant l'ID de la section existante
+                await analytiques.create({
+                  id_compte: Number(compteId),
+                  id_exercice: Number(selectedPeriodeId),
+                  id_dossier: Number(fileId),
+                  id_axe: section.id_axe,
+                  id_section: section.id,
+                  id_ligne_ecriture: journalEntry.id,
+                  debit: debit,
+                  credit: credit,
+                  pourcentage: 100
+                });
+              }
+            }
+
             importedCount++;
             processedLines++;
           } catch (error) {
@@ -771,7 +889,7 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
           }
         }
       }
-      
+
       // Mettre à jour la progression après chaque lot
       const batchProgress = 15 + Math.floor((processedLines / totalLines) * 70);
       progress.update(processedLines, totalLines, 'Importation des écritures...', batchProgress);
