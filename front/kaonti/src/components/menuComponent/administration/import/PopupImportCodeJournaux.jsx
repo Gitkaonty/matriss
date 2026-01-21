@@ -1,5 +1,6 @@
 import { React, useState } from 'react';
-import { Typography, Stack, Button, Dialog, DialogTitle, DialogContent, DialogActions, Badge, Box, CircularProgress, IconButton } from '@mui/material';
+import { Typography, Stack, Button, Dialog, DialogTitle, DialogContent, DialogActions, Badge, Box, IconButton } from '@mui/material';
+import ImportProgressBar from '../../../componentsTools/ImportProgressBar';
 import { init } from '../../../../../init';
 import toast from 'react-hot-toast';
 import Papa from 'papaparse';
@@ -24,6 +25,7 @@ export default function PopupImportCodeJournaux({ open, onClose, fileId, compteI
     const [msgAnomalie, setMsgAnomalie] = useState([]);
     const [traitementWaiting, setTraitementWaiting] = useState(false);
     const [traitementMsg, setTraitementMsg] = useState('');
+    const [progressValue, setProgressValue] = useState(0);
 
     const columns = [
         {
@@ -173,6 +175,7 @@ export default function PopupImportCodeJournaux({ open, onClose, fileId, compteI
                     try {
                         setTraitementMsg('Traitement des données en cours...');
                         setTraitementWaiting(true);
+                        setProgressValue(0);
 
                         const headers = result.meta.fields;
 
@@ -225,7 +228,11 @@ export default function PopupImportCodeJournaux({ open, onClose, fileId, compteI
                             setCodeJournauxData(DataWithId);
 
                             event.target.value = null;
-                            setTraitementWaiting(false);
+                            setProgressValue(100);
+                            setTimeout(() => {
+                                setTraitementWaiting(false);
+                                setProgressValue(0);
+                            }, 800);
                         } else {
                             setTraitementWaiting(false);
                         }
@@ -278,6 +285,7 @@ export default function PopupImportCodeJournaux({ open, onClose, fileId, compteI
 
         setTraitementMsg('Import des codes journaux en cours...');
         setTraitementWaiting(true);
+        setProgressValue(0);
 
         const dataToSend = {
             idCompte: compteId,
@@ -288,14 +296,20 @@ export default function PopupImportCodeJournaux({ open, onClose, fileId, compteI
         axiosPrivate.post('/paramCodeJournaux/importCodeJournaux', dataToSend)
             .then((response) => {
                 const resData = response.data;
-                setTraitementWaiting(false);
                 if (resData.state) {
-                    toast.success(resData.msg);
-                    handleClose();
-                    if (onImportSuccess) {
-                        onImportSuccess();
-                    }
+                    setProgressValue(100);
+                    setTimeout(() => {
+                        setTraitementWaiting(false);
+                        setProgressValue(0);
+                        toast.success(resData.msg);
+                        handleClose();
+                        if (onImportSuccess) {
+                            onImportSuccess();
+                        }
+                    }, 800);
                 } else {
+                    setTraitementWaiting(false);
+                    setProgressValue(0);
                     toast.error(resData.msg);
                     if (resData.anomalies && resData.anomalies.length > 0) {
                         setMsgAnomalie(resData.anomalies);
@@ -307,6 +321,7 @@ export default function PopupImportCodeJournaux({ open, onClose, fileId, compteI
             })
             .catch((error) => {
                 setTraitementWaiting(false);
+                setProgressValue(0);
                 toast.error("Une erreur est survenue lors de l'import");
                 console.error(error);
             });
@@ -430,12 +445,12 @@ export default function PopupImportCodeJournaux({ open, onClose, fileId, compteI
                             </label>
                         </Stack>
 
-                        {traitementWaiting && (
-                            <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
-                                <CircularProgress size={20} sx={{ mr: 2 }} />
-                                <Typography variant='body2'>{traitementMsg}</Typography>
-                            </Box>
-                        )}
+                        <ImportProgressBar 
+                            isVisible={traitementWaiting}
+                            message={traitementMsg}
+                            variant="determinate"
+                            progress={progressValue}
+                        />
 
                         {codeJournauxData.length > 0 && (
                             <Box>

@@ -12,9 +12,11 @@ const balances = db.balances;
 const consolidationDossier = db.consolidationDossier;
 const dossiers = db.dossiers;
 const exercices = db.exercices;
+const detailsimmo = db.detailsimmo;
 const sequelize = db.sequelize;
 
 const fonctionUpdateBalanceSold = require("../../Middlewares/UpdateSolde/updateBalanceSold");
+
 
 const { Op } = require("sequelize");
 
@@ -3564,3 +3566,177 @@ exports.addEcriture = async (req, res) => {
         });
     }
 };
+
+// Version SSE pour importImmobilisations
+const { withSSEProgress } = require('../../Middlewares/sseProgressMiddleware');
+
+const importImmobilisationsWithProgressLogic = async (req, res, progress) => {
+    try {
+        const { data, id_dossier, id_compte, id_exercice } = req.body;
+
+        if (!data || !Array.isArray(data) || data.length === 0) {
+            progress.error('Aucune donnée à importer');
+            return;
+        }
+
+        const totalLines = data.length;
+        progress.update(0, totalLines, 'Démarrage...', 0);
+
+        progress.step('Récupération des données de référence...', 5);
+
+        const exercice = await db.exercices.findByPk(Number(id_exercice));
+        if (!exercice) {
+            progress.error('Exercice introuvable');
+            return;
+        }
+
+        const tousLesExercices = await db.sequelize.query(
+            `SELECT id, date_debut, date_fin FROM exercices WHERE id_dossier = :id_dossier ORDER BY date_debut ASC`,
+            {
+                replacements: { id_dossier: Number(id_dossier) },
+                type: db.Sequelize.QueryTypes.SELECT
+            }
+        );
+
+        const planComptable = await db.sequelize.query(
+            `SELECT id, compte FROM dossierplancomptables WHERE id_dossier = :id_dossier AND id_compte = :id_compte`,
+            {
+                replacements: { id_dossier: Number(id_dossier), id_compte: Number(id_compte) },
+                type: db.Sequelize.QueryTypes.SELECT
+            }
+        );
+
+        const pcMap = new Map();
+        planComptable.forEach(pc => {
+            pcMap.set(pc.compte.trim(), pc.id);
+        });
+
+        progress.step('Validation des données...', 10);
+
+        const anomalies = [];
+        const immobilisationsToInsert = [];
+        const deriveCompteAmort = (compte) => {
+            if (!compte) return '';
+            const s = String(compte);
+            if (s.length < 3) return s;
+            return s[0] + '8' + s.substring(1, s.length - 1);
+        };
+
+        for (let i = 0; i < data.length; i++) {
+            const row = data[i];
+            const ligneNum = i + 1;
+
+            // Validation des champs obligatoires
+            if (!row.numero_compte || row.numero_compte.trim() === '') {
+                anomalies.push(`Ligne ${ligneNum}: Le numéro de compte est obligatoire`);
+                continue;
+            }
+            if (!row.code || row.code.trim() === '') {
+                anomalies.push(`Ligne ${ligneNum}: Le code est obligatoire`);
+                continue;
+            }
+            if (!row.intitule || row.intitule.trim() === '') {
+                anomalies.push(`Ligne ${ligneNum}: L'intitulé est obligatoire`);
+                continue;
+            }
+            if (!row.date_acquisition || row.date_acquisition.trim() === '') {
+                anomalies.push(`Ligne ${ligneNum}: La date d'acquisition est obligatoire`);
+                continue;
+            }
+            if (!row.duree_amort || row.duree_amort.trim() === '') {
+                anomalies.push(`Ligne ${ligneNum}: La durée d'amortissement est obligatoire`);
+                continue;
+            }
+            if (!row.type_amort || row.type_amort.trim() === '') {
+                anomalies.push(`Ligne ${ligneNum}: Le type d'amortissement est obligatoire`);
+                continue;
+            }
+            if (!row.montant_ht || row.montant_ht.trim() === '') {
+                anomalies.push(`Ligne ${ligneNum}: Le montant HT est obligatoire`);
+                continue;
+            }
+
+            const dateAcq = new Date(row.date_acquisition.trim());
+            if (isNaN(dateAcq.getTime())) {
+                anomalies.push(`Ligne ${ligneNum}: La date d'acquisition est invalide`);
+                continue;
+            }
+
+            const exerciceCorrespondant = tousLesExercices.find(exo => {
+                const debut = exo.date_debut ? new Date(exo.date_debut) : null;
+                const fin = exo.date_fin ? new Date(exo.date_fin) : null;
+                return debut && fin && dateAcq >= debut && dateAcq <= fin;
+            });
+
+            if (!exerciceCorrespondant) {
+                const annee = dateAcq.getFullYear();
+                const dateStr = `${dateAcq.getDate().toString().padStart(2, '0')}/${(dateAcq.getMonth() + 1).toString().padStart(2, '0')}/${annee}`;
+                anomalies.push(`Ligne ${ligneNum}: Veuillez créer d'abord l'exercice ${annee} pour importer cette immobilisation (date d'acquisition: ${dateStr})`);
+                continue;
+            }
+
+            const numeroCompte = row.numero_compte.trim();
+            const pc_id = pcMap.get(numeroCompte);
+            if (!pc_id) {
+                anomalies.push(`Ligne ${ligneNum}: Le compte ${numeroCompte} n'existe pas dans le plan comptable`);
+                continue;
+            }
+
+            const compte_amortissement = deriveCompteAmort(numeroCompte);
+            const dateSortie = (row.date_sortie && row.date_sortie.trim() !== '') ? row.date_sortie.trim() : null;
+
+            immobilisationsToInsert.push({
+                id_dossier: Number(id_dossier),
+                id_compte: Number(id_compte),
+                id_exercice: exerciceCorrespondant.id,
+                pc_id: pc_id,
+                code: row.code.trim(),
+                intitule: row.intitule.trim(),
+                fournisseur: row.fournisseur ? row.fournisseur.trim() : '',
+                date_acquisition: row.date_acquisition.trim(),
+                duree_amort: parseInt(row.duree_amort.trim(), 10) || 0,
+                type_amort: row.type_amort.trim(),
+                montant_ht: parseFloat(row.montant_ht.trim().replace(',', '.')) || 0,
+                compte_amortissement: compte_amortissement,
+                date_reprise: row.date_reprise || null,
+                amort_ant: parseFloat(row.amort_ant || 0),
+                date_sortie: dateSortie
+            });
+        }
+
+        if (anomalies.length > 0) {
+            progress.error(`${anomalies.length} anomalie(s) détectée(s):\n${anomalies.join('\n')}`);
+            return;
+        }
+
+        if (immobilisationsToInsert.length === 0) {
+            progress.error('Aucune immobilisation valide à importer');
+            return;
+        }
+
+        await progress.processBatch(
+            immobilisationsToInsert,
+            async (batch) => {
+                await detailsimmo.bulkCreate(batch);
+            },
+            10,
+            90,
+            'Importation des immobilisations...'
+        );
+
+        progress.step('Finalisation...', 95);
+
+        progress.complete(
+            `${immobilisationsToInsert.length} immobilisations ont été importées avec succès`,
+            { nbrligne: immobilisationsToInsert.length }
+        );
+
+    } catch (error) {
+        console.error("Erreur import immobilisations :", error);
+        progress.error("Erreur lors de l'import des immobilisations", error);
+    }
+};
+
+exports.importImmobilisationsWithProgress = withSSEProgress(importImmobilisationsWithProgressLogic, {
+    batchSize: 50
+});

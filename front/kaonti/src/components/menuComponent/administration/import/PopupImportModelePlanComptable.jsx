@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Typography, Stack, Box, Badge, Button, TextField, FormHelperText } from '@mui/material';
 import FormControl from '@mui/material/FormControl';
@@ -10,6 +10,7 @@ import SaveAltIcon from '@mui/icons-material/SaveAlt';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { init } from '../../../../../init';
 import useAuth from '../../../../hooks/useAuth';
+import useSSEImport from '../../../../hooks/useSSEImport';
 import { jwtDecode } from 'jwt-decode';
 import axios from '../../../../../config/axios';
 import toast from 'react-hot-toast';
@@ -17,7 +18,7 @@ import { useFormik } from 'formik';
 import * as Yup from "yup";
 import Papa from 'papaparse';
 import PopupViewDetailsImportModelePc from '../../../componentsTools/popupViewDetailsImportModelePc';
-import CircularProgress from '@mui/material/CircularProgress';
+import ImportProgressBar from '../../../componentsTools/ImportProgressBar';
 import PopupInformation from '../../../componentsTools/popupInformation';
 import VirtualTableModifiableImportJnl from '../../../componentsTools/DeclarationEbilan/virtualTableModifiableImportJnl';
 import VirtualTableImportModelPC from '../../../componentsTools/Paramettage/VirtualTableImportModelPC';
@@ -32,6 +33,17 @@ export default function PopupImportModelePlanComptable({ onSuccess }) {
     const [msgAnomalie, setMsgAnomalie] = useState([]);
     const [traitementModelePcWaiting, setTraitementModelePcWaiting] = useState(false);
     const [traitementModelePcMsg, setTraitementModelePcMsg] = useState('');
+    const [progressValue, setProgressValue] = useState(0);
+    
+    // Hook SSE pour la progression en temps réel
+    const { 
+        isImporting, 
+        progress: sseProgress, 
+        message: sseMessage, 
+        currentLine, 
+        totalLines, 
+        startImport 
+    } = useSSEImport();
     const [anomaliePersiste, setAnomaliePersiste] = useState(false);
     const [nameExist, setNameExist] = useState(false);
 
@@ -64,6 +76,17 @@ export default function PopupImportModelePlanComptable({ onSuccess }) {
     const decoded = auth?.accessToken ? jwtDecode(auth.accessToken) : undefined;
     const compteId = decoded.UserInfo.compteId || null;
     const userId = decoded.UserInfo.userId || null;
+
+    // Synchroniser les valeurs SSE avec l'affichage
+    useEffect(() => {
+        if (isImporting) {
+            setProgressValue(sseProgress);
+            const displayMessage = currentLine > 0 && totalLines > 0 
+                ? `${sseMessage} (${currentLine}/${totalLines} lignes)`
+                : sseMessage;
+            setTraitementModelePcMsg(displayMessage);
+        }
+    }, [isImporting, sseProgress, sseMessage, currentLine, totalLines]);
 
     const formikImport = useFormik({
         initialValues: {
@@ -217,6 +240,7 @@ export default function PopupImportModelePlanComptable({ onSuccess }) {
                     if (validateHeaders(headers)) {
                         setTraitementModelePcMsg('Traitement des données du modèle de plan comptable en cours...');
                         setTraitementModelePcWaiting(true);
+                        setProgressValue(0);
 
                         const couleurAnom = "#EB5B00";
                         let nbrAnom = 0;
@@ -246,7 +270,11 @@ export default function PopupImportModelePlanComptable({ onSuccess }) {
                         formikImport.setFieldValue('modelePcData', DataWithId);
 
                         event.target.value = null;
-                        setTraitementModelePcWaiting(false);
+                        setProgressValue(100);
+                        setTimeout(() => {
+                            setTraitementModelePcWaiting(false);
+                            setProgressValue(0);
+                        }, 800);
 
                         handleOpenAnomalieDetails();
                     }
@@ -290,27 +318,37 @@ export default function PopupImportModelePlanComptable({ onSuccess }) {
             if (testName) {
                 setNameExist(true);
             } else {
-                setTraitementModelePcMsg('Import du modèle de plan comptable en cours...');
                 setTraitementModelePcWaiting(true);
+                setProgressValue(0);
+                setTraitementModelePcMsg('Démarrage de l\'import...');
 
-                axios.post(`/administration/ImportModelePc/ImportModelePc`, formikImport.values).then((response) => {
-                    const resData = response.data;
-                    if (resData.state) {
+                // Utiliser SSE pour la progression en temps réel
+                startImport(
+                    '/administration/ImportModelePc/importModelePcWithProgress',
+                    formikImport.values,
+                    (eventData) => {
+                        // Succès
+                        setTimeout(() => {
+                            setTraitementModelePcMsg('');
+                            setTraitementModelePcWaiting(false);
+                            setProgressValue(0);
+                            toast.success(eventData.message);
+                            setModelePc([]);
+                            setNbrAnomalie(0);
+                            setMsgAnomalie([]);
+                            if (onSuccess) {
+                                onSuccess();
+                            }
+                        }, 1500);
+                    },
+                    (error) => {
+                        // Erreur
                         setTraitementModelePcMsg('');
                         setTraitementModelePcWaiting(false);
-                        toast.success(resData.msg);
-                        setModelePc([]);
-                        setNbrAnomalie(0);
-                        setMsgAnomalie([]);
-                        if (onSuccess) {
-                            onSuccess();
-                        }
-                    } else {
-                        setTraitementModelePcMsg('');
-                        setTraitementModelePcWaiting(false);
-                        toast.error(resData.msg);
+                        setProgressValue(0);
+                        toast.error(error || "Erreur lors de l'import");
                     }
-                });
+                );
             }
         }
     }
@@ -420,13 +458,12 @@ export default function PopupImportModelePlanComptable({ onSuccess }) {
                         </Button>
                     </Stack>
 
-                    {traitementModelePcWaiting
-                        ? <Stack spacing={2} direction={'row'} width={"100%"} alignItems={'center'} justifyContent={'center'}>
-                            <CircularProgress />
-                            <Typography variant='h6' style={{ color: '#2973B2' }}>{traitementModelePcMsg}</Typography>
-                        </Stack>
-                        : null
-                    }
+                    <ImportProgressBar 
+                        isVisible={traitementModelePcWaiting || isImporting}
+                        message={traitementModelePcMsg}
+                        variant="determinate"
+                        progress={progressValue}
+                    />
 
                     <Stack width={"100%"} height={'70vh'}>
                         <VirtualTableImportModelPC tableHeader={columns} tableRow={modelePc} />
