@@ -3038,18 +3038,26 @@ exports.importImmobilisations = async (req, res) => {
         if (!data || !Array.isArray(data) || data.length === 0) {
             return res.status(400).json({ state: false, msg: 'Aucune donnée à importer' });
         }
-
         if (!id_dossier || !id_compte || !id_exercice) {
             return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
         }
 
-        // Récupérer les dates de l'exercice
+        // Récupérer les dates de l'exercice sélectionné
         const exercice = await db.exercices.findByPk(Number(id_exercice));
         if (!exercice) {
             return res.status(404).json({ state: false, msg: 'Exercice introuvable' });
         }
         const dateDebutExercice = exercice.date_debut ? new Date(exercice.date_debut) : null;
         const dateFinExercice = exercice.date_fin ? new Date(exercice.date_fin) : null;
+
+        // Récupérer tous les exercices du dossier pour vérifier l'existence d'exercices futurs
+        const tousLesExercices = await db.sequelize.query(
+            `SELECT id, date_debut, date_fin FROM exercices WHERE id_dossier = :id_dossier ORDER BY date_debut ASC`,
+            {
+                replacements: { id_dossier: Number(id_dossier) },
+                type: db.Sequelize.QueryTypes.SELECT
+            }
+        );
 
         const anomalies = [];
         const immobilisationsToInsert = [];
@@ -3103,17 +3111,32 @@ exports.importImmobilisations = async (req, res) => {
                 continue;
             }
 
-            // Vérifier que la date d'acquisition est dans les limites de l'exercice
-            if (dateDebutExercice && dateFinExercice) {
-                const dateAcq = new Date(row.date_acquisition.trim());
-                if (!isNaN(dateAcq.getTime())) {
-                    if (dateAcq > dateFinExercice) {
-                        const dateFinStr = `${dateFinExercice.getDate().toString().padStart(2, '0')}/${(dateFinExercice.getMonth() + 1).toString().padStart(2, '0')}/${dateFinExercice.getFullYear()}`;
-                        anomalies.push(`Ligne ${ligneNum}: La date d'acquisition (${row.date_acquisition.trim()}) est supérieure à la date de fin de l'exercice (${dateFinStr})`);
-                        continue;
-                    }
-                }
+            // Trouver l'exercice correspondant à la date d'acquisition
+            const dateAcq = new Date(row.date_acquisition.trim());
+            if (isNaN(dateAcq.getTime())) {
+                anomalies.push(`Ligne ${ligneNum}: La date d'acquisition est invalide`);
+                continue;
             }
+
+            // Chercher l'exercice qui contient cette date
+            const exerciceCorrespondant = tousLesExercices.find(exo => {
+                const debut = exo.date_debut ? new Date(exo.date_debut) : null;
+                const fin = exo.date_fin ? new Date(exo.date_fin) : null;
+                return debut && fin && dateAcq >= debut && dateAcq <= fin;
+            });
+
+            if (!exerciceCorrespondant) {
+                // Aucun exercice trouvé pour cette date
+                const annee = dateAcq.getFullYear();
+                const dateStr = `${dateAcq.getDate().toString().padStart(2, '0')}/${(dateAcq.getMonth() + 1).toString().padStart(2, '0')}/${annee}`;
+                anomalies.push(`Ligne ${ligneNum}: Veuillez créer d'abord l'exercice ${annee} pour importer cette immobilisation (date d'acquisition: ${dateStr})`);
+                continue;
+            }
+
+            // Utiliser l'exercice trouvé pour cette immobilisation
+            const exerciceIdPourCetteLigne = exerciceCorrespondant.id;
+            const dateDebutExerciceTrouve = exerciceCorrespondant.date_debut ? new Date(exerciceCorrespondant.date_debut) : null;
+            const dateFinExerciceTrouve = exerciceCorrespondant.date_fin ? new Date(exerciceCorrespondant.date_fin) : null;
 
             // Vérifier que le compte existe dans le plan comptable
             const numeroCompte = row.numero_compte ? row.numero_compte.trim() : '';
@@ -3161,10 +3184,10 @@ exports.importImmobilisations = async (req, res) => {
                         }
                         amortAnt = Number(row.amort_ant.replace(/,/g, '.'));
                     } else {
-                        // Sinon, reprise automatique avec date_reprise = date début exercice
-                        const year = dateDebutExercice.getFullYear();
-                        const month = String(dateDebutExercice.getMonth() + 1).padStart(2, '0');
-                        const day = String(dateDebutExercice.getDate()).padStart(2, '0');
+                        // Sinon, reprise automatique avec date_reprise = date début exercice trouvé
+                        const year = dateDebutExerciceTrouve.getFullYear();
+                        const month = String(dateDebutExerciceTrouve.getMonth() + 1).padStart(2, '0');
+                        const day = String(dateDebutExerciceTrouve.getDate()).padStart(2, '0');
                         dateReprise = `${year}-${month}-${day}`;
 
                         // Utiliser amort_ant du CSV s'il est fourni, sinon 0
@@ -3175,11 +3198,11 @@ exports.importImmobilisations = async (req, res) => {
                 }
             }
 
-            // Préparer l'objet à insérer
+            // Préparer l'objet à insérer avec l'exercice trouvé automatiquement
             const immobData = {
                 id_dossier: Number(id_dossier),
                 id_compte: Number(id_compte),
-                id_exercice: Number(id_exercice),
+                id_exercice: exerciceIdPourCetteLigne, // Utiliser l'exercice trouvé automatiquement
                 pc_id: pc_id,
                 code: row.code.trim(),
                 intitule: row.intitule.trim(),
