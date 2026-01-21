@@ -162,6 +162,19 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.DATEONLY,
             allowNull: true,
             defaultValue: null
+        },
+        comptegen: {
+            type: DataTypes.STRING(100),
+            allowNull: true
+        },
+        compteaux: {
+            type: DataTypes.STRING(100),
+            allowNull: true
+        },
+        libelleaux: {
+            type: DataTypes.STRING(50),
+            unique: false,
+            allowNull: true
         }
     }, { timestamps: true },)
     return journals

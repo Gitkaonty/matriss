@@ -38,7 +38,7 @@ export default function PopupImportModelePlanComptable({ onSuccess }) {
     const columns = [
         { id: 'compte', label: 'Compte', minWidth: 150, align: 'left', isnumber: false },
         { id: 'libelle', label: 'Libellé', minWidth: 350, align: 'left', isnumber: false },
-        { id: 'comptecorrespondace', label: 'Compte corr.', minWidth: 150, align: 'left', isnumber: false },
+        { id: 'comptecorrespondance', label: 'Compte corr.', minWidth: 150, align: 'left', isnumber: false },
         { id: 'libelleautre', label: 'Libellé corr.', minWidth: 350, align: 'left', isnumber: false },
         { id: 'nature', label: 'Nature', minWidth: 150, align: 'left', isnumber: false },
         { id: 'baseaux', label: 'Centr./base aux.', minWidth: 160, align: 'left', isnumber: false },
@@ -89,7 +89,7 @@ export default function PopupImportModelePlanComptable({ onSuccess }) {
 
     const validateHeaders = (headers) => {
         const expectedHeaders = [
-            "compte", "comptecorrespondace", "libelleautre", "libelle", "nature", "baseaux", "typetier", "nif", "statistique", "adresse", "cin", "datecin",
+            "compte", "comptecorrespondance", "libelleautre", "libelle", "nature", "baseaux", "typetier", "nif", "statistique", "adresse", "cin", "datecin",
             "autrepieceidentite", "refpieceidentite", "adressesansnif", "nifrepresentant", "adresserepresentant", "pays",
             "province", "region", "district", "commune"
         ];

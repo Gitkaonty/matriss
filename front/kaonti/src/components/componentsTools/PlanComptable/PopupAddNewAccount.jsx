@@ -72,6 +72,7 @@ const PopupAddNewAccount = ({
     isTypeComptaAutre,
     setSelectedRow
 }) => {
+    const isModifying = stateAction === 'modification';
     const axiosPrivate = useAxiosPrivate();
     const [typeCptGeneral, setTypeCptGeneral] = useState(true);
     const [formulaireTier, setFormulaireTier] = useState('general');
@@ -951,6 +952,7 @@ const PopupAddNewAccount = ({
                                                                     <label htmlFor="nature" style={{ fontSize: 12, color: '#3FA2F6' }}>Nature</label>
                                                                     <Field
                                                                         as={Select}
+                                                                        disabled={isModifying}
                                                                         labelId="nature-label"
                                                                         name="nature"
                                                                         onChange={handleChangeListBoxNature(setFieldValue)}
@@ -988,7 +990,7 @@ const PopupAddNewAccount = ({
                                                                 <Stack spacing={-0.5}>
                                                                     <label htmlFor="baseCptCollectif" style={{ fontSize: 12, color: '#3FA2F6' }}>Centralisation/Base compte auxiliaire</label>
                                                                     <Field
-                                                                        disabled={typeCptGeneral}
+                                                                        disabled={typeCptGeneral || isModifying}
                                                                         as={Select}
                                                                         labelId="baseCptCollectif-label"
                                                                         name="baseCptCollectif"
@@ -1045,6 +1047,7 @@ const PopupAddNewAccount = ({
                                                                 <Stack spacing={1}>
                                                                     <label htmlFor="compte" style={{ fontSize: 12, color: '#3FA2F6' }}>Compte</label>
                                                                     <Field
+                                                                        disabled={isModifying}
                                                                         name='compte'
                                                                         onChange={handleChange}
                                                                         type='text'
@@ -1114,7 +1117,7 @@ const PopupAddNewAccount = ({
                                                                     as={Select}
                                                                     labelId="typeTier-label"
                                                                     name="typeTier"
-                                                                    disabled={values.nature === 'General' || values.nature === 'Collectif'}
+                                                                    disabled={values.nature === 'General' || values.nature === 'Collectif' || isModifying}
                                                                     onBlur={(e) => { /* avoid Formik executeBlur with undefined event */ }}
                                                                     onChange={handleOnChangeListBoxTypeTier(setFieldValue)}
                                                                     sx={{

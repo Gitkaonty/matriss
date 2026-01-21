@@ -2257,7 +2257,6 @@ exports.getJournal = async (req, res) => {
             };
         });
 
-        console.log('[JOURNAL][GET] Nombre de lignes retournées:', mappedData.length);
         if (mappedData.length > 0) {
             console.log('[JOURNAL][GET] Première ligne:', {
                 id: mappedData[0].id,

@@ -416,6 +416,9 @@ const importJournal = async (req, res) => {
               lettragedate: datelettrage || null,
               saisiepar: userId,
               modifierpar: userId || 0,
+              comptegen: rawGen,
+              compteaux: rawAux,
+              libelleaux: item.EcritureLibAux
             });
 
             importSuccess = importSuccess * 1;
@@ -504,7 +507,6 @@ const recupListeImporte = async (req, res) => {
             ...row,
             id: index,
             CompteLib: "",
-            CompAuxLib: ""
           }))
           : result.data;
 
