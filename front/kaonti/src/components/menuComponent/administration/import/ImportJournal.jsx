@@ -153,43 +153,22 @@ export default function ImportJournal() {
             isnumber: false
         },
         {
-            id: 'JournalCode',
-            label: 'Journal',
-            minWidth: 80,
-            align: 'left',
-            isnumber: false
-        },
-        {
             id: 'CompteNum',
-            label: 'Compte',
+            label: 'Compte gen.',
             minWidth: 150,
             align: 'left',
             isnumber: false
         },
         {
             id: 'CompAuxNum',
-            label: 'Compte aux',
+            label: 'Compte centr.',
             minWidth: 150,
             align: 'left',
-            isnumber: false
-        },
-        {
-            id: 'PieceRef',
-            label: 'Pièces',
-            minWidth: 150,
-            align: 'left',
-            isnumber: false
-        },
-        {
-            id: 'PieceDate',
-            label: 'Pièce date',
-            minWidth: 150,
-            align: 'center',
             isnumber: false
         },
         {
             id: 'EcritureLib',
-            label: 'Libellé',
+            label: 'Libellé gen.',
             minWidth: 380,
             align: 'left',
             isnumber: false
@@ -219,6 +198,27 @@ export default function ImportJournal() {
                     : '';
             },
             isnumber: true
+        },
+        {
+            id: 'JournalCode',
+            label: 'Journal',
+            minWidth: 80,
+            align: 'left',
+            isnumber: false
+        },
+        {
+            id: 'PieceRef',
+            label: 'Pièces',
+            minWidth: 150,
+            align: 'left',
+            isnumber: false
+        },
+        {
+            id: 'PieceDate',
+            label: 'Pièce date',
+            minWidth: 150,
+            align: 'center',
+            isnumber: false
         },
         {
             id: 'Idevise',
@@ -671,13 +671,13 @@ export default function ImportJournal() {
                             });
 
                             if (missingDate.length > 0) {
-                                msg.push("Certaines lignes n'ont pas de date d'écriture valide: elles seront ignorées");
+                                msg.push("Certaines lignes n'ont pas de date d'écriture valide: elles seront ignorées.");
                                 nbrAnom = nbrAnom + 1;
                                 setNbrAnomalie(nbrAnom);
                                 setCouleurBoutonAnomalie(couleurAnom);
                             }
                             if (outOfRange.length > 0) {
-                                msg.push("Certaines lignes ne seront pas importées car leur date d'écriture est en dehors de l'exercice");
+                                msg.push("Certaines lignes ne seront pas importées car leur date d'écriture est en dehors de l'exercice.");
                                 nbrAnom = nbrAnom + 1;
                                 setNbrAnomalie(nbrAnom);
                                 setCouleurBoutonAnomalie(couleurAnom);
@@ -691,9 +691,15 @@ export default function ImportJournal() {
                             });
                         }
 
+                        const finalDataCompteFormatted = finalData.map(item => ({
+                            ...item,
+                            CompteNum: padCompte(item.CompteNum),
+                            CompAuxNum: padCompte(item.CompAuxNum)
+                        }));
+
                         //const dataWithFooter = [...finalData, footerRow];
-                        setJournalData(finalData);
-                        formikImport.setFieldValue('journalData', finalData);
+                        setJournalData(finalDataCompteFormatted);
+                        formikImport.setFieldValue('journalData', finalDataCompteFormatted);
 
                         const mapGen = new Map();
 
@@ -705,7 +711,7 @@ export default function ImportJournal() {
                             if (compteNotInParamsGen.includes(compte) && !mapGen.has(compte)) {
                                 mapGen.set(compte, {
                                     CompteNum: compte,
-                                    CompteLib: item.CompteLib
+                                    CompteLib: item.EcritureLib
                                 });
                             }
                         });
@@ -722,7 +728,7 @@ export default function ImportJournal() {
                             if (compteNotInParamsAux.includes(compte) && !mapAux.has(compte)) {
                                 mapAux.set(compte, {
                                     CompAuxNum: compte,
-                                    CompAuxLib: item.CompAuxLib,
+                                    CompAuxLib: item.EcritureLib,
                                     CompteNum: item.CompteNum?.toString()?.padEnd(longeurCompteStd, "0")?.slice(0, longeurCompteStd) || ''
                                 });
                             }
@@ -798,8 +804,8 @@ export default function ImportJournal() {
 
     const handleImportJournal = async (value) => {
         if (value) {
-            const UpdatedCodeJournal = await createCodeJournalNotExisting();
             const UpdatedPlanComptable = await createCompteNotExisting();
+            const UpdatedCodeJournal = await createCodeJournalNotExisting();
 
             if (!Array.isArray(UpdatedCodeJournal)) {
                 toast.error("Un problème est survenu lors de la création des codes journaux manquants.");
