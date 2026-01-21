@@ -615,11 +615,10 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
     const allAnalytiqueValues = Array.from(analytiqueUniqueByKey.values());
 
     // Créer ou récupérer l'axe "axe1"
+    // IMPORTANT: la contrainte unique est sur caaxes.code (globale), donc on doit chercher par code uniquement.
     let axe = await caaxes.findOne({
       where: {
-        code: 'axe1',
-        id_compte: Number(compteId),
-        id_dossier: Number(fileId)
+        code: 'axe1'
       }
     });
 
