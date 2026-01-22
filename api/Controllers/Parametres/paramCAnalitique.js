@@ -589,6 +589,21 @@ exports.importSections = async (req, res) => {
         const createdSections = await caSections.bulkCreate(sectionsToCreate);
 
         if (createdSections && createdSections.length > 0) {
+            const allSections = await caSections.findAll({
+                where: { id_compte, id_dossier, id_axe },
+                attributes: ['id']
+            });
+
+            const nb = allSections.length;
+            const pct = nb > 0 ? Number((100 / nb).toFixed(2)) : 100;
+
+            if (nb > 0) {
+                await caSections.update(
+                    { pourcentage: pct },
+                    { where: { id_compte, id_dossier, id_axe } }
+                );
+            }
+
             resData.state = true;
             resData.msg = `${createdSections.length} section(s) importée(s) avec succès.`;
         } else {
