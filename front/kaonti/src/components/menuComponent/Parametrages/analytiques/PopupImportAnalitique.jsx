@@ -1,5 +1,5 @@
 import { React, useState } from 'react';
-import { Typography, Stack, Button, Dialog, DialogTitle, DialogContent, DialogActions, Badge, Box, CircularProgress } from '@mui/material';
+import { Typography, Stack, Button, Dialog, DialogTitle, DialogContent, DialogActions, Badge, Box, CircularProgress, TextField } from '@mui/material';
 import { init } from '../../../../../init';
 import toast from 'react-hot-toast';
 import Papa from 'papaparse';
@@ -21,6 +21,9 @@ export default function PopupImportAnalitique({ open, onClose, fileId, compteId,
     const [msgAnomalie, setMsgAnomalie] = useState([]);
     const [traitementWaiting, setTraitementWaiting] = useState(false);
     const [traitementMsg, setTraitementMsg] = useState('');
+
+    const [openRecalcPopup, setOpenRecalcPopup] = useState(false);
+    const [recalcChoice, setRecalcChoice] = useState(null); // 'oui' | 'non'
 
     const columns = [
         {
@@ -206,6 +209,52 @@ export default function PopupImportAnalitique({ open, onClose, fileId, compteId,
             return;
         }
 
+        if (!sectionsData || sectionsData.length === 0) {
+            toast.error("Aucune donnée à importer");
+            return;
+        }
+
+        setRecalcChoice(null);
+        setOpenRecalcPopup(true);
+    }
+
+    const totalPourcentage = (sectionsData || []).reduce((sum, row) => {
+        const v = Number(String(row?.pourcentage ?? '').toString().replace(',', '.'));
+        return sum + (isNaN(v) ? 0 : v);
+    }, 0);
+
+    const handleConfirmRecalcChoice = (choice) => {
+        setRecalcChoice(choice);
+        if (choice === 'oui') {
+            setOpenRecalcPopup(false);
+            doImport('oui');
+        }
+    };
+
+    const handleChangePourcentage = (id, value) => {
+        setSectionsData((prev) => (prev || []).map((r) => (
+            r.id === id ? { ...r, pourcentage: value } : r
+        )));
+    };
+
+    const handleContinueManual = () => {
+        const invalid = (sectionsData || []).some((r) => {
+            const v = Number(String(r?.pourcentage ?? '').toString().replace(',', '.'));
+            return isNaN(v) || v < 0 || v > 100;
+        });
+        if (invalid) {
+            toast.error('Veuillez saisir des pourcentages valides (0 à 100) pour toutes les lignes.');
+            return;
+        }
+        if (Math.abs(totalPourcentage - 100) >= 1) {
+            toast.error(`Le total des pourcentages doit être égal à 100%. Total actuel: ${totalPourcentage.toFixed(2)}%`);
+            return;
+        }
+        setOpenRecalcPopup(false);
+        doImport('non');
+    };
+
+    const doImport = (choice) => {
         setTraitementMsg('Import des sections analytiques en cours...');
         setTraitementWaiting(true);
 
@@ -213,7 +262,8 @@ export default function PopupImportAnalitique({ open, onClose, fileId, compteId,
             compteId: compteId,
             fileId: fileId,
             axeId: axeId,
-            sectionsData: sectionsData
+            sectionsData: sectionsData,
+            recalcPourcentages: choice
         };
 
         axiosPrivate.post('/paramCa/importSections', dataToSend)
@@ -241,7 +291,7 @@ export default function PopupImportAnalitique({ open, onClose, fileId, compteId,
                 toast.error("Une erreur est survenue lors de l'import");
                 console.error(error);
             });
-    }
+    };
 
     const handleClose = () => {
         setSectionsData([]);
@@ -249,6 +299,8 @@ export default function PopupImportAnalitique({ open, onClose, fileId, compteId,
         setNbrAnomalie(0);
         setCouleurBoutonAnomalie('white');
         setTraitementWaiting(false);
+        setOpenRecalcPopup(false);
+        setRecalcChoice(null);
         onClose();
     }
 
@@ -259,6 +311,72 @@ export default function PopupImportAnalitique({ open, onClose, fileId, compteId,
                     msg={msgAnomalie}
                     confirmationState={handleCloseAnomalieDetails}
                 />
+            )}
+
+            {openRecalcPopup && (
+                <Dialog open={true} maxWidth="sm" fullWidth onClose={() => setOpenRecalcPopup(false)}>
+                    <DialogTitle>Recalculer les pourcentages ?</DialogTitle>
+                    <DialogContent>
+                        <Stack spacing={2}>
+                            <Stack direction="row" spacing={2}>
+                                <Button
+                                    variant="contained"
+                                    style={{ backgroundColor: initial.theme, color: 'white', textTransform: 'none', outline: 'none' }}
+                                    onClick={() => handleConfirmRecalcChoice('oui')}
+                                >
+                                    Oui
+                                </Button>
+                                <Button
+                                    variant="contained"
+                                    style={{ backgroundColor: initial.theme, color: 'white', textTransform: 'none', outline: 'none' }}
+                                    onClick={() => setRecalcChoice('non')}
+                                >
+                                    Non
+                                </Button>
+                            </Stack>
+
+                            {recalcChoice === 'non' && (
+                                <Stack spacing={1.5}>
+                                    <Typography sx={{ fontSize: 13, color: Math.abs(100 - totalPourcentage) < 1 ? '#2e7d32' : '#d32f2f' }}>
+                                        {`Total: ${totalPourcentage.toFixed(2)}% | Reste: ${(100 - totalPourcentage).toFixed(2)}%`}
+                                    </Typography>
+
+                                    {(sectionsData || []).map((r) => (
+                                        <Stack key={r.id} direction="row" spacing={2} alignItems="center">
+                                            <Typography sx={{ width: 200 }}>{r.section}</Typography>
+                                            <TextField
+                                                value={r.pourcentage}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    const num = Number(String(val).toString().replace(',', '.'));
+                                                    handleChangePourcentage(r.id, isNaN(num) ? val : num);
+                                                }}
+                                                size="small"
+                                                placeholder="%"
+                                            />
+                                        </Stack>
+                                    ))}
+                                </Stack>
+                            )}
+                        </Stack>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button
+                            style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
+                            onClick={() => setOpenRecalcPopup(false)}
+                        >
+                            Annuler
+                        </Button>
+                        {recalcChoice === 'non' && (
+                            <Button
+                                style={{ backgroundColor: initial.theme, color: 'white', width: "120px", textTransform: 'none', outline: 'none' }}
+                                onClick={handleContinueManual}
+                            >
+                                Continuer
+                            </Button>
+                        )}
+                    </DialogActions>
+                </Dialog>
             )}
             <Dialog 
                 open={open} 
@@ -273,14 +391,7 @@ export default function PopupImportAnalitique({ open, onClose, fileId, compteId,
                 </DialogTitle>
                 <DialogContent>
                     <Stack spacing={2} sx={{ mt: 2 }}>
-                        <Box>
-                            <Typography variant='body2' sx={{ mb: 2, color: 'gray' }}>
-                                Format accepté : CSV avec les colonnes suivantes : section, intitule, compte
-                            </Typography>
-                            <Typography variant='body2' sx={{ mb: 2, color: 'gray', fontWeight: 'bold' }}>
-                                Le pourcentage sera calculé automatiquement : 100% divisé par le nombre de lignes
-                            </Typography>
-                            
+                        <Box>            
                             <Stack direction="row" spacing={2}>
                                 <Button
                                     variant="outlined"
