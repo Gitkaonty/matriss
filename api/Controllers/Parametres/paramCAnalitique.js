@@ -194,7 +194,7 @@ exports.addOrUpdateAxes = async (req, res) => {
 
 exports.addOrUpdateSections = async (req, res) => {
     try {
-        const { id, compte, compteId, fileId, axeId, intitule, pourcentage, section, fermer, par_defaut } = req.body;
+        const { id, compte, compteId, fileId, axeId, intitule, pourcentage, section, fermer, par_defaut, recalcPourcentages } = req.body;
 
         let resData = {
             state: false,
@@ -230,6 +230,8 @@ exports.addOrUpdateSections = async (req, res) => {
             }
         })
 
+        const isCreate = testIfExist.length === 0;
+
         const pourcentageData = await caSections.findAll({
             where: {
                 id_compte,
@@ -246,11 +248,63 @@ exports.addOrUpdateSections = async (req, res) => {
 
         const cumulPourcentage = totalPourcentage + newPourcentage;
 
-        if (cumulPourcentage > 100) {
-            resData.state = false;
-            const valueToDisplay = cumulPourcentage - 100;
-            resData.msg = `La valeur du pourcentage est augmenté de ${valueToDisplay}%`;
+        // Option : recalculer automatiquement les pourcentages lors d'un ajout
+        if (isCreate && recalcPourcentages === 'oui') {
+            const sectionAdded = await caSections.create({
+                id_compte,
+                id_dossier,
+                id_axe,
+                compte,
+                intitule,
+                pourcentage: pourcentageFormated,
+                section,
+                fermer,
+                par_defaut
+            });
+
+            if (!sectionAdded) {
+                resData.state = false;
+                resData.msg = "Une erreur est survenue au moment du traitement des données";
+                return res.json(resData);
+            }
+
+            const allSections = await caSections.findAll({
+                where: {
+                    id_compte,
+                    id_dossier,
+                    id_axe
+                },
+                attributes: ['id']
+            });
+
+            const nb = allSections.length;
+            const pct = nb > 0 ? Number((100 / nb).toFixed(2)) : 100;
+
+            await caSections.update(
+                { pourcentage: pct },
+                { where: { id_compte, id_dossier, id_axe } }
+            );
+
+            resData.state = true;
+            resData.msg = "Nouvelle ligne sauvegardée avec succès.";
             return res.json(resData);
+        }
+
+        // Option : pourcentage saisi à la main => le total doit être exactement 100%
+        if (recalcPourcentages === 'non') {
+            if (Math.abs(cumulPourcentage - 100) > 0.01) {
+                resData.state = false;
+                resData.msg = `Le total des pourcentages doit être égal à 100%. Total actuel: ${cumulPourcentage.toFixed(2)}%`;
+                return res.json(resData);
+            }
+        } else {
+            // Comportement actuel (si aucun choix explicitement donné)
+            if (cumulPourcentage > 100) {
+                resData.state = false;
+                const valueToDisplay = cumulPourcentage - 100;
+                resData.msg = `La valeur du pourcentage est augmenté de ${valueToDisplay}%`;
+                return res.json(resData);
+            }
         }
 
         if (testIfExist.length === 0) {
@@ -358,11 +412,35 @@ exports.deleteSections = async (req, res) => {
             });
         }
 
+        const sectionToDelete = await caSections.findOne({
+            where: { id: idToDelete },
+            attributes: ['id', 'id_compte', 'id_dossier', 'id_axe']
+        });
+
         const result = await caSections.destroy({
             where: { id: idToDelete }
         });
 
         if (result) {
+            // Recalculer les pourcentages des sections restantes pour cet axe
+            if (sectionToDelete) {
+                const { id_compte, id_dossier, id_axe } = sectionToDelete;
+                const allSections = await caSections.findAll({
+                    where: { id_compte, id_dossier, id_axe },
+                    attributes: ['id']
+                });
+
+                const nb = allSections.length;
+                const pct = nb > 0 ? Number((100 / nb).toFixed(2)) : 100;
+
+                if (nb > 0) {
+                    await caSections.update(
+                        { pourcentage: pct },
+                        { where: { id_compte, id_dossier, id_axe } }
+                    );
+                }
+            }
+
             resData.state = true;
             resData.msg = 'Section supprimé avec succès';
         } else {
@@ -511,6 +589,21 @@ exports.importSections = async (req, res) => {
         const createdSections = await caSections.bulkCreate(sectionsToCreate);
 
         if (createdSections && createdSections.length > 0) {
+            const allSections = await caSections.findAll({
+                where: { id_compte, id_dossier, id_axe },
+                attributes: ['id']
+            });
+
+            const nb = allSections.length;
+            const pct = nb > 0 ? Number((100 / nb).toFixed(2)) : 100;
+
+            if (nb > 0) {
+                await caSections.update(
+                    { pourcentage: pct },
+                    { where: { id_compte, id_dossier, id_axe } }
+                );
+            }
+
             resData.state = true;
             resData.msg = `${createdSections.length} section(s) importée(s) avec succès.`;
         } else {

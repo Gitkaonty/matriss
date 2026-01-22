@@ -255,6 +255,13 @@ export default function ImportJournal() {
             align: 'center',
             isnumber: false
         },
+        {
+            id: 'Analytique',
+            label: 'Analytique',
+            minWidth: 150,
+            align: 'left',
+            isnumber: false
+        },
     ];
 
     //Récupérer la liste des exercices
@@ -416,8 +423,8 @@ export default function ImportJournal() {
     const validateHeaders = (headers) => {
 
         let expectedHeaders = [];
-        const expectedHeadersCSV = ["EcritureNum", "datesaisie", "EcritureDate", "JournalCode", "CompteNum", "CompAuxNum", "PieceRef", "PieceDate", "EcritureLib", "Debit", "Credit", "Idevise", "EcritureLet", "DateLet", "ModeRglt"];
-        const expectedHeadersFEC = ["EcritureNum", "EcritureDate", "JournalCode", "CompteNum", "CompAuxNum", "PieceRef", "PieceDate", "EcritureLib", "Debit", "Credit", "Idevise", "EcritureLet", "DateLet"];
+        const expectedHeadersCSV = ["EcritureNum", "datesaisie", "EcritureDate", "JournalCode", "CompteNum", "CompAuxNum", "PieceRef", "PieceDate", "EcritureLib", "Debit", "Credit", "Idevise", "EcritureLet", "DateLet", "ModeRglt", "Analytique"];
+        const expectedHeadersFEC = ["EcritureNum", "EcritureDate", "JournalCode", "CompteNum", "CompAuxNum", "PieceRef", "PieceDate", "EcritureLib", "Debit", "Credit", "Idevise", "EcritureLet", "DateLet", "Analytique"];
 
         if (fileTypeCSV) {
             expectedHeaders = expectedHeadersCSV;
@@ -425,8 +432,9 @@ export default function ImportJournal() {
             expectedHeaders = expectedHeadersFEC;
         }
 
-        // Comparer les en-têtes du CSV aux en-têtes attendus
-        const missingHeaders = expectedHeaders.filter(header => !headers.includes(header));
+        // Comparer les en-têtes du CSV aux en-têtes attendus (sauf Analytique qui est optionnelle)
+        const requiredHeaders = expectedHeaders.filter(h => h !== 'Analytique');
+        const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
         if (missingHeaders.length > 0) {
             toast.error(`Les en-têtes du modèle d'import suivants sont manquants : ${missingHeaders.join(', ')}`);
             return false;
@@ -566,8 +574,10 @@ export default function ImportJournal() {
                         const ListeCodeJnlParams = [...new Set(codeJournal.map(item => normalizeCode(item.code)))];
                         const ListeCompteParams = [...new Set(planComptable.map(item => item.compte))];
 
-                        const codeJournalNotInParams = existance(ListeCodeJnlParams, listeUniqueCodeJnl);
-                        const compteNotInParams = existance(ListeCompteParams, listeUniqueCompte);
+                        //const codeJournalNotInParams = existance(ListeCodeJnlParams, listeUniqueCodeJnl);
+                        const codeJournalNotInParams = [];
+                        //const compteNotInParams = existance(ListeCompteParams, listeUniqueCompte);
+                        const compteNotInParams = [];
                         const compteNotInParamsGen = existance(ListeCompteParams, listeUniqueCompteGen);
                         const compteNotInParamsAux = existance(ListeCompteParams, listeUniqueCompteAux);
 
@@ -575,7 +585,8 @@ export default function ImportJournal() {
                         const listeUniqueDevisesInitial = [...new Set(result.data.map(item => (item.Idevise || '').trim()))];
                         const listeUniqueDevises = listeUniqueDevisesInitial.filter(item => item !== '');
                         const listeDevisesParams = [...new Set((devises || []).map(d => d.code))];
-                        const devisesNotInParams = existance(listeDevisesParams, listeUniqueDevises);
+                        //const devisesNotInParams = existance(listeDevisesParams, listeUniqueDevises);
+                        const devisesNotInParams = [];
                         const numberOfEmptyDevises = result.data.filter(row => !row.Idevise || row.Idevise.trim() === '').length;
 
                         if (codeJournalNotInParams.length > 0) {
