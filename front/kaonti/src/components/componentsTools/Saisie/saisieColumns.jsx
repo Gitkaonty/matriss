@@ -3,7 +3,7 @@ import FormatedInput from '../FormatedInput';
 import { IoAddSharp } from "react-icons/io5";
 import { GoX } from "react-icons/go";
 import { useMemo } from 'react';
-import { FaRegEdit } from "react-icons/fa";import { LuView } from "react-icons/lu";
+import { FaRegEdit } from "react-icons/fa";
 
 function CompteEditCell({ params, listePlanComptable }) {
     const options = useMemo(

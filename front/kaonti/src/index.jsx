@@ -18,9 +18,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <AuthProvider>
         <FileInfosProvider>
-          <Routes>
-            <Route path="/*" element={<App />} />
-          </Routes>
+          <App />
           <Toaster
             position="top-right"
             reverseOrder={false}

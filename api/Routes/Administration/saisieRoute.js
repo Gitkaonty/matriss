@@ -30,6 +30,8 @@ router.get('/recupDevise/:id', saisieController.getAllDevises);
 
 router.post('/ajoutJournal', verifyJWT, verifyPermission('ADD'), upload.single('file'), saisieController.addJournal);
 
+router.post('/modificationJournal', verifyJWT, verifyPermission('EDIT'), upload.single('file'), saisieController.modificationJournal);
+
 router.delete('/deleteJournal', verifyJWT, verifyPermission('DELETE'), saisieController.deleteJournal);
 
 // Rapprochements bancaires
@@ -88,8 +90,6 @@ router.get('/getAllJournal/:id_compte/:id_dossier/:id_exercice', saisieControlle
 router.post('/getJournalFiltered', verifyJWT, verifyPermission('VIEW'), saisieController.getJournalFiltered);
 
 router.post('/addLettrage', verifyJWT, verifyPermission('ADD'), saisieController.addLettrage);
-
-router.post('/modificationJournal', verifyJWT, verifyPermission('EDIT'), upload.single('file'), saisieController.modificationJournal);
 
 router.put('/deleteLettrage', verifyJWT, verifyPermission('DELETE'), saisieController.deleteLettrage);
 
