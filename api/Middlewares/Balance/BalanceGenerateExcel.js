@@ -43,7 +43,7 @@ async function getBalanceRows(id_compte, id_dossier, id_exercice, centraliser, u
   return list;
 }
 
-async function exportBalanceTableExcel(id_compte, id_dossier, id_exercice, centraliser, unSolded, movmentedCpt, workbook, dossierName, compteName, exStart, exEnd) {
+async function exportBalanceTableExcel(id_compte, id_dossier, id_exercice, centraliser, unSolded, movmentedCpt, workbook, dossierName, compteName, exStart, exEnd, data) {
   const rows = await getBalanceRows(id_compte, id_dossier, id_exercice, centraliser, unSolded, movmentedCpt);
 
   const ws = workbook.addWorksheet('Balance');
@@ -56,7 +56,7 @@ async function exportBalanceTableExcel(id_compte, id_dossier, id_exercice, centr
     const yyyy = d.getFullYear();
     return `${dd}/${mm}/${yyyy}`;
   }
-    ws.mergeCells('A1:C1');
+  ws.mergeCells('A1:C1');
   const titleCell = ws.getCell('A1');
   titleCell.value = 'BALANCE';
   titleCell.font = { bold: true, size: 16 };
@@ -83,7 +83,7 @@ async function exportBalanceTableExcel(id_compte, id_dossier, id_exercice, centr
   ws.columns = [
     { key: 'compte', width: 18 },
     { key: 'libelle', width: 40 },
-    { key: 'mvtdebit', width: 18, style: { numFmt: '#,##0.00' } },
+    { key: 'mvmcredit', width: 18, style: { numFmt: '#,##0.00' } },
     { key: 'mvtcredit', width: 18, style: { numFmt: '#,##0.00' } },
     { key: 'soldedebit', width: 18, style: { numFmt: '#,##0.00' } },
     { key: 'soldecredit', width: 18, style: { numFmt: '#,##0.00' } },
@@ -99,23 +99,23 @@ async function exportBalanceTableExcel(id_compte, id_dossier, id_exercice, centr
 
   let totMvtD = 0, totMvtC = 0, totSoldeD = 0, totSoldeC = 0;
 
-  rows.forEach(r => {
-    totMvtD += Number(r.mvtdebit || 0);
-    totMvtC += Number(r.mvtcredit || 0);
+  data.forEach(r => {
+    totMvtD += Number(r.mvmcredit || 0);
+    totMvtC += Number(r.mvmcredit || 0);
     totSoldeD += Number(r.soldedebit || 0);
     totSoldeC += Number(r.soldecredit || 0);
     ws.addRow({
-      compte: r['compteLibelle.compte'] || '',
-      libelle: r['compteLibelle.libelle'] || '',
-      mvtdebit: Number(r.mvtdebit || 0),
-      mvtcredit: Number(r.mvtcredit || 0),
+      compte: r.compte || '',
+      libelle: r.libelle || '',
+      mvmcredit: Number(r.mvmcredit || 0),
+      mvmcredit: Number(r.mvmcredit || 0),
       soldedebit: Number(r.soldedebit || 0),
       soldecredit: Number(r.soldecredit || 0)
     });
   });
 
   // Total row
-  const totalRow = ws.addRow({ compte: 'TOTAL', mvtdebit: totMvtD, mvtcredit: totMvtC, soldedebit: totSoldeD, soldecredit: totSoldeC });
+  const totalRow = ws.addRow({ compte: 'TOTAL', mvmcredit: totMvtD, mvmcredit: totMvtC, soldedebit: totSoldeD, soldecredit: totSoldeC });
   totalRow.font = { bold: true };
 
   // Align numbers
