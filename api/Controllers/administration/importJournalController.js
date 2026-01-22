@@ -639,6 +639,7 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
     const axeCode = `axe1_${Number(compteId)}_${Number(fileId)}`;
     const axeLibelle = 'axe1';
 
+    // IMPORTANT: la contrainte unique est sur caaxes.code (globale), donc on doit chercher par code uniquement.
     let axe = await caaxes.findOne({
       where: {
         code: axeCode,

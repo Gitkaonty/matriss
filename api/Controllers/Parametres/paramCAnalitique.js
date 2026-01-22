@@ -459,9 +459,10 @@ exports.deleteSections = async (req, res) => {
     }
 }
 
-exports.getListAxeSection = async (req, res) => {
+exports.getSections = async (req, res) => {
     try {
         const { id_dossier, id_compte } = req.params;
+
         if (!id_dossier || !id_compte) {
             return res.status(200).json({
                 state: false,
@@ -510,9 +511,11 @@ exports.getListAxeSection = async (req, res) => {
     }
 }
 
+exports.getListAxeSection = exports.getSections;
+
 exports.importSections = async (req, res) => {
     try {
-        const { compteId, fileId, axeId, sectionsData } = req.body;
+        const { compteId, fileId, axeId, sectionsData, recalcPourcentages } = req.body;
 
         let resData = {
             state: false,
@@ -545,8 +548,9 @@ exports.importSections = async (req, res) => {
             });
         }
 
+        const shouldRecalc = String(recalcPourcentages || 'oui').toLowerCase() !== 'non';
+
         const totalPourcentage = sectionsData.reduce((sum, item) => sum + (parseFloat(item.pourcentage) || 0), 0);
-        
         if (Math.abs(totalPourcentage - 100) > 0.1) {
             return res.json({
                 state: false,
@@ -559,7 +563,7 @@ exports.importSections = async (req, res) => {
 
         for (let i = 0; i < sectionsData.length; i++) {
             const item = sectionsData[i];
-            
+
             if (!item.section || !item.intitule || !item.compte) {
                 anomalies.push(`Ligne ${i + 1}: Données manquantes (section, intitulé ou compte)`);
                 continue;
@@ -589,19 +593,21 @@ exports.importSections = async (req, res) => {
         const createdSections = await caSections.bulkCreate(sectionsToCreate);
 
         if (createdSections && createdSections.length > 0) {
-            const allSections = await caSections.findAll({
-                where: { id_compte, id_dossier, id_axe },
-                attributes: ['id']
-            });
+            if (shouldRecalc) {
+                const allSections = await caSections.findAll({
+                    where: { id_compte, id_dossier, id_axe },
+                    attributes: ['id']
+                });
 
-            const nb = allSections.length;
-            const pct = nb > 0 ? Number((100 / nb).toFixed(2)) : 100;
+                const nb = allSections.length;
+                const pct = nb > 0 ? Number((100 / nb).toFixed(2)) : 100;
 
-            if (nb > 0) {
-                await caSections.update(
-                    { pourcentage: pct },
-                    { where: { id_compte, id_dossier, id_axe } }
-                );
+                if (nb > 0) {
+                    await caSections.update(
+                        { pourcentage: pct },
+                        { where: { id_compte, id_dossier, id_axe } }
+                    );
+                }
             }
 
             resData.state = true;
