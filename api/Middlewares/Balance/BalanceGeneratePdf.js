@@ -5,41 +5,7 @@ const { Op } = Sequelize;
 const dossierplancomptable = db.dossierplancomptable;
 const balances = db.balances;
 
-const generateBalanceContent = async (id_compte, id_dossier, id_exercice, centraliser, unSolded, movmentedCpt) => {
-  const whereBalance = {
-    id_compte: Number(id_compte),
-    id_dossier: Number(id_dossier),
-    id_exercice: Number(id_exercice),
-    valeur: { [Op.gt]: unSolded ? 0 : -1 },
-    [Op.or]: [
-      { mvtdebit: { [Op.gt]: movmentedCpt ? 0 : -1 } },
-      { mvtcredit: { [Op.gt]: movmentedCpt ? 0 : -1 } }
-    ]
-  };
-
-  const list = await balances.findAll({
-    where: whereBalance,
-    include: [
-      {
-        model: dossierplancomptable,
-        as: 'compteLibelle',
-        attributes: [
-          ['compte', 'compte'],
-          ['libelle', 'libelle'],
-          ['nature', 'nature']
-        ],
-        required: true,
-        where: {
-          id_compte: Number(id_compte),
-          id_dossier: Number(id_dossier),
-          nature: { [Op.ne]: centraliser ? 'Aux' : 'Collectif' }
-        }
-      }
-    ],
-    raw: true,
-    order: [[{ model: dossierplancomptable, as: 'compteLibelle' }, 'compte', 'ASC']]
-  });
-
+const generateBalanceContent = async (id_compte, id_dossier, id_exercice, centraliser, unSolded, movmentedCpt, data) => {
   const buildTable = (data) => {
     const body = [];
     body.push([
@@ -61,16 +27,16 @@ const generateBalanceContent = async (id_compte, id_dossier, id_exercice, centra
       const isEven = i % 2 === 0; // lignes paires et impaires
       const rowColor = isEven ? '#FFFFFF' : '#F8F9F9'; // blanc / gris clair
 
-      totMvtD += Number(r.mvtdebit || 0);
-      totMvtC += Number(r.mvtcredit || 0);
+      totMvtD += Number(r.mvmdebit || 0);
+      totMvtC += Number(r.mvmcredit || 0);
       totSoldeD += Number(r.soldedebit || 0);
       totSoldeC += Number(r.soldecredit || 0);
 
       body.push([
-        { text: r['compteLibelle.compte'] || '', alignment: 'left', margin: [0, 2, 0, 2], fillColor: rowColor },
-        { text: r['compteLibelle.libelle'] || '', alignment: 'left', margin: [0, 2, 0, 2], fillColor: rowColor },
-        { text: fmt(r.mvtdebit), alignment: 'right', margin: [0, 2, 0, 2], fillColor: rowColor },
-        { text: fmt(r.mvtcredit), alignment: 'right', margin: [0, 2, 0, 2], fillColor: rowColor },
+        { text: r.compte || '', alignment: 'left', margin: [0, 2, 0, 2], fillColor: rowColor },
+        { text: r.libelle || '', alignment: 'left', margin: [0, 2, 0, 2], fillColor: rowColor },
+        { text: fmt(r.mvmdebit), alignment: 'right', margin: [0, 2, 0, 2], fillColor: rowColor },
+        { text: fmt(r.mvmcredit), alignment: 'right', margin: [0, 2, 0, 2], fillColor: rowColor },
         { text: fmt(r.soldedebit), alignment: 'right', margin: [0, 2, 0, 2], fillColor: rowColor },
         { text: fmt(r.soldecredit), alignment: 'right', margin: [0, 2, 0, 2], fillColor: rowColor }
       ]);
@@ -98,7 +64,7 @@ const generateBalanceContent = async (id_compte, id_dossier, id_exercice, centra
     ];
   };
 
-  return { buildTable, list };
+  return { buildTable, list: data };
 };
 
 module.exports = { generateBalanceContent };

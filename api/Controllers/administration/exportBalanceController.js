@@ -356,7 +356,7 @@ module.exports = {
     recupBalance,
     exportPdf: async (req, res) => {
         try {
-            const { centraliser = false, unSolded = false, movmentedCpt = false, compteId, fileId, exerciceId } = req.body || {};
+            const { centraliser = false, unSolded = false, movmentedCpt = false, compteId, fileId, exerciceId, data } = req.body || {};
 
             if (!compteId || !fileId || !exerciceId) {
                 return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
@@ -366,7 +366,7 @@ module.exports = {
             const exercice = await exercices.findByPk(exerciceId);
             const compte = await userscomptes.findByPk(compteId, { attributes: ['id', 'nom'], raw: true });
 
-            const { buildTable, list } = await generateBalanceContent(compteId, fileId, exerciceId, centraliser, unSolded, movmentedCpt);
+            const { buildTable, list } = await generateBalanceContent(compteId, fileId, exerciceId, centraliser, unSolded, movmentedCpt, data);
             if (!list || list.length === 0) {
                 return res.status(404).json({ state: false, msg: 'Aucune donnée de balance.' });
             }
@@ -437,7 +437,7 @@ module.exports = {
     },
     exportExcel: async (req, res) => {
         try {
-            const { centraliser = false, unSolded = false, movmentedCpt = false, compteId, fileId, exerciceId } = req.body || {};
+            const { centraliser = false, unSolded = false, movmentedCpt = false, compteId, fileId, exerciceId, data } = req.body || {};
             if (!compteId || !fileId || !exerciceId) {
                 return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
             }
@@ -447,7 +447,7 @@ module.exports = {
             const compte = await userscomptes.findByPk(compteId, { attributes: ['id', 'nom'], raw: true });
 
             const workbook = new ExcelJS.Workbook();
-            await exportBalanceTableExcel(compteId, fileId, exerciceId, centraliser, unSolded, movmentedCpt, workbook, dossier?.dossier, compte?.nom, exercice?.date_debut, exercice?.date_fin);
+            await exportBalanceTableExcel(compteId, fileId, exerciceId, centraliser, unSolded, movmentedCpt, workbook, dossier?.dossier, compte?.nom, exercice?.date_debut, exercice?.date_fin, data);
             workbook.views = [{ activeTab: 0 }];
 
             res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

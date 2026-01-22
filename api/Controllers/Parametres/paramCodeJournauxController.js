@@ -225,6 +225,10 @@ const importCodeJournaux = async (req, res) => {
     console.log('[importCodeJournaux] Plan comptable count:', planComptable.length);
     const planComptableMap = new Map();
     planComptable.forEach(pc => {
+      if (!pc.compte) {
+        console.log('[importCodeJournaux] Compte null trouvé, ignoré');
+        return;
+      }
       const compteKey = pc.compte.trim().toUpperCase();
       const compteData = {
         id: pc.id,

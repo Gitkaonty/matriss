@@ -103,6 +103,7 @@ export default function ExportBalance() {
                 compteId,
                 fileId,
                 exerciceId: selectedPeriodeId,
+                data: balance
             };
             const response = await axios.post(url, body, { responseType: 'blob' });
             const blobType = type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
@@ -121,7 +122,7 @@ export default function ExportBalance() {
             setTraitementJournalMsg('');
             handleCloseExportMenu();
         }
-    }, [checked, unsoldedCompte, movmentedCpt, compteId, fileId, selectedPeriodeId, handleCloseExportMenu]);
+    }, [checked, unsoldedCompte, movmentedCpt, compteId, fileId, selectedPeriodeId, handleCloseExportMenu, balance]);
 
     //récupérer les informations du dossier sélectionné
     useEffect(() => {
@@ -348,7 +349,7 @@ export default function ExportBalance() {
         return () => {
             if (balanceFetchTimer.current) clearTimeout(balanceFetchTimer.current);
         };
-    }, [fileId, selectedPeriodeId, checked, unsoldedCompte, movmentedCpt]);
+    }, [fileId, selectedPeriodeId, checked, unsoldedCompte, movmentedCpt, type]);
 
     //Formulaire pour l'import du journal
     const formikImport = useFormik({

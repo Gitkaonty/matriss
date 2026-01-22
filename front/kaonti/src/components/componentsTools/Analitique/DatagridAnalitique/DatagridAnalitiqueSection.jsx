@@ -22,7 +22,7 @@ import * as Yup from "yup";
 import PopupConfirmDelete from '../../popupConfirmDelete';
 import FormatedInput from '../../FormatedInput';
 import useAxiosPrivate from '../../../../../config/axiosPrivate';
-import PopupImportAnalitique from '../../PopupImportAnalitique';
+import PopupImportAnalitique from '../../../menuComponent/Parametrages/analytiques/PopupImportAnalitique';
 
 const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, isCaActive, canModify, canAdd, canDelete, canView }) => {
     const apiRef = useGridApiRef();
@@ -57,6 +57,7 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
     const [pendingSavePayload, setPendingSavePayload] = useState(null);
     const [pendingAction, setPendingAction] = useState(null); // 'add'
     const [recalcChoiceForNewRow, setRecalcChoiceForNewRow] = useState(null); // 'oui' | 'non'
+    const [pourcentageError, setPourcentageError] = useState(''); // Message d'erreur pour le total des pourcentages
 
     //formulaire pour la sauvegarde
     const formNewParam = useFormik({
@@ -607,11 +608,30 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
         })
             .then((response) => {
                 if (response?.data?.state) {
-                    setSectionsData(response?.data?.data)
+                    setSectionsData(response?.data?.data);
+                    checkTotalPourcentage(response?.data?.data);
                 } else {
                     toast.error(response?.data?.message);
                 }
             })
+    }
+
+    const checkTotalPourcentage = (data) => {
+        if (!data || data.length === 0) {
+            setPourcentageError('');
+            return;
+        }
+
+        const total = data.reduce((sum, item) => {
+            const value = parseFloat(item.pourcentage) || 0;
+            return sum + value;
+        }, 0);
+
+        if (Math.abs(total - 100) >= 1) {
+            setPourcentageError(`Le total des pourcentages doit etre egale a 100%`);
+        } else {
+            setPourcentageError('');
+        }
     }
 
     const deselectRow = (ids) => {
@@ -688,6 +708,10 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
         }
     }, [id_compte, id_dossier, isRefreshed, selectedRowAxeId])
 
+    useEffect(() => {
+        checkTotalPourcentage(sectionsData);
+    }, [sectionsData])
+
     return (
         <>
             {openRecalcPopup ? (
@@ -748,7 +772,6 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
             <Box
                 sx={{ width: '70%' }}
             >
-
                 <Stack
                     sx={{
                         width: '100%',
@@ -759,6 +782,25 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
                     direction={'row'}
                     spacing={0.5}
                 >
+                    {pourcentageError && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
+                            <Typography 
+                                variant="body2" 
+                                sx={{ 
+                                    color: '#d32f2f', 
+                                    backgroundColor: '#ffebee',
+                                    padding: '6px 10px',
+                                    borderRadius: '4px',
+                                    border: '1px solid #ffcdd2',
+                                    fontWeight: 'bold',
+                                    fontSize: '12px'
+                                }}
+                            >
+                                ⚠️ {pourcentageError}
+                            </Typography>
+                        </Box>
+                    )}
+
                     <Tooltip title="Importer des sections">
                         <Stack>
                             <IconButton
@@ -971,6 +1013,7 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
             </Box>
         </>
     );
+
 }
 
 export default DatagridAnalitiqueSection
