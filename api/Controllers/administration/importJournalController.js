@@ -108,15 +108,16 @@ const createNotExistingCompte = async (req, res) => {
       await Promise.all(
         genList.map(async (item) => {
           const compte = String(item.CompteNum || '').trim();
+          const natureCompte = item.CompAuxNum !== '' ? 'Collectif' : 'General';
           if (!compte) return null;
           const exists = await dossierPlanComptable.findOne({ where: { id_compte: compteId, id_dossier: fileId, compte } });
           if (!exists) {
-            return dossierPlanComptable.create({
+            await dossierPlanComptable.create({
               id_compte: compteId,
               id_dossier: fileId,
               compte,
               libelle: item.CompteLib || '',
-              nature: "General",
+              nature: natureCompte,
               typetier: "general",
               baseaux: compte,
               pays: 'Madagascar'
@@ -136,7 +137,7 @@ const createNotExistingCompte = async (req, res) => {
           if (exists) return null;
           // Trouver le général de rattachement par CompteNum (baseaux)
           const genCompte = String(item.CompteNum || '').trim();
-          const base = await dossierPlanComptable.findOne({ where: { id_compte: compteId, id_dossier: fileId, compte: genCompte } });
+          const base = await dossierPlanComptable.findOne({ where: { id_compte: compteId, id_dossier: fileId, compte: genCompte, nature: 'Collectif' } });
           return dossierPlanComptable.create({
             id_compte: compteId,
             id_dossier: fileId,
@@ -145,7 +146,8 @@ const createNotExistingCompte = async (req, res) => {
             nature: "Aux",
             typetier: "sans-nif",
             pays: 'Madagascar',
-            baseaux: base?.id || 0,
+            baseaux_id: base?.id,
+            baseaux: base?.compte,
             typecomptabilite: 'Français'
           });
         })
@@ -154,7 +156,7 @@ const createNotExistingCompte = async (req, res) => {
 
     await db.sequelize.query(
       `UPDATE dossierplancomptables
-       SET baseaux_id = id
+       SET baseaux_id = id, baseaux = compte
        WHERE compte = baseaux
        AND id_compte = :compteId
        AND id_dossier = :fileId`,
@@ -398,6 +400,18 @@ const importJournal = async (req, res) => {
             const usedCode = (item.Idevise && item.Idevise.trim()) ? item.Idevise.trim() : 'MGA';
             const idDevise = deviseMap.get(usedCode) || defaultDeviseId || null;
 
+            const dossierPc = await dossierPlanComptable.findByPk(compteNumId);
+            const comptegen = dossierPc?.compte;
+            const comptebaseaux = dossierPc?.baseaux_id;
+
+            let libelleaux = '';
+            let compteaux = null;
+            if (comptebaseaux) {
+              const cpt = await dossierPlanComptable.findByPk(comptebaseaux);
+              compteaux = cpt?.compte;
+              libelleaux = cpr?.libelle;
+            }
+
             // Création journal
             await journals.create({
 
@@ -423,6 +437,9 @@ const importJournal = async (req, res) => {
               comptegen: rawGen,
               compteaux: rawAux,
               libelleaux: item.EcritureLibAux
+              // comptegen: comptegen,
+              // compteaux: compteaux,
+              // libelleaux: libelleaux
             });
 
             importSuccess = importSuccess * 1;
@@ -857,6 +874,10 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
               lettragedate: datelettrage || null,
               saisiepar: Number(userId),
               modifierpar: Number(userId) || 0,
+              comptegen: rawGen,
+              compteaux: (rawAux === '' || rawAux === null) ? rawGen : rawAux,
+              libelleaux: 'Pas encore de libellé',
+              libellecompte: 'Pas encore de libellé'
             });
 
             // Gestion de la colonne analytique

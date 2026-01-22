@@ -754,7 +754,7 @@ const PopupAddNewAccount = ({
                             setSelectedCommune(selectedRow.commune);
 
                             setFieldValue("typecomptabilite", selectedRow.typecomptabilite || 'Français');
-                            setFieldValue("compteautre", selectedRow?.compteautre);
+                            setFieldValue("compteautre", selectedRow?.compteautre || "");
                             setFieldValue("libelleautre", selectedRow?.libelleautre);
 
                             //Activer ou non la listbox base compte auxiliaire

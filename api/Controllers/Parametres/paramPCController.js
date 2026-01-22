@@ -10,6 +10,10 @@ const dossierpcdetailcpttva = db.dossierpcdetailcpttva;
 const dossiers = db.dossiers;
 const localites = db.localites;
 const consolidationDossier = db.consolidationDossier;
+const journals = db.journals;
+const exercices = db.exercices;
+
+const { Op } = require("sequelize");
 
 dossierPlanComptable.belongsTo(dossierPlanComptableCopy, { as: 'BaseAux', foreignKey: 'baseaux_id', targetKey: 'id' });
 
@@ -82,6 +86,79 @@ const updateCompteAux = async (id_numcpt, baseaux_id, nature) => {
         id: id_numcpt
       }
     })
+  }
+}
+
+const updateLibelleInJournal = async (
+  id,
+  id_compte,
+  id_dossier,
+  nature,
+  libelle
+) => {
+
+  const exerciceData = await exercices.findAll({
+    where: {
+      id_dossier,
+      id_compte,
+      rang: { [Op.gte]: 0 }
+    },
+    raw: true
+  })
+
+  if (!exerciceData.length) return
+
+  const id_exercices = exerciceData.map(e => Number(e.id))
+
+  if (nature === 'Aux') {
+    await journals.update(
+      {
+        libelleaux: libelle
+      },
+      {
+        where: {
+          id_numcpt: id,
+          id_compte,
+          id_dossier,
+          id_exercice: { [Op.in]: id_exercices }
+        }
+      }
+    )
+    return
+  }
+
+  if (nature === 'General') {
+    await journals.update(
+      {
+        libellecompte: libelle,
+        libelleaux: libelle
+      },
+      {
+        where: {
+          id_numcptcentralise: id,
+          id_compte,
+          id_dossier,
+          id_exercice: { [Op.in]: id_exercices }
+        }
+      }
+    )
+    return
+  }
+
+  if (nature === 'Collectif') {
+    await journals.update(
+      {
+        libellecompte: libelle
+      },
+      {
+        where: {
+          id_numcptcentralise: id,
+          id_compte,
+          id_dossier,
+          id_exercice: { [Op.in]: id_exercices }
+        }
+      }
+    )
   }
 }
 
@@ -1267,6 +1344,8 @@ const AddCptToPc = async (req, res) => {
       const dpcUpdated = await dossierPlanComptable.findByPk(itemId);
       resData.dataModified = dpcUpdated;
 
+      await updateLibelleInJournal(itemId, idCompte, idDossier, nature, libelle);
+
       res.json(resData);
     }
   } catch (error) {
@@ -1428,14 +1507,14 @@ const recupPcIdLibelle = async (req, res) => {
       where: {
         id_dossier: { [Sequelize.Op.in]: id_dossiers_a_utiliser },
         id_compte,
-        libelle: { [Sequelize.Op.ne]: 'Collectif' },
+        nature: { [Sequelize.Op.ne]: 'Collectif' },
         typecomptabilite: typeComptabilite
       },
       include: [
         {
           model: dossierPlanComptable,
           as: 'BaseAux',
-          attributes: ['compte'],
+          attributes: ['compte', 'libelle'],
           required: false,
           where: {
             id_dossier: { [Sequelize.Op.in]: id_dossiers_a_utiliser },
@@ -1448,13 +1527,14 @@ const recupPcIdLibelle = async (req, res) => {
         }
       ],
       order: [['compte', 'ASC']],
-      attributes: ['libelle', 'id', 'id_dossier', 'compteautre', 'libelleautre']
+      attributes: ['libelle', 'id', 'id_dossier', 'compteautre', 'libelleautre', 'compte']
     });
 
     const mappedListe = listepc.map(item => ({
       id: item.id,
       libelle: typeComptabilite === 'Autres' ? item?.libelleautre ? item?.libelleautre + ' (Autre)' : item?.libelle || 'Aucune libellé' : item?.libelle || 'Aucune libellé',
-      compte: typeComptabilite === 'Autres' ? item?.compteautre ? item?.compteautre : item?.BaseAux?.compte || null : item?.BaseAux?.compte || null,
+      compte: typeComptabilite === 'Autres' ? item?.compteautre ? item?.compteautre : item?.compte || null : item?.compte || null,
+      libelleaux: typeComptabilite === 'Autres' ? item?.BaseAux?.libelle ? item?.BaseAux?.libelle + ' (Autre)' : item?.BaseAux?.libelle || 'Aucune libellé' : item?.BaseAux?.libelle || 'Aucune libellé',
       id_dossier: Number(item?.id_dossier) || null,
       dossier: item?.dossier.dossier || null,
     }));

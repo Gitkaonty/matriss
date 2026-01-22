@@ -2081,12 +2081,18 @@ exports.modificationJournal = async (req, res) => {
 
         for (const row of tableRows) {
             const dossierPc = await dossierplancomptable.findByPk(row.compte);
+            const libellecompte = dossierPc?.libelle;
+            const comptegen = dossierPc?.compte;
             const comptebaseaux = dossierPc?.baseaux_id;
 
             let id_numcptcentralise = null;
+            let libelleaux = '';
+            let compteaux = null;
             if (comptebaseaux) {
                 const cpt = await dossierplancomptable.findByPk(comptebaseaux);
                 id_numcptcentralise = cpt?.id || null;
+                compteaux = cpt?.compte;
+                libelleaux = cpt?.libelle;
             }
 
             const dateecriture = new Date(
@@ -2121,7 +2127,11 @@ exports.modificationJournal = async (req, res) => {
                 piece: row.piece || '',
                 piecedate: row.piecedate || null,
                 id_ecriture: idEcritureCommun,
-                fichier: null
+                fichier: null,
+                comptegen: comptegen,
+                compteaux: compteaux,
+                libellecompte: libellecompte,
+                libelleaux: libelleaux
             };
 
             const journalExistant = await journals.findByPk(row.id);
@@ -3339,12 +3349,18 @@ exports.addJournal = async (req, res) => {
 
         const newTableRows = await Promise.all(tableRows.map(async (row) => {
             const dossierPc = await dossierplancomptable.findByPk(row.compte);
+            const libellecompte = dossierPc?.libelle;
+            const comptegen = dossierPc?.compte;
             const comptebaseaux = dossierPc?.baseaux_id;
 
             let id_numcptcentralise = null;
+            let libelleaux = '';
+            let compteaux = null;
             if (comptebaseaux) {
                 const cpt = await dossierplancomptable.findByPk(comptebaseaux);
                 id_numcptcentralise = cpt?.id || null;
+                compteaux = cpt?.compte;
+                libelleaux = cpt?.libelle;
             }
 
             const dateecriture = new Date(
@@ -3379,7 +3395,11 @@ exports.addJournal = async (req, res) => {
                 libelle: row.libelle || '',
                 piece: row.piece || '',
                 piecedate: row.piecedate || null,
-                fichier: fichierCheminRelatif
+                fichier: fichierCheminRelatif,
+                comptegen: comptegen,
+                compteaux: compteaux,
+                libellecompte: libellecompte,
+                libelleaux: libelleaux
             };
         }));
 
@@ -3442,24 +3462,36 @@ exports.addEcriture = async (req, res) => {
         let id_devise = null;
 
         const dossierPc_pc = await dossierplancomptable.findByPk(id_plan_comptable);
+        const comptegen_pc = dossierPc_cp?.compte;
+
         const dossierPc_cp = await dossierplancomptable.findByPk(id_contre_partie);
+        const comptegen_cp = dossierPc_cp?.compte;
 
         if (!dossierPc_pc || !dossierPc_cp) {
             throw new Error("Compte ou contrepartie introuvable");
         }
 
         const comptebaseaux_pc = dossierPc_pc?.baseaux_id;
+        let libelleaux_pc = '';
+        let compteaux_pc = '';
+
         const comptebaseaux_cp = dossierPc_cp?.baseaux_id;
+        let libelleaux_cp = '';
+        let compteaux_cp = '';
 
         let id_numcptcentralise_pc = null;
         if (comptebaseaux_pc) {
             const cpt = await dossierplancomptable.findByPk(comptebaseaux_pc);
+            libelleaux_pc = cpt?.libelle;
+            compteaux_pc = cpt?.compte;
             id_numcptcentralise_pc = cpt?.id || null;
         }
 
         let id_numcptcentralise_cp = null;
         if (comptebaseaux_cp) {
             const cpt = await dossierplancomptable.findByPk(comptebaseaux_cp);
+            libelleaux_cp = cpt?.libelle;
+            compteaux_pc = cpt?.compte;
             id_numcptcentralise_cp = cpt?.id || null;
         }
 
@@ -3530,7 +3562,10 @@ exports.addEcriture = async (req, res) => {
             dateecriture: new Date(),
             saisiepar: id_compte,
             devise: 'MGA',
-            id_numcptcentralise: id_numcptcentralise_pc
+            id_numcptcentralise: id_numcptcentralise_pc,
+            comptegen: comptegen_pc,
+            compteaux: compteaux_pc,
+            libelleaux: libelleaux_pc
         }, { transaction });
 
         await journals.create({
@@ -3547,7 +3582,10 @@ exports.addEcriture = async (req, res) => {
             dateecriture: new Date(),
             saisiepar: id_compte,
             devise: 'MGA',
-            id_numcptcentralise: id_numcptcentralise_cp
+            id_numcptcentralise: id_numcptcentralise_cp,
+            comptegen: comptegen_cp,
+            compteaux: compteaux_cp,
+            libelleaux: libelleaux_cp
         }, { transaction });
 
         await transaction.commit();
