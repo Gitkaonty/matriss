@@ -744,6 +744,189 @@ const updateAccountsLength = async (req, res) => {
   }
 }
 
+const padCompte = (val, longueur) => {
+  if (val === null || val === undefined) return null;
+
+  const s = String(val).trim();
+  if (s === "" || s === "0") return null;
+
+  return s.padEnd(longueur, "0").slice(0, longueur);
+};
+
+const updateAccountsLengthInJournals = async (req, res) => {
+  try {
+    const { fileId, compteId, newLongueurStd, newLongueurAux, autoCompletion } = req.body;
+
+    const rows = await sequelize.query(
+      `
+      SELECT
+        j.id,
+        j.comptegen,
+        j.compteaux,
+        dpc_collectif.nature AS nature_collectif,
+        dpc_aux.nature       AS nature_aux
+      FROM journals j
+      LEFT JOIN dossierplancomptables dpc_collectif ON dpc_collectif.id = j.id_numcptcentralise
+      LEFT JOIN dossierplancomptables dpc_aux       ON dpc_aux.id       = j.id_numcpt
+      WHERE j.id_dossier = :fileId
+        AND j.id_compte  = :compteId
+      `,
+      {
+        replacements: { fileId, compteId },
+        type: sequelize.QueryTypes.SELECT
+      }
+    );
+
+    for (const row of rows) {
+      let newCompteGen = padCompte(row.comptegen, newLongueurStd);
+
+      let newCompteAux = row.compteaux;
+
+      if (row.compteaux) {
+        if (row.nature_aux === 'Aux') {
+          if (autoCompletion === true) {
+            newCompteAux = padCompte(row.compteaux, newLongueurAux);
+          }
+        } else {
+          newCompteAux = padCompte(row.compteaux, newLongueurStd);
+        }
+      }
+
+      await sequelize.query(
+        `
+    UPDATE journals
+    SET
+      comptegen = :newCompteGen,
+      compteaux = :newCompteAux
+    WHERE id = :id
+    `,
+        {
+          replacements: {
+            id: row.id,
+            newCompteGen,
+            newCompteAux
+          }
+        }
+      );
+    }
+
+    return res.json({
+      state: true,
+      message: 'Mise à jour des comptes terminée dans le journal',
+      total: rows.length
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(400).json({
+      state: false,
+      message: error.message
+    });
+  }
+};
+
+const updateAccountsLengthInPlanComptable = async (req, res) => {
+  try {
+    const {
+      fileId,
+      newLongueurStd,
+      newLongueurAux,
+      autoCompletion
+    } = req.body;
+
+    const rows = await sequelize.query(
+      `
+      SELECT
+        dpc.id,
+        dpc.compte,
+        dpc.nature,
+        dpc.baseaux,
+        dpc.baseaux_id,
+
+        dpc_base.nature AS baseaux_nature
+
+      FROM dossierplancomptables dpc
+
+      LEFT JOIN dossierplancomptables dpc_base
+        ON dpc_base.id = dpc.baseaux_id
+
+      WHERE dpc.id_dossier = :fileId
+      `,
+      {
+        replacements: { fileId },
+        type: sequelize.QueryTypes.SELECT
+      }
+    );
+
+    let updated = 0;
+
+    for (const row of rows) {
+
+      let newCompte = row.compte;
+      let newBaseaux = row.baseaux;
+
+      if (row.nature === 'General' || row.nature === 'Collectif') {
+        newCompte = padCompte(row.compte, newLongueurStd);
+      }
+
+      if (row.nature === 'Aux') {
+        if (autoCompletion !== true) continue;
+
+        newCompte = padCompte(row.compte, newLongueurAux);
+      }
+
+      if (row.baseaux_id && row.baseaux_nature) {
+        if (
+          row.baseaux_nature === 'Collectif' ||
+          row.baseaux_nature === 'General'
+        ) {
+          newBaseaux = padCompte(row.baseaux, newLongueurStd);
+        }
+      }
+
+      if (
+        newCompte === row.compte &&
+        newBaseaux === row.baseaux
+      ) {
+        continue;
+      }
+
+      await sequelize.query(
+        `
+        UPDATE dossierplancomptables
+        SET
+          compte  = :newCompte,
+          baseaux = :newBaseaux
+        WHERE id = :id
+        `,
+        {
+          replacements: {
+            id: row.id,
+            newCompte,
+            newBaseaux
+          }
+        }
+      );
+
+      updated++;
+    }
+
+    return res.json({
+      state: true,
+      message: "Plan comptable mis à jour (compte + baseaux)",
+      total: rows.length,
+      updated
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(400).json({
+      state: false,
+      message: error.message
+    });
+  }
+};
+
 module.exports = {
   getInfosCRM,
   modifyingInfos,
@@ -757,5 +940,7 @@ module.exports = {
   deleteFiliale,
   deleteDomBank,
   getListePays,
-  updateAccountsLength
+  updateAccountsLength,
+  updateAccountsLengthInJournals,
+  updateAccountsLengthInPlanComptable
 };

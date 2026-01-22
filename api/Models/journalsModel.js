@@ -172,7 +172,12 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: true
         },
         libelleaux: {
-            type: DataTypes.STRING(50),
+            type: DataTypes.STRING(250),
+            unique: false,
+            allowNull: true
+        },
+        libellecompte: {
+            type: DataTypes.STRING(250),
             unique: false,
             allowNull: true
         }

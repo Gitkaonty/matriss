@@ -1869,8 +1869,11 @@ export default function ParamCRM() {
             // Récupérer les anciennes valeurs de longueur pour comparaison
             const oldLongueurStd = crm?.longcomptestd || 6;
             const oldLongueurAux = crm?.longcompteaux || 6;
+            const oldAutoCompletion = crm?.autocompletion;
+
             const newLongueurStd = parseInt(values.longueurcptstd);
             const newLongueurAux = parseInt(values.longueurcptaux);
+            const newAutoCompletion = values.autocompletion;
 
             // Sauvegarder les modifications CRM
             const portefeuilleIds = values.portefeuille.map(val => val.id);
@@ -1885,8 +1888,14 @@ export default function ParamCRM() {
                 toast.success(resData.msg);
 
                 // Si la longueur des comptes a changé, mettre à jour tous les comptes existants
-                if (oldLongueurStd !== newLongueurStd || oldLongueurAux !== newLongueurAux) {
-                    await updateExistingAccountsLength(oldLongueurStd, newLongueurStd, oldLongueurAux, newLongueurAux, values.autocompletion);
+                if (oldLongueurStd !== newLongueurStd || oldLongueurAux !== newLongueurAux || oldAutoCompletion !== newAutoCompletion) {
+                    // await updateExistingAccountsLength(oldLongueurStd, newLongueurStd, oldLongueurAux, newLongueurAux, values.autocompletion);
+
+                    // Modification compte journal, mettre à jour tous les comptes existants
+                    await updateAccountsLengthInJournals(newLongueurStd, newLongueurAux, values.autocompletion);
+
+                    // Modification compte plan comptable, mettre à jour tous les comptes existants
+                    await updateAccountsLengthInPlanComptable(newLongueurStd, newLongueurAux, values.autocompletion);
                 }
             } else {
                 toast.error(resData.msg);
@@ -1929,6 +1938,7 @@ export default function ParamCRM() {
             };
 
             const response = await axios.post(`/paramCrm/updateAccountsLength`, updateData);
+            // const response = await axios.post('/paramCrm/updateAccountsLengthInPlanComptable', updateData);
 
             if (response.data.state) {
                 toast.success(`Longueur des comptes mise à jour : ${response.data.updatedCount} comptes modifiés`);
@@ -1940,6 +1950,39 @@ export default function ParamCRM() {
             toast.error("Paramètres sauvegardés mais erreur lors de la mise à jour des comptes existants");
         }
     }
+
+    // Fonction pour mettre à jour la longueur de tous les comptes dans le journals
+    const updateAccountsLengthInJournals = async (newLongueurStd, newLongueurAux, autoCompletion) => {
+        const payload = {
+            fileId: Number(fileId),
+            compteId: Number(compteId),
+            newLongueurStd: newLongueurStd,
+            newLongueurAux: newLongueurAux,
+            autoCompletion: autoCompletion
+        }
+        const response = await axios.post('/paramCrm/updateAccountsLengthInJournals', payload);
+        if (response?.data?.state) {
+        } else {
+            toast.error("Erreur lors de la modification de longueur de compte dans le journal")
+        }
+    }
+
+    const updateAccountsLengthInPlanComptable = async (newLongueurStd, newLongueurAux, autoCompletion) => {
+        const payload = {
+            fileId: Number(fileId),
+            compteId: Number(compteId),
+            newLongueurStd: newLongueurStd,
+            newLongueurAux: newLongueurAux,
+            autoCompletion: autoCompletion
+        }
+        const response = await axios.post('/paramCrm/updateAccountsLengthInPlanComptable', payload);
+        if (response?.data?.state) {
+
+        } else {
+            toast.error('Erreur lors de la modification de la longueur de compte dans le journal');
+        }
+    }
+
     const handleChangeCentrefisc = async (newValue) => {
         try {
             await axios.put(`/home/FileCentrefisc/${fileId}`, { centrefisc: newValue });

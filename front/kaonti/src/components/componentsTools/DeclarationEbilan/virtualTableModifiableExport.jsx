@@ -309,7 +309,7 @@ const VirtualTableModifiableExport = ({ columns, rows, type, rowsCa }) => {
                 }}
               >
                 {
-                  column.id === "EcritureLib" || column.id === "libelle"
+                  column.id === "EcritureLib" || column.id === "compte"
                     ? "Total"
                     : column.isnumber
                       ? totalColumn(rowsBalance, column.id).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })

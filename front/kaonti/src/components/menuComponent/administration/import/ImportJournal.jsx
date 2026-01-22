@@ -80,7 +80,7 @@ export default function ImportJournal() {
     useEffect(() => {
         if (isImporting) {
             setProgressValue(sseProgress);
-            const displayMessage = currentLine > 0 && totalLines > 0 
+            const displayMessage = currentLine > 0 && totalLines > 0
                 ? `${sseMessage} (${currentLine}/${totalLines} lignes)`
                 : sseMessage;
             setTraitementJournalMsg(displayMessage);
@@ -441,9 +441,9 @@ export default function ImportJournal() {
     };
 
     const padCompte = (val) => {
-        if (val === null || val === undefined) return null;
+        if (val === null || val === undefined) return "";
         const s = String(val).trim();
-        if (s === "" || s === "0") return null;
+        if (s === "" || s === "0") return "";
         return s.padEnd(longeurCompteStd, "0").slice(0, longeurCompteStd);
     };
 
@@ -544,12 +544,13 @@ export default function ImportJournal() {
                         }
 
                         //stocker en 2 variables les comptes généraux et comptesaux pour la création
-                        const listeUniqueCompteGenInitial = [...new Set(
-                            result.data
-                                .map(item => item.CompteNum)
-                                .filter(val => val && val !== 0)
-                                .map(val => val.toString().padEnd(longeurCompteStd, "0").slice(0, longeurCompteStd))
-                        )
+                        const listeUniqueCompteGenInitial = [
+                            ...new Set(
+                                result.data
+                                    .map(item => item.CompteNum)
+                                    .filter(val => val && val !== 0)
+                                    .map(val => val.toString().padEnd(longeurCompteStd, "0").slice(0, longeurCompteStd))
+                            )
                         ];
                         const listeUniqueCompteGen = listeUniqueCompteGenInitial.filter(item => item !== '');
 
@@ -697,21 +698,20 @@ export default function ImportJournal() {
                             CompAuxNum: padCompte(item.CompAuxNum)
                         }));
 
-                        //const dataWithFooter = [...finalData, footerRow];
                         setJournalData(finalDataCompteFormatted);
                         formikImport.setFieldValue('journalData', finalDataCompteFormatted);
 
                         const mapGen = new Map();
 
-                        DataWithId.forEach(item => {
-                            const compte = item.CompteNum?.toString()
-                                .padEnd(longeurCompteStd, "0")
-                                .slice(0, longeurCompteStd);
+                        finalDataCompteFormatted.forEach(item => {
+                            const compteGen = item.CompteNum;
+                            const compteAux = item.CompAuxNum;
 
-                            if (compteNotInParamsGen.includes(compte) && !mapGen.has(compte)) {
-                                mapGen.set(compte, {
-                                    CompteNum: compte,
-                                    CompteLib: item.EcritureLib
+                            if (compteNotInParamsGen.includes(compteGen) && !mapGen.has(compteGen)) {
+                                mapGen.set(compteGen, {
+                                    CompteNum: compteGen,
+                                    CompteLib: item.EcritureLib,
+                                    CompAuxNum: compteAux
                                 });
                             }
                         });
@@ -1097,7 +1097,7 @@ export default function ImportJournal() {
                                 </Button>
                             </Stack>
 
-                            <ImportProgressBar 
+                            <ImportProgressBar
                                 isVisible={traitementJournalWaiting}
                                 message={traitementJournalMsg}
                                 variant="determinate"

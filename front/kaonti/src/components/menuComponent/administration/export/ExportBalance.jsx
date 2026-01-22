@@ -168,21 +168,21 @@ export default function ExportBalance() {
     const columns =
         [
             {
-                id: 'compteLibelle.compte',
+                id: 'compte',
                 label: 'Compte',
                 minWidth: 150,
                 align: 'left',
                 isnumber: false
             },
             {
-                id: 'compteLibelle.libelle',
+                id: 'libelle',
                 label: 'Libellé',
                 minWidth: 400,
                 align: 'left',
                 isnumber: false
             },
             {
-                id: type === 3 ? 'mvtdebitanalytique' : 'mvtdebit',
+                id: type === 3 ? 'mvtdebitanalytique' : 'mvmdebit',
                 label: 'Mouvement débit',
                 minWidth: 200,
                 align: 'right',
@@ -190,7 +190,7 @@ export default function ExportBalance() {
                 isnumber: true
             },
             {
-                id: type === 3 ? 'mvtcreditanalytique' : 'mvtcredit',
+                id: type === 3 ? 'mvtcreditanalytique' : 'mvmcredit',
                 label: 'Mouvement crédit',
                 minWidth: 200,
                 align: 'right',
@@ -292,7 +292,7 @@ export default function ExportBalance() {
                 setTraitementJournalMsg('');
             });
         } else {
-            axios.post(`/administration/exportBalance/recupBalance`, { centraliser, unSolded, movmentedCpt, compteId, fileId, exerciceId, type }).then((response) => {
+            axios.post(`/administration/exportBalance/recupBalanceFromJournal`, { centraliser, unSolded, movmentedCpt, compteId, fileId, exerciceId, type }).then((response) => {
                 const resData = response.data;
                 if (resData.state) {
                     canView ? setBalance(resData.list) : setBalance([]);

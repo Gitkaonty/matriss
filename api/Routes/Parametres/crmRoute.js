@@ -44,4 +44,10 @@ router.get('/getListePays', paramCRMController.getListePays);
 //Mettre à jour la longueur de tous les comptes existants
 router.post('/updateAccountsLength', paramCRMController.updateAccountsLength);
 
+// Mis à jour des longueurs des compte dans le journal
+router.post('/updateAccountsLengthInJournals', paramCRMController.updateAccountsLengthInJournals);
+
+// Mis à jour des longueurs ds compte dans le dossiier plan comptable V2
+router.post('/updateAccountsLengthInPlanComptable', paramCRMController.updateAccountsLengthInPlanComptable);
+
 module.exports = router;

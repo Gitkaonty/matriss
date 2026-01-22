@@ -113,45 +113,33 @@ const recupBalanceFromJournal = async (req, res) => {
             type = null
         } = req.body;
 
-        let rows = await db.sequelize.query(
+        const rows = await db.sequelize.query(
             `
-            SELECT 
-                A.compte,
-                A.libelle,
-                SUM(J.debit) AS mvmdebit,
-                SUM(J.credit) AS mvmcredit,
-                GREATEST(SUM(J.debit) - SUM(J.credit), 0) AS soldedebit,
-                GREATEST(SUM(J.credit) - SUM(J.debit), 0) AS soldecredit,
-                ABS(SUM(J.credit) - SUM(J.debit)) AS valeur
-            FROM dossierplancomptables C
-            JOIN dossierplancomptables A 
-                ON A.id = C.id
-            JOIN journals J 
-                ON 
-                ${centraliser
-                ? 'J.id_numcptcentralise = A.baseaux_id'
-                : 'J.id_numcpt = A.id'
-            }
+            SELECT
+                ${centraliser ? 'J.COMPTEGEN' : 'J.COMPTEAUX'} AS COMPTE,
+                ${centraliser ? 'MAX(J.LIBELLE)' : 'MAX(J.LIBELLEAUX)'} AS LIBELLE,
+                SUM(J.DEBIT) AS MVMDEBIT,
+                SUM(J.CREDIT) AS MVMCREDIT,
+                GREATEST(SUM(J.DEBIT) - SUM(J.CREDIT), 0) AS SOLDEDEBIT,
+                GREATEST(SUM(J.CREDIT) - SUM(J.DEBIT), 0) AS SOLDECREDIT
+            FROM
+                JOURNALS J
             WHERE
-                A.id_dossier = :id_dossier
-                AND A.id_compte = :id_compte
-                AND J.id_dossier = :id_dossier
-                AND J.id_compte = :id_compte
-                AND J.id_exercice = :id_exercice
+                J.ID_DOSSIER = :id_dossier
+                AND J.ID_EXERCICE = :id_exercice
+                AND J.ID_COMPTE = :id_compte
                 AND (
                     :type = 0
-                    OR (:type = 1 AND A.baseaux LIKE '401%')
-                    OR (:type = 2 AND A.baseaux LIKE '411%')
+                    OR (:type = 1 AND J.COMPTEGEN LIKE '401%')
+                    OR (:type = 2 AND J.COMPTEGEN LIKE '411%')
                 )
-                ${centraliser ? "AND A.nature <> 'Aux'" : "AND A.nature <> 'Collectif'"}
-            GROUP BY 
-                ${centraliser ? 'A.baseaux_id,' : 'A.id,'}
-                A.compte,
-                A.libelle
+            GROUP BY
+                ${centraliser ? 'J.COMPTEGEN' : 'J.COMPTEAUX'}
             HAVING
-                (:unSolded = 0 OR ABS(SUM(J.debit) - SUM(J.credit)) > 0)
-                AND (:movmentedCpt = 0 OR SUM(J.debit) > 0 OR SUM(J.credit) > 0)
-            ORDER BY A.compte ASC
+                (:unSolded = 0 OR ABS(SUM(J.DEBIT) - SUM(J.CREDIT)) > 0)
+                AND (:movmentedCpt = 0 OR SUM(J.DEBIT) > 0 OR SUM(J.CREDIT) > 0)
+            ORDER BY
+                ${centraliser ? 'J.COMPTEGEN' : 'J.COMPTEAUX'} ASC
             `,
             {
                 replacements: {
@@ -164,47 +152,6 @@ const recupBalanceFromJournal = async (req, res) => {
                 },
                 type: db.Sequelize.QueryTypes.SELECT
             });
-
-        // if (centraliser) {
-        //     const collectifs = await db.sequelize.query(
-        //         `
-        //         SELECT
-        //             C.ID AS id,
-        //             C.COMPTE AS compte,
-        //             C.LIBELLE AS libelle,
-        //             SUM(J.DEBIT) AS mvmdebit,
-        //             SUM(J.CREDIT) AS mvmcredit,
-        //             GREATEST(SUM(J.DEBIT) - SUM(J.CREDIT), 0) AS soldedebit,
-        //             GREATEST(SUM(J.CREDIT) - SUM(J.DEBIT), 0) AS soldecredit
-        //         FROM DOSSIERPLANCOMPTABLES C
-        //         JOIN DOSSIERPLANCOMPTABLES A
-        //             ON A.BASEAUX_ID = C.ID
-        //             AND A.NATURE = 'Aux'
-        //             AND A.ID_COMPTE = :id_compte
-        //             AND A.ID_DOSSIER = :id_dossier
-        //         JOIN JOURNALS J
-        //             ON J.ID_NUMCPT = A.ID
-        //             AND J.ID_DOSSIER = :id_dossier
-        //             AND J.ID_COMPTE = :id_compte
-        //             AND J.ID_EXERCICE = :id_exercice
-        //         WHERE C.NATURE = 'Collectif'
-        //         GROUP BY C.ID, C.COMPTE, C.LIBELLE
-        //         ORDER BY C.COMPTE ASC
-        //         `,
-        //         {
-        //             replacements: {
-        //                 id_compte: Number(compteId),
-        //                 id_dossier: Number(fileId),
-        //                 id_exercice: Number(exerciceId)
-        //             },
-        //             type: db.Sequelize.QueryTypes.SELECT
-        //         }
-        //     );
-
-        //     const collectifIds = collectifs.map(c => c.id);
-        //     rows = rows.filter(r => !collectifIds.includes(r.id));
-        //     rows.push(...collectifs);
-        // }
 
         return res.json({ state: true, list: rows });
 

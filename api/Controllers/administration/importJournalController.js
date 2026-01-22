@@ -105,15 +105,16 @@ const createNotExistingCompte = async (req, res) => {
       await Promise.all(
         genList.map(async (item) => {
           const compte = String(item.CompteNum || '').trim();
+          const natureCompte = item.CompAuxNum !== '' ? 'Collectif' : 'General';
           if (!compte) return null;
           const exists = await dossierPlanComptable.findOne({ where: { id_compte: compteId, id_dossier: fileId, compte } });
           if (!exists) {
-            return dossierPlanComptable.create({
+            await dossierPlanComptable.create({
               id_compte: compteId,
               id_dossier: fileId,
               compte,
               libelle: item.CompteLib || '',
-              nature: "General",
+              nature: natureCompte,
               typetier: "general",
               baseaux: compte,
               pays: 'Madagascar'
@@ -133,7 +134,7 @@ const createNotExistingCompte = async (req, res) => {
           if (exists) return null;
           // Trouver le général de rattachement par CompteNum (baseaux)
           const genCompte = String(item.CompteNum || '').trim();
-          const base = await dossierPlanComptable.findOne({ where: { id_compte: compteId, id_dossier: fileId, compte: genCompte } });
+          const base = await dossierPlanComptable.findOne({ where: { id_compte: compteId, id_dossier: fileId, compte: genCompte, nature: 'Collectif' } });
           return dossierPlanComptable.create({
             id_compte: compteId,
             id_dossier: fileId,
@@ -142,7 +143,8 @@ const createNotExistingCompte = async (req, res) => {
             nature: "Aux",
             typetier: "sans-nif",
             pays: 'Madagascar',
-            baseaux: base?.id || 0,
+            baseaux_id: base?.id,
+            baseaux: base?.compte,
             typecomptabilite: 'Français'
           });
         })
@@ -151,7 +153,7 @@ const createNotExistingCompte = async (req, res) => {
 
     await db.sequelize.query(
       `UPDATE dossierplancomptables
-       SET baseaux_id = id
+       SET baseaux_id = id, baseaux = compte
        WHERE compte = baseaux
        AND id_compte = :compteId
        AND id_dossier = :fileId`,
@@ -395,6 +397,18 @@ const importJournal = async (req, res) => {
             const usedCode = (item.Idevise && item.Idevise.trim()) ? item.Idevise.trim() : 'MGA';
             const idDevise = deviseMap.get(usedCode) || defaultDeviseId || null;
 
+            const dossierPc = await dossierPlanComptable.findByPk(compteNumId);
+            const comptegen = dossierPc?.compte;
+            const comptebaseaux = dossierPc?.baseaux_id;
+
+            let libelleaux = '';
+            let compteaux = null;
+            if (comptebaseaux) {
+              const cpt = await dossierPlanComptable.findByPk(comptebaseaux);
+              compteaux = cpt?.compte;
+              libelleaux = cpr?.libelle;
+            }
+
             // Création journal
             await journals.create({
 
@@ -420,6 +434,9 @@ const importJournal = async (req, res) => {
               comptegen: rawGen,
               compteaux: rawAux,
               libelleaux: item.EcritureLibAux
+              // comptegen: comptegen,
+              // compteaux: compteaux,
+              // libelleaux: libelleaux
             });
 
             importSuccess = importSuccess * 1;
@@ -554,7 +571,7 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
     progress.update(0, totalLines, 'Démarrage...', 0);
 
     progress.step('Préparation de l\'import...', 5);
-    
+
     if (valSelectCptDispatch === 'ECRASER') {
       await journals.destroy({
         where: {
@@ -566,12 +583,12 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
     }
 
     progress.step('Vérification des devises...', 10);
-    
+
     const deviseCodes = [...new Set((journalData || [])
       .map(r => (r.Idevise || '').trim())
       .filter(v => v))];
     if (!deviseCodes.includes('MGA')) deviseCodes.push('MGA');
-    
+
     for (const code of deviseCodes) {
       const existing = await db.Devise.findOne({ where: { id_compte: compteId, id_dossier: fileId, code } });
       if (!existing) await db.Devise.create({ id_compte: compteId, id_dossier: fileId, code, libelle: code });
@@ -582,7 +599,7 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
     const defaultDeviseId = deviseMap.get('MGA');
 
     progress.step('Traitement des écritures...', 15);
-    
+
     const grouped = journalData.reduce((acc, item) => {
       const key = item.EcritureNum;
       if (!acc[key]) acc[key] = [];
@@ -600,10 +617,10 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
     // Traiter par lots d'écritures, mais afficher la progression en lignes
     const batchSize = 20;
     let processedLines = 0;
-    
+
     for (let i = 0; i < ecritureKeys.length; i += batchSize) {
       const batch = ecritureKeys.slice(i, i + batchSize);
-      
+
       for (let ecritureNum of batch) {
         const lines = grouped[ecritureNum];
         const newIdEcriture = buildIdEcriture(lines[0]);
@@ -627,11 +644,11 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
             let foundCompte = null;
             let foundAux = null;
             let foundGen = null;
-            
+
             if (rawAux) {
               foundAux = await dossierPlanComptable.findOne({ where: { id_compte: compteId, id_dossier: fileId, compte: rawAux } });
             }
-            
+
             foundGen = await dossierPlanComptable.findOne({
               where: {
                 id_compte: compteId,
@@ -761,6 +778,10 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
               lettragedate: datelettrage || null,
               saisiepar: Number(userId),
               modifierpar: Number(userId) || 0,
+              comptegen: rawGen,
+              compteaux: (rawAux === '' || rawAux === null) ? rawGen : rawAux,
+              libelleaux: 'Pas encore de libellé',
+              libellecompte: 'Pas encore de libellé'
             });
 
             importedCount++;
@@ -771,7 +792,7 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
           }
         }
       }
-      
+
       // Mettre à jour la progression après chaque lot
       const batchProgress = 15 + Math.floor((processedLines / totalLines) * 70);
       progress.update(processedLines, totalLines, 'Importation des écritures...', batchProgress);
