@@ -633,22 +633,39 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
     }
     const allAnalytiqueValues = Array.from(analytiqueUniqueByKey.values());
 
-    // Créer ou récupérer l'axe "axe1"
+    // Créer ou récupérer l'axe analytique par dossier.
+    // La base semble avoir une contrainte unique globale sur `code` (ex: caaxes_code_key).
+    // Donc on utilise un code unique par dossier/compte.
+    const axeCode = `axe1_${Number(compteId)}_${Number(fileId)}`;
+    const axeLibelle = 'axe1';
+
     let axe = await caaxes.findOne({
       where: {
-        code: 'axe1',
+        code: axeCode,
         id_compte: Number(compteId),
         id_dossier: Number(fileId)
       }
     });
 
     if (!axe) {
-      axe = await caaxes.create({
-        code: 'axe1',
-        libelle: 'axe1',
-        id_compte: Number(compteId),
-        id_dossier: Number(fileId)
-      });
+      try {
+        axe = await caaxes.create({
+          code: axeCode,
+          libelle: axeLibelle,
+          id_compte: Number(compteId),
+          id_dossier: Number(fileId)
+        });
+      } catch (err) {
+        // Si concurrence: relire le même axe
+        axe = await caaxes.findOne({
+          where: {
+            code: axeCode,
+            id_compte: Number(compteId),
+            id_dossier: Number(fileId)
+          }
+        });
+        if (!axe) throw err;
+      }
     }
 
     // Créer les sections uniques si elles n'existent pas
@@ -928,7 +945,10 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
 
   } catch (error) {
     console.error("Erreur import journal :", error);
-    progress.error("Erreur lors de l'import du journal", error);
+    const msg = error?.message
+      ? `Erreur lors de l'import du journal: ${error.message}`
+      : "Erreur lors de l'import du journal";
+    progress.error(msg, error);
   }
 };
 
