@@ -504,9 +504,9 @@ export default function ImportJournal() {
 
                         const listeUniqueCompte = listeUniqueCompteInitial.filter(item => item !== '');
 
-                        const compteNonValideStd = result.data.some(item => {
-                            return item.CompteNum && item.CompteNum.length !== longeurCompteStd;
-                        });
+                        // const compteNonValideStd = result.data.some(item => {
+                        //     return item.CompteNum && item.CompteNum.length !== longeurCompteStd;
+                        // });
 
 
                         let DataWithId = [];
@@ -543,6 +543,10 @@ export default function ImportJournal() {
                             nbrAnom += 1;
                             setNbrAnomalie(nbrAnom);
                         }
+
+                        const compteNonValideStd = Number(longeurCompteStd) > 0
+                            ? listeUniqueCompte.some((c) => String(c || '').trim() !== '' && String(c || '').trim().length !== Number(longeurCompteStd))
+                            : false;
 
                         if (compteNonValideStd) {
                             msg.push('Attention, la longueur des comptes dans le fichier csv est différente de celle des comptes dans le paramétrage CRM du dossier.');

@@ -184,12 +184,45 @@ const createNotExistingCompte = async (req, res) => {
 
 function parseDate(str) {
   if (!str) return null;
-  if (str.includes("/")) {
-    const [day, month, year] = str.split("/");
-    return new Date(`${year}-${month}-${day}`);
-  } else {
-    return new Date(`${str.substring(0, 4)}-${str.substring(4, 6)}-${str.substring(6, 8)}`);
+
+  // Si c'est déjà une Date
+  if (str instanceof Date) {
+    return isNaN(str.getTime()) ? null : str;
   }
+
+  let s = String(str).trim();
+  if (!s) return null;
+
+  // Retirer l'heure si présente (ex: "2026-01-22 13:22:53" ou "2026-01-22T13:22:53")
+  s = s.replace('T', ' ');
+  if (s.includes(' ')) s = s.split(' ')[0];
+
+  // Formats: dd/mm/yyyy
+  if (s.includes('/')) {
+    const parts = s.split('/').map(p => p.trim());
+    if (parts.length === 3) {
+      const [day, month, year] = parts;
+      const d = new Date(`${year}-${month}-${day}`);
+      return isNaN(d.getTime()) ? null : d;
+    }
+  }
+
+  // Formats: yyyy-mm-dd ou yyyy/mm/dd
+  if (s.includes('-') || s.includes('/')) {
+    const normalized = s.replace(/\//g, '-');
+    const d = new Date(normalized);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  // Format: yyyymmdd
+  if (/^\d{8}$/.test(s)) {
+    const d = new Date(`${s.substring(0, 4)}-${s.substring(4, 6)}-${s.substring(6, 8)}`);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  // Fallback
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
 }
 
 const importJournal = async (req, res) => {
@@ -616,6 +649,7 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
     const finExo = toMidnight(periodeEnd);
 
     let importedCount = 0;
+    let skippedCount = 0;
     const ecritureKeys = Object.keys(grouped);
 
     const normalizeAnalytiqueDisplay = (v) => String(v || '').trim().replace(/\s+/g, ' ');
@@ -633,21 +667,40 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
     }
     const allAnalytiqueValues = Array.from(analytiqueUniqueByKey.values());
 
-    // Créer ou récupérer l'axe "axe1"
+    // Créer ou récupérer l'axe analytique par dossier.
+    // La base semble avoir une contrainte unique globale sur `code` (ex: caaxes_code_key).
+    // Donc on utilise un code unique par dossier/compte.
+    const axeCode = `axe1_${Number(compteId)}_${Number(fileId)}`;
+    const axeLibelle = 'axe1';
+
     // IMPORTANT: la contrainte unique est sur caaxes.code (globale), donc on doit chercher par code uniquement.
     let axe = await caaxes.findOne({
       where: {
-        code: 'axe1'
+        code: axeCode,
+        id_compte: Number(compteId),
+        id_dossier: Number(fileId)
       }
     });
 
     if (!axe) {
-      axe = await caaxes.create({
-        code: 'axe1',
-        libelle: 'axe1',
-        id_compte: Number(compteId),
-        id_dossier: Number(fileId)
-      });
+      try {
+        axe = await caaxes.create({
+          code: axeCode,
+          libelle: axeLibelle,
+          id_compte: Number(compteId),
+          id_dossier: Number(fileId)
+        });
+      } catch (err) {
+        // Si concurrence: relire le même axe
+        axe = await caaxes.findOne({
+          where: {
+            code: axeCode,
+            id_compte: Number(compteId),
+            id_dossier: Number(fileId)
+          }
+        });
+        if (!axe) throw err;
+      }
     }
 
     // Créer les sections uniques si elles n'existent pas
@@ -712,6 +765,7 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
     // Traiter par lots d'écritures, mais afficher la progression en lignes
     const batchSize = 20;
     let processedLines = 0;
+    let firstLineErrorMessage = null;
 
     for (let i = 0; i < ecritureKeys.length; i += batchSize) {
       const batch = ecritureKeys.slice(i, i + batchSize);
@@ -837,6 +891,7 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
 
             // Ignorer les lignes sans date d'écriture
             if (!dateEcrit) {
+              skippedCount++;
               processedLines++;
               continue;
             }
@@ -845,6 +900,7 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
               const afterStart = debutExo ? (dateEcrit && dateEcrit >= debutExo) : true;
               const beforeEnd = finExo ? (dateEcrit && dateEcrit <= finExo) : true;
               if (!(afterStart && beforeEnd)) {
+                skippedCount++;
                 processedLines++;
                 continue;
               }
@@ -884,27 +940,28 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
             if (analytiqueValue && (debit !== 0 || credit !== 0)) {
               // Récupérer la section existante dans le sectionMap
               const section = sectionMap.get(normalizeAnalytiqueKey(analytiqueValue));
-              
-              if (section) {
-                // Insérer dans analytiques en utilisant l'ID de la section existante
-                await analytiques.create({
-                  id_compte: Number(compteId),
-                  id_exercice: Number(selectedPeriodeId),
-                  id_dossier: Number(fileId),
-                  id_axe: section.id_axe,
-                  id_section: section.id,
-                  id_ligne_ecriture: journalEntry.id,
-                  debit: debit,
-                  credit: credit,
-                  pourcentage: 100
-                });
-              }
+              // Insérer dans analytiques en utilisant l'ID de la section existante
+              await analytiques.create({
+                id_compte: Number(compteId),
+                id_exercice: Number(selectedPeriodeId),
+                id_dossier: Number(fileId),
+                id_axe: section.id_axe,
+                id_section: section.id,
+                id_ligne_ecriture: journalEntry.id,
+                debit: debit,
+                credit: credit,
+                pourcentage: 100
+              });
             }
 
             importedCount++;
             processedLines++;
           } catch (error) {
             console.error('Erreur ligne:', error);
+            skippedCount++;
+            if (!firstLineErrorMessage) {
+              firstLineErrorMessage = error?.message ? String(error.message) : String(error);
+            }
             processedLines++;
           }
         }
@@ -920,14 +977,21 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
 
     progress.step('Finalisation...', 95);
 
+    const finalMsg = skippedCount > 0
+      ? `${importedCount} lignes importées, ${skippedCount} ignorées${firstLineErrorMessage ? ` (ex: ${firstLineErrorMessage})` : ''}`
+      : `${importedCount} lignes ont été importées avec succès`;
+
     progress.complete(
-      `${importedCount} lignes ont été importées avec succès`,
-      { nbrligne: importedCount }
+      finalMsg,
+      { nbrligne: importedCount, ignored: skippedCount }
     );
 
   } catch (error) {
     console.error("Erreur import journal :", error);
-    progress.error("Erreur lors de l'import du journal", error);
+    const msg = error?.message
+      ? `Erreur lors de l'import du journal: ${error.message}`
+      : "Erreur lors de l'import du journal";
+    progress.error(msg, error);
   }
 };
 
