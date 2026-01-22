@@ -84,8 +84,10 @@ const useSSEImport = () => {
                                 case 'complete':
                                     setProgress(100);
                                     setMessage(eventData.message);
-                                    setCurrentLine(eventData.total);
-                                    setTotalLines(eventData.total);
+                                    // `total/current` = nb de lignes envoyées / traitées
+                                    // `nbrligne` = nb de lignes réellement importées (retourné par nos endpoints)
+                                    setCurrentLine(eventData.nbrligne ?? eventData.total ?? eventData.current ?? 0);
+                                    setTotalLines(eventData.total ?? eventData.current ?? 0);
                                     setIsImporting(false);
                                     if (onComplete) {
                                         onComplete(eventData);
