@@ -308,9 +308,6 @@ export default function ExportBalance() {
 
     const actualizeBalance = async () => {
         try {
-            setTraitementJournalWaiting(true);
-            setTraitementJournalMsg('Actualisation en cours...');
-
             const id_sectionMapped = selectedSectionsId.map(val => Number(val.id));
 
             const response = await axios.post('/administration/exportBalance/actualizeBalance', {
@@ -331,9 +328,6 @@ export default function ExportBalance() {
         } catch (err) {
             toast.error("Erreur lors de l'actualisation");
             console.error(err);
-        } finally {
-            setTraitementJournalWaiting(false);
-            setTraitementJournalMsg('');
         }
     };
 
