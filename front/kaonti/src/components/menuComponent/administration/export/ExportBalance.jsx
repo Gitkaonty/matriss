@@ -50,6 +50,8 @@ export default function ExportBalance() {
     const { id } = useParams();
     const [noFile, setNoFile] = useState(false);
 
+    const [isRefreshed, setIsRefreshed] = useState(false);
+
     const [selectedExerciceId, setSelectedExerciceId] = useState(0);
     const [selectedPeriodeId, setSelectedPeriodeId] = useState(0);
     const [selectedPeriodeChoiceId, setSelectedPeriodeChoiceId] = useState(0);
@@ -322,6 +324,7 @@ export default function ExportBalance() {
 
             if (response?.data?.state) {
                 toast.success(response?.data?.message);
+                setIsRefreshed(prev => !prev);
             } else {
                 toast.error(response?.data?.message || response?.data?.msg);
             }
@@ -345,7 +348,7 @@ export default function ExportBalance() {
         return () => {
             if (balanceFetchTimer.current) clearTimeout(balanceFetchTimer.current);
         };
-    }, [fileId, selectedPeriodeId, checked, unsoldedCompte, movmentedCpt, type, selectedAxeId, selectedSectionsId]);
+    }, [fileId, selectedPeriodeId, checked, unsoldedCompte, movmentedCpt, type, selectedAxeId, selectedSectionsId, isRefreshed]);
 
     //Formulaire pour l'import du journal
     const formikImport = useFormik({
