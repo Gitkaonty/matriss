@@ -88,7 +88,8 @@ const PopupSaisie = ({
     canView,
     canAdd,
     canDelete,
-    canModify
+    canModify,
+    isTypeComptaAutre
 }) => {
 
     const defaultDeviseData = listeDevise.find(val => val.par_defaut === true);
@@ -503,6 +504,7 @@ const PopupSaisie = ({
 
     const addOrUpdateJournal = async () => {
         const listCaFinalFiltered = listCaFinal.filter(val => val.debit !== 0 || val.credit !== 0);
+
         const rowsInvalides = [];
 
         tableRows.forEach((row) => {
@@ -885,6 +887,7 @@ const PopupSaisie = ({
                         open={openDialogAddNewAccount}
                         onClose={handleCloseDialogAddNewAccount}
                         stateAction={'ajout'}
+                        isTypeComptaAutre={isTypeComptaAutre}
                     />
                 )
             }
@@ -1190,6 +1193,11 @@ const PopupSaisie = ({
                                             }}
                                             sx={{
                                                 ...DataGridStyle.sx,
+                                                '& .MuiDataGrid-columnHeaders': {
+                                                    backgroundColor: initial.theme,
+                                                    color: 'white',
+                                                    fontWeight: 'bold',
+                                                },
                                                 '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
                                                     outline: 'none',
                                                     border: 'none',
