@@ -55,7 +55,6 @@ export default function Home() {
   const GetListeDossier = () => {
     axios.get(`/home/file/${compteId}`, { params: { userId: userId } }).then((response) => {
       const resData = response.data;
-      console.log('resData : ', resData);
       setListeDossier(resData.fileList);
       canView ? setFinalListeDossier(resData.fileList) : setFinalListeDossier([]);
     })

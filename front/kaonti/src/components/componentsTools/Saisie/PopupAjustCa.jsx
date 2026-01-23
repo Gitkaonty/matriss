@@ -42,7 +42,7 @@ export default function PopupAjustCa({
 
         if (axesWithErrors.length > 0) {
             const axesLabels = axesWithErrors.map(([idAxe, rows]) => rows[0].libelle_axe).join(', ');
-            toast.error(`Le total des montants pour l'axe(s) "${axesLabels}" ne correspond pas au montant de l'écriture !`);
+            toast.error(`Le total des montants pour l'axe "${axesLabels}" ne correspond pas au montant de l'écriture !`);
             return;
         }
 
@@ -62,7 +62,7 @@ export default function PopupAjustCa({
         if (params.field === '__check__') return;
 
         if (params.field !== data?.type && params.field !== 'pourcentage') {
-            toast.error('Seule le montant peut être modifié');
+            toast.error('Seul le montant et le pourcentage peuvent être modifiés');
             return;
         }
     };
@@ -180,8 +180,6 @@ export default function PopupAjustCa({
             headerClassName: 'HeaderbackColor',
             editable: true,
             renderEditCell: (params) => {
-                let localValue = params.formattedValue ?? '';
-
                 const handleChange = (event) => {
                     const rawValue = event.target.value ?? '';
                     localValue = rawValue;
@@ -361,7 +359,7 @@ export default function PopupAjustCa({
                         direction="row"
                         alignItems="center"
                         justifyContent="space-between"
-                        style={{ paddingTop: '55px' }}
+                        style={{ paddingTop: '38px' }}
                     >
                         <Typography variant="subtitle1" fontWeight={500}>
                             Montant actuel : {data?.montant.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -476,35 +474,12 @@ export default function PopupAjustCa({
                                 if (current.id_axe !== next.id_axe) {
                                     return 'highlight-separator';
                                 }
-
                                 return '';
                             }}
                             onRowEditStart={() => setIsDisabledSaveButton(true)}
                             onRowEditStop={() => setIsDisabledSaveButton(false)}
                         />
                     </Stack>
-                    {/* <Stack
-                        width="100%"
-                        direction="row"
-                        justifyContent="flex-end"
-                        alignItems="center"
-                        spacing={1}
-                        sx={{ marginTop: 0 }}
-                    >
-                        <Stack direction="row" alignItems="center" spacing={1}>
-                            <Typography
-                                variant="subtitle1"
-                                fontWeight={500}
-                                sx={{ color: '#1976d2' }}
-                            >
-                                Total :{' '}
-                                {totalMontant.toLocaleString('fr-FR', {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                })}
-                            </Typography>
-                        </Stack>
-                    </Stack> */}
                 </Stack>
             </DialogContent>
             <DialogActions>

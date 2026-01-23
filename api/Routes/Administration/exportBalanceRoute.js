@@ -9,6 +9,9 @@ router.post('/recupBalance', exportBalanceController.recupBalance);
 // Récupération de la balance depuis le journal
 router.post('/recupBalanceFromJournal', exportBalanceController.recupBalanceFromJournal);
 
+// Récupération de la balance analytique
+router.post('/recupBalanceAnalytiqueFromJournal', exportBalanceController.recupBalanceAnalytiqueFromJournal);
+
 // Récupération balance analytique
 router.post('/recupBalanceCa', exportBalanceController.recupBalanceCa);
 
