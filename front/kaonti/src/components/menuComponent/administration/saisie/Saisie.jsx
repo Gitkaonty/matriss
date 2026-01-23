@@ -67,6 +67,7 @@ export default function SaisieComponent() {
     const [refreshListAxeSection, setRefreshListAxeSection] = useState(false);
 
     const [openDialogDeleteSaisie, setOpenDialogDeleteSaisie] = useState(false);
+    const [isTypeComptaAutre, setIsTypeComptaAutre] = useState(false);
 
     //récupération infos de connexion
     const navigate = useNavigate();
@@ -100,6 +101,7 @@ export default function SaisieComponent() {
                 setFileInfos(resData.fileInfos[0]);
                 setIsCaActive(resData?.fileInfos[0]?.avecanalytique);
                 setTypeComptabilite(resData?.fileInfos[0]?.typecomptabilite);
+                setIsTypeComptaAutre(resData?.fileInfos[0].typecompta === 'Autres');
                 setNoFile(false);
             } else {
                 setFileInfos([]);
@@ -690,6 +692,7 @@ export default function SaisieComponent() {
                         canAdd={canAdd}
                         canDelete={canDelete}
                         canModify={canModify}
+                        isTypeComptaAutre={isTypeComptaAutre}
                     /> : null
             }
             {

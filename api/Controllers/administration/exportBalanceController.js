@@ -10,7 +10,6 @@ const userscomptes = db.userscomptes;
 const balanceAnalytiques = db.balanceAnalytiques;
 const caSections = db.caSections;
 const caAxes = db.caAxes;
-const journals = db.journals;
 
 const PdfPrinter = require('pdfmake');
 const ExcelJS = require('exceljs');
@@ -18,10 +17,7 @@ const { generateBalanceContent } = require('../../Middlewares/Balance/BalanceGen
 const { exportBalanceTableExcel } = require('../../Middlewares/Balance/BalanceGenerateExcel');
 
 const fonctionUpdateSoldAnalytique = require('../../Middlewares/UpdateSolde/updateBalanceAnalytique');
-const updateSoldAnalytiqueGlobal = fonctionUpdateSoldAnalytique.updateSoldAnalytiqueGlobal;
-
-const fonctionUpdateSoldGenerale = require('../../Middlewares/UpdateSolde/updateBalanceSold');
-const updateSold = fonctionUpdateSoldGenerale.updateSold;
+const createAnalytiqueIfNotExist = fonctionUpdateSoldAnalytique.createAnalytiqueIfNotExist;
 
 balances.belongsTo(dossierplancomptable, { as: 'compteLibelle', foreignKey: 'id_numcompte', targetKey: 'id' });
 balances.belongsTo(dossierplancomptable, { as: 'compteCentralisation', foreignKey: 'id_numcomptecentr', targetKey: 'id' });
@@ -113,11 +109,21 @@ const recupBalanceFromJournal = async (req, res) => {
             type = null
         } = req.body;
 
+        if (!compteId) {
+            return res.json({ state: false, msg: 'Compte vide' })
+        }
+        if (!fileId) {
+            return res.json({ state: false, msg: 'Dossier vide' })
+        }
+        if (!exerciceId) {
+            return res.json({ state: false, msg: 'Exercice vide' })
+        }
+
         const rows = await db.sequelize.query(
             `
             SELECT
                 ${centraliser ? 'J.COMPTEGEN' : 'J.COMPTEAUX'} AS COMPTE,
-                ${centraliser ? 'MAX(J.LIBELLE)' : 'MAX(J.LIBELLEAUX)'} AS LIBELLE,
+                ${centraliser ? 'MAX(J.LIBELLECOMPTE)' : 'MAX(J.LIBELLEAUX)'} AS LIBELLE,
                 SUM(J.DEBIT) AS MVMDEBIT,
                 SUM(J.CREDIT) AS MVMCREDIT,
                 GREATEST(SUM(J.DEBIT) - SUM(J.CREDIT), 0) AS SOLDEDEBIT,
@@ -153,7 +159,7 @@ const recupBalanceFromJournal = async (req, res) => {
                 type: db.Sequelize.QueryTypes.SELECT
             });
 
-        return res.json({ state: true, list: rows });
+        return res.json({ state: true, list: rows, message: 'Balance générale récupérée avec succès' });
 
     } catch (error) {
         console.error(error);
@@ -161,106 +167,80 @@ const recupBalanceFromJournal = async (req, res) => {
     }
 };
 
-// const recupBalanceFromJournal = async (req, res) => {
-//     try {
-//         const { compteId, fileId, exerciceId, centraliser = false, unSolded = false, movmentedCpt = false, type = 0 } = req.body;
+const recupBalanceAnalytiqueFromJournal = async (req, res) => {
+    try {
+        const {
+            compteId,
+            fileId,
+            exerciceId,
+            centraliser = false,
+            unSolded = false,
+            movmentedCpt = false,
+            axeId,
+            sectionId
+        } = req.body;
 
-//         const cId = Number(compteId);
-//         const fId = Number(fileId);
-//         const eId = Number(exerciceId);
+        if (!compteId) return res.json({ state: false, msg: 'Compte vide' });
+        if (!fileId) return res.json({ state: false, msg: 'Dossier vide' });
+        if (!exerciceId) return res.json({ state: false, msg: 'Exercice vide' });
+        if (!axeId) return res.json({ state: true, list: [], msg: 'Axe vide' });
+        if (!sectionId || sectionId.length === 0) return res.json({ state: true, list: [], msg: 'Section vide' });
 
-//         if (!cId || !fId || !eId) {
-//             return res.json({ state: false, msg: 'Paramètres manquants pour la récupération de la balance.' });
-//         }
+        const rows = await db.sequelize.query(
+            `
+            SELECT
+                ${centraliser ? 'J.COMPTEGEN' : 'J.COMPTEAUX'} AS COMPTE,
+                ${centraliser ? 'MAX(J.LIBELLECOMPTE)' : 'MAX(J.LIBELLEAUX)'} AS LIBELLE,
+                SUM(A.DEBIT) AS MVMDEBIT,
+                SUM(A.CREDIT) AS MVMCREDIT,
+                GREATEST(SUM(A.DEBIT) - SUM(A.CREDIT), 0) AS SOLDEDEBIT,
+                GREATEST(SUM(A.CREDIT) - SUM(A.DEBIT), 0) AS SOLDECREDIT
+            FROM
+                ANALYTIQUES A
+                JOIN JOURNALS J ON A.ID_LIGNE_ECRITURE = J.ID
+            WHERE
+                A.ID_COMPTE = :id_compte
+                AND A.ID_EXERCICE = :id_exercice
+                AND A.ID_DOSSIER = :id_dossier
+                AND A.ID_AXE = :id_axe
+                AND A.ID_SECTION IN (:id_sections)
+                AND J.ID_COMPTE = :id_compte
+                AND J.ID_DOSSIER = :id_dossier
+                AND J.ID_EXERCICE = :id_exercice
+                AND ${centraliser ? "J.COMPTEGEN ~ '^(6|7)'" : "J.COMPTEAUX ~ '^(6|7)'"}
 
-//         const comptesCollectif = await dossierplancomptable.findAll({
-//             where: { id_compte: cId, id_dossier: fId, nature: 'Collectif' }
-//         });
+            GROUP BY
+                ${centraliser ? 'J.COMPTEGEN' : 'J.COMPTEAUX'}
+            HAVING 
+                (:unSolded = 0 OR ABS(SUM(A.DEBIT) - SUM(A.CREDIT)) > 0)
+                AND (:movmentedCpt = 0 OR SUM(A.DEBIT) > 0 OR SUM(A.CREDIT) > 0)
+            ORDER BY
+                ${centraliser ? 'J.COMPTEGEN' : 'J.COMPTEAUX'} ASC
+            `,
+            {
+                replacements: {
+                    id_dossier: Number(fileId),
+                    id_exercice: Number(exerciceId),
+                    id_compte: Number(compteId),
+                    unSolded: unSolded ? 1 : 0,
+                    movmentedCpt: movmentedCpt ? 1 : 0,
+                    id_axe: axeId,
+                    id_sections: sectionId
+                },
+                type: db.Sequelize.QueryTypes.SELECT
+            }
+        );
 
-//         let comptesIds = [cId]; 
+        return res.json({ state: true, list: rows, msg: 'Balance analytique récupérée avec succès' });
 
-//         for (const collectif of comptesCollectif) {
-//             const auxilliaires = await dossierplancomptable.findAll({
-//                 where: { id_compte: cId, id_dossier: fId, nature: 'Aux', baseaux_id: collectif.id }
-//             });
-//             comptesIds.push(...auxilliaires.map(val => Number(val.id)));
-//         }
-
-//         const rows = await journals.findAll({
-//             where: {
-//                 id_dossier: fId,
-//                 id_exercice: eId,
-//                 id_numcpt: { [Op.in]: comptesIds }
-//             },
-//             include: [
-//                 {
-//                     model: dossierplancomptable,
-//                     as: 'compteLibelle',
-//                     attributes: ['id', 'id_compte', 'compte', 'libelle', 'nature', 'baseaux'],
-//                     required: true,
-//                     where: {
-//                         ...(type === 1 ? { baseaux: { [Op.like]: '401%' } } : {}),
-//                         ...(type === 2 ? { baseaux: { [Op.like]: '411%' } } : {}),
-//                         [Op.or]: [
-//                             { nature: centraliser ? { [Op.ne]: 'Aux' } : { [Op.ne]: 'Collectif' } }
-//                         ]
-//                     }
-//                 }
-//             ]
-//         });
-
-//         const resultMap = new Map();
-
-//         for (const row of rows) {
-//             const data = row.toJSON();
-//             const compteKey = data.compteLibelle.id_compte; 
-
-//             const totalDebit = Number(data.debit || 0);
-//             const totalCredit = Number(data.credit || 0);
-//             const soldedebit = Math.max(totalDebit - totalCredit, 0);
-//             const soldecredit = Math.max(totalCredit - totalDebit, 0);
-
-//             if (!resultMap.has(compteKey)) {
-//                 resultMap.set(compteKey, {
-//                     compte: data.compteLibelle.compte,
-//                     libelle: data.compteLibelle.libelle,
-//                     mvmdebit: totalDebit,
-//                     mvmcredit: totalCredit,
-//                     soldedebit,
-//                     soldecredit
-//                 });
-//             } else {
-//                 const existing = resultMap.get(compteKey);
-//                 existing.mvmdebit += totalDebit;
-//                 existing.mvmcredit += totalCredit;
-//                 existing.soldedebit += soldedebit;
-//                 existing.soldecredit += soldecredit;
-//             }
-//         }
-
-//         let resultList = Array.from(resultMap.values());
-
-//         if (unSolded) {
-//             resultList = resultList.filter(r => Math.abs(r.mvmdebit - r.mvmcredit) > 0);
-//         }
-//         if (movmentedCpt) {
-//             resultList = resultList.filter(r => r.mvmdebit > 0 || r.mvmcredit > 0);
-//         }
-
-//         resultList.sort((a, b) => (a.compte > b.compte ? 1 : -1));
-
-//         return res.json({ state: true, list: resultList });
-
-//     } catch (error) {
-//         console.error(error);
-//         return res.json({ state: false, msg: 'Erreur serveur', error: error.message });
-//     }
-// };
+    } catch (error) {
+        console.error(error);
+        return res.json({ state: false, msg: 'Erreur serveur', error: error.message });
+    }
+}
 
 const recupBalanceCa = async (req, res) => {
     const { fileId, exerciceId, compteId, id_axes, id_sections, centraliser, unSolded, movmentedCpt } = req.body;
-
-    // await updateSoldAnalytiqueGlobal(compteId, fileId, exerciceId, id_axes, id_sections);
 
     const sectionData = await caSections.findAll({
         where: {
@@ -339,11 +319,7 @@ const actualizeBalance = async (req, res) => {
     try {
         const { id_compte, id_dossier, id_exercice, type, id_axe, id_sections } = req.body;
         if (type === 3) {
-            await updateSoldAnalytiqueGlobal(id_compte, id_dossier, id_exercice, id_axe, id_sections);
-            return res.json({ state: true, message: 'Balance analytique actualisé avec succès' });
-        } else {
-            await updateSold(id_compte, id_dossier, id_exercice, [], true);
-            return res.json({ state: true, message: 'Balance générale actualisé avec succès' });
+            await createAnalytiqueIfNotExist(id_compte, id_dossier, id_exercice);
         }
     } catch (error) {
         console.log(error);
@@ -353,6 +329,7 @@ const actualizeBalance = async (req, res) => {
 
 module.exports = {
     recupBalanceFromJournal,
+    recupBalanceAnalytiqueFromJournal,
     recupBalance,
     exportPdf: async (req, res) => {
         try {
