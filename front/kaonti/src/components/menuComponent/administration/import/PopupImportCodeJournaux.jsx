@@ -177,7 +177,7 @@ export default function PopupImportCodeJournaux({ open, onClose, fileId, compteI
                         setTraitementWaiting(true);
                         setProgressValue(0);
 
-                        const headers = result.meta.fields;
+                        const headers = result?.meta?.fields || [];
 
                         if (validateHeaders(headers)) {
                             setMsgAnomalie([]);
@@ -245,6 +245,7 @@ export default function PopupImportCodeJournaux({ open, onClose, fileId, compteI
                 header: true,
                 skipEmptyLines: true,
                 encoding: "UTF-8",
+                delimiter: ';',
                 error: () => {
                     toast.error('Erreur lors de la lecture du fichier');
                     setTraitementWaiting(false);
@@ -262,7 +263,7 @@ export default function PopupImportCodeJournaux({ open, onClose, fileId, compteI
     }
 
     const handleDownloadModel = () => {
-        const csvContent = "code,libelle,type,compteassocie,nif,stat,adresse\n";
+        const csvContent = "\uFEFFcode;libelle;type;compteassocie;nif;stat;adresse\n";
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
