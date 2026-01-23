@@ -1,6 +1,6 @@
 ﻿const db = require("../../Models");
+const { Op } = require("sequelize");
 require('dotenv').config();
-
 
 const devises = db.devises;
 const journals = db.journals;
@@ -8,17 +8,11 @@ const dossierplancomptable = db.dossierplancomptable;
 const codejournals = db.codejournals;
 const rapprochements = db.rapprochements;
 const analytiques = db.analytiques;
-const balances = db.balances;
 const consolidationDossier = db.consolidationDossier;
 const dossiers = db.dossiers;
 const exercices = db.exercices;
 const detailsimmo = db.detailsimmo;
 const sequelize = db.sequelize;
-
-const fonctionUpdateBalanceSold = require("../../Middlewares/UpdateSolde/updateBalanceSold");
-
-
-const { Op } = require("sequelize");
 
 const fs = require('fs');
 const path = require('path');
@@ -2161,19 +2155,34 @@ exports.modificationJournal = async (req, res) => {
                 modification++;
 
                 const relevantCa = listCa?.filter(item => item.id_ligne_ecriture === row.id) || [];
+
                 for (const item of relevantCa) {
-                    await analytiques.update(
+                    const whereClause = {
+                        id_ligne_ecriture: row.id,
+                        id_axe: item.id_axe,
+                        id_section: item.id_section
+                    };
+
+                    const [affectedRows] = await analytiques.update(
                         {
-                            debit: item.debit || 0, credit: item.credit || 0, pourcentage: item.pourcentage || 0
+                            debit: item.debit || 0,
+                            credit: item.credit || 0,
+                            pourcentage: item.pourcentage || 0
                         },
-                        {
-                            where: {
-                                id_ligne_ecriture: row.id,
-                                id_axe: item.id_axe,
-                                id_section: item.id_section
-                            }
-                        }
+                        { where: whereClause }
                     );
+
+                    if (affectedRows === 0) {
+                        await analytiques.create({
+                            id_compte,
+                            id_dossier,
+                            id_exercice,
+                            ...whereClause,
+                            debit: item.debit || 0,
+                            credit: item.credit || 0,
+                            pourcentage: item.pourcentage || 0
+                        });
+                    }
                 }
             }
             else {
@@ -2588,7 +2597,7 @@ exports.deleteLettrage = async (req, res) => {
 
         return res.status(200).json({
             state: true,
-            message: `Lettrage supprimé avec succès sur ${Number(affectedRows) || 0} ligne(s)`,
+            message: `Lettrage supprimé avec succès sur ${Number(affectedRows) || 0} ${pluralize(Number(affectedRows), 'ligne')}`,
             affected: Number(affectedRows) || 0,
             lettrage: ""
         });

@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -6,21 +5,10 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import { init } from '../../../../init';
-import { IconButton, TableFooter } from '@mui/material';
-import IndeterminateCheckBoxIcon from '@mui/icons-material/IndeterminateCheckBox';
-import AddBoxIcon from '@mui/icons-material/AddBox';
+import { TableFooter } from '@mui/material';
 
-const VirtualTableModifiableExport = ({ columns, rows, type, rowsCa }) => {
-  const rowsBalance = type === 3 ? rowsCa : rows;
+const VirtualTableModifiableExport = ({ columns, rows }) => {
   const initial = init[0];
-  const [openRowsCa, setOpenRowsCa] = useState({});
-
-  const toogleRowCa = (compte) => {
-    setOpenRowsCa(prev => ({
-      ...prev,
-      [compte]: !prev[compte]
-    }));
-  };
 
   const columnWidths = columns.reduce((acc, column) => {
     acc[column.id] = column.minWidth;
@@ -36,39 +24,6 @@ const VirtualTableModifiableExport = ({ columns, rows, type, rowsCa }) => {
 
     return total;
   };
-
-  const groupedDataCa = rowsBalance.reduce((acc, row) => {
-    const compte = row['compteLibelle.compte'];
-
-    if (!acc[compte]) {
-      acc[compte] = {
-        ...row,
-        lignes: [],
-        mvtdebitanalytique: 0,
-        mvtcreditanalytique: 0,
-        soldedebitanalytique: 0,
-        soldecreditanalytique: 0,
-        sousTotal: 0
-      };
-    }
-
-    const compteData = acc[compte];
-
-    compteData.mvtdebitanalytique += parseFloat(row.mvtdebitanalytique) || 0;
-    compteData.mvtcreditanalytique += parseFloat(row.mvtcreditanalytique) || 0;
-    compteData.soldedebitanalytique += parseFloat(row.soldedebitanalytique) || 0;
-    compteData.soldecreditanalytique += parseFloat(row.soldecreditanalytique) || 0;
-
-    compteData.lignes.push(row);
-
-    compteData.sousTotal =
-      compteData.mvtdebitanalytique +
-      compteData.mvtcreditanalytique +
-      compteData.soldedebitanalytique +
-      compteData.soldecreditanalytique;
-
-    return acc;
-  }, {});
 
   return (
     <TableContainer
@@ -88,23 +43,6 @@ const VirtualTableModifiableExport = ({ columns, rows, type, rowsCa }) => {
           }}
         >
           <TableRow>
-            {
-              type === 3 && (
-                <TableCell
-                  align="center"
-                  className="sticky-action"
-                  sx={{
-                    fontWeight: 'bold',
-                    paddingTop: '5px',
-                    paddingBottom: '5px',
-                    fontSize: 15,
-                    color: 'white',
-                    backgroundColor: initial.theme,
-                  }}
-                >
-                </TableCell>
-              )
-            }
             {columns.map((column) => (
               <TableCell
                 key={column.id}
@@ -127,149 +65,41 @@ const VirtualTableModifiableExport = ({ columns, rows, type, rowsCa }) => {
           </TableRow>
         </TableHead>
 
-        {
-          type === 3 ?
-            <TableBody>
-              {
-                Object.values(groupedDataCa).map((group, key) => {
+        <TableBody>
+          {rows.map((row, key) => {
 
+            return (
+              <TableRow hover
+                role="checkbox" tabIndex={-1} key={key}
+                style={{ height: '20px' }}
+
+              >
+                {columns.map((column) => {
+                  const value = row[column.id];
                   return (
-                    <React.Fragment key={key}>
-                      <TableRow
-                        sx={{
-                          position: "sticky",
-                          top: 35,
-                          zIndex: 2,
-                          backgroundColor: "#f5f5f5"
-                        }}
-                        key={key}
-                      >
-                        {
-                          <>
-                            <TableCell align="center"
-                              style={{
-                                paddingTop: '4px', paddingBottom: '4px', fontSize: '13px', position: "sticky", top: 35,
-                              }}
-                            >
-                              <IconButton
-                                onClick={() => toogleRowCa(group['compteLibelle.compte'])}
-                                sx={{
-                                  width: 20,
-                                  height: 20,
-                                }}
-                                style={{
-                                  textTransform: 'none',
-                                  outline: 'none',
-                                  color: 'white',
-                                }}
-                              >
-                                {openRowsCa[group['compteLibelle.compte']] ? <IndeterminateCheckBoxIcon color='primary' /> : <AddBoxIcon color='primary' />}
-                              </IconButton>
-                            </TableCell>
-                          </>
-                        }
-
-                        {columns.map((column) => {
-                          if (!column.id) return null;
-                          let value = group[column.id];
-
-                          if (column.isnumber && (value === null || value === undefined)) {
-                            value = 0;
-                          }
-
-                          if (['mvtdebitanalytique', 'mvtcreditanalytique', 'soldedebitanalytique', 'soldecreditanalytique', 'compteLibelle.compte'].includes(column.id)) {
-                            return (
-                              <TableCell key={column.id} align={column.align} style={{ paddingTop: '10px', paddingBottom: '10px', fontSize: '13px', position: "sticky", top: 35 }}>
-                                {
-                                  column.format && value !== null && value !== undefined
-                                    ? typeof value === 'number'
-                                      ? column.format(value)
-                                      : value
-                                    : value
-                                }
-                              </TableCell>
-                            );
-                          }
-                          return <TableCell key={column.id} align={column.align} style={{ paddingTop: '4px', paddingBottom: '4px', fontSize: '13px', position: "sticky", top: 35 }}></TableCell>
-                        })}
-                      </TableRow>
+                    <TableCell
+                      key={column.id}
+                      align={column.align}
+                      style={{
+                        paddingTop: '5px',
+                        paddingBottom: '5px',
+                        fontSize: 15,
+                      }}
+                    >
                       {
-                        openRowsCa[group['compteLibelle.compte']] && group.lignes.map((row, rKey) => (
-                          <TableRow key={rKey}>
-                            <TableCell />
-                            <TableCell />
-                            {columns
-                              .filter(column => column.id !== 'compteLibelle.compte')
-                              .map((column) => {
-                                if (!column.id) return null;
-                                let value = row[column.id];
-
-                                if (column.isnumber && (value === null || value === undefined)) {
-                                  value = 0;
-                                }
-
-                                return (
-                                  <TableCell
-                                    key={column.id}
-                                    align={column.align}
-                                    style={{ paddingTop: '4px', paddingBottom: '4px', fontSize: '13px' }}
-                                  >
-                                    {
-                                      column.format && value !== null && value !== undefined
-                                        ? typeof value === 'number'
-                                          ? column.format(value)
-                                          : value
-                                        : value
-                                    }
-                                  </TableCell>
-                                )
-                              })}
-                          </TableRow>
-                        ))
+                        column.format && value
+                          ? typeof value === 'number'
+                            ? column.format(value)
+                            : value
+                          : value
                       }
-                    </React.Fragment>
-                  )
-                })
-              }
-            </TableBody>
-            :
-            <TableBody>
-              {rowsBalance.map((row, key) => {
-
-                return (
-                  <TableRow hover
-                    role="checkbox" tabIndex={-1} key={key}
-                    style={{ height: '20px' }}
-
-                  >
-                    {columns.map((column) => {
-                      const value = row[column.id];
-                      return (
-                        <TableCell
-                          key={column.id}
-                          align={column.align}
-                          style={{
-                            paddingTop: '5px',
-                            paddingBottom: '5px',
-                            fontSize: 15,
-                          }}
-                        >
-                          {
-                            column.format && value
-                              ? typeof value === 'number'
-                                ? column.format(value)
-                                : value
-                              : value
-                          }
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-        }
-
+                    </TableCell>
+                  );
+                })}
+              </TableRow>
+            );
+          })}
+        </TableBody>
         <TableFooter
           style={{
             backgroundColor: '#89A8B2',
@@ -279,22 +109,6 @@ const VirtualTableModifiableExport = ({ columns, rows, type, rowsCa }) => {
           }}
         >
           <TableRow>
-            {
-              type === 3 && (
-                <TableCell
-                  align="center"
-                  className="sticky-action"
-                  sx={{
-                    fontWeight: 'bold',
-                    paddingTop: '5px',
-                    paddingBottom: '5px',
-                    fontSize: 15,
-                    color: 'white',
-                  }}
-                >
-                </TableCell>
-              )
-            }
             {columns.map((column) => (
               <TableCell
                 key={column.id}
@@ -312,7 +126,7 @@ const VirtualTableModifiableExport = ({ columns, rows, type, rowsCa }) => {
                   column.id === "EcritureLib" || column.id === "compte"
                     ? "Total"
                     : column.isnumber
-                      ? totalColumn(rowsBalance, column.id).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                      ? totalColumn(rows, column.id).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                       : ""
                 }
               </TableCell>

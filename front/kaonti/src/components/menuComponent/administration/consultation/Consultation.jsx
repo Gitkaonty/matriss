@@ -50,6 +50,7 @@ export default function ConsultationComponent() {
 
     const axiosPrivate = useAxiosPrivate();
     const [typeComptabilite, setTypeComptabilite] = useState(null);
+    const [isTypeComptaAutre, setIsTypeComptaAutre] = useState(false);
 
     const [fileInfos, setFileInfos] = useState('');
     const [fileId, setFileId] = useState(0);
@@ -116,6 +117,7 @@ export default function ConsultationComponent() {
             if (resData.state) {
                 setFileInfos(resData.fileInfos[0]);
                 setTypeComptabilite(resData?.fileInfos[0]?.typecomptabilite);
+                setIsTypeComptaAutre(resData.fileInfos[0].typecomptabilite === 'Autres');
                 setIsCaActive(resData?.fileInfos[0]?.avecanalytique);
                 setNoFile(false);
             } else {
@@ -873,6 +875,7 @@ export default function ConsultationComponent() {
                         canAdd={canAdd}
                         canDelete={canDelete}
                         canModify={canModify}
+                        isTypeComptaAutre={isTypeComptaAutre}
                     /> : null
             }
             {

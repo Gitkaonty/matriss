@@ -10,9 +10,6 @@ const balances = db.balances;
 const caSections = db.caSections;
 const codejournals = db.codejournals;
 
-const fonctionUpdateSold = require('../../Middlewares/UpdateSolde/updateBalanceSold');
-const updateSold = fonctionUpdateSold.updateSold;
-
 const updateSoldAnalytique = async (compte_id, dossier_id, exercice_id) => {
     try {
         let stateUpdate = false;
@@ -393,22 +390,6 @@ const addCompteBilanToBalanceAnalytiqueManyAxes = async (id_compte, id_dossier, 
 
                         const amountCompteInEcriture = amountCompteIn_1_5[compte_in_1_5] || 0;
 
-                        // const val = {
-                        //     id_compte,
-                        //     id_dossier,
-                        //     id_exercice,
-                        //     id_numcpt: compte_in_1_5,
-                        //     id_axe: all_axe,
-                        //     id_section: all_section,
-                        //     mvtdebitanalytique: +(coef * mvtdebit * amountCompteInEcriture),
-                        //     mvtcreditanalytique: +(coef * mvtcredit * amountCompteInEcriture),
-                        //     soldedebitanalytique: +(coef * soldedebit * amountCompteInEcriture),
-                        //     soldecreditanalytique: +(coef * soldecredit * amountCompteInEcriture),
-                        //     valeuranalytique: +(coef * valeur * amountCompteInEcriture),
-                        // };
-
-                        // compteToCreate.push(val);
-
                         await balanceanalytiques.create({
                             id_compte,
                             id_dossier,
@@ -435,13 +416,18 @@ const addCompteBilanToBalanceAnalytiqueManyAxes = async (id_compte, id_dossier, 
 
 const createAnalytiqueIfNotExist = async (id_compte, id_dossier, id_exercice) => {
     const journal_in_6_7 = await journals.findAll({
-        where: { id_dossier, id_exercice, id_compte },
-        include: [{
-            model: dossierplancomptableModel,
-            attributes: ['compte'],
-            where: { compte: { [Op.regexp]: '^(6|7)' } }
-        }],
-        attributes: ['id_numcpt', 'debit', 'credit', 'id_ecriture'],
+        where: {
+            id_dossier,
+            id_exercice,
+            id_compte,
+            compteaux: { [Op.regexp]: '^(6|7)' }
+        },
+        // include: [{
+        //     model: dossierplancomptableModel,
+        //     attributes: ['compte'],
+        //     where: { compte: { [Op.regexp]: '^(6|7)' } }
+        // }],
+        attributes: ['debit', 'credit', 'id_ecriture'],
     });
 
     const sections = await caSections.findAll({
@@ -504,26 +490,26 @@ const createAnalytiqueIfNotExist = async (id_compte, id_dossier, id_exercice) =>
 
 const updateSoldAnalytiqueGlobal = async (id_compte, id_dossier, id_exercice, id_axes, id_sections) => {
     await createAnalytiqueIfNotExist(id_compte, id_dossier, id_exercice);
-    await updateSold(id_compte, id_dossier, id_exercice, [], true);
-    await updateSoldAnalytique(id_compte, id_dossier, id_exercice);
+    // await updateSold(id_compte, id_dossier, id_exercice, [], true);
+    // await updateSoldAnalytique(id_compte, id_dossier, id_exercice);
 
-    const analytiqueData = await analytiques.findAll({
-        where: {
-            id_dossier,
-            id_compte,
-            id_exercice
-        }
-    })
+    // const analytiqueData = await analytiques.findAll({
+    //     where: {
+    //         id_dossier,
+    //         id_compte,
+    //         id_exercice
+    //     }
+    // })
 
-    if (!analytiqueData) return
+    // if (!analytiqueData) return
 
-    const mappedAxesIds = [...new Set(analytiqueData.map(val => Number(val.id_axe)))];
-    const mappedSectionsIds = [...new Set(analytiqueData.map(val => Number(val.id_section)))];
+    // const mappedAxesIds = [...new Set(analytiqueData.map(val => Number(val.id_axe)))];
+    // const mappedSectionsIds = [...new Set(analytiqueData.map(val => Number(val.id_section)))];
 
-    const axesIds = !id_axes || id_axes.length === 0 ? mappedAxesIds : id_axes;
-    const sectionsIds = !id_sections || id_sections.length === 0 ? mappedSectionsIds : id_sections;
+    // const axesIds = !id_axes || id_axes.length === 0 ? mappedAxesIds : id_axes;
+    // const sectionsIds = !id_sections || id_sections.length === 0 ? mappedSectionsIds : id_sections;
 
-    await addCompteBilanToBalanceAnalytiqueOneAxe(id_compte, id_dossier, id_exercice, id_axes, sectionsIds);
+    // await addCompteBilanToBalanceAnalytiqueOneAxe(id_compte, id_dossier, id_exercice, id_axes, sectionsIds);
     // await addCompteBilanToBalanceAnalytiqueManyAxes(id_compte, id_dossier, id_exercice, mappedAxesIds, mappedSectionsIds);
 }
 
@@ -531,5 +517,6 @@ module.exports = {
     updateSoldAnalytique,
     addCompteBilanToBalanceAnalytiqueOneAxe,
     addCompteBilanToBalanceAnalytiqueManyAxes,
-    updateSoldAnalytiqueGlobal
+    updateSoldAnalytiqueGlobal,
+    createAnalytiqueIfNotExist
 };

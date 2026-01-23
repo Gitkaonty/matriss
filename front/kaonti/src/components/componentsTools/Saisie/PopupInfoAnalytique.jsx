@@ -13,7 +13,6 @@ const PopupInfoAnalytique = ({ id, onClose, open }) => {
     const getRepartition = () => {
         axios.get(`/paramCa/getRepartitionCA/${id}`).then((response) => {
             const resData = response?.data;
-            console.log('resData : ', resData);
             if (!resData?.state) return;
             setRows(resData?.list);
         })
