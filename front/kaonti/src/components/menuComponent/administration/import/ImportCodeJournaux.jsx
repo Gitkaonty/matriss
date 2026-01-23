@@ -242,7 +242,7 @@ export default function ImportCodeJournaux() {
         if (file) {
             Papa.parse(file, {
                 complete: (result) => {
-                    const headers = result.meta.fields;
+                    const headers = result?.meta?.fields || [];
 
                     if (validateHeaders(headers)) {
                         setTraitementMsg('Traitement des données en cours...');
@@ -274,7 +274,8 @@ export default function ImportCodeJournaux() {
                 },
                 header: true,
                 skipEmptyLines: true,
-                encoding: "UTF-8"
+                encoding: "UTF-8",
+                delimiter: ';'
             });
         }
     }
@@ -393,7 +394,7 @@ export default function ImportCodeJournaux() {
                                     Sélectionner le fichier à importer
                                 </Typography>
                                 <Typography variant='body2' sx={{ mb: 2, color: 'gray' }}>
-                                    Format accepté : CSV avec les colonnes suivantes : code, libelle, type, compteassocie, nif, stat, adresse
+                                    Format accepté : CSV séparé par point-virgule (;) avec les colonnes suivantes : code, libelle, type, compteassocie, nif, stat, adresse
                                 </Typography>
                                 <Typography variant='body2' sx={{ mb: 2, color: 'gray' }}>
                                     Types acceptés : ACHAT, BANQUE, CAISSE, OD, RAN, VENTE
