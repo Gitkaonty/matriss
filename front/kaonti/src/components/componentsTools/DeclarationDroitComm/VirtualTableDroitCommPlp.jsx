@@ -35,7 +35,7 @@ const VirtualTableDroitCommPlp = ({
                 <Table>
                     <TableHead
                         style={{
-                            backgroundColor: initial.theme,
+                            backgroundColor: initial.add_new_line_bouton_color,
                             position: 'sticky',
                             top: 0,
                             zIndex: 1,
@@ -52,7 +52,7 @@ const VirtualTableDroitCommPlp = ({
                                         paddingBottom: '5px',
                                         fontSize: 15,
                                         color: 'white',
-                                        backgroundColor: initial.theme,
+                                        backgroundColor: initial.add_new_line_bouton_color,
                                         borderLeft: '1px solid #ddd',
                                     }}
                                 >

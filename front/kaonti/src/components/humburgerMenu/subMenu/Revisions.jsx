@@ -41,7 +41,7 @@ export default function Revisions({ onWindowState, pathToNavigate, humburgerMenu
 
     return (
         <Stack
-            backgroundColor={initial.theme}
+            backgroundColor={initial.menu_theme}
             width={'100%'}
             height={'100vh'}
             zIndex={"10"}
@@ -68,17 +68,17 @@ export default function Revisions({ onWindowState, pathToNavigate, humburgerMenu
                 marginTop={"-25px"}
             >
                 <Stack width={"25%"} height={"30px"} spacing={0.1} alignItems={"flex-start"} direction={"column"}>
-                    <Typography variant='h6' marginLeft={"50px"} color={"white"}>Liasses</Typography>
+                    <Typography variant='h6' marginLeft={"50px"} color={initial.text_theme}>Liasses</Typography>
                     <SubMenuList list={liassesList} navigatePath={HandlePath} />
                 </Stack>
 
-                <Divider orientation='vertical' color={"white"} style={{ height: "100%", opacity: "0.2" }} />
+                <Divider orientation='vertical' color={initial.text_theme} style={{ height: "100%", opacity: "0.2" }} />
 
                 <Stack width={"25%"} height={"30px"} spacing={0.1} alignItems={"flex-start"} direction={"column"}>
-                    <Typography variant='h6' marginLeft={"50px"} color={"white"}>Fiscales</Typography>
+                    <Typography variant='h6' marginLeft={"50px"} color={initial.text_theme}>Fiscales</Typography>
                     <SubMenuList list={fiscalesList} navigatePath={HandlePath} />
                 </Stack>
-                <Divider orientation='vertical' color={"white"} style={{ height: "100%", opacity: "0.2" }} />
+                <Divider orientation='vertical' color={initial.text_theme} style={{ height: "100%", opacity: "0.2" }} />
 
             </Stack>
         </Stack>

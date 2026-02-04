@@ -35,22 +35,22 @@ const humburgerMenu = [
     subMenu: 1,
     urlDynamic: false
   },
-  {
-    text: 'Révisions',
-    name: "revision",
-    icons: <BiSelectMultiple style={styleMenuIcon} />,
-    path: "/tab/revision",
-    subMenu: 1,
-    urlDynamic: false
-  },
-  {
-    text: 'Déclarations',
-    name: "declaration",
-    icons: <RiShareForwardBoxLine style={styleMenuIcon} />,
-    path: "/tab/declaration",
-    subMenu: 1,
-    urlDynamic: false
-  },
+  // {
+  //   text: 'Révisions',
+  //   name: "revision",
+  //   icons: <BiSelectMultiple style={styleMenuIcon} />,
+  //   path: "/tab/revision",
+  //   subMenu: 1,
+  //   urlDynamic: false
+  // },
+  // {
+  //   text: 'Déclarations',
+  //   name: "declaration",
+  //   icons: <RiShareForwardBoxLine style={styleMenuIcon} />,
+  //   path: "/tab/declaration",
+  //   subMenu: 1,
+  //   urlDynamic: false
+  // },
   {
     text: 'Paramétrages',
     name: "parametrages",

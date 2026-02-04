@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Typography, Stack, IconButton, FormControl, InputLabel, Select, MenuItem, Input, FormHelperText, Chip } from '@mui/material';
+import { Typography, Stack, IconButton, FormControl, InputLabel, Select, MenuItem, Input, FormHelperText, Chip, ButtonGroup, Button } from '@mui/material';
 import Tooltip from '@mui/material/Tooltip';
 import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
 import { useParams } from 'react-router-dom';
@@ -202,7 +202,7 @@ export default function ParamCodeJournalComponent() {
             console.log('[useEffect pc] Plan comptable chargé, mise à jour de listeCptAssocie pour type:', formikNewCodeJournal.values.type);
             const listBank = pc.filter((row) => row.compte.startsWith('512') || row.compte.startsWith('52'));
             const listCash = pc.filter((row) => row.compte.startsWith('53'));
-            
+
             if (formikNewCodeJournal.values.type === 'BANQUE') {
                 console.log('[useEffect pc] Mise à jour liste BANQUE:', listBank.length, 'comptes');
                 setListeCptAssocie(listBank);
@@ -227,10 +227,10 @@ export default function ParamCodeJournalComponent() {
     const recupListeCptBanqueCaisse = (typeTreso) => {
         console.log('[recupListeCptBanqueCaisse] Type sélectionné:', typeTreso);
         console.log('[recupListeCptBanqueCaisse] Plan comptable (pc) length:', pc?.length);
-        
+
         const listBank = pc?.filter((row) => row.compte.startsWith('512') || row.compte.startsWith('52'));
         const listCash = pc?.filter((row) => row.compte.startsWith('53'));
-        
+
         console.log('[recupListeCptBanqueCaisse] Comptes BANQUE (512 ou 52) trouvés:', listBank?.length);
         console.log('[recupListeCptBanqueCaisse] Comptes CAISSE (53) trouvés:', listCash?.length);
 
@@ -1097,6 +1097,67 @@ export default function ParamCodeJournalComponent() {
             if (cellInput) cellInput.focus();
         }, 50);
     };
+    const iconButtonStyle = {
+        width: 44,
+        height: 44,
+        borderRadius: '2px',
+        backgroundColor: 'transparent',
+        boxShadow: 'none',
+
+        '&:hover': {
+            backgroundColor: 'transparent',
+            boxShadow: 'none',
+        },
+
+        '&:active': {
+            backgroundColor: 'transparent',
+            boxShadow: 'none',
+        },
+
+        '&.Mui-focusVisible': {
+            backgroundColor: 'transparent',
+            boxShadow: 'none',
+        },
+
+        '&.Mui-disabled': {
+            backgroundColor: 'transparent',
+            opacity: 0.4,
+        },
+    };
+    const iconStyle = {
+        width: 24,
+        height: 24,
+    };
+
+    const buttonStyle = {
+        minWidth: 120,
+        height: 32,
+        px: 2,
+        textTransform: 'none',
+        fontSize: '0.85rem',
+        borderRadius: '6px',
+        boxShadow: 'none',
+        '& .MuiTouchRipple-root': {
+            display: 'none',
+        },
+        '&:focus': {
+            outline: 'none',
+        },
+        '&.Mui-focusVisible': {
+            outline: 'none',
+            boxShadow: 'none',
+        },
+
+        '&:hover': {
+            boxShadow: 'none',
+            backgroundColor: 'action.hover',
+            border: 'none',
+        },
+
+        '&.Mui-disabled': {
+            opacity: 0.4
+        },
+    };
 
     return (
         <>
@@ -1143,114 +1204,250 @@ export default function ParamCodeJournalComponent() {
                         </TabList>
                     </Box>
                     <TabPanel value="1">
-                        <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages : codes journaux</Typography>
+                        <Typography variant='h7' sx={{ color: "black" }} align='left'>Paramétrages : codes journaux</Typography>
 
                         <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"}
                             direction={"column"} style={{ marginLeft: "0px", marginTop: "20px", justifyContent: "right" }}>
+                            <Stack
+                                width="100%"
+                                minHeight="56px"
+                                alignItems="center"
+                                direction="row"
+                                justifyContent="flex-end"
+                                sx={{
+                                    // backgroundColor: initial.tableau_theme,
+                                    borderRadius: 1,
+                                    px: 1,
+                                    py: 1,
+                                }}
+                            >
+                                <ButtonGroup
+                                    variant="outlined"
+                                    sx={{
+                                        boxShadow: 'none',
+                                        display: 'flex',
+                                        gap: '1px',
+                                        '& .MuiButton-root': {
+                                            borderRadius: 0,
+                                        },
+                                        '& .MuiButtonGroup-grouped': {
+                                            boxShadow: 'none',
+                                            outline: 'none',
+                                            borderColor: 'inherit',
+                                            marginLeft: 0,
+                                            borderRadius: 1,
+                                            border: 'none',
+                                        },
+                                        '& .MuiButtonGroup-grouped:hover': {
+                                            boxShadow: 'none',
+                                            borderColor: 'inherit',
+                                        },
+                                        '& .MuiButtonGroup-grouped.Mui-focusVisible': {
+                                            boxShadow: 'none',
+                                            borderColor: 'inherit',
+                                        },
+                                    }}
+                                >
+                                    <Tooltip title="Importer des codes journaux">
+                                        <span>
+                                            <Button
+                                                disabled={!canAdd}
+                                                onClick={() => setOpenImportDialog(true)}
+                                                //startIcon={<MdOutlineFileUpload size={18} />}
+                                                sx={{
+                                                    ...buttonStyle,
+                                                    backgroundColor: '#e79754ff',
+                                                    color: 'white',
+                                                    borderColor: '#e79754ff',
+                                                    boxShadow: 'none',
 
-                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                direction={"row"} justifyContent={"right"}>
-                                <Tooltip title="Importer des codes journaux">
-                                    <IconButton
-                                        disabled={!canAdd}
-                                        variant="contained"
-                                        onClick={() => setOpenImportDialog(true)}
-                                        style={{
-                                            width: "35px", height: '35px',
-                                            borderRadius: "2px", borderColor: "transparent",
-                                            backgroundColor: initial.theme,
-                                            textTransform: 'none', outline: 'none'
-                                        }}
-                                    >
-                                        <MdOutlineFileUpload style={{ width: '25px', height: '25px', color: 'white' }} />
-                                    </IconButton>
-                                </Tooltip>
+                                                    '&:hover': {
+                                                        backgroundColor: '#e79754ff',
+                                                        border: 'none',
+                                                        boxShadow: 'none',       // enlève l’effet bleu shadow
+                                                    },
+                                                    '&:focus': {
+                                                        backgroundColor: '#e79754ff',
+                                                        border: 'none',
+                                                        boxShadow: 'none',       // enlève le focus bleu
+                                                    },
+                                                    '&.Mui-disabled': {
+                                                        backgroundColor: '#e79754ff',
+                                                        color: 'white',
+                                                        cursor: 'not-allowed',
+                                                    },
+                                                    '&::before': {
+                                                        display: 'none',         // supprime l’overlay bleu de ButtonGroup
+                                                    },
+                                                }}
+                                            >
+                                                Importer
+                                            </Button>
+                                        </span>
+                                    </Tooltip>
 
-                                <Tooltip title="Ajouter une ligne">
-                                    <IconButton
-                                        disabled={!canAdd || disableAddRowBouton}
-                                        variant="contained"
-                                        onClick={handleOpenDialogAddNewAssocie}
-                                        style={{
-                                            width: "35px", height: '35px',
-                                            borderRadius: "2px", borderColor: "transparent",
-                                            backgroundColor: initial.theme,
-                                            textTransform: 'none', outline: 'none'
-                                        }}
-                                    >
-                                        <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                                    </IconButton>
-                                </Tooltip>
+                                    <Tooltip title="Ajouter une ligne">
+                                        <span>
+                                            <Button
+                                                disabled={!canAdd || disableAddRowBouton}
+                                                onClick={handleOpenDialogAddNewAssocie}
+                                                //startIcon={<TbPlaylistAdd size={18} />}
+                                                sx={{
+                                                    ...buttonStyle,
+                                                    backgroundColor: initial.auth_gradient_end,
+                                                    color: 'white',
+                                                    borderColor: initial.auth_gradient_end,
+                                                    boxShadow: 'none',
 
-                                <Tooltip title="Modifier la ligne sélectionnée">
-                                    <IconButton
-                                        disabled={(!canModify && selectedRowId > 0) || disableModifyBouton}
-                                        variant="contained"
-                                        onClick={handleEditClick(selectedRowId)}
-                                        style={{
-                                            width: "35px", height: '35px',
-                                            borderRadius: "2px", borderColor: "transparent",
-                                            backgroundColor: initial.theme,
-                                            textTransform: 'none', outline: 'none'
-                                        }}
-                                    >
-                                        <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
-                                    </IconButton>
-                                </Tooltip>
+                                                    '&:hover': {
+                                                        backgroundColor: initial.auth_gradient_end,
+                                                        border: 'none',
+                                                        boxShadow: 'none',       // enlève l’effet bleu shadow
+                                                    },
+                                                    '&:focus': {
+                                                        backgroundColor: initial.auth_gradient_end,
+                                                        border: 'none',
+                                                        boxShadow: 'none',       // enlève le focus bleu
+                                                    },
+                                                    '&.Mui-disabled': {
+                                                        backgroundColor: initial.auth_gradient_end,
+                                                        color: 'white',
+                                                        cursor: 'not-allowed',
+                                                    },
+                                                    '&::before': {
+                                                        display: 'none',         // supprime l’overlay bleu de ButtonGroup
+                                                    },
+                                                }}
 
-                                <Tooltip title="Sauvegarder les modifications">
-                                    <span>
-                                        <IconButton
-                                            disabled={(!canAdd && !canModify) || !formikNewCodeJournal.isValid}
-                                            variant="contained"
-                                            onClick={handleSaveClick(selectedRowId)}
-                                            style={{
-                                                width: "35px", height: '35px',
-                                                borderRadius: "2px", borderColor: "transparent",
-                                                backgroundColor: initial.theme,
-                                                textTransform: 'none', outline: 'none'
-                                            }}
-                                        >
-                                            <TfiSave style={{ width: '50px', height: '50px', color: 'white' }} />
-                                        </IconButton>
-                                    </span>
-                                </Tooltip>
+                                            >
+                                                Ajouter
+                                            </Button>
+                                        </span>
+                                    </Tooltip>
 
-                                <Tooltip title="Annuler les modifications">
-                                    <span>
-                                        <IconButton
-                                            disabled={disableCancelBouton}
-                                            variant="contained"
-                                            onClick={handleCancelClick(selectedRowId)}
-                                            style={{
-                                                width: "35px", height: '35px',
-                                                borderRadius: "2px", borderColor: "transparent",
-                                                backgroundColor: initial.button_delete_color,
-                                                textTransform: 'none', outline: 'none'
-                                            }}
-                                        >
-                                            <VscClose style={{ width: '50px', height: '50px', color: 'white' }} />
-                                        </IconButton>
-                                    </span>
-                                </Tooltip>
+                                    <Tooltip title="Modifier la ligne sélectionnée">
+                                        <span>
+                                            <Button
+                                                disabled={(!canModify && selectedRowId > 0) || disableModifyBouton}
+                                                onClick={handleEditClick(selectedRowId)}
+                                                //startIcon={<FaRegPenToSquare size={18} />}
+                                                sx={{
+                                                    ...buttonStyle,
+                                                    backgroundColor: initial.auth_gradient_end,
+                                                    color: 'white',
+                                                    borderColor: initial.auth_gradient_end,
 
-                                <Tooltip title="Supprimer la ligne sélectionné">
-                                    <span>
-                                        <IconButton
-                                            disabled={!canDelete || disableDeleteBouton}
-                                            onClick={handleOpenDialogConfirmDeleteAssocieRow}
-                                            variant="contained"
-                                            style={{
-                                                width: "35px", height: '35px',
-                                                borderRadius: "2px", borderColor: "transparent",
-                                                backgroundColor: initial.button_delete_color,
-                                                textTransform: 'none', outline: 'none'
-                                            }}
-                                        >
-                                            <IoMdTrash style={{ width: '50px', height: '50px', color: 'white' }} />
-                                        </IconButton>
-                                    </span>
-                                </Tooltip>
+                                                    '&:hover': {
+                                                        backgroundColor: initial.auth_gradient_end,
+                                                    },
+
+                                                    // 👇 OVERRIDE DU DISABLED
+                                                    '&.Mui-disabled': {
+                                                        backgroundColor: initial.auth_gradient_end,
+                                                        color: 'white',
+                                                        //opacity: 0.6,          // optionnel : juste un léger effet
+                                                        cursor: 'not-allowed',
+                                                    },
+                                                }}
+                                            >
+                                                Modifier
+                                            </Button>
+                                        </span>
+                                    </Tooltip>
+
+                                    <Tooltip title="Sauvegarder les modifications">
+                                        <span>
+                                            <Button
+                                                disabled={(!canAdd && !canModify) || !formikNewCodeJournal.isValid}
+                                                onClick={handleSaveClick(selectedRowId)}
+                                                //startIcon={<TfiSave size={18} />}
+                                                sx={{
+                                                    ...buttonStyle,
+                                                    backgroundColor: initial.auth_gradient_end,
+                                                    color: 'white',
+                                                    borderColor: initial.auth_gradient_end,
+
+                                                    '&:hover': {
+                                                        backgroundColor: initial.auth_gradient_end,
+                                                        border: 'none',
+                                                    },
+
+                                                    // 👇 OVERRIDE DU DISABLED
+                                                    '&.Mui-disabled': {
+                                                        backgroundColor: initial.auth_gradient_end,
+                                                        color: 'white',
+                                                        //opacity: 0.6,          // optionnel : juste un léger effet
+                                                        cursor: 'not-allowed',
+                                                    },
+                                                }}
+                                            >
+                                                Sauvegarder
+                                            </Button>
+                                        </span>
+                                    </Tooltip>
+
+                                    <Tooltip title="Annuler les modifications">
+                                        <span>
+                                            <Button
+                                                disabled={disableCancelBouton}
+                                                onClick={handleCancelClick(selectedRowId)}
+                                                // startIcon={<VscClose size={18} />}
+                                                sx={{
+                                                    ...buttonStyle,
+                                                    backgroundColor: initial.annuler_bouton_color,
+                                                    color: 'white',
+                                                    borderColor: initial.annuler_bouton_color,
+
+                                                    '&:hover': {
+                                                        backgroundColor: initial.annuler_bouton_color,
+                                                        none: 'none',
+                                                    },
+
+                                                    // 👇 OVERRIDE DU DISABLED
+                                                    '&.Mui-disabled': {
+                                                        backgroundColor: initial.annuler_bouton_color,
+                                                        color: 'white',
+                                                        //opacity: 0.6,          // optionnel : juste un léger effet
+                                                        cursor: 'not-allowed',
+                                                    },
+                                                }}
+                                            >
+                                                Annuler
+                                            </Button>
+                                        </span>
+                                    </Tooltip>
+
+                                    <Tooltip title="Supprimer la ligne sélectionnée">
+                                        <span>
+                                            <Button
+                                                disabled={!canDelete || disableDeleteBouton}
+                                                onClick={handleOpenDialogConfirmDeleteAssocieRow}
+                                                sx={{
+                                                    ...buttonStyle,
+                                                    backgroundColor: initial.annuler_bouton_color,
+                                                    color: 'white',
+                                                    borderColor: initial.annuler_bouton_color,
+
+                                                    '&:hover': {
+                                                        backgroundColor: initial.annuler_bouton_color,
+                                                        border: 'none',
+                                                    },
+
+                                                    // 👇 OVERRIDE DU DISABLED
+                                                    '&.Mui-disabled': {
+                                                        backgroundColor: initial.annuler_bouton_color,
+                                                        color: 'white',
+                                                        //opacity: 0.6,          // optionnel : juste un léger effet
+                                                        cursor: 'not-allowed',
+                                                    },
+                                                }}
+                                            >
+                                                Supprimer
+                                            </Button>
+                                        </span>
+                                    </Tooltip>
+
+                                </ButtonGroup>
                             </Stack>
 
                             <Stack width={"100%"} height={'100%'} minHeight={'600px'}>
@@ -1263,7 +1460,33 @@ export default function ParamCodeJournalComponent() {
                                     disableSelectionOnClick={true}
                                     localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
                                     slots={{ toolbar: QuickFilter }}
-                                    sx={DataGridStyle.sx}
+                                    sx={{
+                                        ...DataGridStyle.sx,
+                                        '& .MuiDataGrid-columnHeaders': {
+                                            backgroundColor: initial.tableau_theme,
+                                            color: initial.text_theme,
+                                        },
+                                        '& .MuiDataGrid-columnHeaderTitle': {
+                                            color: initial.text_theme,
+                                            fontWeight: 600,
+                                        },
+                                        '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
+                                            color: initial.text_theme,
+                                        },
+                                        '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+                                            outline: 'none',
+                                            border: 'none',
+                                        },
+                                        '& .highlight-separator': {
+                                            borderBottom: '1px solid red'
+                                        },
+                                        '& .MuiDataGrid-row.highlight-separator': {
+                                            borderBottom: '1px solid red',
+                                        },
+                                        '& .MuiDataGrid-virtualScroller': {
+                                            maxHeight: '700px',
+                                        },
+                                    }} 
                                     rowHeight={DataGridStyle.rowHeight}
                                     columnHeaderHeight={DataGridStyle.columnHeaderHeight}
                                     editMode='row'

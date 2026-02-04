@@ -121,7 +121,7 @@ const VirtualTableSDRbilan = ({ refreshTable, columns, rows, noCollapsible, stat
         <Table sx={{ width: '100%', border: '1px solid #ddd', }} aria-label="simple table">
           <TableHead
             style={{
-              backgroundColor: initial.theme,
+              backgroundColor: initial.add_new_line_bouton_color,
               position: 'sticky',
               top: 0,
               zIndex: 1,

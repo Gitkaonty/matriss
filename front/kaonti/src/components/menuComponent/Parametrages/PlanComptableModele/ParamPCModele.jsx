@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
     Typography, Stack, Paper, RadioGroup, FormControlLabel, Radio, FormControl,
     InputLabel, Select, MenuItem, TextField, Box, Tab,
-    FormHelperText, Autocomplete
+    FormHelperText, Autocomplete, ButtonGroup
 } from '@mui/material';
 import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
@@ -99,6 +99,16 @@ export default function ParamPlanComptableModele() {
     const [listeCptCollectif, setListeCptCollectif] = useState([]);
     const [disableLocalites, setDisableLocalites] = useState(false);
     const [disableTypeTiers, setDisableTypeTiers] = useState(true);
+
+    const buttonStyle = {
+        minWidth: 120,
+        height: 32,
+        px: 2,
+        borderRadius: 1,
+        textTransform: 'none',
+        fontWeight: 600,
+        boxShadow: 'none',
+    };
 
 
 
@@ -897,66 +907,140 @@ export default function ParamPlanComptableModele() {
             {openInfos ? <DetailsInformation row={rowCptInfos} confirmOpen={showCptInfos} listCptChg={listCptChg} listCptTva={listCptTva} /> : null}
 
             <Stack width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"} justifyContent={"stretch"}>
-                <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages : Plan comptable - modèle</Typography>
+                <Typography variant='h7' sx={{ color: "black" }} align='left'>Paramétrages : Plan comptable - modèle</Typography>
 
                 <Stack width={"100%"} height={"30px"} spacing={0} alignItems={"center"} alignContent={"center"}
                     direction={"row"} style={{ marginLeft: "0px", marginTop: "10px", justifyContent: "right" }}>
                     <Typography variant='h7' sx={{ color: "black", fontWeight: "bold" }} align='left'>Modèle</Typography>
                     <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
                         direction={"row"} justifyContent={"right"}>
-                        <Tooltip title="Importer un modèle">
-                            <span>
-                                <Button
-                                    onClick={() => setOpenImportDialog(true)}
-                                    variant="contained"
-                                    style={{
-                                        height: '35px',
-                                        borderRadius: '5px',
-                                        backgroundColor: initial.theme,
-                                        color: 'white',
-                                        textTransform: 'none',
-                                        outline: 'none',
-                                        marginLeft: '8px'
-                                    }}
-                                >
-                                    Importer
-                                </Button>
-                            </span>
-                        </Tooltip>
+                        <ButtonGroup
+                            variant="outlined"
+                            sx={{
+                                boxShadow: 'none',
+                                display: 'flex',
+                                gap: '2px',
+                                '& .MuiButton-root': {
+                                    borderRadius: 0,
+                                },
+                                '& .MuiButtonGroup-grouped': {
+                                    boxShadow: 'none',
+                                    outline: 'none',
+                                    borderColor: 'inherit',
+                                    marginLeft: 0,
+                                    borderRadius: 1,
+                                    border: 'none',
+                                },
+                                '& .MuiButtonGroup-grouped:hover': {
+                                    boxShadow: 'none',
+                                    borderColor: 'inherit',
+                                },
+                                '& .MuiButtonGroup-grouped.Mui-focusVisible': {
+                                    boxShadow: 'none',
+                                    borderColor: 'inherit',
+                                },
+                            }}
+                        >
+                            <Tooltip title="Importer un modèle">
+                                <span>
+                                    <Button
+                                        onClick={() => setOpenImportDialog(true)}
+                                        variant="contained"
+                                        sx={{
+                                            ...buttonStyle,
+                                            backgroundColor: '#e79754ff',
+                                            color: 'white',
+                                            borderColor: '#e79754ff',
+                                            boxShadow: 'none',
 
-                        <Tooltip title="Ajouter un nouveau modèle">
-                            <IconButton
-                                disabled={!canAdd}
-                                onClick={handleClickOpenNewModel}
-                                variant="contained"
-                                style={{
-                                    width: "35px", height: '35px',
-                                    borderRadius: "5px", borderColor: "transparent",
-                                    backgroundColor: initial.theme,
-                                    textTransform: 'none', outline: 'none'
-                                }}
-                            >
-                                <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                            </IconButton>
-                        </Tooltip>
+                                            '&:hover': {
+                                                backgroundColor: '#e79754ff',
+                                                border: 'none',
+                                                boxShadow: 'none',       // enlève l’effet bleu shadow
+                                            },
+                                            '&:focus': {
+                                                backgroundColor: '#e79754ff',
+                                                border: 'none',
+                                                boxShadow: 'none',       // enlève le focus bleu
+                                            },
+                                            '&.Mui-disabled': {
+                                                backgroundColor: '#e79754ff',
+                                                color: 'white',
+                                                cursor: 'not-allowed',
+                                            },
+                                            '&::before': {
+                                                display: 'none',         // supprime l’overlay bleu de ButtonGroup
+                                            },
+                                        }}
+                                    >
+                                        Importer
+                                    </Button>
+                                </span>
+                            </Tooltip>
 
-                        <Tooltip title="Supprimer le modèle sélectionné">
-                            <span>
-                                <IconButton
-                                    disabled={!canDelete}
-                                    onClick={handleClickOpenDialogDeleteModel}
-                                    variant="contained"
-                                    style={{
-                                        width: "35px", height: '35px',
-                                        borderRadius: "5px", borderColor: "transparent",
-                                        backgroundColor: initial.button_delete_color,
-                                        textTransform: 'none', outline: 'none'
-                                    }}
-                                >
-                                    <IoMdTrash style={{ width: '40px', height: '40px', color: 'white' }} />
-                                </IconButton>
-                            </span>
-                        </Tooltip>
+
+                            <Tooltip title="Ajouter un nouveau modèle">
+                                <span>
+                                    <Button
+                                        disabled={!canAdd}
+                                        onClick={handleClickOpenNewModel}
+                                        sx={{
+                                            ...buttonStyle,
+                                            backgroundColor: initial.auth_gradient_end,
+                                            color: 'white',
+                                            borderColor: initial.auth_gradient_end,
+                                            boxShadow: 'none',
+
+                                            '&:hover': {
+                                                backgroundColor: initial.auth_gradient_end,
+                                                border: 'none',
+                                                boxShadow: 'none',       // enlève l’effet bleu shadow
+                                            },
+                                            '&:focus': {
+                                                backgroundColor: initial.auth_gradient_end,
+                                                border: 'none',
+                                                boxShadow: 'none',       // enlève le focus bleu
+                                            },
+                                            '&.Mui-disabled': {
+                                                backgroundColor: initial.auth_gradient_end,
+                                                color: 'white',
+                                                cursor: 'not-allowed',
+                                            },
+                                            '&::before': {
+                                                display: 'none',         // supprime l’overlay bleu de ButtonGroup
+                                            },
+                                        }}
+                                    >
+                                        Ajouter
+                                    </Button>
+                                </span>
+                            </Tooltip>
+
+                            <Tooltip title="Supprimer le modèle sélectionné">
+                                <span>
+                                    <Button
+                                        disabled={!canDelete || !modelSelectedRow}
+                                        onClick={handleClickOpenDialogDeleteModel}
+                                        sx={{
+                                            ...buttonStyle,
+                                            backgroundColor: initial.annuler_bouton_color,
+                                            color: 'white',
+                                            borderColor: initial.annuler_bouton_color,
+                                            '&:hover': {
+                                                backgroundColor: initial.annuler_bouton_color,
+                                            },
+                                            '&.Mui-disabled': {
+                                                backgroundColor: initial.annuler_bouton_color,
+                                                color: 'white',
+                                                cursor: 'not-allowed',
+                                            },
+                                        }}
+                                    >
+                                        Supprimer
+                                    </Button>
+                                </span>
+                            </Tooltip>
+                        </ButtonGroup>
 
                     </Stack>
                 </Stack>
@@ -1061,7 +1145,7 @@ export default function ParamPlanComptableModele() {
                         <DialogActions>
                             <Button
                                 autoFocus
-                                style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
+                                style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
                                 type='submit'
                                 onClick={formNewModel.handleSubmit}
                             >
@@ -1108,7 +1192,33 @@ export default function ParamPlanComptableModele() {
                         disableRowSelectionOnClick
                         disableSelectionOnClick={true}
                         slots={{ toolbar: QuickFilter }}
-                        sx={DataGridStyle.sx}
+                        sx={{
+                            ...DataGridStyle.sx,
+                            '& .MuiDataGrid-columnHeaders': {
+                                backgroundColor: initial.tableau_theme,
+                                color: initial.text_theme,
+                            },
+                            '& .MuiDataGrid-columnHeaderTitle': {
+                                color: initial.text_theme,
+                                fontWeight: 600,
+                            },
+                            '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
+                                color: initial.text_theme,
+                            },
+                            '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+                                outline: 'none',
+                                border: 'none',
+                            },
+                            '& .highlight-separator': {
+                                borderBottom: '1px solid red'
+                            },
+                            '& .MuiDataGrid-row.highlight-separator': {
+                                borderBottom: '1px solid red',
+                            },
+                            '& .MuiDataGrid-virtualScroller': {
+                                maxHeight: '700px',
+                            },
+                        }}
                         rowHeight={DataGridStyle.rowHeight}
                         columnHeaderHeight={DataGridStyle.columnHeaderHeight}
                         onRowSelectionModelChange={(ids) => {
@@ -1157,53 +1267,123 @@ export default function ParamPlanComptableModele() {
 
                                     <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
                                         direction={"row"} justifyContent={"right"}>
-                                        <Tooltip title="Ajouter un nouveau compte">
-                                            <IconButton
-                                                // disabled={statutDeleteButton}  
-                                                onClick={handleOpenDialogDetailModelAdd(setFieldValue, resetForm)}
-                                                variant="contained"
-                                                style={{
-                                                    width: "35px", height: '35px',
-                                                    borderRadius: "5px", borderColor: "transparent",
-                                                    backgroundColor: initial.theme,
-                                                    textTransform: 'none', outline: 'none'
-                                                }}
-                                            >
-                                                <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                                            </IconButton>
-                                        </Tooltip>
+                                        <ButtonGroup
+                                            variant="outlined"
+                                            sx={{
+                                                boxShadow: 'none',
+                                                display: 'flex',
+                                                gap: '2px',
+                                                '& .MuiButton-root': {
+                                                    borderRadius: 0,
+                                                },
+                                                '& .MuiButtonGroup-grouped': {
+                                                    boxShadow: 'none',
+                                                    outline: 'none',
+                                                    borderColor: 'inherit',
+                                                    marginLeft: 0,
+                                                    borderRadius: 1,
+                                                    border: 'none',
+                                                },
+                                                '& .MuiButtonGroup-grouped:hover': {
+                                                    boxShadow: 'none',
+                                                    borderColor: 'inherit',
+                                                    border: 'none',
+                                                },
+                                                '& .MuiButtonGroup-grouped.Mui-focusVisible': {
+                                                    boxShadow: 'none',
+                                                    borderColor: 'inherit',
+                                                },
+                                            }}
+                                        >
+                                            <Tooltip title="Ajouter un nouveau compte">
+                                                <span>
+                                                    <Button
+                                                        disabled={!canAdd || !modelId}
+                                                        onClick={handleOpenDialogDetailModelAdd(setFieldValue, resetForm)}
+                                                        sx={{
+                                                            ...buttonStyle,
+                                                            backgroundColor: initial.auth_gradient_end,
+                                                            color: 'white',
+                                                            borderColor: initial.auth_gradient_end,
+                                                            boxShadow: 'none',
 
-                                        <Tooltip title="Modifier le compte sélectionné">
-                                            <IconButton
-                                                onClick={handleOpenDialogDetailModelModify(setFieldValue)}
-                                                variant="contained"
-                                                style={{
-                                                    width: "35px", height: '35px',
-                                                    borderRadius: "5px", borderColor: "transparent",
-                                                    backgroundColor: initial.theme,
-                                                    textTransform: 'none', outline: 'none'
-                                                }}
-                                            >
-                                                <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
-                                            </IconButton>
-                                        </Tooltip>
+                                                            '&:hover': {
+                                                                backgroundColor: initial.auth_gradient_end,
+                                                                border: 'none',
+                                                                boxShadow: 'none',       // enlève l’effet bleu shadow
+                                                            },
+                                                            '&:focus': {
+                                                                backgroundColor: initial.auth_gradient_end,
+                                                                border: 'none',
+                                                                boxShadow: 'none',       // enlève le focus bleu
+                                                            },
+                                                            '&.Mui-disabled': {
+                                                                backgroundColor: initial.auth_gradient_end,
+                                                                color: 'white',
+                                                                cursor: 'not-allowed',
+                                                            },
+                                                            '&::before': {
+                                                                display: 'none',         // supprime l’overlay bleu de ButtonGroup
+                                                            },
+                                                        }}
+                                                    >
+                                                        Ajouter
+                                                    </Button>
+                                                </span>
+                                            </Tooltip>
 
-                                        <Tooltip title="Supprimer le compte sélectionné">
-                                            <span>
-                                                <IconButton
-                                                    onClick={handleOpenDialogDetailModelDelete}
-                                                    variant="contained"
-                                                    style={{
-                                                        width: "35px", height: '35px',
-                                                        borderRadius: "5px", borderColor: "transparent",
-                                                        backgroundColor: initial.button_delete_color,
-                                                        textTransform: 'none', outline: 'none'
-                                                    }}
-                                                >
-                                                    <IoMdTrash style={{ width: '40px', height: '40px', color: 'white' }} />
-                                                </IconButton>
-                                            </span>
-                                        </Tooltip>
+                                            <Tooltip title="Modifier le compte sélectionné">
+                                                <span>
+                                                    <Button
+                                                        disabled={!canModify || !detailModelSelectedRow || !detailModelSelectedRow.id}
+                                                        onClick={handleOpenDialogDetailModelModify(setFieldValue)}
+                                                        sx={{
+                                                            ...buttonStyle,
+                                                            backgroundColor: initial.auth_gradient_end,
+                                                            color: 'white',
+                                                            borderColor: initial.auth_gradient_end,
+                                                            '&:hover': {
+                                                                backgroundColor: initial.auth_gradient_end,
+                                                                border: 'none',
+                                                            },
+                                                            '&.Mui-disabled': {
+                                                                backgroundColor: initial.auth_gradient_end,
+                                                                color: 'white',
+                                                                cursor: 'not-allowed',
+                                                            },
+                                                        }}
+                                                    >
+                                                        Modifier
+                                                    </Button>
+                                                </span>
+                                            </Tooltip>
+
+                                            <Tooltip title="Supprimer le compte sélectionné">
+                                                <span>
+                                                    <Button
+                                                        disabled={!canDelete || !detailModelSelectedRow || !detailModelSelectedRow.id}
+                                                        onClick={handleOpenDialogDetailModelDelete}
+                                                        sx={{
+                                                            ...buttonStyle,
+                                                            backgroundColor: initial.annuler_bouton_color,
+                                                            color: 'white',
+                                                            borderColor: initial.annuler_bouton_color,
+                                                            '&:hover': {
+                                                                backgroundColor: initial.annuler_bouton_color,
+                                                                border: 'none',
+                                                            },
+                                                            '&.Mui-disabled': {
+                                                                backgroundColor: initial.annuler_bouton_color,
+                                                                color: 'white',
+                                                                cursor: 'not-allowed',
+                                                            },
+                                                        }}
+                                                    >
+                                                        Supprimer
+                                                    </Button>
+                                                </span>
+                                            </Tooltip>
+                                        </ButtonGroup>
                                     </Stack>
                                 </Stack>
                                 <BootstrapDialog
@@ -1787,7 +1967,7 @@ export default function ParamPlanComptableModele() {
                                                                         style={{
                                                                             width: "35px", height: '35px',
                                                                             borderRadius: "5px", borderColor: "transparent",
-                                                                            backgroundColor: initial.theme,
+                                                                            backgroundColor: initial.add_new_line_bouton_color,
                                                                             textTransform: 'none', outline: 'none'
                                                                         }}
                                                                         onClick={handleOpenDialogAddNewCptModelDetail}
@@ -1823,7 +2003,33 @@ export default function ParamPlanComptableModele() {
                                                                     disableRowSelectionOnClick
                                                                     disableSelectionOnClick={true}
                                                                     slots={{ toolbar: QuickFilter }}
-                                                                    sx={DataGridStyle.sx}
+                                                                    sx={{
+                                                                        ...DataGridStyle.sx,
+                                                                        '& .MuiDataGrid-columnHeaders': {
+                                                                            backgroundColor: initial.tableau_theme,
+                                                                            color: initial.text_theme,
+                                                                        },
+                                                                        '& .MuiDataGrid-columnHeaderTitle': {
+                                                                            color: initial.text_theme,
+                                                                            fontWeight: 600,
+                                                                        },
+                                                                        '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
+                                                                            color: initial.text_theme,
+                                                                        },
+                                                                        '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+                                                                            outline: 'none',
+                                                                            border: 'none',
+                                                                        },
+                                                                        '& .highlight-separator': {
+                                                                            borderBottom: '1px solid red'
+                                                                        },
+                                                                        '& .MuiDataGrid-row.highlight-separator': {
+                                                                            borderBottom: '1px solid red',
+                                                                        },
+                                                                        '& .MuiDataGrid-virtualScroller': {
+                                                                            maxHeight: '700px',
+                                                                        },
+                                                                    }}
                                                                     rowHeight={DataGridStyle.rowHeight}
                                                                     columnHeaderHeight={DataGridStyle.columnHeaderHeight}
                                                                     onRowSelectionModelChange={ids => {
@@ -1865,7 +2071,7 @@ export default function ParamPlanComptableModele() {
                                                                         style={{
                                                                             width: "35px", height: '35px',
                                                                             borderRadius: "5px", borderColor: "transparent",
-                                                                            backgroundColor: initial.theme,
+                                                                            backgroundColor: initial.add_new_line_bouton_color,
                                                                             textTransform: 'none', outline: 'none'
                                                                         }}
                                                                     >
@@ -1900,7 +2106,33 @@ export default function ParamPlanComptableModele() {
                                                                     disableRowSelectionOnClick
                                                                     disableSelectionOnClick={true}
                                                                     slots={{ toolbar: QuickFilter }}
-                                                                    sx={DataGridStyle.sx}
+                                                                    sx={{
+                                                                        ...DataGridStyle.sx,
+                                                                        '& .MuiDataGrid-columnHeaders': {
+                                                                            backgroundColor: initial.tableau_theme,
+                                                                            color: initial.text_theme,
+                                                                        },
+                                                                        '& .MuiDataGrid-columnHeaderTitle': {
+                                                                            color: initial.text_theme,
+                                                                            fontWeight: 600,
+                                                                        },
+                                                                        '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
+                                                                            color: initial.text_theme,
+                                                                        },
+                                                                        '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+                                                                            outline: 'none',
+                                                                            border: 'none',
+                                                                        },
+                                                                        '& .highlight-separator': {
+                                                                            borderBottom: '1px solid red'
+                                                                        },
+                                                                        '& .MuiDataGrid-row.highlight-separator': {
+                                                                            borderBottom: '1px solid red',
+                                                                        },
+                                                                        '& .MuiDataGrid-virtualScroller': {
+                                                                            maxHeight: '700px',
+                                                                        },
+                                                                    }}
                                                                     rowHeight={DataGridStyle.rowHeight}
                                                                     columnHeaderHeight={DataGridStyle.columnHeaderHeight}
                                                                     onRowSelectionModelChange={ids => {
@@ -1951,7 +2183,7 @@ export default function ParamPlanComptableModele() {
                                             Annuler
                                         </Button>
                                         <Button autoFocus
-                                            style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
+                                            style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
                                             type='submit'
                                             onClick={handleSubmit}
                                         >
@@ -2008,7 +2240,7 @@ export default function ParamPlanComptableModele() {
                                     </DialogContent>
                                     <DialogActions>
                                         <Button autoFocus
-                                            style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
+                                            style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
                                             onClick={AddCptToTableCptChg(setFieldValue)}
                                         >
                                             Ajouter
@@ -2068,7 +2300,7 @@ export default function ParamPlanComptableModele() {
                                     </DialogContent>
                                     <DialogActions>
                                         <Button autoFocus
-                                            style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
+                                            style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
                                             onClick={AddCptToTableCptTva(setFieldValue)}
                                         >
                                             Ajouter
@@ -2095,7 +2327,33 @@ export default function ParamPlanComptableModele() {
                         disableRowSelectionOnClick
                         disableSelectionOnClick={true}
                         slots={{ toolbar: QuickFilter }}
-                        sx={DataGridStyle.sx}
+                        sx={{
+                            ...DataGridStyle.sx,
+                            '& .MuiDataGrid-columnHeaders': {
+                                backgroundColor: initial.tableau_theme,
+                                color: initial.text_theme,
+                            },
+                            '& .MuiDataGrid-columnHeaderTitle': {
+                                color: initial.text_theme,
+                                fontWeight: 600,
+                            },
+                            '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
+                                color: initial.text_theme,
+                            },
+                            '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+                                outline: 'none',
+                                border: 'none',
+                            },
+                            '& .highlight-separator': {
+                                borderBottom: '1px solid red'
+                            },
+                            '& .MuiDataGrid-row.highlight-separator': {
+                                borderBottom: '1px solid red',
+                            },
+                            '& .MuiDataGrid-virtualScroller': {
+                                maxHeight: '700px',
+                            },
+                        }}
                         rowHeight={DataGridStyle.rowHeight}
                         columnHeaderHeight={DataGridStyle.columnHeaderHeight}
                         onRowSelectionModelChange={(ids) => {

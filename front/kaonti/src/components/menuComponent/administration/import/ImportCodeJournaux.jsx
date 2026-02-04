@@ -419,7 +419,7 @@ export default function ImportCodeJournaux() {
                                         variant="contained"
                                         component="span"
                                         style={{
-                                            backgroundColor: initial.theme,
+                                            backgroundColor: initial.add_new_line_bouton_color,
                                             textTransform: 'none'
                                         }}
                                     >
@@ -501,7 +501,7 @@ export default function ImportCodeJournaux() {
                                     onClick={handleOpenDialogConfirmImport}
                                     disabled={codeJournauxData.length === 0 || nbrAnomalie > 0}
                                     style={{
-                                        backgroundColor: initial.theme,
+                                        backgroundColor: initial.add_new_line_bouton_color,
                                         textTransform: 'none'
                                     }}
                                 >

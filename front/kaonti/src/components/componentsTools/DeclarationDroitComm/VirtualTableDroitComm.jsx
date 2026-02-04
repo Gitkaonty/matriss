@@ -124,7 +124,7 @@ const VirtualTableDroitComm = ({ columns, nature, deleteState, modifyState, rows
                 <Table aria-label="simple table">
                     <TableHead
                         style={{
-                            backgroundColor: initial.theme,
+                            backgroundColor: initial.add_new_line_bouton_color,
                             position: 'sticky',
                             top: 0,
                             zIndex: 1,
@@ -142,7 +142,7 @@ const VirtualTableDroitComm = ({ columns, nature, deleteState, modifyState, rows
                                             paddingBottom: '5px',
                                             fontSize: 15,
                                             color: 'white',
-                                            backgroundColor: initial.theme,
+                                            backgroundColor: initial.add_new_line_bouton_color,
                                             borderLeft: '1px solid #ddd',
                                         }}
                                     >
@@ -160,7 +160,7 @@ const VirtualTableDroitComm = ({ columns, nature, deleteState, modifyState, rows
                                             paddingBottom: '5px',
                                             fontSize: 15,
                                             color: 'white',
-                                            backgroundColor: initial.theme,
+                                            backgroundColor: initial.add_new_line_bouton_color,
                                             borderLeft: '1px solid #ddd',
                                         }}
                                     >
@@ -179,7 +179,7 @@ const VirtualTableDroitComm = ({ columns, nature, deleteState, modifyState, rows
                                             paddingBottom: '5px',
                                             fontSize: 15,
                                             color: 'white',
-                                            backgroundColor: initial.theme,
+                                            backgroundColor: initial.add_new_line_bouton_color,
                                             borderLeft: '1px solid #ddd',
                                         }}
                                     >

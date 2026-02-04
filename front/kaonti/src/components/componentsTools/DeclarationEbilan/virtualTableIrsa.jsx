@@ -113,7 +113,7 @@ const VirtualTableIrsa = ({ columns, rows, deleteState, modifyState, state, edit
       )}
       <TableContainer style={{ display: 'inline-block', width: 'auto', overflowX: 'auto' }}>
         <Table sx={{ minWidth: 650, border: '1px solid #ddd' }} aria-label="irsa table">
-          <TableHead style={{ backgroundColor: initial.theme, position: 'sticky', top: 0, zIndex: 1 }}>
+          <TableHead style={{ backgroundColor: initial.add_new_line_bouton_color, position: 'sticky', top: 0, zIndex: 1 }}>
             <TableRow>
               <TableCell
                 key={'00modif'}

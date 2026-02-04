@@ -264,7 +264,7 @@ const RolePermission = () => {
                 <TabPanel value="1" style={{ height: '100%' }}>
                     <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
                         <Typography
-                            variant='h6'
+                            variant='h7'
                             sx={{
                                 color: "black",
                                 maxWidth: "100%",

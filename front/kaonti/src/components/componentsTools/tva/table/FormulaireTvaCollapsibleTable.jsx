@@ -199,7 +199,7 @@ export default function FormulaireTvaCollapsibleTable({
         <TableHead>
           <TableRow>
             {cols.map((c) => (
-              <TableCell key={c.id} align={c.align} style={{ minWidth: c.width, fontWeight: 'bold', color: 'white', backgroundColor: initial.theme }}>
+              <TableCell key={c.id} align={c.align} style={{ minWidth: c.width, fontWeight: 'bold', color: 'white', backgroundColor: initial.add_new_line_bouton_color }}>
                 {c.label}
               </TableCell>
             ))}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Typography, Stack, TextField, FormHelperText, RadioGroup, Radio, Box, Tab } from '@mui/material';
+import { Typography, Stack, TextField, FormHelperText, Chip, Box, Tab } from '@mui/material';
 import { FormControl, FormControlLabel, FormLabel } from "@mui/material";
 import Button from '@mui/material/Button';
 import { styled } from '@mui/material/styles';
@@ -266,75 +266,57 @@ const PopupAddSousCompte = ({ selectedRowCompteIds, confirmationState, isRefresh
                                         marginTop: '10px'
                                     }}
                                 >
-                                    <FormControl size="small" fullWidth style={{ width: '100%' }}>
+                                    <Stack spacing={1} sx={{ width: '100%', maxWidth: 400 }}>
+                                        <label style={{ fontSize: 12, color: '#c0c0c0ff' }}>
+                                            Nom du compte
+                                        </label>
                                         <TextField
                                             size="small"
                                             name="nom-sous-compte"
-                                            label="Nom du compte"
                                             fullWidth
-                                            variant='standard'
+                                            variant="outlined"
                                             disabled={true}
                                             value={rowSelectedData?.nom}
-                                            InputProps={{
-                                                style: {
-                                                    fontSize: '13px',
-                                                    padding: '2px 4px',
-                                                    height: '30px',
-                                                },
-                                                sx: {
-                                                    '& input': {
-                                                        height: '30px',
-                                                    },
-                                                },
-                                            }}
-                                            InputLabelProps={{
-                                                style: {
-                                                    fontSize: '13px',
-                                                    marginTop: '-2px',
-                                                },
-                                            }}
                                             sx={{
-                                                ...inputAutoFill
+                                                ...inputAutoFill,
+                                                '& .MuiOutlinedInput-root': {
+                                                    height: 32,
+                                                },
+                                                '& .MuiOutlinedInput-input': {
+                                                    padding: '4px 6px',
+                                                    fontSize: 13,
+                                                },
                                             }}
                                         />
-                                    </FormControl>
+                                    </Stack>
 
-                                    <FormControl size="small" fullWidth style={{ width: '100%' }}>
+                                    <Stack spacing={1} sx={{ width: '100%', maxWidth: 400 }}>
+                                        <label style={{ fontSize: 12, color: '#c0c0c0ff' }}>
+                                            Nom d'utilisateur
+                                        </label>
                                         <TextField
                                             size="small"
                                             name="username"
-                                            label="Nom d'utilisateur"
                                             fullWidth
-                                            variant='standard'
+                                            variant="outlined"
                                             required
                                             value={formData.values.username}
                                             onChange={formData.handleChange}
                                             onBlur={formData.handleBlur}
                                             error={Boolean(formData.touched.username && formData.errors.username)}
                                             helperText={formData.touched.username && formData.errors.username}
-                                            InputProps={{
-                                                style: {
-                                                    fontSize: '13px',
-                                                    padding: '2px 4px',
-                                                    height: '30px',
-                                                },
-                                                sx: {
-                                                    '& input': {
-                                                        height: '30px',
-                                                    },
-                                                },
-                                            }}
-                                            InputLabelProps={{
-                                                style: {
-                                                    fontSize: '13px',
-                                                    marginTop: '-2px',
-                                                },
-                                            }}
                                             sx={{
-                                                ...inputAutoFill
+                                                ...inputAutoFill,
+                                                '& .MuiOutlinedInput-root': {
+                                                    height: 32,
+                                                },
+                                                '& .MuiOutlinedInput-input': {
+                                                    padding: '4px 6px',
+                                                    fontSize: 13,
+                                                },
                                             }}
                                         />
-                                    </FormControl>
+                                    </Stack>
 
                                     <input
                                         type="text"
@@ -343,13 +325,15 @@ const PopupAddSousCompte = ({ selectedRowCompteIds, confirmationState, isRefresh
                                         style={{ display: "none" }}
                                     />
 
-                                    <FormControl size="small" fullWidth>
+                                    <Stack spacing={1} sx={{ width: '100%', maxWidth: 400 }}>
+                                        <label style={{ fontSize: 12, color: '#c0c0c0ff' }}>
+                                            Email
+                                        </label>
                                         <TextField
                                             size="small"
-                                            label="Email"
                                             name="email_add"
                                             fullWidth
-                                            variant="standard"
+                                            variant="outlined"
                                             required
                                             value={formData.values.email_add ?? ""}
                                             onChange={formData.handleChange}
@@ -357,15 +341,18 @@ const PopupAddSousCompte = ({ selectedRowCompteIds, confirmationState, isRefresh
                                             error={Boolean(formData.touched.email_add && formData.errors.email_add)}
                                             helperText={formData.touched.email_add && formData.errors.email_add}
                                             autoComplete="new-email"
-                                            InputProps={{
-                                                style: { fontSize: "13px", padding: "2px 4px", height: "30px" },
-                                                sx: { "& input": { height: "30px" } },
-                                            }}
-                                            InputLabelProps={{
-                                                style: { fontSize: "13px", marginTop: "-2px" },
+                                            sx={{
+                                                ...inputAutoFill,
+                                                '& .MuiOutlinedInput-root': {
+                                                    height: 32,
+                                                },
+                                                '& .MuiOutlinedInput-input': {
+                                                    padding: '4px 6px',
+                                                    fontSize: 13,
+                                                },
                                             }}
                                         />
-                                    </FormControl>
+                                    </Stack>
 
                                     <input
                                         type="password"
@@ -374,13 +361,15 @@ const PopupAddSousCompte = ({ selectedRowCompteIds, confirmationState, isRefresh
                                         style={{ display: "none" }}
                                     />
 
-                                    <FormControl size="small" fullWidth style={{ width: '100%' }}>
+                                    <Stack spacing={1} sx={{ width: '100%', maxWidth: 400 }}>
+                                        <label style={{ fontSize: 12, color: '#c0c0c0ff' }}>
+                                            Mot de passe
+                                        </label>
                                         <TextField
                                             size="small"
-                                            label="Mot de passe"
                                             name="password"
                                             fullWidth
-                                            variant='standard'
+                                            variant="outlined"
                                             type={showPassword ? 'text' : 'password'}
                                             required
                                             value={formData.values.password || ""}
@@ -391,15 +380,7 @@ const PopupAddSousCompte = ({ selectedRowCompteIds, confirmationState, isRefresh
                                             autoComplete="new-password"
                                             InputProps={{
                                                 style: {
-                                                    fontSize: '13px',
-                                                    padding: '2px 4px',
-                                                    height: '30px',
                                                     pointerEvents: !editSousCompte ? 'none' : 'auto'
-                                                },
-                                                sx: {
-                                                    '& input': {
-                                                        height: '30px',
-                                                    },
                                                 },
                                                 readOnly: !editSousCompte,
                                                 endAdornment: (
@@ -415,25 +396,28 @@ const PopupAddSousCompte = ({ selectedRowCompteIds, confirmationState, isRefresh
                                                     </InputAdornment>
                                                 ),
                                             }}
-                                            InputLabelProps={{
-                                                style: {
-                                                    fontSize: '13px',
-                                                    marginTop: '-2px',
+                                            sx={{
+                                                ...inputAutoFill,
+                                                '& .MuiOutlinedInput-root': {
+                                                    height: 32,
+                                                },
+                                                '& .MuiOutlinedInput-input': {
+                                                    padding: '4px 6px',
+                                                    fontSize: 13,
                                                 },
                                             }}
-                                            sx={{
-                                                ...inputAutoFill
-                                            }}
                                         />
-                                    </FormControl>
+                                    </Stack>
 
-                                    <FormControl size="small" fullWidth style={{ width: '100%' }}>
+                                    <Stack spacing={1} sx={{ width: '100%', maxWidth: 400 }}>
+                                        <label style={{ fontSize: 12, color: '#c0c0c0ff' }}>
+                                            Confirmation du mot de passe
+                                        </label>
                                         <TextField
                                             size="small"
-                                            label="Confirmation du mot de passe"
                                             name="passwordConfirmation"
                                             fullWidth
-                                            variant='standard'
+                                            variant="outlined"
                                             type={showPasswordConfirmation ? 'text' : 'password'}
                                             required
                                             value={formData.values.passwordConfirmation || ""}
@@ -443,15 +427,7 @@ const PopupAddSousCompte = ({ selectedRowCompteIds, confirmationState, isRefresh
                                             helperText={formData.touched.passwordConfirmation && formData.errors.passwordConfirmation}
                                             InputProps={{
                                                 style: {
-                                                    fontSize: '13px',
-                                                    padding: '2px 4px',
-                                                    height: '30px',
                                                     pointerEvents: !editSousCompte ? 'none' : 'auto'
-                                                },
-                                                sx: {
-                                                    '& input': {
-                                                        height: '30px',
-                                                    },
                                                 },
                                                 readOnly: !editSousCompte,
                                                 endAdornment: (
@@ -467,17 +443,18 @@ const PopupAddSousCompte = ({ selectedRowCompteIds, confirmationState, isRefresh
                                                     </InputAdornment>
                                                 ),
                                             }}
-                                            InputLabelProps={{
-                                                style: {
-                                                    fontSize: '13px',
-                                                    marginTop: '-2px',
+                                            sx={{
+                                                ...inputAutoFill,
+                                                '& .MuiOutlinedInput-root': {
+                                                    height: 32,
+                                                },
+                                                '& .MuiOutlinedInput-input': {
+                                                    padding: '4px 6px',
+                                                    fontSize: 13,
                                                 },
                                             }}
-                                            sx={{
-                                                ...inputAutoFill
-                                            }}
                                         />
-                                    </FormControl>
+                                    </Stack>
 
                                     <FormControl
                                         component="fieldset"
@@ -486,29 +463,41 @@ const PopupAddSousCompte = ({ selectedRowCompteIds, confirmationState, isRefresh
                                         style={{ width: "100%" }}
                                         error={Boolean(formData.touched.roles && formData.errors.roles)}
                                     >
-                                        <FormLabel component="legend" style={{ fontSize: "13px" }}>
+                                        <FormLabel component="legend" style={{ fontSize: 12, color: '#c0c0c0ff' }}>
                                             Rôle de l'utilisateur
                                         </FormLabel>
-                                        <RadioGroup
-                                            row
-                                            name="roles"
-                                            value={formData.values.roles || ""}
-                                            onChange={(e) => {
-                                                formData.setFieldValue("roles", e.target.value)
-                                            }
-                                            }
+                                        <Stack
+                                            direction="row"
+                                            spacing={1}
+                                            useFlexGap
+                                            flexWrap="wrap"
+                                            sx={{ mt: 1 }}
                                             onBlur={() => formData.setFieldTouched("roles", true)}
                                         >
-                                            {listeRoles.map((role) => (
-                                                <FormControlLabel
-                                                    key={role.id}
-                                                    value={role.id}
-                                                    control={<Radio size="small" />}
-                                                    label={role.nom}
-                                                    sx={{ "& .MuiFormControlLabel-label": { fontSize: "13px" } }}
-                                                />
-                                            ))}
-                                        </RadioGroup>
+                                            {listeRoles.map((role) => {
+                                                const isSelected = String(formData.values.roles || '') === String(role.id);
+
+                                                return (
+                                                    <Chip
+                                                        key={role.id}
+                                                        label={role.nom}
+                                                        size="small"
+                                                        clickable
+                                                        onClick={() => {
+                                                            formData.setFieldValue("roles", String(role.id));
+                                                            formData.setFieldTouched("roles", true);
+                                                        }}
+                                                        variant={isSelected ? 'filled' : 'outlined'}
+                                                        color={isSelected ? 'primary' : 'default'}
+                                                        sx={{
+                                                            fontSize: 12,
+                                                            height: 26,
+                                                            '& .MuiChip-label': { px: 1 }
+                                                        }}
+                                                    />
+                                                );
+                                            })}
+                                        </Stack>
                                         {formData.touched.roles && formData.errors.roles && (
                                             <FormHelperText
                                                 style={{
@@ -568,7 +557,7 @@ const PopupAddSousCompte = ({ selectedRowCompteIds, confirmationState, isRefresh
                     <Button autoFocus
                         type="submit"
                         onClick={formData.handleSubmit}
-                        style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
+                        style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
                     >
                         {`${editSousCompte === false ? 'Modifier' : 'Ajouter'}`}
                     </Button>

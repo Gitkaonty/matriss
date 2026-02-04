@@ -20,13 +20,13 @@ module.exports = (sequelize, DataTypes) => {
         },
         nif: {
             type: DataTypes.STRING(25),
-            unique: true,
-            allowNull: false
+            unique: false,
+            allowNull: true
         },
         stat: {
             type: DataTypes.STRING(25),
-            unique: true,
-            allowNull: false
+            unique: false,
+            allowNull: true
         },
         responsable: {
             type: DataTypes.STRING(150),

@@ -220,7 +220,7 @@ const DatagridAnnexe = ({
                                 borderColor: "transparent",
                                 textTransform: 'none',
                                 outline: 'none',
-                                backgroundColor: initial.theme,
+                                backgroundColor: initial.add_new_line_bouton_color,
                             }}
                             onClick={generateAnnexeDeclarationAuto}
                         >

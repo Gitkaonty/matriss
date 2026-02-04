@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Stack, TextField, Tooltip, Typography } from '@mui/material';
+import { Box, Button, Stack, TextField, Tooltip, Typography } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { init } from '../../../../init';
 import toast from 'react-hot-toast';
@@ -201,24 +201,24 @@ export default function Home() {
       headerAlign: 'left',
       headerClassName: 'HeaderbackColor'
     },
-    {
-      field: 'nif',
-      headerName: "Nif",
-      type: 'string',
-      sortable: true,
-      flex: 2,
-      headerAlign: 'left',
-      headerClassName: 'HeaderbackColor'
-    },
-    {
-      field: 'stat',
-      headerName: "N° statistique",
-      type: 'string',
-      sortable: true,
-      flex: 2,
-      headerAlign: 'left',
-      headerClassName: 'HeaderbackColor'
-    },
+    // {
+    //   field: 'nif',
+    //   headerName: "Nif",
+    //   type: 'string',
+    //   sortable: true,
+    //   flex: 2,
+    //   headerAlign: 'left',
+    //   headerClassName: 'HeaderbackColor'
+    // },
+    // {
+    //   field: 'stat',
+    //   headerName: "N° statistique",
+    //   type: 'string',
+    //   sortable: true,
+    //   flex: 2,
+    //   headerAlign: 'left',
+    //   headerClassName: 'HeaderbackColor'
+    // },
     {
       field: 'responsable',
       headerName: "Résponsable",
@@ -228,24 +228,24 @@ export default function Home() {
       headerAlign: 'left',
       headerClassName: 'HeaderbackColor'
     },
-    {
-      field: 'expertcomptable',
-      headerName: "Expert comptable",
-      type: 'string',
-      sortable: true,
-      flex: 2.5,
-      headerAlign: 'left',
-      headerClassName: 'HeaderbackColor'
-    },
-    {
-      field: 'cac',
-      headerName: "Cac",
-      type: 'string',
-      sortable: true,
-      flex: 2,
-      headerAlign: 'left',
-      headerClassName: 'HeaderbackColor'
-    }
+    // {
+    //   field: 'expertcomptable',
+    //   headerName: "Expert comptable",
+    //   type: 'string',
+    //   sortable: true,
+    //   flex: 2.5,
+    //   headerAlign: 'left',
+    //   headerClassName: 'HeaderbackColor'
+    // },
+    // {
+    //   field: 'cac',
+    //   headerName: "Cac",
+    //   type: 'string',
+    //   sortable: true,
+    //   flex: 2,
+    //   headerAlign: 'left',
+    //   headerClassName: 'HeaderbackColor'
+    // }
   ];
 
   useEffect(() => {
@@ -265,6 +265,36 @@ export default function Home() {
 
     fetchData();
   }, [compteId, userId, canView]);
+
+  const buttonStyle = {
+    minWidth: 120,
+    height: 32,
+    px: 2,
+    textTransform: 'none',
+    fontSize: '0.85rem',
+    borderRadius: '2px',
+    boxShadow: 'none',
+    '& .MuiTouchRipple-root': {
+      display: 'none',
+    },
+    '&:focus': {
+      outline: 'none',
+    },
+    '&.Mui-focusVisible': {
+      outline: 'none',
+      boxShadow: 'none',
+    },
+
+    '&:hover': {
+      boxShadow: 'none',
+      backgroundColor: 'action.hover',
+      border: 'none',
+    },
+
+    '&.Mui-disabled': {
+      opacity: 0.4
+    },
+  };
 
   return (
     <>
@@ -294,8 +324,21 @@ export default function Home() {
           onClose={handleDialogClose}
           TransitionComponent={Transition}
         >
-          <AppBar sx={{ position: 'relative' }} style={{ backgroundColor: initial.theme }}>
-            <Toolbar style={{ backgroundColor: initial.theme }}>
+          <AppBar sx={{
+            position: 'relative',
+            height: "80px",
+            boxShadow: 'none',
+            borderBottom: 'none',
+            backgroundImage: 'linear-gradient(90deg, #064E3B 0%, #0F766E 45%, #0B1220 100%)',
+            backgroundColor: 'transparent',
+          }}>
+            <Toolbar sx={{
+              height: "80px",
+              boxShadow: 'none',
+              borderBottom: 'none',
+              backgroundImage: 'linear-gradient(90deg, #064E3B 0%, #0F766E 45%, #0B1220 100%)',
+              backgroundColor: 'transparent',
+            }}>
               <Stack
                 sx={{ width: "100%" }}
                 direction={'row'}
@@ -303,10 +346,10 @@ export default function Home() {
                 alignItems={'center'}
                 justifyContent={'space-between'}
               >
-                <Typography variant="h6" component="div">
+                <Typography variant="h7" component="div">
                   Création d'un nouveau dossier
                 </Typography>
-                <IconButton
+                {/* <IconButton
                   edge="start"
                   color="inherit"
                   onClick={handleDialogClose}
@@ -317,7 +360,7 @@ export default function Home() {
                   }}
                 >
                   <CloseIcon />
-                </IconButton>
+                </IconButton> */}
               </Stack>
             </Toolbar>
           </AppBar>
@@ -334,7 +377,7 @@ export default function Home() {
       >
         <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"start"}
           justifyContent={"stretch"} alignContent={"flex-start"}>
-          <Typography variant='h6' sx={{ color: "black" }} align='left'>Home</Typography>
+          <Typography variant='h7' sx={{ color: "black" }} align='left'>Home</Typography>
 
           <Stack width={"100%"} height={"10%"} spacing={1} alignItems={"center"} direction={"row"}>
             <Stack alignItems={"center"} width={"100%"} spacing={1} direction={"row"}>
@@ -387,35 +430,73 @@ export default function Home() {
               spacing={0.5}
             >
               <Tooltip title="Ajouter un nouveau dossier">
-                <IconButton
-                  disabled={!canAdd}
-                  onClick={handleDialogClickOpen}
-                  variant="contained"
-                  style={{
-                    width: "35px", height: '35px', borderRadius: "5px",
-                    borderColor: "transparent", backgroundColor: initial.theme,
-                    textTransform: 'none', outline: 'none'
-                  }}
-                >
-                  <AiOutlineFileAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                </IconButton>
+                <span>
+                  <Button
+                    disabled={!canAdd}
+                    onClick={handleDialogClickOpen}
+                    variant="contained"
+                    sx={{
+                      ...buttonStyle,
+                      backgroundColor: initial.auth_gradient_end,
+                      color: 'white',
+                      borderColor: initial.auth_gradient_end,
+                      boxShadow: 'none',
+
+                      '&:hover': {
+                        backgroundColor: initial.auth_gradient_end,
+                        border: 'none',
+                        boxShadow: 'none',       // enlève l’effet bleu shadow
+                      },
+                      '&:focus': {
+                        backgroundColor: initial.auth_gradient_end,
+                        border: 'none',
+                        boxShadow: 'none',       // enlève le focus bleu
+                      },
+                      '&.Mui-disabled': {
+                        backgroundColor: initial.auth_gradient_end,
+                        color: 'white',
+                        cursor: 'not-allowed',
+                      },
+                      '&::before': {
+                        display: 'none',         // supprime l’overlay bleu de ButtonGroup
+                      },
+                    }}
+                  >
+                    Ajouter
+                  </Button>
+                </span>
               </Tooltip>
 
               <Tooltip title="Supprimer le dossier">
-                <IconButton
-                  disabled={!canDelete || selectedDossierRow.length > 1 || selectedDossierRow.length === 0}
-                  onClick={handleOpenDialogConfirmDeleteDossier}
-                  variant="contained"
-                  style={{
-                    width: "35px", height: '35px', borderRadius: "5px",
-                    borderColor: "transparent", backgroundColor: initial.button_delete_color,
-                    textTransform: 'none', outline: 'none'
-                  }}
-                >
-                  <IoMdTrash style={{ width: '40px', height: '40px', color: 'white' }} />
-                </IconButton>
-              </Tooltip>
+                <span>
+                  <Button
+                    disabled={!canDelete || selectedDossierRow.length > 1 || selectedDossierRow.length === 0}
+                    onClick={handleOpenDialogConfirmDeleteDossier}
+                    variant="contained"
+                    sx={{
+                      ...buttonStyle,
+                      backgroundColor: initial.annuler_bouton_color,
+                      color: 'white',
+                      borderColor: initial.annuler_bouton_color,
 
+                      '&:hover': {
+                        backgroundColor: initial.annuler_bouton_color,
+                        border: 'none',
+                      },
+
+                      // 👇 OVERRIDE DU DISABLED
+                      '&.Mui-disabled': {
+                        backgroundColor: initial.annuler_bouton_color,
+                        color: 'white',
+                        //opacity: 0.6,          // optionnel : juste un léger effet
+                        cursor: 'not-allowed',
+                      },
+                    }}
+                  >
+                    Supprimer
+                  </Button>
+                </span>
+              </Tooltip>
             </Stack>
           </Stack>
 
@@ -428,7 +509,13 @@ export default function Home() {
               disableSelectionOnClick={true}
               localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
               //slots={{toolbar : QuickFilter}}
-              sx={DataGridStyle.sx}
+              sx={{
+                '& .MuiDataGrid-columnHeaders': {
+                  backgroundColor: initial.tableau_theme,
+                  color: 'black',
+                  fontWeight: 600,
+                },
+              }}
               rowHeight={DataGridStyle.rowHeight}
               columnHeaderHeight={DataGridStyle.columnHeaderHeight}
               rows={finalListeDossier}

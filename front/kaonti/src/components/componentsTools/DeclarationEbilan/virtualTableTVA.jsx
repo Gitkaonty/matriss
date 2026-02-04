@@ -42,7 +42,7 @@ export default function VirtualTableTVA({ columns, rows, onDeleteRow }) {
               <TableCell
                 key={column.id}
                 align={column.align || 'left'}
-                style={{ minWidth: column.minWidth, fontWeight: 'bold', color: 'white', backgroundColor: initial.theme }}
+                style={{ minWidth: column.minWidth, fontWeight: 'bold', color: 'white', backgroundColor: initial.add_new_line_bouton_color }}
               >
                 {column.label}
               </TableCell>

@@ -1,11 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Typography, Stack, IconButton, FormControl, Input } from '@mui/material';
-import { TbPlaylistAdd } from "react-icons/tb";
-import { FaRegPenToSquare } from "react-icons/fa6";
-import { TfiSave } from "react-icons/tfi";
-import { VscClose } from "react-icons/vsc";
-import { IoMdTrash } from "react-icons/io";
+import { Typography, Stack, FormControl, Input, ButtonGroup, Button } from '@mui/material';
 import Tooltip from '@mui/material/Tooltip';
 import { InfoFileStyle } from './componentsTools/InfosFileStyle';
 import { useParams } from 'react-router-dom';
@@ -433,6 +428,16 @@ export default function ParamDeviseComponent() {
         }, 50);
     };
 
+    const buttonStyle = {
+        minWidth: 120,
+        height: 32,
+        px: 2,
+        borderRadius: 1,
+        textTransform: 'none',
+        fontWeight: 600,
+        boxShadow: 'none',
+    };
+
     return (
         <>
             {
@@ -474,93 +479,179 @@ export default function ParamDeviseComponent() {
                         <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages : Devises</Typography>
                         <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"}
                             direction={"column"} style={{ marginLeft: "0px", marginTop: "20px", justifyContent: "right" }}>
-                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                direction={"row"} justifyContent={"right"}>
-                                <Tooltip title="Ajouter une ligne">
-                                    <span>
-                                        <IconButton
-                                            disabled={!canAdd || disableAddRowBouton}
-                                            variant="contained"
-                                            onClick={handleOpenDialogAddNewAssocie}
-                                            style={{
-                                                width: "35px", height: '35px',
-                                                borderRadius: "2px", borderColor: "transparent",
-                                                backgroundColor: initial.theme,
-                                                textTransform: 'none', outline: 'none'
-                                            }}
-                                        >
-                                            <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                                        </IconButton>
-                                    </span>
-                                </Tooltip>
-                                <Tooltip title="Modifier la ligne sélectionnée">
-                                    <span>
-                                        <IconButton
-                                            disabled={(!canModify && selectedRowId > 0) || disableModifyBouton}
-                                            variant="contained"
-                                            onClick={handleEditClick(selectedRowId)}
-                                            style={{
-                                                width: "35px", height: '35px',
-                                                borderRadius: "2px", borderColor: "transparent",
-                                                backgroundColor: initial.theme,
-                                                textTransform: 'none', outline: 'none'
-                                            }}
-                                        >
-                                            <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
-                                        </IconButton>
-                                    </span>
-                                </Tooltip>
-                                <Tooltip title="Sauvegarder les modifications">
-                                    <span>
-                                        <IconButton
-                                            disabled={(!canAdd && !canModify) || disableSaveBouton}
-                                            variant="contained"
-                                            onClick={handleSaveClick(selectedRowId)}
-                                            style={{
-                                                width: "35px", height: '35px',
-                                                borderRadius: "2px", borderColor: "transparent",
-                                                backgroundColor: initial.theme,
-                                                textTransform: 'none', outline: 'none'
-                                            }}
-                                        >
-                                            <TfiSave style={{ width: '50px', height: '50px', color: 'white' }} />
-                                        </IconButton>
-                                    </span>
-                                </Tooltip>
-                                <Tooltip title="Annuler les modifications">
-                                    <span>
-                                        <IconButton
-                                            disabled={disableCancelBouton}
-                                            variant="contained"
-                                            onClick={handleCancelClick(selectedRowId)}
-                                            style={{
-                                                width: "35px", height: '35px',
-                                                borderRadius: "2px", borderColor: "transparent",
-                                                backgroundColor: initial.button_delete_color,
-                                                textTransform: 'none', outline: 'none'
-                                            }}
-                                        >
-                                            <VscClose style={{ width: '50px', height: '50px', color: 'white' }} />
-                                        </IconButton>
-                                    </span>
-                                </Tooltip>
-                                <Tooltip title="Supprimer la ligne sélectionnée">
-                                    <span>
-                                        <IconButton
-                                            disabled={!canDelete || disableDeleteBouton}
-                                            onClick={handleOpenDialogConfirmDeleteAssocieRow}
-                                            variant="contained"
-                                            style={{
-                                                width: "35px", height: '35px',
-                                                borderRadius: "2px", borderColor: "transparent",
-                                                backgroundColor: initial.button_delete_color,
-                                                textTransform: 'none', outline: 'none'
-                                            }}
-                                        >
-                                            <IoMdTrash style={{ width: '50px', height: '50px', color: 'white' }} />
-                                        </IconButton>
-                                    </span>
-                                </Tooltip>
+                            <Stack
+                                width="100%"
+                                minHeight="56px"
+                                alignItems="center"
+                                direction="row"
+                                justifyContent="flex-end"
+                                sx={{
+                                    borderRadius: 1,
+                                    px: 1,
+                                    py: 1,
+                                }}
+                            >
+                                <ButtonGroup
+                                    variant="outlined"
+                                    sx={{
+                                        boxShadow: 'none',
+                                        display: 'flex',
+                                        gap: '1px',
+                                        '& .MuiButton-root': {
+                                            borderRadius: 0,
+                                        },
+                                        '& .MuiButtonGroup-grouped': {
+                                            boxShadow: 'none',
+                                            outline: 'none',
+                                            borderColor: 'inherit',
+                                            marginLeft: 0,
+                                            borderRadius: 1,
+                                            border: 'none',
+                                        },
+                                        '& .MuiButtonGroup-grouped:hover': {
+                                            boxShadow: 'none',
+                                            borderColor: 'inherit',
+                                            border: 'none',
+                                        },
+                                        '& .MuiButtonGroup-grouped.Mui-focusVisible': {
+                                            boxShadow: 'none',
+                                            borderColor: 'inherit',
+                                        },
+                                    }}
+                                >
+                                    <Tooltip title="Ajouter une ligne">
+                                        <span>
+                                            <Button
+                                                disabled={!canAdd || disableAddRowBouton}
+                                                onClick={handleOpenDialogAddNewAssocie}
+                                                sx={{
+                                                    ...buttonStyle,
+                                                    backgroundColor: initial.auth_gradient_end,
+                                                    color: 'white',
+                                                    borderColor: initial.auth_gradient_end,
+                                                    '&:hover': {
+                                                        backgroundColor: initial.auth_gradient_end,
+                                                        boxShadow: 'none',
+                                                    },
+                                                    '&:focus': {
+                                                        backgroundColor: initial.auth_gradient_end,
+                                                        boxShadow: 'none',
+                                                    },
+                                                    '&.Mui-disabled': {
+                                                        backgroundColor: initial.auth_gradient_end,
+                                                        color: 'white',
+                                                        cursor: 'not-allowed',
+                                                    },
+                                                    '&::before': {
+                                                        display: 'none',
+                                                    },
+                                                }}
+                                            >
+                                                Ajouter
+                                            </Button>
+                                        </span>
+                                    </Tooltip>
+
+                                    <Tooltip title="Modifier la ligne sélectionnée">
+                                        <span>
+                                            <Button
+                                                disabled={(!canModify && selectedRowId > 0) || disableModifyBouton}
+                                                onClick={handleEditClick(selectedRowId)}
+                                                sx={{
+                                                    ...buttonStyle,
+                                                    backgroundColor: initial.auth_gradient_end,
+                                                    color: 'white',
+                                                    borderColor: initial.auth_gradient_end,
+                                                    '&:hover': {
+                                                        backgroundColor: initial.auth_gradient_end,
+                                                    },
+                                                    '&.Mui-disabled': {
+                                                        backgroundColor: initial.auth_gradient_end,
+                                                        color: 'white',
+                                                        cursor: 'not-allowed',
+                                                    },
+                                                }}
+                                            >
+                                                Modifier
+                                            </Button>
+                                        </span>
+                                    </Tooltip>
+
+                                    <Tooltip title="Sauvegarder les modifications">
+                                        <span>
+                                            <Button
+                                                disabled={(!canAdd && !canModify) || disableSaveBouton}
+                                                onClick={handleSaveClick(selectedRowId)}
+                                                sx={{
+                                                    ...buttonStyle,
+                                                    backgroundColor: initial.auth_gradient_end,
+                                                    color: 'white',
+                                                    borderColor: initial.auth_gradient_end,
+                                                    '&:hover': {
+                                                        backgroundColor: initial.auth_gradient_end,
+                                                    },
+                                                    '&.Mui-disabled': {
+                                                        backgroundColor: initial.auth_gradient_end,
+                                                        color: 'white',
+                                                        cursor: 'not-allowed',
+                                                    },
+                                                }}
+                                            >
+                                                Sauvegarder
+                                            </Button>
+                                        </span>
+                                    </Tooltip>
+
+                                    <Tooltip title="Annuler les modifications">
+                                        <span>
+                                            <Button
+                                                disabled={disableCancelBouton}
+                                                onClick={handleCancelClick(selectedRowId)}
+                                                sx={{
+                                                    ...buttonStyle,
+                                                    backgroundColor: initial.annuler_bouton_color,
+                                                    color: 'white',
+                                                    borderColor: initial.annuler_bouton_color,
+                                                    '&:hover': {
+                                                        backgroundColor: initial.annuler_bouton_color,
+                                                    },
+                                                    '&.Mui-disabled': {
+                                                        backgroundColor: initial.annuler_bouton_color,
+                                                        color: 'white',
+                                                        cursor: 'not-allowed',
+                                                    },
+                                                }}
+                                            >
+                                                Annuler
+                                            </Button>
+                                        </span>
+                                    </Tooltip>
+
+                                    <Tooltip title="Supprimer la ligne sélectionnée">
+                                        <span>
+                                            <Button
+                                                disabled={!canDelete || disableDeleteBouton}
+                                                onClick={handleOpenDialogConfirmDeleteAssocieRow}
+                                                sx={{
+                                                    ...buttonStyle,
+                                                    backgroundColor: initial.annuler_bouton_color,
+                                                    color: 'white',
+                                                    borderColor: initial.annuler_bouton_color,
+                                                    '&:hover': {
+                                                        backgroundColor: initial.annuler_bouton_color,
+                                                    },
+                                                    '&.Mui-disabled': {
+                                                        backgroundColor: initial.annuler_bouton_color,
+                                                        color: 'white',
+                                                        cursor: 'not-allowed',
+                                                    },
+                                                }}
+                                            >
+                                                Supprimer
+                                            </Button>
+                                        </span>
+                                    </Tooltip>
+                                </ButtonGroup>
                             </Stack>
                             <Stack width={"100%"} height={'100%'} minHeight={'600px'}>
                                 <DataGrid
@@ -576,12 +667,29 @@ export default function ParamDeviseComponent() {
                                     slots={{ toolbar: QuickFilter }}
                                     sx={{
                                         ...DataGridStyle.sx,
+                                        '& .MuiDataGrid-columnHeaders': {
+                                            backgroundColor: initial.tableau_theme,
+                                            color: initial.text_theme,
+                                        },
+                                        '& .MuiDataGrid-columnHeaderTitle': {
+                                            color: initial.text_theme,
+                                            fontWeight: 600,
+                                        },
+                                        '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
+                                            color: initial.text_theme,
+                                        },
                                         '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
                                             outline: 'none',
                                             border: 'none',
                                         },
+                                        '& .highlight-separator': {
+                                            borderBottom: '1px solid red'
+                                        },
+                                        '& .MuiDataGrid-row.highlight-separator': {
+                                            borderBottom: '1px solid red',
+                                        },
                                         '& .MuiDataGrid-virtualScroller': {
-                                            maxHeight: '100%',
+                                            maxHeight: '700px',
                                         },
                                     }}
                                     rowHeight={DataGridStyle.rowHeight}

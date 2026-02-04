@@ -1,52 +1,38 @@
 import { useEffect, useRef, useState } from 'react';
-import { Stack, Box, TextField, Button, Typography, Checkbox, InputLabel, Input } from "@mui/material";
-import axios from '../../config/axios';
-import { init } from '../../init';
-import InputAdornment from '@mui/material/InputAdornment';
-import FormControl from '@mui/material/FormControl';
-import IconButton from '@mui/material/IconButton';
+import { Stack, Box, TextField, Button, Typography, Checkbox, InputAdornment, IconButton } from "@mui/material";
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import axios from '../../config/axios';
+import { init } from '../../init';
 import useAuth from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { useTheme, useMediaQuery } from "@mui/material";
 import toast from 'react-hot-toast';
 
 const Login = () => {
-  let initial = init[0];
-
+  const initial = init[0];
   const navigate = useNavigate();
   const userRef = useRef();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
   const { setAuth } = useAuth();
-
   const [showPassword, setShowPassword] = useState(false);
 
   const handleClickShowPassword = () => setShowPassword((show) => !show);
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const handleLoginSubmit = async (event) => {
+    event?.preventDefault?.();
     try {
-
-      const response = await axios.post('/', { email, password },
-        {
-          headers: { 'Content-Type': 'application/json' },
-          withCredentials: true
-        }
-      );
-
+      const response = await axios.post('/', { email, password }, {
+        headers: { 'Content-Type': 'application/json' },
+        withCredentials: true
+      });
       const accessToken = response?.data?.accessToken;
       setAuth({ accessToken });
       navigate("/tab/home");
     } catch (err) {
       if (!err.response) {
-        toast.error('Le serveur ne repond pas');
+        toast.error('Le serveur ne répond pas');
       } else if (err.response?.status === 400) {
         toast.error('Veuillez insérer votre email et mot de passe correctement');
       } else if (err.response?.status === 401) {
@@ -55,193 +41,187 @@ const Login = () => {
         toast.error('Erreur de connexion');
       }
     }
-  }
+  };
 
   useEffect(() => {
     userRef.current.focus();
   }, []);
 
   return (
-    <Stack
-      alignItems="center"
-      justifyContent="center"
-      style={{
-        backgroundColor: initial.theme,
+    <Box
+      sx={{
         width: '100vw',
-        height: '100vh',
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: { xs: 'column', md: 'row' },
+        backgroundColor: '#F3F4F6',
+        position: 'relative',
       }}
     >
-
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleSubmit();
+      {/* Left side - Form */}
+      <Box
+        sx={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          px: { xs: 3, md: 8 },
+          py: { xs: 5, md: 8 },
+          position: 'relative',
         }}
       >
-        <Stack
-          alignItems="center"
-          justifyContent="center"
-          width={isMobile ? '80%' : '400px'}
-          maxWidth="90vw"
-          bgcolor="white"
-          borderRadius={2}
-          boxShadow={3}
-          py={4}
-          px={3}
-          mt={2}
+        {/* Transparent card */}
+        <Box
+          component="form"
+          onSubmit={handleLoginSubmit}
+          sx={{
+            width: '100%',
+            maxWidth: 420,
+            backgroundColor: 'rgba(255, 255, 255, 0.08)', // transparent / glass effect
+            borderRadius: 2,
+            boxShadow: 3,
+            px: { xs: 3, md: 4 },
+            py: { xs: 4, md: 5 },
+            backdropFilter: 'blur(8px)', // effet glass
+          }}
         >
-          <Box width="100%">
-            <Stack
-              direction="column"
-              spacing={3}
-              alignItems="center"
-              justifyContent="center"
-            >
-              <img
-                src="/src/img/Logo Kaonty_2.png"
-                alt="Logo Kaonty"
-                style={{
-                  border: '1px solid #FFF',
-                  borderRadius: '8px',
-                  width: '40px',
-                  height: '40px',
-                  marginTop: '10px'
-                }}
+          <Stack spacing={3} alignItems="center">
+
+            {/* Logo + Title + Subtitle */}
+            <Stack spacing={1.5} alignItems="center">
+              <Box
+                component="img"
+                src="/src/img/30.png"
+                alt="Logo"
+                sx={{ width: 150, height: 150, objectFit: 'contain' }}
               />
-
-              <Typography
-                variant="h4"
-                fontFamily="Bahnschrift Condensed"
-                fontWeight="light"
-                color="rgba(112, 112, 112, 0.96)"
-                mt={-1}
+              {/* <Typography
+                variant="h5"
+                fontWeight={700}
+                font-family= "Space Grotesk"
+                letter-spacing= "0.8px"
               >
-                Kaonty
-              </Typography>
-
+                Check-Up Data
+              </Typography> */}
               <Typography
-                variant="body1"
+                variant="body2"
                 fontFamily="Bahnschrift"
-                fontWeight="light"
-                fontSize="16px"
-                color="rgba(33, 33, 33, 0.9)"
-                mt={-2}
+                color="rgba(17, 24, 39, 0.7)"
+                textAlign="center"
               >
                 Connectez-vous à votre compte
               </Typography>
-
-              <TextField
-                ref={userRef}
-                type='email'
-                onChange={e => setEmail(e.target.value)}
-                id="standard-basic01"
-                label="Adresse mail"
-                name='email'
-                variant="standard"
-                fullWidth
-                size='small'
-                required
-                sx={{
-                  '& .MuiInputBase-input': {
-                    fontSize: 15.3,
-                    py: 1,
-                    pl: 0.5,
-                  },
-                  '& .MuiInputBase-input:-webkit-autofill': {
-                    fontSize: '15.3px !important',
-                    WebkitTextFillColor: '#000',
-                    WebkitBoxShadow: '0 0 0 1000px #fff inset',
-                    transition: 'background-color 9999s ease-in-out 0s',
-                    caretColor: '#000',
-                  },
-                  '& .MuiInputBase-root': {
-                    fontSize: 15.3,
-                  },
-                }}
-              />
-
-              <FormControl variant="standard" fullWidth>
-                <InputLabel htmlFor="standard-adornment-password" >Mot de passe *</InputLabel>
-                <Input
-                  onChange={e => setPassword(e.target.value)}
-                  id="standard-adornment-password"
-                  type={showPassword ? 'text' : 'password'}
-                  name='password'
-                  sx={{
-                    '& .MuiInputBase-input': {
-                      fontSize: 15.3,
-                      py: 1,
-                      pl: 0.5,
-                    },
-                    '& .MuiInputBase-input:-webkit-autofill': {
-                      fontSize: '15.3px !important',
-                      WebkitTextFillColor: '#000',
-                      WebkitBoxShadow: '0 0 0 1000px #fff inset',
-                      transition: 'background-color 9999s ease-in-out 0s',
-                      caretColor: '#000',
-                    },
-                    '& .MuiInputBase-root': {
-                      fontSize: 15.3,
-                    },
-                  }}
-                  required
-                  endAdornment={
-                    <InputAdornment position="end">
-                      <IconButton
-                        disableRipple
-                        sx={{
-                          backgroundColor: 'transparent',
-                          '&:hover': { backgroundColor: 'transparent' },
-                          '&:active': { backgroundColor: 'transparent' }
-                        }}
-                        aria-label="toggle password visibility"
-                        onClick={handleClickShowPassword}
-                        style={{
-                          textTransform: 'none',
-                          outline: 'none',
-                        }}
-                      >
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  }
-                />
-              </FormControl>
-
-              <Button
-                type="submit"
-                onClick={handleSubmit}
-                variant="contained"
-                fullWidth
-                sx={{ mt: 1 }}
-                style={{
-                  textTransform: 'none',
-                  outline: 'none',
-                }}
-              >
-                Se connecter
-              </Button>
             </Stack>
 
-            <Stack direction="row" alignItems="center" justifyContent="flex-start" mt={2}>
-              <Checkbox defaultChecked />
-              <Typography
-                variant="body2"
-                fontSize="14px"
-                color="rgba(0, 0, 0, 0.96)"
-              >
-                J'ai lu et j'accepte les conditions générales d'utilisation
-              </Typography>
+            {/* Email */}
+            <TextField
+              inputRef={userRef}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              label="Adresse mail"
+              variant="standard"  // juste la ligne
+              fullWidth
+              required
+              InputLabelProps={{ shrink: true }}
+              sx={{
+                '& .MuiInput-underline:before': { borderBottomColor: 'rgba(0,0,0,0.3)' },
+                '& .MuiInput-underline:hover:before': { borderBottomColor: 'rgba(0,0,0,0.5)' },
+                '& .MuiInput-underline:after': { borderBottomColor: initial.theme },
+              }}
+            />
+
+            {/* Password */}
+            <TextField
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              label="Mot de passe"
+              variant="standard"
+              fullWidth
+              required
+              InputLabelProps={{ shrink: true }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={handleClickShowPassword} sx={{ p: 0 }}>
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiInput-underline:before': { borderBottomColor: 'rgba(0,0,0,0.3)' },
+                '& .MuiInput-underline:hover:before': { borderBottomColor: 'rgba(0,0,0,0.5)' },
+                '& .MuiInput-underline:after': { borderBottomColor: initial.theme },
+              }}
+            />
+
+            {/* Checkbox */}
+            <Stack direction="row" alignItems="center">
+              <Checkbox defaultChecked size="small" />
+              <Typography variant="body2">J'ai lu et j'accepte les conditions générales</Typography>
             </Stack>
-          </Box>
+
+            {/* Submit Button */}
+            <Button
+              type="submit"
+              variant="contained"
+              fullWidth
+              sx={{
+                mt: 1,
+                backgroundColor: initial.theme,
+                '&:hover': { backgroundColor: initial.auth_theme },
+                textTransform: 'none',
+                py: 1.2,
+              }}
+            >
+              Se connecter
+            </Button>
+
+          </Stack>
+        </Box>
+
+        {/* Version text at bottom */}
+        <Typography
+          variant="caption"
+          sx={{
+            position: 'absolute',
+            bottom: 16,
+            width: '100%',
+            textAlign: 'center',
+            color: 'rgba(17,24,39,0.55)',
+          }}
+        >
+          Check Up Data v1.0.0.0
+        </Typography>
+      </Box>
+
+      {/* Right side - Background gradient for desktop */}
+      <Box
+        sx={{
+          flex: 1,
+          display: { xs: 'none', md: 'flex' },
+          alignItems: 'center',
+          justifyContent: 'center',
+          px: 8,
+          py: 8,
+          color: '#FFFFFF',
+          textAlign: 'center',
+          background: `linear-gradient(135deg, ${initial.auth_gradient_start} 0%, ${initial.auth_gradient_end} 100%)`,
+        }}
+      >
+        <Stack spacing={2} sx={{ maxWidth: 420 }}>
+          <Typography variant="h4" fontWeight={700}>
+            Welcome back!
+          </Typography>
+          <Typography variant="body2" sx={{ opacity: 0.9 }}>
+            Welcome back! We are so happy to have you here. It's great to see you again.
+          </Typography>
         </Stack>
-      </form>
-
-      <Typography variant="caption" color="white" mt={2}>
-        © Kaonty v1.0.0.0
-      </Typography>
-    </Stack>
+      </Box>
+    </Box>
   );
 }
 
-export default Login
+export default Login;

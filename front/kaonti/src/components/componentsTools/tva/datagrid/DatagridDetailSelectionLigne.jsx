@@ -498,7 +498,7 @@ const DatagridDetailSelectionLigne = ({ DATAGRID_HEIGHT = '500px', valSelectMois
                 <Button
                   variant="contained"
                   disabled={!canAdd||selectedDetailRows.length === 0 || hasDecltvaTrue}
-                  style={{ textTransform: 'none', outline: 'none', backgroundColor: initial.theme, color: 'white', height: '39px' }}
+                  style={{ textTransform: 'none', outline: 'none', backgroundColor: initial.add_new_line_bouton_color, color: 'white', height: '39px' }}
                   onClick={() => updateAnneeMois('Ajouter')}
                   startIcon={<FaRegCheckCircle size={20} />}
                 >

@@ -54,7 +54,7 @@ const VirtualTableDGE = ({
 
       <TableContainer style={{ width: '100%', overflowX: 'auto' }}>
         <Table size="small" sx={{ width: '100%', minWidth: 650, tableLayout: 'fixed', border: '1px solid #ddd' }} aria-label="centre-fiscaux table">
-          <TableHead style={{ backgroundColor: initial.theme, position: 'sticky', top: 0, zIndex: 1 }}>
+          <TableHead style={{ backgroundColor: initial.add_new_line_bouton_color, position: 'sticky', top: 0, zIndex: 1 }}>
             <TableRow>
               {columns.map((column) => (
                 <React.Fragment key={column.id}>

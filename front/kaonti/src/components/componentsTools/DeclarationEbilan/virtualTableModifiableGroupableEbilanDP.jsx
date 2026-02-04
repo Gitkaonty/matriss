@@ -81,7 +81,7 @@ const VirtualTableModifiableGroupableEbilanDP = ({ columns, rows, deleteState, m
             <col key="action-col" style={{ width: "100px" }} />
           </colgroup>
 
-          <TableHead sx={{ backgroundColor: initial.theme || "#1976d2", position: "sticky", top: 0, zIndex: 2 }}>
+          <TableHead sx={{ backgroundColor: initial.add_new_line_bouton_color || "#1976d2", position: "sticky", top: 0, zIndex: 2 }}>
             <TableRow>
               {columns.map((col) => (
                 <TableCell
@@ -110,7 +110,7 @@ const VirtualTableModifiableGroupableEbilanDP = ({ columns, rows, deleteState, m
                   paddingBottom: '5px',
                   fontSize: 15,
                   color: 'white',
-                  backgroundColor: initial.theme,
+                  backgroundColor: initial.add_new_line_bouton_color,
                   minWidth: 350
                 }}
               >

@@ -3502,7 +3502,7 @@ export default function DeclarationEbilan() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrBilan ? 'none' : 'inline-flex',
                                                             }}
@@ -3628,7 +3628,7 @@ export default function DeclarationEbilan() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrCrn ? 'none' : 'inline-flex',
                                                             }}
@@ -3728,7 +3728,7 @@ export default function DeclarationEbilan() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrCrf ? 'none' : 'inline-flex',
                                                             }}
@@ -3828,7 +3828,7 @@ export default function DeclarationEbilan() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrTftd ? 'none' : 'inline-flex',
                                                             }}
@@ -3928,7 +3928,7 @@ export default function DeclarationEbilan() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrTfti ? 'none' : 'inline-flex',
                                                             }}
@@ -4028,7 +4028,7 @@ export default function DeclarationEbilan() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrEvcp ? 'none' : 'inline-flex',
                                                             }}
@@ -4128,7 +4128,7 @@ export default function DeclarationEbilan() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrDrf ? 'none' : 'inline-flex',
                                                             }}
@@ -4240,7 +4240,7 @@ export default function DeclarationEbilan() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrBhiapc ? 'none' : 'inline-flex',
                                                             }}
@@ -4274,7 +4274,7 @@ export default function DeclarationEbilan() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrBhiapc ? 'none' : 'inline-flex',
                                                             }}
@@ -4384,7 +4384,7 @@ export default function DeclarationEbilan() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrMp ? 'none' : 'inline-flex',
                                                             }}
@@ -4509,7 +4509,7 @@ export default function DeclarationEbilan() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrDa ? 'none' : 'inline-flex',
                                                             }}
@@ -4624,7 +4624,7 @@ export default function DeclarationEbilan() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrDp ? 'none' : 'inline-flex',
                                                             }}
@@ -4657,7 +4657,7 @@ export default function DeclarationEbilan() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrDp ? 'none' : 'inline-flex',
                                                             }}
@@ -4760,7 +4760,7 @@ export default function DeclarationEbilan() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrEiafnc ? 'none' : 'inline-flex',
                                                             }}
@@ -4868,7 +4868,7 @@ export default function DeclarationEbilan() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrSad ? 'none' : 'inline-flex',
                                                             }}
@@ -4968,7 +4968,7 @@ export default function DeclarationEbilan() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrSdr ? 'none' : 'inline-flex',
                                                             }}
@@ -5080,7 +5080,7 @@ export default function DeclarationEbilan() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrSe ? 'none' : 'inline-flex',
                                                             }}
@@ -5182,7 +5182,7 @@ export default function DeclarationEbilan() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrNote ? 'none' : 'inline-flex',
                                                             }}

@@ -81,7 +81,7 @@ const VirtualTableModifiableGroupableEbilanEIAFNC = ({ columns, rows, deleteStat
             <col key="action-col" style={{ width: "100px" }} />
           </colgroup>
 
-          <TableHead sx={{ backgroundColor: initial.theme || "#1976d2", position: "sticky", top: 0, zIndex: 2 }}>
+          <TableHead sx={{ backgroundColor: initial.add_new_line_bouton_color || "#1976d2", position: "sticky", top: 0, zIndex: 2 }}>
             <TableRow>
               {columns.map((col) => (
                 <TableCell

@@ -477,7 +477,7 @@ export default function Sig() {
                                                     style={{
                                                         width: "45px", height: '45px',
                                                         borderRadius: "1px", borderColor: "transparent",
-                                                        backgroundColor: initial.theme,
+                                                        backgroundColor: initial.add_new_line_bouton_color,
                                                         textTransform: 'none', outline: 'none',
                                                         display: verrSig ? 'none' : 'inline-flex',
                                                     }}

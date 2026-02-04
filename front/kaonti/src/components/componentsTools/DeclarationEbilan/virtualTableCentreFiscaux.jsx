@@ -65,7 +65,7 @@ const VirtualTableCentreFiscaux = ({
             })}
             <Stack direction="row" justifyContent="flex-end" spacing={1}>
               <Button variant="outlined" onClick={onEditCancel}>Annuler</Button>
-              <Button variant="contained" onClick={onEditSave} sx={{ backgroundColor: initial.theme }} disabled={!!editRowData?._computed}>Enregistrer</Button>
+              <Button variant="contained" onClick={onEditSave} sx={{ backgroundColor: initial.add_new_line_bouton_color }} disabled={!!editRowData?._computed}>Enregistrer</Button>
             </Stack>
           </Stack>
         </Box>
@@ -73,7 +73,7 @@ const VirtualTableCentreFiscaux = ({
 
       <TableContainer style={{ display: 'inline-block', width: 'auto', overflowX: 'auto' }}>
         <Table sx={{ minWidth: 650, border: '1px solid #ddd' }} aria-label="centre-fiscaux table">
-          <TableHead style={{ backgroundColor: initial.theme, position: 'sticky', top: 0, zIndex: 1 }}>
+          <TableHead style={{ backgroundColor: initial.add_new_line_bouton_color, position: 'sticky', top: 0, zIndex: 1 }}>
             <TableRow>
               <TableCell
                 key={'00modif'}

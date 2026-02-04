@@ -43,8 +43,8 @@ export default function VirtualTableJournalAttente({ tableHeader, tableRow }) {
               {tableHeader.map((column) => (
                 <TableCell
                   sx={{
-                    fontSize: 16,
-                    fontWeight: "bold",
+                    fontSize: 14,
+                    // fontWeight: "bold",
                     backgroundColor: initial.theme,
                     paddingY: 0.8,
                     borderRadius: 0.5,
@@ -94,7 +94,7 @@ export default function VirtualTableJournalAttente({ tableHeader, tableRow }) {
                   align={column.align}
                   sx={{
                     fontWeight: 'bold',
-                    fontSize: 15,
+                    fontSize: 14,
                     paddingY: 0.8,
                     backgroundColor: '#89A8B2',
                     position: 'sticky',

@@ -202,7 +202,7 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
                             onClick={handleEditClick(selectedRowId)}
                             style={{width:"35px", height:'35px', 
                                 borderRadius:"2px", borderColor: "transparent",
-                                backgroundColor: initial.theme,
+                                backgroundColor: initial.add_new_line_bouton_color,
                                 textTransform: 'none', outline: 'none'
                                 }}
                             >
@@ -218,7 +218,7 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
                                 onClick={handleSaveClick(selectedRowId)}
                                 style={{width:"35px", height:'35px', 
                                     borderRadius:"2px", borderColor: "transparent",
-                                    backgroundColor: initial.theme,
+                                    backgroundColor: initial.add_new_line_bouton_color,
                                     textTransform: 'none', outline: 'none'
                                 }}
                                 >
@@ -282,7 +282,7 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
             </DialogContent>
             <DialogActions>
                 <Button autoFocus onClick={handleCloseDeleteModel} 
-                style={{backgroundColor: initial.theme , color:'white', width:"100px", textTransform: 'none', outline: 'none'}}
+                style={{backgroundColor: initial.add_new_line_bouton_color , color:'white', width:"100px", textTransform: 'none', outline: 'none'}}
                 >
                     Fermer
                 </Button>

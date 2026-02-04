@@ -1,12 +1,15 @@
 import Typography from '@mui/material/Typography';
 import { Stack, IconButton } from '@mui/material';
 import { Clear } from '@mui/icons-material';
+import { init } from '../../../../init';
 
 export default function SubMenuHeader({ caption, openWindow, humburgerMenuState, closeDrawer }) {
 
+    let initial = init[0];
+
     const openSubMenu = () => {
         openWindow(false);
-        closeDrawer();
+        if (typeof closeDrawer === 'function') closeDrawer();
     }
 
     return (
@@ -23,7 +26,7 @@ export default function SubMenuHeader({ caption, openWindow, humburgerMenuState,
             justifyContent={"space-between"}
         >
             <Stack  >
-                <Typography variant='h5' marginLeft={"20px"} color={"white"}>{caption}</Typography>
+                <Typography variant='h5' marginLeft={"20px"} color={initial.text_theme}>{caption}</Typography>
             </Stack>
 
             <Stack
@@ -35,13 +38,22 @@ export default function SubMenuHeader({ caption, openWindow, humburgerMenuState,
                     onClick={openSubMenu}
                     aria-label="close"
                     variant='text'
+                    disableRipple
+                    disableFocusRipple
                     style={{
                         textTransform: 'none',
                         outline: 'none'
                     }}
+                    sx={{
+                        boxShadow: 'none',
+                        outline: 'none',
+                        '&:focus': { outline: 'none' },
+                        '&:focus-visible': { outline: 'none', boxShadow: 'none' },
+                        '&.Mui-focusVisible': { outline: 'none', boxShadow: 'none' },
+                    }}
                 >
                     <Clear
-                        style={{ color: "white", fontSize: 32 }}
+                        style={{ color: initial.text_theme, fontSize: 32 }}
                     />
                 </IconButton>
             </Stack>

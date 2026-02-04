@@ -172,7 +172,7 @@ const PopupInfoAnalytique = ({ id, onClose, open }) => {
                             sx={{
                                 ...DataGridStyle.sx,
                                 '& .MuiDataGrid-columnHeaders': {
-                                    backgroundColor: initial.theme,
+                                    backgroundColor: initial.add_new_line_bouton_color,
                                     color: 'white',
                                     fontWeight: 'bold',
                                 },
@@ -232,7 +232,7 @@ const PopupInfoAnalytique = ({ id, onClose, open }) => {
                 <Button
                     autoFocus
                     onClick={onClose}
-                    style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
+                    style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
                 >
                     Fermer
                 </Button>

@@ -347,7 +347,7 @@ const PopupImportToCsv = ({ type, closePopup, id_compte, id_dossier, id_exercice
 
                             <Stack flexDirection={'column'}>
                                 <ImportCard
-                                    sx={{ width: 310, backgroundColor: initial.theme }}
+                                    sx={{ width: 310, backgroundColor: initial.add_new_line_bouton_color }}
                                     sxTypo={{
                                         color: 'white'
                                     }}

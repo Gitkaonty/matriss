@@ -19,7 +19,7 @@ export default function VirtualTableAnomalies({ columns = [], rows = [], personn
   return (
     <TableContainer style={{ display: 'inline-block', width: '100%', overflowX: 'auto' }}>
       <Table sx={{ minWidth: 650, border: '1px solid #ddd' }} aria-label="anomalies table">
-        <TableHead style={{ backgroundColor: initial.theme, position: 'sticky', top: 0, zIndex: 1 }}>
+        <TableHead style={{ backgroundColor: initial.add_new_line_bouton_color, position: 'sticky', top: 0, zIndex: 1 }}>
           <TableRow>
             {columns.map((column) => (
               <TableCell

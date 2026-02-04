@@ -49,66 +49,66 @@ const comptaList = [
         path: "/tab/parametrages/paramPlanComptableModele",
         urldynamic: false
     },
-    {
-        text: 'TVA',
-        name: "tva",
-        path: "/tab/parametrages/paramTVA",
-        urldynamic: true
-    },
-    {
-        text: 'Chiffre D\'affaires',
-        name: "chiffreAffaires",
-        path: "/tab/parametrages/chiffreDaffaires",
-        urldynamic: true
-    },
+    // {
+    //     text: 'TVA',
+    //     name: "tva",
+    //     path: "/tab/parametrages/paramTVA",
+    //     urldynamic: true
+    // },
+    // {
+    //     text: 'Chiffre D\'affaires',
+    //     name: "chiffreAffaires",
+    //     path: "/tab/parametrages/chiffreDaffaires",
+    //     urldynamic: true
+    // },
 ];
 
 const liassesList = [
-    {
-        text: 'Mapping des comptes - Ebilan',
-        name: "mappingComptes",
-        path: "/tab/parametrages/paramMapping",
-        urldynamic: true
-    },
-    {
-        text: 'Mapping des comptes - Etats externes',
-        name: "mappingComptes",
-        path: "/tab/parametrages/paramMapping-externe",
-        urldynamic: true
-    },
+    // {
+    //     text: 'Mapping des comptes - Ebilan',
+    //     name: "mappingComptes",
+    //     path: "/tab/parametrages/paramMapping",
+    //     urldynamic: true
+    // },
+    // {
+    //     text: 'Mapping des comptes - Etats externes',
+    //     name: "mappingComptes",
+    //     path: "/tab/parametrages/paramMapping-externe",
+    //     urldynamic: true
+    // },
 ];
 
 const socialesList = [
-    {
-        text: 'Organismes de santé',
-        name: "organismessante",
-        path: "#",
-        urldynamic: true
-    },
-    {
-        text: 'Prévoyance sociales',
-        name: "prevoyancesociales",
-        path: "#",
-        urldynamic: true
-    },
-    {
-        text: 'Catégories',
-        name: "classification",
-        path: "/tab/parametrages/paramClassification",
-        urldynamic: true
-    },
-    {
-        text: 'Fonctions',
-        name: "fonctions",
-        path: "/tab/parametrages/paramFonctions",
-        urldynamic: true
-    },
-    {
-        text: 'Portefeuille',
-        name: "portefeuille",
-        path: "/tab/parametrages/paramPortefeuille",
-        urldynamic: false
-    },
+    // {
+    //     text: 'Organismes de santé',
+    //     name: "organismessante",
+    //     path: "#",
+    //     urldynamic: true
+    // },
+    // {
+    //     text: 'Prévoyance sociales',
+    //     name: "prevoyancesociales",
+    //     path: "#",
+    //     urldynamic: true
+    // },
+    // {
+    //     text: 'Catégories',
+    //     name: "classification",
+    //     path: "/tab/parametrages/paramClassification",
+    //     urldynamic: true
+    // },
+    // {
+    //     text: 'Fonctions',
+    //     name: "fonctions",
+    //     path: "/tab/parametrages/paramFonctions",
+    //     urldynamic: true
+    // },
+    // {
+    //     text: 'Portefeuille',
+    //     name: "portefeuille",
+    //     path: "/tab/parametrages/paramPortefeuille",
+    //     urldynamic: false
+    // },
 ];
 
 export default function Parametrages({ onWindowState, pathToNavigate, humburgerMenuState, closeDrawer, roles, consolidation }) {
@@ -140,7 +140,7 @@ export default function Parametrages({ onWindowState, pathToNavigate, humburgerM
     }, [consolidation]);
 
     return (
-        <Stack backgroundColor={initial.theme}
+        <Stack backgroundColor={initial.menu_theme}
             width={'100%'}
             height={'100vh'}
             zIndex={"10"}
@@ -167,22 +167,22 @@ export default function Parametrages({ onWindowState, pathToNavigate, humburgerM
                 marginTop={"-25px"}
             >
                 <Stack width={"25%"} height={"30px"} spacing={0.1} alignItems={"flex-start"} direction={"column"}>
-                    <Typography variant='h6' marginLeft={"50px"} color={"white"}>Comptabilité</Typography>
+                    <Typography variant='h6' marginLeft={"50px"} color={initial.text_theme}>Comptabilité</Typography>
                     <SubMenuList list={comptaList} navigatePath={HandlePath} />
                 </Stack>
 
-                <Divider orientation='vertical' color={"white"} style={{ height: "100%", opacity: "0.2" }} />
+                {/* <Divider orientation='vertical' color={initial.text_theme} style={{ height: "100%", opacity: "0.2" }} />
 
                 <Stack width={"25%"} height={"30px"} spacing={0.1} alignItems={"flex-start"} direction={"column"}>
-                    <Typography variant='h6' marginLeft={"50px"} color={"white"}>Liasses</Typography>
+                    <Typography variant='h6' marginLeft={"50px"} color={initial.text_theme}>Liasses</Typography>
                     <SubMenuList list={liassesList} navigatePath={HandlePath} />
                 </Stack>
-                <Divider orientation='vertical' color={"white"} style={{ height: "100%", opacity: "0.2" }} />
+                <Divider orientation='vertical' color={initial.text_theme} style={{ height: "100%", opacity: "0.2" }} />
 
                 <Stack width={"25%"} height={"30px"} spacing={0.1} alignItems={"flex-start"} direction={"column"}>
-                    <Typography variant='h6' marginLeft={"50px"} color={"white"}>Sociales</Typography>
+                    <Typography variant='h6' marginLeft={"50px"} color={initial.text_theme}>Sociales</Typography>
                     <SubMenuList list={sociales} navigatePath={HandlePath} />
-                </Stack>
+                </Stack> */}
             </Stack>
         </Stack>
     )

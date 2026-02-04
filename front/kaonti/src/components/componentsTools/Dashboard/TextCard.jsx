@@ -10,7 +10,9 @@ const TextCard = ({
     exercice,
     evolution,
     color,
-    devise
+    devise,
+    compact,
+    rang
 }) => {
 
     const IconVariation = () => {
@@ -33,6 +35,51 @@ const TextCard = ({
         if (num === null || num === undefined || isNaN(num)) return '-';
         return num.toLocaleString('fr-FR') + ` ${devise}`;
     };
+
+    if (compact) {
+        return (
+            <Stack
+                width="100%"
+                height="100%"
+                direction="column"
+                alignItems="center"
+                justifyContent="center"
+                spacing={0}
+            >
+                <Stack direction="row" alignItems="baseline" justifyContent="center" spacing={1}>
+                    <Typography
+                        sx={{ lineHeight: 1.1 }}
+                        fontSize={'18px'}
+                        color={color}
+                        fontWeight={800}
+                        textAlign={'center'}
+                    >
+                        {formatMontant(montant)}
+                    </Typography>
+                    {!!rang && (
+                        <Typography
+                            sx={{ lineHeight: 1.1 }}
+                            fontSize={'12px'}
+                            color={color}
+                            fontWeight={800}
+                            textAlign={'center'}
+                        >
+                            {rang}
+                        </Typography>
+                    )}
+                </Stack>
+                <Typography
+                    sx={{ lineHeight: 1.1 }}
+                    fontSize={'12px'}
+                    color={color}
+                    fontWeight={600}
+                    textAlign={'center'}
+                >
+                    {text}
+                </Typography>
+            </Stack>
+        );
+    }
 
     return (
         <>

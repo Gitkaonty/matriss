@@ -1,4 +1,4 @@
-import { Autocomplete, Box, Checkbox, IconButton, Paper, Stack, TextField, Tooltip } from '@mui/material';
+import { Autocomplete, Box, Checkbox, IconButton, Paper, Stack, TextField, Tooltip, Button } from '@mui/material';
 import { DataGrid, frFR } from '@mui/x-data-grid';
 import QuickFilter, { DataGridStyle } from '../DatagridToolsStyle';
 
@@ -165,6 +165,35 @@ const CompteTab = ({
             setListeCompteDossier([]);
         }
     }, [selectedRow]);
+    const buttonStyle = {
+        minWidth: 120,
+        height: 32,
+        px: 2,
+        textTransform: 'none',
+        fontSize: '0.85rem',
+        borderRadius: '2px',
+        boxShadow: 'none',
+        '& .MuiTouchRipple-root': {
+            display: 'none',
+        },
+        '&:focus': {
+            outline: 'none',
+        },
+        '&.Mui-focusVisible': {
+            outline: 'none',
+            boxShadow: 'none',
+        },
+
+        '&:hover': {
+            boxShadow: 'none',
+            backgroundColor: 'action.hover',
+            border: 'none',
+        },
+
+        '&.Mui-disabled': {
+            opacity: 0.4
+        },
+    };
 
     return (
         <>
@@ -212,19 +241,39 @@ const CompteTab = ({
             >
                 <Tooltip title="Ajouter une ligne">
                     <Stack>
-                        <IconButton
+                        <Button
                             disabled={selectedRowCompteIds.length !== 1}
                             onClick={() => handleOpenDialogConfirmAddSousCompte('Ajout')}
                             variant="contained"
-                            style={{
-                                width: "35px", height: '35px',
-                                borderRadius: "2px", borderColor: "transparent",
-                                backgroundColor: initial.theme,
-                                textTransform: 'none', outline: 'none'
+                            sx={{
+                                ...buttonStyle,
+                                backgroundColor: initial.auth_gradient_end,
+                                color: 'white',
+                                borderColor: initial.auth_gradient_end,
+                                boxShadow: 'none',
+
+                                '&:hover': {
+                                    backgroundColor: initial.auth_gradient_end,
+                                    border: 'none',
+                                    boxShadow: 'none',       // enlève l’effet bleu shadow
+                                },
+                                '&:focus': {
+                                    backgroundColor: initial.auth_gradient_end,
+                                    border: 'none',
+                                    boxShadow: 'none',       // enlève le focus bleu
+                                },
+                                '&.Mui-disabled': {
+                                    backgroundColor: initial.auth_gradient_end,
+                                    color: 'white',
+                                    cursor: 'not-allowed',
+                                },
+                                '&::before': {
+                                    display: 'none',         // supprime l’overlay bleu de ButtonGroup
+                                },
                             }}
                         >
-                            <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                        </IconButton>
+                            Ajouter
+                        </Button>
                     </Stack>
                 </Tooltip>
 
@@ -235,38 +284,63 @@ const CompteTab = ({
                             marginRight: '3px'
                         }}
                     >
-                        <IconButton
+                        <Button
                             disabled={selectedRowSousCompteIds.length === 0}
                             onClick={() => handleOpenDialogConfirmAddSousCompte('Modification')}
                             variant="contained"
-                            style={{
-                                width: "35px", height: '35px',
-                                borderRadius: "2px", borderColor: "transparent",
-                                backgroundColor: initial.theme,
-                                textTransform: 'none', outline: 'none'
+                            sx={{
+                                ...buttonStyle,
+                                backgroundColor: initial.auth_gradient_end,
+                                color: 'white',
+                                borderColor: initial.auth_gradient_end,
+
+                                '&:hover': {
+                                    backgroundColor: initial.auth_gradient_end,
+                                },
+
+                                // 👇 OVERRIDE DU DISABLED
+                                '&.Mui-disabled': {
+                                    backgroundColor: initial.auth_gradient_end,
+                                    color: 'white',
+                                    //opacity: 0.6,          // optionnel : juste un léger effet
+                                    cursor: 'not-allowed',
+                                },
                             }}
                         >
-                            <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
-                        </IconButton>
+                            Modifier
+                        </Button>
                     </Stack>
                 </Tooltip>
 
                 <Tooltip title="Supprimer la ligne sélectionnée">
                     <Stack
                     >
-                        <IconButton
+                        <Button
                             disabled={selectedRowSousCompteIds.length === 0}
                             onClick={handleOpenDialogConfirmDeleteSousCompte}
                             variant="contained"
-                            style={{
-                                width: "35px", height: '35px',
-                                borderRadius: "2px", borderColor: "transparent",
-                                backgroundColor: initial.button_delete_color,
-                                textTransform: 'none', outline: 'none'
+                            sx={{
+                                ...buttonStyle,
+                                backgroundColor: initial.annuler_bouton_color,
+                                color: 'white',
+                                borderColor: initial.annuler_bouton_color,
+
+                                '&:hover': {
+                                    backgroundColor: initial.annuler_bouton_color,
+                                    border: 'none',
+                                },
+
+                                // 👇 OVERRIDE DU DISABLED
+                                '&.Mui-disabled': {
+                                    backgroundColor: initial.annuler_bouton_color,
+                                    color: 'white',
+                                    //opacity: 0.6,          // optionnel : juste un léger effet
+                                    cursor: 'not-allowed',
+                                },
                             }}
                         >
-                            <IoMdTrash style={{ width: '50px', height: '50px', color: 'white' }} />
-                        </IconButton>
+                            Supprimer
+                        </Button>
                     </Stack>
                 </Tooltip>
 
@@ -294,16 +368,29 @@ const CompteTab = ({
                     }}
                     sx={{
                         ...DataGridStyle.sx,
+                        '& .MuiDataGrid-columnHeaders': {
+                            backgroundColor: initial.tableau_theme,
+                            color: initial.text_theme,
+                        },
+                        '& .MuiDataGrid-columnHeaderTitle': {
+                            color: initial.text_theme,
+                            fontWeight: 600,
+                        },
+                        '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
+                            color: initial.text_theme,
+                        },
                         '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
                             outline: 'none',
                             border: 'none',
                         },
-                        '& .MuiInputBase-root': {
-                            boxShadow: 'none',
-                            border: 'none',
+                        '& .highlight-separator': {
+                            borderBottom: '1px solid red'
                         },
-                        '& .MuiOutlinedInput-notchedOutline': {
-                            border: 'none',
+                        '& .MuiDataGrid-row.highlight-separator': {
+                            borderBottom: '1px solid red',
+                        },
+                        '& .MuiDataGrid-virtualScroller': {
+                            maxHeight: '700px',
                         },
                     }}
                     rowHeight={DataGridStyle.rowHeight}

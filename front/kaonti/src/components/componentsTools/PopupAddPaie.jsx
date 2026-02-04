@@ -1755,7 +1755,7 @@ const PopupAddPaie = ({ confirmationState, mois, annee, setIsRefresh, row, id_co
 
                 <Button autoFocus
                     type="submit"
-                    style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
+                    style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
                     onClick={() => {
                         const allTouched = Object.keys(formik.values).reduce((acc, key) => {
                             acc[key] = true;

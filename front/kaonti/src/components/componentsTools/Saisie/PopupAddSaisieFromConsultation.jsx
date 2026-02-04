@@ -105,7 +105,7 @@ const PopupAddSaisieFromConsultation = ({ confirmationState, listePlanComptable,
             <DialogActions>
                 <Button
                     autoFocus
-                    style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
+                    style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
                     type='submit'
                     onClick={handleClose}
                 >
@@ -115,7 +115,7 @@ const PopupAddSaisieFromConsultation = ({ confirmationState, listePlanComptable,
                     autoFocus
                     onClick={addEcriture}
                     style={{
-                        backgroundColor: initial.theme,
+                        backgroundColor: initial.add_new_line_bouton_color,
                         color: 'white',
                         width: '100px',
                         textTransform: 'none',

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Typography, Stack, Box, Tab, IconButton, Button, Switch, Checkbox, Autocomplete, TextField, Tooltip } from '@mui/material';
+import { Typography, Stack, Box, Tab, IconButton, Button, Switch, Checkbox, Autocomplete, TextField, Tooltip, Chip } from '@mui/material';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -22,6 +22,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import VirtualTableModifiableExport from '../../../componentsTools/DeclarationEbilan/virtualTableModifiableExport';
 import { ListItemIcon, ListItemText } from '@mui/material';
 import { FaFilePdf, FaFileExcel } from 'react-icons/fa';
+import { init } from '../../../../../init';
 import { CiExport } from "react-icons/ci";
 import { IoMdRefreshCircle } from "react-icons/io";
 
@@ -45,6 +46,7 @@ export default function ExportBalance() {
     const [unsoldedCompte, setUnsoldedCompte] = useState(false);
     const [movmentedCpt, setMovmentedCpt] = useState(false);
 
+    let initial = init[0];
     const [fileInfos, setFileInfos] = useState('');
     const [fileId, setFileId] = useState(0);
     const { id } = useParams();
@@ -464,264 +466,346 @@ export default function ExportBalance() {
                 </Box>
                 <TabPanel value="1" style={{ height: '85%' }}>
                     <form onSubmit={formikImport.handleSubmit}>
-                        <Stack width={"100%"} height={"100%"} spacing={4} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
-                            <Typography variant='h6' sx={{ color: "black" }} align='left'>Administration - Export balance</Typography>
+                        <Stack
+                            width="100%"
+                            height="100%"
+                            spacing={2}
+                            alignItems="flex-start"
+                            alignContent="flex-start"
+                            justifyContent="flex-start"
+                        >
+                            <Typography variant="h7" sx={{ color: "black" }} align="left">
+                                Administration - Export balance
+                            </Typography>
 
-                            <Stack width={"100%"} height={"80px"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "20px" }}>
-                                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                                    <InputLabel id="demo-simple-select-standard-label">Exercice:</InputLabel>
-                                    <Select
-                                        labelId="demo-simple-select-standard-label"
-                                        id="demo-simple-select-standard"
-                                        value={selectedExerciceId}
-                                        label={"valSelect"}
-                                        onChange={(e) => handleChangeExercice(e.target.value)}
-                                        sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                        MenuProps={{
-                                            disableScrollLock: true
-                                        }}
-                                    >
-                                        {listeExercice.map((option) => (
-                                            <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                                        ))
-                                        }
-                                    </Select>
-                                </FormControl>
+                            {/* ================= EXERCICE ================= */}
+                            <Stack
+                                width="100%"
+                                spacing={1}
+                                direction="row"
+                                alignItems="flex-start"
+                                sx={{ mt: 1, flexWrap: 'wrap' }}
+                            >
+                                <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 250 }}>
+                                        <Typography sx={{ minWidth: 40, fontSize: 15 }}>
+                                            Exercice :
+                                        </Typography>
+                                        <Select
+                                            value={selectedExerciceId}
+                                            onChange={(e) => handleChangeExercice(e.target.value)}
+                                            displayEmpty
+                                            sx={{
+                                                border: "1px solid #ccc",
+                                                borderRadius: "4px",
+                                                minWidth: 300,
+                                                height: 32,
+                                                px: 1,
+                                                "& .MuiSelect-select": {
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    py: 0,
+                                                    fontSize: 14,
+                                                    whiteSpace: "nowrap",
+                                                    overflow: "hidden",
+                                                    textOverflow: "ellipsis",
+                                                },
+                                            }}
+                                            MenuProps={{
+                                                disableScrollLock: true,
+                                                PaperProps: {
+                                                    sx: {
+                                                        padding: 0,           // supprime le padding autour du Paper
+                                                        "& .MuiMenu-list": {
+                                                            paddingTop: 0,    // supprime le padding en haut
+                                                            paddingBottom: 0, // supprime le padding en bas
+                                                        },
+                                                        "& .MuiMenuItem-root": {
+                                                            minHeight: 22,    // réduit la hauteur de chaque item
+                                                            paddingTop: 1,
+                                                            paddingBottom: 1,
+                                                            fontSize: 14,
+                                                            lineHeight: 1.1,  // compacte encore plus
+                                                        },
+                                                    },
+                                                },
+                                                MenuListProps: {
+                                                    dense: true,
+                                                },
+                                            }}
+                                        >
+                                            {listeExercice.map((option) => (
+                                                <MenuItem
+                                                    key={option.id}
+                                                    value={option.id}
+                                                    sx={{
+                                                        minHeight: 22,
+                                                        py: 1,
+                                                        fontSize: 14,
+                                                        lineHeight: 1.1,
+                                                    }}
+                                                >
+                                                    {option.libelle_rang} : {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
 
-                                <FormControl variant="standard" sx={{ m: 1, minWidth: 150 }}>
-                                    <InputLabel id="demo-simple-select-standard-label">Période</InputLabel>
-                                    <Select
-                                        disabled
-                                        labelId="demo-simple-select-standard-label"
-                                        id="demo-simple-select-standard"
-                                        value={selectedPeriodeChoiceId}
-                                        label={"valSelect"}
-                                        onChange={(e) => handleChangePeriode(e.target.value)}
-                                        sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                        MenuProps={{
-                                            disableScrollLock: true
-                                        }}
-                                    >
-                                        <MenuItem value={0}>Toutes</MenuItem>
-                                        <MenuItem value={1}>Situations</MenuItem>
-                                    </Select>
-                                </FormControl>
-
-                                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                                    <InputLabel id="demo-simple-select-standard-label">Du</InputLabel>
-                                    <Select
-                                        labelId="demo-simple-select-standard-label"
-                                        id="demo-simple-select-standard"
-                                        value={selectedPeriodeId}
-                                        label={"valSelect"}
-                                        onChange={(e) => handleChangeDateIntervalle(e.target.value)}
-                                        sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                        MenuProps={{
-                                            disableScrollLock: true
-                                        }}
-                                    >
-                                        {listeSituation?.map((option) => (
-                                            <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                                        ))
-                                        }
-                                    </Select>
-                                </FormControl>
-
+                                    </Box>
+                                </Box>
                             </Stack>
 
+                            {/* ================= TYPE (+ ESPACE AJOUTÉ) ================= */}
                             <Stack
-                                width={"100%"}
-                                spacing={4}
-                                alignContent={"center"}
-                                direction={"row"}
-                                style={{ marginLeft: "0px", marginTop: "0px", backgroundColor: '#F4F9F9', borderRadius: "5px" }}
+                                direction="row"
                                 alignItems="center"
                                 justifyContent="space-between"
-                                sx={{ p: 0.5 }}
+                                spacing={1}
+                                width="100%"
+                                sx={{ mt: 0 }}
                             >
-                                <Stack direction="row" alignItems="center" spacing={4}>
-                                    <FormControl variant="standard" sx={{ minWidth: 150 }}>
-                                        <InputLabel id="demo-simple-select-standard-label">Type</InputLabel>
+                                {/* Left side : Type / Axe / Section */}
+                                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                                    {/* TYPE */}
+                                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                                        <Typography sx={{ minWidth: 40, fontSize: 15 }}>Type :</Typography>
                                         <Select
                                             disabled={!canView}
-                                            labelId="demo-simple-select-standard-label"
-                                            id="demo-simple-select-standard"
                                             value={type}
-                                            label={"valSelect"}
                                             onChange={handleChangeType}
-                                            sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                            displayEmpty
+                                            sx={{
+                                                minWidth: 140,
+                                                height: 32,
+                                                px: 1,
+                                                "& .MuiSelect-select": { fontSize: 15, py: 0 },
+                                            }}
                                             MenuProps={{
-                                                disableScrollLock: true
+                                                disableScrollLock: true,
+                                                PaperProps: {
+                                                    sx: {
+                                                        "& .MuiMenuItem-root": { fontSize: 15, minHeight: 28 },
+                                                    },
+                                                },
                                             }}
                                         >
                                             <MenuItem value={0}>Générale</MenuItem>
                                             <MenuItem value={1}>Fournisseurs</MenuItem>
                                             <MenuItem value={2}>Clients</MenuItem>
-                                            {isCaActive && (<MenuItem value={3}>Analytique</MenuItem>)}
+                                            {isCaActive && <MenuItem value={3}>Analytique</MenuItem>}
                                         </Select>
-                                    </FormControl>
+                                    </Box>
 
-                                    {
-                                        type === 3 && (
-                                            <>
-                                                <FormControl variant="standard" sx={{ minWidth: 150 }}>
-                                                    <InputLabel>Axe</InputLabel>
-                                                    <Select
-                                                        value={selectedAxeId}
-                                                        onChange={handleChangeAxe}
-                                                        sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                                        MenuProps={{
-                                                            disableScrollLock: true
-                                                        }}
-                                                    >
-                                                        {
-                                                            axesData.map(val => {
-                                                                return (
-                                                                    <MenuItem key={val.id} value={val.id}>{val.code}</MenuItem>
-                                                                )
-                                                            })
-                                                        }
-                                                    </Select>
-                                                </FormControl>
-                                                <FormControl variant="standard" sx={{ width: 750 }}>
-                                                    <Autocomplete
-                                                        multiple
-                                                        id="checkboxes-tags-demo"
-                                                        options={sectionsData}
-                                                        disableCloseOnSelect
-                                                        getOptionLabel={(option) => option.section}
-                                                        onChange={(_event, newValue) => {
-                                                            setSelectedSectionsId(newValue);
-                                                            localStorage.setItem('sectionIds', JSON.stringify(newValue));
-                                                        }}
-                                                        value={selectedSectionsId}
-                                                        renderOption={(props, option, { selected }) => {
-                                                            const { key, ...optionProps } = props;
-                                                            return (
-                                                                <li
-                                                                    key={key}
-                                                                    {...optionProps}
-                                                                    style={{
-                                                                        paddingTop: 2,
-                                                                        paddingBottom: 2,
-                                                                        paddingLeft: 4,
-                                                                        paddingRight: 4,
-                                                                        fontSize: "0.8rem",
-                                                                        display: "flex",
-                                                                        alignItems: "center"
-                                                                    }}
-                                                                >
-                                                                    <Checkbox
-                                                                        icon={icon}
-                                                                        checkedIcon={checkedIcon}
-                                                                        style={{ marginRight: 8 }}
-                                                                        checked={selected}
-                                                                    />
-                                                                    {option.section}
-                                                                </li>
-                                                            );
-                                                        }}
-                                                        renderInput={(params) => (
-                                                            <TextField
-                                                                {...params}
-                                                                variant="standard"
-                                                                label="Section"
+                                    {/* AXE */}
+                                    {type === 3 && (
+                                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                                            <Typography sx={{ minWidth: 40, fontSize: 15 }}>Axe :</Typography>
+                                            <Select
+                                                disabled={!canView}
+                                                value={selectedAxeId}
+                                                onChange={handleChangeAxe}
+                                                displayEmpty
+                                                sx={{
+                                                    minWidth: 120,
+                                                    height: 32,
+                                                    px: 1,
+                                                    "& .MuiSelect-select": { fontSize: 15, py: 0 },
+                                                }}
+                                                MenuProps={{
+                                                    disableScrollLock: true,
+                                                    PaperProps: {
+                                                        sx: {
+                                                            "& .MuiMenuItem-root": { fontSize: 15, minHeight: 28 },
+                                                        },
+                                                    },
+                                                }}
+                                            >
+                                                {axesData.map(val => (
+                                                    <MenuItem key={val.id} value={val.id}>{val.code}</MenuItem>
+                                                ))}
+                                            </Select>
+                                        </Box>
+                                    )}
+
+                                    {/* SECTION */}
+                                    {type === 3 && (
+                                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, minWidth: 250 }}>
+                                            <Typography sx={{ minWidth: 40, fontSize: 15 }}>Section :</Typography>
+                                            <Autocomplete
+                                                multiple
+                                                disablePortal
+                                                limitTags={5}
+                                                options={sectionsData}
+                                                value={selectedSectionsId}
+                                                onChange={(_, newValue) => {
+                                                    setSelectedSectionsId(newValue);
+                                                    localStorage.setItem('sectionIds', JSON.stringify(newValue));
+                                                }}
+                                                disableCloseOnSelect
+                                                getOptionLabel={(option) => option.section}
+                                                renderOption={(props, option, { selected }) => {
+                                                    const { key, ...optionProps } = props;
+                                                    return (
+                                                        <li
+                                                            key={key}
+                                                            {...optionProps}
+                                                            style={{
+                                                                paddingTop: 2,
+                                                                paddingBottom: 2,
+                                                                paddingLeft: 4,
+                                                                paddingRight: 4,
+                                                                fontSize: "0.75rem",
+                                                                display: "flex",
+                                                                alignItems: "center"
+                                                            }}
+                                                        >
+                                                            <Checkbox
+                                                                icon={icon}
+                                                                checkedIcon={checkedIcon}
+                                                                checked={selected}
+                                                                sx={{ mr: 1 }}
                                                             />
-                                                        )}
-                                                    />
-
-                                                </FormControl>
-                                            </>
-                                        )
-                                    }
+                                                            {option.section}
+                                                        </li>
+                                                    );
+                                                }}
+                                                PopperProps={{ placement: 'bottom-start' }}
+                                                renderTags={(value, getTagProps) => {
+                                                    const visible = value.slice(0, 5);
+                                                    const hiddenCount = value.length - visible.length;
+                                                    const allLabels = value.map(v => v.section).join(', ');
+                                                    return (
+                                                        <>
+                                                            {visible.map((option, index) => (
+                                                                <Chip
+                                                                    label={option.section}
+                                                                    size="small"
+                                                                    {...getTagProps({ index })}
+                                                                />
+                                                            ))}
+                                                            {hiddenCount > 0 && (
+                                                                <Tooltip title={allLabels} placement="top" arrow>
+                                                                    <Chip
+                                                                        label={`+${hiddenCount}`}
+                                                                        size="small"
+                                                                    />
+                                                                </Tooltip>
+                                                            )}
+                                                        </>
+                                                    );
+                                                }}
+                                                sx={{
+                                                    minWidth: 500,
+                                                    "& .MuiAutocomplete-inputRoot": {
+                                                        flexWrap: 'nowrap',
+                                                        overflowX: 'auto',
+                                                    },
+                                                    "& .MuiAutocomplete-tag": {
+                                                        maxHeight: 24,
+                                                    },
+                                                    "& .MuiOutlinedInput-root": {
+                                                        height: 30,
+                                                        py: 0,
+                                                        "& .MuiAutocomplete-input": { py: 0, px: 1 }
+                                                    },
+                                                    "& .MuiAutocomplete-popper": {
+                                                        width: 'fit-content',
+                                                        minWidth: 500,
+                                                    },
+                                                }}
+                                                ListboxProps={{ style: { maxHeight: 260 } }}
+                                                renderInput={(params) => <TextField {...params} size="small" variant="outlined" />}
+                                            />
+                                        </Box>
+                                    )}
                                 </Stack>
-                                {
-                                    type === 3 && (
-                                        <Stack
-                                            direction={'row'}
-                                            spacing={0.5}
+
+                                {/* Right side : Actualiser + Export */}
+                                <Stack direction="row" spacing={0.5} alignItems="center">
+                                    {/* Actualiser */}
+                                    <Tooltip title="Actualiser la balance analytique">
+                                        <Button
+                                            disabled={!canView}
+                                            variant="outlined"
+                                            onClick={actualizeBalance}
+                                            sx={{
+                                                height: 32,
+                                                textTransform: 'none',
+                                                backgroundColor: initial.add_new_line_bouton_color,
+                                                color: 'white',
+                                                "&:hover": { backgroundColor: initial.add_new_line_bouton_color }, // empêche changement
+                                                "&:active": { backgroundColor: initial.add_new_line_bouton_color }, // clic
+                                                "&:focus": { backgroundColor: initial.add_new_line_bouton_color }, // focus clavier
+                                            }}
                                         >
-                                            <div>
-                                                <Tooltip
-                                                    title={`Actualiser la balance ${type === 3 ? 'analytique' : 'générale'}`}
-                                                >
-                                                    <Button
-                                                        disabled={!canView}
-                                                        variant="outlined"
-                                                        onClick={actualizeBalance}
-                                                        sx={{
-                                                            height: 40,
-                                                            textTransform: 'none',
-                                                            outline: 'none',
-                                                            '&:focus': {
-                                                                outline: 'none',
-                                                            },
-                                                            '&.Mui-focusVisible': {
-                                                                outline: 'none',
-                                                                boxShadow: 'none',
-                                                            },
-                                                            '&:focus-visible': {
-                                                                outline: 'none',
-                                                                boxShadow: 'none',
-                                                            }
-                                                        }}
-                                                        startIcon={<IoMdRefreshCircle size={25} />}
-                                                    >
-                                                        Actualiser
-                                                    </Button>
-                                                </Tooltip>
-                                            </div>
-                                        </Stack>
-                                    )
-                                }
-                            </Stack>
+                                            Actualiser
+                                        </Button>
+                                    </Tooltip>
 
-                            <Stack width={"100%"} height={"60px"} spacing={0.5} alignItems={"center"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                <FormControlLabel
-                                    control={<Switch checked={checked} disabled={!canView} onChange={handleChange} name="centralisation" />}
-                                    label="Centraliser la balance"
-                                    style={{ width: "15%" }}
-                                />
-
-                                <FormControlLabel
-                                    control={<Switch checked={unsoldedCompte} disabled={!canView} onChange={handleChangeUnsoldedCompte} name="unSoldedCompte" />}
-                                    label="Seulement les comptes non soldés"
-                                    style={{ width: "22%" }}
-                                />
-
-                                <FormControlLabel
-                                    control={<Switch checked={movmentedCpt} disabled={!canView} onChange={handleChangeMovmentedCpt} name="movmentedCpt" />}
-                                    label="Seulement les comptes mouvementés"
-                                    style={{ width: "56%" }}
-                                />
-
-                                <div>
-                                    <IconButton
-                                        disabled={!listeExercice || listeExercice.length === 0 || !selectedExerciceId || selectedExerciceId === 0}
-                                        variant="contained"
-                                        onClick={handleOpenExportMenu}
-                                        aria-controls={openExportMenu ? 'export-menu' : undefined}
-                                        aria-haspopup="true"
-                                        aria-expanded={openExportMenu ? 'true' : undefined}
-                                    >
-                                        <CiExport style={{ width: 35, height: 35, color: "#D32F2F" }} />
-                                    </IconButton>
-                                </div>
-                            </Stack>
-
-                            {traitementJournalWaiting
-                                ? <Stack spacing={2} direction={'row'} width={"100%"} alignItems={'center'} justifyContent={'center'}>
-                                    <CircularProgress />
-                                    <Typography variant='h6' style={{ color: '#2973B2' }}>{traitementJournalMsg}</Typography>
+                                    {/* Exporter */}
+                                    <Tooltip title="Exporter les données ">
+                                        <Button
+                                            disabled={!listeExercice?.length || !selectedExerciceId}
+                                            onClick={handleOpenExportMenu}
+                                            aria-controls={openExportMenu ? 'export-menu' : undefined}
+                                            aria-haspopup="true"
+                                            aria-expanded={openExportMenu ? 'true' : undefined}
+                                            variant="outlined"
+                                            sx={{
+                                                height: 32,
+                                                textTransform: 'none',
+                                                backgroundColor: initial.button_abort_color,
+                                                color: 'white',
+                                                "&:hover": { backgroundColor: initial.button_abort_color },
+                                                "&:active": { backgroundColor: initial.button_abort_color },
+                                                "&:focus": { backgroundColor: initial.button_abort_color },
+                                            }}
+                                        >
+                                            Exporter
+                                        </Button>
+                                    </Tooltip>
                                 </Stack>
-                                : null
-                            }
-
-                            <Stack width={"100%"} height={'600px'} >
-                                {useMemo(() => (
-                                    <VirtualTableModifiableExport columns={columns} rows={balance} />
-                                ), [balance])}
                             </Stack>
+
+                            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ mt: 0 }}>
+                                <Chip
+                                    sx={{fontSize : 14}}
+                                    label="Centraliser"
+                                    color={checked ? "primary" : "default"}
+                                    onClick={() => setChecked(!checked)}
+                                    clickable
+                                />
+                                <Chip
+                                    sx={{fontSize : 14}}
+                                    label="Comptes non soldés"
+                                    color={unsoldedCompte ? "secondary" : "default"}
+                                    onClick={() => setUnsoldedCompte(!unsoldedCompte)}
+                                    clickable
+                                />
+                                <Chip
+                                    sx={{fontSize : 14}}
+                                    label="Comptes mouvementés"
+                                    color={movmentedCpt ? "success" : "default"}
+                                    onClick={() => setMovmentedCpt(!movmentedCpt)}
+                                    clickable
+                                />
+                            </Stack>
+                        </Stack>
+
+                        {/* ================= LOADING ================= */}
+                        {traitementJournalWaiting && (
+                            <Stack direction="row" spacing={2} alignItems="center" justifyContent="center" width="100%">
+                                <CircularProgress />
+                                <Typography variant="h6" sx={{ color: '#2973B2' }}>
+                                    {traitementJournalMsg}
+                                </Typography>
+                            </Stack>
+                        )}
+
+                        {/* ================= TABLE ================= */}
+                        <Stack width="100%" height="600px" mt={3}>
+                            {useMemo(() => (
+                                <VirtualTableModifiableExport columns={columns} rows={balance} />
+                            ), [balance])}
                         </Stack>
                     </form>
                 </TabPanel>
@@ -759,6 +843,6 @@ export default function ExportBalance() {
                     <ListItemText primary="Exporter en Excel" />
                 </MenuItem>
             </Menu>
-        </Box>
+        </Box >
     )
 }

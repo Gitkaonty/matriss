@@ -147,7 +147,7 @@ const DatagridDetailEcritureAssociee = ({ DATAGRID_HEIGHT = '500px', valSelectMo
             <span>
               <Button
                 variant="contained"
-                style={{ textTransform: 'none', outline: 'none', backgroundColor: initial.theme, color: 'white', height: '39px' }}
+                style={{ textTransform: 'none', outline: 'none', backgroundColor: initial.add_new_line_bouton_color, color: 'white', height: '39px' }}
                 startIcon={<MdReplay size={20} />}
                 onClick={handleOpenDialogConfirmReinitialize}
                 disabled={!canDelete || listSaisie.length === 0}

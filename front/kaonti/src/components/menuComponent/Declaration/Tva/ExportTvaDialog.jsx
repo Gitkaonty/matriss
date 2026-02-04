@@ -37,7 +37,7 @@ export default function ExportTvaDialog({
       const finStr = `${String(dernierJour).padStart(2, '0')}-${String(mois).padStart(2, '0')}-${annee}`;
 
       const idDossier = sessionStorage.getItem('fileId');
-      const resp = await fetch(`http://localhost:5100/declaration/tva/export-excel-tableau/${compteId}/${idDossier}/${exerciceId}/${mois}/${annee}`, {
+      const resp = await fetch(`http://localhost:5200/declaration/tva/export-excel-tableau/${compteId}/${idDossier}/${exerciceId}/${mois}/${annee}`, {
         method: 'GET',
         headers: { 'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }
       });
@@ -53,7 +53,7 @@ export default function ExportTvaDialog({
       window.URL.revokeObjectURL(url);
 
       const fileId = sessionStorage.getItem('fileId');
-      const f = 'http://localhost:5100/historique/declaration';
+      const f = 'http://localhost:5200/historique/declaration';
       if (compteId && fileId) {
         const designation = `TVA EXCEL - du ${debutStr} au ${finStr} - Mois ${mois}/${annee}`;
         fetch(f, {
@@ -83,7 +83,7 @@ export default function ExportTvaDialog({
         // On laisse le backend résoudre automatiquement via idDossier si possible
       }
 
-      const resp = await fetch(`http://localhost:5100/declaration/tva/export-xml/${compteId}/${idDossier}/${exerciceId}/${mois}/${annee}`, {
+      const resp = await fetch(`http://localhost:5200/declaration/tva/export-xml/${compteId}/${idDossier}/${exerciceId}/${mois}/${annee}`, {
         method: 'GET',
         headers: { 'Accept': 'application/xml' }
       });
@@ -101,7 +101,7 @@ export default function ExportTvaDialog({
       const fileId = sessionStorage.getItem('fileId');
       if (compteId && fileId) {
         const designation = `TVA XML - du ${debutStr} au ${finStr} - Mois ${mois}/${annee}`;
-        fetch('http://localhost:5100/historique/declaration', {
+        fetch('http://localhost:5200/historique/declaration', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ idCompte: compteId, idDossier: fileId, declaration: 'TVA', designation, date_export: new Date().toISOString() })
@@ -130,7 +130,7 @@ export default function ExportTvaDialog({
         periodeFin: { jour: dernierJour, mois, annee },
       };
       const idDossier = sessionStorage.getItem('fileId');
-      fetch(`http://localhost:5100/declaration/tva/export-pdf-tableau/${compteId}/${idDossier}/${exerciceId}/${mois}/${annee}`, {
+      fetch(`http://localhost:5200/declaration/tva/export-pdf-tableau/${compteId}/${idDossier}/${exerciceId}/${mois}/${annee}`, {
         method: 'GET',
         headers: { 'Accept': 'application/pdf' }
       })
@@ -153,7 +153,7 @@ export default function ExportTvaDialog({
             const debutStr = `01-${String(mois).padStart(2, '0')}-${annee}`;
             const finStr = `${String(dernierJour).padStart(2, '0')}-${String(mois).padStart(2, '0')}-${annee}`;
             const designation = `TVA PDF - du ${debutStr} au ${finStr} - Mois ${mois}/${annee}`;
-            fetch('http://localhost:5100/historique/declaration', {
+            fetch('http://localhost:5200/historique/declaration', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({

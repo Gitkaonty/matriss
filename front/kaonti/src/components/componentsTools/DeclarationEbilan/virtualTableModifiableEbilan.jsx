@@ -110,7 +110,7 @@ const VirtualTableModifiableEbilan = ({ columns, rows, deleteState, modifyState,
         <Table sx={{ width: '100%', border: '1px solid #ddd', }} aria-label="simple table">
           <TableHead
             style={{
-              backgroundColor: initial.theme,
+              backgroundColor: initial.add_new_line_bouton_color,
               position: 'sticky',
               top: 0,
               zIndex: 1,
@@ -128,7 +128,7 @@ const VirtualTableModifiableEbilan = ({ columns, rows, deleteState, modifyState,
                       paddingBottom: '5px',
                       fontSize: 15,
                       color: 'white',
-                      backgroundColor: initial.theme,
+                      backgroundColor: initial.add_new_line_bouton_color,
                     }}
                   >
                   </TableCell>
@@ -146,7 +146,7 @@ const VirtualTableModifiableEbilan = ({ columns, rows, deleteState, modifyState,
                         paddingBottom: '5px',
                         fontSize: 15,
                         color: 'white',
-                        backgroundColor: initial.theme,
+                        backgroundColor: initial.add_new_line_bouton_color,
                       }}
                     >
                     </TableCell>
@@ -159,7 +159,7 @@ const VirtualTableModifiableEbilan = ({ columns, rows, deleteState, modifyState,
                         paddingBottom: '5px',
                         fontSize: 15,
                         color: 'white',
-                        backgroundColor: initial.theme,
+                        backgroundColor: initial.add_new_line_bouton_color,
                         minWidth: "50px",
                         borderLeft: '1px solid #ddd',
                       }}

@@ -101,7 +101,7 @@ export default function PopupPasswordChange({ open, onClose, id_compte }) {
                     m: 0,
                     p: 2,
                     fontWeight: 'bold',
-                    backgroundColor: initial.theme,
+                    backgroundColor: initial.add_new_line_bouton_color,
                     color: 'white',
                     fontSize: 18
                 }}

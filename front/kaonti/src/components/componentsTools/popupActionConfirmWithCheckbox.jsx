@@ -121,7 +121,7 @@ const PopupActionConfirmWithCheckbox = ({ msg, confirmationState, isLoading }) =
                 <Button
                     disabled={isLoading}
                     autoFocus
-                    style={{ backgroundColor: initial.theme, color: 'white', width: '100px', textTransform: 'none', outline: 'none' }}
+                    style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', width: '100px', textTransform: 'none', outline: 'none' }}
                     type='submit'
                     onClick={handleClose}
                 >
@@ -132,7 +132,7 @@ const PopupActionConfirmWithCheckbox = ({ msg, confirmationState, isLoading }) =
                     onClick={handleConfirm}
                     disabled={isLoading}
                     style={{
-                        backgroundColor: initial.theme,
+                        backgroundColor: initial.add_new_line_bouton_color,
                         color: 'white',
                         width: isLoading ? '130px' : '100px',
                         textTransform: 'none',

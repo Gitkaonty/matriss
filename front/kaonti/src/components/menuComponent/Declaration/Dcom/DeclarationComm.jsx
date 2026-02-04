@@ -855,7 +855,7 @@ export default function DeclarationComm() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrouillageSvt ? 'none' : 'inline-flex',
                                                             }}
@@ -889,7 +889,7 @@ export default function DeclarationComm() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrouillageSvt ? 'none' : 'inline-flex',
                                                             }}
@@ -985,7 +985,7 @@ export default function DeclarationComm() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrouillageAdr ? 'none' : 'inline-flex',
                                                             }}
@@ -1019,7 +1019,7 @@ export default function DeclarationComm() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrouillageAdr ? 'none' : 'inline-flex',
                                                             }}
@@ -1115,7 +1115,7 @@ export default function DeclarationComm() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrouillageAc ? 'none' : 'inline-flex',
                                                             }}
@@ -1149,7 +1149,7 @@ export default function DeclarationComm() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrouillageAc ? 'none' : 'inline-flex',
                                                             }}
@@ -1246,7 +1246,7 @@ export default function DeclarationComm() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrouillageAi ? 'none' : 'inline-flex',
                                                             }}
@@ -1280,7 +1280,7 @@ export default function DeclarationComm() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrouillageAi ? 'none' : 'inline-flex',
                                                             }}
@@ -1376,7 +1376,7 @@ export default function DeclarationComm() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrouillageDeb ? 'none' : 'inline-flex',
                                                             }}
@@ -1410,7 +1410,7 @@ export default function DeclarationComm() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrouillageDeb ? 'none' : 'inline-flex',
                                                             }}
@@ -1506,7 +1506,7 @@ export default function DeclarationComm() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrouillageMv ? 'none' : 'inline-flex',
                                                             }}
@@ -1540,7 +1540,7 @@ export default function DeclarationComm() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrouillageMv ? 'none' : 'inline-flex',
                                                             }}
@@ -1636,7 +1636,7 @@ export default function DeclarationComm() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrouillagePsv ? 'none' : 'inline-flex',
                                                             }}
@@ -1670,7 +1670,7 @@ export default function DeclarationComm() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrouillagePsv ? 'none' : 'inline-flex',
                                                             }}
@@ -1766,7 +1766,7 @@ export default function DeclarationComm() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrouillagePl ? 'none' : 'inline-flex',
                                                             }}
@@ -1800,7 +1800,7 @@ export default function DeclarationComm() {
                                                             style={{
                                                                 width: "45px", height: '45px',
                                                                 borderRadius: "1px", borderColor: "transparent",
-                                                                backgroundColor: initial.theme,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
                                                                 textTransform: 'none', outline: 'none',
                                                                 display: verrouillagePl ? 'none' : 'inline-flex',
                                                             }}

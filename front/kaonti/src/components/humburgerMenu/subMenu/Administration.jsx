@@ -1,9 +1,9 @@
+import { useEffect, useState } from 'react';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
-import SubMenuList from '../subMenuComponents/SubMenuList';
-import SubMenuHeader from '../subMenuComponents/SubMenuHeader';
 import { init } from '../../../../init';
-import { Stack } from '@mui/material';
+import { Stack, Box, Button, IconButton, Menu, MenuItem } from '@mui/material';
+import { Clear } from '@mui/icons-material';
 
 const traitementList = [
     {
@@ -18,25 +18,24 @@ const traitementList = [
         path: "/tab/administration/consultation",
         urldynamic: true
     },
-    {
-        text: 'Personnel',
-        name: "personnel",
-        path: "/tab/administration/personnel",
-        urldynamic: true
-    },
-    {
-        text: 'Rapprochements bancaires',
-        name: "rapprochements",
-        path: "/tab/administration/rapprochements",
-        urldynamic: true
-    },
-    {
-        text: 'Immobilisations',
-        name: "immobilisations",
-        path: "/tab/administration/immobilisations",
-        urldynamic: true
-    },
-
+    // {
+    //     text: 'Personnel',
+    //     name: "personnel",
+    //     path: "/tab/administration/personnel",
+    //     urldynamic: true
+    // },
+    // {
+    //     text: 'Rapprochements bancaires',
+    //     name: "rapprochements",
+    //     path: "/tab/administration/rapprochements",
+    //     urldynamic: true
+    // },
+    // {
+    //     text: 'Immobilisations',
+    //     name: "immobilisations",
+    //     path: "/tab/administration/immobilisations",
+    //     urldynamic: true
+    // },
 ];
 
 const importList = [
@@ -52,12 +51,12 @@ const importList = [
     //     path: "/tab/administration/importAnnexeDeclarationEbilan",
     //     urldynamic: true
     // },
-    {
-        text: 'Balance',
-        name: "balance",
-        path: "/tab/administration/importBalance",
-        urldynamic: true
-    },
+    // {
+    //     text: 'Balance',
+    //     name: "balance",
+    //     path: "/tab/administration/importBalance",
+    //     urldynamic: true
+    // },
     {
         text: 'Journal comptable',
         name: "journalComptable",
@@ -96,24 +95,24 @@ const exportList = [
         path: "/tab/administration/exportJournal",
         urldynamic: true
     },
-    {
-        text: 'Etats financiers',
-        name: "etatfinancière",
-        path: "/tab/administration/etatFinacier",
-        urldynamic: true
-    },
-    {
-        text: 'Etats financiers analytique',
-        name: "etatfinancièreAnalytique",
-        path: "/tab/administration/etatFinacierAnalytique",
-        urldynamic: true
-    },
-    {
-        text: 'SIG',
-        name: "sig",
-        path: "/tab/administration/sig",
-        urldynamic: true
-    },
+    // {
+    //     text: 'Etats financiers',
+    //     name: "etatfinancière",
+    //     path: "/tab/administration/etatFinacier",
+    //     urldynamic: true
+    // },
+    // {
+    //     text: 'Etats financiers analytique',
+    //     name: "etatfinancièreAnalytique",
+    //     path: "/tab/administration/etatFinacierAnalytique",
+    //     urldynamic: true
+    // },
+    // {
+    //     text: 'SIG',
+    //     name: "sig",
+    //     path: "/tab/administration/sig",
+    //     urldynamic: true
+    // },
     // {
     //     text: 'Liasse E-bilan',
     //     name: "liasseEbilan",
@@ -121,65 +120,173 @@ const exportList = [
     // },
 ];
 
-export default function Administration({ onWindowState, pathToNavigate, humburgerMenuState, closeDrawer }) {
+export default function Administration({ onWindowState, pathToNavigate, closeDrawer }) {
     let initial = init[0];
 
-    const SendStateToParent = () => {
-        onWindowState(false);
-    }
+    const [fileId, setFileId] = useState(0);
 
-    const HandlePath = (newPath) => {
-        pathToNavigate(newPath);
-    }
+    const [anchorTraitement, setAnchorTraitement] = useState(null);
+    const [anchorImport, setAnchorImport] = useState(null);
+    const [anchorExport, setAnchorExport] = useState(null);
+
+    useEffect(() => {
+        const idDossier = sessionStorage.getItem("fileId");
+        setFileId(idDossier);
+    }, []);
+
+    const navigateToPage = (item) => {
+        if (item.urldynamic == true) {
+            pathToNavigate(`${item.path}/${fileId}`);
+        } else {
+            pathToNavigate(item.path);
+        }
+    };
+
+    const closeAllMenus = () => {
+        setAnchorTraitement(null);
+        setAnchorImport(null);
+        setAnchorExport(null);
+    };
+
+    const handleClosePanel = () => {
+        closeAllMenus();
+        onWindowState(false);
+        if (typeof closeDrawer === 'function') closeDrawer();
+    };
+
+    const menuButtonSx = {
+        textTransform: 'none',
+        color: initial.text_theme,
+        fontWeight: 600,
+        borderRadius: 2,
+        px: 1.25,
+        py: 0.75,
+        minWidth: 'unset',
+        '&:hover': {
+            backgroundColor: 'rgba(255,255,255,0.10)',
+        }
+    };
 
     return (
-        <Stack
-            backgroundColor={initial.theme}
-            width={'100%'}
-            height={'100vh'}
-            zIndex={"10"}
-            position={"fixed"}
-            visibility={'visible'}
+        <Box
             sx={{
-                opacity: "0.95",
+                position: 'fixed',
+                top: 56,
+                left: 0,
+                width: '100vw',
+                height: 'calc(100vh - 56px)',
+                zIndex: 10,
+                backgroundColor: 'rgba(0,0,0,0.20)',
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'center',
+                pt: 3,
+                boxSizing: 'border-box'
             }}
-            marginTop={"-40px"}
-            marginLeft={"-8px"}
         >
-            <SubMenuHeader
-                caption={"Administration"}
-                openWindow={SendStateToParent}
-                humburgerMenuState={humburgerMenuState}
-                closeDrawer={closeDrawer}
-            />
-
             <Stack
-                width={"100%"}
-                height={"100%"}
-                spacing={2}
-                alignItems={"flex-start"}
-                direction={"row"}
-                marginLeft={"20px"}
-                marginTop={"-25px"}
+                sx={{
+                    width: 'min(980px, calc(100vw - 40px))',
+                    backgroundColor: initial.menu_theme,
+                    borderRadius: 2,
+                    border: '1px solid rgba(17, 24, 39, 0.12)',
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
+                    overflow: 'hidden'
+                }}
             >
-                <Stack width={"25%"} height={"30px"} spacing={0.1} alignItems={"flex-start"} direction={"column"}>
-                    <Typography variant='h6' marginLeft={"50px"} color={"white"}>Traitement</Typography>
-                    <SubMenuList list={traitementList} navigatePath={HandlePath} />
+                <Stack direction={'row'} alignItems={'center'} justifyContent={'space-between'} sx={{ px: 2.5, py: 2 }}>
+                    <Typography variant='h6' color={initial.text_theme}>Administration</Typography>
+                    <IconButton
+                        onClick={handleClosePanel}
+                        aria-label="close"
+                        disableRipple
+                        disableFocusRipple
+                        sx={{
+                            boxShadow: 'none',
+                            outline: 'none',
+                            '&:focus': { outline: 'none' },
+                            '&:focus-visible': { outline: 'none', boxShadow: 'none' },
+                            '&.Mui-focusVisible': { outline: 'none', boxShadow: 'none' },
+                        }}
+                    >
+                        <Clear style={{ color: initial.text_theme, fontSize: 24 }} />
+                    </IconButton>
                 </Stack>
 
-                <Divider orientation='vertical' color={"white"} style={{ height: "100%", opacity: "0.2" }} />
+                <Divider sx={{ opacity: 0.15 }} />
 
-                <Stack width={"25%"} height={"30px"} spacing={0.1} alignItems={"flex-start"} direction={"column"}>
-                    <Typography variant='h6' marginLeft={"50px"} color={"white"}>Import</Typography>
-                    <SubMenuList list={importList} navigatePath={HandlePath} />
+                <Stack direction={'row'} alignItems={'center'} spacing={2} sx={{ px: 2.5, py: 1.5, flexWrap: 'wrap' }}>
+                    <Button
+                        onMouseEnter={(e) => { closeAllMenus(); setAnchorTraitement(e.currentTarget); }}
+                        disableRipple
+                        disableFocusRipple
+                        sx={menuButtonSx}
+                    >
+                        Traitement
+                    </Button>
+                    <Button
+                        onMouseEnter={(e) => { closeAllMenus(); setAnchorImport(e.currentTarget); }}
+                        disableRipple
+                        disableFocusRipple
+                        sx={menuButtonSx}
+                    >
+                        Import
+                    </Button>
+                    <Button
+                        onMouseEnter={(e) => { closeAllMenus(); setAnchorExport(e.currentTarget); }}
+                        disableRipple
+                        disableFocusRipple
+                        sx={menuButtonSx}
+                    >
+                        Export
+                    </Button>
                 </Stack>
-                <Divider orientation='vertical' color={"white"} style={{ height: "100%", opacity: "0.2" }} />
 
-                <Stack width={"25%"} height={"30px"} spacing={0.1} alignItems={"flex-start"} direction={"column"}>
-                    <Typography variant='h6' marginLeft={"50px"} color={"white"}>Export</Typography>
-                    <SubMenuList list={exportList} navigatePath={HandlePath} />
-                </Stack>
+                <Menu
+                    anchorEl={anchorTraitement}
+                    open={Boolean(anchorTraitement)}
+                    onClose={() => setAnchorTraitement(null)}
+                    MenuListProps={{ onMouseLeave: () => setAnchorTraitement(null) }}
+                    disableScrollLock
+                    slotProps={{ paper: { sx: { mt: 1, borderRadius: 2, minWidth: 240 } } }}
+                >
+                    {traitementList.map((item) => (
+                        <MenuItem key={item.name} onClick={() => { handleClosePanel(); navigateToPage(item); }}>
+                            {item.text}
+                        </MenuItem>
+                    ))}
+                </Menu>
+
+                <Menu
+                    anchorEl={anchorImport}
+                    open={Boolean(anchorImport)}
+                    onClose={() => setAnchorImport(null)}
+                    MenuListProps={{ onMouseLeave: () => setAnchorImport(null) }}
+                    disableScrollLock
+                    slotProps={{ paper: { sx: { mt: 1, borderRadius: 2, minWidth: 240 } } }}
+                >
+                    {importList.map((item) => (
+                        <MenuItem key={item.name} onClick={() => { handleClosePanel(); navigateToPage(item); }}>
+                            {item.text}
+                        </MenuItem>
+                    ))}
+                </Menu>
+
+                <Menu
+                    anchorEl={anchorExport}
+                    open={Boolean(anchorExport)}
+                    onClose={() => setAnchorExport(null)}
+                    MenuListProps={{ onMouseLeave: () => setAnchorExport(null) }}
+                    disableScrollLock
+                    slotProps={{ paper: { sx: { mt: 1, borderRadius: 2, minWidth: 240 } } }}
+                >
+                    {exportList.map((item) => (
+                        <MenuItem key={item.name} onClick={() => { handleClosePanel(); navigateToPage(item); }}>
+                            {item.text}
+                        </MenuItem>
+                    ))}
+                </Menu>
             </Stack>
-        </Stack>
+        </Box>
     )
 }

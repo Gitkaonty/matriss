@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FormControl, IconButton, InputLabel, MenuItem, Select, Stack, Tooltip } from "@mui/material";
+import { Button, ButtonGroup, FormControl, InputLabel, MenuItem, Select, Stack, Tooltip } from "@mui/material";
 import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes } from '@mui/x-data-grid';
 
 import { TbPlaylistAdd } from 'react-icons/tb';
@@ -17,6 +17,16 @@ import toast from "react-hot-toast";
 const initial = init[0];
 
 const TabDossier = ({ listeCompteDossier, setListeCompteDossier, listeDossier }) => {
+    const buttonStyle = {
+        height: 32,
+        fontSize: 12,
+        fontWeight: 600,
+        boxShadow: 'none',
+        border: 'none',
+        textTransform: 'none',
+        minWidth: 110,
+        px: 2,
+    };
 
     const useFormikCompteDossier = useFormik({
         initialValues: {
@@ -254,98 +264,134 @@ const TabDossier = ({ listeCompteDossier, setListeCompteDossier, listeDossier })
             <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"}
                 alignContent={"flex-start"} justifyContent={"stretch"}
             >
-                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                <Stack width={"100%"} minHeight={"56px"} spacing={1} alignItems={"center"} alignContent={"center"}
                     direction={"row"} justifyContent={"right"}
                 >
-                    <Tooltip title="Ajouter une ligne">
-                        <div>
-                            <IconButton
-                                disabled={disableAddRowBoutonCompteDossier || availableDossier.length === 0}
-                                variant="contained"
-                                onClick={handleOpenDialogAddNewCompteDossier}
-                                style={{
-                                    width: "35px", height: '35px',
-                                    borderRadius: "2px", borderColor: "transparent",
-                                    backgroundColor: initial.theme,
-                                    textTransform: 'none', outline: 'none'
-                                }}
-                            >
-                                <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                            </IconButton>
-                        </div>
-                    </Tooltip>
+                    <ButtonGroup
+                        variant="outlined"
+                        sx={{
+                            boxShadow: 'none',
+                            display: 'flex',
+                            gap: '1px',
+                            '& .MuiButton-root': {
+                                borderRadius: 0,
+                            },
+                            '& .MuiButtonGroup-grouped': {
+                                boxShadow: 'none',
+                                outline: 'none',
+                                borderColor: 'inherit',
+                                marginLeft: 0,
+                                borderRadius: 1,
+                                border: 'none',
+                            },
+                            '& .MuiButtonGroup-grouped:hover': {
+                                boxShadow: 'none',
+                                borderColor: 'inherit',
+                            },
+                            '& .MuiButtonGroup-grouped.Mui-focusVisible': {
+                                boxShadow: 'none',
+                                borderColor: 'inherit',
+                            },
+                        }}
+                    >
+                        <Tooltip title="Ajouter une ligne">
+                            <span>
+                                <Button
+                                    disabled={disableAddRowBoutonCompteDossier || availableDossier.length === 0}
+                                    onClick={handleOpenDialogAddNewCompteDossier}
+                                    sx={{
+                                        ...buttonStyle,
+                                        backgroundColor: initial.auth_gradient_end,
+                                        color: 'white',
+                                        borderColor: initial.auth_gradient_end,
+                                        boxShadow: 'none',
+                                        '&:hover': { backgroundColor: initial.auth_gradient_end, border: 'none', boxShadow: 'none' },
+                                        '&:focus': { backgroundColor: initial.auth_gradient_end, border: 'none', boxShadow: 'none' },
+                                        '&.Mui-disabled': { backgroundColor: initial.auth_gradient_end, color: 'white', cursor: 'not-allowed' },
+                                        '&::before': { display: 'none' },
+                                    }}
+                                >
+                                    Ajouter
+                                </Button>
+                            </span>
+                        </Tooltip>
 
-                    <Tooltip title="Modifier la ligne sélectionnée">
-                        <div>
-                            <IconButton
-                                disabled={disableModifyBoutonCompteDossier}
-                                variant="contained"
-                                onClick={handleEditClickCompteDossier(selectedRowIdCompteDossier)}
-                                style={{
-                                    width: "35px", height: '35px',
-                                    borderRadius: "2px", borderColor: "transparent",
-                                    backgroundColor: initial.theme,
-                                    textTransform: 'none', outline: 'none'
-                                }}
-                            >
-                                <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
-                            </IconButton>
-                        </div>
-                    </Tooltip>
+                        <Tooltip title="Modifier la ligne sélectionnée">
+                            <span>
+                                <Button
+                                    disabled={disableModifyBoutonCompteDossier}
+                                    onClick={handleEditClickCompteDossier(selectedRowIdCompteDossier)}
+                                    sx={{
+                                        ...buttonStyle,
+                                        backgroundColor: initial.auth_gradient_end,
+                                        color: 'white',
+                                        borderColor: initial.auth_gradient_end,
+                                        '&:hover': { backgroundColor: initial.auth_gradient_end },
+                                        '&.Mui-disabled': { backgroundColor: initial.auth_gradient_end, color: 'white', cursor: 'not-allowed' },
+                                    }}
+                                >
+                                    Modifier
+                                </Button>
+                            </span>
+                        </Tooltip>
 
-                    <Tooltip title="Sauvegarder les modifications">
-                        <div>
-                            <IconButton
-                                disabled={disableSaveBoutonCompteDossier}
-                                variant="contained"
-                                onClick={handleSaveClickCompteDossier}
-                                style={{
-                                    width: "35px", height: '35px',
-                                    borderRadius: "2px", borderColor: "transparent",
-                                    backgroundColor: initial.theme,
-                                    textTransform: 'none', outline: 'none'
-                                }}
-                            >
-                                <TfiSave style={{ width: '50px', height: '50px', color: 'white' }} />
-                            </IconButton>
-                        </div>
-                    </Tooltip>
+                        <Tooltip title="Sauvegarder les modifications">
+                            <span>
+                                <Button
+                                    disabled={disableSaveBoutonCompteDossier}
+                                    onClick={handleSaveClickCompteDossier}
+                                    sx={{
+                                        ...buttonStyle,
+                                        backgroundColor: initial.auth_gradient_end,
+                                        color: 'white',
+                                        borderColor: initial.auth_gradient_end,
+                                        '&:hover': { backgroundColor: initial.auth_gradient_end, border: 'none' },
+                                        '&.Mui-disabled': { backgroundColor: initial.auth_gradient_end, color: 'white', cursor: 'not-allowed' },
+                                    }}
+                                >
+                                    Sauvegarder
+                                </Button>
+                            </span>
+                        </Tooltip>
 
-                    <Tooltip title="Annuler les modifications">
-                        <div>
-                            <IconButton
-                                disabled={disableCancelBoutonCompteDossier}
-                                variant="contained"
-                                onClick={handleCancelClickCompteDossier(selectedRowIdCompteDossier)}
-                                style={{
-                                    width: "35px", height: '35px',
-                                    borderRadius: "2px", borderColor: "transparent",
-                                    backgroundColor: initial.button_delete_color,
-                                    textTransform: 'none', outline: 'none'
-                                }}
-                            >
-                                <VscClose style={{ width: '50px', height: '50px', color: 'white' }} />
-                            </IconButton>
-                        </div>
-                    </Tooltip>
+                        <Tooltip title="Annuler les modifications">
+                            <span>
+                                <Button
+                                    disabled={disableCancelBoutonCompteDossier}
+                                    onClick={handleCancelClickCompteDossier(selectedRowIdCompteDossier)}
+                                    sx={{
+                                        ...buttonStyle,
+                                        backgroundColor: initial.annuler_bouton_color,
+                                        color: 'white',
+                                        borderColor: initial.annuler_bouton_color,
+                                        '&:hover': { backgroundColor: initial.annuler_bouton_color },
+                                        '&.Mui-disabled': { backgroundColor: initial.annuler_bouton_color, color: 'white', cursor: 'not-allowed' },
+                                    }}
+                                >
+                                    Annuler
+                                </Button>
+                            </span>
+                        </Tooltip>
 
-                    <Tooltip title="Supprimer la ligne sélectionné">
-                        <div>
-                            <IconButton
-                                disabled={disableDeleteBoutonCompteDossier}
-                                onClick={handleOpenDialogConfirmDeleteCompteDossierRow}
-                                variant="contained"
-                                style={{
-                                    width: "35px", height: '35px',
-                                    borderRadius: "2px", borderColor: "transparent",
-                                    backgroundColor: initial.button_delete_color,
-                                    textTransform: 'none', outline: 'none'
-                                }}
-                            >
-                                <IoMdTrash style={{ width: '50px', height: '50px', color: 'white' }} />
-                            </IconButton>
-                        </div>
-                    </Tooltip>
+                        <Tooltip title="Supprimer la ligne sélectionné">
+                            <span>
+                                <Button
+                                    disabled={disableDeleteBoutonCompteDossier}
+                                    onClick={handleOpenDialogConfirmDeleteCompteDossierRow}
+                                    sx={{
+                                        ...buttonStyle,
+                                        backgroundColor: initial.annuler_bouton_color,
+                                        color: 'white',
+                                        borderColor: initial.annuler_bouton_color,
+                                        '&:hover': { backgroundColor: initial.annuler_bouton_color, border: 'none' },
+                                        '&.Mui-disabled': { backgroundColor: initial.annuler_bouton_color, color: 'white', cursor: 'not-allowed' },
+                                    }}
+                                >
+                                    Supprimer
+                                </Button>
+                            </span>
+                        </Tooltip>
+                    </ButtonGroup>
                 </Stack>
 
                 <Stack
@@ -360,7 +406,33 @@ const TabDossier = ({ listeCompteDossier, setListeCompteDossier, listeDossier })
                         disableSelectionOnClick={true}
                         localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
                         slots={{ toolbar: QuickFilter }}
-                        sx={DataGridStyle.sx}
+                        sx={{
+                            ...DataGridStyle.sx,
+                            '& .MuiDataGrid-columnHeaders': {
+                                backgroundColor: initial.tableau_theme,
+                                color: initial.text_theme,
+                            },
+                            '& .MuiDataGrid-columnHeaderTitle': {
+                                color: initial.text_theme,
+                                fontWeight: 600,
+                            },
+                            '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
+                                color: initial.text_theme,
+                            },
+                            '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+                                outline: 'none',
+                                border: 'none',
+                            },
+                            '& .highlight-separator': {
+                                borderBottom: '1px solid red'
+                            },
+                            '& .MuiDataGrid-row.highlight-separator': {
+                                borderBottom: '1px solid red',
+                            },
+                            '& .MuiDataGrid-virtualScroller': {
+                                maxHeight: '700px',
+                            },
+                        }}
                         rowHeight={DataGridStyle.rowHeight}
                         columnHeaderHeight={DataGridStyle.columnHeaderHeight}
                         rows={listeCompteDossier}

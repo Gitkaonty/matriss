@@ -104,7 +104,7 @@ const VirtualTableAnnexeDeclarationTable = ({ columns, deleteState, modifyState,
                 <Table sx={{ width: '100%', border: '', ableLayout: "fixed" }} aria-label="simple table">
                     <TableHead
                         style={{
-                            backgroundColor: initial.theme,
+                            backgroundColor: initial.add_new_line_bouton_color,
                             position: 'sticky',
                             top: 0,
                             zIndex: 1,
@@ -120,7 +120,7 @@ const VirtualTableAnnexeDeclarationTable = ({ columns, deleteState, modifyState,
                                     fontSize: 15,
                                     color: 'white',
                                     align: 'center',
-                                    backgroundColor: initial.theme,
+                                    backgroundColor: initial.add_new_line_bouton_color,
                                 }}
                             >
                             </TableCell>
@@ -133,7 +133,7 @@ const VirtualTableAnnexeDeclarationTable = ({ columns, deleteState, modifyState,
                                     paddingBottom: '5px',
                                     fontSize: 15,
                                     color: 'white',
-                                    backgroundColor: initial.theme,
+                                    backgroundColor: initial.add_new_line_bouton_color,
                                     borderLeft: '1px solid #ddd',
                                 }}
                             >
@@ -148,7 +148,7 @@ const VirtualTableAnnexeDeclarationTable = ({ columns, deleteState, modifyState,
                                     paddingBottom: '5px',
                                     fontSize: 15,
                                     color: 'white',
-                                    backgroundColor: initial.theme,
+                                    backgroundColor: initial.add_new_line_bouton_color,
                                     borderLeft: '1px solid #ddd',
                                 }}
                             >
