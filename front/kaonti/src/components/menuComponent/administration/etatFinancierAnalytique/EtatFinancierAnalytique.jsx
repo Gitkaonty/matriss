@@ -1020,7 +1020,7 @@ export default function EtatFinancierAnalytique() {
                                                         style={{
                                                             width: "45px", height: '45px',
                                                             borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
+                                                            backgroundColor: initial.add_new_line_bouton_color,
                                                             textTransform: 'none', outline: 'none',
                                                             display: verrBilan ? 'none' : 'inline-flex',
                                                         }}
@@ -1130,7 +1130,7 @@ export default function EtatFinancierAnalytique() {
                                                         style={{
                                                             width: "45px", height: '45px',
                                                             borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
+                                                            backgroundColor: initial.add_new_line_bouton_color,
                                                             textTransform: 'none', outline: 'none',
                                                             display: verrCrn ? 'none' : 'inline-flex',
                                                         }}
@@ -1214,7 +1214,7 @@ export default function EtatFinancierAnalytique() {
                                                         style={{
                                                             width: "45px", height: '45px',
                                                             borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
+                                                            backgroundColor: initial.add_new_line_bouton_color,
                                                             textTransform: 'none', outline: 'none',
                                                             display: verrCrf ? 'none' : 'inline-flex',
                                                         }}
@@ -1298,7 +1298,7 @@ export default function EtatFinancierAnalytique() {
                                                         style={{
                                                             width: "45px", height: '45px',
                                                             borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
+                                                            backgroundColor: initial.add_new_line_bouton_color,
                                                             textTransform: 'none', outline: 'none',
                                                             display: verrTftd ? 'none' : 'inline-flex',
                                                         }}
@@ -1382,7 +1382,7 @@ export default function EtatFinancierAnalytique() {
                                                         style={{
                                                             width: "45px", height: '45px',
                                                             borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
+                                                            backgroundColor: initial.add_new_line_bouton_color,
                                                             textTransform: 'none', outline: 'none',
                                                             display: verrTfti ? 'none' : 'inline-flex',
                                                         }}
@@ -1467,7 +1467,7 @@ export default function EtatFinancierAnalytique() {
                                                         style={{
                                                             width: "45px", height: '45px',
                                                             borderRadius: "1px", borderColor: "transparent",
-                                                            backgroundColor: initial.theme,
+                                                            backgroundColor: initial.add_new_line_bouton_color,
                                                             textTransform: 'none', outline: 'none',
                                                             display: verrTfti ? 'none' : 'inline-flex',
                                                         }}

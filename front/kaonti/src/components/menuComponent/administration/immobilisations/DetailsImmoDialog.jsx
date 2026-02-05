@@ -335,8 +335,8 @@ const DetailsImmoDialog = ({ open, mode = 'add', form = {}, onChange, onClose, o
                                     onChange={(e, v) => onChange({ ...form, __amortTab: v })}
                                     aria-label="tabs amortissement"
                                 >
-                                    <Tab label="Comptable" value="comp" sx={{ textTransform: 'none', minHeight: 26, padding: '0px 8px', fontSize: 12, lineHeight: 1.2, '&.Mui-selected': { backgroundColor: initial.theme, color: 'white' } }} />
-                                    <Tab label="Fiscal" value="fisc" sx={{ textTransform: 'none', minHeight: 26, padding: '0px 8px', fontSize: 12, lineHeight: 1.2, '&.Mui-selected': { backgroundColor: initial.theme, color: 'white' } }} />
+                                    <Tab label="Comptable" value="comp" sx={{ textTransform: 'none', minHeight: 26, padding: '0px 8px', fontSize: 12, lineHeight: 1.2, '&.Mui-selected': { backgroundColor: initial.add_new_line_bouton_color, color: 'white' } }} />
+                                    <Tab label="Fiscal" value="fisc" sx={{ textTransform: 'none', minHeight: 26, padding: '0px 8px', fontSize: 12, lineHeight: 1.2, '&.Mui-selected': { backgroundColor: initial.add_new_line_bouton_color, color: 'white' } }} />
                                 </TabList>
                             </Box>
 
@@ -597,7 +597,7 @@ const DetailsImmoDialog = ({ open, mode = 'add', form = {}, onChange, onClose, o
                 </Button>
                 <Button autoFocus
                     variant="contained" onClick={onSubmit} disabled={loading}
-                    style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}>
+                    style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}>
                     {mode === 'add' ? 'Enregistrer' : 'Enregistrer'}
                 </Button>
             </DialogActions>

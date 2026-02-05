@@ -629,6 +629,19 @@ const PopupAddNewAccount = ({
         }
     }, [selectedProvince, selectedRegion, selectedDistrict, isRestoringLocalites]);
 
+    const inputSx = {
+        '& .MuiOutlinedInput-root': {
+            height: 36,
+            fontSize: 13,
+            borderRadius: 1,
+            backgroundColor: '#fff',
+            '& fieldset': { borderColor: '#d0d5dd' },
+            '&:hover fieldset': { borderColor: '#9aa0a6' },
+            '&.Mui-focused fieldset': { borderColor: '#3FA2F6', borderWidth: 1.2 },
+        },
+    };
+
+
     return (
         <>
             {/* MODAL DE CONFIRMATION DE SUPPRESSION DE COMPTE DE TVA RATTACHE AU COMPTE A CREER */}
@@ -818,7 +831,7 @@ const PopupAddNewAccount = ({
                                 </DialogContent>
                                 <DialogActions>
                                     <Button autoFocus
-                                        style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
+                                        style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
                                         onClick={AddCptToTableCptChg(setFieldValue)}
                                     >
                                         Ajouter
@@ -876,7 +889,7 @@ const PopupAddNewAccount = ({
                                 </DialogContent>
                                 <DialogActions>
                                     <Button autoFocus
-                                        style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
+                                        style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
                                         onClick={AddCptToTableCptTva(setFieldValue)}
                                     >
                                         Ajouter
@@ -901,9 +914,14 @@ const PopupAddNewAccount = ({
                                 >
                                     <DialogTitle
                                         id="customized-dialog-title"
-                                        sx={{ ml: 1, p: 2, width: '550px', height: '50px', backgroundColor: 'transparent' }}
-                                    >
-                                        <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', fontSize: 18 }}>
+                                        sx={{
+                                            height: "50px",
+                                            boxShadow: 'none',
+                                            borderBottom: 'none',
+                                            backgroundImage: 'linear-gradient(90deg, #064E3B 0%, #0F766E 45%, #0B1220 100%)',
+                                            backgroundColor: 'transparent',
+                                        }}>
+                                        <Typography variant="h7" component="div" sx={{ fontSize: 18, color: 'white' }}>
                                             Création d'un nouveau compte
                                         </Typography>
                                     </DialogTitle>
@@ -944,135 +962,208 @@ const PopupAddNewAccount = ({
                                                     <TabPanel value="1">
                                                         <Stack width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"}
                                                             alignContent={"flex-start"} justifyContent={"stretch"} >
-                                                            <Stack direction={'row'} alignContent={'end'}
-                                                                alignItems={'end'} justifyContent={'end'} spacing={5}
-                                                                style={{ backgroundColor: 'transparent' }}
+                                                            <Stack
+                                                                direction="row"
+                                                                spacing={2}
+                                                                alignItems="flex-end"
+                                                                sx={{ backgroundColor: 'transparent' }}
                                                             >
-                                                                <Stack spacing={-0.5}>
-                                                                    <label htmlFor="nature" style={{ fontSize: 12, color: '#3FA2F6' }}>Nature</label>
+                                                                {/* ===== Nature ===== */}
+                                                                <Stack spacing={1} sx={{ width: 250 }}>
+                                                                    {/* Label */}
+                                                                    <InputLabel
+                                                                        sx={{
+                                                                            fontSize: 12,
+                                                                            color: '#9aa0a6',
+                                                                            minHeight: 16, // 🔑 réserve la place
+                                                                        }}
+                                                                    >
+                                                                        Nature
+                                                                    </InputLabel>
+
+                                                                    {/* Select */}
                                                                     <Field
                                                                         as={Select}
                                                                         disabled={isModifying}
-                                                                        labelId="nature-label"
                                                                         name="nature"
+                                                                        size="small"
                                                                         onChange={handleChangeListBoxNature(setFieldValue)}
                                                                         sx={{
-                                                                            borderRadius: 0,
-                                                                            width: 200,
-                                                                            height: 40,
-                                                                            '& .MuiOutlinedInput-notchedOutline': {
-                                                                                borderTop: 'none', // Supprime le cadre
-                                                                                borderLeft: 'none',
-                                                                                borderRight: 'none',
-                                                                                borderWidth: '0.5px'
+                                                                            height: 32,
+                                                                            borderRadius: 1.5,
+                                                                            fontSize: 14,
+                                                                            '& .MuiSelect-select': {
+                                                                                padding: '4px 8px',
+                                                                                display: 'flex',
+                                                                                alignItems: 'center',
+                                                                                height: '100%',
                                                                             },
-                                                                            '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                                                borderTop: 'none', // Supprime le cadre
-                                                                                borderLeft: 'none',
-                                                                                borderRight: 'none',
-                                                                                borderWidth: '0.5px'
-                                                                            },
-                                                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                                                borderTop: 'none', // Supprime le cadre
-                                                                                borderLeft: 'none',
-                                                                                borderRight: 'none',
-                                                                                borderWidth: '0.5px'
-                                                                            },
+                                                                            '& fieldset': { borderColor: '#ccc' },
+                                                                            '&:hover fieldset': { borderColor: '#888' },
+                                                                            '&.Mui-focused fieldset': { borderColor: '#3FA2F6' },
                                                                         }}
                                                                     >
-                                                                        <MenuItem value={"General"}>Compte général</MenuItem>
-                                                                        <MenuItem value={"Collectif"}>Compte collectif</MenuItem>
-                                                                        <MenuItem value={"Aux"}>Compte auxiliaire</MenuItem>
+                                                                        <MenuItem value="General">Compte général</MenuItem>
+                                                                        <MenuItem value="Collectif">Compte collectif</MenuItem>
+                                                                        <MenuItem value="Aux">Compte auxiliaire</MenuItem>
                                                                     </Field>
-                                                                    <ErrorMessage name='nature' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+
+                                                                    {/* Error */}
+                                                                    <Box sx={{ minHeight: 14 }}>
+                                                                        <ErrorMessage
+                                                                            name="nature"
+                                                                            component="div"
+                                                                            style={{ color: 'red', fontSize: 12 }}
+                                                                        />
+                                                                    </Box>
                                                                 </Stack>
 
-                                                                <Stack spacing={-0.5}>
-                                                                    <label htmlFor="baseCptCollectif" style={{ fontSize: 12, color: '#3FA2F6' }}>Centralisation/Base compte auxiliaire</label>
+                                                                {/* ===== Base compte collectif ===== */}
+                                                                <Stack spacing={1} sx={{ width: 400 }}>
+                                                                    {/* Label */}
+                                                                    <InputLabel
+                                                                        sx={{
+                                                                            fontSize: 12,
+                                                                            color: '#9aa0a6',
+                                                                            minHeight: 16, // 🔑 identique
+                                                                        }}
+                                                                    >
+                                                                        Centralisation / Base compte auxiliaire
+                                                                    </InputLabel>
+
+                                                                    {/* Select */}
                                                                     <Field
-                                                                        disabled={typeCptGeneral || isModifying}
                                                                         as={Select}
-                                                                        labelId="baseCptCollectif-label"
+                                                                        disabled={typeCptGeneral || isModifying}
                                                                         name="baseCptCollectif"
+                                                                        size="small"
+                                                                        onChange={handleChangeListBoxBaseCompteAux(setFieldValue)}
                                                                         renderValue={(selected) => {
                                                                             const opt = listeCptCollectif?.find((i) => i.id === selected);
                                                                             if (opt) return `${opt.compte} ${opt.libelle}`;
-                                                                            // Fallback: afficher la valeur actuelle même si la liste n'est pas encore chargée
-                                                                            if (selectedRow && (selected === selectedRow.id || selected === selectedRow.baseaux_id)) {
-                                                                                const label = selectedRow.baseaux
-                                                                                    ? `${selectedRow.baseaux} ${selectedRow.libelle || ''}`.trim()
-                                                                                    : `${selectedRow.compte || ''} ${selectedRow.libelle || ''}`.trim();
-                                                                                return label || ' ';
-                                                                            }
                                                                             return ' ';
                                                                         }}
-                                                                        onChange={handleChangeListBoxBaseCompteAux(setFieldValue)}
                                                                         sx={{
-                                                                            borderRadius: 0,
-                                                                            width: 500,
-                                                                            height: 40,
-                                                                            '& .MuiOutlinedInput-notchedOutline': {
-                                                                                borderTop: 'none', // Supprime le cadre
-                                                                                borderLeft: 'none',
-                                                                                borderRight: 'none',
-                                                                                borderWidth: '0.5px'
+                                                                            height: 32,
+                                                                            borderRadius: 1.5,
+                                                                            fontSize: 14,
+                                                                            '& .MuiSelect-select': {
+                                                                                padding: '4px 8px',
+                                                                                display: 'flex',
+                                                                                alignItems: 'center',
+                                                                                height: '100%',
                                                                             },
-                                                                            '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                                                borderTop: 'none', // Supprime le cadre
-                                                                                borderLeft: 'none',
-                                                                                borderRight: 'none',
-                                                                                borderWidth: '0.5px'
-                                                                            },
-                                                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                                                borderTop: 'none', // Supprime le cadre
-                                                                                borderLeft: 'none',
-                                                                                borderRight: 'none',
-                                                                                borderWidth: '0.5px'
-                                                                            },
+                                                                            '& fieldset': { borderColor: '#ccc' },
+                                                                            '&:hover fieldset': { borderColor: '#888' },
+                                                                            '&.Mui-focused fieldset': { borderColor: '#3FA2F6' },
                                                                         }}
                                                                     >
                                                                         {listeCptCollectif?.map((item) => (
-                                                                            <MenuItem key={item.id} value={item.id}>{item.compte} {item.libelle}</MenuItem>
-                                                                        ))
-                                                                        }
+                                                                            <MenuItem key={item.id} value={item.id}>
+                                                                                {item.compte} {item.libelle}
+                                                                            </MenuItem>
+                                                                        ))}
                                                                     </Field>
-                                                                    <ErrorMessage name='baseCptCollectif' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+
+                                                                    {/* Error */}
+                                                                    <Box sx={{ minHeight: 14 }}>
+                                                                        <ErrorMessage
+                                                                            name="baseCptCollectif"
+                                                                            component="div"
+                                                                            style={{ color: 'red', fontSize: 12 }}
+                                                                        />
+                                                                    </Box>
                                                                 </Stack>
                                                             </Stack>
 
+
                                                             <Stack direction={'row'} alignContent={'start'}
-                                                                alignItems={'start'} spacing={5}
+                                                                alignItems={'start'} spacing={2}
                                                                 style={{ backgroundColor: 'transparent', width: '800px' }}
                                                             >
-                                                                <Stack spacing={1}>
-                                                                    <label htmlFor="compte" style={{ fontSize: 12, color: '#3FA2F6' }}>Compte</label>
+                                                                {/* Compte */}
+                                                                <Stack spacing={1} sx={{ width: 250 }}>
+                                                                    <InputLabel
+                                                                        htmlFor="compte"
+                                                                        sx={{ fontSize: 12, color: '#9aa0a6', mb: 0.5 }}
+                                                                    >
+                                                                        Compte
+                                                                    </InputLabel>
+
                                                                     <Field
-                                                                        disabled={isModifying}
                                                                         name='compte'
-                                                                        onChange={handleChange}
-                                                                        type='text'
+                                                                        as={TextField}
+                                                                        disabled={isModifying}
                                                                         placeholder=""
-                                                                        style={{
-                                                                            height: 22, borderTop: 'none',
-                                                                            borderLeft: 'none', borderRight: 'none',
-                                                                            outline: 'none', fontSize: 14, borderWidth: '0.5px',
-                                                                            width: 200,
+                                                                        size="small"
+                                                                        sx={{
+                                                                            width: '100%',
+                                                                            height: 32,           // même hauteur uniforme
+                                                                            borderRadius: 1.5,    // coins arrondis
+                                                                            fontSize: 14,
+                                                                            '& .MuiOutlinedInput-root': {
+                                                                                height: 32,
+                                                                                '& fieldset': {
+                                                                                    borderColor: '#ccc',
+                                                                                },
+                                                                                '&:hover fieldset': {
+                                                                                    borderColor: '#888',
+                                                                                },
+                                                                                '&.Mui-focused fieldset': {
+                                                                                    borderColor: '#3FA2F6',
+                                                                                },
+                                                                            },
                                                                         }}
                                                                     />
-                                                                    <ErrorMessage name='compte' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+
+                                                                    <ErrorMessage
+                                                                        name='compte'
+                                                                        component="div"
+                                                                        style={{ color: 'red', fontSize: 12, marginTop: 2 }}
+                                                                    />
                                                                 </Stack>
 
-                                                                <Stack spacing={1}>
-                                                                    <label htmlFor="libelle" style={{ fontSize: 12, color: '#3FA2F6' }}>libellé / raison sociale</label>
+                                                                {/* Libellé / raison sociale */}
+                                                                <Stack spacing={1} sx={{ width: 400 }}>
+                                                                    <InputLabel
+                                                                        htmlFor="libelle"
+                                                                        sx={{ fontSize: 12, color: '#9aa0a6', mb: 0.5 }}
+                                                                    >
+                                                                        Libellé / raison sociale
+                                                                    </InputLabel>
+
                                                                     <Field
                                                                         name='libelle'
-                                                                        onChange={handleChange}
-                                                                        type='text'
+                                                                        as={TextField}
                                                                         placeholder=""
-                                                                        style={{ width: 500, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
+                                                                        size="small"
+                                                                        sx={{
+                                                                            width: '100%',
+                                                                            height: 32,
+                                                                            borderRadius: 1.5,
+                                                                            fontSize: 14,
+                                                                            '& .MuiOutlinedInput-root': {
+                                                                                height: 32,
+                                                                                '& fieldset': {
+                                                                                    borderColor: '#ccc',
+                                                                                },
+                                                                                '&:hover fieldset': {
+                                                                                    borderColor: '#888',
+                                                                                },
+                                                                                '&.Mui-focused fieldset': {
+                                                                                    borderColor: '#3FA2F6',
+                                                                                },
+                                                                            },
+                                                                        }}
                                                                     />
-                                                                    <ErrorMessage name='libelle' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+
+                                                                    <ErrorMessage
+                                                                        name='libelle'
+                                                                        component="div"
+                                                                        style={{ color: 'red', fontSize: 12, marginTop: 2 }}
+                                                                    />
                                                                 </Stack>
+
                                                             </Stack>
 
                                                             {isTypeComptaAutre && (
@@ -1080,39 +1171,83 @@ const PopupAddNewAccount = ({
                                                                     alignItems={'start'} spacing={5}
                                                                     style={{ backgroundColor: 'transparent', width: '800px' }}
                                                                 >
-                                                                    <Stack spacing={1}>
-                                                                        <label htmlFor="compteautre" style={{ fontSize: 12, color: '#3FA2F6' }}>Corréspondace ce compte</label>
+                                                                    {/* Corréspondance ce compte */}
+                                                                    <Stack spacing={0.5} sx={{ width: 200 }}>
+                                                                        <InputLabel
+                                                                            htmlFor="compteautre"
+                                                                            sx={{ fontSize: 12, color: '#9aa0a6', mb: 0.5 }}
+                                                                        >
+                                                                            Corréspondance ce compte
+                                                                        </InputLabel>
+
                                                                         <Field
                                                                             name='compteautre'
-                                                                            onChange={handleChange}
-                                                                            type='text'
+                                                                            as={TextField}
                                                                             placeholder=""
-                                                                            style={{
-                                                                                height: 22, borderTop: 'none',
-                                                                                borderLeft: 'none', borderRight: 'none',
-                                                                                outline: 'none', fontSize: 14, borderWidth: '0.5px',
-                                                                                width: 200,
+                                                                            size="small"
+                                                                            sx={{
+                                                                                width: '100%',
+                                                                                height: 32,
+                                                                                borderRadius: 1.5,
+                                                                                fontSize: 14,
+                                                                                '& .MuiOutlinedInput-root': {
+                                                                                    height: 32,
+                                                                                    '& fieldset': { borderColor: '#ccc' },
+                                                                                    '&:hover fieldset': { borderColor: '#888' },
+                                                                                    '&.Mui-focused fieldset': { borderColor: '#3FA2F6' },
+                                                                                },
                                                                             }}
                                                                         />
-                                                                        <ErrorMessage name='compteautre' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+
+                                                                        <ErrorMessage
+                                                                            name='compteautre'
+                                                                            component="div"
+                                                                            style={{ color: 'red', fontSize: 12, marginTop: 2 }}
+                                                                        />
                                                                     </Stack>
 
-                                                                    <Stack spacing={1}>
-                                                                        <label htmlFor="libelleautre" style={{ fontSize: 12, color: '#3FA2F6' }}>libellé / raison sociale (autre)</label>
+                                                                    {/* Libellé / raison sociale (autre) */}
+                                                                    <Stack spacing={0.5} sx={{ width: 500 }}>
+                                                                        <InputLabel
+                                                                            htmlFor="libelleautre"
+                                                                            sx={{ fontSize: 12, color: '#9aa0a6', mb: 0.5 }}
+                                                                        >
+                                                                            Libellé / raison sociale (autre)
+                                                                        </InputLabel>
+
                                                                         <Field
                                                                             name='libelleautre'
-                                                                            onChange={handleChange}
-                                                                            type='text'
+                                                                            as={TextField}
                                                                             placeholder=""
-                                                                            style={{ width: 500, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
+                                                                            size="small"
+                                                                            sx={{
+                                                                                width: '100%',
+                                                                                height: 32,
+                                                                                borderRadius: 1.5,
+                                                                                fontSize: 14,
+                                                                                '& .MuiOutlinedInput-root': {
+                                                                                    height: 32,
+                                                                                    '& fieldset': { borderColor: '#ccc' },
+                                                                                    '&:hover fieldset': { borderColor: '#888' },
+                                                                                    '&.Mui-focused fieldset': { borderColor: '#3FA2F6' },
+                                                                                },
+                                                                            }}
                                                                         />
-                                                                        <ErrorMessage name='libelleautre' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+
+                                                                        <ErrorMessage
+                                                                            name='libelleautre'
+                                                                            component="div"
+                                                                            style={{ color: 'red', fontSize: 12, marginTop: 2 }}
+                                                                        />
                                                                     </Stack>
+
                                                                 </Stack>
                                                             )}
 
-                                                            <Stack spacing={-0.5} style={{ marginTop: 25 }}>
-                                                                <label htmlFor="typeTier" style={{ fontSize: 12, color: '#3FA2F6' }}>Type du tier</label>
+                                                            <Stack spacing={1} style={{ marginTop: 25 }}>
+                                                                <InputLabel htmlFor="typeTier" sx={{ fontSize: 12, color: '#9aa0a6', mb: 0.5 }}>
+                                                                    Type du Tier
+                                                                </InputLabel>
                                                                 <Field
                                                                     as={Select}
                                                                     labelId="typeTier-label"
@@ -1121,26 +1256,15 @@ const PopupAddNewAccount = ({
                                                                     onBlur={(e) => { /* avoid Formik executeBlur with undefined event */ }}
                                                                     onChange={handleOnChangeListBoxTypeTier(setFieldValue)}
                                                                     sx={{
-                                                                        borderRadius: 0,
-                                                                        width: 200,
-                                                                        height: 40,
-                                                                        '& .MuiOutlinedInput-notchedOutline': {
-                                                                            borderTop: 'none', // Supprime le cadre
-                                                                            borderLeft: 'none',
-                                                                            borderRight: 'none',
-                                                                            borderWidth: '0.5px'
-                                                                        },
-                                                                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                                            borderTop: 'none', // Supprime le cadre
-                                                                            borderLeft: 'none',
-                                                                            borderRight: 'none',
-                                                                            borderWidth: '0.5px'
-                                                                        },
-                                                                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                                            borderTop: 'none', // Supprime le cadre
-                                                                            borderLeft: 'none',
-                                                                            borderRight: 'none',
-                                                                            borderWidth: '0.5px'
+                                                                        width: "250px",
+                                                                        height: 32,
+                                                                        borderRadius: 1,
+                                                                        fontSize: 14,
+                                                                        '& .MuiOutlinedInput-root': {
+                                                                            height: 32,
+                                                                            '& fieldset': { borderColor: '#ccc' },
+                                                                            '&:hover fieldset': { borderColor: '#888' },
+                                                                            '&.Mui-focused fieldset': { borderColor: '#3FA2F6' },
                                                                         },
                                                                     }}
                                                                 >
@@ -1160,154 +1284,324 @@ const PopupAddNewAccount = ({
                                                                             style={{ backgroundColor: 'transparent', width: '800px' }}
                                                                         >
                                                                             <Stack spacing={1.5}>
-                                                                                <label htmlFor="cin" style={{ fontSize: 12, color: '#3FA2F6' }}>cin</label>
-                                                                                <Field
-                                                                                    name='cin'
-                                                                                    onChange={(e) => {
-                                                                                        let value = e.target.value.replace(/\s+/g, "");
+                                                                                <Stack spacing={1} sx={{ width: 250 }}>
+                                                                                    <InputLabel htmlFor="cin" sx={{ fontSize: 12, color: '#9aa0a6', mb: 0.5 }}>
+                                                                                        cin
+                                                                                    </InputLabel>
+                                                                                    <Field
+                                                                                        name='cin'
+                                                                                        as={TextField}
+                                                                                        onChange={(e) => {
+                                                                                            let value = e.target.value.replace(/\s+/g, "");
 
-                                                                                        value = value.replace(/[^a-zA-Z0-9]/g, "");
+                                                                                            value = value.replace(/[^a-zA-Z0-9]/g, "");
 
-                                                                                        const formatted = value.replace(/(.{3})/g, "$1 ").trim();
+                                                                                            const formatted = value.replace(/(.{3})/g, "$1 ").trim();
 
-                                                                                        e.target.value = formatted;
-                                                                                        handleChange(e);
-                                                                                    }}
-                                                                                    type='text'
-                                                                                    placeholder=""
-                                                                                    style={{ width: 200, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
-                                                                                />
-                                                                                <ErrorMessage name='cin' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                                            e.target.value = formatted;
+                                                                                            handleChange(e);
+                                                                                        }}
+                                                                                        type='text'
+                                                                                        placeholder=""
+                                                                                        size="small"
+                                                                                        sx={{
+                                                                                            width: '100%',
+                                                                                            height: 32,
+                                                                                            borderRadius: 1.5,
+                                                                                            fontSize: 14,
+                                                                                            '& .MuiOutlinedInput-root': {
+                                                                                                height: 32,
+                                                                                                '& fieldset': { borderColor: '#ccc' },
+                                                                                                '&:hover fieldset': { borderColor: '#888' },
+                                                                                                '&.Mui-focused fieldset': { borderColor: '#3FA2F6' },
+                                                                                            },
+                                                                                        }}
+                                                                                    />
+                                                                                    <ErrorMessage name='cin' component="div" style={{ color: 'red', fontSize: 12, marginTop: 2 }} />
+                                                                                </Stack>
+
+                                                                                <Stack spacing={1} sx={{ width: 250 }}>
+                                                                                    <InputLabel htmlFor="dateCin" sx={{ fontSize: 12, color: '#9aa0a6', mb: 0.5 }}>
+                                                                                        date cin
+                                                                                    </InputLabel>
+                                                                                    <Field
+                                                                                        as={TextField}
+                                                                                        name='dateCin'
+                                                                                        onChange={handleChange}
+                                                                                        type='date'
+                                                                                        placeholder=""
+                                                                                        size="small"
+                                                                                        sx={{
+                                                                                            width: '100%',
+                                                                                            height: 32,
+                                                                                            borderRadius: 1.5,
+                                                                                            fontSize: 14,
+                                                                                            '& .MuiOutlinedInput-root': {
+                                                                                                height: 32,
+                                                                                                '& fieldset': { borderColor: '#ccc' },
+                                                                                                '&:hover fieldset': { borderColor: '#888' },
+                                                                                                '&.Mui-focused fieldset': { borderColor: '#3FA2F6' },
+                                                                                            },
+                                                                                        }}
+                                                                                    />
+                                                                                    <ErrorMessage name='dateCin' component="div" style={{ color: 'red', fontSize: 12, marginTop: 2 }} />
+                                                                                </Stack>
                                                                             </Stack>
 
                                                                             <Stack spacing={1.5}>
-                                                                                <label htmlFor="dateCin" style={{ fontSize: 12, color: '#3FA2F6' }}>date cin</label>
-                                                                                <Field
-                                                                                    name='dateCin'
-                                                                                    onChange={handleChange}
-                                                                                    type='date'
-                                                                                    placeholder=""
-                                                                                    style={{ width: 100, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
-                                                                                />
-                                                                                <ErrorMessage name='dateCin' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                                            </Stack>
-                                                                        </Stack>
+                                                                                <Stack spacing={1} sx={{ width: 400 }}>
+                                                                                    <InputLabel htmlFor="autrePieceID" sx={{ fontSize: 12, color: '#9aa0a6', mb: 0.5 }}>
+                                                                                        Autres pièces d'identité si pas de CIN
+                                                                                    </InputLabel>
+                                                                                    <Field
+                                                                                        as={TextField}
+                                                                                        name='autrePieceID'
+                                                                                        onChange={handleChange}
+                                                                                        type='text'
+                                                                                        placeholder=""
+                                                                                        size="small"
+                                                                                        sx={{
+                                                                                            width: '100%',
+                                                                                            height: 32,
+                                                                                            borderRadius: 1.5,
+                                                                                            fontSize: 14,
+                                                                                            '& .MuiOutlinedInput-root': {
+                                                                                                height: 32,
+                                                                                                '& fieldset': { borderColor: '#ccc' },
+                                                                                                '&:hover fieldset': { borderColor: '#888' },
+                                                                                                '&.Mui-focused fieldset': { borderColor: '#3FA2F6' },
+                                                                                            },
+                                                                                        }}
+                                                                                    />
+                                                                                    <ErrorMessage name='autrePieceID' component="div" style={{ color: 'red', fontSize: 12, marginTop: 2 }} />
+                                                                                </Stack>
 
-                                                                        <Stack direction={'row'} alignContent={'start'}
-                                                                            alignItems={'start'} spacing={6.5}
-                                                                            style={{ backgroundColor: 'transparent', width: '800px', marginTop: '10px' }}
-                                                                        >
-                                                                            <Stack spacing={1.5}>
-                                                                                <label htmlFor="autrePieceID" style={{ fontSize: 12, color: '#3FA2F6' }}>Autres pièces d'identité si pas de CIN</label>
-                                                                                <Field
-                                                                                    name='autrePieceID'
-                                                                                    onChange={handleChange}
-                                                                                    type='text'
-                                                                                    placeholder=""
-                                                                                    style={{ width: 400, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
-                                                                                />
-                                                                                <ErrorMessage name='autrePieceID' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                                <Stack spacing={1} sx={{ width: 400 }}>
+                                                                                    <InputLabel htmlFor="refPieceID" sx={{ fontSize: 12, color: '#9aa0a6', mb: 0.5 }}>
+                                                                                        Référence pièce d'identité
+                                                                                    </InputLabel>
+                                                                                    <Field
+                                                                                        as={TextField}
+                                                                                        name='refPieceID'
+                                                                                        onChange={handleChange}
+                                                                                        type='text'
+                                                                                        placeholder=""
+                                                                                        size="small"
+                                                                                        sx={{
+                                                                                            width: '100%',
+                                                                                            height: 32,
+                                                                                            borderRadius: 1.5,
+                                                                                            fontSize: 14,
+                                                                                            '& .MuiOutlinedInput-root': {
+                                                                                                height: 32,
+                                                                                                '& fieldset': { borderColor: '#ccc' },
+                                                                                                '&:hover fieldset': { borderColor: '#888' },
+                                                                                                '&.Mui-focused fieldset': { borderColor: '#3FA2F6' },
+                                                                                            },
+                                                                                        }}
+                                                                                    />
+                                                                                    <ErrorMessage name='refPieceID' component="div" style={{ color: 'red', fontSize: 12, marginTop: 2 }} />
+                                                                                </Stack>
                                                                             </Stack>
 
-                                                                            <Stack spacing={1.5}>
-                                                                                <label htmlFor="refPieceID" style={{ fontSize: 12, color: '#3FA2F6' }}>Référence pièce d'identité</label>
-                                                                                <Field
-                                                                                    name='refPieceID'
-                                                                                    onChange={handleChange}
-                                                                                    type='text'
-                                                                                    placeholder=""
-                                                                                    style={{ width: 200, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
-                                                                                />
-                                                                                <ErrorMessage name='refPieceID' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                            <Stack spacing={1.5} >
+                                                                                <Stack spacing={1} sx={{ width: 200 }}>
+                                                                                    <InputLabel htmlFor="adresseSansNIF" sx={{ fontSize: 12, color: '#9aa0a6', mb: 0.5 }}>
+                                                                                        Adresse
+                                                                                    </InputLabel>
+                                                                                    <Field
+                                                                                        as={TextField}
+                                                                                        name='adresseSansNIF'
+                                                                                        onChange={handleChange}
+                                                                                        type='text'
+                                                                                        placeholder=""
+                                                                                        size="small"
+                                                                                        sx={{
+                                                                                            width: '100%',
+                                                                                            height: 32,
+                                                                                            borderRadius: 1.5,
+                                                                                            fontSize: 14,
+                                                                                            '& .MuiOutlinedInput-root': {
+                                                                                                height: 32,
+                                                                                                '& fieldset': { borderColor: '#ccc' },
+                                                                                                '&:hover fieldset': { borderColor: '#888' },
+                                                                                                '&.Mui-focused fieldset': { borderColor: '#3FA2F6' },
+                                                                                            },
+                                                                                        }}
+                                                                                    />
+                                                                                    <ErrorMessage name='adresseSansNIF' component="div" style={{ color: 'red', fontSize: 12, marginTop: 2 }} />
+                                                                                </Stack>
                                                                             </Stack>
-                                                                        </Stack>
-
-                                                                        <Stack spacing={1.5} style={{ marginTop: 15 }}>
-                                                                            <label htmlFor="adresseSansNIF" style={{ fontSize: 12, color: '#3FA2F6' }}>Adresse</label>
-                                                                            <Field
-                                                                                name='adresseSansNIF'
-                                                                                onChange={handleChange}
-                                                                                type='text'
-                                                                                placeholder=""
-                                                                                style={{ width: 200, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
-                                                                            />
-                                                                            <ErrorMessage name='adresseSansNIF' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
                                                                         </Stack>
                                                                     </Stack>
                                                                     : formulaireTier === 'avec-nif'
                                                                         ? <Stack >
                                                                             <Stack spacing={1.5} style={{ marginTop: 15 }}>
-                                                                                <label htmlFor="nif" style={{ fontSize: 12, color: '#3FA2F6' }}>Nif</label>
-                                                                                <Field
-                                                                                    name='nif'
-                                                                                    onChange={handleChange}
-                                                                                    type='text'
-                                                                                    placeholder=""
-                                                                                    style={{ width: 200, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
-                                                                                />
-                                                                                <ErrorMessage name='nif' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                                            </Stack>
+                                                                                <Stack spacing={1} sx={{ width: 250 }}>
+                                                                                    <InputLabel htmlFor="nif" sx={{ fontSize: 12, color: '#9aa0a6', mb: 0.5 }}>
+                                                                                        Nif
+                                                                                    </InputLabel>
+                                                                                    <Field
+                                                                                        as={TextField}
+                                                                                        name='nif'
+                                                                                        onChange={handleChange}
+                                                                                        type='text'
+                                                                                        placeholder=""
+                                                                                        size="small"
+                                                                                        sx={{
+                                                                                            width: '100%',
+                                                                                            height: 32,
+                                                                                            borderRadius: 1.5,
+                                                                                            fontSize: 14,
+                                                                                            '& .MuiOutlinedInput-root': {
+                                                                                                height: 32,
+                                                                                                '& fieldset': { borderColor: '#ccc' },
+                                                                                                '&:hover fieldset': { borderColor: '#888' },
+                                                                                                '&.Mui-focused fieldset': { borderColor: '#3FA2F6' },
+                                                                                            },
+                                                                                        }}
+                                                                                    />
+                                                                                    <ErrorMessage name='nif' component="div" style={{ color: 'red', fontSize: 12, marginTop: 2 }} />
+                                                                                </Stack>
 
-                                                                            <Stack spacing={1.5} style={{ marginTop: 15 }}>
-                                                                                <label htmlFor="stat" style={{ fontSize: 12, color: '#3FA2F6' }}>N° statistique</label>
-                                                                                <Field
-                                                                                    name='stat'
-                                                                                    onChange={handleChange}
-                                                                                    type='text'
-                                                                                    placeholder=""
-                                                                                    style={{ width: 200, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
-                                                                                />
-                                                                                <ErrorMessage name='stat' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                                            </Stack>
+                                                                                <Stack spacing={1} sx={{ width: 250 }}>
+                                                                                    <InputLabel htmlFor="stat" sx={{ fontSize: 12, color: '#9aa0a6', mb: 0.5 }}>
+                                                                                        N° statistique
+                                                                                    </InputLabel>
+                                                                                    <Field
+                                                                                        as={TextField}
+                                                                                        name='stat'
+                                                                                        onChange={handleChange}
+                                                                                        type='text'
+                                                                                        placeholder=""
+                                                                                        size="small"
+                                                                                        sx={{
+                                                                                            width: '100%',
+                                                                                            height: 32,
+                                                                                            borderRadius: 1.5,
+                                                                                            fontSize: 14,
+                                                                                            '& .MuiOutlinedInput-root': {
+                                                                                                height: 32,
+                                                                                                '& fieldset': { borderColor: '#ccc' },
+                                                                                                '&:hover fieldset': { borderColor: '#888' },
+                                                                                                '&.Mui-focused fieldset': { borderColor: '#3FA2F6' },
+                                                                                            },
+                                                                                        }}
+                                                                                    />
+                                                                                    <ErrorMessage name='stat' component="div" style={{ color: 'red', fontSize: 12, marginTop: 2 }} />
+                                                                                </Stack>
 
-                                                                            <Stack spacing={1.5} style={{ marginTop: 15 }}>
-                                                                                <label htmlFor="adresse" style={{ fontSize: 12, color: '#3FA2F6' }}>Adresse</label>
-                                                                                <Field
-                                                                                    name='adresse'
-                                                                                    onChange={handleChange}
-                                                                                    type='text'
-                                                                                    placeholder=""
-                                                                                    style={{ width: 200, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
-                                                                                />
-                                                                                <ErrorMessage name='adresse' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                                <Stack spacing={1} sx={{ width: 250 }}>
+                                                                                    <InputLabel htmlFor="adresse" sx={{ fontSize: 12, color: '#9aa0a6', mb: 0.5 }}>
+                                                                                        Adresse
+                                                                                    </InputLabel>
+                                                                                    <Field
+                                                                                        as={TextField}
+                                                                                        name='adresse'
+                                                                                        onChange={handleChange}
+                                                                                        type='text'
+                                                                                        placeholder=""
+                                                                                        size="small"
+                                                                                        sx={{
+                                                                                            width: '100%',
+                                                                                            height: 32,
+                                                                                            borderRadius: 1.5,
+                                                                                            fontSize: 14,
+                                                                                            '& .MuiOutlinedInput-root': {
+                                                                                                height: 32,
+                                                                                                '& fieldset': { borderColor: '#ccc' },
+                                                                                                '&:hover fieldset': { borderColor: '#888' },
+                                                                                                '&.Mui-focused fieldset': { borderColor: '#3FA2F6' },
+                                                                                            },
+                                                                                        }}
+                                                                                    />
+                                                                                    <ErrorMessage name='adresse' component="div" style={{ color: 'red', fontSize: 12, marginTop: 2 }} />
+                                                                                </Stack>
                                                                             </Stack>
                                                                         </Stack>
                                                                         : formulaireTier === 'etranger'
                                                                             ? <Stack margin={"0px"} alignContent={"start"} alignItems={"start"}>
                                                                                 <Stack spacing={1.5} style={{ marginTop: 15 }}>
-                                                                                    <label htmlFor="nifRepresentant" style={{ fontSize: 12, color: '#3FA2F6' }}>Nif du représentant</label>
-                                                                                    <Field
-                                                                                        name='nifRepresentant'
-                                                                                        onChange={handleChange}
-                                                                                        type='text'
-                                                                                        placeholder=""
-                                                                                        style={{ width: 300, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
-                                                                                    />
-                                                                                    <ErrorMessage name='nifRepresentant' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                                                </Stack>
+                                                                                    <Stack spacing={1} sx={{ width: 250 }}>
+                                                                                        <InputLabel htmlFor="nifRepresentant" sx={{ fontSize: 12, color: '#9aa0a6', mb: 0.5 }}>
+                                                                                            Nif du représentant
+                                                                                        </InputLabel>
+                                                                                        <Field
+                                                                                            as={TextField}
+                                                                                            name='nifRepresentant'
+                                                                                            onChange={handleChange}
+                                                                                            type='text'
+                                                                                            placeholder=""
+                                                                                            size="small"
+                                                                                            sx={{
+                                                                                                width: '100%',
+                                                                                                height: 32,
+                                                                                                borderRadius: 1.5,
+                                                                                                fontSize: 14,
+                                                                                                '& .MuiOutlinedInput-root': {
+                                                                                                    height: 32,
+                                                                                                    '& fieldset': { borderColor: '#ccc' },
+                                                                                                    '&:hover fieldset': { borderColor: '#888' },
+                                                                                                    '&.Mui-focused fieldset': { borderColor: '#3FA2F6' },
+                                                                                                },
+                                                                                            }}
+                                                                                        />
+                                                                                        <ErrorMessage name='nifRepresentant' component="div" style={{ color: 'red', fontSize: 12, marginTop: 2 }} />
+                                                                                    </Stack>
 
-                                                                                <Stack spacing={1.5} style={{ marginTop: 15 }}>
-                                                                                    <label htmlFor="adresseEtranger" style={{ fontSize: 12, color: '#3FA2F6' }}>Adresse</label>
-                                                                                    <Field
-                                                                                        name='adresseEtranger'
-                                                                                        onChange={handleChange}
-                                                                                        type='text'
-                                                                                        placeholder=""
-                                                                                        style={{ width: 400, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
-                                                                                    />
-                                                                                    <ErrorMessage name='adresseEtranger' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                                                </Stack>
+                                                                                    <Stack spacing={1} sx={{ width: 250 }}>
+                                                                                        <InputLabel htmlFor="adresseEtranger" sx={{ fontSize: 12, color: '#9aa0a6', mb: 0.5 }}>
+                                                                                            Adresse
+                                                                                        </InputLabel>
+                                                                                        <Field
+                                                                                            as={TextField}
+                                                                                            name='adresseEtranger'
+                                                                                            onChange={handleChange}
+                                                                                            type='text'
+                                                                                            placeholder=""
+                                                                                            size="small"
+                                                                                            sx={{
+                                                                                                width: '100%',
+                                                                                                height: 32,
+                                                                                                borderRadius: 1.5,
+                                                                                                fontSize: 14,
+                                                                                                '& .MuiOutlinedInput-root': {
+                                                                                                    height: 32,
+                                                                                                    '& fieldset': { borderColor: '#ccc' },
+                                                                                                    '&:hover fieldset': { borderColor: '#888' },
+                                                                                                    '&.Mui-focused fieldset': { borderColor: '#3FA2F6' },
+                                                                                                },
+                                                                                            }}
+                                                                                        />
+                                                                                        <ErrorMessage name='adresseEtranger' component="div" style={{ color: 'red', fontSize: 12, marginTop: 2 }} />
+                                                                                    </Stack>
 
-                                                                                <Stack spacing={1.5} style={{ marginTop: 15 }}>
-                                                                                    <label htmlFor="pays" style={{ fontSize: 12, color: '#3FA2F6' }}>Pays</label>
-                                                                                    <Field
-                                                                                        name='pays'
-                                                                                        onChange={handleChange}
-                                                                                        type='text'
-                                                                                        placeholder=""
-                                                                                        style={{ width: 250, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
-                                                                                    />
-                                                                                    <ErrorMessage name='pays' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                                    <Stack spacing={1} sx={{ width: 250 }}>
+                                                                                        <InputLabel htmlFor="pays" sx={{ fontSize: 12, color: '#9aa0a6', mb: 0.5 }}>
+                                                                                            Pays
+                                                                                        </InputLabel>
+                                                                                        <Field
+                                                                                            as={TextField}
+                                                                                            name='pays'
+                                                                                            onChange={handleChange}
+                                                                                            type='text'
+                                                                                            placeholder=""
+                                                                                            size="small"
+                                                                                            sx={{
+                                                                                                width: '100%',
+                                                                                                height: 32,
+                                                                                                borderRadius: 1.5,
+                                                                                                fontSize: 14,
+                                                                                                '& .MuiOutlinedInput-root': {
+                                                                                                    height: 32,
+                                                                                                    '& fieldset': { borderColor: '#ccc' },
+                                                                                                    '&:hover fieldset': { borderColor: '#888' },
+                                                                                                    '&.Mui-focused fieldset': { borderColor: '#3FA2F6' },
+                                                                                                },
+                                                                                            }}
+                                                                                        />
+                                                                                        <ErrorMessage name='pays' component="div" style={{ color: 'red', fontSize: 12, marginTop: 2 }} />
+                                                                                    </Stack>
                                                                                 </Stack>
                                                                             </Stack>
                                                                             : null
@@ -1315,215 +1609,123 @@ const PopupAddNewAccount = ({
                                                             </Stack>
 
                                                             <Stack spacing={1.5} style={{ marginTop: 15 }}>
-                                                                <label htmlFor="motcle" style={{ fontSize: 12, color: '#3FA2F6' }}>Mot clé</label>
-                                                                <Field
-                                                                    name='motcle'
-                                                                    onChange={handleChange}
-                                                                    type='text'
-                                                                    placeholder=""
-                                                                    style={{ width: 200, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
-                                                                />
-                                                                <ErrorMessage name='motcle' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                            </Stack>
-
-                                                            <Stack direction={'row'} width={'100%'} spacing={2} style={{ marginTop: 25 }} >
-                                                                <Stack spacing={-0.5} flex={0.75} minWidth={0}>
-                                                                    <Autocomplete
-                                                                        disabled={disableLocalites}
-                                                                        options={provinces}
-                                                                        value={selectedProvince || null}
-                                                                        onChange={(event, newValue) => {
-                                                                            setFieldValue("province", newValue || "");
-                                                                            setSelectedProvince(newValue || "");
+                                                                <Stack spacing={1} sx={{ width: 250 }}>
+                                                                    <InputLabel htmlFor="motcle" sx={{ fontSize: 12, color: '#9aa0a6', mb: 0.5 }}>
+                                                                        Mot clé
+                                                                    </InputLabel>
+                                                                    <Field
+                                                                        as={TextField}
+                                                                        name='motcle'
+                                                                        onChange={handleChange}
+                                                                        type='text'
+                                                                        placeholder=""
+                                                                        size="small"
+                                                                        sx={{
+                                                                            width: '100%',
+                                                                            height: 32,
+                                                                            borderRadius: 1.5,
+                                                                            fontSize: 14,
+                                                                            '& .MuiOutlinedInput-root': {
+                                                                                height: 32,
+                                                                                '& fieldset': { borderColor: '#ccc' },
+                                                                                '&:hover fieldset': { borderColor: '#888' },
+                                                                                '&.Mui-focused fieldset': { borderColor: '#3FA2F6' },
+                                                                            },
                                                                         }}
-                                                                        onBlur={(e) => { if (!disableLocalites) setFieldTouched("province", true, false); }}
-                                                                        noOptionsText="Aucune province trouvée"
-                                                                        renderInput={(params) => (
-                                                                            <TextField
-                                                                                {...params}
-                                                                                label="Province"
-                                                                                variant="outlined"
-                                                                                size="small"
-                                                                                sx={{
-                                                                                    borderRadius: 0,
-                                                                                    '& .MuiOutlinedInput-notchedOutline': {
-                                                                                        borderTop: 'none',
-                                                                                        borderLeft: 'none',
-                                                                                        borderRight: 'none',
-                                                                                        borderWidth: '0.5px'
-                                                                                    },
-                                                                                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                                                        borderTop: 'none',
-                                                                                        borderLeft: 'none',
-                                                                                        borderRight: 'none',
-                                                                                        borderWidth: '0.5px'
-                                                                                    },
-                                                                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                                                        borderTop: 'none',
-                                                                                        borderLeft: 'none',
-                                                                                        borderRight: 'none',
-                                                                                        borderWidth: '0.5px'
-                                                                                    },
-                                                                                }}
-                                                                            />
-                                                                        )}
                                                                     />
-                                                                    <ErrorMessage name='province' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                                </Stack>
-                                                                <Stack spacing={-0.5} flex={0.9} minWidth={0}>
-                                                                    <Autocomplete
-                                                                        disabled={disableLocalites}
-                                                                        options={regions}
-                                                                        value={selectedRegion || values.region}
-                                                                        onChange={(event, newValue) => {
-                                                                            setFieldValue('region', newValue);
-                                                                            setSelectedRegion(newValue);
-                                                                        }}
-                                                                        onBlur={(e) => { if (!disableLocalites) setFieldTouched("region", true, false); }}
-                                                                        noOptionsText="Aucune région trouvée"
-                                                                        renderInput={(params) => (
-                                                                            <TextField
-                                                                                {...params}
-                                                                                label="Région"
-                                                                                variant="outlined"
-                                                                                size="small"
-                                                                                sx={{
-                                                                                    borderRadius: 0,
-                                                                                    '& .MuiOutlinedInput-notchedOutline': {
-                                                                                        borderTop: 'none',
-                                                                                        borderLeft: 'none',
-                                                                                        borderRight: 'none',
-                                                                                        borderWidth: '0.5px'
-                                                                                    },
-                                                                                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                                                        borderTop: 'none',
-                                                                                        borderLeft: 'none',
-                                                                                        borderRight: 'none',
-                                                                                        borderWidth: '0.5px'
-                                                                                    },
-                                                                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                                                        borderTop: 'none',
-                                                                                        borderLeft: 'none',
-                                                                                        borderRight: 'none',
-                                                                                        borderWidth: '0.5px'
-                                                                                    },
-                                                                                }}
-                                                                            />
-                                                                        )}
-                                                                    />
-                                                                    <ErrorMessage name='region' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                                </Stack>
-                                                                <Stack spacing={-0.5} flex={1} minWidth={0}>
-                                                                    <Autocomplete
-                                                                        disabled={disableLocalites}
-                                                                        options={districts}
-                                                                        value={selectedDistrict || values.district}
-                                                                        onChange={(event, newValue) => {
-                                                                            setFieldValue('district', newValue);
-                                                                            setSelectedDistrict(newValue);
-                                                                        }}
-                                                                        onBlur={(e) => { if (!disableLocalites) setFieldTouched("district", true, false); }}
-                                                                        noOptionsText="Aucune district trouvée"
-                                                                        renderInput={(params) => (
-                                                                            <TextField
-                                                                                {...params}
-                                                                                label="District"
-                                                                                variant="outlined"
-                                                                                size="small"
-                                                                                sx={{
-                                                                                    borderRadius: 0,
-                                                                                    '& .MuiOutlinedInput-notchedOutline': {
-                                                                                        borderTop: 'none',
-                                                                                        borderLeft: 'none',
-                                                                                        borderRight: 'none',
-                                                                                        borderWidth: '0.5px'
-                                                                                    },
-                                                                                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                                                        borderTop: 'none',
-                                                                                        borderLeft: 'none',
-                                                                                        borderRight: 'none',
-                                                                                        borderWidth: '0.5px'
-                                                                                    },
-                                                                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                                                        borderTop: 'none',
-                                                                                        borderLeft: 'none',
-                                                                                        borderRight: 'none',
-                                                                                        borderWidth: '0.5px'
-                                                                                    },
-                                                                                }}
-                                                                            />
-                                                                        )}
-                                                                    />
-                                                                    <ErrorMessage name='district' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                                </Stack>
-                                                                <Stack spacing={-0.5} flex={1} minWidth={0}>
-                                                                    <Autocomplete
-                                                                        disabled={disableLocalites}
-                                                                        options={communes}
-                                                                        value={selectedCommune || values.commune}
-                                                                        onChange={(event, newValue) => {
-                                                                            setFieldValue('commune', newValue);
-                                                                            setSelectedCommune(newValue);
-                                                                        }}
-                                                                        onBlur={(e) => { if (!disableLocalites) setFieldTouched("commune", true, false); }}
-                                                                        noOptionsText="Aucune commmune trouvée"
-                                                                        renderInput={(params) => (
-                                                                            <TextField
-                                                                                {...params}
-                                                                                label="Commune"
-                                                                                variant="outlined"
-                                                                                size="small"
-                                                                                sx={{
-                                                                                    borderRadius: 0,
-                                                                                    '& .MuiOutlinedInput-notchedOutline': {
-                                                                                        borderTop: 'none',
-                                                                                        borderLeft: 'none',
-                                                                                        borderRight: 'none',
-                                                                                        borderWidth: '0.5px'
-                                                                                    },
-                                                                                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                                                        borderTop: 'none',
-                                                                                        borderLeft: 'none',
-                                                                                        borderRight: 'none',
-                                                                                        borderWidth: '0.5px'
-                                                                                    },
-                                                                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                                                        borderTop: 'none',
-                                                                                        borderLeft: 'none',
-                                                                                        borderRight: 'none',
-                                                                                        borderWidth: '0.5px'
-                                                                                    },
-                                                                                }}
-                                                                            />
-                                                                        )}
-                                                                    />
-                                                                    <ErrorMessage name='commune' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                    <ErrorMessage name='motcle' component="div" style={{ color: 'red', fontSize: 12, marginTop: 2 }} />
                                                                 </Stack>
                                                             </Stack>
 
-                                                            <Stack spacing={1.5} style={{ marginTop: 15 }}>
-                                                                <label htmlFor="motcle" style={{ fontSize: 12, color: '#3FA2F6' }}>Type de comptabilité</label>
+                                                            <Stack
+                                                                spacing={2}
+                                                                mt={3}
+                                                                width="100%"
+                                                                maxWidth={520}   // 👈 augmente ici (1100 / 1200 / 1400)
+                                                                mx="auto"
+                                                            >
+                                                                {/* Ligne 1 : Province / Région */}
+                                                                <Stack direction="row" spacing={2}>
+                                                                    <Stack flex={1}>
+                                                                        <InputLabel sx={{ fontSize: 11, color: '#667085', mb: 0.5 }}>
+                                                                            Province
+                                                                        </InputLabel>
+                                                                        <Autocomplete
+                                                                            disabled={disableLocalites}
+                                                                            options={provinces}
+                                                                            value={selectedProvince || null}
+                                                                            onChange={(e, v) => {
+                                                                                setFieldValue('province', v || '');
+                                                                                setSelectedProvince(v || '');
+                                                                            }}
+                                                                            renderInput={(params) => (
+                                                                                <TextField {...params} size="small" sx={inputSx} />
+                                                                            )}
+                                                                        />
+                                                                        <ErrorMessage name="province" component="div" style={{ fontSize: 11, color: '#d32f2f' }} />
+                                                                    </Stack>
 
-                                                                <Stack direction="row" spacing={4} alignItems="center">
-                                                                    <RadioGroup
-                                                                        row
-                                                                        value={values.typecomptabilite}
-                                                                        onChange={(e) => setFieldValue("typecomptabilite", e.target.value)}
-                                                                        defaultValue={'Français'}
-                                                                    >
-                                                                        <FormControlLabel
-                                                                            value="Français"
-                                                                            control={<Radio />}
-                                                                            label="Français"
+                                                                    <Stack flex={1}>
+                                                                        <InputLabel sx={{ fontSize: 11, color: '#667085', mb: 0.5 }}>
+                                                                            Région
+                                                                        </InputLabel>
+                                                                        <Autocomplete
+                                                                            disabled={disableLocalites}
+                                                                            options={regions}
+                                                                            value={selectedRegion || values.region}
+                                                                            onChange={(e, v) => {
+                                                                                setFieldValue('region', v);
+                                                                                setSelectedRegion(v);
+                                                                            }}
+                                                                            renderInput={(params) => (
+                                                                                <TextField {...params} size="small" sx={inputSx} />
+                                                                            )}
                                                                         />
-                                                                        <FormControlLabel
-                                                                            value="Autres"
-                                                                            control={<Radio />}
-                                                                            label="Autres"
-                                                                        />
-                                                                    </RadioGroup>
-                                                                    <ErrorMessage name='typecomptabilite' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
+                                                                        <ErrorMessage name="region" component="div" style={{ fontSize: 11, color: '#d32f2f' }} />
+                                                                    </Stack>
                                                                 </Stack>
+
+                                                                {/* Ligne 2 : District / Commune */}
+                                                                <Stack direction="row" spacing={2}>
+                                                                    <Stack flex={1}>
+                                                                        <InputLabel sx={{ fontSize: 11, color: '#667085', mb: 0.5 }}>
+                                                                            District
+                                                                        </InputLabel>
+                                                                        <Autocomplete
+                                                                            disabled={disableLocalites}
+                                                                            options={districts}
+                                                                            value={selectedDistrict || values.district}
+                                                                            onChange={(e, v) => {
+                                                                                setFieldValue('district', v);
+                                                                                setSelectedDistrict(v);
+                                                                            }}
+                                                                            renderInput={(params) => (
+                                                                                <TextField {...params} size="small" sx={inputSx} />
+                                                                            )}
+                                                                        />
+                                                                        <ErrorMessage name="district" component="div" style={{ fontSize: 11, color: '#d32f2f' }} />
+                                                                    </Stack>
+
+                                                                    <Stack flex={1}>
+                                                                        <InputLabel sx={{ fontSize: 11, color: '#667085', mb: 0.5 }}>
+                                                                            Commune
+                                                                        </InputLabel>
+                                                                        <Autocomplete
+                                                                            disabled={disableLocalites}
+                                                                            options={communes}
+                                                                            value={selectedCommune || values.commune}
+                                                                            onChange={(e, v) => {
+                                                                                setFieldValue('commune', v);
+                                                                                setSelectedCommune(v);
+                                                                            }}
+                                                                            renderInput={(params) => (
+                                                                                <TextField {...params} size="small" sx={inputSx} />
+                                                                            )}
+                                                                        />
+                                                                        <ErrorMessage name="commune" component="div" style={{ fontSize: 11, color: '#d32f2f' }} />
+                                                                    </Stack>
+                                                                </Stack>
+
                                                             </Stack>
 
                                                         </Stack>
@@ -1536,34 +1738,52 @@ const PopupAddNewAccount = ({
                                                                 direction={"row"} justifyContent={'end'}>
 
                                                                 <Tooltip title="Ajouter un nouveau compte">
-                                                                    <IconButton
+                                                                    <Button
                                                                         variant="contained"
-                                                                        style={{
-                                                                            width: "35px", height: '35px',
-                                                                            borderRadius: "5px", borderColor: "transparent",
-                                                                            backgroundColor: initial.theme,
-                                                                            textTransform: 'none', outline: 'none'
+                                                                        sx={{
+                                                                            width: 100,
+                                                                            height: 32,
+                                                                            borderRadius: 1,
+                                                                            backgroundColor: '#4CAF50',
+                                                                            color: 'white',
+                                                                            textTransform: 'none',
+                                                                            fontSize: 14,
+                                                                            alignSelf: 'flex-start',
+                                                                            // position: 'relative',
+                                                                            // top: 25,
+                                                                            '&:hover': {
+                                                                                backgroundColor: '#45a049',
+                                                                            },
                                                                         }}
                                                                         onClick={handleOpenDialogAddNewCptAss}
                                                                     >
-                                                                        <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                                    </IconButton>
+                                                                        Ajouter
+                                                                    </Button>
                                                                 </Tooltip>
 
                                                                 <Tooltip title="Supprimer le compte sélectionné">
                                                                     <span>
-                                                                        <IconButton
+                                                                        <Button
                                                                             onClick={handleOpenDialogConfirmDeleteCptChgFromDialogAddNewCpte}
                                                                             variant="contained"
-                                                                            style={{
-                                                                                width: "35px", height: '35px',
-                                                                                borderRadius: "5px", borderColor: "transparent",
-                                                                                backgroundColor: initial.button_delete_color,
-                                                                                textTransform: 'none', outline: 'none'
+                                                                            sx={{
+                                                                                width: 100,
+                                                                                height: 32,
+                                                                                borderRadius: 1,
+                                                                                backgroundColor: initial.annuler_bouton_color,
+                                                                                color: 'white',
+                                                                                textTransform: 'none',
+                                                                                fontSize: 14,
+                                                                                alignSelf: 'flex-start',
+                                                                                // position: 'relative',
+                                                                                // top: 25,
+                                                                                '&:hover': {
+                                                                                    backgroundColor: initial.annuler_bouton_color,
+                                                                                },
                                                                             }}
                                                                         >
-                                                                            <IoMdTrash style={{ width: '40px', height: '40px', color: 'white' }} />
-                                                                        </IconButton>
+                                                                            Supprimer
+                                                                        </Button>
                                                                     </span>
                                                                 </Tooltip>
                                                             </Stack>
@@ -1577,7 +1797,33 @@ const PopupAddNewAccount = ({
                                                                     disableRowSelectionOnClick
                                                                     disableSelectionOnClick={true}
                                                                     slots={{ toolbar: QuickFilter }}
-                                                                    sx={DataGridStyle.sx}
+                                                                    sx={{
+                                                                        ...DataGridStyle.sx,
+                                                                        '& .MuiDataGrid-columnHeaders': {
+                                                                            backgroundColor: initial.tableau_theme,
+                                                                            color: initial.text_theme,
+                                                                        },
+                                                                        '& .MuiDataGrid-columnHeaderTitle': {
+                                                                            color: initial.text_theme,
+                                                                            fontWeight: 600,
+                                                                        },
+                                                                        '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
+                                                                            color: initial.text_theme,
+                                                                        },
+                                                                        '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+                                                                            outline: 'none',
+                                                                            border: 'none',
+                                                                        },
+                                                                        '& .highlight-separator': {
+                                                                            borderBottom: '1px solid red'
+                                                                        },
+                                                                        '& .MuiDataGrid-row.highlight-separator': {
+                                                                            borderBottom: '1px solid red',
+                                                                        },
+                                                                        '& .MuiDataGrid-virtualScroller': {
+                                                                            maxHeight: '700px',
+                                                                        },
+                                                                    }}
                                                                     rowHeight={DataGridStyle.rowHeight}
                                                                     columnHeaderHeight={DataGridStyle.columnHeaderHeight}
                                                                     onRowSelectionModelChange={ids => {
@@ -1612,35 +1858,53 @@ const PopupAddNewAccount = ({
                                                             <Stack width={"100%"} height={"40px"} spacing={1} alignItems={'end'} alignContent={'end'}
                                                                 direction={"row"} justifyContent={'end'}>
                                                                 <Tooltip title="Ajouter un nouveau compte">
-                                                                    <IconButton
+                                                                    <Button
                                                                         onClick={handleOpenDialogAddNewCptTvaToCpt}
                                                                         variant="contained"
-                                                                        style={{
-                                                                            width: "35px", height: '35px',
-                                                                            borderRadius: "5px", borderColor: "transparent",
-                                                                            backgroundColor: initial.theme,
-                                                                            textTransform: 'none', outline: 'none'
+                                                                        sx={{
+                                                                            width: 100,
+                                                                            height: 32,
+                                                                            borderRadius: 1,
+                                                                            backgroundColor: '#4CAF50',
+                                                                            color: 'white',
+                                                                            textTransform: 'none',
+                                                                            fontSize: 14,
+                                                                            alignSelf: 'flex-start',
+                                                                            // position: 'relative',
+                                                                            // top: 25,
+                                                                            '&:hover': {
+                                                                                backgroundColor: '#45a049',
+                                                                            },
                                                                         }}
                                                                     >
-                                                                        <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                                    </IconButton>
+                                                                        Ajouter
+                                                                    </Button>
                                                                 </Tooltip>
 
                                                                 <Tooltip title="Supprimer le compte sélectionné">
-                                                                    <span>
-                                                                        <IconButton
+                                                                    
+                                                                        <Button
                                                                             onClick={handleOpenDialogConfirmDeleteCptTvaFromDialogAddNewCpte}
                                                                             variant="contained"
-                                                                            style={{
-                                                                                width: "35px", height: '35px',
-                                                                                borderRadius: "5px", borderColor: "transparent",
-                                                                                backgroundColor: initial.button_delete_color,
-                                                                                textTransform: 'none', outline: 'none'
+                                                                            sx={{
+                                                                                width: 100,
+                                                                                height: 32,
+                                                                                borderRadius: 1,
+                                                                                backgroundColor: initial.annuler_bouton_color,
+                                                                                color: 'white',
+                                                                                textTransform: 'none',
+                                                                                fontSize: 14,
+                                                                                alignSelf: 'flex-start',
+                                                                              //  position: 'relative',
+                                                                             //   top: 25,
+                                                                                '&:hover': {
+                                                                                    backgroundColor: initial.annuler_bouton_color,
+                                                                                },
                                                                             }}
                                                                         >
-                                                                            <IoMdTrash style={{ width: '40px', height: '40px', color: 'white' }} />
-                                                                        </IconButton>
-                                                                    </span>
+                                                                            Supprimer
+                                                                        </Button>
+                                                                    
                                                                 </Tooltip>
                                                             </Stack>
 
@@ -1653,7 +1917,33 @@ const PopupAddNewAccount = ({
                                                                     disableRowSelectionOnClick
                                                                     disableSelectionOnClick={true}
                                                                     slots={{ toolbar: QuickFilter }}
-                                                                    sx={DataGridStyle.sx}
+                                                                    sx={{
+                                                                        ...DataGridStyle.sx,
+                                                                        '& .MuiDataGrid-columnHeaders': {
+                                                                            backgroundColor: initial.tableau_theme,
+                                                                            color: initial.text_theme,
+                                                                        },
+                                                                        '& .MuiDataGrid-columnHeaderTitle': {
+                                                                            color: initial.text_theme,
+                                                                            fontWeight: 600,
+                                                                        },
+                                                                        '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
+                                                                            color: initial.text_theme,
+                                                                        },
+                                                                        '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+                                                                            outline: 'none',
+                                                                            border: 'none',
+                                                                        },
+                                                                        '& .highlight-separator': {
+                                                                            borderBottom: '1px solid red'
+                                                                        },
+                                                                        '& .MuiDataGrid-row.highlight-separator': {
+                                                                            borderBottom: '1px solid red',
+                                                                        },
+                                                                        '& .MuiDataGrid-virtualScroller': {
+                                                                            maxHeight: '700px',
+                                                                        },
+                                                                    }}
                                                                     rowHeight={DataGridStyle.rowHeight}
                                                                     columnHeaderHeight={DataGridStyle.columnHeaderHeight}
                                                                     onRowSelectionModelChange={ids => {
@@ -1689,16 +1979,26 @@ const PopupAddNewAccount = ({
 
                                     </DialogContent>
                                     <DialogActions>
-                                        <Button autoFocus
-                                            variant='outlined'
-                                            style={{
-                                                backgroundColor: 'transparent',
-                                                color: initial.theme,
-                                                width: "100px",
+                                        <Button
+                                            variant="outlined"
+                                            sx={{
+                                                width: 100,
+                                                height: 32,
+                                                borderRadius: 1,
+                                                border: '1px solid transparent',
+                                                backgroundColor: initial.annuler_bouton_color,
+                                                color: 'white',
                                                 textTransform: 'none',
-                                                // outline: 'none'
+                                                fontSize: 14,
+                                                '&:hover': {
+                                                    backgroundColor: initial.annuler_bouton_color,
+                                                    border: '1px solid transparent',
+                                                },
+                                                '&:focus': {
+                                                    outline: 'none',
+                                                    border: '1px solid transparent',
+                                                },
                                             }}
-                                            type='submit'
                                             onClick={() => {
                                                 if (stateAction === "ajout") {
                                                     resetForm();
@@ -1708,14 +2008,33 @@ const PopupAddNewAccount = ({
                                         >
                                             Annuler
                                         </Button>
-                                        <Button autoFocus
-                                            style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
-                                            type='submit'
+
+                                        <Button
+                                            sx={{
+                                                width: 100,
+                                                height: 32,
+                                                borderRadius: 1,
+                                                border: '1px solid transparent',
+                                                backgroundColor: initial.auth_gradient_end,
+                                                color: 'white',
+                                                textTransform: 'none',
+                                                fontSize: 14,
+                                                '&:hover': {
+                                                    backgroundColor: initial.auth_gradient_end,
+                                                    border: '1px solid transparent',
+                                                },
+                                                '&:focus': {
+                                                    outline: 'none',
+                                                    border: '1px solid transparent',
+                                                },
+                                            }}
+                                            type="submit"
                                             onClick={handleSubmit}
                                         >
                                             Enregistrer
                                         </Button>
                                     </DialogActions>
+
                                 </BootstrapDialog>
                             </Form>
                         </>

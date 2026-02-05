@@ -1037,7 +1037,7 @@ const PopupAddIrsa = ({ confirmationState, mois, annee, setIsRefresh, row = null
 
             <Button autoFocus
                 type="submit"
-                style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
+                style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
                 onClick={() => {
                     const allTouched = Object.keys(formDataFormik.values).reduce((acc, key) => {
                       acc[key] = true;

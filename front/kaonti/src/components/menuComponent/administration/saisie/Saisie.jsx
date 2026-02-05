@@ -1,10 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Typography, Stack, Box, Tab, Button } from '@mui/material';
+import { Typography, Stack, Box, Tab, Button,Tooltip, IconButton, MenuItem } from '@mui/material';
 
 import { TabContext, TabList, TabPanel } from '@mui/lab';
-import InputLabel from '@mui/material/InputLabel';
-import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 
@@ -43,6 +41,7 @@ export default function SaisieComponent() {
     const { canAdd, canModify, canDelete, canView } = usePermission();
 
     const [typeActionSaisie, setTypeActionSaisie] = useState('');
+    const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
     const axiosPrivate = useAxiosPrivate();
     const canAddOrModify = typeActionSaisie === 'ajout' ? canAdd : canModify;
 
@@ -721,465 +720,505 @@ export default function SaisieComponent() {
                         </TabList>
                     </Box>
                     <TabPanel value="1" style={{ height: '100%' }}>
-                        <Stack width={"100%"} height={"100%"} spacing={6} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
-                            <Typography variant='h6' sx={{ color: "black" }} align='left'>Administration - Saisie</Typography>
-
-                            <Stack width={"100%"} spacing={4} alignItems={"center"} justifyContent="space-between" direction={"row"} style={{ marginLeft: "0px", marginTop: "20px" }}>
-                                <Stack
-                                    direction={"row"}
-                                >
-                                    <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                                        <InputLabel id="demo-simple-select-standard-label">Exercice:</InputLabel>
-                                        <Select
-                                            labelId="demo-simple-select-standard-label"
-                                            id="demo-simple-select-standard"
-                                            value={selectedExerciceId}
-                                            label={"valSelect"}
-                                            onChange={(e) => handleChangeExercice(e.target.value)}
-                                            sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                            MenuProps={{
-                                                disableScrollLock: true
-                                            }}
-                                        >
-                                            {listeExercice.map((option) => (
-                                                <MenuItem
-                                                    key={option.id}
-                                                    value={option.id}
-                                                >{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                                            ))
-                                            }
-                                        </Select>
-                                    </FormControl>
-
-                                    <FormControl variant="standard" sx={{ m: 1, minWidth: 150 }}>
-                                        <InputLabel id="demo-simple-select-standard-label">Période</InputLabel>
-                                        <Select
-                                            disabled
-                                            labelId="demo-simple-select-standard-label"
-                                            id="demo-simple-select-standard"
-                                            value={selectedPeriodeChoiceId}
-                                            label={"valSelect"}
-                                            onChange={(e) => handleChangePeriode(e.target.value)}
-                                            sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                            MenuProps={{
-                                                disableScrollLock: true
-                                            }}
-                                        >
-                                            <MenuItem value={0}>Toutes</MenuItem>
-                                            <MenuItem value={1}>Situations</MenuItem>
-                                        </Select>
-                                    </FormControl>
-
-                                    <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                                        <InputLabel id="demo-simple-select-standard-label">Du</InputLabel>
-                                        <Select
-                                            labelId="demo-simple-select-standard-label"
-                                            id="demo-simple-select-standard"
-                                            value={selectedPeriodeId}
-                                            label={"valSelect"}
-                                            onChange={(e) => handleChangeDateIntervalle(e.target.value)}
-                                            sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                            MenuProps={{
-                                                disableScrollLock: true
-                                            }}
-                                        >
-                                            {listeSituation?.map((option) => (
-                                                <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                                            ))
-                                            }
-                                        </Select>
-                                    </FormControl>
-                                </Stack>
-
-                                <Stack
-                                    direction="row"
-                                    justifyContent="flex-end"
-                                    width="100%"
-                                    spacing={0.5}
-                                    style={{
-                                        marginLeft: "0px",
-                                        marginTop: "5px",
-                                        borderRadius: "5px"
-                                    }}>
-                                    <Button
-                                        onClick={() => handleOpenSaisiePopup('ajout')}
-                                        disabled={!canAdd || !listeExercice || listeExercice.length === 0}
-                                        variant="contained"
-                                        style={{
-                                            textTransform: 'none',
-                                            outline: 'none',
-                                            backgroundColor: initial.theme,
-                                            color: "white",
-                                            height: "39px",
-                                            marginTop: '10px'
-                                        }}
-                                        startIcon={<IoMdAdd size={20} />}
-                                    >
-                                        Nouvelle saisie
-                                    </Button>
-                                    <Button
-                                        onClick={() => handleOpenSaisiePopup('modification')}
-                                        disabled={
-                                            !canModify ||
-                                            selectedRows.length === 0 ||
-                                            (selectedRows.filter(val => val.id_dossier === fileId)).length === 0 ||
-                                            isRanTypeSelected
-                                        }
-                                        variant="contained"
-                                        style={{
-                                            textTransform: 'none',
-                                            outline: 'none',
-                                            backgroundColor: '#4CC0E4',
-                                            color: "white",
-                                            height: "39px",
-                                            marginTop: '10px'
-                                        }}
-                                        startIcon={<AiFillEdit size={20} />}
-                                    >
-                                        Modifier
-                                    </Button>
-                                    <Button
-                                        onClick={handleOpenDialogConfirmDeleteSaisie}
-                                        disabled={
-                                            !canDelete ||
-                                            selectedRows.length === 0 ||
-                                            (selectedRows.filter(val => val.id_dossier === fileId)).length === 0 ||
-                                            isRanTypeSelected
-                                        }
-                                        variant="contained"
-                                        style={{
-                                            textTransform: 'none',
-                                            outline: 'none',
-                                            backgroundColor: initial.button_delete_color,
-                                            color: "white",
-                                            height: "39px",
-                                            marginTop: '10px'
-                                        }}
-                                        startIcon={<MdDelete size={20} />}
-                                    >
-                                        Supprimer
-                                    </Button>
-                                </Stack>
-                            </Stack>
+                        <Stack width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
+                            <Typography variant='h7' sx={{ color: "black" }} align='left'>Administration - Saisie</Typography>
 
                             <Stack
                                 width={"100%"}
-                                paddingLeft={"5px"}
-                                alignItems={"center"}
-                                alignContent={"center"}
-                                direction={"row"}
-                                justifyContent={"space-between"}
-                                style={{
-                                    marginLeft: "0px",
-                                    marginTop: "20px",
-                                    backgroundColor: '#F4F9F9',
-                                    borderRadius: "5px"
+                                spacing={1}
+                                alignItems={"stretch"}
+                                justifyContent={"flex-start"}
+                                sx={{
+                                    minHeight: 56,
+                                    padding: 2,
+                                    borderRadius: 2,
+                                    boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                                    flexWrap: "wrap",
                                 }}
                             >
                                 <Stack
+                                    width={"100%"}
                                     direction={"row"}
-                                    sx={{ flexGrow: 1, flexWrap: 'wrap' }}
+                                    alignItems={"center"}
+                                    justifyContent={"space-between"}
+                                    spacing={2}
+                                    sx={{ 
+                                        minHeight: 56,
+                                        padding: 2,
+                                        flexWrap: 'wrap',
+                                        borderRadius: 2,
+                                        boxShadow: "0 1px 3px rgba(0,0,0,0.06)", 
+                                    }}
                                 >
-                                    <FormControl variant="standard" sx={{ width: '13%', marginRight: 5 }}>
-                                        <InputLabel>Code journal</InputLabel>
-                                        <Select
-                                            value={formSaisieRecherche.values.journal}
-                                            onChange={formSaisieRecherche.handleChange}
-                                            name="journal"
-                                            MenuProps={{
-                                                disableScrollLock: true,
-                                                MenuListProps: {
-                                                    sx: {
-                                                        display: "flex",
-                                                        flexDirection: "column",
-                                                        alignItems: "flex-start",
-                                                    }
-                                                }
-                                            }}
-                                        >
-                                            {listeCodeJournaux.map((value, index) => (
-                                                <MenuItem sx={{ width: '100%' }} key={index} value={value.code}>
-                                                    {`${value.code} - ${value.libelle}`}
-                                                </MenuItem>
-                                            ))}
-                                        </Select>
-                                    </FormControl>
-
-                                    <FormControl variant="standard" sx={{ width: '13%', marginRight: 5 }}>
-                                        <Autocomplete
-                                            options={listePlanComptable}
-                                            getOptionLabel={(option) => `${option.compte || ''} - ${option.libelle || ''}`}
-                                            isOptionEqualToValue={(option, value) => option.id === value.id}
-                                            PaperComponent={(props) => (
-                                                <div {...props} style={{ width: 600, backgroundColor: 'white' }} />
-                                            )}
-                                            value={formSaisieRecherche.values.compte}
-                                            onChange={(e, value) => {
-                                                formSaisieRecherche.setFieldValue('compte', value);
-                                            }}
-                                            renderOption={(props, option) => (
-                                                <li {...props}>
-                                                    <span>
-                                                        {option.compte} - {option.libelle}{' '}
-                                                        <span style={{ color: '#1976d2', fontWeight: 600, fontSize: 14 }}>
-                                                            ({option.dossier})
-                                                        </span>
-                                                    </span>
-                                                </li>
-                                            )}
-                                            renderInput={(params) => (
-                                                <TextField
-                                                    {...params}
-                                                    variant="standard"
-                                                    name="compte"
-                                                    label="Compte"
-                                                />
-                                            )}
-                                        />
-                                    </FormControl>
-
-                                    <FormControl variant="standard" sx={{ width: "13%", marginRight: 5 }}>
-                                        <TextField
-                                            id="piece"
-                                            label="Pièce"
-                                            variant="standard"
-                                            value={formSaisieRecherche.values.piece}
-                                            onChange={formSaisieRecherche.handleChange}
-                                            name="piece"
-                                        />
-                                    </FormControl>
-
-                                    <FormControl variant="standard" sx={{ width: "18%", marginRight: 5 }}>
-                                        <TextField
-                                            id="libelle"
-                                            label="Libellé"
-                                            variant="standard"
-                                            value={formSaisieRecherche.values.libelle}
-                                            onChange={formSaisieRecherche.handleChange}
-                                            name="libelle"
-                                        />
-                                    </FormControl>
-
-                                    <FormControl variant="standard" sx={{ width: "10%", marginRight: 5 }}>
-                                        <TextField
-                                            id="debut"
-                                            label="Début"
-                                            variant="standard"
-                                            type="date"
-                                            value={formSaisieRecherche.values.debut}
-                                            onChange={formSaisieRecherche.handleChange}
-                                            InputLabelProps={{ shrink: true }}
-                                            sx={{
-                                                '& input::-webkit-calendar-picker-indicator': {
-                                                    filter: 'brightness(0) saturate(100%) invert(21%) sepia(31%) saturate(684%) hue-rotate(165deg) brightness(93%) contrast(90%)',
-                                                    cursor: 'pointer',
-                                                },
-                                            }}
-                                        />
-                                    </FormControl>
-
-                                    <FormControl variant="standard" sx={{ width: "10%", marginRight: 3 }}>
-                                        <TextField
-                                            id="fin"
-                                            label="Fin"
-                                            variant="standard"
-                                            type='date'
-                                            value={formSaisieRecherche.values.fin}
-                                            onChange={formSaisieRecherche.handleChange}
-                                            InputLabelProps={{
-                                                shrink: true,
-                                            }}
-                                            inputProps={{
-                                                min: formSaisieRecherche.values.debut,
-                                            }}
-                                            sx={{
-                                                '& input::-webkit-calendar-picker-indicator': {
-                                                    filter: 'brightness(0) saturate(100%) invert(21%) sepia(31%) saturate(684%) hue-rotate(165deg) brightness(93%) contrast(90%)',
-                                                    cursor: 'pointer',
-                                                },
-                                            }}
-                                        />
-                                    </FormControl>
-                                </Stack>
-
-                                <Stack direction="row" spacing={0.5}>
-                                    <Button
-                                        disabled={!canView}
-                                        onClick={handleSearch}
-                                        style={{
-                                            textTransform: 'none',
-                                            outline: 'none',
-                                        }}
-                                        variant="outlined"
-                                        startIcon={<MdFilterAlt size={20} />}
-                                    >
-                                        Appliquer le filtre
-                                    </Button>
-                                    <Button
-                                        disabled={!canView}
-                                        onClick={handleReinitialize}
-                                        style={{
-                                            textTransform: 'none',
-                                            outline: 'none',
-                                        }}
-                                        variant="outlined"
-                                        startIcon={<MdFilterAltOff size={20} />}
-                                    >
-                                        Réinitialiser le filtre
-                                    </Button>
-                                </Stack>
-                            </Stack>
-
-                            <Stack
-                                width="100%"
-                                height="700px"
-                                style={{
-                                    marginLeft: "0px",
-                                    marginTop: "20px",
-                                    overflow: "auto",
-                                }}
-                            >
-                                <DataGrid
-                                    ref={gridRef}
-                                    disableMultipleSelection={DataGridStyle.disableMultipleSelection}
-                                    disableColumnSelector={DataGridStyle.disableColumnSelector}
-                                    disableDensitySelector={DataGridStyle.disableDensitySelector}
-                                    disableRowSelectionOnClick
-                                    disableSelectionOnClick={true}
-                                    localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
-                                    slots={{
-                                        toolbar: QuickFilter,
-                                        footer: () => (
-                                            <>
-                                                <Box
+                                    <Stack direction="row" spacing={0} alignItems="center" sx={{ flex: '1 1 auto', flexWrap: 'wrap', rowGap: 1, columnGap: 2 }}>
+                                        <Stack direction="row" spacing={0} alignItems="center" sx={{ flex: '0 0 auto' }}>
+                                            <Typography sx={{ minWidth: 70, fontSize: 15, mr: 1, whiteSpace: 'nowrap' }}>
+                                                Exercice :
+                                            </Typography>
+                                            <FormControl size="small" variant="outlined" sx={{ minWidth: 200 }}>
+                                                <Select
+                                                    value={selectedExerciceId}
+                                                    onChange={(e) => handleChangeExercice(e.target.value)}
                                                     sx={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        bgcolor: '#F4F9F9',
-                                                        borderTop: '1px solid #ccc',
-                                                        height: '60px',
-                                                        width: '100%',
+                                                        height: 32,
+                                                        fontSize: 15,
+                                                        '& .MuiSelect-select': { py: 0.5 },
                                                     }}
+                                                    MenuProps={{ disableScrollLock: true }}
                                                 >
-                                                    <Box sx={{ flex: 0.6, px: 1 }}>
-                                                        <Typography fontWeight="bold">Total</Typography>
-                                                    </Box>
-                                                    <Box sx={{ flex: 0.5, px: 1 }} />
-                                                    <Box sx={{ flex: 0.7, px: 1 }} />
-                                                    <Box sx={{ flex: 0.7, px: 1 }} />
-                                                    <Box sx={{ flex: 0.3, px: 1 }} />
-                                                    <Box sx={{ flex: 3, px: 1 }} />
-                                                    <Box sx={{ flex: 1, textAlign: 'right', pr: 1, ml: 22 }}>
-                                                        <Typography fontWeight="bold">{totalDebitFormatted}</Typography>
-                                                    </Box>
+                                                    {listeExercice.map((option) => (
+                                                        <MenuItem key={option.id} value={option.id}>
+                                                            {option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}
+                                                        </MenuItem>
+                                                    ))}
+                                                </Select>
+                                            </FormControl>
+                                        </Stack>
+                                    </Stack>
+
+                                    <Stack direction="row" justifyContent="flex-end" spacing={0.5} sx={{ flex: '0 0 auto' }}>
+                                        <Button
+                                            onClick={() => handleOpenSaisiePopup('ajout')}
+                                            disabled={!canAdd || !listeExercice || listeExercice.length === 0}
+                                            variant="contained"
+                                            style={{
+                                                textTransform: 'none',
+                                                outline: 'none',
+                                                backgroundColor: initial.theme,
+                                                color: "white",
+                                                height: "32px",
+                                            }}
+                                            // startIcon={<IoMdAdd size={20} />}
+                                        >
+                                            Nouvelle saisie
+                                        </Button>
+                                        <Button
+                                            onClick={() => handleOpenSaisiePopup('modification')}
+                                            disabled={
+                                                !canModify ||
+                                                selectedRows.length === 0 ||
+                                                (selectedRows.filter(val => val.id_dossier === fileId)).length === 0 ||
+                                                isRanTypeSelected
+                                            }
+                                            variant="contained"
+                                            style={{
+                                                textTransform: 'none',
+                                                outline: 'none',
+                                                backgroundColor: '#4CC0E4',
+                                                color: "white",
+                                                height: "32px",
+                                            }}
+                                            // startIcon={<AiFillEdit size={20} />}
+                                        >
+                                            Modifier
+                                        </Button>
+                                        <Button
+                                            onClick={handleOpenDialogConfirmDeleteSaisie}
+                                            disabled={
+                                                !canDelete ||
+                                                selectedRows.length === 0 ||
+                                                (selectedRows.filter(val => val.id_dossier === fileId)).length === 0 ||
+                                                isRanTypeSelected
+                                            }
+                                            variant="contained"
+                                            style={{
+                                                textTransform: 'none',
+                                                outline: 'none',
+                                                backgroundColor: initial.button_delete_color,
+                                                color: "white",
+                                                height: "32px",
+                                            }}
+                                            // startIcon={<MdDelete size={20} />}
+                                        >
+                                            Supprimer
+                                        </Button>
+                                    </Stack>
+                                </Stack>
+
+                                <Stack
+                                    width={"100%"}
+                                    paddingLeft={"5px"}
+                                    alignItems={"center"}
+                                    alignContent={"center"}
+                                    direction={"row"}
+                                    justifyContent={"space-between"}
+                                    style={{
+                                        marginLeft: "0px",
+                                        marginTop: "20px",
+                                        // backgroundColor: '#F4F9F9',
+                                        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                                        borderRadius: "5px"
+                                    }}
+                                >
+                                    <Stack width="100%" spacing={1} sx={{ p: 1 }}>
+                                        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ flexWrap: 'wrap', rowGap: 1, columnGap: 1.5 }}>
+                                            <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap', rowGap: 1, alignItems: 'center' }}>
+                                                <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 360 }}>
+                                                    <Typography sx={{ fontSize: 14, whiteSpace: 'nowrap' }}>Code journal :</Typography>
+                                                    <FormControl size="small" variant="outlined" sx={{ width: 280 }}>
+                                                        <Select
+                                                            value={formSaisieRecherche.values.journal}
+                                                            onChange={formSaisieRecherche.handleChange}
+                                                            name="journal"
+                                                            displayEmpty
+                                                            sx={{ height: 32 }}
+                                                            MenuProps={{
+                                                                disableScrollLock: true,
+                                                                MenuListProps: {
+                                                                    sx: {
+                                                                        display: "flex",
+                                                                        flexDirection: "column",
+                                                                        alignItems: "flex-start",
+                                                                    }
+                                                                }
+                                                            }}
+                                                        >
+                                                            <MenuItem value={""}>
+                                                                Sélectionner...
+                                                            </MenuItem>
+                                                            {listeCodeJournaux.map((value, index) => (
+                                                                <MenuItem sx={{ width: '100%' }} key={index} value={value.code}>
+                                                                    {`${value.code} - ${value.libelle}`}
+                                                                </MenuItem>
+                                                            ))}
+                                                        </Select>
+                                                    </FormControl>
+                                                </Stack>
+
+                                                <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 360 }}>
+                                                    <Typography sx={{ fontSize: 14, whiteSpace: 'nowrap' }}>Compte :</Typography>
+                                                    <FormControl size="small" variant="outlined" sx={{ width: 320 }}>
+                                                        <Autocomplete
+                                                            options={listePlanComptable}
+                                                            getOptionLabel={(option) => `${option.compte || ''} - ${option.libelle || ''}`}
+                                                            isOptionEqualToValue={(option, value) => option.id === value.id}
+                                                            PaperComponent={(props) => (
+                                                                <div {...props} style={{ width: 600, backgroundColor: 'white' }} />
+                                                            )}
+                                                            value={formSaisieRecherche.values.compte}
+                                                            onChange={(e, value) => {
+                                                                formSaisieRecherche.setFieldValue('compte', value);
+                                                            }}
+                                                            renderOption={(props, option) => (
+                                                                <li {...props}>
+                                                                    <span>
+                                                                        {option.compte} - {option.libelle}{' '}
+                                                                        <span style={{ color: '#1976d2', fontWeight: 600, fontSize: 14 }}>
+                                                                            ({option.dossier})
+                                                                        </span>
+                                                                    </span>
+                                                                </li>
+                                                            )}
+                                                            renderInput={(params) => (
+                                                                <TextField
+                                                                    {...params}
+                                                                    variant="outlined"
+                                                                    size="small"
+                                                                    name="compte"
+                                                                    placeholder="Sélectionner..."
+                                                                    sx={{ '& .MuiInputBase-root': { height: 32 } }}
+                                                                />
+                                                            )}
+                                                        />
+                                                    </FormControl>
+                                                </Stack>
+
+                                                <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 250 }}>
+                                                    <Typography sx={{ fontSize: 14, whiteSpace: 'nowrap' }}>Date début :</Typography>
+                                                    <TextField
+                                                        id="debut"
+                                                        variant="outlined"
+                                                        size="small"
+                                                        type="date"
+                                                        value={formSaisieRecherche.values.debut}
+                                                        onChange={formSaisieRecherche.handleChange}
+                                                        sx={{
+                                                            width: 170,
+                                                            '& .MuiInputBase-root': { height: 32 },
+                                                            '& input::-webkit-calendar-picker-indicator': {
+                                                                filter: 'brightness(0) saturate(100%) invert(21%) sepia(31%) saturate(684%) hue-rotate(165deg) brightness(93%) contrast(90%)',
+                                                                cursor: 'pointer',
+                                                            },
+                                                        }}
+                                                    />
+                                                </Stack>
+
+                                                <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 230 }}>
+                                                    <Typography sx={{ fontSize: 14, whiteSpace: 'nowrap' }}>Date fin :</Typography>
+                                                    <TextField
+                                                        id="fin"
+                                                        variant="outlined"
+                                                        size="small"
+                                                        type='date'
+                                                        value={formSaisieRecherche.values.fin}
+                                                        onChange={formSaisieRecherche.handleChange}
+                                                        inputProps={{ min: formSaisieRecherche.values.debut }}
+                                                        sx={{
+                                                            width: 170,
+                                                            '& .MuiInputBase-root': { height: 32 },
+                                                            '& input::-webkit-calendar-picker-indicator': {
+                                                                filter: 'brightness(0) saturate(100%) invert(21%) sepia(31%) saturate(684%) hue-rotate(165deg) brightness(93%) contrast(90%)',
+                                                                cursor: 'pointer',
+                                                            },
+                                                        }}
+                                                    />
+                                                </Stack>
+                                            </Stack>
+
+                                            <Stack direction="row" spacing={0.5} sx={{ pt: 0.5 }}>
+                                                <Tooltip title="Appliquer les filtres" arrow>
+                                                    <span>
+                                                        <IconButton
+                                                            disabled={!canView}
+                                                            onClick={handleSearch}
+                                                            size="small"
+                                                            sx={{
+                                                                width: 32,
+                                                                height: 32,
+                                                                bgcolor: 'primary.main',
+                                                                color: '#fff',
+                                                                '&:hover': {
+                                                                    bgcolor: 'primary.dark',
+                                                                },
+                                                            }}
+                                                        >
+                                                            <MdFilterAlt size={18} />
+                                                        </IconButton>
+                                                    </span>
+                                                </Tooltip>
+
+                                                <Tooltip title="Réinitialiser les filtres" arrow>
+                                                    <span>
+                                                        <IconButton
+                                                            disabled={!canView}
+                                                            onClick={handleReinitialize}
+                                                            size="small"
+                                                            sx={{
+                                                                width: 32,
+                                                                height: 32,
+                                                                border: '1px solid',
+                                                                borderColor: 'primary.main',
+                                                                color: 'primary.main',
+                                                                '&:hover': {
+                                                                    bgcolor: 'action.hover',
+                                                                },
+                                                            }}
+                                                        >
+                                                            <MdFilterAltOff size={18} />
+                                                        </IconButton>
+                                                    </span>
+                                                </Tooltip>
+                                            </Stack>
+
+                                        </Stack>
+
+                                        <Stack width="100%" direction="row" alignItems="center" justifyContent="flex-start" spacing={1}>
+                                            <Button
+                                                disabled={!canView}
+                                                onClick={() => setShowAdvancedFilters((v) => !v)}
+                                                variant="text"
+                                                style={{ textTransform: 'none', outline: 'none', height: '32px' }}
+                                            >
+                                                {showAdvancedFilters ? 'Filtres avancés ▴' : 'Filtres avancés ▾'}
+                                            </Button>
+                                        </Stack>
+
+                                        {showAdvancedFilters && (
+                                            <Stack direction="row" spacing={0} sx={{ flexWrap: 'wrap', rowGap: 1, alignItems: 'center' }}>
+                                                <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 260 }}>
+                                                    <Typography sx={{ fontSize: 14, whiteSpace: 'nowrap' }}>Pièce :</Typography>
+                                                    <TextField
+                                                        id="piece"
+                                                        variant="outlined"
+                                                        size="small"
+                                                        value={formSaisieRecherche.values.piece}
+                                                        onChange={formSaisieRecherche.handleChange}
+                                                        name="piece"
+                                                        placeholder="Pièce"
+                                                        sx={{ '& .MuiInputBase-root': { height: 32 }, width: 180 }}
+                                                    />
+                                                </Stack>
+
+                                                <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 320 }}>
+                                                    <Typography sx={{ fontSize: 14, whiteSpace: 'nowrap' }}>Libellé :</Typography>
+                                                    <TextField
+                                                        id="libelle"
+                                                        variant="outlined"
+                                                        size="small"
+                                                        value={formSaisieRecherche.values.libelle}
+                                                        onChange={formSaisieRecherche.handleChange}
+                                                        name="libelle"
+                                                        placeholder="Libellé"
+                                                        sx={{ '& .MuiInputBase-root': { height: 32 }, width: 220 }}
+                                                    />
+                                                </Stack>
+                                            </Stack>
+                                        )}
+                                    </Stack>
+                                </Stack>
+
+                                <Stack
+                                    width="100%"
+                                    height="700px"
+                                    style={{
+                                        marginLeft: "0px",
+                                        marginTop: "20px",
+                                        overflow: "auto",
+                                    }}
+                                >
+                                    <DataGrid
+                                        ref={gridRef}
+                                        disableMultipleSelection={DataGridStyle.disableMultipleSelection}
+                                        disableColumnSelector={DataGridStyle.disableColumnSelector}
+                                        disableDensitySelector={DataGridStyle.disableDensitySelector}
+                                        disableRowSelectionOnClick
+                                        disableSelectionOnClick={true}
+                                        localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                                        slots={{
+                                            toolbar: QuickFilter,
+                                            footer: () => (
+                                                <>
                                                     <Box
                                                         sx={{
-                                                            flex: 1,
-                                                            textAlign: 'right',
-                                                            pr: 1,
-                                                            ...(scrollbarVisible ? { mr: 2.5 } : {})
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            bgcolor: '#F4F9F9',
+                                                            borderTop: '1px solid #ccc',
+                                                            height: '60px',
+                                                            width: '100%',
                                                         }}
                                                     >
-                                                        <Typography fontWeight="bold">{totalCreditFormatted}</Typography>
+                                                        <Box sx={{ flex: 0.6, px: 1 }}>
+                                                            <Typography fontWeight="bold">Total</Typography>
+                                                        </Box>
+                                                        <Box sx={{ flex: 0.5, px: 1 }} />
+                                                        <Box sx={{ flex: 0.7, px: 1 }} />
+                                                        <Box sx={{ flex: 0.7, px: 1 }} />
+                                                        <Box sx={{ flex: 0.3, px: 1 }} />
+                                                        <Box sx={{ flex: 3, px: 1 }} />
+                                                        <Box sx={{ flex: 1, textAlign: 'right', pr: 1, ml: 22 }}>
+                                                            <Typography fontWeight="bold">{totalDebitFormatted}</Typography>
+                                                        </Box>
+                                                        <Box
+                                                            sx={{
+                                                                flex: 1,
+                                                                textAlign: 'right',
+                                                                pr: 1,
+                                                                ...(scrollbarVisible ? { mr: 2.5 } : {})
+                                                            }}
+                                                        >
+                                                            <Typography fontWeight="bold">{totalCreditFormatted}</Typography>
+                                                        </Box>
                                                     </Box>
-                                                </Box>
 
-                                                <GridPagination
-                                                    sx={{
-                                                        overflow: 'hidden',
-                                                    }}
-                                                />
-                                            </>
-                                        ),
-                                    }}
-                                    sx={{
-                                        ...DataGridStyle.sx,
-                                        '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
-                                            outline: 'none',
-                                            border: 'none',
-                                        },
-                                        '& .highlight-separator': {
-                                            borderBottom: '1px solid red'
-                                        },
-                                        '& .MuiDataGrid-row.highlight-separator': {
-                                            borderBottom: '1px solid red',
-                                        },
-                                        '& .MuiDataGrid-virtualScroller': {
-                                            maxHeight: '700px',
-                                        },
-                                    }}
-                                    rowHeight={DataGridStyle.rowHeight}
-                                    columnHeaderHeight={DataGridStyle.columnHeaderHeight}
-                                    editMode='row'
-                                    columns={SaisieColumnHeader}
-                                    rows={tableRows}
-                                    initialState={{
-                                        pagination: {
-                                            paginationModel: { page: 0, pageSize: 100 },
-                                        },
-                                    }}
-                                    experimentalFeatures={{ newEditingApi: true }}
-                                    pageSizeOptions={[5, 10, 20, 30, 50, 100]}
-                                    pagination={DataGridStyle.pagination}
-                                    checkboxSelection={DataGridStyle.checkboxSelection}
-                                    columnVisibilityModel={{
-                                        id: false,
-                                    }}
-                                    getRowClassName={(params) => {
-                                        const data = tableRows;
-                                        const index = data.findIndex(row => row.id === params.id);
+                                                    <GridPagination
+                                                        sx={{
+                                                            overflow: 'hidden',
+                                                        }}
+                                                    />
+                                                </>
+                                            ),
+                                        }}
+                                        sx={{
+                                            ...DataGridStyle.sx,
+                                            '& .MuiDataGrid-columnHeaders': {
+                                                backgroundColor: initial.tableau_theme,
+                                                color: initial.text_theme,
+                                            },
+                                            '& .MuiDataGrid-columnHeaderTitle': {
+                                                color: initial.text_theme,
+                                                fontWeight: 600,
+                                            },
+                                            '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
+                                                color: initial.text_theme,
+                                            },
+                                            '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+                                                outline: 'none',
+                                                border: 'none',
+                                            },
+                                            '& .highlight-separator': {
+                                                borderBottom: '1px solid red'
+                                            },
+                                            '& .MuiDataGrid-row.highlight-separator': {
+                                                borderBottom: '1px solid red',
+                                            },
+                                            '& .MuiDataGrid-virtualScroller': {
+                                                maxHeight: '700px',
+                                            },
+                                        }}
+                                        rowHeight={DataGridStyle.rowHeight}
+                                        columnHeaderHeight={DataGridStyle.columnHeaderHeight}
+                                        editMode='row'
+                                        columns={SaisieColumnHeader}
+                                        rows={tableRows}
+                                        initialState={{
+                                            pagination: {
+                                                paginationModel: { page: 0, pageSize: 100 },
+                                            },
+                                        }}
+                                        experimentalFeatures={{ newEditingApi: true }}
+                                        pageSizeOptions={[5, 10, 20, 30, 50, 100]}
+                                        pagination={DataGridStyle.pagination}
+                                        checkboxSelection={DataGridStyle.checkboxSelection}
+                                        columnVisibilityModel={{
+                                            id: false,
+                                        }}
+                                        getRowClassName={(params) => {
+                                            const data = tableRows;
+                                            const index = data.findIndex(row => row.id === params.id);
 
-                                        if (index < data.length - 1) {
-                                            const current = data[index];
-                                            const next = data[index + 1];
+                                            if (index < data.length - 1) {
+                                                const current = data[index];
+                                                const next = data[index + 1];
 
-                                            if (current?.id_ecriture !== next?.id_ecriture) {
-                                                return 'highlight-separator';
+                                                if (current?.id_ecriture !== next?.id_ecriture) {
+                                                    return 'highlight-separator';
+                                                }
                                             }
-                                        }
 
-                                        return '';
-                                    }}
-                                    rowSelectionModel={rowSelectionModel}
-                                    onRowSelectionModelChange={(ids) => {
-                                        const data = tableRows;
-                                        const selectedID = ids[ids.length - 1];
+                                            return '';
+                                        }}
+                                        rowSelectionModel={rowSelectionModel}
+                                        onRowSelectionModelChange={(ids) => {
+                                            const data = tableRows;
+                                            const selectedID = ids[ids.length - 1];
 
-                                        if (!selectedID) {
-                                            setSelectedRows([]);
-                                            setRowSelectionModel([]);
-                                            return;
-                                        }
+                                            if (!selectedID) {
+                                                setSelectedRows([]);
+                                                setRowSelectionModel([]);
+                                                return;
+                                            }
 
-                                        const selectedData = data.find((row) => row.id === selectedID);
-                                        const id_ecriture = selectedData?.id_ecriture;
+                                            const selectedData = data.find((row) => row.id === selectedID);
+                                            const id_ecriture = selectedData?.id_ecriture;
 
-                                        if (!id_ecriture) {
-                                            setSelectedRows([]);
-                                            setRowSelectionModel([]);
-                                            return;
-                                        }
+                                            if (!id_ecriture) {
+                                                setSelectedRows([]);
+                                                setRowSelectionModel([]);
+                                                return;
+                                            }
 
-                                        const rows = data
-                                            .filter((row) => row.id_ecriture === id_ecriture)
-                                            .map((row) => {
-                                                const [annee, mois, jour] = row.dateecriture.split('-');
-                                                const compteObj = listePlanComptable.find(pc => pc.compte === row.compte);
+                                            const rows = data
+                                                .filter((row) => row.id_ecriture === id_ecriture)
+                                                .map((row) => {
+                                                    const [annee, mois, jour] = row.dateecriture.split('-');
+                                                    const compteObj = listePlanComptable.find(pc => pc.compte === row.compte);
 
-                                                return {
-                                                    ...row,
-                                                    jour: parseInt(jour),
-                                                    mois: parseInt(mois),
-                                                    compte: Number(compteObj?.id ?? row.id_numcpt),
-                                                };
-                                            });
+                                                    return {
+                                                        ...row,
+                                                        jour: parseInt(jour),
+                                                        mois: parseInt(mois),
+                                                        compte: Number(compteObj?.id ?? row.id_numcpt),
+                                                    };
+                                                });
 
-                                        const newRowIds = rows.map(row => row.id);
+                                            const newRowIds = rows.map(row => row.id);
 
-                                        setSelectedRows(rows);
-                                        setRowSelectionModel(newRowIds);
-                                    }}
-                                />
+                                            setSelectedRows(rows);
+                                            setRowSelectionModel(newRowIds);
+                                        }}
+                                    />
+                                </Stack>
                             </Stack>
                         </Stack>
                     </TabPanel>

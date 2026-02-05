@@ -334,14 +334,14 @@ export default function PopupImportAnalitique({ open, onClose, fileId, compteId,
                             <Stack direction="row" spacing={2}>
                                 <Button
                                     variant="contained"
-                                    style={{ backgroundColor: initial.theme, color: 'white', textTransform: 'none', outline: 'none' }}
+                                    style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', textTransform: 'none', outline: 'none' }}
                                     onClick={() => handleConfirmRecalcChoice('oui')}
                                 >
                                     Oui
                                 </Button>
                                 <Button
                                     variant="contained"
-                                    style={{ backgroundColor: initial.theme, color: 'white', textTransform: 'none', outline: 'none' }}
+                                    style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', textTransform: 'none', outline: 'none' }}
                                     onClick={() => setRecalcChoice('non')}
                                 >
                                     Non
@@ -375,14 +375,14 @@ export default function PopupImportAnalitique({ open, onClose, fileId, compteId,
                     </DialogContent>
                     <DialogActions>
                         <Button
-                            style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
+                            style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
                             onClick={() => setOpenRecalcPopup(false)}
                         >
                             Annuler
                         </Button>
                         {recalcChoice === 'non' && (
                             <Button
-                                style={{ backgroundColor: initial.theme, color: 'white', width: "120px", textTransform: 'none', outline: 'none' }}
+                                style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', width: "120px", textTransform: 'none', outline: 'none' }}
                                 onClick={handleContinueManual}
                             >
                                 Continuer
@@ -431,7 +431,7 @@ export default function PopupImportAnalitique({ open, onClose, fileId, compteId,
                                         variant="contained"
                                         component="span"
                                         style={{
-                                            backgroundColor: initial.theme,
+                                            backgroundColor: initial.add_new_line_bouton_color,
                                             textTransform: 'none'
                                         }}
                                     >
@@ -519,7 +519,7 @@ export default function PopupImportAnalitique({ open, onClose, fileId, compteId,
                         onClick={handleImport}
                         disabled={sectionsData.length === 0 || nbrAnomalie > 0 || traitementWaiting}
                         style={{
-                            backgroundColor: initial.theme,
+                            backgroundColor: initial.add_new_line_bouton_color,
                             textTransform: 'none'
                         }}
                     >

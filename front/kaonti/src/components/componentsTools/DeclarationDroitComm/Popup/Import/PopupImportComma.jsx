@@ -709,7 +709,7 @@ const PopupImportComma = ({ confirmationState, setIsRefreshed, nature, compteId,
 
                             <Stack flexDirection={'column'}>
                                 <ImportCard
-                                    sx={{ width: 310, backgroundColor: initial.theme }}
+                                    sx={{ width: 310, backgroundColor: initial.add_new_line_bouton_color }}
                                     sxTypo={{
                                         color: 'white'
                                     }}
@@ -816,7 +816,7 @@ const PopupImportComma = ({ confirmationState, setIsRefreshed, nature, compteId,
                         type="submit"
                         onClick={handleSubmit}
                         style={{
-                            backgroundColor: initial.theme,
+                            backgroundColor: initial.add_new_line_bouton_color,
                             color: 'white',
                             width: "100px",
                             textTransform: 'none',

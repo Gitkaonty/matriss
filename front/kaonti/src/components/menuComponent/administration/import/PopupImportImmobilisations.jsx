@@ -360,9 +360,9 @@ export default function PopupImportImmobilisations({ open, onClose, fileId, comp
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'space-between',
-                                        backgroundColor: initial.theme,
+                                        backgroundColor: initial.add_new_line_bouton_color,
                                         color: 'white',
-                                        '&:hover': { backgroundColor: initial.theme, opacity: 0.9 },
+                                        '&:hover': { backgroundColor: initial.add_new_line_bouton_color, opacity: 0.9 },
                                     }}
                                     endIcon={<SaveAltIcon size={18} />}
                                 >
@@ -416,9 +416,9 @@ export default function PopupImportImmobilisations({ open, onClose, fileId, comp
                         disabled={immobilisationsData.length === 0 || traitementWaiting}
                         sx={{
                             minWidth: 110,
-                            backgroundColor: initial.theme,
+                            backgroundColor: initial.add_new_line_bouton_color,
                             textTransform: 'none',
-                            '&:hover': { backgroundColor: initial.theme, opacity: 0.9 },
+                            '&:hover': { backgroundColor: initial.add_new_line_bouton_color, opacity: 0.9 },
                         }}
                     >
                         Importer

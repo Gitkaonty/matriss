@@ -354,9 +354,9 @@ export default function PopupImportAnalitique({ open, onClose, fileId, compteId,
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'space-between',
-                                        backgroundColor: initial.theme,
+                                        backgroundColor: initial.add_new_line_bouton_color,
                                         color: 'white',
-                                        '&:hover': { backgroundColor: initial.theme, opacity: 0.9 },
+                                        '&:hover': { backgroundColor: initial.add_new_line_bouton_color, opacity: 0.9 },
                                     }}
                                     endIcon={<SaveAltIcon size={18} />}
                                 >
@@ -418,9 +418,9 @@ export default function PopupImportAnalitique({ open, onClose, fileId, compteId,
                         disabled={sectionsData.length === 0 || nbrAnomalie > 0 || traitementWaiting}
                         sx={{
                             minWidth: 110,
-                            backgroundColor: initial.theme,
+                            backgroundColor: initial.add_new_line_bouton_color,
                             textTransform: 'none',
-                            '&:hover': { backgroundColor: initial.theme, opacity: 0.9 },
+                            '&:hover': { backgroundColor: initial.add_new_line_bouton_color, opacity: 0.9 },
                         }}
                     >
                         Importer

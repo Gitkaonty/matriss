@@ -16,11 +16,15 @@ import { InfoFileStyle } from '../../componentsTools/InfosFileStyle';
 import DashboardCard from '../../componentsTools/Dashboard/DashboardCard';
 import { format } from 'date-fns';
 import LineChartComponent from '../../componentsTools/Dashboard/LineChartComponent';
+import AreaChartComponent from '../../componentsTools/Dashboard/AreaChartComponent';
+import BarChartComponent from '../../componentsTools/Dashboard/BarChartComponent';
+import SparklineChartComponent from '../../componentsTools/Dashboard/SparklineChartComponent';
 import useAuth from '../../../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
 import toast from 'react-hot-toast';
 import VirtualTableJournalAttente from '../../componentsTools/Dashboard/VirtualTableJournalAttente';
 import usePermission from '../../../hooks/usePermission';
+import { Line } from 'react-chartjs-2';
 
 const columns = [
   {
@@ -76,6 +80,8 @@ const columns = [
 
 const gridHeight = '70vh';
 const gridSpacing = 1;
+const dashboardCardHeight = 80;
+const dashboardCardMinWidth = 170;
 
 export default function DashboardComponent() {
   const { canAdd, canModify, canDelete, canView } = usePermission();
@@ -451,184 +457,189 @@ export default function DashboardComponent() {
                 </Stack>
               </Stack>
 
-              <Stack
-                alignItems={'center'}
-                direction={'row'}
-                width={'100%'}
-                spacing={gridSpacing}
-              >
+              <Stack width={'100%'} spacing={2}>
                 <Stack
-                  style={{
-                    backgroundColor: '#f4f6f7ff',
+                  direction={'row'}
+                  width={'100%'}
+                  spacing={gridSpacing}
+                  justifyContent={'space-between'}
+                  alignItems={'stretch'}
+                  sx={{
+                    overflowX: 'auto',
+                    pb: 0.5,
                   }}
-                  boxShadow={1}
-                  borderRadius={0}
-                  width={'65%'}
-                  height={gridHeight}
                 >
-                  <Stack
-                    width="100%"
-                    height="100%"
-                    direction={'column'}
-                    spacing={1}
-                  >
-                    <Stack
-                      width="100%"
-                      height="100%"
-                      direction={'row'}
-                      justifyContent="space-between"
-                      spacing={1}
+                  <DashboardCard
+                    text={'Résultat'}
+                    type={'total'}
+                    montant={'$5000'}
+                    backgroundColor={'#1f7a8c'}
+                    resultatN={resultatN}
+                    resultatN1={resultatN1}
+                    variationN={variationResultatN}
+                    variationN1={variationResultatN1}
+                    evolutionN={evolutionResultatN}
+                    evolutionN1={evolutionResultatN1}
+                    devise={deviseParDefaut}
+                    compact
+                    sx={{
+                      minWidth: dashboardCardMinWidth, height: dashboardCardHeight, flex: '1 1 0', borderRadius: 1, background: 'linear-gradient(135deg, #037934ff 0%, #85bea3ff 100%)'
+                    }}
+                  />
+                  <DashboardCard
+                    text={'Chiffre d\'affaires'}
+                    type={'comparaison'}
+                    pourcentage={'10'}
+                    backgroundColor={'#1f7a8c'}
+                    resultatN={resultatChiffreAffaireN}
+                    resultatN1={resultatChiffreAffaireN1}
+                    variationN={variationChiffreAffaireN}
+                    variationN1={variationChiffreAffaireN1}
+                    evolutionN={evolutionChiffreAffaireN}
+                    evolutionN1={evolutionChiffreAffaireN1}
+                    devise={deviseParDefaut}
+                    compact
+                    sx={{
+                      minWidth: dashboardCardMinWidth, height: dashboardCardHeight, flex: '1 1 0', borderRadius: 1, background: 'linear-gradient(135deg, #037934ff 0%, #85bea3ff 100%)'
+                    }}
+                  />
+                  <DashboardCard
+                    text={'Dépenses (Achats)'}
+                    type={'comparaison'}
+                    backgroundColor={'#1f7a8c'}
+                    resultatN={resultatDepenseAchatN}
+                    resultatN1={resultatDepenseAchatN1}
+                    variationN={variationDepenseAchatN}
+                    variationN1={variationDepenseAchatN1}
+                    evolutionN={evolutionDepenseAchatN}
+                    evolutionN1={evolutionDepenseAchatN1}
+                    devise={deviseParDefaut}
+                    compact
+                    sx={{
+                      minWidth: dashboardCardMinWidth, height: dashboardCardHeight, flex: '1 1 0', borderRadius: 1, background: 'linear-gradient(135deg, #fb8c00 0%, #fbc02d 100%)'
+                    }}
+                  />
+                  <DashboardCard
+                    text={'Dépenses salariales'}
+                    type={'comparaison'}
+                    backgroundColor={'#faa609ff'}
+                    resultatN={resultatDepenseSalarialeN}
+                    resultatN1={resultatDepenseSalarialeN1}
+                    variationN={variationDepenseSalarialeN}
+                    variationN1={variationDepenseSalarialeN1}
+                    evolutionN={evolutionDepenseSalarialeN}
+                    evolutionN1={evolutionDepenseSalarialeN1}
+                    devise={deviseParDefaut}
+                    compact
+                    sx={{
+                      minWidth: dashboardCardMinWidth, height: dashboardCardHeight, flex: '1 1 0', borderRadius: 1, background: 'linear-gradient(135deg, #fb8c00 0%, #fbc02d 100%)'
+                    }}
+                  />
+                  <DashboardCard
+                    text={'Trésoreries (Banques)'}
+                    type={'comparaison'}
+                    backgroundColor={'#1f7a8c'}
+                    resultatN={resultatTresorerieBanqueN}
+                    resultatN1={resultatTresorerieBanqueN1}
+                    variationN={variationTresorerieBanqueN}
+                    variationN1={variationTresorerieBanqueN1}
+                    evolutionN={evolutionTresorerieBanqueN}
+                    evolutionN1={evolutionTresorerieBanqueN1}
+                    devise={deviseParDefaut}
+                    compact
+                    sx={{
+                      minWidth: dashboardCardMinWidth, height: dashboardCardHeight, flex: '1 1 0', borderRadius: 1, background: 'linear-gradient(135deg, #095a9cff 0%, #6dc5eeff 100%)'
+                    }}
+                  />
+                  <DashboardCard
+                    text={'Trésoreries (Caisse)'}
+                    type={'comparaison'}
+                    backgroundColor={'#1f7a8c'}
+                    resultatN={resultatTresorerieCaisseN}
+                    resultatN1={resultatTresorerieCaisseN1}
+                    variationN={variationTresorerieCaisseN}
+                    variationN1={variationTresorerieCaisseN1}
+                    evolutionN={evolutionTresorerieCaisseN}
+                    evolutionN1={evolutionTresorerieCaisseN1}
+                    devise={deviseParDefaut}
+                    compact
+                    sx={{
+                      minWidth: dashboardCardMinWidth, height: dashboardCardHeight, flex: '1 1 0', borderRadius: 1, background: 'linear-gradient(135deg, #095a9cff 0%, #6dc5eeff 100%)'
+                    }}
+                  />
+                </Stack>
+
+                <Stack
+                  direction={{ xs: 'column', md: 'row' }}
+                  width={'100%'}
+                  spacing={gridSpacing}
+                  alignItems={'stretch'}
+                  sx={{ backgroundColor: '#f8f8f8ff', p: 1, borderRadius: 1 }}
+                >
+                  <Stack direction="column" spacing={gridSpacing} sx={{ flex: { xs: '1 1 auto', md: '2 1 0' }, minWidth: 0 }}>
+                    <Box
+                      sx={{
+                        backgroundColor: 'white',
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                        borderRadius: 1,
+                        p: 1,
+                        minWidth: 0,
+                        height: { xs: 'auto', md: 400 },
+                      }}
                     >
-                      <LineChartComponent
+                      <AreaChartComponent
                         xAxis={xAxis}
                         dataN={chiffresAffairesNGraph}
                         dataN1={chiffresAffairesN1Graph}
                         label={'Chiffre d\'affaires'}
                       />
+                    </Box>
 
-                      <LineChartComponent
+                    <Box sx={{ backgroundColor: 'white', boxShadow: "0 1px 3px rgba(0,0,0,0.08)", borderRadius: 1, p: 1, minWidth: 0, minHeight: 0, height: 389 }}>
+                      <Typography variant='h7' sx={{ color: "black" }} align='left'>Comptes en attente</Typography>
+                      <VirtualTableJournalAttente tableHeader={columns} tableRow={journalData} />
+                    </Box>
+                  </Stack>
+
+                  <Box
+                    sx={{
+                      flex: { xs: '1 1 auto', md: '1 1 0' },
+                      minWidth: 0,
+                      height: { xs: 'auto', md: 800 },
+                      display: 'grid',
+                      gap: gridSpacing,
+                      gridTemplateRows: { xs: 'auto', md: 'repeat(3, 1fr)' },
+                    }}
+                  >
+                    <Box sx={{ backgroundColor: 'white', boxShadow: "0 1px 3px rgba(0,0,0,0.08)", borderRadius: 1, p: 1, minWidth: 0, minHeight: 0 }}>
+                      <AreaChartComponent
                         xAxis={xAxis}
                         dataN={margeBruteNGraph}
                         dataN1={margeBruteN1Graph}
                         label={'Marges brutes'}
                       />
+                    </Box>
 
-                    </Stack>
-                    <Stack
-                      width="100%"
-                      height="100%"
-                      direction={'row'}
-                      justifyContent="space-between"
-                      spacing={1}
-                    >
-                      <LineChartComponent
+                    <Box sx={{ backgroundColor: 'white', boxShadow: "0 1px 3px rgba(0,0,0,0.08)", borderRadius: 0, p: 1, minWidth: 0, minHeight: 0 }}>
+                      <BarChartComponent
                         xAxis={xAxis}
                         dataN={tresorerieBanqueNGraph}
                         dataN1={tresorerieBanqueN1Graph}
                         label={'Trésoreries (Banques)'}
                       />
+                    </Box>
 
-                      <LineChartComponent
+                    <Box sx={{ backgroundColor: 'white', boxShadow: "0 1px 3px rgba(0,0,0,0.08)", borderRadius: 0, p: 1, minWidth: 0, minHeight: 0 }}>
+                      <BarChartComponent
                         xAxis={xAxis}
                         dataN={tresorerieCaisseNGraph}
                         dataN1={tresorerieCaisseN1Graph}
                         label={'Trésoreries (Caisses)'}
                       />
-                    </Stack>
-                  </Stack>
-                </Stack>
-
-                <Stack
-                  alignItems={'center'}
-                  direction={'column'}
-                  justifyContent={'space-between'}
-                  width={'35%'}
-                  height={gridHeight}
-                  spacing={gridSpacing}
-                >
-                  <Stack
-                    alignItems={'center'}
-                    direction={'row'}
-                    width={'100%'}
-                    height={'33.3%'}
-                    spacing={gridSpacing}
-                  >
-                    <DashboardCard
-                      text={'Résultat'}
-                      type={'total'}
-                      montant={'$5000'}
-                      backgroundColor={'#289c70'}
-                      resultatN={resultatN}
-                      resultatN1={resultatN1}
-                      variationN={variationResultatN}
-                      variationN1={variationResultatN1}
-                      evolutionN={evolutionResultatN}
-                      evolutionN1={evolutionResultatN1}
-                      devise={deviseParDefaut}
-                    />
-                    <DashboardCard
-                      text={'Chiffre d\'affaires'}
-                      type={'comparaison'}
-                      pourcentage={'10'}
-                      backgroundColor={'#289c70'}
-                      resultatN={resultatChiffreAffaireN}
-                      resultatN1={resultatChiffreAffaireN1}
-                      variationN={variationChiffreAffaireN}
-                      variationN1={variationChiffreAffaireN1}
-                      evolutionN={evolutionChiffreAffaireN}
-                      evolutionN1={evolutionChiffreAffaireN1}
-                      devise={deviseParDefaut}
-                    />
-                  </Stack>
-                  <Stack
-                    alignItems={'center'}
-                    direction={'row'}
-                    width={'100%'}
-                    height={'33.3%'}
-                    spacing={gridSpacing}
-                  >
-                    <DashboardCard
-                      text={'Dépenses (Achats)'}
-                      type={'comparaison'}
-                      backgroundColor={'#c95e42'}
-                      resultatN={resultatDepenseAchatN}
-                      resultatN1={resultatDepenseAchatN1}
-                      variationN={variationDepenseAchatN}
-                      variationN1={variationDepenseAchatN1}
-                      evolutionN={evolutionDepenseAchatN}
-                      evolutionN1={evolutionDepenseAchatN1}
-                      devise={deviseParDefaut}
-                    />
-                    <DashboardCard
-                      text={'Dépenses salariales'}
-                      type={'comparaison'}
-                      backgroundColor={'#c95e42'}
-                      resultatN={resultatDepenseSalarialeN}
-                      resultatN1={resultatDepenseSalarialeN1}
-                      variationN={variationDepenseSalarialeN}
-                      variationN1={variationDepenseSalarialeN1}
-                      evolutionN={evolutionDepenseSalarialeN}
-                      evolutionN1={evolutionDepenseSalarialeN1}
-                      devise={deviseParDefaut}
-                    />
-                  </Stack>
-                  <Stack
-                    alignItems={'center'}
-                    direction={'row'}
-                    width={'100%'}
-                    height={'33.3%'}
-                    spacing={gridSpacing}
-                  >
-                    <DashboardCard
-                      text={'Trésoreries (Banques)'}
-                      type={'comparaison'}
-                      backgroundColor={'#407dc9'}
-                      resultatN={resultatTresorerieBanqueN}
-                      resultatN1={resultatTresorerieBanqueN1}
-                      variationN={variationTresorerieBanqueN}
-                      variationN1={variationTresorerieBanqueN1}
-                      evolutionN={evolutionTresorerieBanqueN}
-                      evolutionN1={evolutionTresorerieBanqueN1}
-                      devise={deviseParDefaut}
-                    />
-                    <DashboardCard
-                      text={'Trésoreries (Caisse)'}
-                      type={'comparaison'}
-                      backgroundColor={'#407dc9'}
-                      resultatN={resultatTresorerieCaisseN}
-                      resultatN1={resultatTresorerieCaisseN1}
-                      variationN={variationTresorerieCaisseN}
-                      variationN1={variationTresorerieCaisseN1}
-                      evolutionN={evolutionTresorerieCaisseN}
-                      evolutionN1={evolutionTresorerieCaisseN1}
-                      devise={deviseParDefaut}
-                    />
-                  </Stack>
+                    </Box>
+                  </Box>
                 </Stack>
               </Stack>
-
-              <Typography variant='h5' sx={{ color: "black" }} align='left'>Comptes en attente</Typography>
-              <VirtualTableJournalAttente tableHeader={columns} tableRow={journalData} />
             </Stack>
           </TabPanel>
         </TabContext>

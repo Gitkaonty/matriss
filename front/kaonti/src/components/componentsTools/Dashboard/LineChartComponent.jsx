@@ -94,6 +94,7 @@ const LineChartComponent = ({ xAxis, dataN, dataN1, label }) => {
 
     const options = {
         responsive: true,
+        maintainAspectRatio: false,
         layout: { padding: { right: 20 } },
         plugins: {
             legend: { display: true, position: 'top' },
@@ -103,22 +104,37 @@ const LineChartComponent = ({ xAxis, dataN, dataN1, label }) => {
         },
         scales: {
             y: {
-                ticks:
-                {
+                ticks: {
                     callback: formatValue,
-                    display: true
+                    display: true,
                 },
                 grid: {
-                    display: true
+                    display: false,        // ❌ grille horizontale
+                    drawOnChartArea: false,
+                },
+                border: {
+                    display: true,        // ❌ ligne verticale gauche
                 },
             },
-            x: { grid: { display: true } },
+            x: {
+                ticks: {
+                    display: true,
+                },
+                grid: {
+                    display: false,        // ❌ grille verticale
+                    drawOnChartArea: false,
+                },
+                border: {
+                    display: true,        // ❌ ligne horizontale du bas
+                },
+            },
         },
+
     };
 
     return (
-        <Stack flex={1} height={'100%'} alignItems="center" direction="column">
-            <Line data={chartData} options={options} plugins={[shadowPlugin]} />
+        <Stack flex={1} height={'100%'} width={'100%'} minHeight={0} alignItems="stretch" direction="column">
+            <Line data={chartData} options={options} plugins={[shadowPlugin]} style={{ width: '100%', height: '100%' }} />
         </Stack>
     );
 };

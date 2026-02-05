@@ -36,7 +36,7 @@ export default function VirtualTableImportModelPC({ tableHeader, tableRow }) {
                                     sx={{
                                         fontSize: 16,
                                         fontWeight: "bold",
-                                        backgroundColor: initial.theme,
+                                        backgroundColor: initial.add_new_line_bouton_color,
                                         paddingY: 0.8,
                                         borderRadius: 0.5,
                                         color: 'white'

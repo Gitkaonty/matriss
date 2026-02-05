@@ -1,4 +1,4 @@
-import { Box, Stack } from '@mui/material';
+import { Box, Stack, Typography } from '@mui/material';
 import { useState } from 'react';
 import { HiOutlineSwitchHorizontal } from "react-icons/hi";
 import TextCard from './TextCard';
@@ -13,15 +13,92 @@ const DashboardCard = ({
     variationN1,
     evolutionN,
     evolutionN1,
-    devise
+    devise,
+    sx,
+    compact
 }) => {
     const [flipped, setFlipped] = useState(false);
+
+    const formatMontant = (num) => {
+        if (num === null || num === undefined || isNaN(num)) return '-';
+        const codeDevise = devise || '';
+        return num.toLocaleString('fr-FR') + (codeDevise ? ` ${codeDevise}` : '');
+    };
+
+    if (compact) {
+        const montantAffiche = flipped ? resultatN1 : resultatN;
+        const rangAffiche = flipped ? 'N-1' : 'N';
+        return (
+            <Box
+                sx={{
+                    width: '50%',
+                    height: '100%',
+                    position: 'relative',
+                    backgroundColor: backgroundColor,
+                    boxShadow: 0,
+                    borderRadius: 0,
+                    overflow: 'hidden',
+                    ...sx,
+                }}
+            >
+                <Stack
+                    sx={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        cursor: 'pointer',
+                        zIndex: 1,
+                        color: 'white',
+                        '&:hover': {
+                            transform: 'scale(1.1)',
+                        },
+                    }}
+                    onClick={() => setFlipped((v) => !v)}
+                >
+                    <HiOutlineSwitchHorizontal size={18} />
+                </Stack>
+
+                <Box sx={{ height: '100%', width: '100%', display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ position: 'absolute', top: 8, left: 10, pr: 4 }}>
+                        <Typography
+                            sx={{
+                                lineHeight: 1.1,
+                                fontSize: '12px',
+                                color: 'white',
+                                fontWeight: 400,
+                                textAlign: 'left',
+                            }}
+                        >
+                            {text} {rangAffiche}
+                        </Typography>
+                    </Box>
+
+                    <Box sx={{ width: '100%', px: 1.5, display: 'flex', justifyContent: 'flex-end' }}>
+                        <Typography
+                            sx={{
+                                lineHeight: 1.1,
+                                fontSize: { xs: '13px', md: '15px' },
+                                color: 'white',
+                                fontWeight: 400,
+                                textAlign: 'right',
+                                pr: 1.5,
+                            }}
+                        >
+                            {formatMontant(montantAffiche)}
+                        </Typography>
+                    </Box>
+                </Box>
+            </Box>
+        );
+    }
+
     return (
         <Box
             sx={{
                 perspective: 1000,
                 width: '50%',
                 height: '100%',
+                ...sx,
             }}
         >
             <Box

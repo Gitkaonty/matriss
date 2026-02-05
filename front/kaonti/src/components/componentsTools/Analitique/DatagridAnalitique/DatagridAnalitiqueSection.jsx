@@ -712,6 +712,35 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
         checkTotalPourcentage(sectionsData);
     }, [sectionsData])
 
+    const buttonStyle = {
+        minWidth: 120,
+        height: 32,
+        px: 2,
+        textTransform: 'none',
+        fontSize: '0.85rem',
+        borderRadius: '6px',
+        boxShadow: 'none',
+        '& .MuiTouchRipple-root': {
+            display: 'none',
+        },
+        '&:focus': {
+            outline: 'none',
+        },
+        '&.Mui-focusVisible': {
+            outline: 'none',
+            boxShadow: 'none',
+        },
+
+        '&:hover': {
+            boxShadow: 'none',
+            backgroundColor: 'action.hover',
+            border: 'none',
+        },
+
+        '&.Mui-disabled': {
+            opacity: 0.4
+        },
+    };
     return (
         <>
             {openRecalcPopup ? (
@@ -737,7 +766,7 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
                             Non
                         </Button>
                         <Button
-                            style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
+                            style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
                             onClick={() => confirmRecalcPourcentages('oui')}
                         >
                             Oui
@@ -770,7 +799,7 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
                     null
             }
             <Box
-                sx={{ width: '70%' }}
+                sx={{ width: '100%' }}
             >
                 <Stack
                     sx={{
@@ -784,10 +813,10 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
                 >
                     {pourcentageError && (
                         <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
-                            <Typography 
-                                variant="body2" 
-                                sx={{ 
-                                    color: '#d32f2f', 
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    color: '#d32f2f',
                                     backgroundColor: '#ffebee',
                                     padding: '6px 10px',
                                     borderRadius: '4px',
@@ -803,109 +832,177 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
 
                     <Tooltip title="Importer des sections">
                         <Stack>
-                            <IconButton
+                            <Button
                                 disabled={!canAdd || !isCaActive || !(selectedRowAxeId.length > 0)}
                                 variant="contained"
                                 onClick={() => setOpenImportPopup(true)}
-                                style={{
-                                    width: "35px", height: '35px',
-                                    borderRadius: "2px", borderColor: "transparent",
-                                    backgroundColor: initial.theme,
-                                    textTransform: 'none', outline: 'none'
+                                sx={{
+                                    ...buttonStyle,
+                                    backgroundColor: '#e79754ff',
+                                    color: 'white',
+                                    borderColor: '#e79754ff',
+                                    boxShadow: 'none',
+
+                                    '&:hover': {
+                                        backgroundColor: '#e79754ff',
+                                        border: 'none',
+                                        boxShadow: 'none',       // enlève l’effet bleu shadow
+                                    },
+                                    '&:focus': {
+                                        backgroundColor: '#e79754ff',
+                                        border: 'none',
+                                        boxShadow: 'none',       // enlève le focus bleu
+                                    },
+                                    '&.Mui-disabled': {
+                                        backgroundColor: '#e79754ff',
+                                        color: 'white',
+                                        cursor: 'not-allowed',
+                                    },
+                                    '&::before': {
+                                        display: 'none',         // supprime l’overlay bleu de ButtonGroup
+                                    },
                                 }}
                             >
-                                <MdFileUpload style={{ width: '25px', height: '25px', color: 'white' }} />
-                            </IconButton>
+                                Importer
+                            </Button>
                         </Stack>
                     </Tooltip>
 
                     <Tooltip title="Ajouter une ligne">
                         <Stack>
-                            <IconButton
+                            <Button
                                 disabled={!canAdd || disableAddRowBouton || !isCaActive || !(selectedRowAxeId.length > 0)}
                                 variant="contained"
                                 onClick={handleOpenDialogAddNewRow}
-                                style={{
-                                    width: "35px", height: '35px',
-                                    borderRadius: "2px", borderColor: "transparent",
-                                    backgroundColor: initial.theme,
-                                    textTransform: 'none', outline: 'none'
+                                sx={{
+                                    ...buttonStyle,
+                                    backgroundColor: initial.auth_gradient_end,
+                                    color: 'white',
+                                    borderColor: initial.auth_gradient_end,
+                                    '&:hover': {
+                                        backgroundColor: initial.auth_gradient_end,
+                                        boxShadow: 'none',
+                                    },
+                                    '&:focus': {
+                                        backgroundColor: initial.auth_gradient_end,
+                                        boxShadow: 'none',
+                                    },
+                                    '&.Mui-disabled': {
+                                        backgroundColor: initial.auth_gradient_end,
+                                        color: 'white',
+                                        cursor: 'not-allowed',
+                                    },
+                                    '&::before': {
+                                        display: 'none',
+                                    },
                                 }}
                             >
-                                <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                            </IconButton>
+                                Ajouter
+                            </Button>
                         </Stack>
                     </Tooltip>
 
                     <Tooltip title="Modifier la ligne sélectionnée">
                         <Stack>
-                            <IconButton
+                            <Button
                                 disabled={(!canModify && selectedRowId > 0) || disableModifyBouton || !isCaActive || !(selectedRowAxeId.length > 0)}
                                 variant="contained"
                                 onClick={handleEditClick(selectedRowId)}
-                                style={{
-                                    width: "35px", height: '35px',
-                                    borderRadius: "2px", borderColor: "transparent",
-                                    backgroundColor: initial.theme,
-                                    textTransform: 'none', outline: 'none'
+                                sx={{
+                                    ...buttonStyle,
+                                    backgroundColor: initial.auth_gradient_end,
+                                    color: 'white',
+                                    borderColor: initial.auth_gradient_end,
+                                    '&:hover': {
+                                        backgroundColor: initial.auth_gradient_end,
+                                    },
+                                    '&.Mui-disabled': {
+                                        backgroundColor: initial.auth_gradient_end,
+                                        color: 'white',
+                                        cursor: 'not-allowed',
+                                    },
                                 }}
                             >
-                                <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
-                            </IconButton>
+                                Modifier
+                            </Button>
                         </Stack>
                     </Tooltip>
 
                     <Tooltip title="Sauvegarder les modifications">
                         <Stack>
-                            <IconButton
+                            <Button
                                 disabled={(!canAdd && !canModify) || disableSaveBouton || !formNewParam.isValid || !isCaActive || !(selectedRowAxeId.length > 0)}
                                 variant="contained"
                                 onClick={handleSaveClick(selectedRowId)}
-                                style={{
-                                    width: "35px", height: '35px',
-                                    borderRadius: "2px", borderColor: "transparent",
-                                    backgroundColor: initial.theme,
-                                    textTransform: 'none', outline: 'none'
+                                sx={{
+                                    ...buttonStyle,
+                                    backgroundColor: initial.auth_gradient_end,
+                                    color: 'white',
+                                    borderColor: initial.auth_gradient_end,
+                                    '&:hover': {
+                                        backgroundColor: initial.auth_gradient_end,
+                                    },
+                                    '&.Mui-disabled': {
+                                        backgroundColor: initial.auth_gradient_end,
+                                        color: 'white',
+                                        cursor: 'not-allowed',
+                                    },
                                 }}
                             >
-                                <TfiSave style={{ width: '50px', height: '50px', color: 'white' }} />
-                            </IconButton>
+                                Sauvegarder
+                            </Button>
                         </Stack>
                     </Tooltip>
 
                     <Tooltip title="Annuler les modifications">
                         <Stack>
-                            <IconButton
+                            <Button
                                 disabled={disableCancelBouton || !isCaActive || !(selectedRowAxeId.length > 0)}
                                 variant="contained"
                                 onClick={handleCancelClick(selectedRowId)}
-                                style={{
-                                    width: "35px", height: '35px',
-                                    borderRadius: "2px", borderColor: "transparent",
-                                    backgroundColor: initial.button_delete_color,
-                                    textTransform: 'none', outline: 'none'
+                                sx={{
+                                    ...buttonStyle,
+                                    backgroundColor: initial.annuler_bouton_color,
+                                    color: 'white',
+                                    borderColor: initial.annuler_bouton_color,
+                                    '&:hover': {
+                                        backgroundColor: initial.annuler_bouton_color,
+                                    },
+                                    '&.Mui-disabled': {
+                                        backgroundColor: initial.annuler_bouton_color,
+                                        color: 'white',
+                                        cursor: 'not-allowed',
+                                    },
                                 }}
                             >
-                                <VscClose style={{ width: '50px', height: '50px', color: 'white' }} />
-                            </IconButton>
+                                Annuler
+                            </Button>
                         </Stack>
                     </Tooltip>
 
                     <Tooltip title="Supprimer la ligne sélectionné">
                         <Stack>
-                            <IconButton
+                            <Button
                                 disabled={!canDelete || disableDeleteBouton || !isCaActive || !(selectedRowAxeId.length > 0)}
                                 onClick={handleOpenDialogConfirmDeleteRow}
                                 variant="contained"
-                                style={{
-                                    width: "35px", height: '35px',
-                                    borderRadius: "2px", borderColor: "transparent",
-                                    backgroundColor: initial.button_delete_color,
-                                    textTransform: 'none', outline: 'none'
+                                sx={{
+                                    ...buttonStyle,
+                                    backgroundColor: initial.annuler_bouton_color,
+                                    color: 'white',
+                                    borderColor: initial.annuler_bouton_color,
+                                    '&:hover': {
+                                        backgroundColor: initial.annuler_bouton_color,
+                                    },
+                                    '&.Mui-disabled': {
+                                        backgroundColor: initial.annuler_bouton_color,
+                                        color: 'white',
+                                        cursor: 'not-allowed',
+                                    },
                                 }}
                             >
-                                <IoMdTrash style={{ width: '50px', height: '50px', color: 'white' }} />
-                            </IconButton>
+                                Supprimer
+                            </Button>
                         </Stack>
                     </Tooltip>
                 </Stack>
@@ -928,16 +1025,29 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
                         slots={{ toolbar: QuickFilter }}
                         sx={{
                             ...DataGridStyle.sx,
+                            '& .MuiDataGrid-columnHeaders': {
+                                backgroundColor: initial.tableau_theme,
+                                color: initial.text_theme,
+                            },
+                            '& .MuiDataGrid-columnHeaderTitle': {
+                                color: initial.text_theme,
+                                fontWeight: 600,
+                            },
+                            '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
+                                color: initial.text_theme,
+                            },
                             '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
                                 outline: 'none',
                                 border: 'none',
                             },
-                            '& .MuiInputBase-root': {
-                                boxShadow: 'none',
-                                border: 'none',
+                            '& .highlight-separator': {
+                                borderBottom: '1px solid red'
                             },
-                            '& .MuiOutlinedInput-notchedOutline': {
-                                border: 'none',
+                            '& .MuiDataGrid-row.highlight-separator': {
+                                borderBottom: '1px solid red',
+                            },
+                            '& .MuiDataGrid-virtualScroller': {
+                                maxHeight: '700px',
                             },
                         }}
                         rowHeight={DataGridStyle.rowHeight}

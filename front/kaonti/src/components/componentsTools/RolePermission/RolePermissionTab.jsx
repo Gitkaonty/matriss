@@ -1,7 +1,10 @@
-import { Autocomplete, Checkbox,  FormControl,  Paper, Stack, TextField } from '@mui/material';
+import { Autocomplete, Checkbox, FormControl, Paper, Stack, TextField } from '@mui/material';
 
 import { DataGrid, frFR } from '@mui/x-data-grid';
 import QuickFilter, { DataGridStyle } from '../DatagridToolsStyle';
+import { init } from '../../../../init';
+
+const initial = init[0];
 
 const RolePermissionTab = ({
     listCompte,
@@ -172,12 +175,29 @@ const RolePermissionTab = ({
 
                     sx={{
                         ...DataGridStyle.sx,
-                        "& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within": {
-                            outline: "none",
-                            border: "none",
+                        '& .MuiDataGrid-columnHeaders': {
+                            backgroundColor: initial.tableau_theme,
+                            color: initial.text_theme,
                         },
-                        "& .MuiDataGrid-virtualScroller": {
-                            maxHeight: "700px",
+                        '& .MuiDataGrid-columnHeaderTitle': {
+                            color: initial.text_theme,
+                            fontWeight: 600,
+                        },
+                        '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
+                            color: initial.text_theme,
+                        },
+                        '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+                            outline: 'none',
+                            border: 'none',
+                        },
+                        '& .highlight-separator': {
+                            borderBottom: '1px solid red'
+                        },
+                        '& .MuiDataGrid-row.highlight-separator': {
+                            borderBottom: '1px solid red',
+                        },
+                        '& .MuiDataGrid-virtualScroller': {
+                            maxHeight: '700px',
                         },
                     }}
 
@@ -192,7 +212,6 @@ const RolePermissionTab = ({
 
                     style={{ height: "700px" }}
                 />
-
 
             </Stack>
         </>

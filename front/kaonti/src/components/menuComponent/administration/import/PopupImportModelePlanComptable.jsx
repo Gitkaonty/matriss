@@ -436,7 +436,7 @@ export default function PopupImportModelePlanComptable({ onSuccess }) {
                                     height: "50px",
                                     textTransform: 'none',
                                     outline: 'none',
-                                    backgroundColor: initial.theme,
+                                    backgroundColor: initial.add_new_line_bouton_color,
                                     color: couleurBoutonAnomalie
                                 }}
                             >
@@ -451,7 +451,7 @@ export default function PopupImportModelePlanComptable({ onSuccess }) {
                                 height: "50px",
                                 textTransform: 'none',
                                 outline: 'none',
-                                backgroundColor: initial.theme
+                                backgroundColor: initial.add_new_line_bouton_color
                             }}
                         >
                             Importer

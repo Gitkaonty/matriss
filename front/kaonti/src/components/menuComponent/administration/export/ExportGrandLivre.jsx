@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Typography, Stack, Box, Tab, Button, IconButton, Chip } from '@mui/material';
+import { Typography, Stack, Box, Tab, Button, IconButton, Chip, Tooltip } from '@mui/material';
 import Checkbox from '@mui/material/Checkbox';
 import { TabContext, TabList, TabPanel } from '@mui/lab';
 import InputLabel from '@mui/material/InputLabel';
@@ -293,193 +293,291 @@ export default function ExportGrandLivre() {
             />
           </TabList>
         </Box>
-        <TabPanel value="1" style={{ height: '100%' }}>
-          <Stack width={"100%"} height={"100%"} spacing={6} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
-            <Typography variant='h6' sx={{ color: "black" }} align='left'>Administration - Export Grand Livre</Typography>
+        <TabPanel value="1" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <Stack spacing={2} flexGrow={1}>
 
-            <Stack width={"100%"} spacing={4} alignItems={"center"} justifyContent="space-between" direction={"row"} style={{ marginLeft: "0px", marginTop: "20px" }}>
-              <Stack direction={"row"}>
-                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                  <InputLabel>Exercice:</InputLabel>
+            {/* ================= TITRE ================= */}
+            <Typography variant="h7" sx={{ color: "black" }}>
+              Administration - Export Grand Livre
+            </Typography>
+
+            {/* ================= FILTRE HAUT ================= */}
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              spacing={2}
+              alignItems="center"
+              sx={{
+                p: 2,
+                //  backgroundColor: "#f4f9f9",
+                borderRadius: 2,
+                boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                flexWrap: "wrap",
+              }}
+            >
+              {/* Exercice */}
+              {/* Exercice */}
+              <Stack direction="row" spacing={0} alignItems="center">
+                <Typography sx={{ minWidth: 60, fontSize: 15, mr: 1 }}>
+                  Exercice :
+                </Typography>
+
+                <FormControl size="small" sx={{ minWidth: 180 }}>
                   <Select
                     value={selectedExerciceId}
                     onChange={(e) => handleChangeExercice(e.target.value)}
-                    sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                    MenuProps={{ disableScrollLock: true }}
+                    sx={{
+                      fontSize: 15,
+                      height: 32,
+                      "& .MuiSelect-select": {
+                        py: 0.5,
+                      },
+                    }}
                   >
                     {listeExercice.map((option) => (
-                      <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                <FormControl variant="standard" sx={{ m: 1, minWidth: 150 }}>
-                  <InputLabel>Période</InputLabel>
-                  <Select
-                    disabled
-                    value={selectedPeriodeChoiceId}
-                    onChange={(e) => handleChangePeriode(e.target.value)}
-                    sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                    MenuProps={{ disableScrollLock: true }}
-                  >
-                    <MenuItem value={0}>Toutes</MenuItem>
-                    <MenuItem value={1}>Situations</MenuItem>
-                  </Select>
-                </FormControl>
-
-                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                  <InputLabel>Du</InputLabel>
-                  <Select
-                    value={selectedPeriodeId}
-                    onChange={(e) => handleChangeDateIntervalle(e.target.value)}
-                    sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                    MenuProps={{ disableScrollLock: true }}
-                  >
-                    {listeSituation?.map((option) => (
-                      <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
+                      <MenuItem key={option.id} value={option.id} sx={{ fontSize: 15 }}>
+                        {option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}
+                      </MenuItem>
                     ))}
                   </Select>
                 </FormControl>
               </Stack>
+
             </Stack>
 
+            {/* ================= FILTRE BAS ================= */}
             <Stack
-              width={"100%"}
-              paddingLeft={"5px"}
-              alignItems={"center"}
-              alignContent={"center"}
-              direction={"row"}
-              justifyContent={"flex-start"}
-              style={{ marginLeft: "0px", marginTop: "20px", backgroundColor: '#F4F9F9', borderRadius: "5px" }}
+              direction={{ xs: "column", sm: "row" }}
               spacing={2}
+              alignItems="center"
+              sx={{
+                mt: 'auto',
+                p: 2,
+                //backgroundColor: "#f4f9f9",
+                borderRadius: 2,
+                boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                flexWrap: "wrap",
+                position: "relative", // 🔹 pour positionner les boutons en absolute
+              }}
             >
-              <FormControl variant="standard" sx={{ width: '25%' }}>
-                <InputLabel>Code journal</InputLabel>
-                <Select
-                  multiple
-                  value={journalCodes}
-                  onChange={handleChangeCodes}
-                  renderValue={(selected) => (
-                    Array.isArray(selected) ? (
-                      <Stack direction="row" spacing={0.5} useFlexGap flexWrap="wrap">
-                        {selected.filter(val => val !== ALL_OPTION).map((val) => (
-                          <Chip
-                            key={val}
-                            label={val}
-                            size="small"
-                            onMouseDown={(e) => e.stopPropagation()}
-                            onDelete={() => setJournalCodes((prev) => prev.filter((c) => c !== val))}
-                          />
-                        ))}
-                      </Stack>
-                    ) : ''
-                  )}
-                  MenuProps={{
-                    disableScrollLock: true,
-                    PaperProps: {
-                      sx: {
-                        "& .MuiMenuItem-root": {
-                          paddingTop: "2px",    // réduit l’espace haut
-                          paddingBottom: "2px", // réduit l’espace bas
-                          minHeight: "auto",    // supprime la hauteur minimale par défaut
+              {/* Code journal */}
+              <Stack direction="row" spacing={0} alignItems="center">
+                <Typography sx={{ minWidth: 80, fontSize: 15, mr: 1 }}>Code journal :</Typography>
+                <FormControl size="small" sx={{ minWidth: 180 }}>
+                  <Select
+                    multiple
+                    value={journalCodes}
+                    onChange={handleChangeCodes}
+                    displayEmpty
+                    renderValue={(selected) => {
+                      if (!Array.isArray(selected) || selected.length === 0) return "--Sélectionner--";
+
+                      const vals = selected.filter((val) => val !== ALL_OPTION);
+                      const visible = vals.slice(0, 5);
+                      const hiddenCount = vals.length - visible.length;
+                      const allLabels = vals.join(', ');
+
+                      return (
+                        <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+                          {visible.map((val) => (
+                            <Chip
+                              key={val}
+                              label={val}
+                              size="small"
+                              onMouseDown={(e) => e.stopPropagation()}
+                              onDelete={() => setJournalCodes(prev => prev.filter(c => c !== val))}
+                            />
+                          ))}
+                          {hiddenCount > 0 && (
+                            <Tooltip title={allLabels} placement="top" arrow>
+                              <Chip
+                                label={`+${hiddenCount}`}
+                                size="small"
+                                onMouseDown={(e) => e.stopPropagation()}
+                              />
+                            </Tooltip>
+                          )}
+                        </Stack>
+                      );
+                    }}
+                    sx={{
+                      borderRadius: 2,
+                      minWidth: 300,
+                      "& .MuiSelect-select": {
+                        display: "flex",
+                        alignItems: "center",
+                        py: 0.5,
+                        px: 1,
+                        fontSize: 15,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      },
+                    }}
+                    MenuProps={{
+                      disableScrollLock: true,
+                      anchorOrigin: { vertical: 'bottom', horizontal: 'left' },
+                      transformOrigin: { vertical: 'top', horizontal: 'left' },
+                      PaperProps: {
+                        sx: {
+                          "& .MuiMenuItem-root": {
+                            fontSize: 14,
+                            minHeight: 28,
+                          },
                         },
                       },
+                      MenuListProps: { dense: true, disablePadding: true },
+                    }}
+                  >
+                    <MenuItem value={ALL_OPTION}>
+                      <ListItemIcon sx={{ minWidth: 32 }}>
+                        <Checkbox
+                          size="small"
+                          checked={isAllSelected}
+                          indeterminate={!isAllSelected && journalCodes.length > 0}
+                        />
+                      </ListItemIcon>
+                      <ListItemText primary="Sélectionner tout" primaryTypographyProps={{ fontWeight: 'bold' }} />
+                    </MenuItem>
+                    {listeCodeJournaux.map((value, index) => (
+                      <MenuItem key={index} value={value.code}>
+                        <ListItemIcon sx={{ minWidth: 32 }}>
+                          <Checkbox size="small" checked={journalCodes.includes(value.code)} />
+                        </ListItemIcon>
+                        <ListItemText primary={`${value.code} - ${value.libelle}`} />
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Stack>
+
+              {/* Date début */}
+              <Stack direction="row" spacing={0} alignItems="center">
+                <Typography sx={{ minWidth: 80, fontSize: 15, mr: 1 }}>
+                  Date début :
+                </Typography>
+                <TextField
+                  type="date"
+                  size="small"
+                  value={dateDebut}
+                  onChange={(e) => setDateDebut(e.target.value)}
+                  sx={{
+                    width: 150,
+                    "& input": {
+                      fontSize: 15,
+                      py: 0.5,
+                    },
+                  }}
+                />
+              </Stack>
+
+              {/* Date fin */}
+              <Stack direction="row" spacing={0} alignItems="center">
+                <Typography sx={{ minWidth: 50, fontSize: 15, mr: 1 }}>
+                  Date fin :
+                </Typography>
+
+                <TextField
+                  type="date"
+                  size="small"
+                  value={dateFin}
+                  onChange={(e) => setDateFin(e.target.value)}
+                  sx={{
+                    width: 150,
+                    "& input": {
+                      fontSize: 15,
+                      py: 0.5,
+                    },
+                  }}
+                />
+              </Stack>
+
+
+
+              {/* Boutons fixes à droite */}
+              <Stack
+                direction="row"
+                spacing={0.5}
+                sx={{
+                  position: "absolute",
+                  right: 16,     // distance depuis le bord droit
+                  top: "50%",     // centre verticalement
+                  transform: "translateY(-50%)", // ajuste pour centrer
+                }}
+              >
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={handleResetFilter}
+                  sx={{
+                    textTransform: "none",
+                    width: 120,
+                    backgroundColor: initial.add_new_line_bouton_color,
+                    borderColor: initial.add_new_line_bouton_color,
+                    color: "#fff",
+                    "&:hover": {
+                      backgroundColor: initial.add_new_line_bouton_color,
+                      borderColor: initial.add_new_line_bouton_color,
                     },
                   }}
                 >
-                  <MenuItem value={ALL_OPTION}>
-                    <ListItemIcon sx={{ minWidth: 32 }}>
-                      <Checkbox size="small" checked={isAllSelected} indeterminate={!isAllSelected && journalCodes.length > 0} />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary="Sélectionner tout"
-                      primaryTypographyProps={{ fontWeight: 'bold', backgroundColor: '#DFDFDF', color: 'black' }}
-                    />
-                  </MenuItem>
-                  {listeCodeJournaux.map((value, index) => (
-                    <MenuItem key={index} value={value.code}>
-                      <ListItemIcon sx={{ minWidth: 32 }}>
-                        <Checkbox size="small" checked={journalCodes.includes(value.code)} />
-                      </ListItemIcon>
-                      <ListItemText primary={`${value.code} - ${value.libelle}`} />
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-
-              <TextField
-                label="Date début"
-                type="date"
-                value={dateDebut}
-                onChange={(e) => setDateDebut(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                variant="standard"
-                sx={{ width: '20%' }}
-              />
-
-              <TextField
-                label="Date fin"
-                type="date"
-                value={dateFin}
-                onChange={(e) => setDateFin(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                variant="standard"
-                sx={{ width: '20%' }}
-              />
-
-              <Stack direction={'row'} spacing={2} sx={{ ml: 4, alignItems: 'center' }}>
-                <Button
-                  variant="outlined"
-                  onClick={handleResetFilter}
-                  style={{ textTransform: 'none', outline: 'none', height: '36px' }}
-                >
                   Réinitialiser
                 </Button>
-                <IconButton
+                <Button
+                  variant="contained"
+                  size="small"
                   disabled={!canExport()}
                   onClick={handleOpenExportMenu}
-                  aria-controls={openExportMenu ? 'export-menu' : undefined}
-                  aria-haspopup="true"
-                  aria-expanded={openExportMenu ? 'true' : undefined}
+                  sx={{
+                    textTransform: "none",
+                    width: 120,
+                    backgroundColor: initial.theme,
+                    "&:hover": {
+                      backgroundColor: initial.theme,
+                    },
+                    "&.Mui-disabled": {
+                      backgroundColor: "#ccc",
+                      color: "#666",
+                    },
+                  }}
                 >
-                  <CiExport style={{ width: 35, height: 35, color: '#1A5276' }} />
-                </IconButton>
+                  Exporter
+                </Button>
+
               </Stack>
             </Stack>
 
-            <Menu
-              id="export-menu"
-              anchorEl={anchorElExport}
-              open={openExportMenu}
-              onClose={handleCloseExportMenu}
-              keepMounted
-              disablePortal={false}
-              disableScrollLock
-              disableAutoFocus
-              disableEnforceFocus
-              disableRestoreFocus
-              TransitionProps={{ timeout: 0 }}
-              transitionDuration={0}
-              MenuListProps={{ dense: true, disablePadding: true }}
-              anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-              transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-            >
-              <MenuItem onClick={exportPdf} disabled={exporting}>
-                <ListItemIcon>
-                  <FaFilePdf size={20} color="#D32F2F" />
-                </ListItemIcon>
-                <ListItemText primary={exporting ? 'Export...' : 'Exporter en PDF'} />
-              </MenuItem>
-              <MenuItem onClick={exportExcel} disabled={exporting}>
-                <ListItemIcon>
-                  <FaFileExcel size={20} color="#2E7D32" />
-                </ListItemIcon>
-                <ListItemText primary={exporting ? 'Export...' : 'Exporter en Excel'} />
-              </MenuItem>
-            </Menu>
+
+
           </Stack>
+
+          {/* ================= MENU EXPORT ================= */}
+          <Menu
+            id="export-menu"
+            anchorEl={anchorElExport}
+            open={openExportMenu}
+            onClose={handleCloseExportMenu}
+            keepMounted
+            disableScrollLock
+            disableAutoFocus
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+            MenuListProps={{ dense: true }}
+          >
+            <MenuItem onClick={exportPdf} disabled={exporting}>
+              <ListItemIcon>
+                <FaFilePdf size={20} color="#D32F2F" />
+              </ListItemIcon>
+              <ListItemText primary={exporting ? 'Export...' : 'Exporter en PDF'} />
+            </MenuItem>
+            <MenuItem onClick={exportExcel} disabled={exporting}>
+              <ListItemIcon>
+                <FaFileExcel size={20} color="#2E7D32" />
+              </ListItemIcon>
+              <ListItemText primary={exporting ? 'Export...' : 'Exporter en Excel'} />
+            </MenuItem>
+          </Menu>
         </TabPanel>
+
       </TabContext>
     </Box>
   )

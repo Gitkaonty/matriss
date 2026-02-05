@@ -91,7 +91,7 @@ const PopupInformation = ({msg, confirmationState}) =>{
             </DialogContent>
             <DialogActions>
                 <Button autoFocus onClick={handleCloseDeleteModel} 
-                style={{backgroundColor: initial.theme , color:'white', width:"100px", textTransform: 'none', outline: 'none'}}
+                style={{backgroundColor: initial.add_new_line_bouton_color , color:'white', width:"100px", textTransform: 'none', outline: 'none'}}
                 >
                     Fermer
                 </Button>

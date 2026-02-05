@@ -105,40 +105,43 @@ export default function DeclarationCommComponent() {
                         </TabList>
                     </Box>
                     <TabPanel value="1" style={{ height: '100%' }}>
-                        <Stack width={"100%"} height={"100%"} spacing={1} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
-                            <Typography variant='h6' sx={{ color: "black", pb: '5px' }} align='left'>{"Paramétrages - Gestion Analitique"}</Typography>
-                            <Typography sx={{ color: "black", pb: '5px' }} align='left'>
-                                {`La comptabilité analytique de ce dossier est ${isCaActive ? 'activée' : 'désactivée'}`}
-                            </Typography>
-                            <Box sx={{ width: '100%' }}>
-                                <Box sx={{ width: '100%', height: '15px', backgroundColor: '#F4F9F9' }} />
-                                <Stack direction="row" sx={{ width: '100%', minHeight: 450 }}>
-                                    <DatagridAnalitiqueAxe
-                                        id_compte={compteId}
-                                        id_dossier={fileId}
-                                        selectedRowAxeId={selectedRowAxeId}
-                                        setSelectedRowAxeId={setSelectedRowAxeId}
-                                        isCaActive={isCaActive}
-                                        canView={canView}
-                                        canAdd={canAdd}
-                                        canDelete={canDelete}
-                                        canModify={canModify}
-                                    />
-                                    <DatagridAnalitiqueSection
-                                        id_compte={compteId}
-                                        id_dossier={fileId}
-                                        selectedRowAxeId={selectedRowAxeId}
-                                        isCaActive={isCaActive}
-                                        canView={canView}
-                                        canAdd={canAdd}
-                                        canDelete={canDelete}
-                                        canModify={canModify}
-                                    />
-                                </Stack>
-                                <Box sx={{ width: '100%', height: '15px', backgroundColor: '#F4F9F9' }} />
+                        <Stack
+                            direction="column"
+                            width="100%"
+                            alignItems="stretch"
+                            justifyContent="flex-start"
+                            spacing={2}
+                        >
+                            {/* Datagrid du haut */}
+                            <Box sx={{ width: '100%', minHeight: 380 }}>
+                                <DatagridAnalitiqueAxe
+                                    id_compte={compteId}
+                                    id_dossier={fileId}
+                                    selectedRowAxeId={selectedRowAxeId}
+                                    setSelectedRowAxeId={setSelectedRowAxeId}
+                                    isCaActive={isCaActive}
+                                    canView={canView}
+                                    canAdd={canAdd}
+                                    canDelete={canDelete}
+                                    canModify={canModify}
+                                />
                             </Box>
 
+                            {/* Datagrid du bas */}
+                            <Box sx={{ width: '100%', minHeight: 380 }}>
+                                <DatagridAnalitiqueSection
+                                    id_compte={compteId}
+                                    id_dossier={fileId}
+                                    selectedRowAxeId={selectedRowAxeId}
+                                    isCaActive={isCaActive}
+                                    canView={canView}
+                                    canAdd={canAdd}
+                                    canDelete={canDelete}
+                                    canModify={canModify}
+                                />
+                            </Box>
                         </Stack>
+
                     </TabPanel>
                 </TabContext>
             </Box>

@@ -151,10 +151,10 @@ const DropPDFUploader = ({ file, setFile, mode }) => {
                                         sx={{
                                             mt: 1,
                                             textTransform: 'none',
-                                            backgroundColor: initial.theme,
+                                            backgroundColor: initial.add_new_line_bouton_color,
                                             color: 'white',
                                             '&:hover': {
-                                                backgroundColor: initial.theme,
+                                                backgroundColor: initial.add_new_line_bouton_color,
                                                 color: 'white',
                                             },
                                             width: 50,

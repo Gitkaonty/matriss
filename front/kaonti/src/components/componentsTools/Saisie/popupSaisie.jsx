@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Typography, Stack, Box, Button, Divider, DialogTitle, Tooltip } from '@mui/material';
+import { Typography, Stack, Box, Button, Divider, DialogTitle, Tooltip, ToggleButton, ToggleButtonGroup, TextField } from '@mui/material';
 import { TabContext, TabPanel } from '@mui/lab';
 import { styled } from '@mui/material/styles';
 import Dialog from '@mui/material/Dialog';
@@ -867,6 +867,36 @@ const PopupSaisie = ({
         setIsDisabledAddButton(isDatagridEditing());
     }, [tableRows, apiRef.current?.state?.editRows]);
 
+    const buttonStyle = {
+        minWidth: 120,
+        height: 32,
+        px: 2,
+        textTransform: 'none',
+        fontSize: '0.85rem',
+        borderRadius: '6px',
+        boxShadow: 'none',
+        '& .MuiTouchRipple-root': {
+            display: 'none',
+        },
+        '&:focus': {
+            outline: 'none',
+        },
+        '&.Mui-focusVisible': {
+            outline: 'none',
+            boxShadow: 'none',
+        },
+
+        '&:hover': {
+            boxShadow: 'none',
+            backgroundColor: 'action.hover',
+            border: 'none',
+        },
+
+        '&.Mui-disabled': {
+            opacity: 0.4
+        },
+    };
+
     return (
         <>
             {
@@ -913,11 +943,11 @@ const PopupSaisie = ({
             >
                 <DialogTitle
                     sx={{
-                        m: 0,
-                        py: 1.5,
-                        px: 2,
-                        bgcolor: "#f5f5f5",
-                        borderBottom: "1px solid #ddd",
+                        height: "80px",
+                        boxShadow: 'none',
+                        borderBottom: 'none',
+                        backgroundImage: 'linear-gradient(90deg, #064E3B 0%, #0F766E 45%, #0B1220 100%)',
+                        backgroundColor: 'transparent',
                     }}
                 >
                     <Stack
@@ -926,10 +956,10 @@ const PopupSaisie = ({
                         justifyContent="space-between"
                     >
                         <Typography
-                            variant="h6"
+                            variant="h7"
                             component="div"
-                            fontWeight="bold"
-                            color="text.primary"
+                            //fontWeight="bold"
+                            color="white"
                         >
                             {
                                 type === "ajout"
@@ -938,12 +968,12 @@ const PopupSaisie = ({
                             }
                         </Typography>
 
-                        <IconButton
+                        {/* <IconButton
                             onClick={handleClose}
                             style={{ color: 'red', textTransform: 'none', outline: 'none' }}
                         >
                             <CloseIcon />
-                        </IconButton>
+                        </IconButton> */}
                     </Stack>
                 </DialogTitle>
                 <DialogContent >
@@ -955,10 +985,18 @@ const PopupSaisie = ({
                                     direction={'row'}
                                     justifyContent={'space-between'}
                                     alignItems={'center'}
+                                    // style={{
+                                    //     marginLeft: "0px",
+                                    //     backgroundColor: '#F4F9F9',
+                                    //     borderRadius: "5px"
+                                    // }}
                                     style={{
+                                        //padding: 2,
+                                        //  backgroundColor: "#f4f9f9",
                                         marginLeft: "0px",
-                                        backgroundColor: '#F4F9F9',
-                                        borderRadius: "5px"
+                                        borderRadius: 2,
+                                        boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                                        // flexWrap: "wrap",
                                     }}
                                 >
                                     <Stack
@@ -969,56 +1007,81 @@ const PopupSaisie = ({
                                         justifyContent="flex-start"
                                         sx={{ width: '100%' }}
                                     >
-                                        {/* Code Journal */}
-                                        <FormControl variant="standard" sx={{ width: 250 }}>
-                                            <InputLabel>Code journal</InputLabel>
-                                            <Select
-                                                value={formSaisie.values.valSelectCodeJnl}
-                                                onChange={formSaisie.handleChange}
-                                                name="valSelectCodeJnl"
-                                            >
-                                                {listeCodeJournaux.map((value, index) => (
-                                                    <MenuItem sx={{ flex: 0.18 }} key={index} value={value.id}>
-                                                        {`${value.code} - ${value.libelle}`}
-                                                    </MenuItem>
-                                                ))}
-                                            </Select>
-                                        </FormControl>
+                                        <Stack direction="row" spacing={2} alignItems="flex-start">
+                                            {/* Code journal */}
+                                            <Stack spacing={1} sx={{ width: 250 }}>
+                                                <InputLabel sx={{ fontSize: 12, color: '#9aa0a6' }}>Code journal</InputLabel>
+                                                <Select
+                                                    name="valSelectCodeJnl"
+                                                    value={formSaisie.values.valSelectCodeJnl}
+                                                    onChange={formSaisie.handleChange}
+                                                    variant="outlined"
+                                                    size="small"
+                                                    sx={{
+                                                        width: '100%',
+                                                        height: 32,
+                                                        '& .MuiSelect-select': { fontSize: 14, paddingTop: '4px', paddingBottom: '4px' },
+                                                    }}
+                                                >
+                                                    {listeCodeJournaux.map((value, index) => (
+                                                        <MenuItem key={index} value={value.id}>
+                                                            {`${value.code} - ${value.libelle}`}
+                                                        </MenuItem>
+                                                    ))}
+                                                </Select>
+                                            </Stack>
 
-                                        {/* Mois */}
-                                        <FormControl variant="standard" sx={{ width: 115 }}>
-                                            <InputLabel>Mois</InputLabel>
-                                            <Select
-                                                value={formSaisie.values.valSelectMois}
-                                                onChange={formSaisie.handleChange}
-                                                name="valSelectMois"
-                                            >
-                                                {[...Array(12).keys()].map(m => (
-                                                    <MenuItem key={m + 1} value={m + 1}>
-                                                        {new Date(0, m).toLocaleString('fr-FR', { month: 'long' }).replace(/^./, c => c.toUpperCase())}
-                                                    </MenuItem>
-                                                ))}
-                                            </Select>
-                                        </FormControl>
+                                            {/* Mois */}
+                                            <Stack spacing={1} sx={{ width: 115 }}>
+                                                <InputLabel sx={{ fontSize: 12, color: '#9aa0a6' }}>Mois</InputLabel>
+                                                <Select
+                                                    name="valSelectMois"
+                                                    value={formSaisie.values.valSelectMois}
+                                                    onChange={formSaisie.handleChange}
+                                                    variant="outlined"
+                                                    size="small"
+                                                    sx={{
+                                                        width: '100%',
+                                                        height: 32,
+                                                        '& .MuiSelect-select': { fontSize: 14, paddingTop: '4px', paddingBottom: '4px' },
+                                                    }}
+                                                >
+                                                    {[...Array(12).keys()].map(m => (
+                                                        <MenuItem key={m + 1} value={m + 1}>
+                                                            {new Date(0, m)
+                                                                .toLocaleString('fr-FR', { month: 'long' })
+                                                                .replace(/^./, c => c.toUpperCase())}
+                                                        </MenuItem>
+                                                    ))}
+                                                </Select>
+                                            </Stack>
 
-                                        {/* Année */}
-                                        <FormControl variant="standard" sx={{ width: 90 }} style={{ marginRight: '50px' }} >
-                                            <InputLabel>Année</InputLabel>
-                                            <Select
-                                                value={formSaisie.values.valSelectAnnee}
-                                                onChange={formSaisie.handleChange}
-                                                name="valSelectAnnee"
-                                            >
-                                                {listeAnnee.map((year) => (
-                                                    <MenuItem key={year} value={year}>
-                                                        {year}
-                                                    </MenuItem>
-                                                ))}
-                                            </Select>
-                                        </FormControl>
+                                            {/* Année */}
+                                            <Stack spacing={1} sx={{ width: 90 }}>
+                                                <InputLabel sx={{ fontSize: 12, color: '#9aa0a6' }}>Année</InputLabel>
+                                                <Select
+                                                    name="valSelectAnnee"
+                                                    value={formSaisie.values.valSelectAnnee}
+                                                    onChange={formSaisie.handleChange}
+                                                    variant="outlined"
+                                                    size="small"
+                                                    sx={{
+                                                        width: '100%',
+                                                        height: 32,
+                                                        '& .MuiSelect-select': { fontSize: 14, paddingTop: '4px', paddingBottom: '4px' },
+                                                    }}
+                                                >
+                                                    {listeAnnee.map(year => (
+                                                        <MenuItem key={year} value={year}>
+                                                            {year}
+                                                        </MenuItem>
+                                                    ))}
+                                                </Select>
+                                            </Stack>
+                                        </Stack>
 
                                         {/* Choix devise */}
-                                        <RadioGroup
+                                        {/* <RadioGroup
                                             row
                                             name="choixDevise"
                                             value={formSaisie.values.choixDevise}
@@ -1026,118 +1089,104 @@ const PopupSaisie = ({
                                         >
                                             <FormControlLabel value="MGA" control={<Radio />} label="MGA" />
                                             <FormControlLabel value="Devises" control={<Radio />} label="Autres" />
-                                        </RadioGroup>
+                                        </RadioGroup> */}
+                                        <ToggleButtonGroup
+                                            value={formSaisie.values.choixDevise}
+                                            exclusive
+                                            onChange={(_, newValue) => {
+                                                if (newValue !== null) formSaisie.setFieldValue('choixDevise', newValue);
+                                            }}
+                                            size="small"
+                                            color="primary"
+                                            sx={{
+                                                height: 32,                  // garde la hauteur du champ TextField/Select
+                                                alignSelf: 'flex-start',     // permet de ne pas suivre l'alignement du parent
+                                                position: 'relative',
+                                                top: 25,                      // décale verticalement vers le bas
+                                                '& .MuiToggleButton-root': {
+                                                    height: '100%',            // chaque chip prend toute la hauteur
+                                                },
+                                            }}
+                                        >
+                                            <ToggleButton value="MGA">MGA</ToggleButton>
+                                            <ToggleButton value="Devises">Autres</ToggleButton>
+                                        </ToggleButtonGroup>
+
 
                                         {/* Taux de conversion */}
-                                        <Stack spacing={1.5} sx={{ width: 220 }}>
-                                            <InputJoy
-                                                placeholder="Taux"
-                                                type="text"
-                                                name="taux"
-                                                step="0.01"
-                                                value={taux}
-                                                onChange={(e) => {
-                                                    let value = e.target.value;
-                                                    if (typeof value === 'object' && value !== null) {
-                                                        value = value.floatValue ?? 0;
-                                                    }
-                                                    if (typeof value === 'number') {
-                                                        setTaux(value);
-                                                        formSaisie.setFieldValue('taux', value);
-                                                        return;
-                                                    }
-                                                    const parsedValue = String(value)
-                                                        .replace(/\s/g, '')
-                                                        .replace(',', '.');
-
-                                                    setTaux(parsedValue);
-                                                    formSaisie.setFieldValue('taux', parsedValue);
-                                                    selectRef.current?.blur();
-                                                }}
-
-                                                disabled={formSaisie.values.choixDevise === "MGA"}
-                                                slotProps={{
-                                                    input: {
-                                                        component: FormatedInput,
-                                                        sx: {
-                                                            textAlign: 'right',
+                                        {formSaisie.values.choixDevise !== 'MGA' && (
+                                            <Stack
+                                                direction="row"
+                                                spacing={1}
+                                                alignItems="flex-start"
+                                                sx={{ width: 220, position: 'relative', top: 12 }}
+                                            >
+                                                <TextField
+                                                    type="text"
+                                                    name="taux"
+                                                    value={taux}
+                                                    onChange={(e) => {
+                                                        let value = e.target.value;
+                                                        const parsedValue = String(value).replace(/\s/g, '').replace(',', '.');
+                                                        setTaux(parsedValue);
+                                                        formSaisie.setFieldValue('taux', parsedValue);
+                                                    }}
+                                                    size="small"
+                                                    sx={{
+                                                        flex: 1,
+                                                        height: 32,
+                                                        '& .MuiOutlinedInput-root': {
+                                                            borderRadius: 1.5,
+                                                            fontSize: 14,
+                                                            height: 32,
+                                                            '& fieldset': {
+                                                                borderColor: '#ccc',
+                                                            },
+                                                            '&:hover fieldset': {
+                                                                borderColor: '#888',
+                                                            },
+                                                            '&.Mui-focused fieldset': {
+                                                                borderColor: '#3FA2F6',
+                                                            },
                                                         },
-                                                    },
-                                                }}
-                                                endDecorator={
-                                                    <>
-                                                        <Divider orientation="vertical" />
-                                                        <SelectJoy
-                                                            ref={selectRef}
-                                                            variant="plain"
-                                                            value={formSaisie.values.currency}
-                                                            onChange={(_, value) => formSaisie.setFieldValue('currency', value)}
-                                                            name="currency"
-                                                            slotProps={{
-                                                                button: {
-                                                                    sx: {
-                                                                        boxShadow: 'none',
-                                                                        outline: 'none',
-                                                                        border: 'none',
-                                                                        '&:focus': { outline: 'none' },
-                                                                        '&:focus-visible': { outline: 'none' },
-                                                                    },
-                                                                },
-                                                                listbox: {
-                                                                    variant: 'plain',
-                                                                    sx: {
-                                                                        zIndex: 2000,
-                                                                    },
-                                                                },
-                                                            }}
-                                                            sx={{
-                                                                mr: -1.5,
-                                                                border: 'none',
-                                                                outline: 'none',
-                                                                boxShadow: 'none',
-                                                                '--Select-focusedThickness': '0px',
-                                                                '--Select-indicator-thickness': '0px',
-                                                                '&:focus': { outline: 'none' },
-                                                                '&:focus-visible': { outline: 'none' },
-                                                            }}
-                                                        >
-                                                            {listeDevise
-                                                                .filter(val => val.code !== 'MGA')
-                                                                .map((value, index) => (
-                                                                    <OptionJoy key={index} value={value.code}>
-                                                                        {`${value.code}`}
-                                                                    </OptionJoy>
-                                                                ))}
-                                                        </SelectJoy>
-                                                    </>
-                                                }
-                                                sx={{
-                                                    width: '100%',
-                                                    '& input[type=number]': { MozAppearance: 'textfield' },
-                                                    '& input[type=number]::-webkit-outer-spin-button': { WebkitAppearance: 'none', margin: 0 },
-                                                    '& input[type=number]::-webkit-inner-spin-button': { WebkitAppearance: 'none', margin: 0 },
-                                                }}
-                                            />
-                                        </Stack>
+                                                        input: { textAlign: 'right', paddingRight: '8px' },
+                                                    }}
+                                                />
+
+                                                {/* Select devise discret */}
+                                                <Select
+                                                    name="currency"
+                                                    value={formSaisie.values.currency ?? ''}
+                                                    onChange={(e) => formSaisie.setFieldValue('currency', e.target.value)}
+                                                    size="small"
+                                                    sx={{
+                                                        height: 32,
+                                                        borderRadius: 1.5,
+                                                        fontSize: 14,
+                                                        '& .MuiSelect-select': { padding: '4px 8px' },
+                                                        '& fieldset': { borderColor: '#ccc' },
+                                                        '&:hover fieldset': { borderColor: '#888' },
+                                                        '&.Mui-focused fieldset': { borderColor: '#3FA2F6' },
+                                                    }}
+                                                >
+                                                    {listeDevise.filter(v => v.code !== 'MGA').map((val) => (
+                                                        <MenuItem key={val.code} value={val.code}>
+                                                            {val.code}
+                                                        </MenuItem>
+                                                    ))}
+                                                </Select>
+                                            </Stack>
+                                        )}
                                     </Stack>
 
                                     <Stack
                                         direction="row"
                                         alignItems={'center'}
-                                        sx={{ flex: 0.06 }}
+                                        sx={{ flex: 0.06, mt: 2.5 }}
                                         spacing={0.5}
                                     >
                                         <Button
-                                            autoFocus
                                             variant="contained"
-                                            style={{
-                                                height: "39px",
-                                                textTransform: 'none',
-                                                outline: 'none',
-                                                backgroundColor: initial.theme,
-                                                color: "white",
-                                                marginTop: '0px',
-                                            }}
                                             onClick={addOrUpdateJournal}
                                             disabled={
                                                 !formSaisie.values.valSelectCodeJnl
@@ -1146,23 +1195,72 @@ const PopupSaisie = ({
                                                 || tableRows.length === 0
                                                 || isDisabledAddButton
                                             }
+                                            sx={{
+                                                width: 100,
+                                                height: 32,
+                                                borderRadius: 1,
+                                                backgroundColor: initial.auth_gradient_end,
+                                                color: 'white',
+                                                textTransform: 'none',
+                                                fontSize: 14,
+
+                                                '&:hover': {
+                                                    backgroundColor: initial.auth_gradient_end,
+                                                },
+
+                                                // 🔥 STYLE QUAND DISABLED
+                                                '&.Mui-disabled': {
+                                                    backgroundColor: initial.auth_gradient_end,
+                                                    color: 'white',
+                                                    opacity: 1,          // empêche l'effet grisé
+                                                    cursor: 'not-allowed',
+                                                },
+                                            }}
                                         >
-                                            {type === 'ajout' ? 'Enregistrer' : 'Modifier'}
+                                            {type === 'ajout' ? 'Sauvegarder' : 'Modifier'}
                                         </Button>
-                                        <Tooltip title="Ajouter un nouveau compte">
-                                            <IconButton
-                                                onClick={handleOpenDialogAddNewAccount}
-                                                variant="contained"
-                                                style={{
-                                                    width: "39px", height: '39px',
-                                                    borderRadius: "5px", borderColor: "transparent",
-                                                    backgroundColor: '#4CAF50',
-                                                    textTransform: 'none', outline: 'none'
-                                                }}
-                                            >
-                                                <MdAccountBalance style={{ width: '25px', height: '25px', color: 'white' }} />
-                                            </IconButton>
-                                        </Tooltip>
+                                        <Button
+                                            variant="contained"
+                                            onClick={handleOpenDialogAddNewAccount}
+                                            sx={{
+                                                width: 100,
+                                                height: 32,
+                                                borderRadius: 1,
+                                                backgroundColor: '#4CAF50',
+                                                color: 'white',
+                                                textTransform: 'none',
+                                                fontSize: 14,
+                                                alignSelf: 'flex-start',
+                                                //position: 'relative',
+                                                //  top: 25,
+                                                '&:hover': {
+                                                    backgroundColor: '#45a049',
+                                                },
+                                            }}
+                                        >
+                                            Ajouter
+                                        </Button>
+                                        <Button
+                                            onClick={handleClose}
+                                            sx={{
+                                                width: 100,
+                                                height: 32,
+                                                borderRadius: 1,
+                                                backgroundColor: initial.annuler_bouton_color,
+                                                color: 'white',
+                                                textTransform: 'none',
+                                                fontSize: 14,
+                                                alignSelf: 'flex-start',
+                                                //  position: 'relative',
+                                                // top: 25,                                       
+                                                '&:hover': {
+                                                    backgroundColor: initial.annuler_bouton_color,
+                                                },
+                                            }}
+                                        >
+                                            Fermer
+                                        </Button>
+
                                     </Stack>
                                 </Stack>
                                 <Stack
@@ -1194,9 +1292,9 @@ const PopupSaisie = ({
                                             sx={{
                                                 ...DataGridStyle.sx,
                                                 '& .MuiDataGrid-columnHeaders': {
-                                                    backgroundColor: initial.theme,
-                                                    color: 'white',
-                                                    fontWeight: 'bold',
+                                                    backgroundColor: initial.tableau_theme,
+                                                    color: 'black',
+                                                    //  fontWeight: 'bold',
                                                 },
                                                 '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
                                                     outline: 'none',
@@ -1315,7 +1413,7 @@ const PopupSaisie = ({
                         </Box>
                     </Box>
                 </DialogTitle>
-            </BootstrapDialog>
+            </BootstrapDialog >
         </>
     )
 }

@@ -1,111 +1,26 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { styled, useTheme } from '@mui/material/styles';
 import Box from '@mui/material/Box';
-import MuiDrawer from '@mui/material/Drawer';
 import MuiAppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
-import List from '@mui/material/List';
 import CssBaseline from '@mui/material/CssBaseline';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import { Stack, Menu, MenuItem, Divider } from '@mui/material';
+import { Stack, Menu, MenuItem, Divider, Button } from '@mui/material';
 import { init } from '../../init';
 import { Outlet } from 'react-router-dom';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
-import Dialog from '@mui/material/Dialog';
 import useLogout from '../hooks/useLogout';
 import { BsEscape } from "react-icons/bs";
 import { TbPasswordUser } from "react-icons/tb";
 import humburgerMenu from '../components/humburgerMenu/menuContent';
-import Administration from '../components/humburgerMenu/subMenu/Administration';
-import Declaration from '../components/humburgerMenu/subMenu/Declaration';
-import Parametrages from '../components/humburgerMenu/subMenu/Parametrages';
-import Revisions from '../components/humburgerMenu/subMenu/Revisions';
 import useAuth from '../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
 import { useLocation } from "react-router-dom";
 import { MdAccountBox } from "react-icons/md";
 import { RiAccountBoxLine } from "react-icons/ri";
-
+import axios from '../../config/axios';
 import PopupDisconnectCompte from '../components/menuComponent/Compte/PopupDisconnectCompte';
 import PopupPasswordChange from '../components/menuComponent/Compte/PopupPasswordChange';
-import axios from '../../config/axios';
-
-const drawerWidth = 240;
-
-const BootstrapDialog = styled(Dialog)(({ theme }) => ({
-  '& .MuiDialogContent-root': {
-    padding: theme.spacing(2),
-  },
-  '& .MuiDialogActions-root': {
-    padding: theme.spacing(1),
-  },
-}));
-
-//Création des composants pour le menu-------------------------------------------------------------------
-const openedMixin = (theme) => ({
-  width: drawerWidth,
-  transition: theme.transitions.create('width', {
-    easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.enteringScreen,
-  }),
-  overflowX: 'hidden',
-});
-
-const closedMixin = (theme) => ({
-  transition: theme.transitions.create('width', {
-    easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.leavingScreen,
-  }),
-  overflowX: 'hidden',
-  width: `calc(${theme.spacing(7)} + 1px)`,
-  [theme.breakpoints.up('sm')]: {
-    width: `calc(${theme.spacing(8)} + 1px)`,
-  },
-});
-
-const AppBar = styled(MuiAppBar, {
-  shouldForwardProp: (prop) => prop !== 'open',
-})(({ theme, open }) => ({
-  zIndex: theme.zIndex.drawer + 1,
-  transition: theme.transitions.create(['width', 'margin'], {
-    easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.leavingScreen,
-  }),
-  ...(open && {
-    marginLeft: drawerWidth,
-    width: `calc(100% - ${drawerWidth}px)`,
-    transition: theme.transitions.create(['width', 'margin'], {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.enteringScreen,
-    }),
-  }),
-}));
-
-const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' })(
-  ({ theme, open }) => ({
-    width: drawerWidth,
-    flexShrink: 0,
-    whiteSpace: 'nowrap',
-    boxSizing: 'border-box',
-    ...(open && {
-      ...openedMixin(theme),
-      '& .MuiDrawer-paper': openedMixin(theme),
-    }),
-    ...(!open && {
-      ...closedMixin(theme),
-      '& .MuiDrawer-paper': closedMixin(theme),
-    }),
-  }),
-);
 
 const ProfileImage = ({ name }) => {
   const nameParts = name.split(" ");
@@ -124,6 +39,7 @@ const ProfileImage = ({ name }) => {
         fontSize: "16px",
         lineHeight: "1",
         backgroundColor: "transparent",
+        color: init[0].text_theme,
       }}
     >
       {firstNameInitial}{lastNameInitial}
@@ -144,15 +60,12 @@ export default function HomePage() {
   const roles = decoded.UserInfo.roles;
   const compteId = decoded.UserInfo.compteId || null;
   const userId = decoded.UserInfo.userId || null;
-  const username = decoded.UserInfo.username || null;
   const comptename = decoded.UserInfo.compte || null;
 
   const [isButtonAddVisible, setIsButtonAddVisible] = useState(false);
-  const [isOpenPopupAddCompte, setIsOpenAddCompte] = useState(false);
+  const [isButtonRolePermissionVisible, setIsButtonRolePermissionVisible] = useState(false);
   const [isOpenPopupDisconnect, setIsOpenPopupDisconnect] = useState(false);
   const [isOpenPopupChangePassword, setOpenPopupChangePassword] = useState(false);
-  const [isButtonRolePermissionVisible, setIsButtonRolePermissionVisible] = useState(false);
-
   const [activeMenu, setActiveMenu] = useState("");
   const [listePortefeuille, setListePortefeuille] = useState([]);
   const [listeDossier, setListeDossier] = useState([]);
@@ -165,10 +78,10 @@ export default function HomePage() {
 
   const navigate = useNavigate();
   let initial = init[0];
-  const theme = useTheme();
 
-  const [open, setOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState();
+  const [adminAnchorEl, setAdminAnchorEl] = useState(null);
+  const [paramAnchorEl, setParamAnchorEl] = useState(null);
 
   const handleMenu = (event) => {
     setAnchorEl(event.currentTarget);
@@ -178,77 +91,76 @@ export default function HomePage() {
     setAnchorEl(null);
   };
 
-  const handleDrawerOpen = () => {
-    setOpen(true);
+  const closeHeaderSubMenus = () => {
+    setAdminAnchorEl(null);
+    setParamAnchorEl(null);
   };
 
-  const handleDrawerClose = () => {
-    setOpen(false);
-    // handleCloseSubMenu(false);
-    setActiveMenu("");
+  const adminTraitementList = useMemo(() => (
+    [
+      { text: 'Saisie', name: 'saisie', path: '/tab/administration/saisie', urldynamic: true },
+      { text: 'Consultation', name: 'consultation', path: '/tab/administration/consultation', urldynamic: true },
+    ]
+  ), []);
+
+  const adminImportList = useMemo(() => (
+    [
+      { text: 'Journal comptable', name: 'journalComptable', path: '/tab/administration/importJournal', urldynamic: true },
+    ]
+  ), []);
+
+  const adminExportList = useMemo(() => (
+    [
+      { text: 'Balance', name: 'balance', path: '/tab/administration/exportBalance', urldynamic: true },
+      { text: 'Grand livre', name: 'grandLivre', path: '/tab/administration/exportGrandLivre', urldynamic: true },
+      { text: 'Journal comptable', name: 'journalComptable', path: '/tab/administration/exportJournal', urldynamic: true },
+    ]
+  ), []);
+
+  const paramComptaList = useMemo(() => (
+    [
+      { text: 'Analytique', name: 'analytique', path: '/tab/parametrages/paramAnalytique', urldynamic: true },
+      { text: 'Code journaux', name: 'codejournaux', path: '/tab/parametrages/paramCodeJournal', urldynamic: true },
+      { text: 'CRM', name: 'crm', path: '/tab/parametrages/paramCrm', urldynamic: true },
+      { text: 'Devises', name: 'devises', path: '/tab/parametrages/paramDevise', urldynamic: true },
+      { text: 'Exercices', name: 'exercices', path: '/tab/parametrages/paramExercice', urldynamic: true },
+      { text: 'Plan comptable', name: 'planComptable', path: '/tab/parametrages/paramPlanComptable', urldynamic: true },
+      { text: 'Plan comptable - modèle', name: 'planComptableModele', path: '/tab/parametrages/paramPlanComptableModele', urldynamic: false },
+    ]
+  ), []);
+
+  const openAdminMenu = (el) => {
+    if (adminAnchorEl === el) return;
+    setParamAnchorEl(null);
+    setAdminAnchorEl(el);
   };
 
-  //Choix d'affichage de sous menu----------------------------------------
-  const [subMenuState, setSubMenuState] = useState({
-    administration: false,
-    revision: false,
-    declaration: false,
-    parametrages: false
-  });
+  const openParamMenu = (el) => {
+    if (paramAnchorEl === el) return;
+    setAdminAnchorEl(null);
+    setParamAnchorEl(el);
+  };
 
-  function showSubMenu(name, subMenu, path, urlDynamic) {
-    if (!subMenu) {
-      setSubMenuState({
-        administration: false,
-        revision: false,
-        declaration: false,
-        parametrages: false,
-      });
-
-      if (urlDynamic) {
-        navigate(`${path}/${idDossier}`);
-      } else {
-        navigate(path);
-      }
-      setOpen(false);
-      setActiveMenu(path);
-      return;
+  const navigateToMenuItem = (item) => {
+    closeHeaderSubMenus();
+    if (item?.urldynamic) {
+      navigate(`${item.path}/${idDossier}`);
+    } else {
+      navigate(item.path);
     }
+    setActiveMenu(item.path);
+  };
 
-    setSubMenuState(prev => {
-      const isOpen = !!prev[name];
-      const reset = {
-        administration: false,
-        revision: false,
-        declaration: false,
-        parametrages: false,
-      };
-
-      setActiveMenu(prevActive => (isOpen && prevActive === path ? "" : path));
-
-      return isOpen ? reset : { ...reset, [name]: true };
-    });
-  }
-
-  const handleCloseSubMenu = (newState) => {
-    setSubMenuState({
-      administration: newState,
-      revision: newState,
-      declaration: newState,
-      parametrages: newState
-    });
-  }
-
-  const subMenuPathNavigation = (path) => {
-    setSubMenuState({
-      administration: false,
-      revision: false,
-      declaration: false,
-      parametrages: false
-    });
-    navigate(path);
-    setOpen(false);
-  }
+  const handleTopNavClick = (item) => {
+    closeHeaderSubMenus();
+    if (item?.subMenu) return;
+    if (item?.urlDynamic) {
+      navigate(`${item.path}/${idDossier}`);
+    } else {
+      navigate(item.path);
+    }
+    setActiveMenu(item.path);
+  };
 
   const GetInfosIdDossier = (id) => {
     axios.get(`/home/FileInfos/${id}`).then((response) => {
@@ -280,7 +192,8 @@ export default function HomePage() {
   };
 
   //Creation de la liste du menu-------------------------------------------------
-  const MenuSide = humburgerMenu;
+  // Déclarations désactivées: on ne les affiche plus dans le menu.
+  const MenuSide = humburgerMenu.filter(item => item.name !== 'declaration');
 
   const setShowPopupDisconnect = (value) => {
     setIsOpenPopupDisconnect(value);
@@ -370,58 +283,149 @@ export default function HomePage() {
       <Box
         sx={{
           display: "flex",
-          width: open ? "100vw" : "97.8vw",
+          width: "100vw",
           height: "100vh",
-          overflowX: open ? "hidden" : "",
-          overflowY: open ? "hidden" : ""
+          overflowX: "hidden",
+          overflowY: "auto"
         }}
       >
         <CssBaseline />
-        <AppBar position="fixed" open={open} style={{ height: "30px" }}>
-          <Toolbar style={{ backgroundColor: "#010122", alignContent: 'flex-start', alignItems: "center" }} variant="dense">
-
-            <IconButton
-              color="inherit"
-              aria-label="open drawer"
-              onClick={handleDrawerOpen}
-              edge="start"
-              sx={{ mr: 2, ...(open && { display: 'none' }) }}
-              style={{ textTransform: 'none', outline: 'none' }}
-            >
-              <ChevronRightIcon style={{ textTransform: 'none', outline: 'none' }} />
-            </IconButton>
-
-            <Stack
-              direction={'row'}
-              alignItems={'center'}
-              justifyContent={'space-between'}
-              sx={{ width: "100%" }}
-            >
-              <Stack direction={"row"} alignContent={"center"} alignItems={"center"} marginLeft={"10px"}>
-                <MdAccountBox style={{ width: "40px", height: "40px" }} />
-                <Typography
-                  variant="h4" noWrap component="div"
-                  style={{
-                    height: "35px", width: "100%",
-                    fontSize: "16px", textAlign: "center", alignContent: "center"
-                  }}
-                >
-                  {`${comptename}`}
-                </Typography>
+        <MuiAppBar
+          position="fixed"
+          elevation={0}
+          sx={{
+            height: "80px",
+            boxShadow: 'none',
+            borderBottom: 'none',
+            backgroundImage: 'linear-gradient(90deg, #064E3B 0%, #0F766E 45%, #0B1220 100%)',
+            backgroundColor: 'transparent',
+          }}
+        >
+          <Toolbar
+            variant="dense"
+            sx={{
+              minHeight: '80px',
+              alignItems: 'center',
+              px: 2,
+            }}
+          >
+            <Stack direction={'row'} alignItems={'center'} sx={{ width: "100%" }}>
+              <Stack direction={'row'} alignItems={'center'} sx={{ minWidth: 140 }}>
+                <img
+                  src="/src/img/30.png"
+                  alt="Logo Check Up Data"
+                  style={{ width: '60px', height: '60px' }}
+                />
               </Stack>
 
-              <Stack
-              >
+              <Stack direction={'row'} alignItems={'center'} justifyContent={'center'} sx={{ flexGrow: 1 }}>
+                <Stack direction={'row'} alignItems={'center'} spacing={4}>
+                  {MenuSide.map((item) => (
+                    <Button
+                      key={item.name}
+                      onClick={() => handleTopNavClick(item)}
+                      onMouseEnter={(e) => {
+                        if (item.name === 'administration') {
+                          openAdminMenu(e.currentTarget);
+                        } else if (item.name === 'parametrages') {
+                          openParamMenu(e.currentTarget);
+                        } else {
+                          closeHeaderSubMenus();
+                        }
+                      }}
+                      disableRipple
+                      disableFocusRipple
+                      sx={{
+                        color: 'white',
+                        textTransform: 'none',
+                        fontWeight: location.pathname.startsWith(item.path) ? 700 : 500,
+                        opacity: location.pathname.startsWith(item.path) ? 1 : 0.9,
+                        outline: 'none',
+                        boxShadow: 'none',
+                        '&:focus': { outline: 'none' },
+                        '&.Mui-focusVisible': { outline: 'none' },
+                        '&:hover': {
+                          backgroundColor: 'rgba(255,255,255,0.10)',
+                        },
+                      }}
+                    >
+                      {item.text}
+                    </Button>
+                  ))}
+                </Stack>
+
+                <Menu
+                  anchorEl={adminAnchorEl}
+                  open={Boolean(adminAnchorEl)}
+                  onClose={() => setAdminAnchorEl(null)}
+                  MenuListProps={{
+                    onMouseLeave: () => setAdminAnchorEl(null)
+                  }}
+                  disableScrollLock
+                  anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                  transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                  slotProps={{
+                    paper: {
+                      sx: { mt: 1, borderRadius: 2, minWidth: 260 }
+                    }
+                  }}
+                >
+                  <MenuItem disabled><Typography fontWeight={700}>Traitement</Typography></MenuItem>
+                  {adminTraitementList.map((it) => (
+                    <MenuItem key={`t-${it.name}`} onClick={() => navigateToMenuItem(it)}>{it.text}</MenuItem>
+                  ))}
+                  <Divider sx={{ my: 0 }} />
+                  <MenuItem disabled><Typography fontWeight={700}>Import</Typography></MenuItem>
+                  {adminImportList.map((it) => (
+                    <MenuItem key={`i-${it.name}`} onClick={() => navigateToMenuItem(it)}>{it.text}</MenuItem>
+                  ))}
+                  <Divider sx={{ my: 0 }} />
+                  <MenuItem disabled><Typography fontWeight={700}>Export</Typography></MenuItem>
+                  {adminExportList.map((it) => (
+                    <MenuItem key={`e-${it.name}`} onClick={() => navigateToMenuItem(it)}>{it.text}</MenuItem>
+                  ))}
+                </Menu>
+
+                <Menu
+                  anchorEl={paramAnchorEl}
+                  open={Boolean(paramAnchorEl)}
+                  onClose={() => setParamAnchorEl(null)}
+                  MenuListProps={{
+                    onMouseLeave: () => setParamAnchorEl(null)
+                  }}
+                  disableScrollLock
+                  anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                  transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                  slotProps={{
+                    paper: {
+                      sx: { mt: 1, borderRadius: 2, minWidth: 260 }
+                    }
+                  }}
+                >
+                  {paramComptaList.map((it) => (
+                    <MenuItem key={it.name} onClick={() => navigateToMenuItem(it)}>{it.text}</MenuItem>
+                  ))}
+                </Menu>
+              </Stack>
+
+              <Stack direction={'row'} alignItems={'center'} sx={{ minWidth: 140, justifyContent: 'flex-end' }}>
                 <IconButton
                   size="40"
                   aria-label="account of current user"
                   aria-controls="menu-appbar"
                   aria-haspopup="true"
                   onClick={handleMenu}
+                  disableRipple
+                  disableFocusRipple
                   color="inherit"
                   style={{ textTransform: 'none', outline: 'none' }}
                   sx={{
                     p: 0,
+                    boxShadow: 'none',
+                    outline: 'none',
+                    '&:focus': { outline: 'none' },
+                    '&:focus-visible': { outline: 'none', boxShadow: 'none' },
+                    '&.Mui-focusVisible': { outline: 'none', boxShadow: 'none' },
                   }}
                 >
                   <div
@@ -433,7 +437,8 @@ export default function HomePage() {
                       fontWeight: "lighter",
                       height: "35px",
                       width: "35px",
-                      backgroundColor: "#427AA1",
+                      backgroundColor: initial.menu_theme,
+                      border: "1px solid rgba(17, 24, 39, 0.2)",
                       borderRadius: "50%",
                       textTransform: 'none',
                       outline: 'none'
@@ -465,6 +470,21 @@ export default function HomePage() {
                     }
                   }}
                 >
+                  <MenuItem disabled>
+                    <Stack direction={"row"} alignItems={'center'} alignContent={'center'}>
+                      <IconButton
+                        style={{ color: initial.button_exit_color, borderRadius: "50px", borderColor: "transparent", backgroundColor: 'transparent' }}
+                        aria-label="close"
+                      >
+                        <MdAccountBox style={{ width: "20px", height: "20px", color: "gray" }} />
+                      </IconButton>
+                      <Stack>
+                        <Typography fontWeight={700}>{decoded?.UserInfo?.username || 'Kaonty'}</Typography>
+                        <Typography variant="body2">{comptename || ''}</Typography>
+                      </Stack>
+                    </Stack>
+                  </MenuItem>
+                  <Divider sx={{ my: 0 }} />
                   <MenuItem onClick={() => { handleClose(); setOpenPopupChangePassword(true) }} >
                     <Stack direction={"row"} alignItems={'center'} alignContent={'left'}>
                       <IconButton
@@ -508,76 +528,7 @@ export default function HomePage() {
             </Stack>
 
           </Toolbar>
-        </AppBar>
-
-        <Drawer
-          variant="permanent"
-          open={open}
-          style={{
-            marginRight: "-10px"
-          }}
-          PaperProps={{
-            sx: {
-              backgroundColor: initial.theme,
-              color: "white",
-            }
-          }}
-        >
-
-          <Stack height={"47.5px"} width={"100%"} style={{ backgroundColor: "#010122", paddingLeft: 5 }}>
-            <IconButton onClick={handleDrawerClose} style={{ width: "47px", height: "47px", color: "white", textTransform: 'none', outline: 'none' }}>
-              {theme.direction === 'rtl' ? <ChevronRightIcon style={{ textTransform: 'none', outline: 'none' }} /> : <ChevronLeftIcon style={{ textTransform: 'none', outline: 'none' }} />}
-            </IconButton>
-          </Stack>
-
-          <Stack
-            sx={{
-              width: "100%",
-              alignItems: "center",
-              justifyContent: "center"
-            }}
-          >
-            <img
-              src="/src/img/Logo Kaonty_2.png"
-              alt="Logo Kaonty"
-              style={{
-                width: '40px',
-                height: '40px',
-                marginTop: '10px'
-              }}
-            />
-          </Stack>
-
-          <Stack style={{ marginBottom: "55px" }} />
-
-          <List >
-            {MenuSide.map(item => (
-              <ListItem
-                key={item.text}
-                onClick={() => showSubMenu(item.name, item.subMenu, item.path, item.urlDynamic)}
-              >
-                <ListItemButton
-                  style={{
-                    marginLeft: "-12px",
-                    marginRight: "-12px",
-                    borderRadius: '5px',
-                    marginBottom: '-12px',
-                    backgroundColor: activeMenu
-                      ? activeMenu === item.path
-                        ? "rgba(241, 218, 230, 0.3)"
-                        : "transparent"
-                      : location.pathname.startsWith(item.path)
-                        ? "rgba(241, 218, 230, 0.3)"
-                        : "transparent",
-                  }}
-                >
-                  <ListItemIcon>{item.icons}</ListItemIcon>
-                  <ListItemText primary={item.text} primaryTypographyProps={{ fontSize: '15px' }} />
-                </ListItemButton>
-              </ListItem>
-            ))}
-          </List>
-        </Drawer>
+        </MuiAppBar>
 
         {/* SOUS MENU */}
         <Box
@@ -585,70 +536,19 @@ export default function HomePage() {
           sx={{
             flexGrow: 1,
             minWidth: 0,
-            marginRight: open ? 2 : 0
+            marginRight: 0,
+            marginTop: 10
           }}>
           <div
             style={{
               position: "relative",
-              width: "100.4%",
+              width: "100%",
               marginBottom: 0,
-              marginTop: 48,
               marginLeft: 10,
               zIndex: 1,
             }}
           >
-            {subMenuState.administration && (
-              <Administration
-                humburgerMenuState={open}
-                onWindowState={handleCloseSubMenu}
-                pathToNavigate={subMenuPathNavigation}
-                closeDrawer={() => { setOpen(false); setActiveMenu("") }}
-                roles={roles}
-              />
-            )}
-            {subMenuState.revision && (
-              <Revisions
-                humburgerMenuState={open}
-                onWindowState={handleCloseSubMenu}
-                pathToNavigate={subMenuPathNavigation}
-                closeDrawer={() => { setOpen(false); setActiveMenu("") }}
-                roles={roles}
-              />
-            )}
-            {subMenuState.declaration && (
-              <Declaration
-                humburgerMenuState={open}
-                onWindowState={handleCloseSubMenu}
-                pathToNavigate={subMenuPathNavigation}
-                closeDrawer={() => { setOpen(false); setActiveMenu("") }}
-                roles={roles}
-              />
-            )}
-            {subMenuState.parametrages && (
-              <Parametrages
-                humburgerMenuState={open}
-                onWindowState={handleCloseSubMenu}
-                pathToNavigate={subMenuPathNavigation}
-                closeDrawer={() => { setOpen(false); setActiveMenu("") }}
-                roles={roles}
-                consolidation={consolidation}
-              />
-            )}
             <Box sx={{ position: 'relative' }}>
-              {open && (
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100vw',
-                    height: '105vh',
-                    backgroundColor: 'rgba(0,0,0,0.4)',
-                    zIndex: 1,
-                  }}
-                  onClick={() => setOpen(false)}
-                />
-              )}
               <Box
                 sx={{
                   position: 'relative',

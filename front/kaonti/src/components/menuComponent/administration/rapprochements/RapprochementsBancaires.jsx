@@ -134,7 +134,7 @@ function RapprochementsBancaires() {
           <IconButton
             onClick={() => handleAdd(false)}
             disabled={!pcSelected || !!editingRowId}
-            style={{ width: "35px", height: '35px', borderRadius: "2px", backgroundColor: initial.theme }}
+            style={{ width: "35px", height: '35px', borderRadius: "2px", backgroundColor: initial.add_new_line_bouton_color }}
           >
             <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
           </IconButton>
@@ -145,7 +145,7 @@ function RapprochementsBancaires() {
           <IconButton
             onClick={handleEdit}
             disabled={rapproSelectionModel.length === 0 || !!editingRowId}
-            style={{ width: "35px", height: '35px', borderRadius: "2px", backgroundColor: initial.theme }}
+            style={{ width: "35px", height: '35px', borderRadius: "2px", backgroundColor: initial.add_new_line_bouton_color }}
           >
             <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
           </IconButton>
@@ -156,7 +156,7 @@ function RapprochementsBancaires() {
           <IconButton
             onClick={handleSave}
             disabled={!editingRowId}
-            style={{ width: "35px", height: '35px', borderRadius: "2px", backgroundColor: initial.theme }}
+            style={{ width: "35px", height: '35px', borderRadius: "2px", backgroundColor: initial.add_new_line_bouton_color }}
           >
             <TfiSave style={{ width: '25px', height: '25px', color: 'white' }} />
           </IconButton>
@@ -1104,7 +1104,7 @@ function RapprochementsBancaires() {
                 autoHeight
                 sx={{
                   flex: 1,
-                  '& .MuiDataGrid-columnHeaders': { backgroundColor: initial.theme, color: '#fff' },
+                  '& .MuiDataGrid-columnHeaders': { backgroundColor: initial.add_new_line_bouton_color, color: '#fff' },
                 }}
                 checkboxSelection
                 isRowSelectable={(params) => !params.row?.isTotal}

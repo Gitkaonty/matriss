@@ -192,7 +192,6 @@ const AddCptToPc = async (req, res) => {
       region,
       district,
       commune,
-      typecomptabilite,
       compteautre,
       libelleautre,
     } = req.body;
@@ -311,7 +310,6 @@ const AddCptToPc = async (req, res) => {
           region: region,
           district: district,
           commune: commune,
-          typecomptabilite
         });
 
         if (NewCptAdded.id) {
@@ -445,7 +443,6 @@ const AddCptToPc = async (req, res) => {
           region: region,
           district: district,
           commune: commune,
-          typecomptabilite
         });
 
         if (NewCptAdded.id) {
@@ -579,7 +576,6 @@ const AddCptToPc = async (req, res) => {
           region: region,
           district: district,
           commune: commune,
-          typecomptabilite
         });
 
         if (NewCptAdded.id) {
@@ -710,7 +706,6 @@ const AddCptToPc = async (req, res) => {
           region: region,
           district: district,
           commune: commune,
-          typecomptabilite
         });
 
         if (NewCptAdded.id) {
@@ -857,7 +852,6 @@ const AddCptToPc = async (req, res) => {
           region: region,
           district: district,
           commune: commune,
-          typecomptabilite
         };
 
         const NewCptAdded = await dossierPlanComptable.update(
@@ -1005,7 +999,6 @@ const AddCptToPc = async (req, res) => {
           region: region,
           district: district,
           commune: commune,
-          typecomptabilite
         };
 
         console.log('[AddCptToPc] UPDATE avec-nif - itemId:', itemId, 'compte:', compteFormated);
@@ -1152,7 +1145,6 @@ const AddCptToPc = async (req, res) => {
           region: region,
           district: district,
           commune: commune,
-          typecomptabilite
         };
 
         const NewCptAdded = await dossierPlanComptable.update(
@@ -1294,7 +1286,6 @@ const AddCptToPc = async (req, res) => {
           region: region,
           district: district,
           commune: commune,
-          typecomptabilite
         };
 
         const NewCptAdded = await dossierPlanComptable.update(
@@ -1474,11 +1465,9 @@ const deleteItemPc = async (req, res) => {
 const recupPcIdLibelle = async (req, res) => {
   try {
     const { id_dossier, id_compte } = req.params;
-    // const { typeComptabilite } = req.query;
 
     const dossierData = await dossiers.findByPk(id_dossier);
     const consolidation = dossierData?.consolidation || false;
-    const typeComptabilite = dossierData?.typecomptabilite || 'Français';
 
     let id_dossiers_a_utiliser = [Number(id_dossier)];
 
@@ -1508,7 +1497,6 @@ const recupPcIdLibelle = async (req, res) => {
         id_dossier: { [Sequelize.Op.in]: id_dossiers_a_utiliser },
         id_compte,
         nature: { [Sequelize.Op.ne]: 'Collectif' },
-        typecomptabilite: typeComptabilite
       },
       include: [
         {
@@ -1532,9 +1520,9 @@ const recupPcIdLibelle = async (req, res) => {
 
     const mappedListe = listepc.map(item => ({
       id: item.id,
-      libelle: typeComptabilite === 'Autres' ? item?.libelleautre ? item?.libelleautre + ' (Autre)' : item?.libelle || 'Aucune libellé' : item?.libelle || 'Aucune libellé',
-      compte: typeComptabilite === 'Autres' ? item?.compteautre ? item?.compteautre : item?.compte || null : item?.compte || null,
-      libelleaux: typeComptabilite === 'Autres' ? item?.BaseAux?.libelle ? item?.BaseAux?.libelle + ' (Autre)' : item?.BaseAux?.libelle || 'Aucune libellé' : item?.BaseAux?.libelle || 'Aucune libellé',
+      libelle: item?.libelle || 'Aucune libellé',
+      compte: item?.compte || null,
+      libelleaux: item?.BaseAux?.libelle || 'Aucune libellé',
       id_dossier: Number(item?.id_dossier) || null,
       dossier: item?.dossier.dossier || null,
     }));
@@ -1576,7 +1564,6 @@ const recupPcIdLibelleForJournal = async (req, res) => {
     const { id_dossier, id_compte } = req.params;
 
     const dossierData = await dossiers.findByPk(id_dossier);
-    const typeComptabilite = dossierData?.typecomptabilite || 'Français';
 
     const listepc = await dossierPlanComptable.findAll({
       where: {
@@ -1606,8 +1593,8 @@ const recupPcIdLibelleForJournal = async (req, res) => {
 
     const mappedListe = listepc.map(item => ({
       id: item.id,
-      libelle: typeComptabilite === 'Autres' ? item?.libelleautre ? item?.libelleautre + ' (Autre)' : item?.libelle || 'Aucune libellé' : item?.libelle || 'Aucune libellé',
-      compte: typeComptabilite === 'Autres' ? item?.compteautre ? item?.compteautre : item?.BaseAux?.compte || null : item?.BaseAux?.compte || null,
+      libelle: item?.libelle || 'Aucune libellé',
+      compte: item?.BaseAux?.compte || null,
       id_dossier: Number(item?.id_dossier) || null,
       dossier: item?.dossier.dossier || null,
     }));

@@ -24,8 +24,7 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
+  display: block;
   min-width: 320px;
   min-height: 100vh;
 }
@@ -51,7 +50,15 @@ button:hover {
 }
 button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  outline: none;
+}
+
+/* Remove any residual header underline/shadow (often perceived as a blue line) */
+.MuiAppBar-root,
+.MuiToolbar-root,
+.MuiPaper-root {
+  box-shadow: none !important;
+  border-bottom: none !important;
 }
 
 @media (prefers-color-scheme: light) {

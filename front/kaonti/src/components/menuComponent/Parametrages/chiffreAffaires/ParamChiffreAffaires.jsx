@@ -663,20 +663,20 @@ export default function ParamChiffreAffairesComponent() {
 
                             <Stack width={"100%"} spacing={0.5} direction={"row"} justifyContent={"right"}>
                                 <Tooltip title="Ajouter une ligne">
-                                    <IconButton disabled={!canAdd || disableAddRowBouton} onClick={handleOpenDialogAddNewAssocie} style={{ width: "35px", height: '35px', borderRadius: "2px", backgroundColor: initial.theme }}>
+                                    <IconButton disabled={!canAdd || disableAddRowBouton} onClick={handleOpenDialogAddNewAssocie} style={{ width: "35px", height: '35px', borderRadius: "2px", backgroundColor: initial.add_new_line_bouton_color }}>
                                         <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
                                     </IconButton>
                                 </Tooltip>
 
                                 <Tooltip title="Modifier la ligne sélectionnée">
-                                    <IconButton disabled={(!canModify && selectedRowId > 0) || disableModifyBouton} onClick={handleEditClick(selectedRowId)} style={{ width: "35px", height: '35px', borderRadius: "2px", backgroundColor: initial.theme }}>
+                                    <IconButton disabled={(!canModify && selectedRowId > 0) || disableModifyBouton} onClick={handleEditClick(selectedRowId)} style={{ width: "35px", height: '35px', borderRadius: "2px", backgroundColor: initial.add_new_line_bouton_color }}>
                                         <FaRegPenToSquare style={{ width: '25px', height: '25px', color: 'white' }} />
                                     </IconButton>
                                 </Tooltip>
 
                                 <Tooltip title="Sauvegarder les modifications">
                                     <span>
-                                        <IconButton disabled={(!canAdd && !canModify) || disableSaveBouton} onClick={handleSaveClick(selectedRowId)} style={{ width: "35px", height: '35px', borderRadius: "2px", backgroundColor: initial.theme }}>
+                                        <IconButton disabled={(!canAdd && !canModify) || disableSaveBouton} onClick={handleSaveClick(selectedRowId)} style={{ width: "35px", height: '35px', borderRadius: "2px", backgroundColor: initial.add_new_line_bouton_color }}>
                                             <TfiSave style={{ width: '50px', height: '50px', color: 'white' }} />
                                         </IconButton>
                                     </span>

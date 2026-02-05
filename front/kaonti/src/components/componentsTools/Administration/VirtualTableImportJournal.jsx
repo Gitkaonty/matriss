@@ -46,10 +46,10 @@ export default function VirtualTableImportJournal({ tableHeader, tableRow }) {
                                     sx={{
                                         fontSize: 16,
                                         fontWeight: "bold",
-                                        backgroundColor: initial.theme,
+                                        backgroundColor: initial.tableau_theme,
                                         paddingY: 0.8,
                                         borderRadius: 0.5,
-                                        color: 'white'
+                                        color: 'black'
                                     }}
                                     key={column.id}
                                     align={column.align}
@@ -107,7 +107,7 @@ export default function VirtualTableImportJournal({ tableHeader, tableRow }) {
                                         fontWeight: 'bold',
                                         fontSize: 15,
                                         paddingY: 0.8,
-                                        backgroundColor: '#89A8B2',
+                                        backgroundColor: initial.footer_theme,
                                         position: 'sticky',
                                         bottom: 0,
                                         zIndex: 2,

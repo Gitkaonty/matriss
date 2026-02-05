@@ -664,7 +664,7 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
                                 style={{
                                     width: "35px", height: '35px',
                                     borderRadius: "2px", borderColor: "transparent",
-                                    backgroundColor: initial.theme,
+                                    backgroundColor: initial.add_new_line_bouton_color,
                                     textTransform: 'none', outline: 'none'
                                 }}
                             >
@@ -680,7 +680,7 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
                                 style={{
                                     width: "35px", height: '35px',
                                     borderRadius: "2px", borderColor: "transparent",
-                                    backgroundColor: initial.theme,
+                                    backgroundColor: initial.add_new_line_bouton_color,
                                     textTransform: 'none', outline: 'none'
                                 }}
                             >
@@ -697,7 +697,7 @@ export const Datagriddetail = ({ compteId, fileId, exerciceId, etatId, rubriqueI
                                     style={{
                                         width: "35px", height: '35px',
                                         borderRadius: "2px", borderColor: "transparent",
-                                        backgroundColor: initial.theme,
+                                        backgroundColor: initial.add_new_line_bouton_color,
                                         textTransform: 'none', outline: 'none'
                                     }}
                                 >

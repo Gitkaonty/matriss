@@ -5,12 +5,6 @@ import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import SaveAltIcon from '@mui/icons-material/SaveAlt';
-import LogoutIcon from '@mui/icons-material/Logout';
 import useAuth from '../../../../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
 import axios from '../../../../../config/axios';
@@ -321,6 +315,12 @@ export default function ImportJournal() {
         } else if (choix === 1) {
             GetListeSituation(selectedExerciceId);
         }
+    }
+
+    const handleChangeSelectedPeriod = (periodeId) => {
+        setSelectedPeriodeId(periodeId);
+        setSelectedExerciceId(periodeId);
+        formikImport.setFieldValue('idExercice', periodeId);
     }
 
     //Récupération du plan comptable
@@ -876,6 +876,35 @@ export default function ImportJournal() {
             handleCloseDialogConfirmImport();
         }
     }
+    const buttonStyle = {
+        minWidth: 120,
+        height: 32,
+        px: 2,
+        textTransform: 'none',
+        fontSize: '0.85rem',
+        borderRadius: '6px',
+        boxShadow: 'none',
+        '& .MuiTouchRipple-root': {
+            display: 'none',
+        },
+        '&:focus': {
+            outline: 'none',
+        },
+        '&.Mui-focusVisible': {
+            outline: 'none',
+            boxShadow: 'none',
+        },
+
+        '&:hover': {
+            boxShadow: 'none',
+            backgroundColor: 'action.hover',
+            border: 'none',
+        },
+
+        '&.Mui-disabled': {
+            opacity: 0.4
+        },
+    };
 
     return (
         <Box>
@@ -928,199 +957,255 @@ export default function ImportJournal() {
                         <Stack width={"100%"} height={"100%"} spacing={4} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
                             <Typography variant='h6' sx={{ color: "black" }} align='left'>Administration - Import Journal</Typography>
 
-                            <Stack width={"100%"} height={"80px"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "20px" }}>
-                                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                                    <InputLabel id="demo-simple-select-standard-label">Exercice:</InputLabel>
-                                    <Select
-                                        labelId="demo-simple-select-standard-label"
-                                        id="demo-simple-select-standard"
-                                        value={selectedExerciceId}
-                                        label={"valSelect"}
-                                        onChange={(e) => handleChangeExercice(e.target.value)}
-                                        sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                    >
-                                        {listeExercice.map((option) => (
-                                            <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                                        ))
-                                        }
-                                    </Select>
-                                </FormControl>
-
-                                <FormControl variant="standard" sx={{ m: 1, minWidth: 150 }}>
-                                    <InputLabel id="demo-simple-select-standard-label">Période</InputLabel>
-                                    <Select
-                                        disabled
-                                        labelId="demo-simple-select-standard-label"
-                                        id="demo-simple-select-standard"
-                                        value={selectedPeriodeChoiceId}
-                                        label={"valSelect"}
-                                        onChange={(e) => handleChangePeriode(e.target.value)}
-                                        sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                    >
-                                        <MenuItem value={0}>Toutes</MenuItem>
-                                        <MenuItem value={1}>Situations</MenuItem>
-                                    </Select>
-                                </FormControl>
-
-                                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                                    <InputLabel id="demo-simple-select-standard-label">Du</InputLabel>
-                                    <Select
-                                        labelId="demo-simple-select-standard-label"
-                                        id="demo-simple-select-standard"
-                                        value={selectedPeriodeId}
-                                        label={"valSelect"}
-                                        onChange={(e) => handleChangeDateIntervalle(e.target.value)}
-                                        sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                    >
-                                        {listeSituation?.map((option) => (
-                                            <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                                        ))
-                                        }
-                                    </Select>
-                                </FormControl>
-
-                            </Stack>
-
-                            <Stack width={"100%"} height={"60px"} spacing={2} alignItems={"center"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                <FormControl variant="standard" sx={{ m: 0 }}>
-                                    <InputLabel id="demo-simple-select-standard-label">Type de fichier</InputLabel>
-                                    <Select
-                                        labelId="demo-simple-select-standard-label"
-                                        id="demo-simple-select-standard"
-                                        value={formikImport.values.type}
-                                        label={"valSelectType"}
-                                        onChange={handleChangeType}
-                                        sx={{ width: "140px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                    >
-                                        <MenuItem key={"CSV"} value={"CSV"}>CSV</MenuItem>
-                                        <MenuItem key={"FEC"} value={"FEC"}>FEC</MenuItem>
-                                    </Select>
-
-                                    <FormHelperText style={{ color: 'red' }}>
-                                        {formikImport.errors.type && formikImport.touched.type && formikImport.errors.type}
-                                    </FormHelperText>
-                                </FormControl>
-
-                                <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                                    <InputLabel id="demo-simple-select-standard-label">Choix d'import</InputLabel>
-                                    <Select
-                                        labelId="demo-simple-select-standard-label"
-                                        id="demo-simple-select-standard"
-                                        value={formikImport.values.choixImport}
-                                        label={"valSelectCptDispatch"}
-                                        onChange={handleChangeCptDispatch}
-                                        sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                    >
-                                        <MenuItem key={"None"} value={""}>
-                                            <em>None</em>
-                                        </MenuItem>
-                                        <MenuItem key={"ECRASER"} value={"ECRASER"}>Ecraser les données déjà existantes</MenuItem>
-                                        <MenuItem key={"UPDATE"} value={"UPDATE"}>Importer sans écraser</MenuItem>
-                                    </Select>
-
-                                    <FormHelperText style={{ color: 'red' }}>
-                                        {formikImport.errors.choixImport && formikImport.touched.choixImport && formikImport.errors.choixImport}
-                                    </FormHelperText>
-                                </FormControl>
-
-                                <Stack spacing={1} width={"400px"} height={"50px"} direction={"row"}
-                                    style={{ border: '2px dashed rgba(5,96,116,0.60)', marginLeft: "30px", paddingLeft: "20px" }}
-                                    alignContent={"center"} justifyContent={"left"} alignItems={"center"}
+                            <Stack width={"100%"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"column"} style={{ marginLeft: "0px", marginTop: "20px" }}>
+                                <Stack
+                                    width={"100%"}
+                                    spacing={2}
+                                    alignItems={"center"}
+                                    alignContent={"center"}
+                                    direction={"row"}
+                                    style={{ marginLeft: "0px", marginTop: "0px", flexWrap: 'wrap', marginBottom: "20px" }} // <-- ici
                                 >
-                                    <Typography variant='h7' sx={{ color: "black", fontWeight: "bold" }} align='left'>
-                                        Télécharger ici le modèle d'import
-                                    </Typography>
-
-                                    <List style={{ marginLeft: "10px" }}>
-                                        <ListItem style={{ width: "100px", justifyContent: "center" }}>
-                                            <ListItemButton
-                                                disabled={!fileTypeCSV}
-                                                onClick={fileTypeCSV ? handleDownloadModel : undefined}
+                                    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                                        <Box
+                                            sx={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 0.3,
+                                                minWidth: "250px",
+                                            }}
+                                        >
+                                            <Typography
+                                                sx={{
+                                                    fontWeight: "bold",
+                                                    minWidth: "70px",
+                                                    flexShrink: 0,
+                                                }}
                                             >
-                                                <ListItemIcon >
-                                                    <LogoutIcon
-                                                        style={{
-                                                            width: "40px",
-                                                            height: "30px",
-                                                            color: fileTypeCSV ? 'rgba(5,96,116,0.60)' : '#bdbdbd',
-                                                            transform: "rotate(270deg)"
-                                                        }}
-                                                    />
-                                                </ListItemIcon>
-                                            </ListItemButton>
-                                        </ListItem>
-                                    </List>
+                                                Exercice:
+                                            </Typography>
+
+                                            <Select
+                                                value={selectedPeriodeId}
+                                                onChange={(e) => handleChangeSelectedPeriod(e.target.value)}
+                                                displayEmpty
+                                                sx={{
+                                                    border: "1px solid #ccc",
+                                                    borderRadius: "4px",
+                                                    minWidth: "300px",
+                                                    height: "32px",
+                                                    paddingX: 1,
+                                                    "& .MuiSelect-select": {
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        paddingY: 0,
+                                                        whiteSpace: "nowrap",
+                                                        overflow: "hidden",
+                                                        textOverflow: "ellipsis",
+                                                    },
+                                                }}
+                                            >
+                                                {listeExercice.map((option) => (
+                                                    <MenuItem key={option.id} value={option.id}>
+                                                        {option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        </Box>
+                                    </Box>
                                 </Stack>
 
-                                <Stack spacing={1} width={"350px"} height={"50px"} direction={"row"}
-                                    style={{ border: '2px dashed rgba(5,96,116,0.60)', marginLeft: "30px", paddingLeft: "20px" }}
-                                    alignContent={"center"} justifyContent={"left"} alignItems={"center"}
-                                    backgroundColor={'rgba(5,96,116,0.05)'}
+                                <Stack
+                                    width={"100%"}
+                                    spacing={1}
+                                    alignItems={"center"}
+                                    alignContent={"center"}
+                                    direction={"row"}
+                                    style={{ marginLeft: "0px", marginTop: "0px", flexWrap: 'wrap' }}
                                 >
-                                    <input
-                                        type="file"
-                                        accept={fileTypeCSV ? ".csv" : ".txt"}
-                                        // webkitdirectory="true"
-                                        onChange={handleFileSelect}
-                                        style={{ display: 'none' }}
-                                        id="fileInput"
-                                    />
+                                    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                                        {/* Ligne Label + Select */}
+                                        <Box
+                                            sx={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 1,
+                                                minWidth: "250px",
+                                            }}
+                                        >
+                                            {/* Label à côté */}
+                                            <Typography sx={{ fontWeight: "bold", minWidth: "120px" }}>
+                                                Type de fichier:
+                                            </Typography>
 
-                                    <Typography variant='h7' sx={{ color: "black", fontWeight: "bold" }} align='left'>
-                                        Importer depuis le fichier
-                                    </Typography>
+                                            {/* Select style compact, sans contour bleu */}
+                                            <Select
+                                                value={formikImport.values.type}
+                                                onChange={handleChangeType}
+                                                displayEmpty
+                                                sx={{
+                                                    border: "1px solid #ccc", // contour gris clair
+                                                    borderRadius: "4px",
+                                                    minWidth: "140px",
+                                                    height: "32px", // hauteur réduite
+                                                    paddingX: 1,
+                                                    "& .MuiSelect-select": {
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        paddingY: 0,
+                                                    },
+                                                }}
+                                            >
+                                                <MenuItem value={"CSV"}>CSV</MenuItem>
+                                                <MenuItem value={"FEC"}>FEC</MenuItem>
+                                            </Select>
+                                        </Box>
 
-                                    <List style={{ marginLeft: "10px" }}>
-                                        <ListItem style={{ width: "100px", justifyContent: "center" }}>
-                                            <ListItemButton onClick={() => document.getElementById('fileInput').click()}>
-                                                <ListItemIcon >
-                                                    <SaveAltIcon style={{ width: "40px", height: "30px", color: 'rgba(5,96,116,0.60)' }} />
-                                                </ListItemIcon>
-                                            </ListItemButton>
-                                        </ListItem>
-                                    </List>
+                                        {/* Message d'erreur */}
+                                        {formikImport.errors.type && formikImport.touched.type && (
+                                            <FormHelperText sx={{ color: "red", marginLeft: "120px" }}>
+                                                {formikImport.errors.type}
+                                            </FormHelperText>
+                                        )}
+                                    </Box>
+
+                                    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                                        <FormControl sx={{ m: 1, minWidth: 250 }}>
+                                            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}> {/* gap réduit */}
+                                                {/* Label à côté */}
+                                                <Typography sx={{ fontWeight: "bold", minWidth: "100px" }}> {/* minWidth réduit */}
+                                                    Choix d'import:
+                                                </Typography>
+
+                                                {/* Select avec hauteur réduite */}
+                                                <Select
+                                                    value={formikImport.values.choixImport}
+                                                    onChange={handleChangeCptDispatch}
+                                                    displayEmpty
+                                                    sx={{
+                                                        border: "1px solid #1976d2",
+                                                        borderRadius: "4px",
+                                                        width: "320px",         // largeur fixe
+                                                        height: "32px",          // hauteur réduite
+                                                        paddingX: 1,
+                                                        "& .MuiSelect-select": {
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            paddingY: 0,
+                                                            whiteSpace: "nowrap",        // pas de retour à la ligne
+                                                            overflow: "hidden",          // cacher le dépassement
+                                                            textOverflow: "ellipsis",    // tronquer le texte avec "…"
+                                                        },
+                                                    }}
+                                                >
+                                                    <MenuItem value={""}>
+                                                        <em>None</em>
+                                                    </MenuItem>
+                                                    <MenuItem value={"ECRASER"}>Ecraser les données déjà existantes</MenuItem>
+                                                    <MenuItem value={"UPDATE"}>Importer sans écraser</MenuItem>
+                                                </Select>
+
+                                            </Box>
+
+                                            {/* Message d'erreur */}
+                                            {formikImport.errors.choixImport && formikImport.touched.choixImport && (
+                                                <FormHelperText sx={{ color: "red", marginLeft: "100px" }}> {/* aligné avec label */}
+                                                    {formikImport.errors.choixImport}
+                                                </FormHelperText>
+                                            )}
+                                        </FormControl>
+                                    </Box>
+
+                                    <Stack direction="row" alignItems="center" spacing={0.5} sx={{ ml: 4 }}>
+                                        <Button
+                                            variant="contained"
+                                            disabled={!fileTypeCSV}
+                                            onClick={fileTypeCSV ? handleDownloadModel : undefined}
+                                            style={{
+                                                ...buttonStyle,
+                                                backgroundColor: initial.auth_gradient_end
+                                            }}
+                                        >
+                                            Télécharger le Modèle
+                                        </Button>
+
+                                        <input
+                                            type="file"
+                                            accept={fileTypeCSV ? ".csv" : ".txt"}
+                                            onChange={handleFileSelect}
+                                            style={{ display: "none" }}
+                                            id="fileInput"
+                                        />
+
+                                        <Button
+                                            variant="contained"
+                                            onClick={() => document.getElementById("fileInput").click()}
+                                            style={{
+                                                ...buttonStyle,
+                                                backgroundColor: initial.auth_gradient_end
+                                            }}
+                                        >
+                                            Choisir un fichier
+                                        </Button>
+                                
+                                        <Badge badgeContent={nbrAnomalie} color="warning">
+                                            <Button
+                                                onClick={handleOpenAnomalieDetails}
+                                                variant="contained"
+                                                style={{
+                                                    ...buttonStyle,
+                                                    backgroundColor: initial.delete_line_bouton_color,
+                                                    color: couleurBoutonAnomalie
+                                                }}
+                                            >
+                                                Anomalies
+                                            </Button>
+                                        </Badge>
+                                        <Button
+                                            type='submit'
+                                            variant="contained"
+                                            sx={{
+                                                ...buttonStyle,
+                                                backgroundColor: '#e79754ff',
+                                                color: 'white',
+                                                borderColor: '#e79754ff',
+                                                boxShadow: 'none',
+
+                                                '&:hover': {
+                                                    backgroundColor: '#e79754ff',
+                                                    border: 'none',
+                                                    boxShadow: 'none',       // enlève l’effet bleu shadow
+                                                },
+                                                '&:focus': {
+                                                    backgroundColor: '#e79754ff',
+                                                    border: 'none',
+                                                    boxShadow: 'none',       // enlève le focus bleu
+                                                },
+                                                '&.Mui-disabled': {
+                                                    backgroundColor: '#e79754ff',
+                                                    color: 'white',
+                                                    cursor: 'not-allowed',
+                                                },
+                                                '&::before': {
+                                                    display: 'none',         // supprime l’overlay bleu de ButtonGroup
+                                                },
+                                            }}
+                                        >
+                                            Importer
+                                        </Button>
+                                    </Stack>
                                 </Stack>
 
-                                <Badge badgeContent={nbrAnomalie} color="warning">
-                                    <Button
-                                        onClick={handleOpenAnomalieDetails}
-                                        variant="contained"
-                                        style={{
-                                            height: "50px",
-                                            textTransform: 'none',
-                                            outline: 'none',
-                                            backgroundColor: initial.theme,
-                                            color: couleurBoutonAnomalie
-                                        }}
-                                    >
-                                        Anomalies
-                                    </Button>
-                                </Badge>
+                                <ImportProgressBar
+                                    isVisible={traitementJournalWaiting}
+                                    message={traitementJournalMsg}
+                                    variant="determinate"
+                                    progress={progressValue}
+                                />
 
+                                <VirtualTableImportJournal tableHeader={columnsTable} tableRow={journalData} />
 
-                                <Button
-                                    type='submit'
-                                    variant="contained"
-                                    style={{
-                                        height: "50px",
-                                        textTransform: 'none',
-                                        outline: 'none',
-                                        backgroundColor: initial.theme
-                                    }}
-                                >
-                                    Importer
-                                </Button>
                             </Stack>
-
-                            <ImportProgressBar
-                                isVisible={traitementJournalWaiting}
-                                message={traitementJournalMsg}
-                                variant="determinate"
-                                progress={progressValue}
-                            />
-
-                            <VirtualTableImportJournal tableHeader={columnsTable} tableRow={journalData} />
-
                         </Stack>
                     </form>
                 </TabPanel>

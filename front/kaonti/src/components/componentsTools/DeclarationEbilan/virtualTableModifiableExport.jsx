@@ -36,7 +36,7 @@ const VirtualTableModifiableExport = ({ columns, rows }) => {
       <Table sx={{ minWidth: 650, border: '1px solid #ddd', }} aria-label="simple table">
         <TableHead
           style={{
-            backgroundColor: initial.theme,
+            backgroundColor: initial.tableau_theme,
             position: 'sticky',
             top: 0,
             zIndex: 1,
@@ -56,7 +56,7 @@ const VirtualTableModifiableExport = ({ columns, rows }) => {
                   borderRight: '1px solid #ddd',
                   borderLeft: '1px solid #ddd',
                   fontSize: 15,
-                  color: 'white'
+                  color: 'black'
                 }}
               >
                 {column.label}
@@ -102,7 +102,7 @@ const VirtualTableModifiableExport = ({ columns, rows }) => {
         </TableBody>
         <TableFooter
           style={{
-            backgroundColor: '#89A8B2',
+            backgroundColor: initial.footer_theme,
             position: 'sticky',
             bottom: 0,
             zIndex: 1,

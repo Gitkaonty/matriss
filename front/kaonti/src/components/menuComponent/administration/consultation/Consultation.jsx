@@ -1,10 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Autocomplete, Typography, Stack, Box, Tab, Button, TextField, Tooltip } from '@mui/material';
-import RadioGroup from '@mui/material/RadioGroup';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Radio from '@mui/material/Radio';
-import InputLabel from '@mui/material/InputLabel';
+import { Autocomplete, Typography, Stack, Box, Tab, Button, TextField, Tooltip, Chip } from '@mui/material';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
@@ -926,118 +922,94 @@ export default function ConsultationComponent() {
                         </TabList>
                     </Box>
                     <TabPanel value="1" style={{ height: '85%' }}>
-                        <Stack width={"100%"} height={"100%"} spacing={6} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
-                            <Typography variant='h6' sx={{ color: "black" }} align='left'>Administration - Consultation</Typography>
-                            <Stack width={"100%"} height={"80px"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "20px" }}>
-                                <Stack
-                                    direction={'row'}
-                                >
-                                    <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                                        <InputLabel id="demo-simple-select-standard-label">Exercice:</InputLabel>
-                                        <Select
-                                            labelId="demo-simple-select-standard-label"
-                                            id="demo-simple-select-standard"
-                                            value={selectedExerciceId}
-                                            label={"exercice"}
-                                            onChange={(e) => handleChangeExercice(e.target.value)}
-                                            sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                        >
-                                            {listeExercice.map((option) => (
-                                                <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                                            ))
-                                            }
-                                        </Select>
-                                    </FormControl>
-
-                                    <FormControl variant="standard" sx={{ m: 1, minWidth: 150 }}>
-                                        <InputLabel id="demo-simple-select-standard-label">Période</InputLabel>
-                                        <Select
-                                            disabled
-                                            labelId="demo-simple-select-standard-label"
-                                            id="demo-simple-select-standard"
-                                            label={"periode"}
-                                            sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                        >
-                                            <MenuItem value={0}>Toutes</MenuItem>
-                                            <MenuItem value={1}>Situations</MenuItem>
-                                        </Select>
-                                    </FormControl>
-
-                                    <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                                        <InputLabel id="demo-simple-select-standard-label">Du</InputLabel>
-                                        <Select
-                                            labelId="demo-simple-select-standard-label"
-                                            id="demo-simple-select-standard"
-                                            value={selectedPeriodeId}
-                                            label={"du"}
-                                            onChange={(e) => handleChangeDateIntervalle(e.target.value)}
-                                            sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                        >
-                                            {listeSituation?.map((option) => (
-                                                <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                                            ))
-                                            }
-                                        </Select>
-                                    </FormControl>
-                                </Stack>
-                                <Stack
-                                    direction="row"
-                                    justifyContent="flex-end"
-                                    width="70%"
-                                    spacing={0.5}
-                                    style={{
-                                        marginLeft: "0px",
-                                        marginTop: "5px",
-                                        borderRadius: "5px"
-                                    }}>
-                                    <Button
-                                        onClick={handleOpenSaisiePopup}
-                                        disabled={
-                                            !canModify ||
-                                            selectedRows.length === 0 ||
-                                            selectedRows.every(row => Number(row.id_dossier) !== Number(fileId)) ||
-                                            isRanTypeSelected
-                                        }
-                                        variant="contained"
-                                        style={{
-                                            textTransform: 'none',
-                                            outline: 'none',
-                                            backgroundColor: '#4CC0E4',
-                                            color: "white",
-                                            height: "39px",
-                                            marginTop: '10px'
-                                        }}
-                                        startIcon={<AiFillEdit size={20} />}
-                                    >
-                                        Modifier
-                                    </Button>
-                                </Stack>
-                            </Stack>
-
+                        <Stack width={"100%"} height={"100%"} spacing={3} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
+                            <Typography variant='h7' sx={{ color: "black" }} align='left'>Administration - Consultation</Typography>
                             <Stack
                                 width={"100%"}
-                                paddingLeft={"5px"}
-                                alignItems={"left"}
-                                alignContent={"center"}
-                                direction={"row"}
-                                justifyContent={"space-between"}
-                                style={{
-                                    marginLeft: "0px",
-                                    marginTop: "20px",
-                                    backgroundColor: '#F4F9F9',
-                                    borderRadius: "5px"
+                                spacing={2}
+                                alignItems={"stretch"}
+                                justifyContent={"flex-start"}
+                                sx={{
+                                    minHeight: 56,
+                                    padding: 2,
+                                    borderRadius: 2,
+                                    boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                                    flexWrap: "wrap",
                                 }}
                             >
-                                <FormControl
-                                    variant="standard"
+                                <Stack
+                                    width={"100%"}
+                                    direction={"row"}
+                                    alignItems={"center"}
+                                    justifyContent={"space-between"}
+                                    spacing={2}
+                                    sx={{ flexWrap: 'wrap' }}
                                 >
-                                    <Stack direction={'row'} alignContent={'center'}>
-                                        <Stack
-                                            sx={{
-                                                width: 600,
-                                                mr: 2
+                                    <Stack direction="row" spacing={0} alignItems="center" sx={{ flex: '0 0 auto' }}>
+                                        <Typography sx={{ minWidth: 70, fontSize: 15, mr: 1, whiteSpace: 'nowrap' }}>
+                                            Exercice :
+                                        </Typography>
+                                        <FormControl size="small" sx={{ minWidth: 300 }}>
+                                            <Select
+                                                value={selectedExerciceId}
+                                                onChange={(e) => handleChangeExercice(e.target.value)}
+                                                sx={{
+                                                    fontSize: 15,
+                                                    height: 32,
+                                                    "& .MuiSelect-select": { py: 0.5 },
+                                                }}
+                                                MenuProps={{
+                                                    disableScrollLock: true,
+                                                    anchorOrigin: { vertical: 'bottom', horizontal: 'left' },
+                                                    transformOrigin: { vertical: 'top', horizontal: 'left' },
+                                                }}
+                                            >
+                                                {listeExercice.map((option) => (
+                                                    <MenuItem key={option.id} value={option.id} sx={{ fontSize: 15 }}>
+                                                        {option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
+                                    </Stack>
+
+                                    <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: '0 0 auto' }}>
+                                        <Button
+                                            onClick={handleOpenSaisiePopup}
+                                            disabled={
+                                                !canModify ||
+                                                selectedRows.length === 0 ||
+                                                selectedRows.every(row => Number(row.id_dossier) !== Number(fileId)) ||
+                                                isRanTypeSelected
+                                            }
+                                            variant="contained"
+                                            style={{
+                                                textTransform: 'none',
+                                                outline: 'none',
+                                                backgroundColor: '#4CC0E4',
+                                                color: "white",
+                                                height: "32px",
                                             }}
+                                            startIcon={<AiFillEdit size={20} />}
                                         >
+                                            Modifier
+                                        </Button>
+                                    </Stack>
+                                </Stack>
+
+                                <Stack
+                                    width={"100%"}
+                                    direction={"row"}
+                                    alignItems={"center"}
+                                    justifyContent={"space-between"}
+                                    spacing={2}
+                                    sx={{ flexWrap: 'wrap' }}
+                                >
+                                    <Stack direction="row" spacing={0} alignItems="center" sx={{ flex: '1 1 auto', minWidth: 420 }}>
+                                        <Typography sx={{ minWidth: 70, fontSize: 15, mr: 1, whiteSpace: 'nowrap' }}>
+                                            Compte :
+                                        </Typography>
+                                        <Stack sx={{ width: 420, mr: 1 }}>
                                             <Autocomplete
                                                 disabled={!canView || !selectedExerciceId || selectedExerciceId === 0}
                                                 value={listePlanComptable.find(item => item.id === Number(valSelectedCompte)) || null}
@@ -1056,14 +1028,14 @@ export default function ConsultationComponent() {
                                                 )}
                                                 options={listePlanComptable}
                                                 getOptionLabel={(option) => `${option.compte || ''} - ${option.libelle || ''}`}
-                                                renderInput={(params) => <TextField {...params} label="Compte" variant="standard" />}
+                                                renderInput={(params) => <TextField {...params} label="" placeholder="Sélectionner un compte" variant="standard" />}
                                                 isOptionEqualToValue={(option, value) => option?.id === value?.id}
                                                 disableClearable={false}
                                                 noOptionsText="Aucun compte disponible"
                                             />
-
                                         </Stack>
-                                        <Stack direction={'row'} spacing={1}>
+
+                                        <Stack direction={'row'} spacing={0.5}>
                                             <Button
                                                 disabled={!canView || !selectedExerciceId || selectedExerciceId === 0 || valSelectedCompte === 'tout'}
                                                 sx={{
@@ -1071,25 +1043,13 @@ export default function ConsultationComponent() {
                                                     padding: 1,
                                                     backgroundColor: 'transparent',
                                                     boxShadow: 'none',
-                                                    '&:hover': {
-                                                        backgroundColor: 'transparent',
-                                                    },
-                                                    '&:focus': {
-                                                        outline: 'none',
-                                                        backgroundColor: 'transparent',
-                                                        boxShadow: 'none',
-                                                    },
-                                                    '&:active': {
-                                                        backgroundColor: 'transparent',
-                                                        boxShadow: 'none',
-                                                    },
+                                                    '&:hover': { backgroundColor: 'transparent' },
+                                                    '&:focus': { outline: 'none', backgroundColor: 'transparent', boxShadow: 'none' },
+                                                    '&:active': { backgroundColor: 'transparent', boxShadow: 'none' },
                                                 }}
                                                 onClick={handlePrevious}
                                             >
-                                                <GrPrevious
-                                                    color="gray"
-                                                    size={20}
-                                                />
+                                                <GrPrevious color="gray" size={20} />
                                             </Button>
                                             <Button
                                                 disabled={
@@ -1102,111 +1062,140 @@ export default function ConsultationComponent() {
                                                     padding: 1,
                                                     backgroundColor: 'transparent',
                                                     boxShadow: 'none',
-                                                    '&:hover': {
-                                                        backgroundColor: 'transparent',
-                                                    },
-                                                    '&:focus': {
-                                                        outline: 'none',
-                                                        backgroundColor: 'transparent',
-                                                        boxShadow: 'none',
-                                                    },
-                                                    '&:active': {
-                                                        backgroundColor: 'transparent',
-                                                        boxShadow: 'none',
-                                                    },
+                                                    '&:hover': { backgroundColor: 'transparent' },
+                                                    '&:focus': { outline: 'none', backgroundColor: 'transparent', boxShadow: 'none' },
+                                                    '&:active': { backgroundColor: 'transparent', boxShadow: 'none' },
                                                 }}
                                                 onClick={handleNext}
                                             >
-                                                <GrNext
-                                                    color="gray"
-                                                    size={20}
-                                                />
+                                                {/* <GrNext color="gray" size={20} /> */}
                                             </Button>
                                         </Stack>
                                     </Stack>
-                                </FormControl>
 
-                                <RadioGroup
-                                    row
-                                    aria-labelledby="filtrageCompte"
-                                    name="filtrageCompte"
-                                    onChange={(e) => {
-                                        setFiltrageCompte(e.target.value);
-                                        setFilteredList([]);
-                                        setListSaisie([]);
-                                        handleSearch();
-                                    }}
-                                    value={filtrageCompte}
-                                >
-                                    <FormControlLabel value="0" control={<Radio disabled={!canView} />} label="Tous" style={{ marginLeft: "5px" }} />
-                                    <FormControlLabel value="1" control={<Radio disabled={!canView} />} label="Comptes mouvementés" style={{ marginLeft: "5px" }} />
-                                    <FormControlLabel value="2" control={<Radio disabled={!canView} />} label="Comptes soldés" style={{ marginLeft: "5px" }} />
-                                    <FormControlLabel value="3" control={<Radio disabled={!canView} />} label="Comptes non soldés" style={{ marginLeft: "5px" }} />
-                                </RadioGroup>
-                            </Stack>
+                                    <Stack direction="row" spacing={0.5} alignItems="center" sx={{ flex: '0 0 auto' }}>
+                                        <Button
+                                            disabled={!canAdd || selectedRows.length === 0 || !valSelectedCompte || selectedRows.every(row => Number(row.id_dossier) !== Number(fileId))}
+                                            variant="contained"
+                                            sx={{
+                                                textTransform: 'none',
+                                                outline: 'none',
+                                                backgroundColor: initial.theme,
+                                                color: initial.menu_theme,
+                                                height: "32px",
+                                                "&:hover": {
+                                                    backgroundColor: initial.theme,
+                                                },
+                                                "&.Mui-disabled": {
+                                                    backgroundColor: initial.theme,
+                                                    color: initial.menu_theme,
+                                                },
+                                            }}
+                                            onClick={handleOpenPopupAddEcriture}
+                                            // startIcon={<TbPlugConnected size={20} />}
+                                        >
+                                            Créer
+                                        </Button>
+                                        <Button
+                                            disabled={!canAdd || selectedRows.length === 0 || solde !== 0 || selectedRows.every(row => Number(row.id_dossier) !== Number(fileId))}
+                                            variant="contained"
+                                            sx={{
+                                                textTransform: 'none',
+                                                outline: 'none',
+                                                backgroundColor: initial.theme,
+                                                color: initial.menu_theme,
+                                                height: "32px",
+                                                "&:hover": {
+                                                    backgroundColor: initial.theme,
+                                                },
+                                                "&.Mui-disabled": {
+                                                    backgroundColor: initial.theme,
+                                                    color: initial.menu_theme,
+                                                },
+                                            }}
+                                            onClick={ajoutLettrage}
+                                            // startIcon={<TbPlugConnected size={20} />}
+                                        >
+                                            Lettrer
+                                        </Button>
+                                        <Button
+                                            disabled={!canDelete || selectedRows.length === 0 || solde !== 0 || selectedRows.every(row => Number(row.id_dossier) !== Number(fileId))}
+                                            variant="contained"
+                                            style={{
+                                                textTransform: 'none',
+                                                outline: 'none',
+                                                backgroundColor: initial.delete_line_bouton_color,
+                                                color: "white",
+                                                height: "32px",
+                                            }}
+                                            onClick={supprimerLettrage}
+                                            // startIcon={<TbPlugConnectedX size={20} />}
+                                        >
+                                            Délettrer
+                                        </Button>
+                                    </Stack>
+                                </Stack>
 
-                            <Stack
-                                direction="row"
-                                justifyContent="flex-end"
-                                alignItems="center"
-                                width="100%"
-                                spacing={0.5}
-                                sx={{ mt: 2, borderRadius: "5px" }}
-                                style={{
-                                    marginLeft: "0px",
-                                    marginTop: "20px",
-                                    borderRadius: "5px"
-                                }}>
-
-                                <Button
-                                    disabled={!canAdd || selectedRows.length === 0 || !valSelectedCompte || selectedRows.every(row => Number(row.id_dossier) !== Number(fileId))}
-                                    variant="contained"
-                                    style={{
-                                        textTransform: 'none',
-                                        outline: 'none',
-                                        backgroundColor: initial.theme,
-                                        color: "white",
-                                        height: "39px",
-                                        marginTop: '10px'
-                                    }}
-                                    onClick={handleOpenPopupAddEcriture}
-                                    startIcon={<TbPlugConnected size={20} />}
+                                <Stack
+                                    width={"100%"}
+                                    direction="row"
+                                    alignItems="center"
+                                    spacing={1}
+                                    sx={{ flexWrap: 'wrap' }}
                                 >
-                                    Créer
-                                </Button>
-                                <Button
-                                    disabled={!canAdd || selectedRows.length === 0 || solde !== 0 || selectedRows.every(row => Number(row.id_dossier) !== Number(fileId))}
-                                    variant="contained"
-                                    style={{
-                                        textTransform: 'none',
-                                        outline: 'none',
-                                        backgroundColor: initial.theme,
-                                        color: "white",
-                                        height: "39px",
-                                        marginTop: '10px'
-                                    }}
-                                    onClick={ajoutLettrage}
-                                    startIcon={<TbPlugConnected size={20} />}
-                                >
-                                    Lettrer
-                                </Button>
-                                <Button
-                                    disabled={!canDelete || selectedRows.length === 0 || solde !== 0 || selectedRows.every(row => Number(row.id_dossier) !== Number(fileId))}
-                                    variant="contained"
-                                    style={{
-                                        textTransform: 'none',
-                                        outline: 'none',
-                                        backgroundColor: '#FF8A8A',
-                                        color: "white",
-                                        height: "39px",
-                                        marginTop: '10px'
-                                    }}
-                                    onClick={supprimerLettrage}
-                                    startIcon={<TbPlugConnectedX size={20} />}
-                                >
-                                    Délettrer
-                                </Button>
-
+                                    <Chip
+                                        disabled={!canView}
+                                        label="Tous"
+                                        clickable
+                                        color={filtrageCompte === '0' ? 'primary' : 'default'}
+                                        variant={filtrageCompte === '0' ? 'filled' : 'outlined'}
+                                        onClick={() => {
+                                            setFiltrageCompte('0');
+                                            setFilteredList([]);
+                                            setListSaisie([]);
+                                            handleSearch();
+                                        }}
+                                    />
+                                    <Chip
+                                        disabled={!canView}
+                                        label="Comptes mouvementés"
+                                        clickable
+                                        color={filtrageCompte === '1' ? 'primary' : 'default'}
+                                        variant={filtrageCompte === '1' ? 'filled' : 'outlined'}
+                                        onClick={() => {
+                                            setFiltrageCompte('1');
+                                            setFilteredList([]);
+                                            setListSaisie([]);
+                                            handleSearch();
+                                        }}
+                                    />
+                                    <Chip
+                                        disabled={!canView}
+                                        label="Comptes soldés"
+                                        clickable
+                                        color={filtrageCompte === '2' ? 'primary' : 'default'}
+                                        variant={filtrageCompte === '2' ? 'filled' : 'outlined'}
+                                        onClick={() => {
+                                            setFiltrageCompte('2');
+                                            setFilteredList([]);
+                                            setListSaisie([]);
+                                            handleSearch();
+                                        }}
+                                    />
+                                    <Chip
+                                        disabled={!canView}
+                                        label="Comptes non soldés"
+                                        clickable
+                                        color={filtrageCompte === '3' ? 'primary' : 'default'}
+                                        variant={filtrageCompte === '3' ? 'filled' : 'outlined'}
+                                        onClick={() => {
+                                            setFiltrageCompte('3');
+                                            setFilteredList([]);
+                                            setListSaisie([]);
+                                            handleSearch();
+                                        }}
+                                    />
+                                </Stack>
                             </Stack>
 
                             <Stack
@@ -1227,6 +1216,17 @@ export default function ConsultationComponent() {
                                     slots={{ toolbar: QuickFilter }}
                                     sx={{
                                         ...DataGridStyle.sx,
+                                        '& .MuiDataGrid-columnHeaders': {
+                                            backgroundColor: initial.tableau_theme,
+                                            color: initial.text_theme,
+                                        },
+                                        '& .MuiDataGrid-columnHeaderTitle': {
+                                            color: initial.text_theme,
+                                            fontWeight: 600,
+                                        },
+                                        '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
+                                            color: initial.text_theme,
+                                        },
                                         '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
                                             outline: 'none',
                                             border: 'none',
@@ -1293,6 +1293,7 @@ export default function ConsultationComponent() {
                                         >
                                             {calculateDebitCredit(selectedRows).debit}
                                         </strong>,{" "}
+                                        
                                     </span>
                                     <span>
                                         Crédit : <strong

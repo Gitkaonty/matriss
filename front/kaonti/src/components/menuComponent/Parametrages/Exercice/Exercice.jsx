@@ -1,7 +1,6 @@
 import { React, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Typography, Stack, Paper, IconButton, FormLabel, FormControl, Select, Input, FormHelperText, Button } from '@mui/material';
-import { HiLockClosed, HiPencilSquare } from "react-icons/hi2";
+import { Typography, Stack, Paper, IconButton, FormLabel, FormControl, Select, Input, FormHelperText, Button, ButtonGroup } from '@mui/material';
 import Tooltip from '@mui/material/Tooltip';
 import { DataGridStyle } from '../../../componentsTools/DatagridToolsStyle';
 import { DataGrid, frFR } from '@mui/x-data-grid';
@@ -15,8 +14,6 @@ import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
 import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
 import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFile';
-import { BsChevronLeft, BsChevronRight } from "react-icons/bs";
-import { IoMdTrash } from 'react-icons/io';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -30,7 +27,6 @@ import { jwtDecode } from 'jwt-decode';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import PopupActionConfirm from '../../../componentsTools/popupActionConfirm';
-import { BsFillUnlockFill } from "react-icons/bs";
 import usePermission from '../../../../hooks/usePermission';
 import useAxiosPrivate from '../../../../../config/axiosPrivate';
 
@@ -72,6 +68,16 @@ export default function ParamExerciceComponent() {
 
     const [loadingCreateNextExercice, setLoadingCreateNextExercice] = useState(false);
     const [loadingCreatePreviousExercice, setLoadingPreviousExercice] = useState(false);
+
+    const buttonStyle = {
+        minWidth: 120,
+        height: 32,
+        px: 2,
+        borderRadius: 1,
+        textTransform: 'none',
+        fontWeight: 600,
+        boxShadow: 'none',
+    };
 
     //récupération des informations de connexion
     const { auth } = useAuth();
@@ -512,7 +518,7 @@ export default function ParamExerciceComponent() {
                     <DialogContent >
                         <Stack width={"95%"} height={"100%"} spacing={0} alignItems={'center'} alignContent={"center"}
                             direction={"column"} justifyContent={"center"} style={{ marginLeft: '10px' }}>
-                            <Typography sx={{ ml: 0, flex: 1 }} variant="h6" component="div" >
+                            <Typography sx={{ ml: 0, flex: 1 }} variant="h7" component="div" >
                                 Création du premier exercice
                             </Typography>
 
@@ -589,7 +595,7 @@ export default function ParamExerciceComponent() {
 
                     <DialogActions>
                         <Button autoFocus
-                            style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
+                            style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
                             type='submit'
                             onClick={handleCloseDialogCreateFirstExercice}
                         >
@@ -598,7 +604,7 @@ export default function ParamExerciceComponent() {
                         <Button autoFocus
                             disabled={!firstExerciceForm.isValid}
                             onClick={createFirstExercice}
-                            style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
+                            style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
                         >
                             Créer
                         </Button>
@@ -623,92 +629,192 @@ export default function ParamExerciceComponent() {
                 </Box>
                 <TabPanel value="1">
                     <Stack style={{ marginTop: 0 }} width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"} justifyContent={"stretch"}>
-                        <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages : Exercices</Typography>
+                        <Typography variant='h7' sx={{ color: "black" }} align='left'>Paramétrages : Exercices</Typography>
 
                         <Stack width={"100%"} height={"30px"} spacing={0} alignItems={"center"} alignContent={"center"}
                             direction={"row"} style={{ marginLeft: "0px", marginTop: "20px", justifyContent: "right" }}>
                             <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
                                 direction={"row"} justifyContent={"right"}>
 
-                                <Tooltip title="Ajouter l'exercice précédent">
-                                    <IconButton
-                                        disabled={!canAdd}
-                                        onClick={handleCreateNextExercicePrev}
-                                        variant="contained"
-                                        style={{
-                                            width: "35px", height: '35px',
-                                            borderRadius: "2px", borderColor: "transparent",
-                                            backgroundColor: initial.theme,
-                                            textTransform: 'none', outline: 'none'
-                                        }}
-                                    >
-                                        <BsChevronLeft style={{ width: '25px', height: '25px', color: 'white' }} />
-                                    </IconButton>
-                                </Tooltip>
+                                <ButtonGroup
+                                    variant="outlined"
+                                    sx={{
+                                        boxShadow: 'none',
+                                        display: 'flex',
+                                        gap: '2px',
+                                        '& .MuiButton-root': {
+                                            borderRadius: 0,
+                                        },
+                                        '& .MuiButtonGroup-grouped': {
+                                            boxShadow: 'none',
+                                            outline: 'none',
+                                            borderColor: 'inherit',
+                                            marginLeft: 0,
+                                            borderRadius: 1,
+                                            border: 'none',
+                                        },
+                                        '& .MuiButtonGroup-grouped:hover': {
+                                            boxShadow: 'none',
+                                            borderColor: 'inherit',
+                                        },
+                                        '& .MuiButtonGroup-grouped.Mui-focusVisible': {
+                                            boxShadow: 'none',
+                                            borderColor: 'inherit',
+                                        },
+                                    }}
+                                >
+                                    <Tooltip title="Ajouter l'exercice précédent">
+                                        <span>
+                                            <Button
+                                                disabled={!canAdd}
+                                                onClick={handleCreateNextExercicePrev}
+                                                 sx={{
+                                                    ...buttonStyle,
+                                                    backgroundColor: '#e79754ff',
+                                                    color: 'white',
+                                                    borderColor: '#e79754ff',
+                                                    boxShadow: 'none',
 
-                                <Tooltip title="Ajouter l'exercice suivant">
-                                    <IconButton
-                                        disabled={!canAdd}
-                                        onClick={handleCreateNextExercice}
-                                        variant="contained"
-                                        style={{
-                                            width: "35px", height: '35px',
-                                            borderRadius: "2px", borderColor: "transparent",
-                                            backgroundColor: initial.theme,
-                                            textTransform: 'none', outline: 'none'
-                                        }}
-                                    >
-                                        <BsChevronRight style={{ width: '25px', height: '25px', color: 'white' }} />
-                                    </IconButton>
-                                </Tooltip>
+                                                    '&:hover': {
+                                                        backgroundColor: '#e79754ff',
+                                                        border: 'none',
+                                                        boxShadow: 'none',       // enlève l’effet bleu shadow
+                                                    },
+                                                    '&:focus': {
+                                                        backgroundColor: '#e79754ff',
+                                                        border: 'none',
+                                                        boxShadow: 'none',       // enlève le focus bleu
+                                                    },
+                                                    '&.Mui-disabled': {
+                                                        backgroundColor: '#e79754ff',
+                                                        color: 'white',
+                                                        cursor: 'not-allowed',
+                                                    },
+                                                    '&::before': {
+                                                        display: 'none',         // supprime l’overlay bleu de ButtonGroup
+                                                    },
+                                                }}
+                                            >
+                                                Précédent
+                                            </Button>
+                                        </span>
+                                    </Tooltip>
 
-                                <Tooltip title="Vérrouiller un exercice">
-                                    <IconButton
-                                        onClick={handleVerrouillerExercice}
-                                        variant="contained"
-                                        style={{
-                                            width: "35px", height: '35px',
-                                            borderRadius: "2px", borderColor: "transparent",
-                                            backgroundColor: initial.theme,
-                                            textTransform: 'none', outline: 'none'
-                                        }}
-                                    >
-                                        <HiLockClosed style={{ width: '25px', height: '25px', color: 'white' }} />
-                                    </IconButton>
-                                </Tooltip>
+                                    <Tooltip title="Ajouter l'exercice suivant">
+                                        <span>
+                                            <Button
+                                                disabled={!canAdd}
+                                                onClick={handleCreateNextExercice}
+                                                 sx={{
+                                                    ...buttonStyle,
+                                                    backgroundColor: '#e79754ff',
+                                                    color: 'white',
+                                                    borderColor: '#e79754ff',
+                                                    boxShadow: 'none',
 
-                                <Tooltip title="Déverrouiller un exercice">
-                                    <IconButton
-                                        onClick={handleDeverrouillerExercice}
-                                        variant="contained"
-                                        style={{
-                                            width: "35px", height: '35px',
-                                            borderRadius: "2px", borderColor: "transparent",
-                                            backgroundColor: initial.theme,
-                                            textTransform: 'none', outline: 'none'
-                                        }}
-                                    >
-                                        <BsFillUnlockFill style={{ width: '25px', height: '25px', color: 'white' }} />
-                                    </IconButton>
-                                </Tooltip>
+                                                    '&:hover': {
+                                                        backgroundColor: '#e79754ff',
+                                                        border: 'none',
+                                                        boxShadow: 'none',       // enlève l’effet bleu shadow
+                                                    },
+                                                    '&:focus': {
+                                                        backgroundColor: '#e79754ff',
+                                                        border: 'none',
+                                                        boxShadow: 'none',       // enlève le focus bleu
+                                                    },
+                                                    '&.Mui-disabled': {
+                                                        backgroundColor: '#e79754ff',
+                                                        color: 'white',
+                                                        cursor: 'not-allowed',
+                                                    },
+                                                    '&::before': {
+                                                        display: 'none',         // supprime l’overlay bleu de ButtonGroup
+                                                    },
+                                                }}
+                                            >
+                                                Suivant
+                                            </Button>
+                                        </span>
+                                    </Tooltip>
 
-                                <Tooltip title="Supprimer un exercice">
-                                    <span>
-                                        <IconButton
-                                            disabled={!canDelete || selectedExerciceRow.length === 0}
-                                            onClick={handleDeleteExercice}
-                                            variant="contained"
-                                            style={{
-                                                width: "35px", height: '35px',
-                                                borderRadius: "2px", borderColor: "transparent",
-                                                backgroundColor: initial.button_delete_color,
-                                                textTransform: 'none', outline: 'none'
-                                            }}
-                                        >
-                                            <IoMdTrash style={{ width: '50px', height: '50px', color: 'white' }} />
-                                        </IconButton>
-                                    </span>
-                                </Tooltip>
+                                    <Tooltip title="Vérrouiller un exercice">
+                                        <span>
+                                            <Button
+                                                disabled={!canModify}
+                                                onClick={handleVerrouillerExercice}
+                                                sx={{
+                                                    ...buttonStyle,
+                                                    backgroundColor: initial.auth_gradient_end,
+                                                    color: 'white',
+                                                    borderColor: initial.auth_gradient_end,
+                                                    '&:hover': {
+                                                        backgroundColor: initial.auth_gradient_end,
+                                                        border: 'none',
+                                                    },
+                                                    '&.Mui-disabled': {
+                                                        backgroundColor: initial.auth_gradient_end,
+                                                        color: 'white',
+                                                        cursor: 'not-allowed',
+                                                    },
+                                                }}
+                                            >
+                                                Verrouiller
+                                            </Button>
+                                        </span>
+                                    </Tooltip>
+
+                                    <Tooltip title="Déverrouiller un exercice">
+                                        <span>
+                                            <Button
+                                                disabled={!canModify}
+                                                onClick={handleDeverrouillerExercice}
+                                                sx={{
+                                                    ...buttonStyle,
+                                                    backgroundColor: initial.auth_gradient_end,
+                                                    color: 'white',
+                                                    borderColor: initial.auth_gradient_end,
+                                                    '&:hover': {
+                                                        backgroundColor: initial.auth_gradient_end,
+                                                        border: 'none',
+                                                    },
+                                                    '&.Mui-disabled': {
+                                                        backgroundColor: initial.auth_gradient_end,
+                                                        color: 'white',
+                                                        cursor: 'not-allowed',
+                                                    },
+                                                }}
+                                            >
+                                                Déverrouiller
+                                            </Button>
+                                        </span>
+                                    </Tooltip>
+
+                                    <Tooltip title="Supprimer un exercice">
+                                        <span>
+                                            <Button
+                                                disabled={!canDelete || selectedExerciceRow.length === 0}
+                                                onClick={handleDeleteExercice}
+                                                sx={{
+                                                    ...buttonStyle,
+                                                    backgroundColor: initial.annuler_bouton_color,
+                                                    color: 'white',
+                                                    borderColor: initial.annuler_bouton_color,
+                                                    '&:hover': {
+                                                        backgroundColor: initial.annuler_bouton_color,
+                                                        border : 'none',
+                                                    },
+                                                    '&.Mui-disabled': {
+                                                        backgroundColor: initial.annuler_bouton_color,
+                                                        color: 'white',
+                                                        cursor: 'not-allowed',
+                                                    },
+                                                }}
+                                            >
+                                                Supprimer
+                                            </Button>
+                                        </span>
+                                    </Tooltip>
+                                </ButtonGroup>
                             </Stack>
                         </Stack>
 
@@ -721,7 +827,33 @@ export default function ParamExerciceComponent() {
                                 disableSelectionOnClick={true}
                                 localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
                                 slots={{ toolbar: QuickFilter }}
-                                sx={DataGridStyle.sx}
+                                sx={{
+                                    ...DataGridStyle.sx,
+                                    '& .MuiDataGrid-columnHeaders': {
+                                        backgroundColor: initial.tableau_theme,
+                                        color: initial.text_theme,
+                                    },
+                                    '& .MuiDataGrid-columnHeaderTitle': {
+                                        color: initial.text_theme,
+                                        fontWeight: 600,
+                                    },
+                                    '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
+                                        color: initial.text_theme,
+                                    },
+                                    '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+                                        outline: 'none',
+                                        border: 'none',
+                                    },
+                                    '& .highlight-separator': {
+                                        borderBottom: '1px solid red'
+                                    },
+                                    '& .MuiDataGrid-row.highlight-separator': {
+                                        borderBottom: '1px solid red',
+                                    },
+                                    '& .MuiDataGrid-virtualScroller': {
+                                        maxHeight: '700px',
+                                    },
+                                }}
                                 rowHeight={DataGridStyle.rowHeight}
                                 columnHeaderHeight={DataGridStyle.columnHeaderHeight}
                                 editMode='row'

@@ -4,10 +4,12 @@ import Typography from '@mui/material/Typography';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import { matchPath, useLocation } from "react-router-dom";
+import { init } from '../../../../init';
 
 export default function SubMenuList({ list, navigatePath }) {
   const [fileId, setFileId] = useState(0);
   const location = useLocation();
+  let initial = init[0];
   let idDossier;
 
   useEffect(() => {
@@ -41,7 +43,7 @@ export default function SubMenuList({ list, navigatePath }) {
                 marginBottom: "-12px",
               }}
             >
-              <Typography variant="h8" color="white">
+              <Typography variant="h8" color={initial.text_theme}>
                 {item.text}
               </Typography>
             </ListItemButton>

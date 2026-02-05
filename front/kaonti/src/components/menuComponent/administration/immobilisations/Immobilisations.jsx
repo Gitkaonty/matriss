@@ -1056,7 +1056,7 @@ const Immobilisations = () => {
                 <Button
                   onClick={handleOpenConfirmGenerateEcritures}
                   variant="contained"
-                  sx={{ backgroundColor: initial.theme, textTransform: 'none', whiteSpace: 'nowrap' }}
+                  sx={{ backgroundColor: initial.add_new_line_bouton_color, textTransform: 'none', whiteSpace: 'nowrap' }}
                 >
                   Générer écriture
                 </Button>
@@ -1135,21 +1135,21 @@ const Immobilisations = () => {
                     <Stack direction="row" spacing={0.5} alignItems="center">
                       <Tooltip title="Ajouter">
                         <span>
-                          <IconButton onClick={handleDetailsAdd} style={{ width: 35, height: 35, borderRadius: 2, backgroundColor: initial.theme }}>
+                          <IconButton onClick={handleDetailsAdd} style={{ width: 35, height: 35, borderRadius: 2, backgroundColor: initial.add_new_line_bouton_color }}>
                             <TbPlaylistAdd style={{ width: 22, height: 22, color: 'white' }} />
                           </IconButton>
                         </span>
                       </Tooltip>
                       <Tooltip title="Modifier">
                         <span>
-                          <IconButton onClick={handleDetailsEdit} disabled={detailsSelectionModel.length === 0} style={{ width: 35, height: 35, borderRadius: 2, backgroundColor: initial.theme }}>
+                          <IconButton onClick={handleDetailsEdit} disabled={detailsSelectionModel.length === 0} style={{ width: 35, height: 35, borderRadius: 2, backgroundColor: initial.add_new_line_bouton_color }}>
                             <FaRegPenToSquare style={{ width: 20, height: 20, color: 'white' }} />
                           </IconButton>
                         </span>
                       </Tooltip>
                       <Tooltip title="Sauvegarder">
                         <span>
-                          <IconButton onClick={handleDetailsSave} disabled={!detailsEditingRowId} style={{ width: 35, height: 35, borderRadius: 2, backgroundColor: initial.theme }}>
+                          <IconButton onClick={handleDetailsSave} disabled={!detailsEditingRowId} style={{ width: 35, height: 35, borderRadius: 2, backgroundColor: initial.add_new_line_bouton_color }}>
                             <TfiSave style={{ width: 20, height: 20, color: 'white' }} />
                           </IconButton>
                         </span>
@@ -1225,7 +1225,7 @@ const Immobilisations = () => {
                     autoHeight
                     sx={{
                       '& .MuiDataGrid-columnHeaders': {
-                        backgroundColor: initial.theme,
+                        backgroundColor: initial.add_new_line_bouton_color,
                         color: 'white',
                         fontWeight: 'bold',
                       },
@@ -1243,7 +1243,7 @@ const Immobilisations = () => {
                             ligneLoading ||
                             !(Array.isArray(detailsSelectionModel) && detailsSelectionModel.length > 0)
                           }
-                          style={{ backgroundColor: initial.theme, color: 'white', textTransform: 'none' }}
+                          style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', textTransform: 'none' }}
                         >
                           {savingLignes ? 'Enregistrement...' : 'Enregistrer les lignes'}
                         </Button>
@@ -1369,7 +1369,7 @@ const Immobilisations = () => {
                                   backgroundColor: '#eeeeee',
                                   borderRadius: 1,
                                   '& .MuiDataGrid-columnHeaders': {
-                                    backgroundColor: initial.theme,
+                                    backgroundColor: initial.add_new_line_bouton_color,
                                     color: 'white',
                                     fontWeight: 'bold',
                                   },
@@ -1398,7 +1398,7 @@ const Immobilisations = () => {
                             sx={{
                               height: 250,
                               '& .MuiDataGrid-columnHeaders': {
-                                backgroundColor: initial.theme,
+                                backgroundColor: initial.add_new_line_bouton_color,
                                 color: 'white',
                                 fontWeight: 'bold',
                               },
@@ -1518,7 +1518,7 @@ const Immobilisations = () => {
                                   backgroundColor: '#eeeeee',
                                   borderRadius: 1,
                                   '& .MuiDataGrid-columnHeaders': {
-                                    backgroundColor: initial.theme,
+                                    backgroundColor: initial.add_new_line_bouton_color,
                                     color: 'white',
                                     fontWeight: 'bold',
                                   },
@@ -1547,7 +1547,7 @@ const Immobilisations = () => {
                             sx={{
                               height: 250,
                               '& .MuiDataGrid-columnHeaders': {
-                                backgroundColor: initial.theme,
+                                backgroundColor: initial.add_new_line_bouton_color,
                                 color: 'white',
                                 fontWeight: 'bold',
                               },
@@ -1603,7 +1603,7 @@ const Immobilisations = () => {
                         density="compact"
                         sx={{
                           '& .MuiDataGrid-columnHeaders': {
-                            backgroundColor: initial.theme, 
+                            backgroundColor: initial.add_new_line_bouton_color, 
                             color: '#fff',              
                             fontWeight: 'bold',
                           }
@@ -1628,7 +1628,7 @@ const Immobilisations = () => {
                       variant="contained"
                        onClick={handleConfirmLienEcriture} 
                        disabled={journalSelection.length === 0}
-                        style={{ backgroundColor: initial.theme, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}>
+                        style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}>
                           Valider
                       </Button>
                     </DialogActions>

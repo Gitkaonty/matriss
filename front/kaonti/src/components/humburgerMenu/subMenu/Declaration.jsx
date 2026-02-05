@@ -94,7 +94,7 @@ export default function Declaration({ onWindowState, pathToNavigate, humburgerMe
 
     return (
         <Stack
-            backgroundColor={initial.theme}
+            backgroundColor={initial.menu_theme}
             width={'100%'}
             height={'100vh'}
             zIndex={"10"}
@@ -121,14 +121,14 @@ export default function Declaration({ onWindowState, pathToNavigate, humburgerMe
                 marginTop={"-25px"}
             >
                 <Stack width={"40%"} height={"30px"} spacing={0.1} alignItems={"flex-start"} direction={"column"}>
-                    <Typography variant='h6' marginLeft={"50px"} color={"white"}>Liasses fiscales</Typography>
+                    <Typography variant='h6' marginLeft={"50px"} color={initial.text_theme}>Liasses fiscales</Typography>
                     <SubMenuList list={declFiscalesList} navigatePath={HandlePath} />
                 </Stack>
 
-                <Divider orientation='vertical' color={"white"} style={{ height: "100%", opacity: "0.2" }} />
+                <Divider orientation='vertical' color={initial.text_theme} style={{ height: "100%", opacity: "0.2" }} />
 
                 <Stack width={"40%"} height={"30px"} spacing={0.1} alignItems={"flex-start"} direction={"column"}>
-                    <Typography variant='h6' marginLeft={"50px"} color={"white"}>Organismes</Typography>
+                    <Typography variant='h6' marginLeft={"50px"} color={initial.text_theme}>Organismes</Typography>
                     <SubMenuList list={declSocialesList} navigatePath={HandlePath} />
                 </Stack>
 
