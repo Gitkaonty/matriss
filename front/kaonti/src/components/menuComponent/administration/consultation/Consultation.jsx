@@ -1068,7 +1068,7 @@ export default function ConsultationComponent() {
                                                 }}
                                                 onClick={handleNext}
                                             >
-                                                {/* <GrNext color="gray" size={20} /> */}
+                                                <GrNext color="gray" size={20} />
                                             </Button>
                                         </Stack>
                                     </Stack>

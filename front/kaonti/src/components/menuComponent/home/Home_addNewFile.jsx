@@ -1674,7 +1674,6 @@ export default function AddNewFile({ confirmationState }) {
                                             handleSubmit();
                                         }}
                                         style={{
-                                            borderRadius: "0",
                                             height: '32px', marginLeft: "5px", width: '120px', borderRadius: '4px',
                                             textTransform: 'none', outline: 'none', border: 'none', backgroundColor: initial.auth_gradient_end
                                         }}
