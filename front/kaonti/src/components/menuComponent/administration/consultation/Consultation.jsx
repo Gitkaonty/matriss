@@ -1256,7 +1256,7 @@ export default function ConsultationComponent() {
 
                                         const newRowIds = selectedData.map(row => row.id);
                                         setRowSelectionModel(newRowIds);
-
+                                        
                                         const lettrages = selectedData.map(row => row.lettrage);
 
                                         const hasNullLettrage = lettrages.some(l => !l || l.trim() === "");
