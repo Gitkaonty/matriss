@@ -100,6 +100,7 @@ export default function HomePage() {
     [
       { text: 'Saisie', name: 'saisie', path: '/tab/administration/saisie', urldynamic: true },
       { text: 'Consultation', name: 'consultation', path: '/tab/administration/consultation', urldynamic: true },
+      { text: 'Révision', name: 'revision', path: '/tab/administration/revision', urldynamic: true },
     ]
   ), []);
 
@@ -126,6 +127,8 @@ export default function HomePage() {
       { text: 'Exercices', name: 'exercices', path: '/tab/parametrages/paramExercice', urldynamic: true },
       { text: 'Plan comptable', name: 'planComptable', path: '/tab/parametrages/paramPlanComptable', urldynamic: true },
       { text: 'Plan comptable - modèle', name: 'planComptableModele', path: '/tab/parametrages/paramPlanComptableModele', urldynamic: false },
+      { text: 'Controles', name: 'controles', path: '/tab/parametrages/controles', urldynamic: true},
+      { text: 'TVA', name: 'tva', path: '/tab/parametrages/paramTVA', urldynamic: true},
     ]
   ), []);
 

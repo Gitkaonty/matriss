@@ -29,6 +29,12 @@ module.exports = (sequelize, DataTypes) => {
             unique: false,
             allowNull: false
         },
+        vraie_date: {
+            type: DataTypes.DATE,
+            unique: false,
+            allowNull: true,
+            defaultValue: null
+        },
         id_journal: {
             type: DataTypes.BIGINT,
             allowNull: false,
@@ -67,7 +73,7 @@ module.exports = (sequelize, DataTypes) => {
         credit: {
             type: DataTypes.DOUBLE,
             allowNull: false,
-            defaultValue: 0
+            defaultValue: 0 
         },
         devise: {
             type: DataTypes.STRING(10),
@@ -180,6 +186,11 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING(250),
             unique: false,
             allowNull: true
+        },
+        id_revision_controle: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            defaultValue: null
         }
     }, { timestamps: true },)
     return journals

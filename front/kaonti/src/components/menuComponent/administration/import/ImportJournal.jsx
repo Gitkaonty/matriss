@@ -678,14 +678,14 @@ export default function ImportJournal() {
                             // Séparer dates manquantes et hors bornes pour des messages cohérents
                             const missingDate = DataWithId.filter(r => !parseToDate(r.EcritureDate));
                             const withDate = DataWithId.filter(r => !!parseToDate(r.EcritureDate));
-
                             const outOfRange = withDate.filter(r => {
                                 const d = parseToDate(r.EcritureDate);
                                 const afterStart = dStart ? (d && d >= dStart) : true;
                                 const beforeEnd = dEnd ? (d && d <= dEnd) : true;
-                                return !(afterStart && beforeEnd);
+                                const isRAN = r.JournalCode && r.JournalCode.toString().trim().toUpperCase() === 'RAN';
+                                return !(afterStart && beforeEnd) && !isRAN;
                             });
-
+                            
                             if (missingDate.length > 0) {
                                 msg.push("Certaines lignes n'ont pas de date d'écriture valide: elles seront ignorées.");
                                 nbrAnom = nbrAnom + 1;
@@ -703,7 +703,9 @@ export default function ImportJournal() {
                                 const d = parseToDate(r.EcritureDate);
                                 const afterStart = dStart ? (d && d >= dStart) : true;
                                 const beforeEnd = dEnd ? (d && d <= dEnd) : true;
-                                return afterStart && beforeEnd;
+                                const isRAN = r.JournalCode && r.JournalCode.toString().trim().toUpperCase() === 'RAN';
+                                // Autoriser les journaux RAN même hors exercice
+                                return (afterStart && beforeEnd) || isRAN;
                             });
                         }
 
@@ -798,7 +800,7 @@ export default function ImportJournal() {
     const createCodeJournalNotExisting = async () => {
         const response = await axios.post(`/administration/importJournal/createNotExistingCodeJournal`, { compteId, fileId, codeJournalToCreate });
         const resData = response.data;
-        return resData.list;
+        return resData;
     }
 
     //création des comptes qui n'existe pas encore avant import journal
@@ -820,10 +822,11 @@ export default function ImportJournal() {
     const handleImportJournal = async (value) => {
         if (value) {
             const UpdatedPlanComptable = await createCompteNotExisting();
-            const UpdatedCodeJournal = await createCodeJournalNotExisting();
+            const codeJournalRes = await createCodeJournalNotExisting();
+            const UpdatedCodeJournal = codeJournalRes?.list;
 
             if (!Array.isArray(UpdatedCodeJournal)) {
-                toast.error("Un problème est survenu lors de la création des codes journaux manquants.");
+                toast.error(codeJournalRes?.msg || "Un problème est survenu lors de la création des codes journaux manquants.");
             }
 
             if (!Array.isArray(UpdatedPlanComptable)) {

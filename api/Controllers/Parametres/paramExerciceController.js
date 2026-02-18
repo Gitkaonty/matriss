@@ -42,7 +42,12 @@ const etatsEtatFinancierAnalytique = db.etatsEtatFinancierAnalitiques;
 // Unified Formulaire TVA
 const formulaireTvaAnnexes = db.formulaireTvaAnnexes;
 const formulaireTvaAnnexesMatrices = db.formulaireTvaAnnexesMatrices;
+
+const revisionControleMatrix = db.revisionControleMatrix;
+const revisionControle = db.revisionControle;
+
 const dossiers = db.dossiers;
+const periodes = db.periodes;
 
 const getListeExercice = async (req, res) => {
   try {
@@ -119,6 +124,7 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
   const listeRubriqueExterne = await rubriquesExternesMatrices.findAll({});
   const listeCompteRubriqueExterne = await compteRubriquesExternesMatrices.findAll({});
   const listeEtatsEtatFinancier = await etatsEtatFinancierMatrice.findAll({});
+  const listeRevisionControleMatrix = await revisionControleMatrix.findAll({});
   // const listeEtatCentresFiscales = await etatsCentresFiscalesmatrices.findAll({});
 
   const createdExerciceInfosData = await exercice.findOne({
@@ -484,6 +490,24 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
   //     exercice: item.exercice,
   //   });
   // });
+  // Copier les matrices de contrôles dans les contrôles de l'exercice
+  const listeControleMatrix = await revisionControleMatrix.findAll({});
+  listeControleMatrix.map(async (item) => {
+    await revisionControle.create({
+      id_compte: id_compte,
+      id_dossier: id_dossier,
+      id_exercice: createExercice.id,
+      id_controle: item.id_controle,
+      Type: item.Type,
+      compte: item.compte,
+      test: item.test,
+      description: item.description,
+      anomalies: item.anomalies,
+      details: item.details,
+      Valider: item.Valider,
+      Commentaire: item.Commentaire
+    });
+  });
 }
 
 const createFirstExercice = async (req, res) => {
@@ -899,6 +923,204 @@ const getListeAnnee = async (req, res) => {
   }
 };
 
+// === FONCTIONS POUR LES PERIODES ===
+
+const getListePeriodes = async (req, res) => {
+  try {
+    const id_exercice = req.params.id_exercice;
+
+    let resData = {
+      state: false,
+      msg: '',
+      list: []
+    };
+
+    const list = await periodes.findAll({
+      where: { id_exercice },
+      order: [['date_debut', 'ASC']]
+    });
+
+    if (list) {
+      resData.state = true;
+      resData.list = list;
+    } else {
+      resData.state = false;
+      resData.msg = 'une erreur est survenue lors du traitement.';
+    }
+
+    return res.json(resData);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ state: false, msg: 'Erreur serveur', error: error.message });
+  }
+}
+
+const createPeriode = async (req, res) => {
+  try {
+    const { id_exercice, id_compte, id_dossier, libelle, date_debut, date_fin } = req.body;
+
+    let resData = {
+      state: false,
+      msg: '',
+      fileInfos: []
+    };
+
+    // Vérifier que les dates sont dans l'exercice
+    const exerciceParent = await exercice.findByPk(id_exercice);
+    if (!exerciceParent) {
+      resData.msg = 'Exercice non trouvé';
+      return res.json(resData);
+    }
+
+    const debutPeriode = new Date(date_debut);
+    const finPeriode = new Date(date_fin);
+    const debutExercice = new Date(exerciceParent.date_debut);
+    const finExercice = new Date(exerciceParent.date_fin);
+
+    if (debutPeriode < debutExercice || finPeriode > finExercice) {
+      resData.msg = 'Les dates de la période doivent être comprises entre les dates de l\'exercice';
+      return res.json(resData);
+    }
+
+    // Vérifier que la période ne chevauche pas une autre période
+    const periodesExistantes = await periodes.findAll({
+      where: { id_exercice }
+    });
+
+    for (const periode of periodesExistantes) {
+      const debutExistant = new Date(periode.date_debut);
+      const finExistant = new Date(periode.date_fin);
+
+      if ((debutPeriode >= debutExistant && debutPeriode <= finExistant) ||
+          (finPeriode >= debutExistant && finPeriode <= finExistant) ||
+          (debutPeriode <= debutExistant && finPeriode >= finExistant)) {
+        resData.msg = 'La période chevauche une période existante';
+        return res.json(resData);
+      }
+    }
+
+    const createPeriode = await periodes.create({
+      id_exercice,
+      id_compte,
+      id_dossier,
+      libelle,
+      date_debut,
+      date_fin,
+      rang: periodesExistantes.length + 1
+    });
+
+    if (createPeriode) {
+      resData.state = true;
+    } else {
+      resData.state = false;
+      resData.msg = "Une erreur est survenue au moment du traitement des données";
+    }
+
+    return res.json(resData);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ state: false, msg: 'Erreur serveur', error: error.message });
+  }
+}
+
+const updatePeriode = async (req, res) => {
+  try {
+    const { id_periode, libelle, date_debut, date_fin } = req.body;
+
+    let resData = {
+      state: false,
+      msg: '',
+      fileInfos: []
+    };
+
+    // Récupérer la période
+    const periode = await periodes.findByPk(id_periode);
+    if (!periode) {
+      resData.msg = 'Période non trouvée';
+      return res.json(resData);
+    }
+
+    // Vérifier que les dates sont dans l'exercice
+    const exerciceParent = await exercice.findByPk(periode.id_exercice);
+    const debutPeriode = new Date(date_debut);
+    const finPeriode = new Date(date_fin);
+    const debutExercice = new Date(exerciceParent.date_debut);
+    const finExercice = new Date(exerciceParent.date_fin);
+
+    if (debutPeriode < debutExercice || finPeriode > finExercice) {
+      resData.msg = 'Les dates de la période doivent être comprises entre les dates de l\'exercice';
+      return res.json(resData);
+    }
+
+    // Vérifier que la période ne chevauche pas une autre période (sauf elle-même)
+    const periodesExistantes = await periodes.findAll({
+      where: { 
+        id_exercice: periode.id_exercice,
+        id: { [Op.ne]: id_periode }
+      }
+    });
+
+    for (const p of periodesExistantes) {
+      const debutExistant = new Date(p.date_debut);
+      const finExistant = new Date(p.date_fin);
+
+      if ((debutPeriode >= debutExistant && debutPeriode <= finExistant) ||
+          (finPeriode >= debutExistant && finPeriode <= finExistant) ||
+          (debutPeriode <= debutExistant && finPeriode >= finExistant)) {
+        resData.msg = 'La période chevauche une période existante';
+        return res.json(resData);
+      }
+    }
+
+    const updated = await periodes.update({
+      libelle,
+      date_debut,
+      date_fin
+    }, {
+      where: { id: id_periode }
+    });
+
+    if (updated) {
+      resData.state = true;
+    } else {
+      resData.state = false;
+      resData.msg = "Une erreur est survenue au moment du traitement des données";
+    }
+
+    return res.json(resData);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ state: false, msg: 'Erreur serveur', error: error.message });
+  }
+}
+
+const deletePeriode = async (req, res) => {
+  try {
+    const { id_periode } = req.body;
+
+    let resData = {
+      state: false,
+      msg: '',
+      fileInfos: []
+    };
+
+    const deleted = await periodes.destroy({
+      where: { id: id_periode }
+    });
+
+    if (deleted) {
+      resData.state = true;
+    } else {
+      resData.state = false;
+      resData.msg = "Une erreur est survenue au moment du traitement des données";
+    }
+
+    return res.json(resData);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ state: false, msg: 'Erreur serveur', error: error.message });
+  }
+}
 
 module.exports = {
   getListeExercice,
@@ -910,5 +1132,9 @@ module.exports = {
   deleteExercice,
   getListeSituation,
   getListeExerciceById,
-  getListeAnnee
+  getListeAnnee,
+  getListePeriodes,
+  createPeriode,
+  updatePeriode,
+  deletePeriode
 };

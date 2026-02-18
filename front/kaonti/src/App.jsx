@@ -28,6 +28,7 @@ import ParamTVAComponent from './components/menuComponent/Parametrages/Tva/Param
 import ParamDeviseComponent from './components/ParamDeviseComponent';
 import ParamExerciceComponent from './components/menuComponent/Parametrages/Exercice/Exercice';
 import ParamCRM from './components/menuComponent/Parametrages/crm/ParamCRM';
+import Controles from './components/menuComponent/parametrages/controles/ControlesMatrix';
 import ParamMappingComponent from './components/menuComponent/Parametrages/mappingcompte/ParamMapping';
 import AnalitiqueComponent from './components/menuComponent/Parametrages/analytiques/AnalitiqueComponent';
 import DeclarationComm from './components/menuComponent/Declaration/Dcom/DeclarationComm';
@@ -47,6 +48,7 @@ import ParamMappingExterne from './components/menuComponent/Parametrages/mapping
 import EtatFinancier from './components/menuComponent/administration/etatFinancier/EtatFinancier';
 import Sig from './components/menuComponent/administration/SIG/Sig';
 import EtatFinancierAnalytique from './components/menuComponent/administration/etatFinancierAnalytique/EtatFinancierAnalytique';
+import Revision from './components/menuComponent/administration/revision/Revision';
 import PortefeuilleComponent from './components/menuComponent/Parametrages/portefeuille/Portefeuille';
 import RolePermission from './components/menuComponent/Parametrages/rolePermission/RolePermission';
 import Consolidation from './components/menuComponent/Parametrages/Consolidation/Consolidation';
@@ -114,6 +116,7 @@ export default function App() {
                   <Route path='/tab/administration/etatFinacier/:id' element={<EtatFinancier />} />
                   <Route path='/tab/administration/etatFinacierAnalytique/:id' element={<EtatFinancierAnalytique />} />
                   <Route path='/tab/administration/sig/:id' element={<Sig />} />
+                  <Route path='/tab/administration/revision/:id' element={<Revision />} />
 
                   <Route path='/tab/parametrages/paramCodeJournal/:id' element={<ParamCodeJournalComponent />} />
                   <Route path='/tab/parametrages/paramPlanComptable/:id' element={<ParamPlanComptableComponent />} />
@@ -127,6 +130,7 @@ export default function App() {
                   <Route path='/tab/parametrages/paramFonctions/:id' element={<FonctionsComponent />} />
                   <Route path='/tab/parametrages/chiffreDaffaires/:id' element={<ParamChiffreAffaires />} />
                   <Route path='/tab/parametrages/paramMapping-externe/:id' element={<ParamMappingExterne />} />
+                  <Route path='/tab/parametrages/controles/:id' element={<Controles />} />
 
                   <Route element={<ProtectedDossierConsolidation />}>
                     <Route path='/tab/parametrages/consolidation-correpondance/:id' element={<Consolidation />} />

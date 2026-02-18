@@ -25,6 +25,8 @@ import toast from 'react-hot-toast';
 import VirtualTableJournalAttente from '../../componentsTools/Dashboard/VirtualTableJournalAttente';
 import usePermission from '../../../hooks/usePermission';
 import { Line } from 'react-chartjs-2';
+import RevuAnalytiqueNN1 from './RevuAnalytiqueNN1';
+import RevuAnalytiqueMensuelle from './RevuAnalytiqueMensuelle';
 
 const columns = [
   {
@@ -85,6 +87,8 @@ const dashboardCardMinWidth = 170;
 
 export default function DashboardComponent() {
   const { canAdd, canModify, canDelete, canView } = usePermission();
+
+  const [valueRevuAnalytique, setValueRevuAnalytique] = useState('1');
 
   const [fileInfos, setFileInfos] = useState('');
   const [noFile, setNoFile] = useState(false);
@@ -160,6 +164,10 @@ export default function DashboardComponent() {
   const [evolutionTresorerieCaisseN1, setEvolutionTresorerieCaisseN1] = useState('');
 
   const [journalData, setJournalData] = useState([]);
+
+  const handleChangeRevuAnalytiqueTab = (event, newValue) => {
+    setValueRevuAnalytique(newValue);
+  };
 
   const GetListeDossier = (id) => {
     axios.get(`/home/FileInfos/${id}`).then((response) => {
@@ -640,6 +648,33 @@ export default function DashboardComponent() {
                   </Box>
                 </Stack>
               </Stack>
+
+              <Box sx={{ width: '100%', mt: 2 }}>
+                <TabContext value={valueRevuAnalytique}>
+                  <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                    <TabList onChange={handleChangeRevuAnalytiqueTab} aria-label="revue analytique tabs" variant="scrollable">
+                      <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="Revu Analytique N/N-1" value="1" />
+                      <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="Revu Analytique mensuel" value="2" />
+                    </TabList>
+                  </Box>
+
+                  <TabPanel value="1" sx={{ px: 0, pt: 2 }}>
+                    <RevuAnalytiqueNN1
+                      compteId={compteId}
+                      dossierId={fileId}
+                      exerciceId={selectedPeriodeId}
+                    />
+                  </TabPanel>
+
+                  <TabPanel value="2" sx={{ px: 0, pt: 2 }}>
+                    <RevuAnalytiqueMensuelle
+                      compteId={compteId}
+                      dossierId={fileId}
+                      exerciceId={selectedPeriodeId}
+                    />
+                  </TabPanel>
+                </TabContext>
+              </Box>
             </Stack>
           </TabPanel>
         </TabContext>

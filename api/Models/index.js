@@ -46,6 +46,7 @@ db.modeleplancomptabledetail = require('./modelePCDetailModel')(sequelize, DataT
 db.modeleplancomptabledetailcptchg = require('./modelePCDetailsCptChgModel')(sequelize, DataTypes);
 db.modeleplancomptabledetailcpttva = require('./modelePCDetailCptTvaModel')(sequelize, DataTypes);
 db.exercices = require('./exercicesModel')(sequelize, DataTypes);
+db.periodes = require('./periodesModel')(sequelize, DataTypes);
 db.dombancaires = require('./domBancaireModel')(sequelize, DataTypes);
 db.balances = require('./balanceModel')(sequelize, DataTypes);
 db.codejournals = require('./codejournalsModel')(sequelize, DataTypes);
@@ -116,7 +117,12 @@ db.dossierPasswordAccess = require('./dossiersMotDePasseAcces')(sequelize, DataT
 //
 db.compteRubriquesExternesMatrices = require('./compteRubriqueExterneMatriceModel')(sequelize, DataTypes);
 db.rubriquesExternesMatrices = require('./rubriquesExterneMatriceModel')(sequelize, DataTypes);
-//
+db.commentaireAnalytique = require('./commentaireAnalytiqueModel')(sequelize, DataTypes);
+db.commentaireAnalytiqueMensuelle = require('./commentaireAnalytiqueMensuelleModel.js')(sequelize, DataTypes);
+db.revision = require('./revisionModel.js')(sequelize, DataTypes);
+db.revisionControle = require('./revisionControleModel.js')(sequelize, DataTypes);
+db.revisionControleMatrix = require('./revisionControleMatrixModel.js')(sequelize, DataTypes);
+db.tableControleAnomalies = require('./tableControleAnomaliesModel.js')(sequelize, DataTypes);
 
 //
 db.caSections = require('./caSectionMolel')(sequelize, DataTypes);

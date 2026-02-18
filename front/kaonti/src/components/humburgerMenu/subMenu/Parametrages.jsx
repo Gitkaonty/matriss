@@ -49,12 +49,18 @@ const comptaList = [
         path: "/tab/parametrages/paramPlanComptableModele",
         urldynamic: false
     },
-    // {
-    //     text: 'TVA',
-    //     name: "tva",
-    //     path: "/tab/parametrages/paramTVA",
-    //     urldynamic: true
-    // },
+    {
+        text: 'Controles',
+        name: "controles",
+        path: "/tab/parametrages/controles",
+        urldynamic: true
+    },
+    {
+        text: 'TVA',
+        name: "tva",
+        path: "/tab/parametrages/paramTVA",
+        urldynamic: true
+    },
     // {
     //     text: 'Chiffre D\'affaires',
     //     name: "chiffreAffaires",
