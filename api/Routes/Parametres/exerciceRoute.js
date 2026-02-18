@@ -36,4 +36,17 @@ router.get('/listeExerciceById/:id', paramExerciceController.getListeExerciceByI
 //récupérer la liste des années
 router.get('/getListeAnnee/:id_compte/:id_dossier', paramExerciceController.getListeAnnee);
 
+// === ROUTES POUR LES PERIODES ===
+//récupérer la liste des périodes d'un exercice
+router.get('/listePeriodes/:id_exercice', paramExerciceController.getListePeriodes);
+
+//créer une période
+router.post('/createPeriode', verifyJWT, verifyPermission('ADD'), paramExerciceController.createPeriode);
+
+//modifier une période
+router.post('/updatePeriode', verifyJWT, verifyPermission('UPDATE'), paramExerciceController.updatePeriode);
+
+//supprimer une période
+router.post('/deletePeriode', verifyJWT, verifyPermission('DELETE'), paramExerciceController.deletePeriode);
+
 module.exports = router;

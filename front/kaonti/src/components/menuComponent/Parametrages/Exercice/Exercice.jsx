@@ -29,6 +29,7 @@ import { format } from 'date-fns';
 import PopupActionConfirm from '../../../componentsTools/popupActionConfirm';
 import usePermission from '../../../../hooks/usePermission';
 import useAxiosPrivate from '../../../../../config/axiosPrivate';
+import Periode from './Periode';
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialogContent-root': {
@@ -63,11 +64,13 @@ export default function ParamExerciceComponent() {
     const [openActionConfirmDeleteExercice, setOpenActionConfirmDeleteExercice] = useState(false);
     const [msgDeleteExercice, setMsgDeleteExercice] = useState('');
     const [selectedExerciceRow, setSelectedExerciceRow] = useState([]);
+    const [selectedExercice, setSelectedExercice] = useState(null);
     const [exerciceToDeleteId, setExerciceToDeleteId] = useState(0);
     const [exerciceToDeleteRang, setExerciceToDeleteRang] = useState(null);
 
     const [loadingCreateNextExercice, setLoadingCreateNextExercice] = useState(false);
     const [loadingCreatePreviousExercice, setLoadingPreviousExercice] = useState(false);
+
 
     const buttonStyle = {
         minWidth: 120,
@@ -416,6 +419,14 @@ export default function ParamExerciceComponent() {
     //supprimer un exercice
     const saveSelectedExercice = (ids) => {
         setSelectedExerciceRow(ids);
+
+        if (ids.length > 0) {
+            const selectedId = ids[0];
+            const exo = listeExercice.find(e => e.id === selectedId);
+            setSelectedExercice(exo || null);
+        } else {
+            setSelectedExercice(null);
+        }
     }
 
     const handleDeleteExercice = () => {
@@ -878,6 +889,15 @@ export default function ParamExerciceComponent() {
                                 rowSelectionModel={selectedExerciceRow}
                             />
                         </Stack>
+
+                        <Periode
+                            selectedExercice={selectedExercice}
+                            idCompte={id}
+                            idDossier={fileId}
+                            axiosPrivate={axiosPrivate}
+                            canAdd={canAdd}
+                            canDelete={canDelete}
+                        />
                     </Stack>
                 </TabPanel>
             </TabContext>

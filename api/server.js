@@ -17,7 +17,7 @@ const credentials = require('./Middlewares/credentials');
 //const modelePlanComptableDeleteRoutes = require('./Routes/modelePlanComptableRoutes/modelePlanComptableDeleteRoutes');
 require('dotenv').config();
 
-const PORT = process.env.PORT || 5200;
+const PORT = process.env.PORT || 5300;
 
 //Définition du moteur d'affichage
 const app = express();
@@ -76,6 +76,12 @@ app.use('/home', require('./Routes/Home/homeRoutes'));
 //routes pour dashboard
 app.use('/dashboard', require('./Routes/Dashboard/dashboardRoutes'));
 
+//routes pour commentaires analytiques
+app.use('/commentaireAnalytique', require('./Routes/Dashboard/commentaireAnalytiqueRoutes'));
+app.use('/commentaireAnalytiqueMensuelle', require('./Routes/Dashboard/commentaireAnalytiqueMensuelleRoutes'));
+
+
+
 //----------------------------------------------------------------------------------------------------------------
 // MENU ADMINISTRATION
 //----------------------------------------------------------------------------------------------------------------
@@ -90,6 +96,12 @@ app.use('/administration/personnel', require('./Routes/Administration/personnels
 app.use('/administration/etatFinancier', require('./Routes/Administration/etatFinancier/etatFinancierRoute'));
 
 app.use('/administration/etatFinancierAnalytique', require('./Routes/Administration/etatFinancierAnalytique/etatFinancierAnalytiqueRoute'));
+
+// Routes pour les révisions
+app.use('/administration/revision', require('./Routes/revision/revisionRoutes'));
+
+app.use('/administration/revisionControleAuto', require('./Routes/revision/revisionControleAutoRoutes'));
+
 
 //export
 app.use('/administration/exportBalance', require('./Routes/Administration/exportBalanceRoute'));
@@ -143,6 +155,10 @@ app.use('/param/portefeuille', require('./Routes/Parametres/Portefeuille/portefe
 
 // Route pour consolidation
 app.use('/param/consolidation', require('./Routes/Parametres/Consolidation/paramConsolidationRoute'));
+
+app.use('/param/revisionControle', require('./Routes/Parametres/revisionControleRoutes'));
+
+app.use('/param/revisionControleMatrix', require('./Routes/Parametres/revisionControleMatrixRoutes'));
 
 //----------------------------------------------------------------------------------------------------------------
 // MENU DECLARATION

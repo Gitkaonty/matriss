@@ -18,6 +18,12 @@ const traitementList = [
         path: "/tab/administration/consultation",
         urldynamic: true
     },
+    {
+        text: 'Révision',
+        name: "revision",
+        path: "/tab/administration/revision",
+        urldynamic: true
+    },
     // {
     //     text: 'Personnel',
     //     name: "personnel",

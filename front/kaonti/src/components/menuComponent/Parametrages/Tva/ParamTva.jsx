@@ -150,7 +150,7 @@ export default function ParamTVAComponent() {
 
     //Récupération du plan comptable
     const recupPc = () => {
-        axios.post(`/paramPlanComptable/pc`, { fileId }).then((response) => {
+        axios.post(`/paramPlanComptable/pc`, { fileId, compteId }).then((response) => {
             const resData = response.data;
             if (resData.state) {
                 const pcToFilter = resData.liste;
@@ -212,6 +212,18 @@ export default function ParamTVAComponent() {
         formikNewParamTva.setFieldValue('libelle', infosCompte[0].libelle);
     }
 
+    // Mapping des natures de TVA vers les libellés descriptifs complets
+    const mapTvaNatureToCode = (nature) => {
+        const mapping = {
+            'DED': 'TVA déductible',
+            'COLL': 'TVA collectée',
+            'IMMO': 'TVA immobilisation',
+            'CRED': 'TVA crédit',
+            'APAYER': 'TVA à payer'
+        };
+        return mapping[nature?.toUpperCase()] || nature;
+    };
+
     //associé déscriptioncode la déscription du code sélectionné
     const handleChangeCodeTva = (value) => {
         const infosCode = listeCodeTva?.filter((row) => row.id === value);
@@ -227,7 +239,7 @@ export default function ParamTVAComponent() {
             field: 'dossierplancomptable.compte',
             headerName: 'Compte',
             type: 'singleSelect',
-            valueOptions: Array.from(new Set((pc || []).map((code) => code.compte))),
+            valueOptions: Array.from(new Set((pc || []).filter((code) => code.compte?.startsWith('445')).map((code) => code.compte))),
             sortable: true,
             flex: 2.5,
             headerAlign: 'left',
@@ -249,7 +261,7 @@ export default function ParamTVAComponent() {
                             onChange={(e) => handleChangeCompte(e.target.value)}
                             label="Type"
                         >
-                            {Array.from(new Map((pc || []).map(o => [`${o.compte}||${o.libelle}`, o])).values()).map((option) => (
+                            {Array.from(new Map((pc || []).filter((o) => o.compte?.startsWith('445')).map(o => [`${o.compte}||${o.libelle}`, o])).values()).map((option) => (
                                 <MenuItem key={option.id} value={option.id}>
                                     {option.compte} - {option.libelle}
                                 </MenuItem>
@@ -293,18 +305,19 @@ export default function ParamTVAComponent() {
         },
         {
             field: 'listecodetva.code',
-            headerName: 'Code tva',
+            headerName: 'Nature',
             type: 'singleSelect',
             valueOptions: () => listeCodeTva.map((row) => row.code),
             sortable: true,
-            flex: 0.5,
+            flex: 1.5,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
             editable: editableRow,
             valueFormatter: (params) => {
                 const selectedType = listeCodeTva.find((option) => option.code === params.code);
-                return selectedType ? selectedType.code : params.code;
+                const nature = selectedType?.nature || params.code;
+                return mapTvaNatureToCode(nature);
             },
 
             renderEditCell: (params) => {
@@ -319,7 +332,7 @@ export default function ParamTVAComponent() {
                         >
                             {listeCodeTva?.map((option) => (
                                 <MenuItem key={option.id} value={option.id}>
-                                    {option.code} - {option.libelle}
+                                    {option.libelle}
                                 </MenuItem>
                             ))}
                         </Select>
@@ -330,20 +343,37 @@ export default function ParamTVAComponent() {
                 );
             },
             renderCell: (params) => {
-                if (params.value && typeof params.value === 'string' && params.value.startsWith('2')) {
+                // Récupérer la nature depuis les données de la ligne
+                const row = params.row;
+                // Essayer plusieurs sources possibles pour la nature
+                let nature = row?.['listecodetva.nature'] || row?.nature || row?.listecodetva?.nature;
+                
+                // Si pas de nature, essayer de trouver via le code dans listeCodeTva
+                if (!nature && listeCodeTva) {
+                    const codeMatch = listeCodeTva.find((opt) => opt.code === params.value || opt.id === row.type);
+                    if (codeMatch) {
+                        nature = codeMatch.nature;
+                    }
+                }
+                
+                const mappedCode = mapTvaNatureToCode(nature) || params.value;
+                
+                if (mappedCode && typeof mappedCode === 'string' && mappedCode.startsWith('2')) {
                     return (
                         <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
                             <div style={{
-                                width: 90,
+                                width: 140,
                                 height: 25,
                                 backgroundColor: '#FFA62F',
                                 borderRadius: 15,
                                 display: 'flex',
                                 justifyContent: 'center',
                                 alignItems: 'center',
-                                color: 'white'
+                                color: 'white',
+                                fontSize: '12px',
+                                padding: '0 8px'
                             }}>
-                                {params.value}
+                                {mappedCode}
                             </div>
                         </Stack>
                     )
@@ -351,51 +381,53 @@ export default function ParamTVAComponent() {
                     return (
                         <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
                             <div style={{
-                                width: 90,
+                                width: 140,
                                 height: 25,
                                 backgroundColor: '#3D5300',
                                 borderRadius: 15,
                                 display: 'flex',
                                 justifyContent: 'center',
                                 alignItems: 'center',
-                                color: 'white'
+                                color: 'white',
+                                fontSize: '12px',
+                                padding: '0 8px'
                             }}>
-                                {params.value}
+                                {mappedCode}
                             </div>
                         </Stack>
                     )
                 }
             }
         },
-        {
-            field: 'listecodetva.libelle',
-            headerName: 'Déscription',
-            type: 'string',
-            sortable: true,
-            flex: 3,
-            headerAlign: 'left',
-            align: 'left',
-            headerClassName: 'HeaderbackColor',
-            editable: editableRow,
-            renderEditCell: (params) => {
-                return (
-                    <FormControl fullWidth style={{ height: '100%' }}>
-                        <Input
-                            style={{
-                                height: '100%', alignItems: 'center',
-                                outline: 'none',
-                                backgroundColor: 'transparent'
-                            }}
-                            type="text"
-                            value={formikNewParamTva.values.codedescription}
-                            //onChange = {(e) => formikNewParamTva.setFieldValue('libelle', e.target.value)}
-                            label="libelle"
-                            disableUnderline={true}
-                        />
-                    </FormControl>
-                );
-            },
-        },
+        // {
+        //     field: 'listecodetva.libelle',
+        //     headerName: 'Déscription',
+        //     type: 'string',
+        //     sortable: true,
+        //     flex: 3,
+        //     headerAlign: 'left',
+        //     align: 'left',
+        //     headerClassName: 'HeaderbackColor',
+        //     editable: editableRow,
+        //     renderEditCell: (params) => {
+        //         return (
+        //             <FormControl fullWidth style={{ height: '100%' }}>
+        //                 <Input
+        //                     style={{
+        //                         height: '100%', alignItems: 'center',
+        //                         outline: 'none',
+        //                         backgroundColor: 'transparent'
+        //                     }}
+        //                     type="text"
+        //                     value={formikNewParamTva.values.codedescription}
+        //                     //onChange = {(e) => formikNewParamTva.setFieldValue('libelle', e.target.value)}
+        //                     label="libelle"
+        //                     disableUnderline={true}
+        //                 />
+        //             </FormControl>
+        //         );
+        //     },
+        // },
     ];
 
     //gestion ajout + modification + suppression ligne dans le tableau liste code journaux
@@ -742,7 +774,7 @@ export default function ParamTVAComponent() {
                                         style={{
                                             width: "35px", height: '35px',
                                             borderRadius: "2px", borderColor: "transparent",
-                                            backgroundColor: initial.add_new_line_bouton_color,
+                                            backgroundColor: initial.theme,
                                             textTransform: 'none', outline: 'none'
                                         }}
                                     >
@@ -758,7 +790,7 @@ export default function ParamTVAComponent() {
                                         style={{
                                             width: "35px", height: '35px',
                                             borderRadius: "2px", borderColor: "transparent",
-                                            backgroundColor: initial.add_new_line_bouton_color,
+                                            backgroundColor: initial.theme,
                                             textTransform: 'none', outline: 'none'
                                         }}
                                     >
@@ -775,7 +807,7 @@ export default function ParamTVAComponent() {
                                             style={{
                                                 width: "35px", height: '35px',
                                                 borderRadius: "2px", borderColor: "transparent",
-                                                backgroundColor: initial.add_new_line_bouton_color,
+                                                backgroundColor: initial.theme,
                                                 textTransform: 'none', outline: 'none'
                                             }}
                                         >

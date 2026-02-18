@@ -45,10 +45,10 @@ export default function VirtualTableJournalAttente({ tableHeader, tableRow }) {
                   sx={{
                     fontSize: 14,
                     // fontWeight: "bold",
-                    backgroundColor: initial.theme,
+                    backgroundColor: initial.tableau_theme,
                     paddingY: 0.8,
                     borderRadius: 0.5,
-                    color: 'white'
+                    color: 'black'
                   }}
                   key={column.id}
                   align={column.align}
@@ -96,7 +96,7 @@ export default function VirtualTableJournalAttente({ tableHeader, tableRow }) {
                     fontWeight: 'bold',
                     fontSize: 14,
                     paddingY: 0.8,
-                    backgroundColor: '#89A8B2',
+                    backgroundColor: '#f3f1f1ff',
                     position: 'sticky',
                     bottom: 0,
                     zIndex: 2,
