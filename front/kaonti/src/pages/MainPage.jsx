@@ -129,6 +129,7 @@ export default function HomePage() {
       { text: 'Plan comptable - modèle', name: 'planComptableModele', path: '/tab/parametrages/paramPlanComptableModele', urldynamic: false },
       { text: 'Controles', name: 'controles', path: '/tab/parametrages/controles', urldynamic: true},
       { text: 'TVA', name: 'tva', path: '/tab/parametrages/paramTVA', urldynamic: true},
+      { text: 'Portefeuille', name: 'portefeuille', path: '/tab/parametrages/paramPortefeuille', urldynamic: false},
     ]
   ), []);
 

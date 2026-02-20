@@ -1238,6 +1238,32 @@ const deleteItemPc = async (req, res) => {
   }
 }
 
+const getAllCollectifAccounts = async (req, res) => {
+  try {
+    const { modelId } = req.body;
+    
+    const collectifAccounts = await modeleplancomptabledetail.findAll({
+      where: {
+        id_modeleplancomptable: modelId,
+        nature: 'Collectif'
+      },
+      order: [['compte', 'ASC']]
+    });
+
+    return res.json({
+      state: true,
+      list: collectifAccounts || []
+    });
+  } catch (error) {
+    console.log(error);
+    return res.json({
+      state: false,
+      msg: 'Erreur lors de la récupération des comptes collectifs',
+      list: []
+    });
+  }
+}
+
 module.exports = {
   recupListModelePlanComptable,
   recupListDossier,
@@ -1246,5 +1272,6 @@ module.exports = {
   detailModel,
   AddCptTodetailModel,
   keepListCptChgTvaAssoc,
-  deleteItemPc
+  deleteItemPc,
+  getAllCollectifAccounts
 };

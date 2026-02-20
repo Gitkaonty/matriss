@@ -109,12 +109,12 @@ const socialesList = [
     //     path: "/tab/parametrages/paramFonctions",
     //     urldynamic: true
     // },
-    // {
-    //     text: 'Portefeuille',
-    //     name: "portefeuille",
-    //     path: "/tab/parametrages/paramPortefeuille",
-    //     urldynamic: false
-    // },
+    {
+        text: 'Portefeuille',
+        name: "portefeuille",
+        path: "/tab/parametrages/paramPortefeuille",
+        urldynamic: false
+    },
 ];
 
 export default function Parametrages({ onWindowState, pathToNavigate, humburgerMenuState, closeDrawer, roles, consolidation }) {
