@@ -362,11 +362,6 @@ const createNewFile = async (req, res) => {
               continue;
             }
 
-            if (!item.libelle) {
-              //console.log(`⚠️ Ligne ${index + 1} ignorée : champ 'libelle' vide`);
-              continue;
-            }
-
             let compteFormated = '';
             let baseAux = '';
 
@@ -395,90 +390,88 @@ const createNewFile = async (req, res) => {
               id_dossier: newFile.id,
               compte: compteFormated,
               libelle: item.libelle,
-              compteautre: item.compteautre,
-              libelleautre: item.libelleautre,
+              // compteautre: item.compteautre,
+              // libelleautre: item.libelleautre,
               nature: item.nature,
               baseaux: baseAux,
-              cptcharge: item.cptcharge,
-              typetier: item.typetier,
-              cpttva: item.cpttva,
-              nif: item.nif,
-              statistique: item.statistique,
-              adresse: item.adresse,
-              motcle: item.motcle,
-              cin: item.cin,
-              datecin: item.datecin,
-              autrepieceid: item.autrepieceid,
-              refpieceid: item.refpieceid,
-              adressesansnif: item.adressesansnif,
-              nifrepresentant: item.nifrepresentant,
-              adresseetranger: item.adresseetranger,
-              pays: item.pays,
+              // cptcharge: item.cptcharge,
+              // typetier: item.typetier,
+              // cpttva: item.cpttva,
+              // nif: item.nif,
+              // statistique: item.statistique,
+              // adresse: item.adresse,
+              // motcle: item.motcle,
+              // cin: item.cin,
+              // datecin: item.datecin,
+              // autrepieceid: item.autrepieceid,
+              // refpieceid: item.refpieceid,
+              // adressesansnif: item.adressesansnif,
+              // nifrepresentant: item.nifrepresentant,
+              // adresseetranger: item.adresseetranger,
+              // pays: item.pays,
               // baseaux_id: à gérer plus tard
             });
 
             //console.log(`✅ [${index + 1}/${modelePc.length}] Insertion OK pour le compte :`, compteFormated);
 
             //copier les comptes de charges associés au compte s'il en existe 
-            if (item.cptcharge) {
-              const listCptCh = await modeleplancomptabledetailcptchg.findAll({
-                where:
-                {
-                  id_compte: idCompte,
-                  id_modeleplancomptable: plancomptable,
-                  id_detail: item.id
-                }
-              });
+            // if (item.cptcharge) {
+            //   const listCptCh = await modeleplancomptabledetailcptchg.findAll({
+            //     where:
+            //     {
+            //       id_compte: idCompte,
+            //       id_modeleplancomptable: plancomptable,
+            //       id_detail: item.id
+            //     }
+            //   });
 
-              if (listCptCh.length > 0) {
-                for (const [index, item] of listCptCh.entries()) {
-                  await dossierpcdetailcptchg.create({
-                    id_compte: idCompte,
-                    id_dossier: newFile.id,
-                    id_detail: newCptEntry.id,
-                    compte: item.compte,
-                    libelle: item.libelle,
-                    libelle: item.libelle,
-                    id_comptecompta: item.id_comptecompta
-                  });
-                }
-              }
-            }
+            //   if (listCptCh.length > 0) {
+            //     for (const [index, item] of listCptCh.entries()) {
+            //       await dossierpcdetailcptchg.create({
+            //         id_compte: idCompte,
+            //         id_dossier: newFile.id,
+            //         id_detail: newCptEntry.id,
+            //         compte: item.compte,
+            //         libelle: item.libelle,
+            //         libelle: item.libelle,
+            //         id_comptecompta: item.id_comptecompta
+            //       });
+            //     }
+            //   }
+            // }
 
-            //copier les comptes de TVA associés au compte s'il en existe
-            if (item.cpttva) {
-              const listCptTva = await modeleplancomptabledetailcpttva.findAll({
-                where:
-                {
-                  id_compte: idCompte,
-                  id_modeleplancomptable: plancomptable,
-                  id_detail: item.id
-                }
-              });
+            // //copier les comptes de TVA associés au compte s'il en existe
+            // if (item.cpttva) {
+            //   const listCptTva = await modeleplancomptabledetailcpttva.findAll({
+            //     where:
+            //     {
+            //       id_compte: idCompte,
+            //       id_modeleplancomptable: plancomptable,
+            //       id_detail: item.id
+            //     }
+            //   });
 
-              if (listCptTva.length > 0) {
-                for (const [index, item] of listCptTva.entries()) {
-                  await dossierpcdetailcpttva.create({
-                    id_compte: idCompte,
-                    id_dossier: newFile.id,
-                    id_detail: newCptEntry.id,
-                    compte: item.compte,
-                    libelle: item.libelle,
-                    id_comptecompta: item.id_comptecompta
-                  });
-                }
-              }
-            }
+            //   if (listCptTva.length > 0) {
+            //     for (const [index, item] of listCptTva.entries()) {
+            //       await dossierpcdetailcpttva.create({
+            //         id_compte: idCompte,
+            //         id_dossier: newFile.id,
+            //         id_detail: newCptEntry.id,
+            //         compte: item.compte,
+            //         libelle: item.libelle,
+            //         id_comptecompta: item.id_comptecompta
+            //       });
+            //     }
+            //   }
+            // }
 
           } catch (err) {
-            //console.log(`❌ [${index + 1}] Erreur insertion compte : ${item.compte}`);
             console.log("💥 Message :", err.message);
           }
         }
 
         //console.log("🏁 Fin de la boucle de copie du plan comptable");
       }
-
 
       if (newFile) {
         updatebaseAuxID(idCompte, newFile.id, plancomptable);

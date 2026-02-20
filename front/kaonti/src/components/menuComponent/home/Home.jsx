@@ -22,7 +22,7 @@ import { useNavigate } from 'react-router-dom';
 import { FcFile } from "react-icons/fc";
 import useFileInfos from '../../../hooks/useFileInfos';
 import usePermission from '../../../hooks/usePermission';
-import useAxiosPrivate from '../../../../config/axiosPrivate';
+import useAxiosPrivate from '../../../hooks/useAxiosPrivate';
 import PopupConfirmPasswordDossier from '../../componentsTools/Dossier/PopupConfirmPasswordDossier';
 
 const Transition = React.forwardRef(function Transition(props, ref) {

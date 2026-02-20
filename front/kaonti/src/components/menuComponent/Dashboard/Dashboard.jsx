@@ -654,7 +654,7 @@ export default function DashboardComponent() {
                   <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                     <TabList onChange={handleChangeRevuAnalytiqueTab} aria-label="revue analytique tabs" variant="scrollable">
                       <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="Revu Analytique N/N-1" value="1" />
-                      <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="Revu Analytique mensuel" value="2" />
+                      <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="Revu Analytique mensuel LLE" value="2" />
                     </TabList>
                   </Box>
 

@@ -32,5 +32,7 @@ router.get('/keepListCptChgTvaAssoc/:itemId', paramPCModeleController.keepListCp
 //supprimer un compte dans le tableau du plan comptable
 router.post('/deleteItemPc', verifyJWT, verifyPermission('DELETE'), paramPCModeleController.deleteItemPc);
 
+//Récupérer tous les comptes collectifs du modèle
+router.post('/allCollectifAccounts', paramPCModeleController.getAllCollectifAccounts);
 
 module.exports = router;

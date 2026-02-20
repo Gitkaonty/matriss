@@ -319,8 +319,8 @@ export default function Revision() {
                     boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                 }}
             >
-                <Typography variant="h5" sx={{ fontWeight: 600, color: '#333', mb: 2 }}>
-                    Révision
+                <Typography component="div" variant="h7" sx={{ fontWeight: 600, color: '#333', mb: 2, display: 'block' }}>
+                    Administration-Révision
                 </Typography>
 
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
