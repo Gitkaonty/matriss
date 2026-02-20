@@ -1,26 +1,25 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
     Typography, Stack, Paper, RadioGroup, FormControlLabel, Radio, FormControl,
     InputLabel, Select, MenuItem, TextField, Box, Tab,
-    FormHelperText, Autocomplete, ButtonGroup
+    FormHelperText, Autocomplete, ButtonGroup, IconButton, Chip
 } from '@mui/material';
 import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
 import { init } from '../../../../../init';
 import axios from '../../../../../config/axios';
 import toast from 'react-hot-toast';
-import { DataGrid, frFR } from '@mui/x-data-grid';
+import { DataGrid, frFR, useGridApiContext, useGridApiRef } from '@mui/x-data-grid';
 import { styled } from '@mui/material/styles';
 import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
-import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
+import { TbCircleLetterCFilled, TbCircleLetterGFilled, TbCircleLetterAFilled } from "react-icons/tb";
 import { TabContext, TabList, TabPanel } from '@mui/lab';
 import { IoMdTrash } from "react-icons/io";
 import { TbPlaylistAdd } from "react-icons/tb";
-import { FaRegPenToSquare } from "react-icons/fa6";
+import { IoAdd, IoClose } from "react-icons/io5";
 import ParamPCModele_column from './ParamPCModele_column';
 import { useFormik, Field, Formik, Form, ErrorMessage } from 'formik';
 import * as Yup from "yup";
@@ -46,8 +45,6 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
 
 //header pour le tableau liste de modèle
 const columnHeaderModel = ParamPCModele_column.columnHeaderModel;
-
-//header pour le tableau détail - sera initialisé dans le composant
 
 //header pour le tableau ajouter compte de charge et/ou compte de TVA dans le popup
 const columnHeaderAddNewRowModelDetail = ParamPCModele_column.columnHeaderAddNewRowModelDetail;
@@ -124,6 +121,12 @@ export default function ParamPlanComptableModele() {
     const [rowCptInfos, setRowCptInfos] = useState([]);
     const [openInfos, setOpenInfos] = useState(false);
 
+    // ===== STATES POUR EDITION INLINE =====
+    const apiRef = useGridApiRef();
+    const [rowModesModel, setRowModesModel] = useState({});
+    const [selectedRowId, setSelectedRowId] = useState(null);
+    const [isLoadingCollectif, setIsLoadingCollectif] = useState(false);
+    const loadingCollectifRef = useRef(false);
 
     //paramètres de connexion------------------------------------
     const decoded = auth?.accessToken
@@ -265,7 +268,11 @@ export default function ParamPlanComptableModele() {
     const showModelDetail = (rowId) => {
         axios.post(`/paramPlanComptableModele/detailModel`, { rowId }).then((response) => {
             const resData = response.data;
-            setDetailModel(resData.modelDetail);
+            const mapped = (resData.modelDetail || []).map((r) => ({
+                ...r,
+                baseCompte: r.baseCompte ?? r.baseaux ?? '',
+            }));
+            setDetailModel(mapped);
         })
     }
 
@@ -275,8 +282,11 @@ export default function ParamPlanComptableModele() {
         setOpenDialogAddModelDetail(false);
     }
 
-    const handleOpenDialogDetailModelAdd = (setFieldValue, resetForm) => () => {
+    const handleOpenDialogDetailModelAdd = (setFieldValue, resetForm) => async () => {
         if (modelId !== null) {
+            // Charger d'abord la liste des comptes collectifs
+            await recupererListeCptCollectifInline();
+            
             resetForm();
             setListCptChg([]);
             setListCptTva([]);
@@ -298,7 +308,6 @@ export default function ParamPlanComptableModele() {
             setFieldValue("idModele", modelId);
 
             setFormulaireTier('sans-nif');
-            recupererListeCptCollectif();
             setTypeCptGeneral(true);
             setDisableTypeTiers(true); // Désactiver Type Tiers par défaut (nature = General)
 
@@ -317,14 +326,9 @@ export default function ParamPlanComptableModele() {
         }
     }
 
-    //gestion tableau ajout compte de TVA associé au nouveau compte à créer
-    const recupererListeCptCollectif = () => {
-        const result = detailModel?.filter(item => item.nature === 'Collectif');
-        setListeCptCollectif(result);
-    }
-
-    const handleOpenDialogDetailModelModify = (setFieldValue) => () => {
-        recupererListeCptCollectif();
+    const handleOpenDialogDetailModelModify = (setFieldValue) => async () => {
+        // Charger d'abord la liste des comptes collectifs
+        await recupererListeCptCollectifInline();
 
         setFieldValue("action", "modify");
         setFieldValue("itemId", detailModelSelectedRow.id);
@@ -897,6 +901,493 @@ export default function ParamPlanComptableModele() {
         }
     }
 
+    // ===== FONCTIONS POUR EDITION INLINE =====
+
+    // Récupérer la liste des comptes collectifs pour le dropdown baseCompte via API
+    const recupererListeCptCollectifInline = useCallback(async () => {
+        if (loadingCollectifRef.current || !modelId) return Promise.resolve([]);
+        loadingCollectifRef.current = true;
+        setIsLoadingCollectif(true);
+        
+        try {
+            const response = await axios.post(`/paramPlanComptableModele/allCollectifAccounts`, { modelId });
+            const resData = response.data;
+            if (resData.state) {
+                setListeCptCollectif(resData.list);
+                setIsLoadingCollectif(false);
+                loadingCollectifRef.current = false;
+                return Promise.resolve(resData.list);
+            } else {
+                setListeCptCollectif([]);
+                setIsLoadingCollectif(false);
+                loadingCollectifRef.current = false;
+                return Promise.resolve([]);
+            }
+        } catch (error) {
+            console.error('Erreur récupération comptes collectifs:', error);
+            setListeCptCollectif([]);
+            setIsLoadingCollectif(false);
+            loadingCollectifRef.current = false;
+            return Promise.resolve([]);
+        }
+    }, [modelId]);
+
+    // Cellule d'édition pour Nature
+    const NatureEditCell = (props) => {
+        const { id, field, value } = props;
+        const apiRef = useGridApiContext();
+
+        useEffect(() => {
+            if (value === 'General' || value === 'Collectif') {
+                const currentRow = apiRef.current.getRow(id);
+                apiRef.current.setEditCellValue({ id, field: 'baseCompte', value: currentRow?.compte || '' });
+            }
+        }, [value, id, apiRef]);
+
+        return (
+            <Select
+                size="small"
+                value={value || ''}
+                onChange={(e) => {
+                    apiRef.current.setEditCellValue({ id, field, value: e.target.value });
+                }}
+                sx={{ width: '100%' }}
+            >
+                <MenuItem value="General">Compte général</MenuItem>
+                <MenuItem value="Collectif">Compte collectif</MenuItem>
+                <MenuItem value="Aux">Compte auxiliaire</MenuItem>
+            </Select>
+        );
+    };
+
+    // Cellule d'édition pour BaseCompte
+    const BaseCompteEditCell = (props) => {
+        const { id, field, value, row } = props;
+        const [localValue, setLocalValue] = useState('');
+        const apiRef = useGridApiContext();
+
+        const currentRow = apiRef.current.getRowWithUpdatedValues(id);
+        const currentNature = currentRow?.nature || row.nature;
+        const currentCompte = currentRow?.compte || row.compte;
+
+        useEffect(() => {
+            if (currentNature === 'General' || currentNature === 'Collectif') {
+                const compteValue = currentCompte || '';
+                setLocalValue(compteValue);
+                apiRef.current.setEditCellValue({ id, field, value: compteValue });
+            } else {
+                // Pour Auxiliaire, on doit trouver l'ID correspondant à la valeur
+                if (value != null && value !== '' && listeCptCollectif.length > 0) {
+                    // Essayer de trouver par ID d'abord, puis par numéro de compte
+                    const foundById = listeCptCollectif.find(item => String(item.id) === String(value));
+                    const foundByCompte = listeCptCollectif.find(item => String(item.compte) === String(value));
+                    const found = foundById || foundByCompte;
+                    
+                    if (found) {
+                        setLocalValue(String(found.id));
+                        // Mettre à jour la valeur dans la cellule avec l'ID
+                        apiRef.current.setEditCellValue({ id, field, value: String(found.id) });
+                    } else {
+                        setLocalValue('');
+                        apiRef.current.setEditCellValue({ id, field, value: '' });
+                    }
+                } else {
+                    setLocalValue('');
+                }
+            }
+        }, [value, currentNature, currentCompte, listeCptCollectif, id, field, apiRef]);
+
+        useEffect(() => {
+            if (currentNature === 'Aux' && listeCptCollectif.length === 0 && !isLoadingCollectif && !loadingCollectifRef.current) {
+                recupererListeCptCollectifInline();
+            }
+        }, [currentNature, listeCptCollectif.length, isLoadingCollectif, recupererListeCptCollectifInline]);
+
+        const handleChange = (event) => {
+            const newValue = event.target.value;
+            setLocalValue(newValue);
+            apiRef.current.setEditCellValue({ id, field, value: newValue });
+        };
+
+        if (currentNature === 'General' || currentNature === 'Collectif') {
+            return (
+                <TextField
+                    size="small"
+                    value={currentCompte || ''}
+                    disabled
+                    sx={{
+                        width: '100%',
+                        '& .MuiInputBase-root.Mui-disabled': { backgroundColor: '#f5f5f5' }
+                    }}
+                />
+            );
+        }
+
+        return (
+            <Select
+                size="small"
+                value={localValue || ''}
+                onChange={handleChange}
+                disabled={isLoadingCollectif}
+                displayEmpty
+                sx={{ width: '100%' }}
+            >
+                <MenuItem value="">
+                    <em>{isLoadingCollectif ? 'Chargement...' : 'Sélectionner un compte'}</em>
+                </MenuItem>
+                {listeCptCollectif?.map((item) => (
+                    <MenuItem key={item.id} value={String(item.id)}>
+                        {item.compte} - {item.libelle}
+                    </MenuItem>
+                ))}
+            </Select>
+        );
+    };
+
+    // Rendu de la cellule BaseCompte
+    const BaseCompteRenderCell = (params) => {
+        const { row } = params;
+        const value = row.baseaux || row.baseCompte;
+
+        if (row.nature === 'General' || row.nature === 'Collectif') {
+            return <span>{row.compte}</span>;
+        }
+
+        if (value && listeCptCollectif.length > 0) {
+            const found = listeCptCollectif.find(item => String(item.id) === String(value) || String(item.compte) === String(value));
+            if (found) {
+                return <span>{found.compte}</span>;
+            }
+        }
+
+        return <span>{value}</span>;
+    };
+
+    // Vérifier si une ligne est en édition
+    const isRowInEditMode = (id) => {
+        return rowModesModel[id]?.mode === 'edit';
+    };
+
+    // Vérifier s'il y a une ligne en édition
+    const hasRowInEditMode = () => {
+        return Object.values(rowModesModel).some((mode) => mode.mode === 'edit');
+    };
+
+    // Gestion du clic sur Ajouter
+    const handleAddClick = () => {
+        if (!modelId) {
+            toast.error("Veuillez sélectionner un modèle de plan comptable.");
+            return;
+        }
+        if (hasRowInEditMode()) {
+            toast.error("Veuillez terminer l'édition en cours avant d'ajouter une nouvelle ligne.");
+            return;
+        }
+        if (modelSelectedRow?.pardefault) {
+            toast.error("Vous ne pouvez pas modifier les comptes associés au modèle de plan comptable natif de kaonty.");
+            return;
+        }
+
+        const newId = `new-${Date.now()}`;
+        const newRow = {
+            id: newId,
+            compte: '',
+            libelle: '',
+            nature: 'General',
+            baseCompte: '',
+            isNew: true
+        };
+
+        setDetailModel((prev) => [newRow, ...prev]);
+        setRowModesModel((prev) => ({
+            ...prev,
+            [newId]: { mode: 'edit', fieldToFocus: 'compte' }
+        }));
+        setSelectedRowId(newId);
+        setPcAllselectedRow([newId]);
+    };
+
+    // Gestion du clic sur Modifier
+    const handleEditClick = () => {
+        if (!detailModelSelectedRow?.id) {
+            toast.error("Veuillez sélectionner une ligne à modifier.");
+            return;
+        }
+        if (hasRowInEditMode()) {
+            toast.error("Veuillez terminer l'édition en cours.");
+            return;
+        }
+        if (modelSelectedRow?.pardefault) {
+            toast.error("Vous ne pouvez pas modifier les comptes associés au modèle de plan comptable natif de kaonty.");
+            return;
+        }
+
+        const id = detailModelSelectedRow.id;
+        setRowModesModel((prev) => ({
+            ...prev,
+            [id]: { mode: 'edit', fieldToFocus: 'compte' }
+        }));
+        setSelectedRowId(id);
+    };
+
+    // Gestion du clic sur Sauvegarder
+    const handleSaveClick = async () => {
+        if (!selectedRowId) {
+            toast.error("Aucune ligne en cours d'édition.");
+            return;
+        }
+
+        try {
+            await apiRef.current.stopRowEditMode({ id: selectedRowId });
+        } catch (error) {
+            console.error('Erreur lors de la sauvegarde:', error);
+        }
+    };
+
+    // Gestion du clic sur Annuler
+    const handleCancelClick = () => {
+        if (!selectedRowId) return;
+
+        const isNewRow = String(selectedRowId).startsWith('new-');
+
+        if (isNewRow) {
+            setDetailModel((prev) => prev.filter((row) => row.id !== selectedRowId));
+        }
+
+        setRowModesModel((prev) => ({
+            ...prev,
+            [selectedRowId]: { mode: 'view' }
+        }));
+        setSelectedRowId(null);
+        apiRef.current.stopRowEditMode({ id: selectedRowId, ignoreModifications: true });
+    };
+
+    // Mise à jour d'une ligne
+    const processRowUpdate = async (newRow, oldRow) => {
+        return new Promise((resolve, reject) => {
+            const isNewRow = String(newRow.id).startsWith('new-');
+
+            const normalizeCompte = (v) =>
+                (v || '').toString().toUpperCase().replace(/[\s\.\-]/g, '').trim();
+
+            const normalizedCompte = normalizeCompte(newRow.compte);
+
+            if (!normalizedCompte) {
+                toast.error('Veuillez taper un numéro de compte');
+                reject(oldRow);
+                return;
+            }
+
+            if (!newRow.libelle?.trim()) {
+                toast.error('Veuillez insérer un libellé pour le numéro de compte');
+                reject(oldRow);
+                return;
+            }
+
+            const exists = detailModel.some(
+                (r) => normalizeCompte(r.compte) === normalizedCompte && r.id !== newRow.id
+            );
+
+            if (exists) {
+                toast.error('Ce compte existe déjà');
+                reject(oldRow);
+                return;
+            }
+
+            if (newRow.nature === 'Aux' && (!newRow.baseCompte || newRow.baseCompte === '')) {
+                toast.error('Veuillez ajouter la base du compte collectif');
+                reject(oldRow);
+                return;
+            }
+
+            let baseCptValue = null;
+            if (newRow.nature === 'General' || newRow.nature === 'Collectif') {
+                baseCptValue = newRow.compte ? Number(newRow.compte) : null;
+            } else if (newRow.baseCompte && String(newRow.baseCompte).trim() !== '') {
+                baseCptValue = Number(newRow.baseCompte);
+            }
+
+            const payload = {
+                action: isNewRow ? 'new' : 'modify',
+                itemId: isNewRow ? 0 : newRow.id,
+                idCompte: Number(compteId),
+                idModele: Number(modelId),
+                compte: newRow.compte,
+                libelle: newRow.libelle,
+                nature: newRow.nature,
+                baseCptCollectif: baseCptValue,
+                typeTier: (newRow.nature === 'General' || newRow.nature === 'Collectif') ? 'general' : 'sans-nif',
+                nif: '',
+                stat: '',
+                adresse: '',
+                motcle: '',
+                cin: '',
+                dateCin: null,
+                autrePieceID: '',
+                refPieceID: '',
+                adresseSansNIF: '',
+                nifRepresentant: '',
+                adresseEtranger: '',
+                pays: '',
+                province: '',
+                region: '',
+                district: '',
+                commune: '',
+                listeCptChg: [],
+                listeCptTva: []
+            };
+
+            axiosPrivate.post(`/paramPlanComptableModele/AddCptTodetailModel`, payload)
+                .then((response) => {
+                    const resData = response.data;
+
+                    if (resData.state === true) {
+                        toast.success(resData.msg || 'Compte enregistré avec succès');
+
+                        if (!isNewRow && resData?.dataModified) {
+                            const updatedRow = {
+                                ...newRow,
+                                ...resData.dataModified,
+                                baseCompte: resData.dataModified.baseaux || resData.dataModified.baseCompte || newRow.baseCompte
+                            };
+                            setDetailModel((prev) => prev.map((row) => row.id === newRow.id ? updatedRow : row));
+                            resolve(updatedRow);
+                        } else {
+                            showModelDetail(modelId);
+                            resolve(newRow);
+                        }
+
+                        setRowModesModel((prev) => ({
+                            ...prev,
+                            [newRow.id]: { mode: 'view' }
+                        }));
+                        setSelectedRowId(null);
+                    } else {
+                        toast.error(resData.msg || 'Erreur lors de l\'enregistrement');
+                        reject(oldRow);
+                    }
+                })
+                .catch((error) => {
+                    if (error.code === 'ERR_CANCELED' || error.message?.includes('aborted')) {
+                        console.log('[DEBUG] processRowUpdate: requête annulée');
+                        reject(oldRow);
+                        return;
+                    }
+                    console.error('[DEBUG] processRowUpdate: erreur', error);
+                    toast.error(error?.response?.data?.msg || 'Erreur lors de l\'enregistrement');
+                    reject(oldRow);
+                });
+        });
+    };
+
+    // Gestion des changements de mode d'édition
+    const handleRowModesModelChange = (newRowModesModel) => {
+        setRowModesModel(newRowModesModel);
+    };
+
+    const handleRowEditStart = (params) => {
+        setSelectedRowId(params.id);
+    };
+
+    const handleRowEditStop = (params, event) => {
+        if (params.reason === 'escapeKeyDown') {
+            const isNewRow = String(params.id).startsWith('new-');
+            if (isNewRow) {
+                setDetailModel((prev) => prev.filter((row) => row.id !== params.id));
+            }
+            setSelectedRowId(null);
+        }
+    };
+
+    // Colonnes pour le DataGrid avec édition inline
+    const columnHeaderDetailInline = (handleShowCptInfos) => [
+        {
+            field: 'id',
+            headerName: 'ID',
+            type: 'number',
+            sortable: true,
+            width: 70,
+            headerAlign: 'right',
+            headerClassName: 'HeaderbackColor',
+        },
+        {
+            field: 'compte',
+            headerName: 'Compte',
+            type: 'string',
+            sortable: true,
+            width: 130,
+            headerAlign: 'left',
+            headerClassName: 'HeaderbackColor',
+            editable: true,
+            renderCell: (params) => (
+                <span style={{ cursor: 'pointer', width: '100%' }} onClick={() => handleShowCptInfos(params.row)}>
+                    {params.row.compte}
+                </span>
+            ),
+        },
+        {
+            field: 'libelle',
+            headerName: 'Libellé',
+            type: 'string',
+            sortable: true,
+            width: 300,
+            headerAlign: 'left',
+            headerClassName: 'HeaderbackColor',
+            editable: true,
+        },
+        {
+            field: 'nature',
+            headerName: 'Nature',
+            type: 'string',
+            sortable: true,
+            width: 130,
+            headerAlign: 'left',
+            headerClassName: 'HeaderbackColor',
+            editable: true,
+            renderEditCell: (params) => <NatureEditCell {...params} />,
+            renderCell: (params) => {
+                const nature = params.row.nature;
+                if (nature === 'General') {
+                    return (
+                        <Chip
+                            icon={<TbCircleLetterGFilled style={{ color: 'white', width: 18, height: 18 }} />}
+                            label="Général"
+                            sx={{ width: '100%', justifyContent: 'space-between', backgroundColor: '#48A6A7', color: 'white' }}
+                        />
+                    );
+                } else if (nature === 'Collectif') {
+                    return (
+                        <Chip
+                            icon={<TbCircleLetterCFilled style={{ color: 'white', width: 18, height: 18 }} />}
+                            label="Collectif"
+                            sx={{ width: '100%', justifyContent: 'space-between', backgroundColor: '#A6D6D6', color: 'white' }}
+                        />
+                    );
+                } else {
+                    return (
+                        <Chip
+                            icon={<TbCircleLetterAFilled style={{ color: 'white', width: 18, height: 18 }} />}
+                            label="Auxiliaire"
+                            sx={{ width: '100%', justifyContent: 'space-between', backgroundColor: '#123458', color: 'white' }}
+                        />
+                    );
+                }
+            },
+        },
+        {
+            field: 'baseCompte',
+            headerName: 'Centr. / base Aux',
+            type: 'string',
+            sortable: true,
+            width: 175,
+            headerAlign: 'left',
+            headerClassName: 'HeaderbackColor',
+            editable: true,
+            renderEditCell: (params) => <BaseCompteEditCell {...params} />,
+            renderCell: (params) => <BaseCompteRenderCell {...params} />,
+        },
+    ];
+
     return (
         <Box
             sx={{
@@ -989,25 +1480,23 @@ export default function ParamPlanComptableModele() {
                                             backgroundColor: initial.auth_gradient_end,
                                             color: 'white',
                                             borderColor: initial.auth_gradient_end,
-                                            boxShadow: 'none',
-
                                             '&:hover': {
                                                 backgroundColor: initial.auth_gradient_end,
+                                                boxShadow: 'none',
                                                 border: 'none',
-                                                boxShadow: 'none',       // enlève l’effet bleu shadow
                                             },
                                             '&:focus': {
                                                 backgroundColor: initial.auth_gradient_end,
-                                                border: 'none',
-                                                boxShadow: 'none',       // enlève le focus bleu
+                                                boxShadow: 'none',
                                             },
                                             '&.Mui-disabled': {
                                                 backgroundColor: initial.auth_gradient_end,
                                                 color: 'white',
                                                 cursor: 'not-allowed',
+                                                border: 'none',
                                             },
                                             '&::before': {
-                                                display: 'none',         // supprime l’overlay bleu de ButtonGroup
+                                                display: 'none',
                                             },
                                         }}
                                     >
@@ -1028,11 +1517,13 @@ export default function ParamPlanComptableModele() {
                                             borderColor: initial.annuler_bouton_color,
                                             '&:hover': {
                                                 backgroundColor: initial.annuler_bouton_color,
+                                                border: 'none',
                                             },
                                             '&.Mui-disabled': {
                                                 backgroundColor: initial.annuler_bouton_color,
                                                 color: 'white',
                                                 cursor: 'not-allowed',
+                                                border: 'none',
                                             },
                                         }}
                                     >
@@ -1242,1078 +1733,178 @@ export default function ParamPlanComptableModele() {
                     />
                 </Stack>
 
-                {/* MODAL POUR L'AJOUT/MODIFICATION D'UN NOUVEAU COMPTE POUR LE MODELE SELECTIONNE */}
-                {/* <form onSubmit={formAddCptModelDetail.handleSubmit}> */}
-                <Formik
-                    initialValues={formAddCptModelInitialValues}
-                    validationSchema={formAddCptModelValidationSchema}
-                    onSubmit={(values) => {
-                        formAddCptModelhandleSubmit(values);
-                        //();
-                    }}
-                >
-                    {({ handleChange, handleSubmit, setFieldValue, setFieldTouched, resetForm }) => {
-                        // useEffect(() => {
-                        //     if (openDialogAddNewCptModelDetail) {
-                        //         resetForm();
-                        //     }
-                        // }, [openDialogAddNewCptModelDetail, resetForm]);
+                {/* BOUTONS POUR EDITION INLINE */}
+                <Stack width={"100%"} height={"30px"} spacing={0} alignItems={"center"} alignContent={"center"}
+                    direction={"row"} style={{ marginLeft: "0px", marginTop: "30px", justifyContent: "right" }}>
+                    <Typography variant='h7' sx={{ color: "black", fontWeight: "bold", width: "300px" }} align='left'>Plan de compte</Typography>
 
-                        return (
-                            <Form style={{ width: '100%' }}>
-                                <Stack width={"100%"} height={"30px"} spacing={0} alignItems={"center"} alignContent={"center"}
-                                    direction={"row"} style={{ marginLeft: "0px", marginTop: "30px", justifyContent: "right" }}>
-                                    <Typography variant='h7' sx={{ color: "black", fontWeight: "bold", width: "300px" }} align='left'>Plan de compte</Typography>
-
-                                    <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                        direction={"row"} justifyContent={"right"}>
-                                        <ButtonGroup
-                                            variant="outlined"
-                                            sx={{
+                    <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                        direction={"row"} justifyContent={"right"}>
+                        <ButtonGroup
+                            variant="outlined"
+                            sx={{
+                                boxShadow: 'none',
+                                display: 'flex',
+                                gap: '2px',
+                                '& .MuiButton-root': {
+                                    borderRadius: 0,
+                                },
+                                '& .MuiButtonGroup-grouped': {
+                                    boxShadow: 'none',
+                                    outline: 'none',
+                                    borderColor: 'inherit',
+                                    marginLeft: 0,
+                                    borderRadius: 1,
+                                    border: 'none',
+                                },
+                                '& .MuiButtonGroup-grouped:hover': {
+                                    boxShadow: 'none',
+                                    borderColor: 'inherit',
+                                    border: 'none',
+                                },
+                                '& .MuiButtonGroup-grouped.Mui-focusVisible': {
+                                    boxShadow: 'none',
+                                    borderColor: 'inherit',
+                                },
+                            }}
+                        >
+                            <Tooltip title="Ajouter un nouveau compte">
+                                <span>
+                                    <Button
+                                        disabled={!canAdd || !modelId || hasRowInEditMode()}
+                                        onClick={handleAddClick}
+                                        sx={{
+                                            ...buttonStyle,
+                                            backgroundColor: initial.auth_gradient_end,
+                                            color: 'white',
+                                            borderColor: initial.auth_gradient_end,
+                                            boxShadow: 'none',
+                                            '&:hover': {
+                                                backgroundColor: initial.auth_gradient_end,
+                                                border: 'none',
                                                 boxShadow: 'none',
-                                                display: 'flex',
-                                                gap: '2px',
-                                                '& .MuiButton-root': {
-                                                    borderRadius: 0,
-                                                },
-                                                '& .MuiButtonGroup-grouped': {
-                                                    boxShadow: 'none',
-                                                    outline: 'none',
-                                                    borderColor: 'inherit',
-                                                    marginLeft: 0,
-                                                    borderRadius: 1,
-                                                    border: 'none',
-                                                },
-                                                '& .MuiButtonGroup-grouped:hover': {
-                                                    boxShadow: 'none',
-                                                    borderColor: 'inherit',
-                                                    border: 'none',
-                                                },
-                                                '& .MuiButtonGroup-grouped.Mui-focusVisible': {
-                                                    boxShadow: 'none',
-                                                    borderColor: 'inherit',
-                                                },
-                                            }}
-                                        >
-                                            <Tooltip title="Ajouter un nouveau compte">
-                                                <span>
-                                                    <Button
-                                                        disabled={!canAdd || !modelId}
-                                                        onClick={handleOpenDialogDetailModelAdd(setFieldValue, resetForm)}
-                                                        sx={{
-                                                            ...buttonStyle,
-                                                            backgroundColor: initial.auth_gradient_end,
-                                                            color: 'white',
-                                                            borderColor: initial.auth_gradient_end,
-                                                            boxShadow: 'none',
-
-                                                            '&:hover': {
-                                                                backgroundColor: initial.auth_gradient_end,
-                                                                border: 'none',
-                                                                boxShadow: 'none',       // enlève l’effet bleu shadow
-                                                            },
-                                                            '&:focus': {
-                                                                backgroundColor: initial.auth_gradient_end,
-                                                                border: 'none',
-                                                                boxShadow: 'none',       // enlève le focus bleu
-                                                            },
-                                                            '&.Mui-disabled': {
-                                                                backgroundColor: initial.auth_gradient_end,
-                                                                color: 'white',
-                                                                cursor: 'not-allowed',
-                                                            },
-                                                            '&::before': {
-                                                                display: 'none',         // supprime l’overlay bleu de ButtonGroup
-                                                            },
-                                                        }}
-                                                    >
-                                                        Ajouter
-                                                    </Button>
-                                                </span>
-                                            </Tooltip>
-
-                                            <Tooltip title="Modifier le compte sélectionné">
-                                                <span>
-                                                    <Button
-                                                        disabled={!canModify || !detailModelSelectedRow || !detailModelSelectedRow.id}
-                                                        onClick={handleOpenDialogDetailModelModify(setFieldValue)}
-                                                        sx={{
-                                                            ...buttonStyle,
-                                                            backgroundColor: initial.auth_gradient_end,
-                                                            color: 'white',
-                                                            borderColor: initial.auth_gradient_end,
-                                                            '&:hover': {
-                                                                backgroundColor: initial.auth_gradient_end,
-                                                                border: 'none',
-                                                            },
-                                                            '&.Mui-disabled': {
-                                                                backgroundColor: initial.auth_gradient_end,
-                                                                color: 'white',
-                                                                cursor: 'not-allowed',
-                                                            },
-                                                        }}
-                                                    >
-                                                        Modifier
-                                                    </Button>
-                                                </span>
-                                            </Tooltip>
-
-                                            <Tooltip title="Supprimer le compte sélectionné">
-                                                <span>
-                                                    <Button
-                                                        disabled={!canDelete || !detailModelSelectedRow || !detailModelSelectedRow.id}
-                                                        onClick={handleOpenDialogDetailModelDelete}
-                                                        sx={{
-                                                            ...buttonStyle,
-                                                            backgroundColor: initial.annuler_bouton_color,
-                                                            color: 'white',
-                                                            borderColor: initial.annuler_bouton_color,
-                                                            '&:hover': {
-                                                                backgroundColor: initial.annuler_bouton_color,
-                                                                border: 'none',
-                                                            },
-                                                            '&.Mui-disabled': {
-                                                                backgroundColor: initial.annuler_bouton_color,
-                                                                color: 'white',
-                                                                cursor: 'not-allowed',
-                                                            },
-                                                        }}
-                                                    >
-                                                        Supprimer
-                                                    </Button>
-                                                </span>
-                                            </Tooltip>
-                                        </ButtonGroup>
-                                    </Stack>
-                                </Stack>
-                                <BootstrapDialog
-                                    onClose={handleCloseDialogDetailModelAdd}
-                                    aria-labelledby="customized-dialog-title"
-                                    open={openDialogAddModelDetail}
-                                    fullWidth={true}
-                                    maxWidth={"lg"}
-                                >
-                                    {/* <DialogTitle sx={{ m: 0, p: 2 }} id="customized-dialog-title" style={{fontWeight:'normal', width:'100%', height:'55px', backgroundColor : initial.normal_pupup_header_color}}>
-                                    <Typography variant='h8'>Ajout d'un nouveau compte pour le modèle : {selectedModelName}</Typography>
-                                </DialogTitle> */}
-                                    <IconButton
-                                        style={{ color: 'red', textTransform: 'none', outline: 'none' }}
-                                        aria-label="close"
-                                        onClick={handleCloseDialogDetailModelAdd}
-                                        sx={{
-                                            position: 'absolute',
-                                            right: 8,
-                                            top: 8,
-                                            color: (theme) => theme.palette.grey[500],
+                                            },
+                                            '&:focus': {
+                                                backgroundColor: initial.auth_gradient_end,
+                                                border: 'none',
+                                                boxShadow: 'none',
+                                            },
+                                            '&.Mui-disabled': {
+                                                backgroundColor: initial.auth_gradient_end,
+                                                color: 'white',
+                                                cursor: 'not-allowed',
+                                            },
+                                            '&::before': {
+                                                display: 'none',
+                                            },
                                         }}
                                     >
-                                        <CloseIcon />
-                                    </IconButton>
+                                        Ajouter
+                                    </Button>
+                                </span>
+                            </Tooltip>
 
-                                    <Typography style={{ marginTop: 75, marginLeft: 30 }} variant='h5'>Création d'un nouveau compte</Typography>
-
-                                    <DialogContent style={{ width: "100%" }} >
-
-                                        <Stack width={"100%"} height={"650px"} spacing={0} alignItems={'start'} alignContent={"center"}
-                                            direction={"column"} justifyContent={"left"} style={{ marginLeft: '0px' }}>
-                                            <Box sx={{ width: '100%', typography: 'body1' }}>
-                                                <TabContext value={tabValueAjoutNewRowModelDetail} sx={{ width: '100%' }}>
-                                                    <Box sx={{ borderBottom: 1, borderColor: 'transparent' }}>
-                                                        <TabList onChange={handleChangeTabValueAjoutNewRowModelDetail} aria-label="lab API tabs example" variant='scrollable'>
-                                                            <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="infos générales" value="1" />
-                                                            <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="Compte de charges" value="2" />
-                                                            <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="Compte de TVA" value="3" />
-                                                        </TabList>
-                                                    </Box>
-
-                                                    <TabPanel value="1">
-                                                        <Stack width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"}
-                                                            alignContent={"flex-start"} justifyContent={"stretch"} >
-                                                            <Stack direction={'row'} alignContent={'end'}
-                                                                alignItems={'end'} justifyContent={'end'} spacing={5}
-                                                                style={{ backgroundColor: 'transparent' }}
-                                                            >
-                                                                <Stack spacing={-0.5}>
-                                                                    <label htmlFor="nature" style={{ fontSize: 12, color: '#3FA2F6' }}>Nature</label>
-                                                                    <Field
-                                                                        as={Select}
-                                                                        labelId="nature-label"
-                                                                        name="nature"
-                                                                        onChange={handleChangeListBoxNature(setFieldValue)}
-                                                                        sx={{
-                                                                            borderRadius: 0,
-                                                                            width: 200,
-                                                                            height: 40,
-                                                                            '& .MuiOutlinedInput-notchedOutline': {
-                                                                                borderTop: 'none', // Supprime le cadre
-                                                                                borderLeft: 'none',
-                                                                                borderRight: 'none',
-                                                                                borderWidth: '0.5px'
-                                                                            },
-                                                                            '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                                                borderTop: 'none', // Supprime le cadre
-                                                                                borderLeft: 'none',
-                                                                                borderRight: 'none',
-                                                                                borderWidth: '0.5px'
-                                                                            },
-                                                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                                                borderTop: 'none', // Supprime le cadre
-                                                                                borderLeft: 'none',
-                                                                                borderRight: 'none',
-                                                                                borderWidth: '0.5px'
-                                                                            },
-                                                                        }}
-                                                                    >
-                                                                        <MenuItem value={"General"}>Compte général</MenuItem>
-                                                                        <MenuItem value={"Collectif"}>Compte collectif</MenuItem>
-                                                                        <MenuItem value={"Aux"}>Compte auxiliaire</MenuItem>
-                                                                    </Field>
-                                                                    <ErrorMessage name='nature' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                                </Stack>
-
-                                                                <Stack spacing={-0.5}>
-                                                                    <label htmlFor="baseCptCollectif" style={{ fontSize: 12, color: '#3FA2F6' }}>Centralisation / Base compte auxiliaire</label>
-                                                                    <Field
-                                                                        disabled={typeCptGeneral}
-                                                                        as={Select}
-                                                                        labelId="baseCptCollectif-label"
-                                                                        name="baseCptCollectif"
-                                                                        renderValue={(selected) => {
-                                                                            const opt = listeCptCollectif?.find((i) => i.id === selected);
-                                                                            if (opt) return `${opt.compte} ${opt.libelle}`;
-                                                                            // Fallback: afficher la valeur actuelle même si la liste n'est pas encore chargée
-                                                                            if (detailModelSelectedRow && (selected === detailModelSelectedRow.id || selected === detailModelSelectedRow.baseaux_id)) {
-                                                                                const label = detailModelSelectedRow.baseaux
-                                                                                    ? `${detailModelSelectedRow.baseaux} ${detailModelSelectedRow.libelle || ''}`.trim()
-                                                                                    : `${detailModelSelectedRow.compte || ''} ${detailModelSelectedRow.libelle || ''}`.trim();
-                                                                                return label || ' ';
-                                                                            }
-                                                                            return ' ';
-                                                                        }}
-                                                                        onChange={handleChangeListBoxBaseCompteAux(setFieldValue)}
-                                                                        sx={{
-                                                                            borderRadius: 0,
-                                                                            width: 500,
-                                                                            height: 40,
-                                                                            '& .MuiOutlinedInput-notchedOutline': {
-                                                                                borderTop: 'none', // Supprime le cadre
-                                                                                borderLeft: 'none',
-                                                                                borderRight: 'none',
-                                                                                borderWidth: '0.5px'
-                                                                            },
-                                                                            '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                                                borderTop: 'none', // Supprime le cadre
-                                                                                borderLeft: 'none',
-                                                                                borderRight: 'none',
-                                                                                borderWidth: '0.5px'
-                                                                            },
-                                                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                                                borderTop: 'none', // Supprime le cadre
-                                                                                borderLeft: 'none',
-                                                                                borderRight: 'none',
-                                                                                borderWidth: '0.5px'
-                                                                            },
-                                                                        }}
-                                                                    >
-                                                                        {listeCptCollectif?.map((item) => (
-                                                                            <MenuItem key={item.id} value={item.id}>{item.compte} {item.libelle}</MenuItem>
-                                                                        ))
-                                                                        }
-                                                                    </Field>
-                                                                    <ErrorMessage name='baseCptCollectif' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                                </Stack>
-
-                                                                {/* <Stack spacing={1.5}>
-                                                            <label htmlFor="baseCptCollectif" style={{fontSize:12, color: '#3FA2F6'}}>base compte collectif</label>
-                                                            <Field
-                                                            disabled={typeCptGeneral}
-                                                            name='baseCptCollectif'
-                                                            onChange={handleChange}
-                                                            type='text'
-                                                            placeholder=""
-                                                            style={{height:22, borderTop: 'none',borderLeft: 'none',borderRight: 'none', outline: 'none', fontSize:14, borderWidth:'0.5px' }}
-                                                            />
-                                                            <ErrorMessage name='baseCptCollectif' component="div" style={{ color: 'red', fontSize:12, marginTop:-2 }}/>
-                                                        </Stack> */}
-                                                            </Stack>
-
-                                                            <Stack direction={'row'} alignContent={'stard'}
-                                                                alignItems={'start'} spacing={5}
-                                                                style={{ backgroundColor: 'transparent', width: '800px' }}
-                                                            >
-                                                                <Stack spacing={1}>
-                                                                    <label htmlFor="compte" style={{ fontSize: 12, color: '#3FA2F6' }}>compte</label>
-                                                                    <Field
-                                                                        name='compte'
-                                                                        onChange={handleChange}
-                                                                        type='text'
-                                                                        placeholder=""
-                                                                        style={{
-                                                                            height: 22, borderTop: 'none',
-                                                                            borderLeft: 'none', borderRight: 'none',
-                                                                            outline: 'none', fontSize: 14, borderWidth: '0.5px',
-                                                                            width: 200,
-                                                                        }}
-                                                                    />
-                                                                    <ErrorMessage name='compte' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                                </Stack>
-
-                                                                <Stack spacing={1}>
-                                                                    <label htmlFor="libelle" style={{ fontSize: 12, color: '#3FA2F6' }}>libellé / raison sociale</label>
-                                                                    <Field
-                                                                        name='libelle'
-                                                                        onChange={handleChange}
-                                                                        type='text'
-                                                                        placeholder=""
-                                                                        style={{ width: 500, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
-                                                                    />
-                                                                    <ErrorMessage name='libelle' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                                </Stack>
-                                                            </Stack>
-
-                                                            <Stack spacing={-0.5} style={{ marginTop: 50 }}>
-                                                                <label htmlFor="typeTier" style={{ fontSize: 12, color: '#3FA2F6' }}>Type du tier</label>
-                                                                <Field
-                                                                    as={Select}
-                                                                    disabled={disableTypeTiers}
-                                                                    labelId="typeTier-label"
-                                                                    name="typeTier"
-                                                                    onChange={handleOnChangeListBoxTypeTier(setFieldValue)}
-                                                                    sx={{
-                                                                        borderRadius: 0,
-                                                                        width: 200,
-                                                                        height: 40,
-                                                                        '& .MuiOutlinedInput-notchedOutline': {
-                                                                            borderTop: 'none', // Supprime le cadre
-                                                                            borderLeft: 'none',
-                                                                            borderRight: 'none',
-                                                                            borderWidth: '0.5px'
-                                                                        },
-                                                                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                                            borderTop: 'none', // Supprime le cadre
-                                                                            borderLeft: 'none',
-                                                                            borderRight: 'none',
-                                                                            borderWidth: '0.5px'
-                                                                        },
-                                                                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                                            borderTop: 'none', // Supprime le cadre
-                                                                            borderLeft: 'none',
-                                                                            borderRight: 'none',
-                                                                            borderWidth: '0.5px'
-                                                                        },
-                                                                    }}
-                                                                >
-                                                                    <MenuItem key={"sans-nif"} value={"sans-nif"}>Sans NIF</MenuItem>
-                                                                    <MenuItem key={"avec-nif"} value={"avec-nif"}>Avec NIF</MenuItem>
-                                                                    <MenuItem key={"etranger"} value={"etranger"}>Etranger</MenuItem>
-                                                                    <MenuItem key={"general"} value={"general"}>Général</MenuItem>
-                                                                </Field>
-                                                                <ErrorMessage name='typeTier' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                            </Stack>
-
-                                                            <Stack >
-                                                                {formulaireTier === 'sans-nif'
-                                                                    ? <Stack margin={"0px"} alignContent={"start"} alignItems={"start"}>
-                                                                        <Stack direction={'row'} alignContent={'stard'}
-                                                                            alignItems={'start'} spacing={6.5}
-                                                                            style={{ backgroundColor: 'transparent', width: '800px' }}
-                                                                        >
-                                                                            <Stack spacing={1.5}>
-                                                                                <label htmlFor="cin" style={{ fontSize: 12, color: '#3FA2F6' }}>cin</label>
-                                                                                <Field
-                                                                                    name='cin'
-                                                                                    onChange={handleChange}
-                                                                                    type='text'
-                                                                                    placeholder=""
-                                                                                    style={{ width: 200, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
-                                                                                />
-                                                                                <ErrorMessage name='cin' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                                            </Stack>
-
-                                                                            <Stack spacing={1.5}>
-                                                                                <label htmlFor="dateCin" style={{ fontSize: 12, color: '#3FA2F6' }}>date cin</label>
-                                                                                <Field
-                                                                                    name='dateCin'
-                                                                                    onChange={handleChange}
-                                                                                    type='date'
-                                                                                    placeholder=""
-                                                                                    style={{ width: 100, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
-                                                                                />
-                                                                                <ErrorMessage name='dateCin' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                                            </Stack>
-                                                                        </Stack>
-
-                                                                        <Stack direction={'row'} alignContent={'stard'}
-                                                                            alignItems={'start'} spacing={6.5}
-                                                                            style={{ backgroundColor: 'transparent', width: '800px', marginTop: '10px' }}
-                                                                        >
-                                                                            <Stack spacing={1.5}>
-                                                                                <label htmlFor="autrePieceID" style={{ fontSize: 12, color: '#3FA2F6' }}>Autres pièces d'identité si pas de CIN</label>
-                                                                                <Field
-                                                                                    name='autrePieceID'
-                                                                                    onChange={handleChange}
-                                                                                    type='text'
-                                                                                    placeholder=""
-                                                                                    style={{ width: 400, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
-                                                                                />
-                                                                                <ErrorMessage name='autrePieceID' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                                            </Stack>
-
-                                                                            <Stack spacing={1.5}>
-                                                                                <label htmlFor="refPieceID" style={{ fontSize: 12, color: '#3FA2F6' }}>Référence pièce d'identité</label>
-                                                                                <Field
-                                                                                    name='refPieceID'
-                                                                                    onChange={handleChange}
-                                                                                    type='text'
-                                                                                    placeholder=""
-                                                                                    style={{ width: 200, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
-                                                                                />
-                                                                                <ErrorMessage name='refPieceID' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                                            </Stack>
-                                                                        </Stack>
-
-                                                                        <Stack spacing={1.5} style={{ marginTop: 15 }}>
-                                                                            <label htmlFor="adresseSansNIF" style={{ fontSize: 12, color: '#3FA2F6' }}>Adresse</label>
-                                                                            <Field
-                                                                                name='adresseSansNIF'
-                                                                                onChange={handleChange}
-                                                                                type='text'
-                                                                                placeholder=""
-                                                                                style={{ width: 200, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
-                                                                            />
-                                                                            <ErrorMessage name='adresseSansNIF' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                                        </Stack>
-                                                                    </Stack>
-                                                                    : formulaireTier === 'avec-nif'
-                                                                        ? <Stack >
-                                                                            <Stack spacing={1.5} style={{ marginTop: 15 }}>
-                                                                                <label htmlFor="nif" style={{ fontSize: 12, color: '#3FA2F6' }}>Nif</label>
-                                                                                <Field
-                                                                                    name='nif'
-                                                                                    onChange={handleChange}
-                                                                                    type='text'
-                                                                                    placeholder=""
-                                                                                    style={{ width: 200, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
-                                                                                />
-                                                                                <ErrorMessage name='nif' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                                            </Stack>
-
-                                                                            <Stack spacing={1.5} style={{ marginTop: 15 }}>
-                                                                                <label htmlFor="stat" style={{ fontSize: 12, color: '#3FA2F6' }}>N° statistique</label>
-                                                                                <Field
-                                                                                    name='stat'
-                                                                                    onChange={handleChange}
-                                                                                    type='text'
-                                                                                    placeholder=""
-                                                                                    style={{ width: 200, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
-                                                                                />
-                                                                                <ErrorMessage name='stat' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                                            </Stack>
-
-                                                                            <Stack spacing={1.5} style={{ marginTop: 15 }}>
-                                                                                <label htmlFor="adresse" style={{ fontSize: 12, color: '#3FA2F6' }}>Adresse</label>
-                                                                                <Field
-                                                                                    name='adresse'
-                                                                                    onChange={handleChange}
-                                                                                    type='text'
-                                                                                    placeholder=""
-                                                                                    style={{ width: 200, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
-                                                                                />
-                                                                                <ErrorMessage name='adresse' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                                            </Stack>
-                                                                        </Stack>
-                                                                        : formulaireTier === 'etranger'
-
-                                                                            ? <Stack margin={"0px"} alignContent={"start"} alignItems={"start"}>
-                                                                                <Stack spacing={1.5} style={{ marginTop: 15 }}>
-                                                                                    <label htmlFor="nifRepresentant" style={{ fontSize: 12, color: '#3FA2F6' }}>Nif du représentant</label>
-                                                                                    <Field
-                                                                                        name='nifRepresentant'
-                                                                                        onChange={handleChange}
-                                                                                        type='text'
-                                                                                        placeholder=""
-                                                                                        style={{ width: 300, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
-                                                                                    />
-                                                                                    <ErrorMessage name='nifRepresentant' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                                                </Stack>
-
-                                                                                <Stack spacing={1.5} style={{ marginTop: 15 }}>
-                                                                                    <label htmlFor="adresseEtranger" style={{ fontSize: 12, color: '#3FA2F6' }}>Adresse</label>
-                                                                                    <Field
-                                                                                        name='adresseEtranger'
-                                                                                        onChange={handleChange}
-                                                                                        type='text'
-                                                                                        placeholder=""
-                                                                                        style={{ width: 400, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
-                                                                                    />
-                                                                                    <ErrorMessage name='adresseEtranger' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                                                </Stack>
-
-                                                                                <Stack spacing={1.5} style={{ marginTop: 15 }}>
-                                                                                    <label htmlFor="pays" style={{ fontSize: 12, color: '#3FA2F6' }}>Pays</label>
-                                                                                    <Field
-                                                                                        name='pays'
-                                                                                        onChange={handleChange}
-                                                                                        type='text'
-                                                                                        placeholder=""
-                                                                                        style={{ width: 250, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
-                                                                                    />
-                                                                                    <ErrorMessage name='pays' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                                                </Stack>
-                                                                            </Stack>
-                                                                            : null
-                                                                }
-                                                            </Stack>
-
-                                                            <Stack spacing={1.5} style={{ marginTop: 15 }}>
-                                                                <label htmlFor="motcle" style={{ fontSize: 12, color: '#3FA2F6' }}>Mot clé</label>
-                                                                <Field
-                                                                    name='motcle'
-                                                                    onChange={handleChange}
-                                                                    type='text'
-                                                                    placeholder=""
-                                                                    style={{ width: 200, height: 22, borderTop: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none', fontSize: 14, borderWidth: '0.5px' }}
-                                                                />
-                                                                <ErrorMessage name='motcle' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                            </Stack>
-
-                                                            <Stack direction={'row'} width={'100%'} spacing={2} style={{ marginTop: 25 }} >
-                                                                <Stack spacing={-0.5} flex={0.75} minWidth={0}>
-                                                                    <Autocomplete
-                                                                        disabled={disableLocalites}
-                                                                        options={provinces}
-                                                                        value={selectedProvince || null}
-                                                                        onChange={(event, newValue) => {
-                                                                            setFieldValue("province", newValue || "");
-                                                                            setSelectedProvince(newValue || "");
-                                                                        }}
-                                                                        onBlur={(e) => { if (!disableLocalites) setFieldTouched("province", true, false); }}
-                                                                        noOptionsText="Aucune province trouvée"
-                                                                        renderInput={(params) => (
-                                                                            <TextField
-                                                                                {...params}
-                                                                                label="Province"
-                                                                                variant="outlined"
-                                                                                size="small"
-                                                                                sx={{
-                                                                                    borderRadius: 0,
-                                                                                    '& .MuiOutlinedInput-notchedOutline': {
-                                                                                        borderTop: 'none',
-                                                                                        borderLeft: 'none',
-                                                                                        borderRight: 'none',
-                                                                                        borderWidth: '0.5px'
-                                                                                    },
-                                                                                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                                                        borderTop: 'none',
-                                                                                        borderLeft: 'none',
-                                                                                        borderRight: 'none',
-                                                                                        borderWidth: '0.5px'
-                                                                                    },
-                                                                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                                                        borderTop: 'none',
-                                                                                        borderLeft: 'none',
-                                                                                        borderRight: 'none',
-                                                                                        borderWidth: '0.5px'
-                                                                                    },
-                                                                                }}
-                                                                            />
-                                                                        )}
-                                                                    />
-                                                                    <ErrorMessage name='province' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                                </Stack>
-                                                                <Stack spacing={-0.5} flex={0.9} minWidth={0}>
-                                                                    <Autocomplete
-                                                                        disabled={disableLocalites}
-                                                                        options={regions}
-                                                                        value={selectedRegion || null}
-                                                                        onChange={(event, newValue) => {
-                                                                            setFieldValue('region', newValue);
-                                                                            setSelectedRegion(newValue)
-                                                                        }}
-                                                                        onBlur={(e) => { if (!disableLocalites) setF("region", true, false); }}
-                                                                        noOptionsText="Aucune région trouvée"
-                                                                        renderInput={(params) => (
-                                                                            <TextField
-                                                                                {...params}
-                                                                                label="Région"
-                                                                                variant="outlined"
-                                                                                size="small"
-                                                                                sx={{
-                                                                                    borderRadius: 0,
-                                                                                    '& .MuiOutlinedInput-notchedOutline': {
-                                                                                        borderTop: 'none',
-                                                                                        borderLeft: 'none',
-                                                                                        borderRight: 'none',
-                                                                                        borderWidth: '0.5px'
-                                                                                    },
-                                                                                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                                                        borderTop: 'none',
-                                                                                        borderLeft: 'none',
-                                                                                        borderRight: 'none',
-                                                                                        borderWidth: '0.5px'
-                                                                                    },
-                                                                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                                                        borderTop: 'none',
-                                                                                        borderLeft: 'none',
-                                                                                        borderRight: 'none',
-                                                                                        borderWidth: '0.5px'
-                                                                                    },
-                                                                                }}
-                                                                            />
-                                                                        )}
-                                                                    />
-                                                                    <ErrorMessage name='region' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                                </Stack>
-                                                                <Stack spacing={-0.5} flex={1} minWidth={0}>
-                                                                    <Autocomplete
-                                                                        disabled={disableLocalites}
-                                                                        options={districts}
-                                                                        value={selectedDistrict || null}
-                                                                        onChange={(event, newValue) => {
-                                                                            setFieldValue('district', newValue);
-                                                                            setSelectedDistrict(newValue);
-                                                                        }}
-                                                                        onBlur={(e) => { if (!disableLocalites) setFieldTouched("district", true, false); }}
-                                                                        noOptionsText="Aucune district trouvée"
-                                                                        renderInput={(params) => (
-                                                                            <TextField
-                                                                                {...params}
-                                                                                label="District"
-                                                                                variant="outlined"
-                                                                                size="small"
-                                                                                sx={{
-                                                                                    borderRadius: 0,
-                                                                                    '& .MuiOutlinedInput-notchedOutline': {
-                                                                                        borderTop: 'none',
-                                                                                        borderLeft: 'none',
-                                                                                        borderRight: 'none',
-                                                                                        borderWidth: '0.5px'
-                                                                                    },
-                                                                                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                                                        borderTop: 'none',
-                                                                                        borderLeft: 'none',
-                                                                                        borderRight: 'none',
-                                                                                        borderWidth: '0.5px'
-                                                                                    },
-                                                                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                                                        borderTop: 'none',
-                                                                                        borderLeft: 'none',
-                                                                                        borderRight: 'none',
-                                                                                        borderWidth: '0.5px'
-                                                                                    },
-                                                                                }}
-                                                                            />
-                                                                        )}
-                                                                    />
-                                                                    <ErrorMessage name='district' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                                </Stack>
-                                                                <Stack spacing={-0.5} flex={1} minWidth={0}>
-                                                                    <Autocomplete
-                                                                        disabled={disableLocalites}
-                                                                        options={communes}
-                                                                        value={selectedCommune || null}
-                                                                        onChange={(event, newValue) => {
-                                                                            setFieldValue('commune', newValue);
-                                                                            setSelectedCommune(newValue);
-                                                                        }}
-                                                                        onBlur={(e) => { if (!disableLocalites) setFieldTouched("commune", true, false); }}
-                                                                        noOptionsText="Aucune commmune trouvée"
-                                                                        renderInput={(params) => (
-                                                                            <TextField
-                                                                                {...params}
-                                                                                label="Commune"
-                                                                                variant="outlined"
-                                                                                size="small"
-                                                                                sx={{
-                                                                                    borderRadius: 0,
-                                                                                    '& .MuiOutlinedInput-notchedOutline': {
-                                                                                        borderTop: 'none',
-                                                                                        borderLeft: 'none',
-                                                                                        borderRight: 'none',
-                                                                                        borderWidth: '0.5px'
-                                                                                    },
-                                                                                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                                                        borderTop: 'none',
-                                                                                        borderLeft: 'none',
-                                                                                        borderRight: 'none',
-                                                                                        borderWidth: '0.5px'
-                                                                                    },
-                                                                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                                                        borderTop: 'none',
-                                                                                        borderLeft: 'none',
-                                                                                        borderRight: 'none',
-                                                                                        borderWidth: '0.5px'
-                                                                                    },
-                                                                                }}
-                                                                            />
-                                                                        )}
-                                                                    />
-                                                                    <ErrorMessage name='commune' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
-                                                                </Stack>
-                                                            </Stack>
-
-                                                        </Stack>
-                                                    </TabPanel>
-
-                                                    <TabPanel value="2">
-                                                        <Stack width={"100%"} height={"100%"} spacing={0}>
-
-                                                            <Stack width={"100%"} height={"20%"} spacing={0.5} alignItems={'end'} alignContent={'end'}
-                                                                direction={"row"} justifyContent={'end'}>
-
-                                                                <Tooltip title="Ajouter un nouveau compte">
-                                                                    <IconButton
-                                                                        variant="contained"
-                                                                        style={{
-                                                                            width: "35px", height: '35px',
-                                                                            borderRadius: "5px", borderColor: "transparent",
-                                                                            backgroundColor: initial.add_new_line_bouton_color,
-                                                                            textTransform: 'none', outline: 'none'
-                                                                        }}
-                                                                        onClick={handleOpenDialogAddNewCptModelDetail}
-                                                                    >
-                                                                        <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                                    </IconButton>
-                                                                </Tooltip>
-
-                                                                <Tooltip title="Supprimer le compte sélectionné">
-                                                                    <span>
-                                                                        <IconButton
-                                                                            onClick={handleOpenDialogConfirmDeleteCptChgFromDialogAddNewCpte}
-                                                                            variant="contained"
-                                                                            style={{
-                                                                                width: "35px", height: '35px',
-                                                                                borderRadius: "5px", borderColor: "transparent",
-                                                                                backgroundColor: initial.button_delete_color,
-                                                                                textTransform: 'none', outline: 'none'
-                                                                            }}
-                                                                        >
-                                                                            <IoMdTrash style={{ width: '40px', height: '40px', color: 'white' }} />
-                                                                        </IconButton>
-                                                                    </span>
-                                                                </Tooltip>
-                                                            </Stack>
-
-                                                            <Stack width={"100%"} height={"500px"}>
-                                                                <DataGrid
-                                                                    disableMultipleSelection={DataGridStyle.disableMultipleSelection}
-                                                                    disableColumnSelector={DataGridStyle.disableColumnSelector}
-                                                                    disableDensitySelector={DataGridStyle.disableDensitySelector}
-                                                                    localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
-                                                                    disableRowSelectionOnClick
-                                                                    disableSelectionOnClick={true}
-                                                                    slots={{ toolbar: QuickFilter }}
-                                                                    sx={{
-                                                                        ...DataGridStyle.sx,
-                                                                        '& .MuiDataGrid-columnHeaders': {
-                                                                            backgroundColor: initial.tableau_theme,
-                                                                            color: initial.text_theme,
-                                                                        },
-                                                                        '& .MuiDataGrid-columnHeaderTitle': {
-                                                                            color: initial.text_theme,
-                                                                            fontWeight: 600,
-                                                                        },
-                                                                        '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
-                                                                            color: initial.text_theme,
-                                                                        },
-                                                                        '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
-                                                                            outline: 'none',
-                                                                            border: 'none',
-                                                                        },
-                                                                        '& .highlight-separator': {
-                                                                            borderBottom: '1px solid red'
-                                                                        },
-                                                                        '& .MuiDataGrid-row.highlight-separator': {
-                                                                            borderBottom: '1px solid red',
-                                                                        },
-                                                                        '& .MuiDataGrid-virtualScroller': {
-                                                                            maxHeight: '700px',
-                                                                        },
-                                                                    }}
-                                                                    rowHeight={DataGridStyle.rowHeight}
-                                                                    columnHeaderHeight={DataGridStyle.columnHeaderHeight}
-                                                                    onRowSelectionModelChange={ids => {
-
-                                                                        if (ids.length === 1) {
-                                                                            //setDisableButtonAddCompteCharge(false);
-                                                                            setSelectedCptChgOnList(ids);
-                                                                        } else {
-                                                                            setSelectedCptChgOnList([0]);
-                                                                        }
-                                                                    }}
-                                                                    rows={listCptChg}
-                                                                    columns={columnHeaderAddNewRowModelDetail}
-                                                                    initialState={{
-                                                                        pagination: {
-                                                                            paginationModel: { page: 0, pageSize: 100 },
-                                                                        },
-                                                                    }}
-                                                                    pageSizeOptions={[50, 100]}
-                                                                    pagination={DataGridStyle.pagination}
-                                                                    checkboxSelection={DataGridStyle.checkboxSelection}
-                                                                    columnVisibilityModel={{
-                                                                        id: false,
-                                                                    }}
-                                                                />
-                                                            </Stack>
-
-                                                        </Stack>
-                                                    </TabPanel>
-
-                                                    <TabPanel value="3">
-                                                        <Stack width={"100%"} height={"90%"} spacing={0} alignItems={"flex-start"}>
-                                                            <Stack width={"100%"} height={"40px"} spacing={0.5} alignItems={'end'} alignContent={'end'}
-                                                                direction={"row"} justifyContent={'end'}>
-                                                                <Tooltip title="Ajouter un nouveau compte">
-                                                                    <IconButton
-                                                                        onClick={handleOpenDialogAddNewCptTvaModelDetail}
-                                                                        variant="contained"
-                                                                        style={{
-                                                                            width: "35px", height: '35px',
-                                                                            borderRadius: "5px", borderColor: "transparent",
-                                                                            backgroundColor: initial.add_new_line_bouton_color,
-                                                                            textTransform: 'none', outline: 'none'
-                                                                        }}
-                                                                    >
-                                                                        <TbPlaylistAdd style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                                    </IconButton>
-                                                                </Tooltip>
-
-                                                                <Tooltip title="Supprimer le compte sélectionné">
-                                                                    <span>
-                                                                        <IconButton
-                                                                            onClick={handleOpenDialogConfirmDeleteCptTvaFromDialogAddNewCpte}
-                                                                            variant="contained"
-                                                                            style={{
-                                                                                width: "35px", height: '35px',
-                                                                                borderRadius: "5px", borderColor: "transparent",
-                                                                                backgroundColor: initial.button_delete_color,
-                                                                                textTransform: 'none', outline: 'none'
-                                                                            }}
-                                                                        >
-                                                                            <IoMdTrash style={{ width: '40px', height: '40px', color: 'white' }} />
-                                                                        </IconButton>
-                                                                    </span>
-                                                                </Tooltip>
-                                                            </Stack>
-
-                                                            <Stack width={"100%"} height={"500px"}>
-                                                                <DataGrid
-                                                                    disableMultipleSelection={DataGridStyle.disableMultipleSelection}
-                                                                    disableColumnSelector={DataGridStyle.disableColumnSelector}
-                                                                    disableDensitySelector={DataGridStyle.disableDensitySelector}
-                                                                    localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
-                                                                    disableRowSelectionOnClick
-                                                                    disableSelectionOnClick={true}
-                                                                    slots={{ toolbar: QuickFilter }}
-                                                                    sx={{
-                                                                        ...DataGridStyle.sx,
-                                                                        '& .MuiDataGrid-columnHeaders': {
-                                                                            backgroundColor: initial.tableau_theme,
-                                                                            color: initial.text_theme,
-                                                                        },
-                                                                        '& .MuiDataGrid-columnHeaderTitle': {
-                                                                            color: initial.text_theme,
-                                                                            fontWeight: 600,
-                                                                        },
-                                                                        '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
-                                                                            color: initial.text_theme,
-                                                                        },
-                                                                        '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
-                                                                            outline: 'none',
-                                                                            border: 'none',
-                                                                        },
-                                                                        '& .highlight-separator': {
-                                                                            borderBottom: '1px solid red'
-                                                                        },
-                                                                        '& .MuiDataGrid-row.highlight-separator': {
-                                                                            borderBottom: '1px solid red',
-                                                                        },
-                                                                        '& .MuiDataGrid-virtualScroller': {
-                                                                            maxHeight: '700px',
-                                                                        },
-                                                                    }}
-                                                                    rowHeight={DataGridStyle.rowHeight}
-                                                                    columnHeaderHeight={DataGridStyle.columnHeaderHeight}
-                                                                    onRowSelectionModelChange={ids => {
-
-                                                                        if (ids.length === 1) {
-                                                                            //setDisableButtonAddCompteTva(false);
-                                                                            setSelectedCptTvaOnList(ids);
-                                                                        } else {
-                                                                            setSelectedCptTvaOnList([0]);
-                                                                        }
-                                                                    }}
-                                                                    rows={listCptTva}
-                                                                    columns={columnHeaderAddNewRowModelDetail}
-                                                                    initialState={{
-                                                                        pagination: {
-                                                                            paginationModel: { page: 0, pageSize: 100 },
-                                                                        },
-                                                                    }}
-                                                                    pageSizeOptions={[50, 100]}
-                                                                    pagination={DataGridStyle.pagination}
-                                                                    checkboxSelection={DataGridStyle.checkboxSelection}
-                                                                    columnVisibilityModel={{
-                                                                        id: false,
-                                                                    }}
-                                                                />
-                                                            </Stack>
-                                                        </Stack>
-                                                    </TabPanel>
-
-                                                </TabContext>
-                                            </Box>
-                                        </Stack>
-
-                                    </DialogContent>
-                                    <DialogActions>
-                                        <Button autoFocus
-                                            variant='outlined'
-                                            style={{
-                                                backgroundColor: 'transparent',
-                                                color: initial.theme,
-                                                width: "100px",
-                                                textTransform: 'none',
-                                                // outline: 'none'
-                                            }}
-                                            type='submit'
-                                            onClick={handleCloseDialogDetailModelAdd}
-                                        >
-                                            Annuler
-                                        </Button>
-                                        <Button autoFocus
-                                            style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
-                                            type='submit'
-                                            onClick={handleSubmit}
-                                        >
-                                            Enregistrer
-                                        </Button>
-                                    </DialogActions>
-                                </BootstrapDialog>
-
-                                {/* MODAL POUR AJOUTER UN COMPTE DANS LA LISTE DES COMPTES DE CHARGES RATTACHES AU COMPTE A CREER*/}
-                                <BootstrapDialog
-                                    onClose={handleCloseDialogAddNewCptModelDetail}
-                                    aria-labelledby="customized-dialog-title"
-                                    open={openDialogAddNewCptModelDetail}
-                                >
-                                    <DialogTitle sx={{ m: 0, p: 2 }} id="customized-dialog-title" style={{ fontWeight: 'normal', width: '600px', height: '55px', backgroundColor: initial.normal_pupup_header_color }}>
-                                        <Typography variant='h10'>Ajouter un nouveau compte</Typography>
-                                    </DialogTitle>
-                                    <IconButton
-                                        style={{ color: 'red' }}
-                                        aria-label="close"
-                                        onClick={handleCloseDialogAddNewCptModelDetail}
+                            <Tooltip title="Modifier le compte sélectionné">
+                                <span>
+                                    <Button
+                                        disabled={!canModify || !detailModelSelectedRow?.id || hasRowInEditMode()}
+                                        onClick={handleEditClick}
                                         sx={{
-                                            position: 'absolute',
-                                            right: 8,
-                                            top: 8,
-                                            color: (theme) => theme.palette.grey[500],
+                                            ...buttonStyle,
+                                            backgroundColor: initial.auth_gradient_end,
+                                            color: 'white',
+                                            borderColor: initial.auth_gradient_end,
+                                            '&:hover': {
+                                                backgroundColor: initial.auth_gradient_end,
+                                                boxShadow: 'none',
+                                                border: 'none',
+                                            },
+                                            '&.Mui-disabled': {
+                                                backgroundColor: initial.auth_gradient_end,
+                                                color: 'white',
+                                                cursor: 'not-allowed',
+                                                border: 'none',
+                                            },
                                         }}
                                     >
-                                        <CloseIcon />
-                                    </IconButton>
-                                    <DialogContent dividers>
+                                        Modifier
+                                    </Button>
+                                </span>
+                            </Tooltip>
 
-                                        <Stack width={"90%"} height={"150px"} spacing={2} alignItems={'center'} alignContent={"center"}
-                                            direction={"column"} justifyContent={"center"} style={{ marginLeft: '10px' }}>
-
-                                            <FormControl variant="standard" required sx={{ m: 1, minWidth: 250 }}>
-                                                <InputLabel id="demo-simple-select-standard-label">Compte</InputLabel>
-                                                <Select
-                                                    labelId="demo-simple-select-standard-labelchg"
-                                                    id="demo-simple-select-standardchg"
-                                                    value={selectedCptAssocChg.idCpt}
-                                                    label={"cptchg"}
-                                                    onChange={(e) => saveCptChg(e.target.value)}
-                                                    sx={{ width: "500px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                                >
-                                                    <MenuItem key={0} value={''}><em>Aucune sélection</em></MenuItem>
-                                                    {pcHorsCollectif.map((cpt) => (
-                                                        <MenuItem key={cpt.id} value={cpt.id}>{cpt.compte}: {cpt.libelle}</MenuItem>
-                                                    ))}
-                                                </Select>
-                                            </FormControl>
-                                        </Stack>
-
-                                    </DialogContent>
-                                    <DialogActions>
-                                        <Button autoFocus
-                                            style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
-                                            onClick={AddCptToTableCptChg(setFieldValue)}
-                                        >
-                                            Ajouter
-                                        </Button>
-                                    </DialogActions>
-                                </BootstrapDialog>
-
-                                {/* MODAL DE CONFIRMATION DE SUPPRIMER DE COMPTE DE CHARGE RATTACHE AU COMPTE A CREER */}
-                                {openDialogDeleteCptChgFromAddNewCpt ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer le compte sélectionné ?"} confirmationState={deleteCptChgPC(setFieldValue)} /> : null}
-
-
-                                {/* MODAL POUR AJOUTER UN COMPTE DANS LA LISTE DES COMPTES DE TVA RATTACHES AU COMPTE A CREER*/}
-                                <BootstrapDialog
-                                    onClose={handleCloseDialogAddNewCptTvaModelDetail}
-                                    aria-labelledby="customized-dialog-title"
-                                    open={openDialogAddNewCptTvaModelDetail}
-                                >
-                                    <DialogTitle sx={{ m: 0, p: 2 }} id="customized-dialog-title" style={{ fontWeight: 'normal', width: '600px', height: '55px', backgroundColor: initial.normal_pupup_header_color }}>
-                                        <Typography variant='h10'>Ajouter un nouveau compte de TVA</Typography>
-                                    </DialogTitle>
-                                    <IconButton
-                                        style={{ color: 'red' }}
-                                        aria-label="close"
-                                        onClick={handleCloseDialogAddNewCptTvaModelDetail}
+                            <Tooltip title="Sauvegarder">
+                                <span>
+                                    <Button
+                                        // disabled={!selectedRowId}
+                                        onClick={handleSaveClick}
                                         sx={{
-                                            position: 'absolute',
-                                            right: 8,
-                                            top: 8,
-                                            color: (theme) => theme.palette.grey[500],
+                                            ...buttonStyle,
+                                            backgroundColor: '#4caf50',
+                                            color: 'white',
+                                            borderColor: '#4caf50',
+                                            '&:hover': {
+                                                backgroundColor: '#4caf50',
+                                                boxShadow: 'none',
+                                                border: 'none',
+                                            },
                                         }}
                                     >
-                                        <CloseIcon />
-                                    </IconButton>
-                                    <DialogContent dividers>
+                                        Sauvegarder
+                                    </Button>
+                                </span>
+                            </Tooltip>
 
-                                        <Stack width={"90%"} height={"150px"} spacing={2} alignItems={'center'} alignContent={"center"}
-                                            direction={"column"} justifyContent={"center"} style={{ marginLeft: '10px' }}>
+                            <Tooltip title="Annuler">
+                                <span>
+                                    <Button
+                                        //disabled={!selectedRowId}
+                                        onClick={handleCancelClick}
+                                        sx={{
+                                            ...buttonStyle,
+                                            backgroundColor: initial.annuler_bouton_color,
+                                            color: 'white',
+                                            borderColor: initial.annuler_bouton_color,
+                                            '&:hover': {
+                                                backgroundColor: initial.annuler_bouton_color,
+                                                boxShadow: 'none',
+                                                border: 'none',
+                                            },
+                                        }}
+                                    >
+                                        Annuler
+                                    </Button>
+                                </span>
+                            </Tooltip>
 
-                                            <FormControl variant="standard" required sx={{ m: 1, minWidth: 250 }}>
-                                                <InputLabel id="demo-simple-select-standard-label">Compte</InputLabel>
-                                                <Select
-                                                    labelId="demo-simple-select-standard-labelchg"
-                                                    id="demo-simple-select-standardchg"
-                                                    value={selectedCptAssocTva.idCpt}
-                                                    label={"cptchg"}
-                                                    onChange={(e) => saveCptTva(e.target.value)}
-                                                    sx={{ width: "500px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                                >
-                                                    <MenuItem key={0} value={''}><em>Aucune sélection</em></MenuItem>
-                                                    {pcOnlyCptTva.map((cpt) => (
-                                                        <MenuItem key={cpt.id} value={cpt.id}>{cpt.compte}: {cpt.libelle}</MenuItem>
-                                                    ))}
-                                                </Select>
-                                            </FormControl>
-                                        </Stack>
-
-                                    </DialogContent>
-                                    <DialogActions>
-                                        <Button autoFocus
-                                            style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
-                                            onClick={AddCptToTableCptTva(setFieldValue)}
-                                        >
-                                            Ajouter
-                                        </Button>
-                                    </DialogActions>
-                                </BootstrapDialog>
-
-                                {/* MODAL DE CONFIRMATION DE SUPPRESSION DE COMPTE DE TVA RATTACHE AU COMPTE A CREER */}
-                                {openDialogDeleteCptTvaFromAddNewCpt ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer le compte sélectionné ?"} confirmationState={deleteCptTvaPC(setFieldValue)} /> : null}
-                            </Form>
-                        )
-                    }}
-                </Formik>
+                            <Tooltip title="Supprimer le compte sélectionné">
+                                <span>
+                                    <Button
+                                        disabled={!canDelete || !detailModelSelectedRow?.id || hasRowInEditMode()}
+                                        onClick={handleOpenDialogDetailModelDelete}
+                                        sx={{
+                                            ...buttonStyle,
+                                            backgroundColor: initial.annuler_bouton_color,
+                                            color: 'white',
+                                            borderColor: initial.annuler_bouton_color,
+                                            '&:hover': {
+                                                backgroundColor: initial.annuler_bouton_color,
+                                                border: 'none',
+                                            },
+                                            '&.Mui-disabled': {
+                                                backgroundColor: initial.annuler_bouton_color,
+                                                color: 'white',
+                                                cursor: 'not-allowed',
+                                                border: 'none',
+                                            },
+                                        }}
+                                    >
+                                        Supprimer
+                                    </Button>
+                                </span>
+                            </Tooltip>
+                        </ButtonGroup>
+                    </Stack>
+                </Stack>
 
                 {/* MODAL DE CONFIRMATION DE SUPPRESSION D'UN COMPTE DANS LE TABLEAU DU PLAN COMPTABLE */}
                 {openDialogDeleteItemsPc ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer les comptes sélectionnés ?"} confirmationState={deleteItemsPC} /> : null}
@@ -2354,6 +1945,16 @@ export default function ParamPlanComptableModele() {
                                 maxHeight: '700px',
                             },
                         }}
+                        apiRef={apiRef}
+                        editMode="row"
+                        rowModesModel={rowModesModel}
+                        onRowModesModelChange={handleRowModesModelChange}
+                        onRowEditStart={handleRowEditStart}
+                        onRowEditStop={handleRowEditStop}
+                        processRowUpdate={processRowUpdate}
+                        onProcessRowUpdateError={(error) => {
+                            console.error('Erreur lors de la mise à jour:', error);
+                        }}
                         rowHeight={DataGridStyle.rowHeight}
                         columnHeaderHeight={DataGridStyle.columnHeaderHeight}
                         onRowSelectionModelChange={(ids) => {
@@ -2361,7 +1962,7 @@ export default function ParamPlanComptableModele() {
                             listDetailModelPCSelectedRow(single);
                         }}
                         rows={detailModel}
-                        columns={ParamPCModele_column.columnHeaderDetail(handleShowCptInfos)}
+                        columns={columnHeaderDetailInline(handleShowCptInfos)}
                         initialState={{
                             pagination: {
                                 paginationModel: { page: 0, pageSize: 100 },

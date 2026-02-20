@@ -33,7 +33,7 @@ import { TbPlaylistAdd } from 'react-icons/tb';
 import { IoMdTrash } from 'react-icons/io';
 import { FormControlLabel } from '@mui/material';
 import MontantCapitalField from './Field/MontantCapitalField';
-import useAxiosPrivate from '../../../../config/axiosPrivate';
+import useAxiosPrivate from '../../../hooks/useAxiosPrivate';
 
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
@@ -1827,7 +1827,7 @@ export default function AddNewFile({ confirmationState }) {
                                                             <ErrorMessage name="plancomptable" component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
                                                         </Stack>
                                                     </Grid>
-
+{/* 
                                                     <Grid item>
                                                         <Stack spacing={1} sx={{ width: '100%' }}>
                                                             <InputLabel sx={{ fontSize: 12, color: '#c0c0c0ff' }}>
@@ -1843,15 +1843,15 @@ export default function AddNewFile({ confirmationState }) {
                                                             </RadioGroup>
                                                             <ErrorMessage name='devisepardefaut' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
                                                         </Stack>
-                                                    </Grid>
+                                                    </Grid> */}
                                                 </Grid>
 
                                                 {/* Titre */}
-                                                <Typography fontWeight={600} fontSize={16} marginTop={1}>
+                                                {/* <Typography fontWeight={600} fontSize={16} marginTop={1}>
                                                     Paramétrages de longueur des comptes
-                                                </Typography>
+                                                </Typography> */}
 
-                                                <Grid container spacing={1} alignItems="flex-start">
+                                                {/* <Grid container spacing={1} alignItems="flex-start">
                                                     <Grid item>
                                                         <Stack spacing={1}>
                                                             <InputLabel sx={{ fontSize: 12, color: '#c0c0c0ff' }}>
@@ -1906,7 +1906,8 @@ export default function AddNewFile({ confirmationState }) {
                                                             <Field as={Checkbox} name="autocompletion" sx={{ padding: 0 }} />
                                                         </Stack>
                                                     </Grid>
-                                                </Grid>
+                                                </Grid> */}
+                                                
                                                 <FormControlLabel
                                                     control={<Field as={Checkbox} name="avecanalytique" />}
                                                     label="Avec analytique"

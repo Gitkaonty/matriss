@@ -1177,36 +1177,110 @@ exports.previewImmoLineaire = async (req, res) => {
         // -----------------------------
         // OUTILS
         // -----------------------------
-        const addMonths = (d, m) => { const nd = new Date(d); nd.setMonth(nd.getMonth() + m); return nd; };
-        const addDays = (d, n) => { const nd = new Date(d); nd.setDate(nd.getDate() + n); return nd; };
-        const minDate = (a, b) => (a <= b ? a : b);
-        const toYMD = d => d.toISOString().substring(0, 10);
-        const clamp = v => Math.round((v + 0.0000001) * 100) / 100;
+        // Fonction pour ajouter des mois à une date
+        // d = date de départ, m = nombre de mois à ajouter
+        const addMonths = (d, m) => {
+            const nd = new Date(d);       // On crée une copie de la date pour ne pas modifier l'originale
+            nd.setMonth(nd.getMonth() + m); // On ajoute le nombre de mois à la date
+            return nd;                    // On retourne la nouvelle date
+        };
 
+        // Fonction pour ajouter des jours à une date
+        // d = date de départ, n = nombre de jours à ajouter
+        const addDays = (d, n) => {
+            const nd = new Date(d);       // On crée une copie de la date
+            nd.setDate(nd.getDate() + n); // On ajoute le nombre de jours
+            return nd;                    // On retourne la nouvelle date
+        };
+
+        // Fonction pour retourner la date la plus petite entre deux dates
+        // a et b = deux objets Date
+        const minDate = (a, b) => (a <= b ? a : b);
+
+        // Fonction pour convertir une date en format "YYYY-MM-DD"
+        const toYMD = d => d.toISOString().substring(0, 10);
+
+        // Fonction pour arrondir un nombre à 2 décimales
+        // v = nombre à arrondir
+        const clamp = v => Math.round((v + 0.0000001) * 100) / 100;
+        //////////////////////////////////
+        // Fonction pour calculer le nombre de jours entre deux dates
+        // debut = date de départ, fin = date de fin
         const nbJoursBetween = (debut, fin) => {
+
+            // Si on utilise la base 360 (méthode financière/bancaire)
             if (baseJours === 360) {
+
+                // On prend le jour du mois de la date de départ, max 30
                 const dStart = Math.min(debut.getDate(), 30);
+
+                // On prend le jour du mois de la date de fin, max 30
                 const dEnd = Math.min(fin.getDate(), 30);
-                const monthsDiff = (fin.getFullYear() - debut.getFullYear()) * 12 + (fin.getMonth() - debut.getMonth());
-                if (monthsDiff === 0) return Math.max(1, dEnd - dStart + 1);
+
+                // On calcule la différence en nombre de mois entre les deux dates
+                const monthsDiff = (fin.getFullYear() - debut.getFullYear()) * 12
+                    + (fin.getMonth() - debut.getMonth());
+
+                // Si les deux dates sont dans le même mois
+                if (monthsDiff === 0)
+                    // On retourne la différence de jours + 1 (inclus le premier jour)
+                    // Math.max(1, ...) évite de retourner 0 ou un nombre négatif
+                    return Math.max(1, dEnd - dStart + 1);
+
+                // Sinon, on calcule :
+                // 1) Jours restants du premier mois : 30 - dStart + 1
+                // 2) Mois complets entre les deux dates : (monthsDiff - 1) * 30
+                // 3) Jours du dernier mois : dEnd
                 return (30 - dStart + 1) + Math.max(0, monthsDiff - 1) * 30 + dEnd;
             }
+
+            // Sinon, méthode normale : différence réelle en jours
+            // fin - debut donne la différence en millisecondes
+            // On divise par 1000*60*60*24 pour convertir en jours
+            // +1 pour inclure le premier jour
             return Math.floor((fin - debut) / (1000 * 60 * 60 * 24)) + 1;
         };
 
         // -----------------------------
         // CALCUL DE LA REPRISE (COMPTABLE)
         // -----------------------------
+        // On initialise la date de départ de l’amortissement comptable
+        // Par défaut, elle commence à la date de mise en service (dateMS)
         let dateDepartAmortComp = new Date(dateMS);
+
+        // On initialise la durée effective avec la durée initiale prévue
         let dureeAmortCompEffective = dureeCompInitiale;
+
+        // On initialise le cumul d’amortissement antérieur à 0
         let cumulInitialComp = 0;
 
+        // On vérifie si la reprise d’amortissement est active,
+        // qu’une date de reprise existe,
+        // et qu’il y a déjà un amortissement antérieur
         if (repriseActiveComp && dateRepriseComp && amortAntComp > 0) {
+
+            // On calcule la date de fin théorique d’amortissement :
+            // on ajoute la durée initiale en mois à la date de mise en service,
+            // puis on enlève 1 jour
             const finTheo = addDays(addMonths(dateMS, dureeCompInitiale), -1);
+
+            // On vérifie que la date de reprise est avant ou égale à la fin théorique
             if (dateRepriseComp <= finTheo) {
+
+                // On calcule le nombre de jours restants entre la date de reprise
+                // et la fin théorique d’amortissement
                 const joursRestants = nbJoursBetween(dateRepriseComp, finTheo);
+
+                // On convertit les jours restants en mois :
+                // (jours / baseJours) donne une fraction d’année
+                // * 12 pour convertir en mois
+                // clamp pour arrondir à 2 décimales
                 dureeAmortCompEffective = clamp((joursRestants / baseJours) * 12);
+
+                // La nouvelle date de départ devient la date de reprise
                 dateDepartAmortComp = new Date(dateRepriseComp);
+
+                // On conserve le montant déjà amorti avant la reprise
                 cumulInitialComp = amortAntComp;
             }
         }
@@ -1214,62 +1288,96 @@ exports.previewImmoLineaire = async (req, res) => {
         // -----------------------------
         // AMORTISSEMENT COMPTABLE
         // -----------------------------
+        // Calcul du taux annuel basé sur la durée effective en mois
+        // Exemple : si dureeAmortCompEffective = 24 mois, tauxAnnuelComp = 12 / 24 = 0.5
         const tauxAnnuelComp = 12 / dureeAmortCompEffective;
+
+        // Base restante à amortir : montant hors taxe moins le cumul déjà amorti
         const baseRestanteComp = clamp(montantHT - cumulInitialComp);
+
+        // Tableau qui va contenir chaque ligne d’amortissement
         const compLines = [];
 
+        // Date de début de l’amortissement
         let debutC = new Date(dateDepartAmortComp);
+
+        // Date de fin de l’amortissement : date de départ + durée effective en mois - 1 jour
         const finAmortComp = addDays(addMonths(dateDepartAmortComp, dureeAmortCompEffective), -1);
+
+        // Index de l’année ou du rang d’amortissement
         let indexC = 1;
+
+        // Cumul amorti jusqu’à présent (au début, c’est le cumul initial)
         let cumulC = cumulInitialComp;
+
+        // Valeur nette comptable restante (VNC)
         let vncC = clamp(montantHT - cumulInitialComp);
+
+        // Compteur de sécurité pour éviter boucle infinie
         let safetyC = 0;
 
+        // Boucle principale : on calcule année par année tant que la VNC > 0
         while (vncC > 0 && safetyC < 1000) {
+
+            // Si la date de début dépasse la fin théorique, on sort
             if (debutC > finAmortComp) break;
 
+            // Calcul de la date de fin pour cette période
+            // Pour la 1ère ligne : on prend soit la fin de l’exercice, soit la fin théorique
+            // Pour les suivantes : on avance d’1 an (12 mois) et on enlève 1 jour
             let fin = indexC === 1
                 ? (exoFin && exoFin < finAmortComp ? exoFin : finAmortComp)
                 : addDays(addMonths(debutC, 12), -1);
 
+            // On s’assure que la fin ne dépasse pas la fin théorique
             if (fin > finAmortComp) fin = finAmortComp;
 
+            // Cas où la fin est avant le début (exercice incomplet) : ajustement
             if (fin < debutC) {
                 fin = minDate(addDays(addMonths(debutC, 1), -1), finAmortComp);
-                if (fin < debutC) break;
+                if (fin < debutC) break; // si toujours invalide, on sort
             }
 
+            // Nombre de jours entre début et fin de cette période
             const nbJours = nbJoursBetween(debutC, fin);
             if (!isFinite(nbJours) || nbJours <= 0) break;
 
+            // Nombre d’année fractionnaire pour cette période
             const anneeNombre = clamp(nbJours / baseJours);
+
+            // Dotation théorique pour cette période : base restante * taux annuel * fraction d’année
             const dotTheorique = clamp(baseRestanteComp * tauxAnnuelComp * anneeNombre);
 
+            // Dotation réelle
             let dot;
             if (fin >= finAmortComp || vncC - dotTheorique < 1) {
+                // Si on est à la dernière période ou si VNC restante < dotation théorique → on prend le reste
                 dot = vncC;
             } else {
+                // Sinon, on prend le minimum entre VNC et dotation théorique
                 dot = Math.min(vncC, dotTheorique);
             }
 
+            // On ajoute la ligne dans le tableau des amortissements
             compLines.push({
-                rang: indexC,
-                date_debut: toYMD(debutC),
-                date_fin: toYMD(fin),
-                nb_jours: nbJours,
-                annee_nombre: anneeNombre,
-                dotation_mensuelle: clamp(baseRestanteComp / dureeCompInitiale),
-                dot_ant: clamp(cumulC),
-                dotation_annuelle: dot,
-                cumul_amort: clamp(cumulC + dot),
-                vnc: clamp(vncC - dot),
+                rang: indexC,                            // numéro de la ligne
+                date_debut: toYMD(debutC),               // début période
+                date_fin: toYMD(fin),                    // fin période
+                nb_jours: nbJours,                        // nombre de jours
+                annee_nombre: anneeNombre,                // fraction d’année
+                dotation_mensuelle: clamp(baseRestanteComp / dureeCompInitiale), // dotation mensuelle
+                dot_ant: clamp(cumulC),                  // cumul précédent
+                dotation_annuelle: dot,                  // dotation de l’année
+                cumul_amort: clamp(cumulC + dot),        // cumul après dotation
+                vnc: clamp(vncC - dot),                  // valeur nette comptable restante
             });
 
-            cumulC += dot;
-            vncC -= dot;
-            debutC = addDays(fin, 1);
-            indexC++;
-            safetyC++;
+            // Mise à jour des variables pour la prochaine itération
+            cumulC += dot;               // cumul amorti
+            vncC -= dot;                 // VNC restante
+            debutC = addDays(fin, 1);    // date de début de la prochaine période
+            indexC++;                    // rang suivant
+            safetyC++;                    // compteur de sécurité pour éviter boucle infinie
         }
 
         // -----------------------------
