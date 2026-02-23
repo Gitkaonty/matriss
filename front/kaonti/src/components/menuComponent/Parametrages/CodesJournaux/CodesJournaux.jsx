@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Typography, Stack, IconButton, FormControl, InputLabel, Select, MenuItem, Input, FormHelperText, Chip, ButtonGroup, Button } from '@mui/material';
+import { Typography, Stack, FormControl, InputLabel, Select, MenuItem, Input, FormHelperText, Chip, ButtonGroup, Button } from '@mui/material';
 import Tooltip from '@mui/material/Tooltip';
 import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
 import { useParams } from 'react-router-dom';
@@ -9,12 +9,6 @@ import Tab from '@mui/material/Tab';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
-import { IoMdTrash } from "react-icons/io";
-import { TbPlaylistAdd } from "react-icons/tb";
-import { FaRegPenToSquare } from "react-icons/fa6";
-import { VscClose } from "react-icons/vsc";
-import { TfiSave } from "react-icons/tfi";
-import { MdOutlineFileUpload } from "react-icons/md";
 import PopupConfirmDelete from '../../../componentsTools/popupConfirmDelete';
 import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFile';
 import PopupImportCodeJournaux from '../../administration/import/PopupImportCodeJournaux';
@@ -68,15 +62,40 @@ export default function ParamCodeJournalComponent() {
     const [libelleValidationColor, setLibelleValidationColor] = useState('transparent');
     const [typeValidationColor, setTypeValidationColor] = useState('transparent');
     const [compteAssocieValidationColor, setCompteAssocieValidationColor] = useState('transparent');
-    const [nifValidationColor, setNifValidationColor] = useState('transparent');
-    const [statValidationColor, setStatValidationColor] = useState('transparent');
-    const [adresseValidationColor, setAdresseValidationColor] = useState('transparent');
     //récupération infos de connexion
     const { auth } = useAuth();
     const decoded = auth?.accessToken ? jwtDecode(auth.accessToken) : undefined;
     const compteId = decoded.UserInfo.compteId || null;
     const userId = decoded.UserInfo.userId || null;
     const navigate = useNavigate();
+
+    const buttonStyle = {
+        minWidth: 120,
+        height: 32,
+        px: 2,
+        textTransform: 'none',
+        fontSize: '0.85rem',
+        borderRadius: '6px',
+        boxShadow: 'none',
+        '& .MuiTouchRipple-root': {
+            display: 'none',
+        },
+        '&:focus': {
+            outline: 'none',
+        },
+        '&.Mui-focusVisible': {
+            outline: 'none',
+            boxShadow: 'none',
+        },
+        '&:hover': {
+            boxShadow: 'none',
+            backgroundColor: 'action.hover',
+            border: 'none',
+        },
+        '&.Mui-disabled': {
+            opacity: 0.4
+        },
+    };
 
     //sauvegarde de la nouvelle ligne ajoutée
     const formikNewCodeJournal = useFormik({
@@ -87,10 +106,7 @@ export default function ParamCodeJournalComponent() {
             code: '',
             libelle: '',
             type: '',
-            compteassocie: '',
-            nif: '',
-            stat: '',
-            adresse: ''
+            compteassocie: ''
         },
         validationSchema: Yup.object({
             code: Yup.string().required("Veuillez ajouter un code journal"),
@@ -200,9 +216,9 @@ export default function ParamCodeJournalComponent() {
     useEffect(() => {
         if (pc && pc.length > 0 && formikNewCodeJournal.values.type) {
             console.log('[useEffect pc] Plan comptable chargé, mise à jour de listeCptAssocie pour type:', formikNewCodeJournal.values.type);
-            const listBank = pc.filter((row) => String(row?.compte || '').startsWith('512') || String(row?.compte || '').startsWith('52'));
-            const listCash = pc.filter((row) => String(row?.compte || '').startsWith('53'));
-
+            const listBank = pc.filter((row) => row.compte.startsWith('512') || row.compte.startsWith('52'));
+            const listCash = pc.filter((row) => row.compte.startsWith('53'));
+            
             if (formikNewCodeJournal.values.type === 'BANQUE') {
                 console.log('[useEffect pc] Mise à jour liste BANQUE:', listBank.length, 'comptes');
                 setListeCptAssocie(listBank);
@@ -227,10 +243,10 @@ export default function ParamCodeJournalComponent() {
     const recupListeCptBanqueCaisse = (typeTreso) => {
         console.log('[recupListeCptBanqueCaisse] Type sélectionné:', typeTreso);
         console.log('[recupListeCptBanqueCaisse] Plan comptable (pc) length:', pc?.length);
-
-        const listBank = pc?.filter((row) => String(row?.compte || '').startsWith('512') || String(row?.compte || '').startsWith('52'));
-        const listCash = pc?.filter((row) => String(row?.compte || '').startsWith('53'));
-
+        
+        const listBank = pc?.filter((row) => row.compte.startsWith('512') || row.compte.startsWith('52'));
+        const listCash = pc?.filter((row) => row.compte.startsWith('53'));
+        
         console.log('[recupListeCptBanqueCaisse] Comptes BANQUE (512 ou 52) trouvés:', listBank?.length);
         console.log('[recupListeCptBanqueCaisse] Comptes CAISSE (53) trouvés:', listCash?.length);
 
@@ -240,26 +256,15 @@ export default function ParamCodeJournalComponent() {
             setListeCptAssocie(listBank);
             console.log('[recupListeCptBanqueCaisse] Liste BANQUE définie:', listBank);
             setCompteAssocieValidationColor('#F6D6D6');
-            // Champs manuels (vides)
-            formikNewCodeJournal.setFieldValue('nif', '');
-            formikNewCodeJournal.setFieldValue('stat', '');
-            formikNewCodeJournal.setFieldValue('adresse', '');
         } else if (typeTreso === 'CAISSE') {
             setListeCptAssocie(listCash);
             console.log('[recupListeCptBanqueCaisse] Liste CAISSE définie:', listCash);
             setCompteAssocieValidationColor('#F6D6D6');
-            // Ces champs doivent rester vides
-            formikNewCodeJournal.setFieldValue('nif', '');
-            formikNewCodeJournal.setFieldValue('stat', '');
-            formikNewCodeJournal.setFieldValue('adresse', '');
         } else {
             // Pour les autres types
             setListeCptAssocie([]);
             setCompteAssocieValidationColor('transparent');
             formikNewCodeJournal.setFieldValue("compteassocie", '');
-            formikNewCodeJournal.setFieldValue('nif', '');
-            formikNewCodeJournal.setFieldValue('stat', '');
-            formikNewCodeJournal.setFieldValue('adresse', '');
         }
     };
 
@@ -270,7 +275,7 @@ export default function ParamCodeJournalComponent() {
             headerName: 'Code',
             type: 'string',
             sortable: true,
-            flex: 1,
+            flex: 0.5,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
@@ -304,7 +309,7 @@ export default function ParamCodeJournalComponent() {
             headerName: 'Libellé',
             type: 'string',
             sortable: true,
-            flex: 3,
+            flex: 1,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
@@ -338,7 +343,7 @@ export default function ParamCodeJournalComponent() {
             type: 'singleSelect',
             valueOptions: type.map((code) => code.value),
             sortable: true,
-            flex: 1.5,
+            flex: 1,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
@@ -546,24 +551,6 @@ export default function ParamCodeJournalComponent() {
                         </Stack>
                     )
                 }
-                // if (params.value === 'RAN') {
-                //     return (
-                //         <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-                //             <Chip
-                //                 icon={<MdOutlineSyncLock style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
-                //                 label={params.value}
-
-                //                 style={{
-                //                     width: "100%",
-                //                     display: 'flex', // ou block, selon le rendu souhaité
-                //                     justifyContent: 'space-between',
-                //                     backgroundColor: '#FFA62F',
-                //                     color: 'white'
-                //                 }}
-                //             />
-                //         </Stack>
-                //     )
-                // }
             }
         },
         {
@@ -612,112 +599,6 @@ export default function ParamCodeJournalComponent() {
                 );
             },
         },
-
-        {
-            field: 'nif',
-            headerName: 'NIF',
-            type: 'string',
-            sortable: true,
-            flex: 3,
-            headerAlign: 'left',
-            align: 'left',
-            headerClassName: 'HeaderbackColor',
-            editable: true,
-            renderEditCell: (params) => {
-                const isEditable = formikNewCodeJournal.values.type === 'BANQUE';
-                return (
-                    <FormControl fullWidth style={{ height: '100%' }}>
-                        <Input
-                            style={{
-                                height: '100%', alignItems: 'center',
-                                outline: 'none',
-                                backgroundColor: isEditable ? nifValidationColor : '#f0f0f0',
-                            }}
-                            type="text"
-                            value={formikNewCodeJournal.values.nif}
-                            onChange={(e) => formikNewCodeJournal.setFieldValue('nif', e.target.value)}
-                            label="nif"
-                            disableUnderline={true}
-                            disabled={!isEditable}
-                        />
-
-                        <FormHelperText style={{ color: 'red' }}>
-                            {formikNewCodeJournal.errors.nif && formikNewCodeJournal.touched.nif && formikNewCodeJournal.errors.nif}
-                        </FormHelperText>
-                    </FormControl>
-                );
-            },
-        },
-        {
-            field: 'stat',
-            headerName: 'STAT',
-            type: 'string',
-            sortable: true,
-            flex: 3,
-            headerAlign: 'left',
-            align: 'left',
-            headerClassName: 'HeaderbackColor',
-            editable: true,
-            renderEditCell: (params) => {
-                const isEditable = formikNewCodeJournal.values.type === 'BANQUE';
-                return (
-                    <FormControl fullWidth style={{ height: '100%' }}>
-                        <Input
-                            style={{
-                                height: '100%', alignItems: 'center',
-                                outline: 'none',
-                                backgroundColor: isEditable ? '#fff' : '#f0f0f0', // gris si non éditable
-                            }}
-                            type="text"
-                            value={formikNewCodeJournal.values.stat}
-                            onChange={(e) => formikNewCodeJournal.setFieldValue('stat', e.target.value)}
-                            label="stat"
-                            disableUnderline={true}
-                            disabled={!isEditable} // Désactiver complètement si non éditable
-                        />
-
-                        <FormHelperText style={{ color: 'red' }}>
-                            {formikNewCodeJournal.errors.libelle && formikNewCodeJournal.touched.libelle && formikNewCodeJournal.errors.libelle}
-                        </FormHelperText>
-                    </FormControl>
-                );
-            },
-        },
-        {
-            field: 'adresse',
-            headerName: 'Adresse',
-            type: 'string',
-            sortable: true,
-            flex: 3,
-            headerAlign: 'left',
-            align: 'left',
-            headerClassName: 'HeaderbackColor',
-            editable: true,
-            renderEditCell: (params) => {
-                const isEditable = formikNewCodeJournal.values.type === 'BANQUE';
-                return (
-                    <FormControl fullWidth style={{ height: '100%' }}>
-                        <Input
-                            style={{
-                                height: '100%', alignItems: 'center',
-                                outline: 'none',
-                                backgroundColor: isEditable ? '#fff' : '#f0f0f0', // gris si non éditable
-                            }}
-                            type="text"
-                            value={formikNewCodeJournal.values.adresse}
-                            onChange={(e) => formikNewCodeJournal.setFieldValue('adresse', e.target.value)}
-                            label="adresse"
-                            disableUnderline={true}
-                            disabled={!isEditable} // Désactiver complètement si non éditable
-                        />
-
-                        <FormHelperText style={{ color: 'red' }}>
-                            {formikNewCodeJournal.errors.adresse && formikNewCodeJournal.touched.adresse && formikNewCodeJournal.errors.adresse}
-                        </FormHelperText>
-                    </FormControl>
-                );
-            },
-        },
     ];
 
     //gestion ajout + modification + suppression ligne dans le tableau liste code journaux
@@ -749,15 +630,12 @@ export default function ParamCodeJournalComponent() {
         setLibelleValidationColor('transparent');
         setTypeValidationColor('transparent');
         setCompteAssocieValidationColor('transparent');
-        setNifValidationColor('transparent');
-        setStatValidationColor('transparent');
-        setAdresseValidationColor('transparent');
 
         //charger dans le formik les données de la ligne
         const selectedRowInfos = listeCodeJournaux?.filter((item) => item.id === id[0]);
 
-        const listBank = pc?.filter((row) => String(row?.compte || '').startsWith('512'));
-        const listCash = pc?.filter((row) => String(row?.compte || '').startsWith('53'));
+        const listBank = pc?.filter((row) => row.compte.startsWith('512'));
+        const listCash = pc?.filter((row) => row.compte.startsWith('53'));
 
         if (selectedRowInfos[0].type === 'BANQUE') {
             setListeCptAssocie(listBank);
@@ -774,16 +652,6 @@ export default function ParamCodeJournalComponent() {
         formikNewCodeJournal.setFieldValue("libelle", selectedRowInfos[0].libelle);
         formikNewCodeJournal.setFieldValue("type", selectedRowInfos[0].type);
         formikNewCodeJournal.setFieldValue("compteassocie", selectedRowInfos[0].compteassocie);
-        // Renseigner nif/stat/adresse en fonction du type
-        if (selectedRowInfos[0].type === 'BANQUE') {
-            formikNewCodeJournal.setFieldValue('nif', selectedRowInfos[0].nif || '');
-            formikNewCodeJournal.setFieldValue('stat', selectedRowInfos[0].stat || '');
-            formikNewCodeJournal.setFieldValue('adresse', selectedRowInfos[0].adresse || '');
-        } else {
-            formikNewCodeJournal.setFieldValue('nif', '');
-            formikNewCodeJournal.setFieldValue('stat', '');
-            formikNewCodeJournal.setFieldValue('adresse', '');
-        }
 
         setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
         setDisableSaveBouton(false);
@@ -794,17 +662,11 @@ export default function ParamCodeJournalComponent() {
         let saveBoolCode = false;
         let saveBoolLibelle = false;
         let saveBoolType = false;
-        let saveBoolCompteAssocie = false;
-        let saveBoolNif = false;
-        let saveBoolStat = false;
-        let saveBoolAdresse = false;
+        let saveBoolCompteAssocie = true;
 
         setLibelleValidationColor('transparent');
         setTypeValidationColor('transparent');
         setCompteAssocieValidationColor('transparent');
-        setNifValidationColor('transparent');
-        setStatValidationColor('transparent');
-        setAdresseValidationColor('transparent');
 
         if (formikNewCodeJournal.values.code === '') {
             setCodeValidationColor('#F6D6D6');
@@ -815,7 +677,7 @@ export default function ParamCodeJournalComponent() {
         }
 
         if (formikNewCodeJournal.values.libelle === '') {
-            setLibelleValidationColor('#F6D6D6');
+            setLibelleValidationColor('#F6D6D6'); 
             saveBoolLibelle = false;
         } else {
             setLibelleValidationColor('transparent');
@@ -843,55 +705,7 @@ export default function ParamCodeJournalComponent() {
             saveBoolCompteAssocie = true;
         }
 
-        if (formikNewCodeJournal.values.type === 'BANQUE') {
-            // Tous ces champs obligatoires
-            if (formikNewCodeJournal.values.nif === '') {
-                setNifValidationColor('#F6D6D6');
-                saveBoolNif = false;
-            } else {
-                setNifValidationColor('transparent');
-                saveBoolNif = true;
-            }
-
-            if (formikNewCodeJournal.values.stat === '') {
-                setStatValidationColor('#F6D6D6');
-                saveBoolStat = false;
-            } else {
-                setStatValidationColor('transparent');
-                saveBoolStat = true;
-            }
-
-            if (formikNewCodeJournal.values.adresse === '') {
-                setAdresseValidationColor('#F6D6D6');
-                saveBoolAdresse = false;
-            } else {
-                setAdresseValidationColor('transparent');
-                saveBoolAdresse = true;
-            }
-
-        } else if (formikNewCodeJournal.values.type === 'CAISSE') {
-            // Juste compte associé obligatoire, les autres ignorés
-            setNifValidationColor('transparent');
-            setStatValidationColor('transparent');
-            setAdresseValidationColor('transparent');
-            saveBoolNif = true;
-            saveBoolStat = true;
-            saveBoolAdresse = true;
-        } else {
-            // Pour tous les autres types : tout est vide
-            formikNewCodeJournal.setFieldValue('nif', '');
-            formikNewCodeJournal.setFieldValue('stat', '');
-            formikNewCodeJournal.setFieldValue('adresse', '');
-            formikNewCodeJournal.setFieldValue('compteassocie', '');
-            setNifValidationColor('transparent');
-            setStatValidationColor('transparent');
-            setAdresseValidationColor('transparent');
-            saveBoolNif = true;
-            saveBoolStat = true;
-            saveBoolAdresse = true;
-        }
-
-        if (saveBoolCode && saveBoolLibelle && saveBoolType && saveBoolCompteAssocie && saveBoolNif && saveBoolStat && saveBoolAdresse) {
+        if (saveBoolCode && saveBoolLibelle && saveBoolType && saveBoolCompteAssocie) {
             // Vérification locale de doublon de code (hors ligne courante)
             const currentId = Array.isArray(id) ? id[0] : id;
             const newCode = String(formikNewCodeJournal.values.code || '').trim();
@@ -1014,9 +828,6 @@ export default function ParamCodeJournalComponent() {
             libelle: '',
             type: '',
             compteassocie: '',
-            nif: '',
-            stat: '',
-            adresse: '',
         };
         setListeCodeJournaux([...listeCodeJournaux, newRow]);
         setSelectedRowId([newRow.id]);
@@ -1097,67 +908,6 @@ export default function ParamCodeJournalComponent() {
             if (cellInput) cellInput.focus();
         }, 50);
     };
-    const iconButtonStyle = {
-        width: 44,
-        height: 44,
-        borderRadius: '2px',
-        backgroundColor: 'transparent',
-        boxShadow: 'none',
-
-        '&:hover': {
-            backgroundColor: 'transparent',
-            boxShadow: 'none',
-        },
-
-        '&:active': {
-            backgroundColor: 'transparent',
-            boxShadow: 'none',
-        },
-
-        '&.Mui-focusVisible': {
-            backgroundColor: 'transparent',
-            boxShadow: 'none',
-        },
-
-        '&.Mui-disabled': {
-            backgroundColor: 'transparent',
-            opacity: 0.4,
-        },
-    };
-    const iconStyle = {
-        width: 24,
-        height: 24,
-    };
-
-    const buttonStyle = {
-        minWidth: 120,
-        height: 32,
-        px: 2,
-        textTransform: 'none',
-        fontSize: '0.85rem',
-        borderRadius: '6px',
-        boxShadow: 'none',
-        '& .MuiTouchRipple-root': {
-            display: 'none',
-        },
-        '&:focus': {
-            outline: 'none',
-        },
-        '&.Mui-focusVisible': {
-            outline: 'none',
-            boxShadow: 'none',
-        },
-
-        '&:hover': {
-            boxShadow: 'none',
-            backgroundColor: 'action.hover',
-            border: 'none',
-        },
-
-        '&.Mui-disabled': {
-            opacity: 0.4
-        },
-    };
 
     return (
         <>
@@ -1204,29 +954,19 @@ export default function ParamCodeJournalComponent() {
                         </TabList>
                     </Box>
                     <TabPanel value="1">
-                        <Typography variant='h7' sx={{ color: "black" }} align='left'>Paramétrages : codes journaux</Typography>
+                        <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages : codes journaux</Typography>
 
                         <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"}
                             direction={"column"} style={{ marginLeft: "0px", marginTop: "20px", justifyContent: "right" }}>
-                            <Stack
-                                width="100%"
-                                minHeight="56px"
-                                alignItems="center"
-                                direction="row"
-                                justifyContent="flex-end"
-                                sx={{
-                                    // backgroundColor: initial.tableau_theme,
-                                    borderRadius: 1,
-                                    px: 1,
-                                    py: 1,
-                                }}
-                            >
+
+                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
+                                direction={"row"} justifyContent={"right"}>
                                 <ButtonGroup
                                     variant="outlined"
                                     sx={{
                                         boxShadow: 'none',
                                         display: 'flex',
-                                        gap: '1px',
+                                        gap: '2px',
                                         '& .MuiButton-root': {
                                             borderRadius: 0,
                                         },
@@ -1241,6 +981,7 @@ export default function ParamCodeJournalComponent() {
                                         '& .MuiButtonGroup-grouped:hover': {
                                             boxShadow: 'none',
                                             borderColor: 'inherit',
+                                            border: 'none',
                                         },
                                         '& .MuiButtonGroup-grouped.Mui-focusVisible': {
                                             boxShadow: 'none',
@@ -1253,23 +994,21 @@ export default function ParamCodeJournalComponent() {
                                             <Button
                                                 disabled={!canAdd}
                                                 onClick={() => setOpenImportDialog(true)}
-                                                //startIcon={<MdOutlineFileUpload size={18} />}
                                                 sx={{
                                                     ...buttonStyle,
                                                     backgroundColor: '#e79754ff',
                                                     color: 'white',
                                                     borderColor: '#e79754ff',
                                                     boxShadow: 'none',
-
                                                     '&:hover': {
                                                         backgroundColor: '#e79754ff',
                                                         border: 'none',
-                                                        boxShadow: 'none',       // enlève l’effet bleu shadow
+                                                        boxShadow: 'none',
                                                     },
                                                     '&:focus': {
                                                         backgroundColor: '#e79754ff',
                                                         border: 'none',
-                                                        boxShadow: 'none',       // enlève le focus bleu
+                                                        boxShadow: 'none',
                                                     },
                                                     '&.Mui-disabled': {
                                                         backgroundColor: '#e79754ff',
@@ -1277,7 +1016,7 @@ export default function ParamCodeJournalComponent() {
                                                         cursor: 'not-allowed',
                                                     },
                                                     '&::before': {
-                                                        display: 'none',         // supprime l’overlay bleu de ButtonGroup
+                                                        display: 'none',
                                                     },
                                                 }}
                                             >
@@ -1291,23 +1030,21 @@ export default function ParamCodeJournalComponent() {
                                             <Button
                                                 disabled={!canAdd || disableAddRowBouton}
                                                 onClick={handleOpenDialogAddNewAssocie}
-                                                //startIcon={<TbPlaylistAdd size={18} />}
                                                 sx={{
                                                     ...buttonStyle,
                                                     backgroundColor: initial.auth_gradient_end,
                                                     color: 'white',
                                                     borderColor: initial.auth_gradient_end,
                                                     boxShadow: 'none',
-
                                                     '&:hover': {
                                                         backgroundColor: initial.auth_gradient_end,
                                                         border: 'none',
-                                                        boxShadow: 'none',       // enlève l’effet bleu shadow
+                                                        boxShadow: 'none',
                                                     },
                                                     '&:focus': {
                                                         backgroundColor: initial.auth_gradient_end,
                                                         border: 'none',
-                                                        boxShadow: 'none',       // enlève le focus bleu
+                                                        boxShadow: 'none',
                                                     },
                                                     '&.Mui-disabled': {
                                                         backgroundColor: initial.auth_gradient_end,
@@ -1315,10 +1052,9 @@ export default function ParamCodeJournalComponent() {
                                                         cursor: 'not-allowed',
                                                     },
                                                     '&::before': {
-                                                        display: 'none',         // supprime l’overlay bleu de ButtonGroup
+                                                        display: 'none',
                                                     },
                                                 }}
-
                                             >
                                                 Ajouter
                                             </Button>
@@ -1330,22 +1066,17 @@ export default function ParamCodeJournalComponent() {
                                             <Button
                                                 disabled={(!canModify && selectedRowId > 0) || disableModifyBouton}
                                                 onClick={handleEditClick(selectedRowId)}
-                                                //startIcon={<FaRegPenToSquare size={18} />}
                                                 sx={{
                                                     ...buttonStyle,
                                                     backgroundColor: initial.auth_gradient_end,
                                                     color: 'white',
                                                     borderColor: initial.auth_gradient_end,
-
                                                     '&:hover': {
                                                         backgroundColor: initial.auth_gradient_end,
                                                     },
-
-                                                    // 👇 OVERRIDE DU DISABLED
                                                     '&.Mui-disabled': {
                                                         backgroundColor: initial.auth_gradient_end,
                                                         color: 'white',
-                                                        //opacity: 0.6,          // optionnel : juste un léger effet
                                                         cursor: 'not-allowed',
                                                     },
                                                 }}
@@ -1360,23 +1091,18 @@ export default function ParamCodeJournalComponent() {
                                             <Button
                                                 disabled={(!canAdd && !canModify) || !formikNewCodeJournal.isValid}
                                                 onClick={handleSaveClick(selectedRowId)}
-                                                //startIcon={<TfiSave size={18} />}
                                                 sx={{
                                                     ...buttonStyle,
                                                     backgroundColor: initial.auth_gradient_end,
                                                     color: 'white',
                                                     borderColor: initial.auth_gradient_end,
-
                                                     '&:hover': {
                                                         backgroundColor: initial.auth_gradient_end,
                                                         border: 'none',
                                                     },
-
-                                                    // 👇 OVERRIDE DU DISABLED
                                                     '&.Mui-disabled': {
                                                         backgroundColor: initial.auth_gradient_end,
                                                         color: 'white',
-                                                        //opacity: 0.6,          // optionnel : juste un léger effet
                                                         cursor: 'not-allowed',
                                                     },
                                                 }}
@@ -1391,23 +1117,18 @@ export default function ParamCodeJournalComponent() {
                                             <Button
                                                 disabled={disableCancelBouton}
                                                 onClick={handleCancelClick(selectedRowId)}
-                                                // startIcon={<VscClose size={18} />}
                                                 sx={{
                                                     ...buttonStyle,
                                                     backgroundColor: initial.annuler_bouton_color,
                                                     color: 'white',
                                                     borderColor: initial.annuler_bouton_color,
-
                                                     '&:hover': {
                                                         backgroundColor: initial.annuler_bouton_color,
                                                         none: 'none',
                                                     },
-
-                                                    // 👇 OVERRIDE DU DISABLED
                                                     '&.Mui-disabled': {
                                                         backgroundColor: initial.annuler_bouton_color,
                                                         color: 'white',
-                                                        //opacity: 0.6,          // optionnel : juste un léger effet
                                                         cursor: 'not-allowed',
                                                     },
                                                 }}
@@ -1427,17 +1148,13 @@ export default function ParamCodeJournalComponent() {
                                                     backgroundColor: initial.annuler_bouton_color,
                                                     color: 'white',
                                                     borderColor: initial.annuler_bouton_color,
-
                                                     '&:hover': {
                                                         backgroundColor: initial.annuler_bouton_color,
                                                         border: 'none',
                                                     },
-
-                                                    // 👇 OVERRIDE DU DISABLED
                                                     '&.Mui-disabled': {
                                                         backgroundColor: initial.annuler_bouton_color,
                                                         color: 'white',
-                                                        //opacity: 0.6,          // optionnel : juste un léger effet
                                                         cursor: 'not-allowed',
                                                     },
                                                 }}
@@ -1446,7 +1163,6 @@ export default function ParamCodeJournalComponent() {
                                             </Button>
                                         </span>
                                     </Tooltip>
-
                                 </ButtonGroup>
                             </Stack>
 
@@ -1460,33 +1176,7 @@ export default function ParamCodeJournalComponent() {
                                     disableSelectionOnClick={true}
                                     localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
                                     slots={{ toolbar: QuickFilter }}
-                                    sx={{
-                                        ...DataGridStyle.sx,
-                                        '& .MuiDataGrid-columnHeaders': {
-                                            backgroundColor: initial.tableau_theme,
-                                            color: initial.text_theme,
-                                        },
-                                        '& .MuiDataGrid-columnHeaderTitle': {
-                                            color: initial.text_theme,
-                                            fontWeight: 600,
-                                        },
-                                        '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
-                                            color: initial.text_theme,
-                                        },
-                                        '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
-                                            outline: 'none',
-                                            border: 'none',
-                                        },
-                                        '& .highlight-separator': {
-                                            borderBottom: '1px solid red'
-                                        },
-                                        '& .MuiDataGrid-row.highlight-separator': {
-                                            borderBottom: '1px solid red',
-                                        },
-                                        '& .MuiDataGrid-virtualScroller': {
-                                            maxHeight: '700px',
-                                        },
-                                    }} 
+                                    sx={DataGridStyle.sx}
                                     rowHeight={DataGridStyle.rowHeight}
                                     columnHeaderHeight={DataGridStyle.columnHeaderHeight}
                                     editMode='row'
@@ -1517,7 +1207,7 @@ export default function ParamCodeJournalComponent() {
                                         id: false,
                                     }}
                                     rowSelectionModel={selectedRow}
-                                    onRowEditStart={(params, event) => {
+                                    onCellDoubleClick={(params, event) => {
                                         const rowId = params.id;
                                         const rowData = params.row;
 
@@ -1534,9 +1224,6 @@ export default function ParamCodeJournalComponent() {
                                         setLibelleValidationColor('transparent');
                                         setTypeValidationColor('transparent');
                                         setCompteAssocieValidationColor('transparent');
-                                        setNifValidationColor('transparent');
-                                        setStatValidationColor('transparent');
-                                        setAdresseValidationColor('transparent');
 
                                         formikNewCodeJournal.setFieldValue("idCode", rowId);
                                         formikNewCodeJournal.setFieldValue("idDossier", fileId);
@@ -1545,16 +1232,6 @@ export default function ParamCodeJournalComponent() {
                                         formikNewCodeJournal.setFieldValue("libelle", rowData.libelle);
                                         formikNewCodeJournal.setFieldValue("type", rowData.type);
                                         formikNewCodeJournal.setFieldValue("compteassocie", rowData.compteassocie);
-
-                                        if (rowData.type === 'BANQUE') {
-                                            formikNewCodeJournal.setFieldValue('nif', rowData.nif || '');
-                                            formikNewCodeJournal.setFieldValue('stat', rowData.stat || '');
-                                            formikNewCodeJournal.setFieldValue('adresse', rowData.adresse || '');
-                                        } else {
-                                            formikNewCodeJournal.setFieldValue('nif', '');
-                                            formikNewCodeJournal.setFieldValue('stat', '');
-                                            formikNewCodeJournal.setFieldValue('adresse', '');
-                                        }
 
                                         setRowModesModel((oldModel) => ({
                                             ...oldModel,

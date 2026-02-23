@@ -10,10 +10,15 @@ exports.getOrCreateRevisionControles = async (req, res) => {
 
     // Vérifier si les contrôles existent déjà pour cet exercice (SQL)
     const existingQuery = `
-      SELECT * FROM table_revisions_controles 
-      WHERE id_compte = ${id_compte} 
-        AND id_dossier = ${id_dossier} 
-        AND id_exercice = ${id_exercice}
+      SELECT 
+        c.*,
+        m.anomalies as "matrix_anomalies"
+      FROM table_revisions_controles c
+      LEFT JOIN revisions_controles_matrices m 
+        ON c.id_controle = m.id_controle AND c."Type" = m."Type"
+      WHERE c.id_compte = ${id_compte} 
+        AND c.id_dossier = ${id_dossier} 
+        AND c.id_exercice = ${id_exercice}
     `;
     const existingControles = await db.sequelize.query(existingQuery, { type: db.Sequelize.QueryTypes.SELECT });
 
@@ -42,6 +47,8 @@ exports.getOrCreateRevisionControles = async (req, res) => {
           RETURNING *
         `;
         const [newControle] = await db.sequelize.query(insertQuery, { type: db.Sequelize.QueryTypes.INSERT });
+        // Ajouter matrix_anomalies au contrôle retourné
+        newControle.matrix_anomalies = matrix.anomalies;
         insertedControles.push(newControle);
       }
 
@@ -78,17 +85,21 @@ exports.getControlesByType = async (req, res) => {
     console.log('Getting controles by type:', { id_compte, id_dossier, id_exercice, type });
 
     const controles = await db.sequelize.query(`
-      SELECT *, 
+      SELECT 
+        c.*,
         CASE 
-          WHEN compte IS NOT NULL AND LENGTH(compte) >= 2 
-          THEN SUBSTRING(compte, 1, 2) 
+          WHEN c.compte IS NOT NULL AND LENGTH(c.compte) >= 2 
+          THEN SUBSTRING(c.compte, 1, 2) 
           ELSE NULL 
-        END as "comptePrefix"
-      FROM table_revisions_controles
-      WHERE id_compte = ${id_compte}
-        AND id_dossier = ${id_dossier}
-        AND id_exercice = ${id_exercice}
-        AND "Type" = '${type}'
+        END as "comptePrefix",
+        m.anomalies as "matrix_anomalies"
+      FROM table_revisions_controles c
+      LEFT JOIN revisions_controles_matrices m 
+        ON c.id_controle = m.id_controle AND c."Type" = m."Type"
+      WHERE c.id_compte = ${id_compte}
+        AND c.id_dossier = ${id_dossier}
+        AND c.id_exercice = ${id_exercice}
+        AND c."Type" = '${type}'
     `, { type: db.Sequelize.QueryTypes.SELECT });
 
     res.json({

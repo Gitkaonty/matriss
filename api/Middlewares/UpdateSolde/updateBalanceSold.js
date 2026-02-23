@@ -7,26 +7,20 @@ const dossierPlanComptable = db.dossierplancomptable;
 const balances = db.balances;
 
 const updateNatureBalance = async (id_compte, id_dossier, id_exercice) => {
-    const dossierPlanComptableData = await dossierPlanComptable.findAll({
-        where: {
-            id_compte,
-            id_dossier
-        }
-    })
-    if (dossierPlanComptableData.length > 0) {
-        for (const dossierPc of dossierPlanComptableData) {
-            await balances.update({
-                nature: dossierPc.nature
-            }, {
-                where: {
-                    id_numcompte: dossierPc.id,
-                    id_dossier,
-                    id_compte,
-                    id_exercice
-                }
-            })
-        }
-    }
+    // Mise à jour optimisée en une seule requête SQL
+    await db.sequelize.query(`
+        UPDATE balances b
+        SET nature = dpc.nature
+        FROM dossierplancomptables dpc
+        WHERE b.id_numcompte = dpc.id
+        AND b.id_compte = :id_compte
+        AND b.id_dossier = :id_dossier
+        AND b.id_exercice = :id_exercice
+        AND dpc.id_compte = :id_compte
+        AND dpc.id_dossier = :id_dossier
+    `, {
+        replacements: { id_compte, id_dossier, id_exercice }
+    });
 }
 
 const updateSold = async (compte_id, dossier_id, exercice_id, listecompte, allCompte) => {

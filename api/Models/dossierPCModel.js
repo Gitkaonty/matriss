@@ -222,7 +222,13 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING(150),
             allowNull: true
         },
-    }, { timestamps: true },)
+    }, { timestamps: true,
+        indexes: [
+            { fields: ['id_compte', 'id_dossier'] },
+            { fields: ['compte'] },
+            { fields: ['baseaux_id'] }
+        ]
+     },)
 
     dossierplancomptables.associate = (models) => {
         dossierplancomptables.belongsTo(models.dossierplancomptables, {
