@@ -192,6 +192,16 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: true,
             defaultValue: null
         }
-    }, { timestamps: true },)
+    }, { 
+        timestamps: true,
+        indexes: [
+            { fields: ['id_compte', 'id_dossier', 'id_exercice'] },
+            { fields: ['id_journal'] },
+            { fields: ['id_numcpt'] },
+            { fields: ['id_numcptcentralise'] },
+            { fields: ['dateecriture'] },
+            { fields: ['id_ecriture'] }
+        ]
+    })
     return journals
 }

@@ -68,40 +68,10 @@ export default function PopupImportCodeJournaux({ open, onClose, fileId, compteI
             align: 'left',
             headerClassName: 'HeaderbackColor',
         },
-        {
-            field: 'nif',
-            headerName: 'NIF',
-            type: 'string',
-            sortable: true,
-            flex: 2,
-            headerAlign: 'left',
-            align: 'left',
-            headerClassName: 'HeaderbackColor',
-        },
-        {
-            field: 'stat',
-            headerName: 'STAT',
-            type: 'string',
-            sortable: true,
-            flex: 2,
-            headerAlign: 'left',
-            align: 'left',
-            headerClassName: 'HeaderbackColor',
-        },
-        {
-            field: 'adresse',
-            headerName: 'Adresse',
-            type: 'string',
-            sortable: true,
-            flex: 3,
-            headerAlign: 'left',
-            align: 'left',
-            headerClassName: 'HeaderbackColor',
-        },
     ];
 
     const validateHeaders = (headers) => {
-        const expectedHeaders = ["code", "libelle", "type", "compteassocie", "nif", "stat", "adresse"];
+        const expectedHeaders = ["code", "libelle", "type", "compteassocie"];
 
         const normalize = (s) => (s || "")
             .toString()
@@ -204,10 +174,7 @@ export default function PopupImportCodeJournaux({ open, onClose, fileId, compteI
                                     code: getValue(row.code),
                                     libelle: getValue(row.libelle),
                                     type: getValue(row.type).toUpperCase(),
-                                    compteassocie: getValue(row.compteassocie),
-                                    nif: getValue(row.nif),
-                                    stat: getValue(row.stat),
-                                    adresse: getValue(row.adresse)
+                                    compteassocie: getValue(row.compteassocie)
                                 };
                                 
                                 // Debug: log first 3 rows to see what's being read
@@ -263,7 +230,7 @@ export default function PopupImportCodeJournaux({ open, onClose, fileId, compteI
     }
 
     const handleDownloadModel = () => {
-        const csvContent = "\uFEFFcode;libelle;type;compteassocie;nif;stat;adresse\n";
+        const csvContent = "\uFEFFcode;libelle;type;compteassocie\n";
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);

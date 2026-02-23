@@ -3,6 +3,7 @@ import {
     Box,
     Typography,
     Button,
+    ButtonGroup,
     Chip,
     Alert,
     Stack,
@@ -423,24 +424,24 @@ export default function Revision() {
                             <DataGrid
                                 rows={controlesGrouped.map((c, idx) => ({ id: idx, ...c }))}
                                 columns={[
-                                    {
-                                        field: 'Type',
-                                        headerName: 'Type',
-                                        width: 150, // largeur fixe
-                                        renderCell: (params) => (
-                                            <Typography
-                                                variant="body2"
-                                                sx={{
-                                                    fontSize: 13,
-                                                    whiteSpace: 'nowrap',
-                                                    overflow: 'hidden',
-                                                    textOverflow: 'ellipsis',
-                                                }}
-                                            >
-                                                {params.value}
-                                            </Typography>
-                                        ),
-                                    },
+                                    // {
+                                    //     field: 'Type',
+                                    //     headerName: 'Type',
+                                    //     width: 150, // largeur fixe
+                                    //     renderCell: (params) => (
+                                    //         <Typography
+                                    //             variant="body2"
+                                    //             sx={{
+                                    //                 fontSize: 13,
+                                    //                 whiteSpace: 'nowrap',
+                                    //                 overflow: 'hidden',
+                                    //                 textOverflow: 'ellipsis',
+                                    //             }}
+                                    //         >
+                                    //             {params.value}
+                                    //         </Typography>
+                                    //     ),
+                                    // },
                                     {
                                         field: 'description',
                                         headerName: 'Description',
@@ -479,32 +480,66 @@ export default function Revision() {
                                     {
                                         field: 'actions',
                                         headerName: 'Action',
-                                        width: 180,
+                                        width: 220,
                                         align: 'center',
                                         headerAlign: 'center',
                                         sortable: false,
                                         renderCell: (params) => (
-                                            <Box
+                                            <ButtonGroup
+                                                variant="outlined"
                                                 sx={{
+                                                    boxShadow: 'none',
                                                     display: 'flex',
-                                                    gap: 0.5,
-                                                    border: 'none',
-                                                    backgroundColor: 'transparent'
-                                                }}>
+                                                    gap: '2px',
+                                                    '& .MuiButton-root': {
+                                                        borderRadius: 0,
+                                                        minWidth: '80px',
+                                                        height: '28px',
+                                                        fontSize: '0.75rem',
+                                                        textTransform: 'none',
+                                                    },
+                                                    '& .MuiButtonGroup-grouped': {
+                                                        boxShadow: 'none',
+                                                        outline: 'none',
+                                                        borderColor: 'inherit',
+                                                        marginLeft: 0,
+                                                        borderRadius: 1,
+                                                        border: 'none',
+                                                    },
+                                                    '& .MuiButtonGroup-grouped:hover': {
+                                                        boxShadow: 'none',
+                                                        borderColor: 'inherit',
+                                                        border: 'none',
+                                                    },
+                                                }}
+                                            >
                                                 <Button
                                                     variant="contained"
                                                     size="small"
                                                     disableElevation
-                                                    sx={{height:'25px'}}
+                                                    sx={{
+                                                        backgroundColor: initial.theme,
+                                                        color: 'white',
+                                                        '&:hover': {
+                                                            backgroundColor: initial.theme,
+                                                        },
+                                                    }}
                                                     onClick={() => handleToggleValidateType(params.row.Type, !params.row.Valider)}
                                                 >
                                                     {params.row.Valider ? 'Annuler' : 'Valider'}
                                                 </Button>
 
                                                 <Button
-                                                    variant="text"
+                                                    variant="contained"
                                                     size="small"
-                                                    sx={{height:'25px'}}
+                                                    disableElevation
+                                                    sx={{
+                                                        backgroundColor: initial.add_new_line_bouton_color,
+                                                        color: 'white',
+                                                        '&:hover': {
+                                                            backgroundColor: initial.add_new_line_bouton_color,
+                                                        },
+                                                    }}
                                                     disabled={detailsLoading}
                                                     onClick={() => {
                                                         const type = params.row.Type;
@@ -520,7 +555,7 @@ export default function Revision() {
                                                 >
                                                     Détails
                                                 </Button>
-                                            </Box>
+                                            </ButtonGroup>
                                         )
                                     }
                                 ]}

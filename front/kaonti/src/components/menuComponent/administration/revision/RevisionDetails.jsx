@@ -574,7 +574,7 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
             {/* TITLE */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#333" }}>
-                    {currentItem.Type} - {currentItem.id_controle}
+                    {currentItem.description} - compte : {currentItem.compte && currentItem.compte !== '0' && currentItem.compte !== 0 ? currentItem.compte : 'n/a'}
                 </Typography>
                 {/* <Chip 
                     size="small" 
@@ -603,27 +603,17 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
                             <AccountBalance fontSize="small" color="action" />
                             <Typography variant="body2" color="textSecondary">
-                                Compte:
+                                Anomalie:
                             </Typography>
                             <Typography variant="body2" fontWeight={500}>
-                                {currentItem.compte}
-                            </Typography>
-                        </Box>
-
-                        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}>
-                            <Description fontSize="small" color="action" sx={{ mt: 0.3 }} />
-                            <Typography variant="body2" color="textSecondary">
-                                Description:
-                            </Typography>
-                            <Typography variant="body2" fontWeight={500}>
-                                {currentItem.description}
+                                {currentItem.matrix_anomalies || 'N/A'}
                             </Typography>
                         </Box>
 
                         {/* COMPTEUR D'ANOMALIES */}
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1, p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}>
                             <Typography variant="body2" color="textSecondary">
-                                Anomalies:
+                               Total des Anomalies:
                             </Typography>
                             <Chip
                                 size="small"

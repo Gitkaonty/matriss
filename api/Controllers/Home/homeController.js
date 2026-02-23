@@ -333,14 +333,14 @@ const createNewFile = async (req, res) => {
         }
       }
 
-      // Ajout de devise si pour MGA
+      // Ajout de devise par defaut EURO
       if (newFile.id) {
-        if (devisepardefaut === 'MGA') {
+        if (devisepardefaut === 'EURO') {
           await devises.create({
             id_dossier: newFile.id,
             id_compte: idCompte,
-            code: 'MGA',
-            libelle: 'Madagascar',
+            code: 'EUR',
+            libelle: 'Euro',
             par_defaut: true
           })
         }
