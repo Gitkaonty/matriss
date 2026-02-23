@@ -620,7 +620,7 @@ export default function ImportJournal() {
                         // Anomalies devises vides (par défaut EURO)
                         if (numberOfEmptyDevises > 0) {
                             const hasEURO = listeDevisesParams.includes('EUR') || devisesNotInParams.includes('EUR');
-                            const suffix = hasEURO ? '' : " (EURO sera créé au besoin)";
+                            const suffix = hasEURO ? '' : " (EUR sera créé au besoin)";
                             msg.push(`Certaines lignes n'ont pas de devise : elles utiliseront la devise par défaut 'EUR'${suffix}.`);
                             nbrAnom = nbrAnom + 1;
                             setNbrAnomalie(nbrAnom);
