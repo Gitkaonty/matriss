@@ -617,11 +617,11 @@ export default function ImportJournal() {
                             setCouleurBoutonAnomalie(couleurAnom);
                         }
 
-                        // Anomalies devises vides (par défaut MGA)
+                        // Anomalies devises vides (par défaut EURO)
                         if (numberOfEmptyDevises > 0) {
-                            const hasMGA = listeDevisesParams.includes('MGA') || devisesNotInParams.includes('MGA');
-                            const suffix = hasMGA ? '' : " (MGA sera créé au besoin)";
-                            msg.push(`Certaines lignes n'ont pas de devise : elles utiliseront la devise par défaut 'MGA'${suffix}.`);
+                            const hasEURO = listeDevisesParams.includes('EUR') || devisesNotInParams.includes('EUR');
+                            const suffix = hasEURO ? '' : " (EURO sera créé au besoin)";
+                            msg.push(`Certaines lignes n'ont pas de devise : elles utiliseront la devise par défaut 'EURO'${suffix}.`);
                             nbrAnom = nbrAnom + 1;
                             setNbrAnomalie(nbrAnom);
                             setCouleurBoutonAnomalie(couleurAnom);

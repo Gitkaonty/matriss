@@ -129,7 +129,7 @@ const createNotExistingCompte = async (req, res) => {
     if (genList.length > 0) {
       await Promise.all(
         genList.map(async (item) => {
-          const compte = String(item.CompteNum || '').trim();
+          const compte = String(item.CompteNum || '').trim().slice(0, 150);
           const natureCompte = item.CompAuxNum !== '' ? 'Collectif' : 'General';
           if (!compte) return null;
           const exists = await dossierPlanComptable.findOne({ where: { id_compte: compteId, id_dossier: fileId, compte } });
@@ -138,7 +138,7 @@ const createNotExistingCompte = async (req, res) => {
               id_compte: compteId,
               id_dossier: fileId,
               compte,
-              libelle: item.CompteLib || '',
+              libelle: (item.CompteLib || '').slice(0, 150),
               nature: natureCompte,
               typetier: "general",
               baseaux: compte,
@@ -153,18 +153,18 @@ const createNotExistingCompte = async (req, res) => {
     if (auxList.length > 0) {
       await Promise.all(
         auxList.map(async (item) => {
-          const aux = String(item.CompAuxNum || '').trim();
+          const aux = String(item.CompAuxNum || '').trim().slice(0, 150);
           if (!aux) return null;
           const exists = await dossierPlanComptable.findOne({ where: { id_compte: compteId, id_dossier: fileId, compte: aux } });
           if (exists) return null;
           // Trouver le général de rattachement par CompteNum (baseaux)
-          const genCompte = String(item.CompteNum || '').trim();
+          const genCompte = String(item.CompteNum || '').trim().slice(0, 150);
           const base = await dossierPlanComptable.findOne({ where: { id_compte: compteId, id_dossier: fileId, compte: genCompte, nature: 'Collectif' } });
           return dossierPlanComptable.create({
             id_compte: compteId,
             id_dossier: fileId,
             compte: aux,
-            libelle: item.CompAuxLib || '',
+            libelle: (item.CompAuxLib || '').slice(0, 150),
             nature: "Aux",
             typetier: "sans-nif",
             pays: 'Madagascar',
@@ -312,11 +312,11 @@ const importJournal = async (req, res) => {
     if (journalData.length > 0) {
       importSuccess = 1;
 
-      // Assurer l'existence des devises utilisées et de la devise par défaut MGA
+      // Assurer l'existence des devises utilisées et de la devise par défaut EURO
       const deviseCodes = [...new Set((journalData || [])
         .map(r => (r.Idevise || '').trim())
         .filter(v => v))];
-      if (!deviseCodes.includes('MGA')) deviseCodes.push('MGA');
+      if (!deviseCodes.includes('EUR')) deviseCodes.push('EUR');
       for (const code of deviseCodes) {
         const existing = await db.Devise.findOne({ where: { id_compte: compteId, id_dossier: fileId, code } });
         if (!existing) await db.Devise.create({ id_compte: compteId, id_dossier: fileId, code, libelle: code });
@@ -325,7 +325,7 @@ const importJournal = async (req, res) => {
       // Construire une map code -> id
       const allDevises = await db.Devise.findAll({ where: { id_compte: compteId, id_dossier: fileId }, raw: true });
       const deviseMap = new Map(allDevises.map(dv => [dv.code, dv.id]));
-      const defaultDeviseId = deviseMap.get('MGA');
+      const defaultDeviseId = deviseMap.get('EUR');
 
       // Grouper par numéro d'écriture
       const grouped = journalData.reduce((acc, item) => {
@@ -498,7 +498,7 @@ const importJournal = async (req, res) => {
             }
 
             // Résoudre la devise (id et code)
-            const usedCode = (item.Idevise && item.Idevise.trim()) ? item.Idevise.trim() : 'MGA';
+            const usedCode = (item.Idevise && item.Idevise.trim()) ? item.Idevise.trim() : 'EUR';
             const idDevise = deviseMap.get(usedCode) || defaultDeviseId || null;
 
             const dossierPc = await dossierPlanComptable.findByPk(compteNumId);
@@ -751,11 +751,11 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
       raw: true
     });
     const deviseMap = new Map(allDevises.map(d => [d.code, d.id]));
-    let defaultDeviseId = deviseMap.get('MGA');
+    let defaultDeviseId = deviseMap.get('EUR');
 
     // Créer les devises manquantes
     const deviseCodes = [...new Set(journalData.map(r => String(r.Idevise || '').trim()).filter(Boolean))];
-    if (!deviseCodes.includes('MGA')) deviseCodes.push('MGA');
+    if (!deviseCodes.includes('EUR')) deviseCodes.push('EUR');
     
     const newDevises = deviseCodes.filter(code => !deviseMap.has(code));
     if (newDevises.length > 0) {
@@ -768,7 +768,7 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
         raw: true
       });
       freshDevises.forEach(d => deviseMap.set(d.code, d.id));
-      defaultDeviseId = deviseMap.get('MGA');
+      defaultDeviseId = deviseMap.get('EUR');
     }
 
     progress.step("Création des journaux manquants...", 15);
@@ -834,6 +834,39 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
     }, {});
 
     const ecritureKeys = Object.keys(grouped);
+    
+    // LOGS pour analyser la distribution
+    console.log('=== ANALYSE DES ÉCRITURES ===');
+    console.log(`Nombre total de lignes dans journalData: ${journalData.length}`);
+    console.log(`Nombre d'écritures uniques (EcritureNum): ${ecritureKeys.length}`);
+    
+    // Calculer la distribution
+    const linesPerEcriture = ecritureKeys.map(key => grouped[key].length);
+    const minLines = Math.min(...linesPerEcriture);
+    const maxLines = Math.max(...linesPerEcriture);
+    const avgLines = (journalData.length / ecritureKeys.length).toFixed(2);
+    
+    console.log(`Distribution: min=${minLines}, max=${maxLines}, moyenne=${avgLines} lignes/écriture`);
+    
+    // Trouver les écritures avec le plus de lignes (top 5)
+    const top5 = ecritureKeys
+      .map(key => ({ num: key, count: grouped[key].length }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+    console.log('Top 5 écritures avec le plus de lignes:', top5);
+    
+    // Compter combien d'écritures ont 1, 2, 3, 4+ lignes
+    const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, '5+': 0 };
+    linesPerEcriture.forEach(count => {
+      if (count === 1) distribution[1]++;
+      else if (count === 2) distribution[2]++;
+      else if (count === 3) distribution[3]++;
+      else if (count === 4) distribution[4]++;
+      else distribution['5+']++;
+    });
+    console.log('Distribution des lignes par écriture:', distribution);
+    console.log('==============================');
+
     let imported = 0;
     let skipped = 0;
     let skippedNoDate = 0;
@@ -913,7 +946,7 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
           debit,
           credit,
           id_devise: deviseMap.get(item.Idevise) || defaultDeviseId,
-          devise: String(item.Idevise || 'MGA').substring(0, 10),
+          devise: String(item.Idevise || 'EUR').substring(0, 10),
           lettrage: item.EcritureLet || null,
           lettragedate: normalizeDate(item.DateLet),
           saisiepar: userId,
