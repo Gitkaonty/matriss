@@ -621,7 +621,7 @@ export default function ImportJournal() {
                         if (numberOfEmptyDevises > 0) {
                             const hasEURO = listeDevisesParams.includes('EUR') || devisesNotInParams.includes('EUR');
                             const suffix = hasEURO ? '' : " (EURO sera créé au besoin)";
-                            msg.push(`Certaines lignes n'ont pas de devise : elles utiliseront la devise par défaut 'EURO'${suffix}.`);
+                            msg.push(`Certaines lignes n'ont pas de devise : elles utiliseront la devise par défaut 'EUR'${suffix}.`);
                             nbrAnom = nbrAnom + 1;
                             setNbrAnomalie(nbrAnom);
                             setCouleurBoutonAnomalie(couleurAnom);
