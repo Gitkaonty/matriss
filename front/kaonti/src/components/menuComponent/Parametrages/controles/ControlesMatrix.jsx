@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   Box,
   Typography,
-  IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -20,17 +19,11 @@ import {
   TableHead,
   TableRow,
   Switch,
-  FormControlLabel,
-  Tab,
 } from '@mui/material';
-import TabContext from '@mui/lab/TabContext';
-import TabList from '@mui/lab/TabList';
-import TabPanel from '@mui/lab/TabPanel';
-import { Edit, Delete, Add, Check, Close } from '@mui/icons-material';
+import { Delete, Add } from '@mui/icons-material';
 import useAxiosPrivate from '../../../../hooks/useAxiosPrivate';
 import axios from '../../../../../config/axios';
 import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFile';
-import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
 
 export default function ControlesMatrix() {
   const axiosPrivate = useAxiosPrivate();
@@ -208,148 +201,130 @@ export default function ControlesMatrix() {
           null
       }
       <Box sx={{ p: 2, height: '100vh', backgroundColor: '#f5f5f5' }}>
-        <TabContext value={"1"}>
-          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            <TabList aria-label="lab API tabs example">
-              <Tab
-                style={{
-                  textTransform: 'none',
-                  outline: 'none',
-                  border: 'none',
-                  margin: -5
-                }}
-                label={InfoFileStyle(fileInfos?.dossier)}
-                value="1"
-              />
-            </TabList>
-          </Box>
-          <TabPanel value="1">
-            {/* Header */}
-            <Box sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              mb: 3,
-              backgroundColor: 'white',
-              p: 2,
-              borderRadius: 1,
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-            }}>
-              <Typography variant="h7" sx={{ fontWeight: 600, color: '#333' }}>
-                paramétrages-contrôle
-              </Typography>
+        {/* Header */}
+        <Box sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 3,
+          backgroundColor: 'white',
+          p: 2,
+          borderRadius: 1,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+        }}>
+          <Typography variant="h7" sx={{ fontWeight: 600, color: '#333' }}>
+            paramétrages-contrôle
+          </Typography>
 
-              <Button
-                variant="contained"
-                startIcon={<Add />}
-                onClick={() => handleOpenDialog()}
-                sx={{ height: '25px', textTransform: 'none' }}
-              >
-                Ajouter une matrice
-              </Button>
-            </Box>
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => handleOpenDialog()}
+            sx={{ height: '25px', textTransform: 'none' }}
+          >
+            Ajouter une matrice
+          </Button>
+        </Box>
 
-            {/* Table */}
-            {matrices.length === 0 ? (
-              <Alert severity="info" sx={{ mt: 2 }}>
-                aucune matrice de contrôle trouvée.
-              </Alert>
-            ) : (
-              <TableContainer component={Paper} sx={{ boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                <Table>
-                  <TableHead sx={{ backgroundColor: '#f8f9fa' }}>
-                    <TableRow>
-                      <TableCell sx={{ fontWeight: 600, color: '#495057', py: 0.5 }}>id contrôle</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: '#495057', py: 0.5 }}>type</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: '#495057', py: 0.5 }}>compte</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: '#495057', py: 0.5, width: '100px' }}>
-                        test
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600, py: 0.5, width: '500px' }}>
-                        description
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600, py: 0.5, width: '500px' }}>
-                        anomalies
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: '#495057', py: 0.5, width: '100px' }}>validé</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: '#495057', py: 0.5, width: '100px' }}>actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {matrices.map((matrix) => (
-                      <TableRow
-                        key={matrix.id}
-                        hover
-                        sx={{ '&:hover': { backgroundColor: '#f8f9fa' } }}
-                      >
-                        <TableCell sx={{ py: 0.5 }}>{matrix.id_controle}</TableCell>
-                        <TableCell sx={{ py: 0.5 }}>{matrix.Type}</TableCell>
-                        <TableCell sx={{ py: 0.5 }}>{matrix.compte}</TableCell>
-                        <TableCell sx={{ py: 0.5 }}>
-                          <Box sx={{ maxHeight: '30px', overflow: 'auto', fontSize: '13px', pr: 1 }}>
-                            {matrix.test}
-                          </Box>
-                        </TableCell>
-                        <TableCell sx={{ py: 0.5 }}>
-                          <Box sx={{ maxHeight: '30px', overflow: 'auto', fontSize: '13px', pr: 1 }}>
-                            {matrix.description}
-                          </Box>
-                        </TableCell>
-                        <TableCell sx={{ py: 0.5 }}>
-                          <Box sx={{ maxHeight: '30px', overflow: 'auto', fontSize: '13px', pr: 1 }}>
-                            {matrix.anomalies || '-'}
-                          </Box>
-                        </TableCell>
-                        <TableCell sx={{ py: 0.5 }}>
-                          <Chip
-                            label={matrix.Valider ? 'oui' : 'non'}
-                            color={matrix.Valider ? 'success' : 'default'}
-                            size="small"
-                            sx={{ fontWeight: 500, height: '25px' }}
-                          />
-                        </TableCell>
-                        <TableCell sx={{ py: 0.5 }}>
-                          <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-start' }}>
-                            <Button
-                              color="success"
-                              variant="contained"
-                              size="small"
-                              // startIcon={<Check />}
-                              onClick={() => handleValidationToggle(matrix)}
-                              sx={{ height: '25px', borderRadius: '1px', textTransform: 'none' }}
-                            >
-                              {matrix.Valider ? 'Invalider' : 'Valider'}
-                            </Button>
-                            {/* <Button
-                              color="primary"
-                              variant="contained"
-                              size="small"
-                              startIcon={<Edit />}
-                              onClick={() => handleOpenDialog(matrix)}
-                              sx={{ height: '25px', borderRadius: '1px', textTransform: 'none' }}
-                            >
-                              modifier
-                            </Button> */}
-                            <Button
-                              color="error"
-                              variant="contained"
-                              size="small"
-                              // startIcon={<Delete />}
-                              onClick={() => handleDelete(matrix.id)}
-                              sx={{ height: '25px', borderRadius: '1px', textTransform: 'none' }}
-                            >
-                              Supprimer
-                            </Button>
-                          </Box>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            )}
-          </TabPanel>
-        </TabContext>
+        {/* Table */}
+        {matrices.length === 0 ? (
+          <Alert severity="info" sx={{ mt: 2 }}>
+            aucune matrice de contrôle trouvée.
+          </Alert>
+        ) : (
+          <TableContainer component={Paper} sx={{ boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+            <Table>
+              <TableHead sx={{ backgroundColor: '#f8f9fa' }}>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 600, color: '#495057', py: 0.5 }}>id contrôle</TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: '#495057', py: 0.5 }}>type</TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: '#495057', py: 0.5 }}>compte</TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: '#495057', py: 0.5, width: '100px' }}>
+                    test
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, py: 0.5, width: '500px' }}>
+                    description
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, py: 0.5, width: '500px' }}>
+                    anomalies
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: '#495057', py: 0.5, width: '100px' }}>activé</TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: '#495057', py: 0.5, width: '100px' }}>actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {matrices.map((matrix) => (
+                  <TableRow
+                    key={matrix.id}
+                    hover
+                    sx={{ '&:hover': { backgroundColor: '#f8f9fa' } }}
+                  >
+                    <TableCell sx={{ py: 0.5 }}>{matrix.id_controle}</TableCell>
+                    <TableCell sx={{ py: 0.5 }}>{matrix.Type}</TableCell>
+                    <TableCell sx={{ py: 0.5 }}>{matrix.compte}</TableCell>
+                    <TableCell sx={{ py: 0.5 }}>
+                      <Box sx={{ maxHeight: '30px', overflow: 'auto', fontSize: '13px', pr: 1 }}>
+                        {matrix.test}
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ py: 0.5 }}>
+                      <Box sx={{ maxHeight: '30px', overflow: 'auto', fontSize: '13px', pr: 1 }}>
+                        {matrix.description}
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ py: 0.5 }}>
+                      <Box sx={{ maxHeight: '30px', overflow: 'auto', fontSize: '13px', pr: 1 }}>
+                        {matrix.anomalies || '-'}
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ py: 0.5 }}>
+                      <Chip
+                        label={matrix.Valider ? 'oui' : 'non'}
+                        color={matrix.Valider ? 'success' : 'default'}
+                        size="small"
+                        sx={{ fontWeight: 500, height: '25px' }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ py: 0.5 }}>
+                      <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-start' }}>
+                        <Button
+                          color="success"
+                          variant="contained"
+                          size="small"
+                          // startIcon={<Check />}
+                          onClick={() => handleValidationToggle(matrix)}
+                          sx={{ height: '25px', borderRadius: '1px', textTransform: 'none' }}
+                        >
+                          {matrix.Valider ? 'Invalider' : 'Valider'}
+                        </Button>
+                        {/* <Button
+                          color="primary"
+                          variant="contained"
+                          size="small"
+                          startIcon={<Edit />}
+                          onClick={() => handleOpenDialog(matrix)}
+                          sx={{ height: '25px', borderRadius: '1px', textTransform: 'none' }}
+                        >
+                          modifier
+                        </Button> */}
+                        <Button
+                          color="error"
+                          variant="contained"
+                          size="small"
+                          // startIcon={<Delete />}
+                          onClick={() => handleDelete(matrix.id)}
+                          sx={{ height: '25px', borderRadius: '1px', textTransform: 'none' }}
+                        >
+                          Supprimer
+                        </Button>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
 
         {/* Dialog pour ajouter/modifier une matrice */}
         <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
@@ -408,18 +383,6 @@ export default function ControlesMatrix() {
 
               {/* SWITCH */}
               <Box display="flex" alignItems="center" gap={2}>
-                <Box
-                  sx={{
-                    width: "140px",
-                    fontWeight: 500,
-                    height: "32px",
-                    display: "flex",
-                    alignItems: "center"
-                  }}
-                >
-                  Activer
-                </Box>
-
                 <Switch
                   checked={formData.Valider}
                   onChange={(e) =>
@@ -429,7 +392,6 @@ export default function ControlesMatrix() {
                   sx={{ height: "32px" }}
                 />
               </Box>
-
             </Box>
           </DialogContent>
           <DialogActions>

@@ -41,7 +41,7 @@ const getListeCodeJournaux = async (req, res) => {
 
 const addCodeJournal = async (req, res) => {
   try {
-    const { idCompte, idDossier, idCode, code, libelle, type, compteassocie, nif, stat, adresse } = req.body;
+    const { idCompte, idDossier, idCode, code, libelle, type, compteassocie } = req.body;
 
     let resData = {
       state: false,
@@ -68,10 +68,7 @@ const addCodeJournal = async (req, res) => {
         code: code,
         libelle: libelle,
         type: type,
-        compteassocie: compteassocie,
-        nif: nif,
-        stat: stat,
-        adresse: adresse
+        compteassocie: compteassocie
       });
 
       if (addCode) {
@@ -102,10 +99,7 @@ const addCodeJournal = async (req, res) => {
           code: code,
           libelle: libelle,
           type: type,
-          compteassocie: compteassocie,
-          nif: nif,
-          stat: stat,
-          adresse: adresse
+          compteassocie: compteassocie
         },
         {
           where: { id: idCode }
@@ -220,7 +214,7 @@ const importCodeJournaux = async (req, res) => {
     // Récupérer tous les comptes du plan comptable pour validation
     const planComptable = await dossierplancomptable.findAll({
       where: { id_dossier: idDossier },
-      attributes: ['id', 'compte', 'nif', 'statistique', 'adresse']
+      attributes: ['id', 'compte']
     });
     console.log('[importCodeJournaux] Plan comptable count:', planComptable.length);
     const planComptableMap = new Map();
@@ -232,9 +226,6 @@ const importCodeJournaux = async (req, res) => {
       const compteKey = pc.compte.trim().toUpperCase();
       const compteData = {
         id: pc.id,
-        nif: pc.nif || '',
-        stat: pc.statistique || '',
-        adresse: pc.adresse || ''
       };
       planComptableMap.set(compteKey, compteData);
       // Log quelques exemples pour déboguer
@@ -295,21 +286,13 @@ const importCodeJournaux = async (req, res) => {
       }
 
       if (!hasError) {
-        // Si compteInfo existe, utiliser les informations du plan comptable
-        const nifValue = compteInfo ? compteInfo.nif : (row.nif ? row.nif.trim() : '');
-        const statValue = compteInfo ? compteInfo.stat : (row.stat ? row.stat.trim() : '');
-        const adresseValue = compteInfo ? compteInfo.adresse : (row.adresse ? row.adresse.trim() : '');
-        
         validData.push({
           id_compte: idCompte,
           id_dossier: idDossier,
-          code: row.code.trim(),
+          code: row.code.trim().toUpperCase(),
           libelle: row.libelle.trim(),
           type: row.type.toUpperCase(),
-          compteassocie: row.compteassocie ? row.compteassocie.trim() : '',
-          nif: nifValue,
-          stat: statValue,
-          adresse: adresseValue
+          compteassocie: row.compteassocie ? row.compteassocie.trim() : ''
         });
       }
     }

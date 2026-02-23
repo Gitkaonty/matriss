@@ -50,6 +50,13 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: true
         },
 
-    }, {timestamps: true}, )
+    }, { 
+        timestamps: true,
+        indexes: [
+            { fields: ['id_compte', 'id_dossier'] },
+            { fields: ['code'] },
+            { fields: ['type'] }
+        ]
+    })
     return codejournals
  }

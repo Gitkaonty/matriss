@@ -58,7 +58,6 @@ export default function ImportJournal() {
     const [traitementJournalWaiting, setTraitementJournalWaiting] = useState(false);
     const [traitementJournalMsg, setTraitementJournalMsg] = useState('');
     const [progressValue, setProgressValue] = useState(0);
-    const [longeurCompteStd, setLongeurCompteStd] = useState(0);
 
     //récupération infos de connexion
     const { auth } = useAuth();
@@ -110,7 +109,6 @@ export default function ImportJournal() {
 
             if (resData.state) {
                 setFileInfos(resData.fileInfos[0]);
-                setLongeurCompteStd(resData.fileInfos[0]?.longcomptestd);
                 setNoFile(false);
             } else {
                 setFileInfos([]);
@@ -162,7 +160,7 @@ export default function ImportJournal() {
         },
         {
             id: 'EcritureLib',
-            label: 'Libellé gen.',
+            label: 'Libellé',
             minWidth: 380,
             align: 'left',
             isnumber: false
@@ -412,7 +410,7 @@ export default function ImportJournal() {
 
     //download modele d'import
     const handleDownloadModel = () => {
-        const fileUrl = '../../../../../public/modeleImport/modeleImportJournal.csv';
+        const fileUrl = '/modeleImport/modeleImportJournal.csv';
         const link = document.createElement('a');
         link.href = fileUrl;
         link.download = 'ModeleImportJournal';
@@ -452,7 +450,7 @@ export default function ImportJournal() {
         if (val === null || val === undefined) return "";
         const s = String(val).trim();
         if (s === "" || s === "0") return "";
-        return s.padEnd(longeurCompteStd, "0").slice(0, longeurCompteStd);
+        return s;
     };
 
     const parseCSVNumber = (value) => {
@@ -542,18 +540,10 @@ export default function ImportJournal() {
 
                             nbrAnom += 1;
                             setNbrAnomalie(nbrAnom);
-                        }
-
-                        const compteNonValideStd = Number(longeurCompteStd) > 0
-                            ? listeUniqueCompte.some((c) => String(c || '').trim() !== '' && String(c || '').trim().length !== Number(longeurCompteStd))
-                            : false;
-
-                        if (compteNonValideStd) {
-                            msg.push('Attention, la longueur des comptes dans le fichier csv est différente de celle des comptes dans le paramétrage CRM du dossier.');
-                            nbrAnom = nbrAnom + 1;
-                            setNbrAnomalie(nbrAnom);
                             setCouleurBoutonAnomalie(couleurAnom);
                         }
+
+                        const compteNonValideStd = false;
 
                         //stocker en 2 variables les comptes généraux et comptesaux pour la création
                         const listeUniqueCompteGenInitial = [
@@ -561,7 +551,7 @@ export default function ImportJournal() {
                                 result.data
                                     .map(item => item.CompteNum)
                                     .filter(val => val && val !== 0)
-                                    .map(val => val.toString().padEnd(longeurCompteStd, "0").slice(0, longeurCompteStd))
+                                    .map(val => val.toString().trim())
                             )
                         ];
                         const listeUniqueCompteGen = listeUniqueCompteGenInitial.filter(item => item !== '');
@@ -571,7 +561,7 @@ export default function ImportJournal() {
                                 result.data
                                     .map(item => item.CompAuxNum)
                                     .filter(val => val && val !== 0)
-                                    .map(val => val.toString().padEnd(longeurCompteStd, "0").slice(0, longeurCompteStd))
+                                    .map(val => val.toString().trim())
                             )
                         ];
                         const listeUniqueCompteAux = listeUniqueCompteAuxInitial.filter(item => item !== '');
@@ -738,15 +728,13 @@ export default function ImportJournal() {
                         const mapAux = new Map();
 
                         DataWithId.forEach(item => {
-                            const compte = item.CompAuxNum?.toString()
-                                .padEnd(longeurCompteStd, "0")
-                                .slice(0, longeurCompteStd);
+                            const compte = item.CompAuxNum?.toString()?.trim();
 
                             if (compteNotInParamsAux.includes(compte) && !mapAux.has(compte)) {
                                 mapAux.set(compte, {
                                     CompAuxNum: compte,
                                     CompAuxLib: item.EcritureLib,
-                                    CompteNum: item.CompteNum?.toString()?.padEnd(longeurCompteStd, "0")?.slice(0, longeurCompteStd) || ''
+                                    CompteNum: item.CompteNum?.toString()?.trim() || ''
                                 });
                             }
                         });
@@ -845,7 +833,7 @@ export default function ImportJournal() {
                 // Utiliser SSE pour la progression en temps réel
                 startImport(
                     '/administration/importJournal/importJournalWithProgress',
-                    { compteId, userId, fileId, selectedPeriodeId, fileTypeCSV, valSelectCptDispatch, journalData, longeurCompteStd, periodeStart, periodeEnd },
+                    { compteId, userId, fileId, selectedPeriodeId, fileTypeCSV, valSelectCptDispatch, journalData, periodeStart, periodeEnd },
                     (eventData) => {
                         // Succès
                         setTimeout(() => {
@@ -1157,8 +1145,8 @@ export default function ImportJournal() {
                                                 variant="contained"
                                                 style={{
                                                     ...buttonStyle,
-                                                    backgroundColor: initial.delete_line_bouton_color,
-                                                    color: couleurBoutonAnomalie
+                                                    backgroundColor: nbrAnomalie > 0 ? couleurBoutonAnomalie : initial.delete_line_bouton_color,
+                                                    color: 'white'
                                                 }}
                                             >
                                                 Anomalies

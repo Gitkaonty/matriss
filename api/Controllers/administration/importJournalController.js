@@ -261,7 +261,7 @@ function parseDate(str) {
 
 const importJournal = async (req, res) => {
   try {
-    const { compteId, userId, fileId, selectedPeriodeId, fileTypeCSV, valSelectCptDispatch, journalData, longeurCompteStd, periodeStart, periodeEnd } = req.body;
+    const { compteId, userId, fileId, selectedPeriodeId, fileTypeCSV, valSelectCptDispatch, journalData, periodeStart, periodeEnd } = req.body;
 
     let resData = {
       state: false,
@@ -353,8 +353,6 @@ const importJournal = async (req, res) => {
             // Récupération des IDs
             const rawAux = String(item.CompAuxNum || '').trim();
             const rawGen = String(item.CompteNum || '').trim();
-            const isGenDigits = /^\d+$/.test(rawGen);
-            const paddedGen = isGenDigits ? rawGen.padEnd(longeurCompteStd, '0').slice(0, longeurCompteStd) : rawGen;
 
             const normCode = String(item.JournalCode || '').trim().toUpperCase();
             let idCodeJournal = await codejournals.findOne({
@@ -372,12 +370,12 @@ const importJournal = async (req, res) => {
             if (rawAux) {
               foundAux = await dossierPlanComptable.findOne({ where: { id_compte: compteId, id_dossier: fileId, compte: rawAux } });
             }
-            // chercher le général (brut/pad)
+            // chercher le général (valeur brute)
             foundGen = await dossierPlanComptable.findOne({
               where: {
                 id_compte: compteId,
                 id_dossier: fileId,
-                [Op.or]: [{ compte: rawGen }, { compte: paddedGen }]
+                compte: rawGen
               },
             });
             foundCompte = foundAux || foundGen;
@@ -385,19 +383,20 @@ const importJournal = async (req, res) => {
             if (!foundCompte) {
               // Auto-créer si possible
               let genCompte = null;
-              if (isGenDigits && paddedGen) {
-                // vérifier ou créer le général padé
-                genCompte = await dossierPlanComptable.findOne({ where: { id_compte: compteId, id_dossier: fileId, compte: paddedGen } });
+              if (rawGen) {
+                // vérifier ou créer le général
+                genCompte = await dossierPlanComptable.findOne({ where: { id_compte: compteId, id_dossier: fileId, compte: rawGen } });
                 if (!genCompte) {
                   genCompte = await dossierPlanComptable.create({
                     id_compte: compteId,
                     id_dossier: fileId,
-                    compte: paddedGen,
+                    compte: rawGen,
                     libelle: '',
                     nature: 'General',
                     typetier: 'general',
-                    baseaux: paddedGen,
+                    baseaux: rawGen,
                     pays: 'Madagascar',
+                    longueur: rawGen.length
                   });
                   await db.sequelize.query(
                     `UPDATE dossierplancomptables SET baseaux_id = id WHERE id = :id`,
@@ -419,7 +418,8 @@ const importJournal = async (req, res) => {
                     pays: 'Madagascar',
                     baseaux: genCompte?.compte,
                     baseaux_id: genCompte?.id,
-                    typecomptabilite: 'Français'
+                    typecomptabilite: 'Français',
+                    longueur: rawAux.length
                   });
                 }
                 foundCompte = createdAux || genCompte;
@@ -447,7 +447,8 @@ const importJournal = async (req, res) => {
                   pays: 'Madagascar',
                   baseaux: foundGen.compte,
                   baseaux_id: foundGen.id,
-                  typecomptabilite: 'Français'
+                  typecomptabilite: 'Français',
+                  longueur: rawAux.length
                 });
               }
               foundCompte = createdAux;
@@ -668,7 +669,6 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
       selectedPeriodeId,
       valSelectCptDispatch,
       journalData,
-      longeurCompteStd,
       periodeStart,
       periodeEnd
     } = req.body;
@@ -679,29 +679,20 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
     }
 
     /* ======================================================
-       NORMALISATION DATE (STRING → STRING, SANS TIMEZONE)
+       NORMALISATION DATE
        ====================================================== */
     const normalizeDate = (val) => {
       if (!val) return null;
       const s = String(val).trim();
-
-      // Format: yyyymmdd
-      if (/^\d{8}$/.test(s)) {
-        return `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`;
-      }
-      // Format: dd/mm/yyyy ou dd-mm-yyyy
+      if (/^\d{8}$/.test(s)) return `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`;
       if (/^\d{2}[/-]\d{2}[/-]\d{4}$/.test(s)) {
-        const separator = s.includes('/') ? '/' : '-';
-        const [day, month, year] = s.split(separator);
+        const sep = s.includes('/') ? '/' : '-';
+        const [day, month, year] = s.split(sep);
         return `${year}-${month}-${day}`;
       }
-      // Format: yyyy-mm-dd
-      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
-        return s;
-      }
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
       const d = new Date(s);
-      if (isNaN(d)) return null;
-      return d.toISOString().slice(0, 10);
+      return isNaN(d) ? null : d.toISOString().slice(0, 10);
     };
 
     const debutExo = normalizeDate(periodeStart);
@@ -712,27 +703,13 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
       return;
     }
 
-    console.log('🎯 IMPORT PARAMS:', {
-      compteId,
-      fileId,
-      selectedPeriodeId,
-      periodeStart,
-      periodeEnd,
-      debutExo,
-      finExo
-    });
-
     progress.step("Initialisation...", 5);
 
     /* ======================================================
        VÉRIFICATION JOURNAL RAN
        ====================================================== */
     const ranJournal = await codejournals.findOne({
-      where: {
-        id_compte: compteId,
-        id_dossier: fileId,
-        type: 'RAN'
-      }
+      where: { id_compte: compteId, id_dossier: fileId, type: 'RAN' }
     });
 
     if (!ranJournal) {
@@ -740,49 +717,116 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
       return;
     }
 
+    /* ======================================================
+       ÉCRASEMENT SI NÉCESSAIRE
+       ====================================================== */
     if (valSelectCptDispatch === 'ECRASER') {
       await journals.destroy({
-        where: {
-          id_compte: compteId,
-          id_dossier: fileId,
-          id_exercice: selectedPeriodeId
-        }
+        where: { id_compte: compteId, id_dossier: fileId, id_exercice: selectedPeriodeId }
       });
     }
+
+    progress.step("Pré-chargement des données...", 10);
 
     /* ======================================================
-       DEVISES
+       PRÉ-CHARGEMENT EN MÉMOIRE (CACHE)
        ====================================================== */
-    const deviseCodes = [...new Set(
-      journalData.map(r => String(r.Idevise || '').trim()).filter(Boolean)
-    )];
-    if (!deviseCodes.includes('MGA')) deviseCodes.push('MGA');
+    // Charger tous les journaux existants
+    const allJournals = await codejournals.findAll({
+      where: { id_compte: compteId, id_dossier: fileId },
+      raw: true
+    });
+    const journalMap = new Map(allJournals.map(j => [j.code, j]));
 
-    for (const code of deviseCodes) {
-      const exist = await db.Devise.findOne({
-        where: { id_compte: compteId, id_dossier: fileId, code }
-      });
-      if (!exist) {
-        await db.Devise.create({
-          id_compte: compteId,
-          id_dossier: fileId,
-          code,
-          libelle: code
-        });
-      }
-    }
+    // Charger tous les comptes existants
+    const allComptes = await dossierPlanComptable.findAll({
+      where: { id_compte: compteId, id_dossier: fileId },
+      raw: true
+    });
+    const compteMap = new Map(allComptes.map(c => [c.compte, c]));
 
+    // Charger toutes les devises
     const allDevises = await db.Devise.findAll({
       where: { id_compte: compteId, id_dossier: fileId },
       raw: true
     });
-
     const deviseMap = new Map(allDevises.map(d => [d.code, d.id]));
-    const defaultDeviseId = deviseMap.get('MGA');
+    let defaultDeviseId = deviseMap.get('MGA');
+
+    // Créer les devises manquantes
+    const deviseCodes = [...new Set(journalData.map(r => String(r.Idevise || '').trim()).filter(Boolean))];
+    if (!deviseCodes.includes('MGA')) deviseCodes.push('MGA');
+    
+    const newDevises = deviseCodes.filter(code => !deviseMap.has(code));
+    if (newDevises.length > 0) {
+      await db.Devise.bulkCreate(
+        newDevises.map(code => ({ id_compte: compteId, id_dossier: fileId, code, libelle: code }))
+      );
+      // Recharger
+      const freshDevises = await db.Devise.findAll({
+        where: { id_compte: compteId, id_dossier: fileId },
+        raw: true
+      });
+      freshDevises.forEach(d => deviseMap.set(d.code, d.id));
+      defaultDeviseId = deviseMap.get('MGA');
+    }
+
+    progress.step("Création des journaux manquants...", 15);
 
     /* ======================================================
-       GROUPEMENT DES ÉCRITURES
+       CRÉATION BATCH DES JOURNAUX MANQUANTS
        ====================================================== */
+    const journalCodesNeeded = [...new Set(
+      journalData.map(r => String(r.JournalCode || '').trim().toUpperCase().slice(0, 10)).filter(Boolean)
+    )];
+    const newJournalCodes = journalCodesNeeded.filter(code => !journalMap.has(code));
+    
+    if (newJournalCodes.length > 0) {
+      const journalsToCreate = newJournalCodes.map(code => ({
+        id_compte: compteId,
+        id_dossier: fileId,
+        code: code,
+        libelle: code,
+        type: 'OD'
+      }));
+      
+      const createdJournals = await codejournals.bulkCreate(journalsToCreate, { returning: true });
+      createdJournals.forEach(j => journalMap.set(j.code, j));
+    }
+
+    progress.step("Création des comptes manquants...", 20);
+
+    /* ======================================================
+       CRÉATION BATCH DES COMPTES MANQUANTS
+       ====================================================== */
+    const comptesNeeded = [...new Set(
+      journalData.flatMap(r => [
+        String(r.CompteNum || '').trim(),
+        String(r.CompAuxNum || '').trim()
+      ]).filter(c => c)
+    )];
+    const newComptes = comptesNeeded.filter(c => !compteMap.has(c));
+    
+    if (newComptes.length > 0) {
+      const comptesToCreate = newComptes.map(num => ({
+        id_compte: compteId,
+        id_dossier: fileId,
+        compte: num,
+        libelle: num,
+        longueur: num.length,
+        type: num.startsWith('6') || num.startsWith('7') ? 'RESULTAT' : 'BILAN',
+        actif: true
+      }));
+      
+      const createdComptes = await dossierPlanComptable.bulkCreate(comptesToCreate, { returning: true });
+      createdComptes.forEach(c => compteMap.set(c.compte, c));
+    }
+
+    /* ======================================================
+       PRÉPARATION DES ÉCRITURES
+       ====================================================== */
+    progress.step("Préparation des écritures...", 25);
+
     const grouped = journalData.reduce((acc, row) => {
       if (!acc[row.EcritureNum]) acc[row.EcritureNum] = [];
       acc[row.EcritureNum].push(row);
@@ -792,179 +836,133 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
     const ecritureKeys = Object.keys(grouped);
     let imported = 0;
     let skipped = 0;
-    let processed = 0;
     let skippedNoDate = 0;
     let skippedOutOfPeriod = 0;
     let skippedNoAccount = 0;
     let skippedError = 0;
+    let batchEntries = [];
+    const BATCH_SIZE = 500; // Taille du batch pour bulkCreate
 
-    /* ======================================================
-       IMPORT
-       ====================================================== */
-    for (const ecritureNum of ecritureKeys) {
+    for (let i = 0; i < ecritureKeys.length; i++) {
+      const ecritureNum = ecritureKeys[i];
       const lines = grouped[ecritureNum];
       const idEcriture = buildIdEcriture(lines[0]);
 
       for (const item of lines) {
-        try {
-          const dateEcrit = normalizeDate(item.EcritureDate);
-          if (!dateEcrit) {
-            skipped++; skippedNoDate++; processed++; continue;
-          }
+        const dateEcrit = normalizeDate(item.EcritureDate);
+        if (!dateEcrit) {
+          skipped++; skippedNoDate++; continue;
+        }
 
-          /* =======================
-             JOURNAL
-             ======================= */
-          const journalCode = String(item.JournalCode || '').trim().toUpperCase();
-          let journal = await codejournals.findOne({
-            where: { id_compte: compteId, id_dossier: fileId, code: journalCode }
+        const journalCode = String(item.JournalCode || '').trim().toUpperCase().slice(0, 10);
+        const journal = journalMap.get(journalCode);
+        
+        if (!journal) {
+          skipped++; skippedError++; continue;
+        }
+
+        const isRAN = journal.type === 'RAN';
+        const inExercice = dateEcrit >= debutExo && (!finExo || dateEcrit <= finExo);
+        
+        if (!inExercice && !isRAN) {
+          skipped++; skippedOutOfPeriod++; continue;
+        }
+
+        const compteNum = String(item.CompteNum || '').trim();
+        if (!compteNum) {
+          skipped++; skippedNoAccount++; continue;
+        }
+
+        const compte = compteMap.get(compteNum);
+        if (!compte) {
+          skipped++; skippedError++; continue;
+        }
+
+        const compteAux = String(item.CompAuxNum || '').trim();
+        const auxCompte = compteAux ? compteMap.get(compteAux) : null;
+
+        // Parser montants
+        const parseAmount = (v) => {
+          if (!v) return 0;
+          let s = String(v).replace(/\s/g, '');
+          if (s.includes(',') && s.includes('.')) {
+            s = s.replace(/\./g, '').replace(',', '.');
+          } else {
+            s = s.replace(',', '.');
+          }
+          const n = parseFloat(s);
+          return isNaN(n) ? 0 : n;
+        };
+
+        const debit = parseAmount(item.Debit);
+        const credit = parseAmount(item.Credit);
+
+        batchEntries.push({
+          id_compte: compteId,
+          id_dossier: fileId,
+          id_exercice: selectedPeriodeId,
+          id_ecriture: idEcriture,
+          dateecriture: isRAN ? debutExo : dateEcrit,
+          vraie_date: dateEcrit,
+          id_journal: journal.id,
+          id_numcpt: compte.id,
+          id_numcptcentralise: compte.baseaux_id || compte.id,
+          piece: String(item.PieceRef || '').substring(0, 50),
+          piecedate: normalizeDate(item.PieceDate),
+          libelle: String(item.EcritureLib || '').substring(0, 100),
+          debit,
+          credit,
+          id_devise: deviseMap.get(item.Idevise) || defaultDeviseId,
+          devise: String(item.Idevise || 'MGA').substring(0, 10),
+          lettrage: item.EcritureLet || null,
+          lettragedate: normalizeDate(item.DateLet),
+          saisiepar: userId,
+          modifierpar: userId,
+          comptegen: compteNum.substring(0, 50),
+          compteaux: (compteAux || compteNum).substring(0, 50),
+          libellecompte: String(compte?.libelle || compteNum).substring(0, 50),
+          libelleaux: String(auxCompte?.libelle || compteAux || 'Pas encore de libellé').substring(0, 50)
+        });
+
+        imported++;
+
+        // Insérer par batch pour éviter surcharge mémoire
+        if (batchEntries.length >= BATCH_SIZE) {
+          await journals.bulkCreate(batchEntries, { 
+            ignoreDuplicates: true,
+            validate: false,
+            individualHooks: false,
+            hooks: false,
+            logging: false
           });
-
-          if (!journal) {
-            journal = await codejournals.create({
-              id_compte: compteId,
-              id_dossier: fileId,
-              code: journalCode,
-              libelle: journalCode,
-              type: 'OD'
-            });
-          }
-
-          const isRAN = journal.type === 'RAN';
-
-          const inExercice =
-            dateEcrit >= debutExo &&
-            (!finExo || dateEcrit <= finExo);
-
-          if (!inExercice && !isRAN) {
-            skipped++; skippedOutOfPeriod++; processed++; continue;
-          }
-
-          /* =======================
-             COMPTE COMPTABLE
-             ======================= */
-          const compteNum = String(item.CompteNum || '').trim();
-          const compteAux = String(item.CompAuxNum || '').trim();
-
-          if (!compteNum) {
-            skipped++; skippedNoAccount++; processed++; continue;
-          }
-
-          let compte = await dossierPlanComptable.findOne({
-            where: {
-              id_compte: compteId,
-              id_dossier: fileId,
-              compte: compteNum
-            }
-          });
-
-          if (!compte) {
-            compte = await dossierPlanComptable.create({
-              id_compte: compteId,
-              id_dossier: fileId,
-              compte: compteNum,
-              libelle: item.CompteLib || compteNum,
-              longueur: longeurCompteStd,
-              type: compteNum.startsWith('6') || compteNum.startsWith('7')
-                ? 'RESULTAT'
-                : 'BILAN',
-              actif: true
-            });
-          }
-
-          // Pour le libellé, chercher aussi le compte auxiliaire
-          let libelleCompte = compte.libelle || 'Pas encore de libellé';
-          let libelleAux = 'Pas encore de libellé';
-
-          if (compteAux) {
-            const auxCompte = await dossierPlanComptable.findOne({
-              where: {
-                id_compte: compteId,
-                id_dossier: fileId,
-                compte: compteAux
-              }
-            });
-            if (auxCompte) {
-              libelleAux = auxCompte.libelle || 'Pas encore de libellé';
-            }
-          }
-
-          /* =======================
-             MONTANTS
-             ======================= */
-          const parseAmount = (v) => {
-            if (!v) return 0;
-            let s = String(v).replace(/\s/g, '');
-            if (s.includes(',') && s.includes('.')) {
-              s = s.replace(/\./g, '').replace(',', '.');
-            } else {
-              s = s.replace(',', '.');
-            }
-            const n = parseFloat(s);
-            return isNaN(n) ? 0 : n;
-          };
-
-          const debit = parseAmount(item.Debit);
-          const credit = parseAmount(item.Credit);
-
-          /* =======================
-             INSERT ÉCRITURE
-             ======================= */
-          const journalEntry = await journals.create({
-            id_compte: compteId,
-            id_dossier: fileId,
-            id_exercice: selectedPeriodeId,
-            id_ecriture: idEcriture,
-            dateecriture: isRAN ? debutExo : dateEcrit,
-            vraie_date: dateEcrit,
-            id_journal: journal.id,
-            id_numcpt: compte.id,
-            id_numcptcentralise: compte.baseaux_id || compte.id,
-            piece: item.PieceRef || '',
-            piecedate: normalizeDate(item.PieceDate),
-            libelle: String(item.EcritureLib || '').substring(0, 100),
-            debit,
-            credit,
-            id_devise: deviseMap.get(item.Idevise) || defaultDeviseId,
-            devise: item.Idevise || 'MGA',
-            lettrage: item.EcritureLet || null,
-            lettragedate: normalizeDate(item.DateLet),
-            saisiepar: userId,
-            modifierpar: userId,
-            comptegen: compteNum,
-            compteaux: compteAux || compteNum,
-            libellecompte: String(libelleCompte || '').substring(0, 50),
-            libelleaux: String(libelleAux || '').substring(0, 50)
-          });
-
-          console.log('✅ ÉCRITURE CRÉÉE:', {
-            id: journalEntry.id,
-            comptegen: compteNum,
-            libellecompte: libelleCompte,
-            dateecriture: isRAN ? debutExo : dateEcrit,
-            debit: debit,
-            credit: credit
-          });
-
-          imported++;
-          processed++;
-
-        } catch (err) {
-          console.error("Erreur import ligne:", err);
-          skipped++; skippedError++; processed++;
+          batchEntries = [];
         }
       }
 
-      progress.update(
-        processed,
-        journalData.length,
-        "Import des écritures...",
-        10 + Math.floor((processed / journalData.length) * 80)
-      );
+      // Progression mise à jour moins fréquemment
+      if (i % 50 === 0 || i === ecritureKeys.length - 1) {
+        progress.update(
+          i + 1,
+          ecritureKeys.length,
+          "Import des écritures...",
+          25 + Math.floor((i / ecritureKeys.length) * 65)
+        );
+      }
+    }
+
+    // Insérer le batch final
+    if (batchEntries.length > 0) {
+      await journals.bulkCreate(batchEntries, { 
+        ignoreDuplicates: true,
+        validate: false,
+        individualHooks: false,
+        hooks: false,
+        logging: false
+      });
     }
 
     /* ======================================================
-       SOLDES
+       MISE À JOUR DES SOLDES (UNE SEULE FOIS)
        ====================================================== */
     progress.step("Mise à jour des soldes...", 95);
 
@@ -978,15 +976,9 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
 
     progress.complete(
       `${imported} lignes importées, ${skipped} ignorées`,
-      { 
-        imported, 
-        skipped, 
-        skippedNoDate, 
-        skippedOutOfPeriod, 
-        skippedNoAccount, 
-        skippedError 
-      }
+      { imported, skipped, skippedNoDate, skippedOutOfPeriod, skippedNoAccount, skippedError }
     );
+
     console.log('📊 RAPPORT IMPORT:', {
       imported,
       skipped,
