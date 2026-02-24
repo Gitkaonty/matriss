@@ -51,9 +51,9 @@ export default function RevuAnalytiqueNN1({ compteId, dossierId, exerciceId }) {
                 flex: 2,
                 minWidth: 220,
             },
-            {
-                field: 'soldeN',
-                headerName: 'Solde N',
+                        {
+                field: 'soldeN1',
+                headerName: 'Solde N-1',
                 type: 'number',
                 flex: 1,
                 minWidth: 130,
@@ -74,8 +74,8 @@ export default function RevuAnalytiqueNN1({ compteId, dossierId, exerciceId }) {
                 ),
             },
             {
-                field: 'soldeN1',
-                headerName: 'Solde N-1',
+                field: 'soldeN',
+                headerName: 'Solde N',
                 type: 'number',
                 flex: 1,
                 minWidth: 130,

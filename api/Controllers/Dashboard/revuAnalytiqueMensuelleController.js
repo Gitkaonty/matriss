@@ -239,6 +239,7 @@ exports.getRevuAnalytiqueMensuelle = async (req, res) => {
                 if (!row) return;
                 row.commentaire = c.commentaire || '';
                 row.valide_anomalie = !!c.valide_anomalie;
+                row.anomalies = !!c.anomalies; // Charger la valeur sauvegardée par l'utilisateur
             });
         }
 
@@ -327,26 +328,9 @@ exports.getRevuAnalytiqueMensuelle = async (req, res) => {
         console.log('[DEBUG] Après remplissage mensuel');
         console.log('[DEBUG] Sample rows:', Array.from(map.values()).slice(0, 2));
 
-        /**
-         * 7️⃣ Détection anomalies (variation ≥ 30 % Mois / Mois-1)
-         */
-        map.forEach(row => {
-            for (let i = 1; i < moisExercice.length; i++) {
-                const m = moisExercice[i];
-                const mp = moisExercice[i - 1];
-
-                const cur = row[m.nom];
-                const prev = row[mp.nom];
-
-                if (prev !== 0) {
-                    const varPct = Math.abs((cur - prev) / prev);
-                    if (varPct >= 0.3) {
-                        row.anomalies = true;
-                        break;
-                    }
-                }
-            }
-        });
+        // NOTE: La détection automatique d'anomalies est désactivée pour la revue mensuelle
+        // L'utilisateur confirme manuellement s'il y a anomalie ou non
+        // Les anomalies sont chargées depuis la base de données (commentaireAnalytiqueMensuelle)
 
         console.log('\n=== COMPARAISON TOTAUX MENSUELLE vs N/N-1 ===');
         

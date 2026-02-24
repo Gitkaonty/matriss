@@ -390,7 +390,7 @@ export default function Revision() {
                             height: "32px",
                         }}
                     >
-                        Contrôler
+                        Réviser
                     </Button>
                 </Box>
             </Box>
