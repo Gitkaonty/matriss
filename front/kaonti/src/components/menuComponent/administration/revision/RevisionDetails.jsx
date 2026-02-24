@@ -20,11 +20,24 @@ import {
     DialogContent,
     DialogActions
 } from '@mui/material';
+import { init } from '../../../../../init';
 import { ArrowBack, ArrowForward, CalendarToday, AccountBalance, Description, PlayArrow, FilterList, PictureAsPdf, TableChart } from '@mui/icons-material';
 import useAxiosPrivate from "../../../../hooks/useAxiosPrivate";
 import PopupActionConfirm from "../../../componentsTools/popupActionConfirm";
 
+// Helper pour formater les montants sans espace insécable
+const formatMontant = (value, options = {}) => {
+    const number = parseFloat(value) || 0;
+    const formatted = number.toLocaleString('fr-FR', {
+        minimumFractionDigits: options.fractions || 2,
+        maximumFractionDigits: options.fractions || 2
+    });
+    // Remplacer l'espace insécable (U+00A0) par un espace normal
+    return formatted.replace(/\u00A0/g, ' ');
+};
+
 export default function RevisionDetails({ type, controles, onClose, onSaveComment, idCompte, idDossier, idExercice, dateDebut, dateFin, onValidationChange }) {
+    const initial = init[0];
     const axiosPrivate = useAxiosPrivate();
     const [currentIndex, setCurrentIndex] = useState(0);
     const isValidatingRef = useRef(false);
@@ -56,9 +69,15 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
     // Pagination spécifique ATYPIQUE (par compte)
     const [atypiqueCompteIndex, setAtypiqueCompteIndex] = useState(0);
 
+    // Pagination spécifique IMMOB (par compte) - indépendante
+    const [immobCompteIndex, setImmobCompteIndex] = useState(0);
+
+    // Navigation spécifique UTIL_CPT_TVA (par écriture)
+    const [tvaEcritureIndex, setTvaEcritureIndex] = useState(0);
+
     const items = useMemo(() => controles || [], [controles]);
     const total = items.length;
-    
+
     // S'assurer que currentIndex est toujours valide
     const safeCurrentIndex = Math.min(Math.max(0, currentIndex), Math.max(0, total - 1));
     const currentItem = items[safeCurrentIndex] || null;
@@ -73,23 +92,124 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
         setAtypiqueCompteIndex(0);
     }, [anomalies.length, currentItem?.id_controle]);
 
+    // Réinitialiser l'index de compte IMMOB quand les anomalies ou le contrôle changent
+    useEffect(() => {
+        setImmobCompteIndex(0);
+    }, [anomalies.length, currentItem?.id_controle]);
+
+    // Réinitialiser l'index d'écriture TVA quand les anomalies ou le contrôle changent
+    useEffect(() => {
+        setTvaEcritureIndex(0);
+    }, [anomalies.length, currentItem?.id_controle]);
+
     const atypiqueGroupedByCompte = useMemo(() => {
         const groupedByCompte = {};
         anomalies.forEach((anomalie) => {
             const compte = anomalie.journalLines?.[0]?.comptegen || anomalie.compteNum || 'N/A';
             if (!groupedByCompte[compte]) {
                 groupedByCompte[compte] = {
-                    anomalies: []
+                    anomalies: [],
+                    allLines: []
                 };
             }
             groupedByCompte[compte].anomalies.push(anomalie);
+            // Ajouter toutes les lignes de cette anomalie
+            if (Array.isArray(anomalie.journalLines)) {
+                groupedByCompte[compte].allLines.push(...anomalie.journalLines);
+            }
         });
         return groupedByCompte;
     }, [anomalies]);
 
     const atypiqueComptesList = useMemo(() => {
-        return Object.keys(atypiqueGroupedByCompte).sort();
-    }, [atypiqueGroupedByCompte]);
+        const comptes = new Set();
+        anomalies.forEach(a => {
+            if (Array.isArray(a.journalLines)) {
+                a.journalLines.forEach(l => {
+                    const c = l?.comptegen || l?.compteaux;
+                    if (c) comptes.add(c);
+                });
+            }
+        });
+        return Array.from(comptes).sort();
+    }, [anomalies]);
+
+    // Extraction des comptes uniques pour IMMOB (tous les comptes des anomalies, y compris ecritureComplete)
+    const immobComptesList = useMemo(() => {
+        const comptes = new Set();
+        anomalies.forEach(a => {
+            // Priorité 1: utiliser compteNum (pour SENS_SOLDE, SENS_ECRITURE, IMMO_CHARGE)
+            if (a.compteNum) {
+                comptes.add(a.compteNum);
+            }
+            // Priorité 2: utiliser compte (si disponible)
+            if (a.compte) {
+                comptes.add(a.compte);
+            }
+            // Priorité 3: chercher dans ecritureComplete
+            if (Array.isArray(a.ecritureComplete)) {
+                a.ecritureComplete.forEach(l => {
+                    const c = l?.comptegen || l?.compteaux;
+                    if (c) comptes.add(c);
+                });
+            }
+            // Priorité 4: chercher dans journalLines
+            if (Array.isArray(a.journalLines)) {
+                a.journalLines.forEach(l => {
+                    const c = l?.comptegen || l?.compteaux;
+                    if (c) comptes.add(c);
+                });
+            }
+        });
+        return Array.from(comptes).sort();
+    }, [anomalies]);
+
+    const immobSafeCompteIndex = useMemo(() => {
+        if (immobComptesList.length === 0) return 0;
+        return Math.min(Math.max(0, immobCompteIndex), immobComptesList.length - 1);
+    }, [immobComptesList.length, immobCompteIndex]);
+
+    const immobCurrentCompte = useMemo(() => {
+        if (immobComptesList.length === 0) return null;
+        return immobComptesList[immobSafeCompteIndex];
+    }, [immobComptesList, immobSafeCompteIndex]);
+
+    // Navigation TVA par écriture
+    const handlePrevTvaEcriture = () => {
+        setTvaEcritureIndex(prev => Math.max(0, prev - 1));
+    };
+    const handleNextTvaEcriture = () => {
+        setTvaEcritureIndex(prev => Math.min(tvaFilteredAnomalies.length - 1, prev + 1));
+    };
+
+    // Calculer les anomalies filtrées pour TVA (exclure compte 28)
+    const tvaFilteredAnomalies = useMemo(() => {
+        return anomalies.filter(a => {
+            const lines = a.journalLines || [];
+            return lines.some(l => {
+                const cpt = l.comptegen || l.compteaux || '';
+                return !cpt.startsWith('28');
+            });
+        }).map(a => ({
+            ...a,
+            journalLines: (a.journalLines || []).filter(l => {
+                const cpt = l.comptegen || l.compteaux || '';
+                return !cpt.startsWith('28');
+            })
+        })).filter(a => a.journalLines.length > 0);
+    }, [anomalies]);
+
+    // Index sécurisé pour TVA
+    const tvaSafeEcritureIndex = useMemo(() => {
+        if (tvaFilteredAnomalies.length === 0) return 0;
+        return Math.min(Math.max(0, tvaEcritureIndex), tvaFilteredAnomalies.length - 1);
+    }, [tvaFilteredAnomalies.length, tvaEcritureIndex]);
+
+    // Écriture courante TVA
+    const tvaCurrentEcriture = useMemo(() => {
+        if (tvaFilteredAnomalies.length === 0) return null;
+        return tvaFilteredAnomalies[tvaSafeEcritureIndex];
+    }, [tvaFilteredAnomalies, tvaSafeEcritureIndex]);
 
     const atypiqueSafeCompteIndex = useMemo(() => {
         if (atypiqueComptesList.length === 0) return 0;
@@ -503,7 +623,7 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
             try {
                 const parsed = JSON.parse(currentItem.details);
                 if (Array.isArray(parsed)) data = parsed;
-            } catch (e) {            
+            } catch (e) {
             }
         }
 
@@ -538,14 +658,57 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
             </Paper>
         );
     }
+    const buttonStyle = {
+        minWidth: 120,
+        height: 32,
+        px: 2,
+        textTransform: 'none',
+        fontSize: '0.85rem',
+        borderRadius: '6px',
+        boxShadow: 'none',
+        '& .MuiTouchRipple-root': {
+            display: 'none',
+        },
+        '&:focus': {
+            outline: 'none',
+        },
+        '&.Mui-focusVisible': {
+            outline: 'none',
+            boxShadow: 'none',
+        },
+        '&:hover': {
+            boxShadow: 'none',
+            backgroundColor: 'action.hover',
+            border: 'none',
+        },
+        '&.Mui-disabled': {
+            opacity: 0.4
+        },
+    };
 
     return (
         <Paper sx={{ mt: 2, p: 3, boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
             {/* HEADER */}
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-                <Typography variant="h6" sx={{ fontWeight: 600, color: "#2c3e50" }}>
-                    Détail
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, bgcolor: '#f5f5f5' }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600, color: "#2c3e50" }}>
+                        Détails
+                    </Typography>
+                    {/* Pagination de page déplacée ici */}
+                    {total > 0 && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.5, borderRadius: 1 }}>
+                            <Button variant="outlined" size="small" onClick={handlePrev} disabled={total <= 1} sx={{ minWidth: '30px', px: 0.5, fontSize: '0.75rem' }}>
+                                {"<"}
+                            </Button>
+                            <Typography variant="caption" sx={{ color: '#666', fontSize: '0.75rem' }}>
+                                {currentIndex + 1} / {total}
+                            </Typography>
+                            <Button variant="outlined" size="small" onClick={handleNext} disabled={total <= 1} sx={{ minWidth: '30px', px: 0.5, fontSize: '0.75rem' }}>
+                                {">"}
+                            </Button>
+                        </Box>
+                    )}
+                </Box>
                 <Box sx={{ display: 'flex', gap: 1 }}>
                     <Button
                         variant="outlined"
@@ -610,16 +773,73 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                             </Typography>
                         </Box>
 
-                        {/* COMPTEUR D'ANOMALIES */}
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1, p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-                            <Typography variant="body2" color="textSecondary">
-                               Total des Anomalies:
-                            </Typography>
-                            <Chip
-                                size="small"
-                                label={`${anomalies.filter(a => !a.valide).length} / ${anomalies.length}`}
-                                color={anomalies.filter(a => !a.valide).length === 0 ? 'success' : 'warning'}
-                            />
+                        {/* COMPTEUR D'ANOMALIES - Avec navigation compte si applicable */}
+                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: atypiqueComptesList.length > 1 ? "center" : "flex-start", flexWrap: "wrap", gap: 2, mt: 1, p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                                <Typography variant="body2" color="textSecondary">
+                                    Total des Anomalies validées:
+                                </Typography>
+                                <Chip
+                                    size="small"
+                                    label={`${anomalies.filter(a => !a.valide).length} / ${anomalies.length}`}
+                                    color={anomalies.filter(a => !a.valide).length === 0 ? 'success' : 'warning'}
+                                />
+                            </Box>
+                            {/* Navigation TVA par écriture (dans la même ligne) */}
+                            {currentItem?.Type === 'UTIL_CPT_TVA' && tvaFilteredAnomalies.length > 1 && (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mx: 'auto' }}>
+                                    <Button
+                                        variant="outlined"
+                                        size="small"
+                                        disabled={tvaSafeEcritureIndex === 0}
+                                        onClick={handlePrevTvaEcriture}
+                                        sx={{ minWidth: '30px', px: 0.5, fontSize: '0.75rem' }}
+                                    >
+                                        {"<"}
+                                    </Button>
+                                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#1976d2', whiteSpace: 'nowrap' }}>
+                                        Écriture({tvaSafeEcritureIndex + 1} / {tvaFilteredAnomalies.length})
+                                    </Typography>
+                                    <Button
+                                        variant="outlined"
+                                        size="small"
+                                        disabled={tvaSafeEcritureIndex >= tvaFilteredAnomalies.length - 1}
+                                        onClick={handleNextTvaEcriture}
+                                        sx={{ minWidth: '30px', px: 0.5, fontSize: '0.75rem' }}
+                                    >
+                                        {">"}
+                                    </Button>
+                                </Box>
+                            )}
+                            {/* Navigation compte ATYPIQUE - centrée au milieu (cachée pour IMMO et UTIL_CPT_TVA) */}
+                            {atypiqueComptesList.length > 1 &&
+                                !(currentItem?.Type && String(currentItem.Type).toUpperCase().includes('IMMO')) &&
+                                currentItem?.Type !== 'UTIL_CPT_TVA' && (
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mx: 'auto' }}>
+                                        <Button
+                                            variant="outlined"
+                                            size="small"
+                                            disabled={atypiqueSafeCompteIndex === 0}
+                                            onClick={() => setAtypiqueCompteIndex((prev) => Math.max(0, prev - 1))}
+                                            sx={{ minWidth: '30px', px: 0.5, fontSize: '0.75rem' }}
+                                        >
+                                            {"<"}
+                                        </Button>
+                                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#1976d2', whiteSpace: 'nowrap' }}>
+                                            Compte {atypiqueCurrentCompte} ({atypiqueSafeCompteIndex + 1} / {atypiqueComptesList.length})
+                                        </Typography>
+                                        <Button
+                                            variant="outlined"
+                                            size="small"
+                                            disabled={atypiqueSafeCompteIndex === atypiqueComptesList.length - 1}
+                                            onClick={() => setAtypiqueCompteIndex((prev) => Math.min(atypiqueComptesList.length - 1, prev + 1))}
+                                            sx={{ minWidth: '30px', px: 0.5, fontSize: '0.75rem' }}
+                                        >
+                                            {">"}
+                                        </Button>
+                                    </Box>
+                                )}
+                            {/* Navigation IMMO - SUPPRIMÉE : on affiche par écriture, pas par compte */}
                         </Box>
                     </Box>
 
@@ -635,59 +855,66 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                             <CircularProgress size={24} />
                         </Box>
                     ) : currentItem?.Type === 'EXISTENCE' ? (
-                        // Mode EXISTENCE - Afficher les anomalies avec boutons et pagination
+                        // Mode EXISTENCE - avec filtre par compte
                         anomalies.length > 0 ? (
                             <Box>
-                                {/* Info pagination */}
-                                {anomalies.length > ANOMALIES_PER_PAGE && (
-                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, mb: 2, p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-                                        <Button
-                                            variant="outlined"
-                                            size="small"
-                                            onClick={handlePrevAnomaliesPage}
-                                            disabled={anomaliesPage === 0}
-                                        >
-                                            {"<"}
-                                        </Button>
-                                        <Typography variant="body2" sx={{ color: '#666' }}>
-                                            Page {anomaliesPage + 1} / {totalAnomaliesPages} ({anomalies.length} anomalies)
-                                        </Typography>
-                                        <Button
-                                            variant="outlined"
-                                            size="small"
-                                            onClick={handleNextAnomaliesPage}
-                                            disabled={anomaliesPage >= totalAnomaliesPages - 1}
-                                        >
-                                            {">"}
-                                        </Button>
-                                    </Box>
-                                )}
-
-                                {paginatedAnomalies.map((anomalie, idx) => (
-                                    <Box key={idx} sx={{ mb: 3 }}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                                            <Alert severity="warning" sx={{ flex: 1, fontSize: '0.9rem' }}>
-                                                {anomalie.message || 'Anomalie d\'existence'}
-                                            </Alert>
-                                            <Button
-                                                variant="contained"
-                                                size="small"
-                                                sx={{ textTransform: 'none' }}
-                                                onClick={() => handleToggleValidateAnomaly(anomalie)}
-                                            >
-                                                {anomalie.valide ? 'Annuler' : 'Valider'}
-                                            </Button>
-                                            <Button
-                                                variant="outlined"
-                                                size="small"
-                                                sx={{ textTransform: 'none' }}
-                                                onClick={() => handleCommentAnomaly(anomalie)}
-                                            >
-                                                Commenter
-                                            </Button>
+                                {paginatedAnomalies
+                                    .filter(a => !atypiqueCurrentCompte ||
+                                        (a.journalLines?.[0]?.comptegen === atypiqueCurrentCompte ||
+                                            a.journalLines?.[0]?.compteaux === atypiqueCurrentCompte))
+                                    .map((anomalie, idx) => (
+                                        <Box key={idx} sx={{ mb: 3 }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                                                <Alert severity="warning" sx={{ flex: 1, fontSize: '0.9rem' }}>
+                                                    {anomalie.message || 'Anomalie d\'existence'}
+                                                </Alert>
+                                                <Button
+                                                    variant="contained"
+                                                    size="small"
+                                                    sx={{
+                                                        ...buttonStyle,
+                                                        backgroundColor: initial.auth_gradient_end,
+                                                        color: 'white',
+                                                        borderColor: initial.auth_gradient_end,
+                                                        '&:hover': {
+                                                            backgroundColor: initial.auth_gradient_end,
+                                                            border: 'none',
+                                                        },
+                                                        '&.Mui-disabled': {
+                                                            backgroundColor: initial.auth_gradient_end,
+                                                            color: 'white',
+                                                            cursor: 'not-allowed',
+                                                        },
+                                                    }}
+                                                    onClick={() => handleToggleValidateAnomaly(anomalie)}
+                                                >
+                                                    {anomalie.valide ? 'Annuler' : 'Valider'}
+                                                </Button>
+                                                <Button
+                                                    variant="outlined"
+                                                    size="small"
+                                                    sx={{
+                                                        ...buttonStyle,
+                                                        backgroundColor: initial.add_new_line_bouton_color,
+                                                        color: 'white',
+                                                        borderColor: initial.add_new_line_bouton_color,
+                                                        '&:hover': {
+                                                            backgroundColor: initial.add_new_line_bouton_color,
+                                                            none: 'none',
+                                                        },
+                                                        '&.Mui-disabled': {
+                                                            backgroundColor: initial.add_new_line_bouton_color,
+                                                            color: 'white',
+                                                            cursor: 'not-allowed',
+                                                        },
+                                                    }}
+                                                    onClick={() => handleCommentAnomaly(anomalie)}
+                                                >
+                                                    Commenter
+                                                </Button>
+                                            </Box>
                                         </Box>
-                                    </Box>
-                                ))}
+                                    ))}
                             </Box>
                         ) : (
                             // Fallback: afficher depuis details si pas d'anomalies dans table_controle_anomalies
@@ -709,11 +936,11 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                 return <Alert severity="info">Aucune information</Alert>;
                             })()
                         )) : currentItem?.Type === 'SENS_SOLDE' ? (
-                            // Mode SENS_SOLDE avec pagination
+                            // Mode SENS_SOLDE avec filtre par compte
                             anomalies.length > 0 ? (
                                 <Box>
                                     {/* Info pagination */}
-                                    {anomalies.length > ANOMALIES_PER_PAGE && (
+                                    {/* {anomalies.length > ANOMALIES_PER_PAGE && (
                                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, mb: 2, p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}>
                                             <Button
                                                 variant="outlined"
@@ -735,132 +962,166 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                 {">"}
                                             </Button>
                                         </Box>
-                                    )}
+                                    )} */}
 
-                                    {paginatedAnomalies.map((anomalie, idx) => {
-                                        const compte = anomalie.id_jnl;
-                                        const lines = anomalie.journalLines || [];
-                                        const testType = currentItem?.test?.toUpperCase();
+                                    {paginatedAnomalies
+                                        .filter(a => !atypiqueCurrentCompte || String(a.id_jnl) === String(atypiqueCurrentCompte))
+                                        .map((anomalie, idx) => {
+                                            const compte = anomalie.id_jnl;
+                                            const lines = anomalie.journalLines || [];
+                                            const testType = currentItem?.test?.toUpperCase();
 
-                                        const totalDebit = lines.reduce((sum, line) => sum + (parseFloat(line.debit) || 0), 0);
-                                        const totalCredit = lines.reduce((sum, line) => sum + (parseFloat(line.credit) || 0), 0);
-                                        const solde = totalDebit - totalCredit;
-                                        const soldeNormalise = Math.abs(solde) < 0.01 ? 0 : solde;
+                                            const totalDebit = lines.reduce((sum, line) => sum + (parseFloat(line.debit) || 0), 0);
+                                            const totalCredit = lines.reduce((sum, line) => sum + (parseFloat(line.credit) || 0), 0);
+                                            const solde = totalDebit - totalCredit;
+                                            const soldeNormalise = Math.abs(solde) < 0.01 ? 0 : solde;
 
-                                        let detailMessage = anomalie.message || 'Anomalie de sens de solde';
-                                        if (testType === 'DEBITEUR' && soldeNormalise < 0) {
-                                            detailMessage = `Le compte "${compte}" doit avoir un solde débiteur (solde actuel: ${soldeNormalise.toFixed(2)})`;
-                                        } else if (testType === 'CREDITEUR' && soldeNormalise > 0) {
-                                            detailMessage = `Le compte "${compte}" doit avoir un solde créditeur (solde actuel: ${soldeNormalise.toFixed(2)})`;
-                                        } else if (testType === 'NULL' && soldeNormalise !== 0) {
-                                            detailMessage = `Le compte "${compte}" doit avoir un solde nul (solde actuel: ${soldeNormalise.toFixed(2)})`;
-                                        }
+                                            let detailMessage = anomalie.message || 'Anomalie de sens de solde';
+                                            if (testType === 'DEBITEUR' && soldeNormalise < 0) {
+                                                detailMessage = `Le compte "${compte}" doit avoir un solde débiteur (solde actuel: ${soldeNormalise.toFixed(2)})`;
+                                            } else if (testType === 'CREDITEUR' && soldeNormalise > 0) {
+                                                detailMessage = `Le compte "${compte}" doit avoir un solde créditeur (solde actuel: ${soldeNormalise.toFixed(2)})`;
+                                            } else if (testType === 'NULL' && soldeNormalise !== 0) {
+                                                detailMessage = `Le compte "${compte}" doit avoir un solde nul (solde actuel: ${soldeNormalise.toFixed(2)})`;
+                                            }
 
-                                        return (
-                                            <Box key={idx} sx={{ mb: 3 }}>
-                                                {/* Boutons et message */}
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                                                    <Alert severity="warning" sx={{ flex: 1, fontSize: '0.9rem' }}>
-                                                        {detailMessage}
-                                                    </Alert>
-                                                    <Button
-                                                        variant="contained"
-                                                        size="small"
-                                                        onClick={() => handleToggleValidateAnomaly(anomalie)}
-                                                    >
-                                                        {anomalie.valide ? 'Annuler' : 'Valider'}
-                                                    </Button>
-                                                    <Button
-                                                        variant="outlined"
-                                                        size="small"
-                                                        onClick={() => handleCommentAnomaly(anomalie)}
-                                                    >
-                                                        Commenter
-                                                    </Button>
-                                                </Box>
+                                            return (
+                                                <Box key={idx} sx={{ mb: 3 }}>
+                                                    {/* Boutons et message */}
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                                                        <Alert severity="warning" sx={{ flex: 1, fontSize: '0.9rem' }}>
+                                                            {detailMessage}
+                                                        </Alert>
+                                                        <Button
+                                                            variant="contained"
+                                                            size="small"
+                                                            sx={{
+                                                                ...buttonStyle,
+                                                                backgroundColor: initial.auth_gradient_end,
+                                                                color: 'white',
+                                                                borderColor: initial.auth_gradient_end,
+                                                                '&:hover': {
+                                                                    backgroundColor: initial.auth_gradient_end,
+                                                                    none: 'none',
+                                                                },
+                                                                '&.Mui-disabled': {
+                                                                    backgroundColor: initial.auth_gradient_end,
+                                                                    color: 'white',
+                                                                    cursor: 'not-allowed',
+                                                                },
+                                                            }}
+                                                            onClick={() => handleToggleValidateAnomaly(anomalie)}
+                                                        >
+                                                            {anomalie.valide ? 'Annuler' : 'Valider'}
+                                                        </Button>
+                                                        <Button
+                                                            variant="outlined"
+                                                            size="small"
+                                                            sx={{
+                                                                ...buttonStyle,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
+                                                                color: 'white',
+                                                                borderColor: initial.add_new_line_bouton_color,
+                                                                '&:hover': {
+                                                                    backgroundColor: initial.add_new_line_bouton_color,
+                                                                    none: 'none',
+                                                                },
+                                                                '&.Mui-disabled': {
+                                                                    backgroundColor: initial.add_new_line_bouton_color,
+                                                                    color: 'white',
+                                                                    cursor: 'not-allowed',
+                                                                },
+                                                            }}
+                                                            onClick={() => handleCommentAnomaly(anomalie)}
+                                                        >
+                                                            Commenter
+                                                        </Button>
+                                                    </Box>
 
-                                                {lines.length > 0 ? (
-                                                    <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 200 }}>
-                                                        <Table size="small" stickyHeader>
-                                                            <TableHead>
-                                                                <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-                                                                    <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
-                                                                    <TableCell sx={{ fontWeight: 600 }}>Pièce</TableCell>
-                                                                    <TableCell sx={{ fontWeight: 600 }}>Libellé</TableCell>
-                                                                    <TableCell sx={{ fontWeight: 600, textAlign: "right" }}>Débit</TableCell>
-                                                                    <TableCell sx={{ fontWeight: 600, textAlign: "right" }}>Crédit</TableCell>
-                                                                    <TableCell sx={{ fontWeight: 600 }}>Lettrage</TableCell>
-                                                                    <TableCell sx={{ fontWeight: 600 }}>Analytique</TableCell>
-                                                                    <TableCell sx={{ fontWeight: 600, textAlign: 'center' }}>Validé</TableCell>
-                                                                    <TableCell sx={{ fontWeight: 600 }}>Commentaire</TableCell>
-                                                                </TableRow>
-                                                            </TableHead>
-                                                            <TableBody>
-                                                                {lines.map((line, lineIdx) => (
-                                                                    <TableRow key={lineIdx} hover>
-                                                                        <TableCell>{line?.dateecriture ? new Date(line.dateecriture).toLocaleDateString('fr-FR') : '-'}</TableCell>
-                                                                        <TableCell>{line?.piece || '-'}</TableCell>
-                                                                        <TableCell>{line?.libelle || '-'}</TableCell>
-                                                                        <TableCell sx={{ textAlign: "right" }}>
-                                                                            {line?.debit ? parseFloat(line.debit).toLocaleString("fr-FR") : "-"}
-                                                                        </TableCell>
-                                                                        <TableCell sx={{ textAlign: "right" }}>
-                                                                            {line?.credit ? parseFloat(line.credit).toLocaleString("fr-FR") : "-"}
-                                                                        </TableCell>
-                                                                        <TableCell>{line?.lettrage || '-'}</TableCell>
-                                                                        <TableCell>{line?.analytique || '-'}</TableCell>
-                                                                        <TableCell sx={{ textAlign: 'center' }}>
-                                                                            <Chip
-                                                                                label={anomalie?.valide ? 'Oui' : 'Non'}
-                                                                                color={anomalie?.valide ? 'success' : 'default'}
-                                                                                size="small"
-                                                                            />
-                                                                        </TableCell>
-                                                                        <TableCell sx={{ maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                                            {anomalie?.commentaire || '-'}
-                                                                        </TableCell>
+                                                    {lines.length > 0 ? (
+                                                        <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 200 }}>
+                                                            <Table size="small" stickyHeader>
+                                                                <TableHead>
+                                                                    <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
+                                                                        <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
+                                                                        <TableCell sx={{ fontWeight: 600 }}>Compte</TableCell>
+                                                                        <TableCell sx={{ fontWeight: 600 }}>Pièce</TableCell>
+                                                                        <TableCell sx={{ fontWeight: 600 }}>Libellé</TableCell>
+                                                                        <TableCell sx={{ fontWeight: 600, textAlign: "right" }}>Débit</TableCell>
+                                                                        <TableCell sx={{ fontWeight: 600, textAlign: "right" }}>Crédit</TableCell>
+                                                                        <TableCell sx={{ fontWeight: 600 }}>Lettrage</TableCell>
+                                                                        <TableCell sx={{ fontWeight: 600 }}>Analytique</TableCell>
+                                                                        <TableCell sx={{ fontWeight: 600, textAlign: 'center' }}>Validé</TableCell>
+                                                                        <TableCell sx={{ fontWeight: 600 }}>Commentaire</TableCell>
                                                                     </TableRow>
-                                                                ))}
-                                                                <TableRow sx={{ backgroundColor: "#e3f2fd", fontWeight: "bold" }}>
-                                                                    <TableCell colSpan={5} sx={{ fontWeight: 600 }}>Total</TableCell>
-                                                                    <TableCell sx={{ textAlign: "right", fontWeight: 600 }}>
-                                                                        {totalDebit.toLocaleString("fr-FR", { minimumFractionDigits: 2 })}
-                                                                    </TableCell>
-                                                                    <TableCell sx={{ textAlign: "right", fontWeight: 600 }}>
-                                                                        {totalCredit.toLocaleString("fr-FR", { minimumFractionDigits: 2 })}
-                                                                    </TableCell>
-                                                                    <TableCell colSpan={2} />
-                                                                </TableRow>
-                                                                <TableRow sx={{ backgroundColor: "#fff3e0" }}>
-                                                                    <TableCell colSpan={5} sx={{ fontWeight: 600 }}>Solde</TableCell>
-                                                                    <TableCell colSpan={2} sx={{ textAlign: "center", fontWeight: 600 }}>
-                                                                        {soldeNormalise > 0 ? `Débiteur: ${soldeNormalise.toFixed(2)}` : soldeNormalise < 0 ? `Créditeur: ${Math.abs(soldeNormalise).toFixed(2)}` : 'Solde nul'}
-                                                                    </TableCell>
-                                                                    <TableCell colSpan={2} />
-                                                                </TableRow>
-                                                            </TableBody>
-                                                        </Table>
-                                                    </TableContainer>
-                                                ) : (
-                                                    <Typography variant="caption" color="text.secondary">
-                                                        Aucune ligne de journal pour ce compte
-                                                    </Typography>
-                                                )}
-                                            </Box>
-                                        );
-                                    })}
+                                                                </TableHead>
+                                                                <TableBody>
+                                                                    {lines.map((line, lineIdx) => (
+                                                                        <TableRow key={lineIdx} hover>
+                                                                            <TableCell>{line?.dateecriture ? new Date(line.dateecriture).toLocaleDateString('fr-FR') : '-'}</TableCell>
+                                                                            <TableCell>{line?.comptegen || line?.compteaux || '-'}</TableCell>
+                                                                            <TableCell>{line?.piece || '-'}</TableCell>
+                                                                            <TableCell>{line?.libelle || '-'}</TableCell>
+                                                                            <TableCell sx={{ textAlign: "right" }}>
+                                                                                {line?.debit ? formatMontant(line.debit) : "-"}
+                                                                            </TableCell>
+                                                                            <TableCell sx={{ textAlign: "right" }}>
+                                                                                {line?.credit ? formatMontant(line.credit) : "-"}
+                                                                            </TableCell>
+                                                                            <TableCell>{line?.lettrage || '-'}</TableCell>
+                                                                            <TableCell>{line?.analytique || '-'}</TableCell>
+                                                                            <TableCell sx={{ textAlign: 'center' }}>
+                                                                                <Chip
+                                                                                    label={anomalie?.valide ? 'Oui' : 'Non'}
+                                                                                    color={anomalie?.valide ? 'success' : 'default'}
+                                                                                    size="small"
+                                                                                />
+                                                                            </TableCell>
+                                                                            <TableCell sx={{ maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                                                {anomalie?.commentaire || '-'}
+                                                                            </TableCell>
+                                                                        </TableRow>
+                                                                    ))}
+                                                                    <TableRow sx={{ backgroundColor: "#e3f2fd", fontWeight: "bold" }}>
+                                                                        <TableCell colSpan={4} sx={{ fontWeight: 600 }}>Total</TableCell>
+                                                                        <TableCell sx={{ textAlign: "right", fontWeight: 600 }}>
+                                                                            {totalDebit.toLocaleString("fr-FR", { minimumFractionDigits: 2 }).replace(/\u00A0/g, ' ')}
+                                                                        </TableCell>
+                                                                        <TableCell sx={{ textAlign: "right", fontWeight: 600 }}>
+                                                                            {totalCredit.toLocaleString("fr-FR", { minimumFractionDigits: 2 }).replace(/\u00A0/g, ' ')}
+                                                                        </TableCell>
+                                                                        <TableCell colSpan={4} />
+                                                                    </TableRow>
+                                                                    <TableRow sx={{ backgroundColor: "#fff3e0" }}>
+                                                                        <TableCell colSpan={4} sx={{ fontWeight: 600 }}>Solde</TableCell>
+                                                                        <TableCell colSpan={2} sx={{ textAlign: "center", fontWeight: 600 }}>
+                                                                            {soldeNormalise > 0 ? `Débiteur: ${soldeNormalise.toFixed(2)}` : soldeNormalise < 0 ? `Créditeur: ${Math.abs(soldeNormalise).toFixed(2)}` : 'Solde nul'}
+                                                                        </TableCell>
+                                                                        <TableCell colSpan={4} />
+                                                                    </TableRow>
+                                                                </TableBody>
+                                                            </Table>
+                                                        </TableContainer>
+                                                    ) : (
+                                                        <Typography variant="caption" color="text.secondary">
+                                                            Aucune ligne de journal pour ce compte
+                                                        </Typography>
+                                                    )}
+                                                </Box>
+                                            );
+                                        })}
                                 </Box>
                             ) : (
                                 <Alert severity="success">Aucun compte avec anomalie de sens de solde</Alert>
                             )
                         ) : currentItem?.Type === 'SENS_ECRITURE' ? (
-                            // Mode SENS_ECRITURE avec pagination
+                            // Mode SENS_ECRITURE avec filtre par compte
                             anomalies.length > 0 ? (
                                 <Box>
                                     {/* Info pagination */}
                                     {anomalies.length > ANOMALIES_PER_PAGE && (
                                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, mb: 2, p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-                                            <Button
+                                            {/* <Button
                                                 variant="outlined"
                                                 size="small"
                                                 onClick={handlePrevAnomaliesPage}
@@ -878,157 +1139,184 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                 disabled={anomaliesPage >= totalAnomaliesPages - 1}
                                             >
                                                 {">"}
-                                            </Button>
+                                            </Button> */}
                                         </Box>
                                     )}
 
-                                    {paginatedAnomalies.map((anomalie, idx) => {
-                                        const compte = anomalie.id_jnl;
-                                        const lines = anomalie.journalLines || [];
-                                        const testType = currentItem?.test?.toUpperCase();
+                                    {paginatedAnomalies
+                                        .filter(a => !atypiqueCurrentCompte || String(a.id_jnl) === String(atypiqueCurrentCompte))
+                                        .map((anomalie, idx) => {
+                                            const compte = anomalie.id_jnl;
+                                            const lines = anomalie.journalLines || [];
+                                            const testType = currentItem?.test?.toUpperCase();
 
-                                        const filteredLines = lines.filter(line => {
-                                            const debit = parseFloat(line.debit) || 0;
-                                            const credit = parseFloat(line.credit) || 0;
-                                            if (testType === 'CREDIT') {
-                                                return credit > 0;
-                                            } else if (testType === 'DEBIT') {
-                                                return debit > 0;
-                                            }
-                                            return true;
-                                        });
+                                            const filteredLines = lines.filter(line => {
+                                                const debit = parseFloat(line.debit) || 0;
+                                                const credit = parseFloat(line.credit) || 0;
+                                                if (testType === 'CREDIT') {
+                                                    return credit > 0;
+                                                } else if (testType === 'DEBIT') {
+                                                    return debit > 0;
+                                                }
+                                                return true;
+                                            });
 
-                                        return (
-                                            <Box key={idx} sx={{ mb: 3 }}>
-                                                {/* Boutons et message */}
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                                                    <Alert severity="warning" sx={{ flex: 1, fontSize: '0.9rem' }}>
-                                                        {anomalie.message || 'Anomalie de sens d\'écriture'}
-                                                    </Alert>
-                                                    <Button
-                                                        variant="contained"
-                                                        size="small"
-                                                        onClick={() => handleToggleValidateAnomaly(anomalie)}
-                                                    >
-                                                        {anomalie.valide ? 'Annuler' : 'Valider'}
-                                                    </Button>
-                                                    <Button
-                                                        variant="outlined"
-                                                        size="small"
-                                                        onClick={() => handleCommentAnomaly(anomalie)}
-                                                    >
-                                                        Commenter
-                                                    </Button>
-                                                </Box>
+                                            return (
+                                                <Box key={idx} sx={{ mb: 3 }}>
+                                                    {/* Boutons et message */}
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                                                        <Alert severity="warning" sx={{ flex: 1, fontSize: '0.9rem' }}>
+                                                            {anomalie.message || 'Anomalie de sens d\'écriture'}
+                                                        </Alert>
+                                                        <Button
+                                                            variant="contained"
+                                                            size="small"
+                                                            onClick={() => handleToggleValidateAnomaly(anomalie)}
+                                                            sx={{
+                                                                ...buttonStyle,
+                                                                backgroundColor: initial.auth_gradient_end,
+                                                                color: 'white',
+                                                                borderColor: initial.auth_gradient_end,
+                                                                '&:hover': {
+                                                                    backgroundColor: initial.auth_gradient_end,
+                                                                    none: 'none',
+                                                                },
+                                                                '&.Mui-disabled': {
+                                                                    backgroundColor: initial.auth_gradient_end,
+                                                                    color: 'white',
+                                                                    cursor: 'not-allowed',
+                                                                },
+                                                            }}
+                                                        >
+                                                            {anomalie.valide ? 'Annuler' : 'Valider'}
+                                                        </Button>
+                                                        <Button
+                                                            variant="outlined"
+                                                            size="small"
+                                                            onClick={() => handleCommentAnomaly(anomalie)}
+                                                            sx={{
+                                                                ...buttonStyle,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
+                                                                color: 'white',
+                                                                borderColor: initial.add_new_line_bouton_color,
+                                                                '&:hover': {
+                                                                    backgroundColor: initial.add_new_line_bouton_color,
+                                                                    none: 'none',
+                                                                },
+                                                                '&.Mui-disabled': {
+                                                                    backgroundColor: initial.add_new_line_bouton_color,
+                                                                    color: 'white',
+                                                                    cursor: 'not-allowed',
+                                                                },
+                                                            }}
+                                                        >
+                                                            Commenter
+                                                        </Button>
+                                                    </Box>
 
-                                                {filteredLines.length > 0 ? (
-                                                    <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 200 }}>
-                                                        <Table size="small" stickyHeader>
-                                                            <TableHead>
-                                                                <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-                                                                    <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
-                                                                    <TableCell sx={{ fontWeight: 600 }}>Pièce</TableCell>
-                                                                    <TableCell sx={{ fontWeight: 600 }}>Libellé</TableCell>
-                                                                    <TableCell sx={{ fontWeight: 600, textAlign: "right" }}>Débit</TableCell>
-                                                                    <TableCell sx={{ fontWeight: 600, textAlign: "right" }}>Crédit</TableCell>
-                                                                    <TableCell sx={{ fontWeight: 600 }}>Lettrage</TableCell>
-                                                                    <TableCell sx={{ fontWeight: 600 }}>Analytique</TableCell>
-                                                                    <TableCell sx={{ fontWeight: 600, textAlign: 'center' }}>Validé</TableCell>
-                                                                    <TableCell sx={{ fontWeight: 600 }}>Commentaire</TableCell>
-                                                                </TableRow>
-                                                            </TableHead>
-                                                            <TableBody>
-                                                                {filteredLines.map((line, lineIdx) => (
-                                                                    <TableRow key={lineIdx} hover>
-                                                                        <TableCell>{line?.dateecriture ? new Date(line.dateecriture).toLocaleDateString('fr-FR') : '-'}</TableCell>
-                                                                        <TableCell>{line?.piece || '-'}</TableCell>
-                                                                        <TableCell>{line?.libelle || '-'}</TableCell>
-                                                                        <TableCell sx={{ textAlign: "right" }}>
-                                                                            {line?.debit ? parseFloat(line.debit).toLocaleString("fr-FR") : "-"}
-                                                                        </TableCell>
-                                                                        <TableCell sx={{ textAlign: "right" }}>
-                                                                            {line?.credit ? parseFloat(line.credit).toLocaleString("fr-FR") : "-"}
-                                                                        </TableCell>
-                                                                        <TableCell>{line?.lettrage || '-'}</TableCell>
-                                                                        <TableCell>{line?.analytique || '-'}</TableCell>
-                                                                        <TableCell sx={{ textAlign: 'center' }}>
-                                                                            <Chip
-                                                                                label={anomalie?.valide ? 'Oui' : 'Non'}
-                                                                                color={anomalie?.valide ? 'success' : 'default'}
-                                                                                size="small"
-                                                                            />
-                                                                        </TableCell>
-                                                                        <TableCell sx={{ maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                                            {anomalie?.commentaire || '-'}
-                                                                        </TableCell>
+                                                    {filteredLines.length > 0 ? (
+                                                        <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 200 }}>
+                                                            <Table size="small" stickyHeader>
+                                                                <TableHead>
+                                                                    <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
+                                                                        <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
+                                                                        <TableCell sx={{ fontWeight: 600 }}>Compte</TableCell>
+                                                                        <TableCell sx={{ fontWeight: 600 }}>Pièce</TableCell>
+                                                                        <TableCell sx={{ fontWeight: 600 }}>Libellé</TableCell>
+                                                                        <TableCell sx={{ fontWeight: 600, textAlign: "right" }}>Débit</TableCell>
+                                                                        <TableCell sx={{ fontWeight: 600, textAlign: "right" }}>Crédit</TableCell>
+                                                                        <TableCell sx={{ fontWeight: 600 }}>Lettrage</TableCell>
+                                                                        <TableCell sx={{ fontWeight: 600 }}>Analytique</TableCell>
+                                                                        <TableCell sx={{ fontWeight: 600, textAlign: 'center' }}>Validé</TableCell>
+                                                                        <TableCell sx={{ fontWeight: 600 }}>Commentaire</TableCell>
                                                                     </TableRow>
-                                                                ))}
-                                                                <TableRow sx={{ backgroundColor: "#e3f2fd", fontWeight: "bold" }}>
-                                                                    <TableCell colSpan={5} sx={{ fontWeight: 600 }}>Total</TableCell>
-                                                                    <TableCell sx={{ textAlign: "right", fontWeight: 600 }}>
-                                                                        {filteredLines.reduce((sum, line) => sum + (parseFloat(line.debit) || 0), 0).toLocaleString("fr-FR", { minimumFractionDigits: 2 })}
-                                                                    </TableCell>
-                                                                    <TableCell sx={{ textAlign: "right", fontWeight: 600 }}>
-                                                                        {filteredLines.reduce((sum, line) => sum + (parseFloat(line.credit) || 0), 0).toLocaleString("fr-FR", { minimumFractionDigits: 2 })}
-                                                                    </TableCell>
-                                                                    <TableCell colSpan={2} />
-                                                                </TableRow>
-                                                            </TableBody>
-                                                        </Table>
-                                                    </TableContainer>
-                                                ) : (
-                                                    <Typography variant="caption" color="text.secondary">
-                                                        Aucune ligne de journal pour ce compte
-                                                    </Typography>
-                                                )}
-                                            </Box>
-                                        );
-                                    })}
+                                                                </TableHead>
+                                                                <TableBody>
+                                                                    {filteredLines.map((line, lineIdx) => (
+                                                                        <TableRow key={lineIdx} hover>
+                                                                            <TableCell>{line?.dateecriture ? new Date(line.dateecriture).toLocaleDateString('fr-FR') : '-'}</TableCell>
+                                                                            <TableCell>{line?.comptegen || line?.compteaux || '-'}</TableCell>
+                                                                            <TableCell>{line?.piece || '-'}</TableCell>
+                                                                            <TableCell>{line?.libelle || '-'}</TableCell>
+                                                                            <TableCell sx={{ textAlign: "right" }}>
+                                                                                {line?.debit ? formatMontant(line.debit) : "-"}
+                                                                            </TableCell>
+                                                                            <TableCell sx={{ textAlign: "right" }}>
+                                                                                {line?.credit ? formatMontant(line.credit) : "-"}
+                                                                            </TableCell>
+                                                                            <TableCell>{line?.lettrage || '-'}</TableCell>
+                                                                            <TableCell>{line?.analytique || '-'}</TableCell>
+                                                                            <TableCell sx={{ textAlign: 'center' }}>
+                                                                                <Chip
+                                                                                    label={anomalie?.valide ? 'Oui' : 'Non'}
+                                                                                    color={anomalie?.valide ? 'success' : 'default'}
+                                                                                    size="small"
+                                                                                />
+                                                                            </TableCell>
+                                                                            <TableCell sx={{ maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                                                {anomalie?.commentaire || '-'}
+                                                                            </TableCell>
+                                                                        </TableRow>
+                                                                    ))}
+                                                                    <TableRow sx={{ backgroundColor: "#e3f2fd", fontWeight: "bold" }}>
+                                                                        <TableCell colSpan={4} sx={{ fontWeight: 600 }}>Total</TableCell>
+                                                                        <TableCell sx={{ textAlign: "right", fontWeight: 600 }}>
+                                                                            {filteredLines.reduce((sum, line) => sum + (parseFloat(line.debit) || 0), 0).toLocaleString("fr-FR", { minimumFractionDigits: 2 }).replace(/\u00A0/g, ' ')}
+                                                                        </TableCell>
+                                                                        <TableCell sx={{ textAlign: "right", fontWeight: 600 }}>
+                                                                            {filteredLines.reduce((sum, line) => sum + (parseFloat(line.credit) || 0), 0).toLocaleString("fr-FR", { minimumFractionDigits: 2 }).replace(/\u00A0/g, ' ')}
+                                                                        </TableCell>
+                                                                        <TableCell colSpan={4} />
+                                                                    </TableRow>
+                                                                </TableBody>
+                                                            </Table>
+                                                        </TableContainer>
+                                                    ) : (
+                                                        <Typography variant="caption" color="text.secondary">
+                                                            Aucune ligne de journal pour ce compte
+                                                        </Typography>
+                                                    )}
+                                                </Box>
+                                            );
+                                        })}
                                 </Box>
                             ) : (
                                 <Alert severity="success">Aucun compte avec anomalie de sens d\'écriture</Alert>
                             )
                         ) : currentItem?.Type === 'UTIL_CPT_TVA' ? (
-                            // Mode UTIL_CPT_TVA - Affichage par écriture complète avec pagination
-                            anomalies.length > 0 ? (
+                            // Mode UTIL_CPT_TVA - Affichage par écriture avec navigation, exclure compte 28
+                            tvaFilteredAnomalies.length > 0 ? (
                                 <Box>
-                                    {/* Info pagination */}
-                                    {anomalies.length > ANOMALIES_PER_PAGE && (
-                                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, mb: 2, p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-                                            <Button
-                                                variant="outlined"
-                                                size="small"
-                                                onClick={handlePrevAnomaliesPage}
-                                                disabled={anomaliesPage === 0}
-                                            >
-                                                {"<"}
-                                            </Button>
-                                            <Typography variant="body2" sx={{ color: '#666' }}>
-                                                Page {anomaliesPage + 1} / {totalAnomaliesPages} ({anomalies.length} anomalies)
-                                            </Typography>
-                                            <Button
-                                                variant="outlined"
-                                                size="small"
-                                                onClick={handleNextAnomaliesPage}
-                                                disabled={anomaliesPage >= totalAnomaliesPages - 1}
-                                            >
-                                                {">"}
-                                            </Button>
-                                        </Box>
-                                    )}
-
-                                    {paginatedAnomalies.map((anomalie, idx) => {
+                                    {/* Afficher uniquement l'écriture courante */}
+                                    {(() => {
+                                        const anomalie = tvaCurrentEcriture;
+                                        if (!anomalie) return null;
                                         const lines = anomalie.journalLines || [];
                                         return (
-                                            <Box key={idx} sx={{ mb: 3 }}>
+                                            <Box sx={{ mb: 3 }}>
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                                                     <Alert severity="warning" sx={{ flex: 1 }}>
-                                                        <strong>Écriture {anomalie.id_jnl}</strong> - {anomalie.message}
+                                                        <strong>Écriture</strong> - {anomalie.message}
                                                     </Alert>
                                                     <Button
                                                         variant="contained"
                                                         size="small"
                                                         onClick={() => handleToggleValidateAnomaly(anomalie)}
+                                                        sx={{
+                                                            ...buttonStyle,
+                                                            backgroundColor: initial.auth_gradient_end,
+                                                            color: 'white',
+                                                            borderColor: initial.auth_gradient_end,
+                                                            '&:hover': {
+                                                                backgroundColor: initial.auth_gradient_end,
+                                                                none: 'none',
+                                                            },
+                                                            '&.Mui-disabled': {
+                                                                backgroundColor: initial.auth_gradient_end,
+                                                                color: 'white',
+                                                                cursor: 'not-allowed',
+                                                            },
+                                                        }}
                                                     >
                                                         {anomalie.valide ? 'Annuler' : 'Valider'}
                                                     </Button>
@@ -1036,12 +1324,149 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                         variant="outlined"
                                                         size="small"
                                                         onClick={() => handleCommentAnomaly(anomalie)}
+                                                        sx={{
+                                                            ...buttonStyle,
+                                                            backgroundColor: initial.add_new_line_bouton_color,
+                                                            color: 'white',
+                                                            borderColor: initial.add_new_line_bouton_color,
+                                                            '&:hover': {
+                                                                backgroundColor: initial.add_new_line_bouton_color,
+                                                                none: 'none',
+                                                            },
+                                                            '&.Mui-disabled': {
+                                                                backgroundColor: initial.add_new_line_bouton_color,
+                                                                color: 'white',
+                                                                cursor: 'not-allowed',
+                                                            },
+                                                        }}
                                                     >
                                                         Commenter
                                                     </Button>
                                                 </Box>
 
-                                                {lines.length > 0 ? (
+                                                <TableContainer component={Paper} variant="outlined">
+                                                    <Table size="small">
+                                                        <TableHead>
+                                                            <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                                                                <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
+                                                                <TableCell sx={{ fontWeight: 600 }}>Compte</TableCell>
+                                                                <TableCell sx={{ fontWeight: 600 }}>Pièce</TableCell>
+                                                                <TableCell sx={{ fontWeight: 600 }}>Libellé</TableCell>
+                                                                <TableCell sx={{ fontWeight: 600, textAlign: "right" }}>Débit</TableCell>
+                                                                <TableCell sx={{ fontWeight: 600, textAlign: "right" }}>Crédit</TableCell>
+                                                                <TableCell sx={{ fontWeight: 600, textAlign: "center" }}>Validé</TableCell>
+                                                                <TableCell sx={{ fontWeight: 600 }}>Commentaire</TableCell>
+                                                            </TableRow>
+                                                        </TableHead>
+                                                        <TableBody>
+                                                            {lines.map((line, lineIdx) => (
+                                                                <TableRow key={lineIdx} hover>
+                                                                    <TableCell>{line?.dateecriture ? new Date(line.dateecriture).toLocaleDateString('fr-FR') : '-'}</TableCell>
+                                                                    <TableCell>
+                                                                        <Box sx={{
+                                                                            fontWeight: (line?.comptegen?.startsWith('2') || line?.compteaux?.startsWith('2')) ? 700 : 400,
+                                                                            color: (line?.comptegen?.startsWith('2') || line?.compteaux?.startsWith('2')) ? 'primary.main' : 'inherit'
+                                                                        }}>
+                                                                            {line?.comptegen || line?.compteaux || '-'}
+                                                                            {((line?.comptegen?.startsWith('4456') || line?.compteaux?.startsWith('4456')) && (
+                                                                                <Chip label="TVA" size="small" color="info" sx={{ ml: 1, fontSize: '0.7rem' }} />
+                                                                            ))}
+                                                                        </Box>
+                                                                    </TableCell>
+                                                                    <TableCell>{line?.piece || '-'}</TableCell>
+                                                                    <TableCell>{line?.libelle || '-'}</TableCell>
+                                                                    <TableCell sx={{ textAlign: "right" }}>{line?.debit ? formatMontant(line.debit) : "-"}</TableCell>
+                                                                    <TableCell sx={{ textAlign: "right" }}>{line?.credit ? formatMontant(line.credit) : "-"}</TableCell>
+                                                                    <TableCell sx={{ textAlign: "center" }}>
+                                                                        {lineIdx === 0 && (
+                                                                            <Chip
+                                                                                label={anomalie.valide ? "Oui" : "Non"}
+                                                                                color={anomalie.valide ? "success" : "error"}
+                                                                                size="small"
+                                                                            />
+                                                                        )}
+                                                                    </TableCell>
+                                                                    <TableCell>{lineIdx === 0 ? (anomalie.commentaire || '-') : ''}</TableCell>
+                                                                </TableRow>
+                                                            ))}
+                                                        </TableBody>
+                                                    </Table>
+                                                </TableContainer>
+                                            </Box>
+                                        );
+                                    })()}
+                                </Box>
+                            ) : (
+                                <Alert severity="success">Aucune anomalie de TVA détectée</Alert>
+                            )
+                        ) : (currentItem?.Type && String(currentItem.Type).toUpperCase().includes('IMMO')) ? (
+                            // Mode IMMO (IMMOB, IMMO_CHARGE, etc.) - Afficher une seule anomalie par compte
+                            anomalies.length > 0 ? (
+                                <Box sx={{ maxHeight: 400, overflowY: 'auto' }}>
+                                    {(() => {
+                                        // Trouver l'anomalie du compte courant
+                                        const currentCompte = immobComptesList[immobSafeCompteIndex];
+                                        const currentAnomaly = anomalies.find(a =>
+                                            a.compteNum === currentCompte ||
+                                            a.journalLines?.[0]?.comptegen === currentCompte
+                                        );
+
+                                        if (!currentAnomaly) return <Alert severity="info">Aucune anomalie pour le compte {currentCompte}</Alert>;
+
+                                        return (
+                                            <Box>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                                                    <Alert severity="warning" sx={{ flex: 1, fontSize: '0.9rem' }}>
+                                                        {currentAnomaly.message || 'Anomalie'}
+                                                    </Alert>
+                                                    <Button
+                                                        variant="contained"
+                                                        size="small"
+                                                        onClick={() => handleToggleValidateAnomaly(currentAnomaly)}
+                                                        sx={{
+                                                            ...buttonStyle,
+                                                            backgroundColor: initial.auth_gradient_end,
+                                                            color: 'white',
+                                                            borderColor: initial.auth_gradient_end,
+                                                            '&:hover': {
+                                                                backgroundColor: initial.auth_gradient_end,
+                                                                none: 'none',
+                                                            },
+                                                            '&.Mui-disabled': {
+                                                                backgroundColor: initial.auth_gradient_end,
+                                                                color: 'white',
+                                                                cursor: 'not-allowed',
+                                                            },
+                                                        }}
+                                                    >
+                                                        {currentAnomaly.valide ? 'Annuler' : 'Valider'}
+                                                    </Button>
+                                                    <Button
+                                                        variant="outlined"
+                                                        size="small"
+                                                        onClick={() => handleCommentAnomaly(currentAnomaly)}
+                                                        sx={{
+                                                            ...buttonStyle,
+                                                            backgroundColor: initial.add_new_line_bouton_color,
+                                                            color: 'white',
+                                                            borderColor: initial.add_new_line_bouton_color,
+                                                            '&:hover': {
+                                                                backgroundColor: initial.add_new_line_bouton_color,
+                                                                none: 'none',
+                                                            },
+                                                            '&.Mui-disabled': {
+                                                                backgroundColor: initial.add_new_line_bouton_color,
+                                                                color: 'white',
+                                                                cursor: 'not-allowed',
+                                                            },
+                                                        }}
+                                                    >
+                                                        Commenter
+                                                    </Button>
+                                                </Box>
+
+                                                {/* Tableau des lignes de l'anomalie courante */}
+                                                {currentAnomaly.journalLines?.length > 0 ? (
                                                     <TableContainer component={Paper} variant="outlined">
                                                         <Table size="small">
                                                             <TableHead>
@@ -1057,144 +1482,152 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                                 </TableRow>
                                                             </TableHead>
                                                             <TableBody>
-                                                                {lines.map((line, lineIdx) => (
-                                                                    <TableRow key={lineIdx} hover>
+                                                                {currentAnomaly.journalLines.map((line, lineIdx) => (
+                                                                    <TableRow key={line?.id || lineIdx} hover>
                                                                         <TableCell>{line?.dateecriture ? new Date(line.dateecriture).toLocaleDateString('fr-FR') : '-'}</TableCell>
-                                                                        <TableCell>
-                                                                            <Box sx={{
-                                                                                fontWeight: (line?.comptegen?.startsWith('2') || line?.compteaux?.startsWith('2')) ? 700 : 400,
-                                                                                color: (line?.comptegen?.startsWith('2') || line?.compteaux?.startsWith('2')) ? 'primary.main' : 'inherit'
-                                                                            }}>
-                                                                                {line?.comptegen || line?.compteaux || '-'}
-                                                                                {((line?.comptegen?.startsWith('4456') || line?.compteaux?.startsWith('4456')) && (
-                                                                                    <Chip label="TVA" size="small" color="info" sx={{ ml: 1, fontSize: '0.7rem' }} />
-                                                                                ))}
-                                                                            </Box>
-                                                                        </TableCell>
+                                                                        <TableCell>{line?.comptegen || line?.compteaux || '-'}</TableCell>
                                                                         <TableCell>{line?.piece || '-'}</TableCell>
                                                                         <TableCell>{line?.libelle || '-'}</TableCell>
-                                                                        <TableCell sx={{ textAlign: "right" }}>{line?.debit ? parseFloat(line.debit).toLocaleString("fr-FR") : "-"}</TableCell>
-                                                                        <TableCell sx={{ textAlign: "right" }}>{line?.credit ? parseFloat(line.credit).toLocaleString("fr-FR") : "-"}</TableCell>
+                                                                        <TableCell sx={{ textAlign: "right" }}>{line?.debit ? formatMontant(line.debit) : "-"}</TableCell>
+                                                                        <TableCell sx={{ textAlign: "right" }}>{line?.credit ? formatMontant(line.credit) : "-"}</TableCell>
                                                                         <TableCell sx={{ textAlign: "center" }}>
                                                                             {lineIdx === 0 && (
                                                                                 <Chip
-                                                                                    label={anomalie.valide ? "Oui" : "Non"}
-                                                                                    color={anomalie.valide ? "success" : "error"}
+                                                                                    label={currentAnomaly.valide ? "Oui" : "Non"}
+                                                                                    color={currentAnomaly.valide ? "success" : "error"}
                                                                                     size="small"
+                                                                                    sx={{ fontWeight: 600 }}
                                                                                 />
                                                                             )}
                                                                         </TableCell>
-                                                                        <TableCell>{lineIdx === 0 ? (anomalie.commentaire || '-') : ''}</TableCell>
+                                                                        <TableCell>{lineIdx === 0 ? (currentAnomaly.commentaire || '-') : ''}</TableCell>
                                                                     </TableRow>
                                                                 ))}
                                                             </TableBody>
                                                         </Table>
                                                     </TableContainer>
                                                 ) : (
-                                                    <Typography variant="caption" color="text.secondary">
-                                                        Aucune ligne pour cette écriture
-                                                    </Typography>
+                                                    <Alert severity="info">Aucune ligne pour ce compte</Alert>
                                                 )}
                                             </Box>
                                         );
-                                    })}
+                                    })()}
                                 </Box>
                             ) : (
-                                <Alert severity="success">Aucune anomalie de TVA détectée</Alert>
+                                <Alert severity="success">Aucune anomalie détectée pour ce contrôle</Alert>
                             )
                         ) : currentItem?.Type === 'ATYPIQUE' ? (
-                            // Mode ATYPIQUE - Affichage paginé par compte
+                            // Mode ATYPIQUE - Affichage paginé par compte avec tableau unique
                             anomalies.length > 0 ? (
                                 <Box sx={{ maxHeight: 400, overflowY: 'auto' }}>
                                     {!atypiqueCurrentData ? null : (
                                         <Box>
-                                            {/* Navigation entre comptes */}
-                                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, p: 1, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
-                                                <Button
-                                                    variant="outlined"
-                                                    size="small"
-                                                    disabled={atypiqueSafeCompteIndex === 0}
-                                                    onClick={() => setAtypiqueCompteIndex((prev) => Math.max(0, prev - 1))}
-                                                >
-                                                    ← Compte précédent
-                                                </Button>
-                                                <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#1976d2' }}>
-                                                    Compte {atypiqueCurrentCompte} ({atypiqueSafeCompteIndex + 1} / {atypiqueComptesList.length})
-                                                </Typography>
-                                                <Button
-                                                    variant="outlined"
-                                                    size="small"
-                                                    disabled={atypiqueSafeCompteIndex === atypiqueComptesList.length - 1}
-                                                    onClick={() => setAtypiqueCompteIndex((prev) => Math.min(atypiqueComptesList.length - 1, prev + 1))}
-                                                >
-                                                    Compte suivant →
-                                                </Button>
-                                            </Box>
-
-                                            {/* Anomalies du compte: une anomalie = un bloc + son propre tableau */}
-                                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                                {atypiqueCurrentData.anomalies.map((anomalie, idx) => (
-                                                    <Box key={anomalie.id || idx} sx={{ p: 0 }}>
-                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                                                            <Alert severity="warning" sx={{ flex: 1, fontSize: '0.85rem', py: 0.5 }}>
-                                                                {anomalie.message}
-                                                            </Alert>
-                                                            <Button
-                                                                variant="contained"
-                                                                size="small"
-                                                                onClick={() => handleToggleValidateAnomaly(anomalie)}
-                                                            >
-                                                                {anomalie.valide ? 'Annuler' : 'Valider'}
-                                                            </Button>
-                                                            <Button
-                                                                variant="outlined"
-                                                                size="small"
-                                                                onClick={() => handleCommentAnomaly(anomalie)}
-                                                            >
-                                                                Commenter
-                                                            </Button>
-                                                        </Box>
-
-                                                        {anomalie.journalLines?.length > 0 ? (
-                                                            <TableContainer component={Paper}>
-                                                                <Table size="small">
-                                                                    <TableHead>
-                                                                        <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                                                                            <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
-                                                                            <TableCell sx={{ fontWeight: 600 }}>Pièce</TableCell>
-                                                                            <TableCell sx={{ fontWeight: 600 }}>Libellé</TableCell>
-                                                                            <TableCell sx={{ fontWeight: 600, textAlign: "right" }}>Débit</TableCell>
-                                                                            <TableCell sx={{ fontWeight: 600, textAlign: "right" }}>Crédit</TableCell>
-                                                                            <TableCell sx={{ fontWeight: 600, textAlign: "center" }}>Validé</TableCell>
-                                                                            <TableCell sx={{ fontWeight: 600 }}>Commentaire</TableCell>
-                                                                        </TableRow>
-                                                                    </TableHead>
-                                                                    <TableBody>
-                                                                        {anomalie.journalLines.map((line, lineIdx) => (
-                                                                            <TableRow key={line?.id || lineIdx} hover>
-                                                                                <TableCell>{line?.dateecriture ? new Date(line.dateecriture).toLocaleDateString('fr-FR') : '-'}</TableCell>
-                                                                                <TableCell>{line?.piece || '-'}</TableCell>
-                                                                                <TableCell>{line?.libelle || '-'}</TableCell>
-                                                                                <TableCell sx={{ textAlign: "right" }}>{line?.debit ? parseFloat(line.debit).toLocaleString("fr-FR") : "-"}</TableCell>
-                                                                                <TableCell sx={{ textAlign: "right" }}>{line?.credit ? parseFloat(line.credit).toLocaleString("fr-FR") : "-"}</TableCell>
-                                                                                <TableCell sx={{ textAlign: "center" }}>
-                                                                                    <Chip
-                                                                                        label={anomalie.valide ? "Oui" : "Non"}
-                                                                                        color={anomalie.valide ? "success" : "error"}
-                                                                                        size="small"
-                                                                                        sx={{ fontWeight: 600 }}
-                                                                                    />
-                                                                                </TableCell>
-                                                                                <TableCell>{anomalie.commentaire || '-'}</TableCell>
-                                                                            </TableRow>
-                                                                        ))}
-                                                                    </TableBody>
-                                                                </Table>
-                                                            </TableContainer>
-                                                        ) : null}
+                                            {(() => {
+                                                const globalAnomaly = atypiqueCurrentData.anomalies?.[0];
+                                                if (!globalAnomaly) return null;
+                                                return (
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                                                        <Alert severity="warning" sx={{ flex: 1, fontSize: '0.85rem', py: 0.5 }}>
+                                                            {globalAnomaly.message || `Anomalie atypique (${atypiqueCurrentData.anomalies.length})`}
+                                                        </Alert>
+                                                        <Button
+                                                            variant="contained"
+                                                            size="small"
+                                                            onClick={() => handleToggleValidateAnomaly(globalAnomaly)}
+                                                            sx={{
+                                                                ...buttonStyle,
+                                                                backgroundColor: initial.auth_gradient_end,
+                                                                color: 'white',
+                                                                borderColor: initial.auth_gradient_end,
+                                                                '&:hover': {
+                                                                    backgroundColor: initial.auth_gradient_end,
+                                                                    none: 'none',
+                                                                },
+                                                                '&.Mui-disabled': {
+                                                                    backgroundColor: initial.auth_gradient_end,
+                                                                    color: 'white',
+                                                                    cursor: 'not-allowed',
+                                                                },
+                                                            }}
+                                                        >
+                                                            {globalAnomaly.valide ? 'Annuler' : 'Valider'}
+                                                        </Button>
+                                                        <Button
+                                                            variant="outlined"
+                                                            size="small"
+                                                            onClick={() => handleCommentAnomaly(globalAnomaly)}
+                                                            sx={{
+                                                                ...buttonStyle,
+                                                                backgroundColor: initial.add_new_line_bouton_color,
+                                                                color: 'white',
+                                                                borderColor: initial.add_new_line_bouton_color,
+                                                                '&:hover': {
+                                                                    backgroundColor: initial.add_new_line_bouton_color,
+                                                                    none: 'none',
+                                                                },
+                                                                '&.Mui-disabled': {
+                                                                    backgroundColor: initial.add_new_line_bouton_color,
+                                                                    color: 'white',
+                                                                    cursor: 'not-allowed',
+                                                                },
+                                                            }}
+                                                        >
+                                                            Commenter
+                                                        </Button>
                                                     </Box>
-                                                ))}
-                                            </Box>
+                                                );
+                                            })()}
+
+                                            {/* Tableau unique avec toutes les lignes du compte courant */}
+                                            {atypiqueCurrentData.allLines?.length > 0 ? (
+                                                <Box>
+                                                    <TableContainer component={Paper} variant="outlined">
+                                                        <Table size="small">
+                                                            <TableHead>
+                                                                <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                                                                    <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
+                                                                    <TableCell sx={{ fontWeight: 600 }}>Compte</TableCell>
+                                                                    <TableCell sx={{ fontWeight: 600 }}>Pièce</TableCell>
+                                                                    <TableCell sx={{ fontWeight: 600 }}>Libellé</TableCell>
+                                                                    <TableCell sx={{ fontWeight: 600, textAlign: "right" }}>Débit</TableCell>
+                                                                    <TableCell sx={{ fontWeight: 600, textAlign: "right" }}>Crédit</TableCell>
+                                                                    <TableCell sx={{ fontWeight: 600, textAlign: "center" }}>Validé</TableCell>
+                                                                    <TableCell sx={{ fontWeight: 600 }}>Commentaire</TableCell>
+                                                                </TableRow>
+                                                            </TableHead>
+                                                            <TableBody>
+                                                                {atypiqueCurrentData.allLines.map((line, lineIdx) => {
+                                                                    // Trouver l'anomalie associée à cette ligne
+                                                                    const relatedAnomaly = atypiqueCurrentData.anomalies.find(a =>
+                                                                        a.journalLines?.some(jl => jl.id === line.id)
+                                                                    );
+                                                                    return (
+                                                                        <TableRow key={line?.id || lineIdx} hover>
+                                                                            <TableCell>{line?.dateecriture ? new Date(line.dateecriture).toLocaleDateString('fr-FR') : '-'}</TableCell>
+                                                                            <TableCell>{line?.comptegen || line?.compteaux || '-'}</TableCell>
+                                                                            <TableCell>{line?.piece || '-'}</TableCell>
+                                                                            <TableCell>{line?.libelle || '-'}</TableCell>
+                                                                            <TableCell sx={{ textAlign: "right" }}>{line?.debit ? formatMontant(line.debit) : "-"}</TableCell>
+                                                                            <TableCell sx={{ textAlign: "right" }}>{line?.credit ? formatMontant(line.credit) : "-"}</TableCell>
+                                                                            <TableCell sx={{ textAlign: "center" }}>
+                                                                                <Chip
+                                                                                    label={relatedAnomaly?.valide ? "Oui" : "Non"}
+                                                                                    color={relatedAnomaly?.valide ? "success" : "error"}
+                                                                                    size="small"
+                                                                                    sx={{ fontWeight: 600 }}
+                                                                                />
+                                                                            </TableCell>
+                                                                            <TableCell>{relatedAnomaly?.commentaire || '-'}</TableCell>
+                                                                        </TableRow>
+                                                                    );
+                                                                })}
+                                                            </TableBody>
+                                                        </Table>
+                                                    </TableContainer>
+                                                </Box>
+                                            ) : (
+                                                <Alert severity="info">Aucune ligne pour ce compte</Alert>
+                                            )}
                                         </Box>
                                     )}
                                 </Box>
@@ -1214,6 +1647,21 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                 variant="contained"
                                                 size="small"
                                                 onClick={() => handleToggleValidateAnomaly(anomalie)}
+                                                sx={{
+                                                    ...buttonStyle,
+                                                    backgroundColor: initial.auth_gradient_end,
+                                                    color: 'white',
+                                                    borderColor: initial.auth_gradient_end,
+                                                    '&:hover': {
+                                                        backgroundColor: initial.auth_gradient_end,
+                                                        none: 'none',
+                                                    },
+                                                    '&.Mui-disabled': {
+                                                        backgroundColor: initial.auth_gradient_end,
+                                                        color: 'white',
+                                                        cursor: 'not-allowed',
+                                                    },
+                                                }}
                                             >
                                                 {anomalie.valide ? 'Annuler' : 'Valider'}
                                             </Button>
@@ -1221,6 +1669,21 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                 variant="outlined"
                                                 size="small"
                                                 onClick={() => handleCommentAnomaly(anomalie)}
+                                                sx={{
+                                                    ...buttonStyle,
+                                                    backgroundColor: initial.add_new_line_bouton_color,
+                                                    color: 'white',
+                                                    borderColor: initial.add_new_line_bouton_color,
+                                                    '&:hover': {
+                                                        backgroundColor: initial.add_new_line_bouton_color,
+                                                        none: 'none',
+                                                    },
+                                                    '&.Mui-disabled': {
+                                                        backgroundColor: initial.add_new_line_bouton_color,
+                                                        color: 'white',
+                                                        cursor: 'not-allowed',
+                                                    },
+                                                }}
                                             >
                                                 Commenter
                                             </Button>
@@ -1250,8 +1713,8 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                                 <TableCell>{line?.comptegen || line?.compteaux || '-'}</TableCell>
                                                                 <TableCell>{line?.piece || '-'}</TableCell>
                                                                 <TableCell>{line?.libelle || '-'}</TableCell>
-                                                                <TableCell sx={{ textAlign: "right" }}>{line?.debit ? parseFloat(line.debit).toLocaleString("fr-FR") : "-"}</TableCell>
-                                                                <TableCell sx={{ textAlign: "right" }}>{line?.credit ? parseFloat(line.credit).toLocaleString("fr-FR") : "-"}</TableCell>
+                                                                <TableCell sx={{ textAlign: "right" }}>{line?.debit ? formatMontant(line.debit) : "-"}</TableCell>
+                                                                <TableCell sx={{ textAlign: "right" }}>{line?.credit ? formatMontant(line.credit) : "-"}</TableCell>
                                                                 <TableCell>{line?.lettrage || '-'}</TableCell>
                                                                 <TableCell>{line?.analytique || '-'}</TableCell>
                                                                 <TableCell sx={{ textAlign: "center" }}>
@@ -1277,29 +1740,6 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                     )}
                 </Grid>
             </Grid>
-
-            {/* NAVIGATION BUTTONS */}
-            <Box
-                sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 1,
-                    mt: 3,
-                    pt: 2,
-                    borderTop: "1px solid #e0e0e0",
-                }}
-            >
-                <Button variant="outlined" size="small" onClick={handlePrev} disabled={total <= 1}>
-                    {"<"}
-                </Button>
-                <Typography variant="body2" sx={{ mx: 1, color: "#666" }}>
-                    {currentIndex + 1} / {total}
-                </Typography>
-                <Button variant="outlined" size="small" onClick={handleNext} disabled={total <= 1}>
-                    {">"}
-                </Button>
-            </Box>
 
             {/* POPUP DE CONFIRMATION POUR VALIDATION */}
             {confirmPopup.open && (
@@ -1333,12 +1773,49 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                         variant="outlined"
                     />
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCloseCommentDialog} color="primary">
+                <DialogActions sx={{ gap: 0, padding: '8px 24px' }}>
+                    <Button
+                        onClick={handleCloseCommentDialog}
+                        color="primary"
+                        sx={{
+                            ...buttonStyle,
+                            backgroundColor: initial.annuler_bouton_color,
+                            color: 'white',
+                            borderColor: initial.annuler_bouton_color,
+                            '&:hover': {
+                                backgroundColor: initial.annuler_bouton_color,
+                                none: 'none',
+                            },
+                            '&.Mui-disabled': {
+                                backgroundColor: initial.annuler_bouton_color,
+                                color: 'white',
+                                cursor: 'not-allowed',
+                            },
+                        }}
+                    >
                         Annuler
                     </Button>
-                    <Button onClick={handleSaveCommentDialog} color="primary" variant="contained">
-                        Enregistrer
+                    <Button
+                        onClick={handleSaveCommentDialog}
+                        color="primary"
+                        variant="contained"
+                        sx={{
+                            ...buttonStyle,
+                            backgroundColor: initial.auth_gradient_end,
+                            color: 'white',
+                            borderColor: initial.auth_gradient_end,
+                            '&:hover': {
+                                backgroundColor: initial.auth_gradient_end,
+                                border: 'none',
+                            },
+                            '&.Mui-disabled': {
+                                backgroundColor: initial.auth_gradient_end,
+                                color: 'white',
+                                cursor: 'not-allowed',
+                            },
+                        }}
+                    >
+                        Sauvegarder
                     </Button>
                 </DialogActions>
             </Dialog>
