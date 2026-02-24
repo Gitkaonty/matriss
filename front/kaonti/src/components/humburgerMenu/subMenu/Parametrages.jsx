@@ -26,6 +26,12 @@ const comptaList = [
         urldynamic: true
     },
     {
+        text: 'Controles',
+        name: "controles",
+        path: "/tab/parametrages/controles",
+        urldynamic: true
+    },
+    {
         text: 'Devises',
         name: "devises",
         path: "/tab/parametrages/paramDevise",
@@ -48,12 +54,6 @@ const comptaList = [
         name: "planComptableModele",
         path: "/tab/parametrages/paramPlanComptableModele",
         urldynamic: false
-    },
-    {
-        text: 'Controles',
-        name: "controles",
-        path: "/tab/parametrages/controles",
-        urldynamic: true
     },
     {
         text: 'TVA',
