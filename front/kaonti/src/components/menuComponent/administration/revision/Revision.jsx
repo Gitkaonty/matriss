@@ -51,6 +51,9 @@ export default function Revision() {
     // === Popup d'erreur pour anomalies non validées ===
     const [errorPopup, setErrorPopup] = useState({ open: false, message: '' });
 
+    // === Popup pour résultat de révision ===
+    const [reviserPopup, setReviserPopup] = useState({ open: false, message: '', success: true });
+
     // === État de chargement pour les détails ===
     const [detailsLoading, setDetailsLoading] = useState(false);
 
@@ -196,13 +199,25 @@ export default function Revision() {
             if (response.data.state) {
                 console.log('Contrôle global exécuté:', response.data);
                 await fetchControles();
-                alert(`Contrôle terminé! ${response.data.totalEcritures} écritures liées au total.`);
+                setReviserPopup({
+                    open: true,
+                    message: `Contrôle terminé! ${response.data.totalEcritures} écritures liées au total.`,
+                    success: true
+                });
             } else {
-                alert(response.data.message || 'Erreur lors du contrôle');
+                setReviserPopup({
+                    open: true,
+                    message: response.data.message || 'Erreur lors du contrôle',
+                    success: false
+                });
             }
         } catch (error) {
             console.error('Error executing global controle:', error);
-            alert('Erreur lors de l\'exécution du contrôle global');
+            setReviserPopup({
+                open: true,
+                message: 'Erreur lors de l\'exécution du contrôle global',
+                success: false
+            });
         }
     };
 
@@ -392,6 +407,14 @@ export default function Revision() {
                     >
                         Réviser
                     </Button>
+                    {controlesGrouped.length > 0 && (
+                        <Chip
+                            label={`${controlesGrouped.reduce((sum, c) => sum + (c.anomalies || 0), 0)} anomalies`}
+                            color="warning"
+                            size="small"
+                            sx={{ ml: 1 }}
+                        />
+                    )}
                 </Box>
             </Box>
 
@@ -622,6 +645,32 @@ export default function Revision() {
                     <Button
                         variant="contained"
                         onClick={() => setErrorPopup({ open: false, message: '' })}
+                        sx={{ backgroundColor: initial.theme }}
+                    >
+                        OK
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* POPUP DE RÉSULTAT DE RÉVISION */}
+            <Dialog
+                open={reviserPopup.open}
+                onClose={() => setReviserPopup({ open: false, message: '', success: true })}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle sx={{ color: reviserPopup.success ? 'success.main' : 'error.main', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <span>{reviserPopup.success ? '✅' : '❌'}</span> {reviserPopup.success ? 'Contrôle terminé' : 'Erreur'}
+                </DialogTitle>
+                <DialogContent>
+                    <Typography sx={{ mt: 1 }}>
+                        {reviserPopup.message}
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        variant="contained"
+                        onClick={() => setReviserPopup({ open: false, message: '', success: true })}
                         sx={{ backgroundColor: initial.theme }}
                     >
                         OK
