@@ -751,52 +751,44 @@ export default function ConsultationComponent() {
 
     useEffect(() => {
         const fetchData = async () => {
-            // setValSelectedCompte("tout");
+            try {
+                const resData = await getListeSaisieReturn();
+                const comptesAvecSolde = resData.map(row => String(row.compteaux));
 
-            if (filtrageCompte === "0") {
-                setListePlanComptable(listePlanComptableInitiale);
-                setValSelectedCompte("tout");
-            } else {
-                try {
-                    const resData = await getListeSaisieReturn();
-                    const comptesAvecSolde = resData.map(row => String(row.compte));
+                const listePlanComptableFiltree = listePlanComptableInitiale.filter(plan =>
+                    comptesAvecSolde.includes(String(plan.compte))
+                );
 
-                    const listePlanComptableFiltree = listePlanComptableInitiale.filter(plan =>
-                        comptesAvecSolde.includes(String(plan.compte))
-                    );
+                if (filtrageCompte === "1") {
+                    // Comptes mouvementés
+                    setListePlanComptable(listePlanComptableFiltree);
 
-                    if (filtrageCompte === "1") {
-                        // Comptes mouvementés
-                        setListePlanComptable(listePlanComptableFiltree);
+                } else if (filtrageCompte === "2") {
+                    // Comptes soldés
+                    const comptesEquilibres = listePlanComptableFiltree.filter(plan => {
+                        const lignes = resData.filter(row => String(row.compteaux) === String(plan.compte));
+                        const totalDebit = lignes.reduce((sum, row) => sum + (Number(row.debit) || 0), 0);
+                        const totalCredit = lignes.reduce((sum, row) => sum + (Number(row.credit) || 0), 0);
+                        return Math.abs(totalDebit - totalCredit) < 0.01;
+                    });
 
-                    } else if (filtrageCompte === "2") {
-                        // Comptes soldés
-                        const comptesEquilibres = listePlanComptableFiltree.filter(plan => {
-                            const lignes = resData.filter(row => String(row.compte) === String(plan.compte));
-                            const totalDebit = lignes.reduce((sum, row) => sum + (Number(row.debit) || 0), 0);
-                            const totalCredit = lignes.reduce((sum, row) => sum + (Number(row.credit) || 0), 0);
-                            return Math.abs(totalDebit - totalCredit) < 0.01;
-                        });
+                    setListePlanComptable(comptesEquilibres);
 
-                        setListePlanComptable(comptesEquilibres);
+                } else if (filtrageCompte === "3") {
+                    // Comptes non soldés
+                    const comptesDesequilibres = listePlanComptableFiltree.filter(plan => {
+                        const lignes = resData.filter(row => String(row.compteaux) === String(plan.compte));
+                        const totalDebit = lignes.reduce((sum, row) => sum + (Number(row.debit) || 0), 0);
+                        const totalCredit = lignes.reduce((sum, row) => sum + (Number(row.credit) || 0), 0);
+                        return Math.abs(totalDebit - totalCredit) >= 0.01;
+                    });
 
-                    } else if (filtrageCompte === "3") {
-                        // Comptes non soldés
-                        const comptesDesequilibres = listePlanComptableFiltree.filter(plan => {
-                            const lignes = resData.filter(row => String(row.compte) === String(plan.compte));
-                            const totalDebit = lignes.reduce((sum, row) => sum + (Number(row.debit) || 0), 0);
-                            const totalCredit = lignes.reduce((sum, row) => sum + (Number(row.credit) || 0), 0);
-                            return Math.abs(totalDebit - totalCredit) >= 0.01;
-                        });
-
-                        setListePlanComptable(comptesDesequilibres);
-                    }
-                } catch (error) {
-                    console.error("Erreur lors du chargement des écritures :", error);
+                    setListePlanComptable(comptesDesequilibres);
                 }
+            } catch (error) {
+                console.error("Erreur lors du chargement des écritures :", error);
             }
-        };
-
+        }
         if (fileId && compteId) {
             fetchData();
         }
@@ -1092,7 +1084,7 @@ export default function ConsultationComponent() {
                                                 },
                                             }}
                                             onClick={handleOpenPopupAddEcriture}
-                                            // startIcon={<TbPlugConnected size={20} />}
+                                        // startIcon={<TbPlugConnected size={20} />}
                                         >
                                             Créer
                                         </Button>
@@ -1114,7 +1106,7 @@ export default function ConsultationComponent() {
                                                 },
                                             }}
                                             onClick={ajoutLettrage}
-                                            // startIcon={<TbPlugConnected size={20} />}
+                                        // startIcon={<TbPlugConnected size={20} />}
                                         >
                                             Lettrer
                                         </Button>
@@ -1129,7 +1121,7 @@ export default function ConsultationComponent() {
                                                 height: "32px",
                                             }}
                                             onClick={supprimerLettrage}
-                                            // startIcon={<TbPlugConnectedX size={20} />}
+                                        // startIcon={<TbPlugConnectedX size={20} />}
                                         >
                                             Délettrer
                                         </Button>
@@ -1256,7 +1248,7 @@ export default function ConsultationComponent() {
 
                                         const newRowIds = selectedData.map(row => row.id);
                                         setRowSelectionModel(newRowIds);
-                                        
+
                                         const lettrages = selectedData.map(row => row.lettrage);
 
                                         const hasNullLettrage = lettrages.some(l => !l || l.trim() === "");
@@ -1293,7 +1285,7 @@ export default function ConsultationComponent() {
                                         >
                                             {calculateDebitCredit(selectedRows).debit}
                                         </strong>,{" "}
-                                        
+
                                     </span>
                                     <span>
                                         Crédit : <strong
