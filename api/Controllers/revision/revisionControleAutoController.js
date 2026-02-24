@@ -1130,7 +1130,7 @@ exports.executeAll = async (req, res) => {
           const ecartType = parseFloat(row.ecart_type) || 0;
           const seuil = parseFloat(row.seuil) || (moyenne + (K * ecartType));
 
-          const messageAnomalie = `Compte ${compte}: montant ${montant.toFixed(2)} > moyenne ${moyenne.toFixed(2)} + Ecart_Type ${ecartType.toFixed(2)} (seuil ${seuil.toFixed(2)})`;
+          const messageAnomalie = `Compte ${compte}`;
 
           const key = `${row.id}_${controles[0]?.id_controle || 'ATYPIQUE'}`;
           const savedData = anomaliesMap[key] || {};
