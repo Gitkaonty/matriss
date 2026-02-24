@@ -787,10 +787,10 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                                     <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
                                                                     <TableCell sx={{ fontWeight: 600 }}>Pièce</TableCell>
                                                                     <TableCell sx={{ fontWeight: 600 }}>Libellé</TableCell>
-                                                                    <TableCell sx={{ fontWeight: 600 }}>Lettrage</TableCell>
-                                                                    <TableCell sx={{ fontWeight: 600 }}>Analytique</TableCell>
                                                                     <TableCell sx={{ fontWeight: 600, textAlign: "right" }}>Débit</TableCell>
                                                                     <TableCell sx={{ fontWeight: 600, textAlign: "right" }}>Crédit</TableCell>
+                                                                    <TableCell sx={{ fontWeight: 600 }}>Lettrage</TableCell>
+                                                                    <TableCell sx={{ fontWeight: 600 }}>Analytique</TableCell>
                                                                     <TableCell sx={{ fontWeight: 600, textAlign: 'center' }}>Validé</TableCell>
                                                                     <TableCell sx={{ fontWeight: 600 }}>Commentaire</TableCell>
                                                                 </TableRow>
@@ -801,14 +801,14 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                                         <TableCell>{line?.dateecriture ? new Date(line.dateecriture).toLocaleDateString('fr-FR') : '-'}</TableCell>
                                                                         <TableCell>{line?.piece || '-'}</TableCell>
                                                                         <TableCell>{line?.libelle || '-'}</TableCell>
-                                                                        <TableCell>{line?.lettrage || '-'}</TableCell>
-                                                                        <TableCell>{line?.analytique || '-'}</TableCell>
                                                                         <TableCell sx={{ textAlign: "right" }}>
                                                                             {line?.debit ? parseFloat(line.debit).toLocaleString("fr-FR") : "-"}
                                                                         </TableCell>
                                                                         <TableCell sx={{ textAlign: "right" }}>
                                                                             {line?.credit ? parseFloat(line.credit).toLocaleString("fr-FR") : "-"}
                                                                         </TableCell>
+                                                                        <TableCell>{line?.lettrage || '-'}</TableCell>
+                                                                        <TableCell>{line?.analytique || '-'}</TableCell>
                                                                         <TableCell sx={{ textAlign: 'center' }}>
                                                                             <Chip
                                                                                 label={anomalie?.valide ? 'Oui' : 'Non'}
@@ -929,10 +929,10 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                                     <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
                                                                     <TableCell sx={{ fontWeight: 600 }}>Pièce</TableCell>
                                                                     <TableCell sx={{ fontWeight: 600 }}>Libellé</TableCell>
-                                                                    <TableCell sx={{ fontWeight: 600 }}>Lettrage</TableCell>
-                                                                    <TableCell sx={{ fontWeight: 600 }}>Analytique</TableCell>
                                                                     <TableCell sx={{ fontWeight: 600, textAlign: "right" }}>Débit</TableCell>
                                                                     <TableCell sx={{ fontWeight: 600, textAlign: "right" }}>Crédit</TableCell>
+                                                                    <TableCell sx={{ fontWeight: 600 }}>Lettrage</TableCell>
+                                                                    <TableCell sx={{ fontWeight: 600 }}>Analytique</TableCell>
                                                                     <TableCell sx={{ fontWeight: 600, textAlign: 'center' }}>Validé</TableCell>
                                                                     <TableCell sx={{ fontWeight: 600 }}>Commentaire</TableCell>
                                                                 </TableRow>
@@ -943,14 +943,14 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                                         <TableCell>{line?.dateecriture ? new Date(line.dateecriture).toLocaleDateString('fr-FR') : '-'}</TableCell>
                                                                         <TableCell>{line?.piece || '-'}</TableCell>
                                                                         <TableCell>{line?.libelle || '-'}</TableCell>
-                                                                        <TableCell>{line?.lettrage || '-'}</TableCell>
-                                                                        <TableCell>{line?.analytique || '-'}</TableCell>
                                                                         <TableCell sx={{ textAlign: "right" }}>
                                                                             {line?.debit ? parseFloat(line.debit).toLocaleString("fr-FR") : "-"}
                                                                         </TableCell>
                                                                         <TableCell sx={{ textAlign: "right" }}>
                                                                             {line?.credit ? parseFloat(line.credit).toLocaleString("fr-FR") : "-"}
                                                                         </TableCell>
+                                                                        <TableCell>{line?.lettrage || '-'}</TableCell>
+                                                                        <TableCell>{line?.analytique || '-'}</TableCell>
                                                                         <TableCell sx={{ textAlign: 'center' }}>
                                                                             <Chip
                                                                                 label={anomalie?.valide ? 'Oui' : 'Non'}
@@ -1235,10 +1235,10 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                             <TableCell sx={{ fontWeight: 600 }}>Compte</TableCell>
                                                             <TableCell sx={{ fontWeight: 600 }}>Pièce</TableCell>
                                                             <TableCell sx={{ fontWeight: 600 }}>Libellé</TableCell>
-                                                            <TableCell sx={{ fontWeight: 600 }}>Lettrage</TableCell>
-                                                            <TableCell sx={{ fontWeight: 600 }}>Analytique</TableCell>
                                                             <TableCell sx={{ fontWeight: 600, textAlign: "right" }}>Débit</TableCell>
                                                             <TableCell sx={{ fontWeight: 600, textAlign: "right" }}>Crédit</TableCell>
+                                                            <TableCell sx={{ fontWeight: 600 }}>Lettrage</TableCell>
+                                                            <TableCell sx={{ fontWeight: 600 }}>Analytique</TableCell>
                                                             <TableCell sx={{ fontWeight: 600, textAlign: "center" }}>Valider</TableCell>
                                                             <TableCell sx={{ fontWeight: 600 }}>Commentaire</TableCell>
                                                         </TableRow>
@@ -1250,10 +1250,10 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                                 <TableCell>{line?.comptegen || line?.compteaux || '-'}</TableCell>
                                                                 <TableCell>{line?.piece || '-'}</TableCell>
                                                                 <TableCell>{line?.libelle || '-'}</TableCell>
-                                                                <TableCell>{line?.lettrage || '-'}</TableCell>
-                                                                <TableCell>{line?.analytique || '-'}</TableCell>
                                                                 <TableCell sx={{ textAlign: "right" }}>{line?.debit ? parseFloat(line.debit).toLocaleString("fr-FR") : "-"}</TableCell>
                                                                 <TableCell sx={{ textAlign: "right" }}>{line?.credit ? parseFloat(line.credit).toLocaleString("fr-FR") : "-"}</TableCell>
+                                                                <TableCell>{line?.lettrage || '-'}</TableCell>
+                                                                <TableCell>{line?.analytique || '-'}</TableCell>
                                                                 <TableCell sx={{ textAlign: "center" }}>
                                                                     <Chip
                                                                         label={anomalie.valide ? "Oui" : "Non"}

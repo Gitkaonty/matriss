@@ -1,8 +1,6 @@
-import { useCallback, useMemo, useState, useEffect } from 'react';
-import { Badge, Box, Checkbox, IconButton } from '@mui/material';
+import { useCallback, useMemo, useState, useEffect, useRef } from 'react';
+import { Badge, Box, Checkbox, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 import EditNoteIcon from '@mui/icons-material/EditNote';
-import { DataGrid, frFR } from '@mui/x-data-grid';
-import { DataGridStyle } from '../../componentsTools/DatagridToolsStyle';
 import { init } from '../../../../init';
 import useAxiosPrivate from '../../../hooks/useAxiosPrivate';
 import PopupCommentaireAnalytique from './PopupCommentaireAnalytique';
@@ -10,12 +8,34 @@ import PopupCommentaireAnalytique from './PopupCommentaireAnalytique';
 export default function RevuAnalytiqueMensuelle({ compteId, dossierId, exerciceId }) {
     let initial = init[0];
     const axiosPrivate = useAxiosPrivate();
-    
+
     const [popupOpen, setPopupOpen] = useState(false);
     const [selectedRow, setSelectedRow] = useState(null);
     const [rows, setRows] = useState([]);
     const [loading, setLoading] = useState(false);
     const [moisColumns, setMoisColumns] = useState([]);
+    const scrollContainerRef = useRef(null);
+
+    const handleToggleAnomalie = useCallback(
+        async (row, checked) => {
+            try {
+                await axiosPrivate.post('/commentaireAnalytiqueMensuelle/addOrUpdate', {
+                    id_compte: compteId,
+                    id_exercice: exerciceId,
+                    id_dossier: dossierId,
+                    compte: row.compte,
+                    commentaire: row.commentaire || '',
+                    valide_anomalie: row.valide_anomalie,
+                    anomalies: checked,
+                });
+
+                setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, anomalies: checked } : r)));
+            } catch (error) {
+                console.error('Erreur lors de la mise à jour anomalie:', error);
+            }
+        },
+        [axiosPrivate, compteId, dossierId, exerciceId]
+    );
 
     const handleToggleValide = useCallback(
         async (row, checked) => {
@@ -27,6 +47,7 @@ export default function RevuAnalytiqueMensuelle({ compteId, dossierId, exerciceI
                     compte: row.compte,
                     commentaire: row.commentaire || '',
                     valide_anomalie: checked,
+                    anomalies: row.anomalies,
                 });
 
                 setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, valide_anomalie: checked } : r)));
@@ -37,19 +58,25 @@ export default function RevuAnalytiqueMensuelle({ compteId, dossierId, exerciceI
         [axiosPrivate, compteId, dossierId, exerciceId]
     );
 
-    // Colonnes de base fixes
+    // Colonnes de base fixes (Compte + Libelle avec classes CSS sticky)
     const baseColumns = [
         {
             field: 'compte',
             headerName: 'Compte',
-            flex: 0.8,
-            minWidth: 100,
+            width: 100,
+            sortable: false,
+            disableColumnMenu: true,
+            headerClassName: 'sticky-header-col-0',
+            cellClassName: 'sticky-cell-col-0',
         },
         {
             field: 'libelle',
-            headerName: 'Libelle',
-            flex: 1.5,
-            minWidth: 180,
+            headerName: 'Libellé',
+            width: 180,
+            sortable: false,
+            disableColumnMenu: true,
+            headerClassName: 'sticky-header-col-1',
+            cellClassName: 'sticky-cell-col-1',
         }
     ];
 
@@ -59,10 +86,11 @@ export default function RevuAnalytiqueMensuelle({ compteId, dossierId, exerciceI
             field: mois.nom,
             headerName: mois.nomAffiche,
             type: 'number',
-            flex: 1,
-            minWidth: 120,
+            width: 110,
             align: 'right',
             headerAlign: 'right',
+            sortable: false,
+            disableColumnMenu: true,
             renderCell: (params) => (
                 <Box
                     sx={{
@@ -88,10 +116,11 @@ export default function RevuAnalytiqueMensuelle({ compteId, dossierId, exerciceI
                 field: 'total_exercice',
                 headerName: 'Total',
                 type: 'number',
-                flex: 1.2,
-                minWidth: 140,
+                width: 130,
                 align: 'right',
                 headerAlign: 'right',
+                sortable: false,
+                disableColumnMenu: true,
                 renderCell: (params) => (
                     <Box
                         sx={{
@@ -108,20 +137,19 @@ export default function RevuAnalytiqueMensuelle({ compteId, dossierId, exerciceI
             {
                 field: 'anomalies',
                 headerName: 'Anomalies',
-                flex: 0.6,
-                minWidth: 90,
+                width: 90,
                 sortable: false,
-                filterable: false,
                 disableColumnMenu: true,
                 renderCell: (params) => (
                     <Checkbox
                         size="small"
                         checked={!!params.value}
-                        disabled
+                        onChange={(e) => handleToggleAnomalie(params.row, e.target.checked)}
                         sx={{
-                            '&.Mui-disabled': {
-                                color: params.value ? 'orange' : 'green'
-                            }
+                            color: params.value ? 'orange' : 'green',
+                            '&.Mui-checked': {
+                                color: 'orange',
+                            },
                         }}
                     />
                 ),
@@ -129,10 +157,8 @@ export default function RevuAnalytiqueMensuelle({ compteId, dossierId, exerciceI
             {
                 field: 'valide_anomalie',
                 headerName: 'Validé',
-                flex: 0.6,
-                minWidth: 90,
+                width: 70,
                 sortable: false,
-                filterable: false,
                 disableColumnMenu: true,
                 renderCell: (params) => (
                     <Checkbox
@@ -145,8 +171,9 @@ export default function RevuAnalytiqueMensuelle({ compteId, dossierId, exerciceI
             {
                 field: 'commentaire',
                 headerName: 'Commentaire',
-                flex: 2,
-                minWidth: 240,
+                width: 240,
+                sortable: false,
+                disableColumnMenu: true,
                 renderCell: (params) => (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
                         <Badge
@@ -191,7 +218,7 @@ export default function RevuAnalytiqueMensuelle({ compteId, dossierId, exerciceI
             },
         ];
         return finalColumns;
-    }, [compteId, dossierId, exerciceId, handleToggleValide, monthColumns]);
+    }, [monthColumns, compteId, dossierId, exerciceId, handleToggleValide, handleToggleAnomalie]);
 
     useEffect(() => {
         const fetchRevuAnalytiqueMensuelle = async () => {
@@ -204,11 +231,8 @@ export default function RevuAnalytiqueMensuelle({ compteId, dossierId, exerciceI
                 }
 
                 const response = await axiosPrivate.get(`/dashboard/revuAnalytiqueMensuelle/${compteId}/${dossierId}/${exerciceId}`);
-                
+
                 if (response.data.state) {
-                    console.log('[RevuAnalytiqueMensuelle] Données reçues:', response.data);
-                    console.log('[RevuAnalytiqueMensuelle] Colonnes mois:', response.data.moisColumns);
-                    
                     setRows(response.data.data);
                     setMoisColumns(response.data.moisColumns || []);
                 }
@@ -239,62 +263,240 @@ export default function RevuAnalytiqueMensuelle({ compteId, dossierId, exerciceI
         );
     };
 
+    // Styles pour les colonnes sticky
+    const stickyCol0Style = {
+        position: 'sticky',
+        left: 0,
+        zIndex: 3,
+        borderRight: '1px solid #e0e0e0',
+        minWidth: 100,
+        maxWidth: 100,
+    };
+
+    const stickyCol1Style = {
+        position: 'sticky',
+        left: 100,
+        zIndex: 3,
+        borderRight: '1px solid #e0e0e0',
+        minWidth: 300,
+        maxWidth: 300,
+        width: 300,
+    };
+
+    const stickyHeaderStyle = {
+        position: 'sticky',
+        top: 0,
+        zIndex: 4,
+        backgroundColor: initial.tableau_theme,
+        color: initial.text_theme,
+        fontWeight: 600,
+        fontSize: '12px',
+    };
+
+    const headerCellStyle = {
+        ...stickyHeaderStyle,
+        padding: '2px 8px',
+        height: 18,
+    };
+
+    const cellStyle = {
+        padding: '2px 8px',
+        height: 18,
+        fontSize: '12px',
+    };
+
     return (
         <Box sx={{ width: '100%', height: '60vh' }}>
-            <DataGrid
-                localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
-                rows={rows}
-                columns={columns}
-                loading={loading}
-                disableRowSelectionOnClick
-                rowHeight={35}
-                columnHeaderHeight={35}
+            <TableContainer
+                component={Paper}
+                ref={scrollContainerRef}
                 sx={{
-                    ...DataGridStyle.sx,
                     height: '100%',
-                    '& .MuiDataGrid-columnHeaders': {
-                        backgroundColor: initial.tableau_theme,
-                        color: initial.text_theme,
-                        minHeight: 35,
-                        maxHeight: 35,
+                    overflow: 'auto',
+                    '&::-webkit-scrollbar': {
+                        height: 8,
+                        width: 8,
                     },
-                    '& .MuiDataGrid-columnHeader': {
-                        minHeight: 35,
-                        maxHeight: 35,
-                        lineHeight: '35px',
-                    },
-                    '& .MuiDataGrid-columnHeaderTitleContainer': {
-                        minHeight: 35,
-                        maxHeight: 35,
-                    },
-                    '& .MuiDataGrid-columnHeaderTitle': {
-                        color: initial.text_theme,
-                        fontWeight: 600,
-                    },
-                    '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
-                        color: initial.text_theme,
-                    },
-                    '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
-                        outline: 'none',
-                        border: 'none',
-                    },
-                    '& .MuiDataGrid-row': {
-                        minHeight: 35,
-                        maxHeight: 35,
+                    '&::-webkit-scrollbar-thumb': {
+                        backgroundColor: '#bdbdbd',
+                        borderRadius: 4,
                     },
                 }}
-                initialState={{
-                    pagination: {
-                        paginationModel: { page: 0, pageSize: 25 },
-                    },
-                }}
-                pageSizeOptions={[25, 50, 100]}
-                processRowUpdate={(newRow) => {
-                    setRows((prev) => prev.map((r) => (r.id === newRow.id ? newRow : r)));
-                    return newRow;
-                }}
-            />
-            
+            >
+                <Table
+                    stickyHeader
+                    size="small"
+                    sx={{
+                        tableLayout: 'fixed',
+                        minWidth: 280 + moisColumns.length * 110 + 530,
+
+                        '& .MuiTableCell-root': {
+                            padding: '2px 6px',
+                            fontSize: '11px',
+                            lineHeight: 1.2,
+                            borderBottom: 'none',
+                        },
+
+                        '& .MuiTableHead .MuiTableCell-root': {
+                            height: 35,
+                        },
+
+                        '& .MuiTableBody .MuiTableCell-root': {
+                            height: 35,
+                        },
+
+                        '& .MuiTableRow-root': {
+                            height: 35,
+                        },
+                        '& .MuiTableBody .MuiTableRow-root:nth-of-type(odd)': {
+                            backgroundColor: '#f5f5f5',
+                        },
+
+                        '& .MuiTableBody .MuiTableRow-root:nth-of-type(even)': {
+                            backgroundColor: '#ffffff',
+                        },
+
+                    }}
+                >
+                    <TableHead>
+                        <TableRow>
+                            {/* Colonnes fixes */}
+                            <TableCell sx={{ ...headerCellStyle, ...stickyCol0Style, zIndex: 5, backgroundColor: initial.tableau_theme }}>Compte</TableCell>
+                            <TableCell sx={{ ...headerCellStyle, ...stickyCol1Style, zIndex: 5, backgroundColor: initial.tableau_theme }}>Libellé</TableCell>
+
+                            {/* Colonnes mois */}
+                            {moisColumns.map((mois) => (
+                                <TableCell
+                                    key={mois.nom}
+                                    align="right"
+                                    sx={{ ...headerCellStyle, minWidth: 110, maxWidth: 110 }}
+                                >
+                                    {mois.nomAffiche}
+                                </TableCell>
+                            ))}
+
+                            {/* Autres colonnes */}
+                            <TableCell align="right" sx={{ ...headerCellStyle, minWidth: 130, maxWidth: 130 }}>Total</TableCell>
+                            <TableCell align="center" sx={{ ...headerCellStyle, minWidth: 90, maxWidth: 90 }}>Anomalies</TableCell>
+                            <TableCell align="center" sx={{ ...headerCellStyle, minWidth: 70, maxWidth: 70 }}>Validé</TableCell>
+                            <TableCell sx={{ ...headerCellStyle, minWidth: 240, maxWidth: 240 }}>Commentaire</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {rows.map((row, index) => (
+                            <TableRow key={row.id} hover>
+                                {/* Colonnes fixes */}
+                                <TableCell sx={{ ...cellStyle, ...stickyCol0Style, backgroundColor: index % 2 === 0 ? '#ffffff' : '#f5f5f5' }}>{row.compte}</TableCell>
+                                <TableCell sx={{ ...cellStyle, ...stickyCol1Style, backgroundColor: index % 2 === 0 ? '#ffffff' : '#f5f5f5' }}>{row.libelle}</TableCell>
+
+                                {/* Colonnes mois */}
+                                {moisColumns.map((mois) => {
+                                    const value = row[mois.nom];
+                                    return (
+                                        <TableCell
+                                            key={mois.nom}
+                                            align="right"
+                                            sx={{
+                                                ...cellStyle,
+                                                minWidth: 110,
+                                                maxWidth: 110,
+                                                backgroundColor: index % 2 === 0 ? '#ffffff' : '#f5f5f5',
+                                                color: value > 0 ? 'blue' : value < 0 ? 'red' : 'inherit',
+                                                fontWeight: value !== 0 ? 500 : 400,
+                                            }}
+                                        >
+                                            {value?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}
+                                        </TableCell>
+                                    );
+                                })}
+
+                                {/* Total */}
+                                <TableCell
+                                    align="right"
+                                    sx={{
+                                        ...cellStyle,
+                                        minWidth: 130,
+                                        maxWidth: 130,
+                                        backgroundColor: index % 2 === 0 ? '#ffffff' : '#f5f5f5',
+                                        color: row.total_exercice > 0 ? 'blue' : row.total_exercice < 0 ? 'red' : 'inherit',
+                                        fontWeight: row.total_exercice !== 0 ? 500 : 400,
+                                    }}
+                                >
+                                    {row.total_exercice?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}
+                                </TableCell>
+
+                                {/* Anomalies */}
+                                <TableCell align="center" sx={{ ...cellStyle, minWidth: 90, maxWidth: 90, backgroundColor: index % 2 === 0 ? '#ffffff' : '#f5f5f5' }}>
+                                    <Checkbox
+                                        size="small"
+                                        checked={!!row.anomalies}
+                                        onChange={(e) => handleToggleAnomalie(row, e.target.checked)}
+                                        sx={{
+                                            color: row.anomalies ? 'orange' : 'green',
+                                            '&.Mui-checked': {
+                                                color: 'orange',
+                                            },
+                                        }}
+                                    />
+                                </TableCell>
+
+                                {/* Validé */}
+                                <TableCell align="center" sx={{ ...cellStyle, minWidth: 70, maxWidth: 70, backgroundColor: index % 2 === 0 ? '#ffffff' : '#f5f5f5' }}>
+                                    <Checkbox
+                                        size="small"
+                                        checked={!!row.valide_anomalie}
+                                        onChange={(e) => handleToggleValide(row, e.target.checked)}
+                                    />
+                                </TableCell>
+
+                                {/* Commentaire */}
+                                <TableCell sx={{ ...cellStyle, minWidth: 240, maxWidth: 240, backgroundColor: index % 2 === 0 ? '#ffffff' : '#f5f5f5' }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <Badge
+                                            variant={row.commentaire && String(row.commentaire).trim() ? 'dot' : 'standard'}
+                                            color="success"
+                                            overlap="circular"
+                                        >
+                                            <IconButton
+                                                size="small"
+                                                sx={{
+                                                    backgroundColor: 'primary.main',
+                                                    color: 'white',
+                                                    '&:hover': {
+                                                        backgroundColor: 'primary.dark',
+                                                    }
+                                                }}
+                                                onClick={() => {
+                                                    setSelectedRow({
+                                                        ...row,
+                                                        id_compte: compteId,
+                                                        id_exercice: exerciceId,
+                                                        id_dossier: dossierId,
+                                                    });
+                                                    setPopupOpen(true);
+                                                }}
+                                            >
+                                                <EditNoteIcon fontSize="small" />
+                                            </IconButton>
+                                        </Badge>
+                                        <Box
+                                            sx={{
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap',
+                                                flex: 1,
+                                            }}
+                                        >
+                                            {row.commentaire || ''}
+                                        </Box>
+                                    </Box>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+
             <PopupCommentaireAnalytique
                 open={popupOpen}
                 onClose={() => setPopupOpen(false)}

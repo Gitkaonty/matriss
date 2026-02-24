@@ -11,13 +11,16 @@ import {
     Box,
     Typography
 } from '@mui/material';
+import { init } from '../../../../init';
 import useAxiosPrivate from '../../../hooks/useAxiosPrivate';
+
 
 const PopupCommentaireAnalytique = ({ open, onClose, compteData, onSave, apiBasePath = '/commentaireAnalytique' }) => {
     const axiosPrivate = useAxiosPrivate();
     const [commentaire, setCommentaire] = useState('');
     const [valideAnomalie, setValideAnomalie] = useState(false);
     const [loading, setLoading] = useState(false);
+    const initial = init[0];
 
     useEffect(() => {
         const fetchExisting = async () => {
@@ -76,6 +79,33 @@ const PopupCommentaireAnalytique = ({ open, onClose, compteData, onSave, apiBase
         setValideAnomalie(false);
         onClose();
     };
+    const buttonStyle = {
+        minWidth: 120,
+        height: 32,
+        px: 2,
+        textTransform: 'none',
+        fontSize: '0.85rem',
+        borderRadius: '6px',
+        boxShadow: 'none',
+        '& .MuiTouchRipple-root': {
+            display: 'none',
+        },
+        '&:focus': {
+            outline: 'none',
+        },
+        '&.Mui-focusVisible': {
+            outline: 'none',
+            boxShadow: 'none',
+        },
+        '&:hover': {
+            boxShadow: 'none',
+            backgroundColor: 'action.hover',
+            border: 'none',
+        },
+        '&.Mui-disabled': {
+            opacity: 0.4
+        },
+    };
 
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
@@ -111,16 +141,47 @@ const PopupCommentaireAnalytique = ({ open, onClose, compteData, onSave, apiBase
                 </Box>
             </DialogContent>
             <DialogActions>
-                <Button onClick={handleClose} color="secondary">
+                <Button onClick={handleClose} color="secondary"
+                    sx={{
+                        ...buttonStyle,
+                        backgroundColor: initial.annuler_bouton_color,
+                        color: 'white',
+                        borderColor: initial.annuler_bouton_color,
+                        '&:hover': {
+                            backgroundColor: initial.annuler_bouton_color,
+                            none: 'none',
+                        },
+                        '&.Mui-disabled': {
+                            backgroundColor: initial.annuler_bouton_color,
+                            color: 'white',
+                            cursor: 'not-allowed',
+                        },
+                    }}
+                >
                     Annuler
                 </Button>
-                <Button 
-                    onClick={handleSave} 
-                    variant="contained" 
+                <Button
+                    onClick={handleSave}
+                    variant="contained"
                     color="primary"
                     disabled={loading}
+                    sx={{
+                        ...buttonStyle,
+                        backgroundColor: initial.auth_gradient_end,
+                        color: 'white',
+                        borderColor: initial.auth_gradient_end,
+                        '&:hover': {
+                            backgroundColor: initial.auth_gradient_end,
+                            border: 'none',
+                        },
+                        '&.Mui-disabled': {
+                            backgroundColor: initial.auth_gradient_end,
+                            color: 'white',
+                            cursor: 'not-allowed',
+                        },
+                    }}
                 >
-                    {loading ? 'Enregistrement...' : 'Enregistrer'}
+                    Sauvegarder
                 </Button>
             </DialogActions>
         </Dialog>
@@ -128,3 +189,4 @@ const PopupCommentaireAnalytique = ({ open, onClose, compteData, onSave, apiBase
 };
 
 export default PopupCommentaireAnalytique;
+

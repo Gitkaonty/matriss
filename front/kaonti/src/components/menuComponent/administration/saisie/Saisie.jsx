@@ -373,11 +373,6 @@ export default function SaisieComponent() {
 
     //afficher ou non le popup du saisie
     const handleOpenSaisiePopup = (type) => {
-        const defaultDeviseData = listeDevise.find(val => val.par_defaut === true);
-        if (!defaultDeviseData) {
-            return toast.error('Veuillez sélectionner une devise par défaut dans le paramétrage CRM de ce dossier')
-        }
-
         if (type === 'modification' && selectedRows.length > 0) {
             const selectedJournalId = selectedRows[0].id_journal;
             const codeJournal = listeCodeJournaux.find(cj => cj.id === selectedJournalId);

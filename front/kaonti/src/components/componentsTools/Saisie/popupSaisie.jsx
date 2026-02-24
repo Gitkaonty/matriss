@@ -94,7 +94,7 @@ const PopupSaisie = ({
 
     const defaultDeviseData = listeDevise.find(val => val.par_defaut === true);
 
-    const defaultDevise = defaultDeviseData.code === 'MGA' ? 'MGA' : 'Devises';
+    const defaultDevise = defaultDeviseData?.code === 'EUR' ? 'EUR' : 'Devises';
 
     const axiosPrivate = useAxiosPrivate();
 
