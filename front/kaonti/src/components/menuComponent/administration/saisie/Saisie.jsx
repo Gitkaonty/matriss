@@ -894,16 +894,16 @@ export default function SaisieComponent() {
                                                             onChange={(e, value) => {
                                                                 formSaisieRecherche.setFieldValue('compte', value);
                                                             }}
-                                                            // renderOption={(props, option) => (
-                                                            //     <li {...props}>
-                                                            //         <span>
-                                                            //             {option.compte} - {option.libelle}{' '}
-                                                            //             <span style={{ color: '#1976d2', fontWeight: 600, fontSize: 14 }}>
-                                                            //                 ({option.dossier})
-                                                            //             </span>
-                                                            //         </span>
-                                                            //     </li>
-                                                            // )}
+                                                            renderOption={(props, option) => (
+                                                                <li {...props}>
+                                                                    <span>
+                                                                        {option.compte} - {option.libelle}{' '}
+                                                                        {/* <span style={{ color: '#1976d2', fontWeight: 600, fontSize: 14 }}>
+                                                                            ({option.dossier})
+                                                                        </span> */}
+                                                                    </span>
+                                                                </li>
+                                                            )}
                                                             renderInput={(params) => (
                                                                 <TextField
                                                                     {...params}

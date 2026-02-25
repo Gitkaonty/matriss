@@ -505,7 +505,8 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
       anomalies: item.anomalies,
       details: item.details,
       Valider: item.Valider,
-      Commentaire: item.Commentaire
+      Commentaire: item.Commentaire,
+      paramUn: item.paramUn
     });
   });
 }

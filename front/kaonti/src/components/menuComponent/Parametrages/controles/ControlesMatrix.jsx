@@ -20,10 +20,11 @@ import {
   TableRow,
   Switch,
 } from '@mui/material';
-import { Delete, Add } from '@mui/icons-material';
+import { Delete, Add, Edit } from '@mui/icons-material';
 import useAxiosPrivate from '../../../../hooks/useAxiosPrivate';
 import axios from '../../../../../config/axios';
 import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFile';
+import PopupActionConfirm from '../../../componentsTools/popupActionConfirm';
 
 export default function ControlesMatrix() {
   const axiosPrivate = useAxiosPrivate();
@@ -39,6 +40,10 @@ export default function ControlesMatrix() {
   const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
   const [editingMatrix, setEditingMatrix] = useState(null);
+
+  // Popup de confirmation pour Activer/Désactiver
+  const [confirmTogglePopup, setConfirmTogglePopup] = useState({ open: false, matrix: null, action: '' });
+  const [confirmToggleLoading, setConfirmToggleLoading] = useState(false);
 
   const GetInfosIdDossier = (id) => {
     axios.get(`/home/FileInfos/${id}`).then((response) => {
@@ -112,7 +117,8 @@ export default function ControlesMatrix() {
     anomalies: '',
     details: '',
     Valider: false,
-    Commentaire: ''
+    Commentaire: '',
+    paramUn: ''
   });
 
   const handleOpenDialog = (matrix = null) => {
@@ -127,7 +133,8 @@ export default function ControlesMatrix() {
         anomalies: matrix.anomalies || '',
         details: matrix.details || '',
         Valider: matrix.Valider || false,
-        Commentaire: matrix.Commentaire || ''
+        Commentaire: matrix.Commentaire || '',
+        paramUn: matrix.paramUn || ''
       });
     } else {
       setFormData({
@@ -139,7 +146,8 @@ export default function ControlesMatrix() {
         anomalies: '',
         details: '',
         Valider: false,
-        Commentaire: ''
+        Commentaire: '',
+        paramUn: ''
       });
     }
     setOpenDialog(true);
@@ -154,16 +162,20 @@ export default function ControlesMatrix() {
     try {
       const payload = { ...formData };
 
-      if (editingMatrix) {
-        await axiosPrivate.put(`/param/revisionControleMatrix/${editingMatrix.id}`, payload);
-      } else {
-        await axiosPrivate.post('/param/revisionControleMatrix', payload);
-      }
+      console.log('Editing matrix ID:', editingMatrix?.id);
+      console.log('Editing matrix id_controle:', editingMatrix?.id_controle);
+      console.log('Payload to send:', payload);
+
+      // Utiliser le même endpoint POST pour l'ajout et la modification
+      // Le backend gère automatiquement la mise à jour si id_controle existe
+      console.log('Sending to addOrUpdate endpoint:', payload);
+      await axiosPrivate.post('/param/revisionControleMatrix', payload);
 
       fetchMatrices();
       handleCloseDialog();
     } catch (error) {
       console.error('Error saving controle matrix:', error);
+      alert('Erreur lors de la sauvegarde: ' + (error.response?.data?.message || error.message));
     }
   };
 
@@ -178,15 +190,32 @@ export default function ControlesMatrix() {
     }
   };
 
-  const handleValidationToggle = async (matrix) => {
+  const handleValidationToggleClick = (matrix) => {
+    setConfirmTogglePopup({ 
+      open: true, 
+      matrix, 
+      action: matrix.Valider ? 'desactiver' : 'activer' 
+    });
+  };
+
+  const handleConfirmToggle = async (confirmed) => {
+    if (!confirmed || !confirmTogglePopup.matrix) {
+      setConfirmTogglePopup({ open: false, matrix: null, action: '' });
+      return;
+    }
+
+    setConfirmToggleLoading(true);
     try {
-      await axiosPrivate.put(`/param/revisionControleMatrix/validation/${matrix.id}`, {
-        Valider: !matrix.Valider,
-        Commentaire: matrix.Commentaire
+      await axiosPrivate.put(`/param/revisionControleMatrix/validation/${confirmTogglePopup.matrix.id}`, {
+        Valider: !confirmTogglePopup.matrix.Valider,
+        Commentaire: confirmTogglePopup.matrix.Commentaire
       });
       fetchMatrices();
     } catch (error) {
       console.error('Error updating validation:', error);
+    } finally {
+      setConfirmToggleLoading(false);
+      setConfirmTogglePopup({ open: false, matrix: null, action: '' });
     }
   };
   return (
@@ -200,6 +229,15 @@ export default function ControlesMatrix() {
           :
           null
       }
+      {confirmTogglePopup.open && (
+        <PopupActionConfirm
+          msg={confirmTogglePopup.action === 'activer' 
+            ? `Voulez-vous activer cette matrice de contrôle ?` 
+            : `Voulez-vous désactiver cette matrice de contrôle ?`}
+          confirmationState={handleConfirmToggle}
+          isLoading={confirmToggleLoading}
+        />
+      )}
       <Box sx={{ p: 2, height: '100vh', backgroundColor: '#f5f5f5' }}>
         {/* Header */}
         <Box sx={{
@@ -245,8 +283,11 @@ export default function ControlesMatrix() {
                   <TableCell sx={{ fontWeight: 600, py: 0.5, width: '500px' }}>
                     description
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 600, py: 0.5, width: '500px' }}>
+                  <TableCell sx={{ fontWeight: 600, color: '#495057', py: 0.5, width: '500px' }}>
                     anomalies
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: '#495057', py: 0.5, width: '300px' }}>
+                    paramUn
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, color: '#495057', py: 0.5, width: '100px' }}>activé</TableCell>
                   <TableCell sx={{ fontWeight: 600, color: '#495057', py: 0.5, width: '100px' }}>actions</TableCell>
@@ -278,6 +319,11 @@ export default function ControlesMatrix() {
                       </Box>
                     </TableCell>
                     <TableCell sx={{ py: 0.5 }}>
+                      <Box sx={{ maxHeight: '30px', overflow: 'auto', fontSize: '13px', pr: 1 }}>
+                        {matrix.paramUn !== null && matrix.paramUn !== undefined ? matrix.paramUn.toString() : '-'}
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ py: 0.5 }}>
                       <Chip
                         label={matrix.Valider ? 'oui' : 'non'}
                         color={matrix.Valider ? 'success' : 'default'}
@@ -291,22 +337,21 @@ export default function ControlesMatrix() {
                           color="success"
                           variant="contained"
                           size="small"
-                          // startIcon={<Check />}
-                          onClick={() => handleValidationToggle(matrix)}
+                          onClick={() => handleValidationToggleClick(matrix)}
                           sx={{ height: '25px', borderRadius: '1px', textTransform: 'none' }}
                         >
-                          {matrix.Valider ? 'Invalider' : 'Valider'}
+                          {matrix.Valider ? 'Désactiver' : 'Activer'}
                         </Button>
-                        {/* <Button
+                        <Button
                           color="primary"
                           variant="contained"
                           size="small"
-                          startIcon={<Edit />}
+                          // startIcon={<Edit />}
                           onClick={() => handleOpenDialog(matrix)}
                           sx={{ height: '25px', borderRadius: '1px', textTransform: 'none' }}
                         >
-                          modifier
-                        </Button> */}
+                          Modifier
+                        </Button>
                         <Button
                           color="error"
                           variant="contained"
@@ -342,6 +387,7 @@ export default function ControlesMatrix() {
                 { label: "description :", name: "description" },
                 { label: "anomalies :", name: "anomalies" },
                 { label: "détails", name: "details" },
+                { label: "paramUn :", name: "paramUn", type: "number" },
                 { label: "commentaire", name: "Commentaire" },
               ].map((field) => (
 
@@ -367,6 +413,7 @@ export default function ControlesMatrix() {
                       setFormData({ ...formData, [field.name]: e.target.value })
                     }
                     disabled={field.disabled}
+                    type={field.type || "text"}
                     size="small"
                     sx={{
                       width: "350px",

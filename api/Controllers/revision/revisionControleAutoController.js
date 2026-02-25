@@ -1075,90 +1075,103 @@ exports.executeAll = async (req, res) => {
         console.log('Nombre de contrôles ATYPIQUE:', controles.length);
         console.log('IDs des contrôles:', controles.map(c => c.id_controle));
         
-        const K = 3;
-        console.log('DEBUG ATYPIQUE - Mode exercice courant (stats par compte, en une requête)');
-
-        // Une seule requête: montant par ligne + stats (moyenne, écart-type) par compte (comptegen)
-        // Puis filtre des lignes atypiques: montant > moyenne + K*écart_type
-        const atypiqueQuery = `
-          WITH base AS (
+        // Traiter chaque contrôle individuellement avec son propre paramUn
+        for (const controle of controles) {
+          // Lire K depuis la matrice
+          const kQuery = `
             SELECT
-              j.id,
-              j.id_ecriture,
-              j.dateecriture,
-              j.comptegen,
-              j.compteaux,
-              j.piece,
-              j.libelle,
-              COALESCE(j.debit, 0)::numeric AS debit,
-              COALESCE(j.credit, 0)::numeric AS credit,
-              (COALESCE(j.debit, 0)::numeric + COALESCE(j.credit, 0)::numeric) AS montant
-            FROM journals j
-            WHERE j.id_compte = ${id_compte}
-              AND j.id_dossier = ${id_dossier}
-              AND j.id_exercice = ${id_exercice}
-              ${dateCondition}
-              AND j.comptegen IS NOT NULL
-          ), stats AS (
-            SELECT
-              comptegen,
-              AVG(montant) AS moyenne,
-              STDDEV_POP(montant) AS ecart_type
-            FROM base
-            GROUP BY comptegen
-          )
-          SELECT
-            b.*,
-            s.moyenne,
-            s.ecart_type,
-            (s.moyenne + (${K} * s.ecart_type)) AS seuil
-          FROM base b
-          JOIN stats s ON s.comptegen = b.comptegen
-          WHERE s.ecart_type IS NOT NULL
-            AND s.ecart_type > 0
-            AND (b.montant - s.moyenne - (${K} * s.ecart_type)) > 0
-          ORDER BY b.comptegen ASC, b.dateecriture ASC, b.id ASC
-        `;
-
-        const rows = await db.sequelize.query(atypiqueQuery, { type: db.Sequelize.QueryTypes.SELECT });
-        console.log(`DEBUG ATYPIQUE - Lignes atypiques trouvées: ${rows.length}`);
-
-        for (const row of rows) {
-          const compte = row.comptegen;
-          const montant = parseFloat(row.montant) || 0;
-          const moyenne = parseFloat(row.moyenne) || 0;
-          const ecartType = parseFloat(row.ecart_type) || 0;
-          const seuil = parseFloat(row.seuil) || (moyenne + (K * ecartType));
-
-          const messageAnomalie = `Compte ${compte}`;
-
-          const key = `${row.id}_${controles[0]?.id_controle || 'ATYPIQUE'}`;
-          const savedData = anomaliesMap[key] || {};
-
-          anomaliesDetectees.push({
-            controleId: controles[0]?.id,
-            idEcriture: row.id_ecriture,
-            idJournalLine: row.id,
-            compte,
-            montant,
-            moyenne,
-            ecartType,
-            seuil,
-            message: messageAnomalie
-          });
-
-          const insertQuery = `
-            INSERT INTO table_controle_anomalies (
-              id_compte, id_dossier, id_exercice, id_jnl, "codeCtrl", id_controle, message,
-              valide, commentaire, id_periode, "createdAt", "updatedAt"
-            ) VALUES (
-              ${id_compte}, ${id_dossier}, ${id_exercice}, '${row.id}', '${type}',
-              '${controles[0]?.id_controle || 'ATYPIQUE'}', '${messageAnomalie.replace(/'/g, "''")}',
-              ${savedData.valide || false}, '${(savedData.commentaire || '').replace(/'/g, "''")}', ${savedData.id_periode || idPeriode || 'NULL'}, NOW(), NOW()
-            )
-            ON CONFLICT (id_compte, id_dossier, id_exercice, id_jnl, id_controle) DO NOTHING
+              COALESCE(
+                (SELECT rcm."paramUn" FROM revisions_controles_matrices rcm WHERE rcm.id_controle = '${controle.id_controle}' LIMIT 1),
+                (SELECT trc."paramUn" FROM table_revisions_controles trc WHERE trc.id = ${controle.id} LIMIT 1)
+              ) AS "paramUn"
           `;
-          await db.sequelize.query(insertQuery, { type: db.Sequelize.QueryTypes.INSERT });
+          const kRows = await db.sequelize.query(kQuery, { type: db.Sequelize.QueryTypes.SELECT });
+          const paramUnDb = kRows?.[0]?.paramUn;
+          const K = (paramUnDb === null || paramUnDb === undefined || paramUnDb === '') ? 3 : Number(paramUnDb);
+          console.log(`DEBUG ATYPIQUE - Contrôle ${controle.id_controle} avec K=${K} (paramUn lu: ${paramUnDb})`);
+          
+          // Requête pour ce contrôle spécifique avec son K
+          const atypiqueQuery = `
+            WITH base AS (
+              SELECT
+                j.id,
+                j.id_ecriture,
+                j.dateecriture,
+                j.comptegen,
+                j.compteaux,
+                j.piece,
+                j.libelle,
+                COALESCE(j.debit, 0)::numeric AS debit,
+                COALESCE(j.credit, 0)::numeric AS credit,
+                (COALESCE(j.debit, 0)::numeric + COALESCE(j.credit, 0)::numeric) AS montant
+              FROM journals j
+              WHERE j.id_compte = ${id_compte}
+                AND j.id_dossier = ${id_dossier}
+                AND j.id_exercice = ${id_exercice}
+                ${dateCondition}
+                AND j.comptegen IS NOT NULL
+            ), stats AS (
+              SELECT
+                comptegen,
+                AVG(montant) AS moyenne,
+                STDDEV_POP(montant) AS ecart_type
+              FROM base
+              GROUP BY comptegen
+            )
+            SELECT
+              b.*,
+              s.moyenne,
+              s.ecart_type,
+              (s.moyenne + (${K} * s.ecart_type)) AS seuil
+            FROM base b
+            JOIN stats s ON s.comptegen = b.comptegen
+            WHERE s.ecart_type IS NOT NULL
+              AND s.ecart_type > 0
+              AND (b.montant - s.moyenne - (${K} * s.ecart_type)) > 0
+            ORDER BY b.comptegen ASC, b.dateecriture ASC, b.id ASC
+          `;
+
+          const rows = await db.sequelize.query(atypiqueQuery, { type: db.Sequelize.QueryTypes.SELECT });
+          console.log(`DEBUG ATYPIQUE - Contrôle ${controle.id_controle}: ${rows.length} lignes atypiques trouvées`);
+
+          for (const row of rows) {
+            const compte = row.comptegen;
+            const montant = parseFloat(row.montant) || 0;
+            const moyenne = parseFloat(row.moyenne) || 0;
+            const ecartType = parseFloat(row.ecart_type) || 0;
+            const seuil = parseFloat(row.seuil) || (moyenne + (K * ecartType));
+
+            const messageAnomalie = `Compte ${compte} (K=${K})`;
+
+            const key = `${row.id}_${controle.id_controle}`;
+            const savedData = anomaliesMap[key] || {};
+
+            anomaliesDetectees.push({
+              controleId: controle.id,
+              idEcriture: row.id_ecriture,
+              idJournalLine: row.id,
+              compte,
+              montant,
+              moyenne,
+              ecartType,
+              seuil,
+              k: K, // Ajouter le K utilisé pour info
+              message: messageAnomalie
+            });
+
+            const insertQuery = `
+              INSERT INTO table_controle_anomalies (
+                id_compte, id_dossier, id_exercice, id_jnl, "codeCtrl", id_controle, message,
+                valide, commentaire, id_periode, "createdAt", "updatedAt"
+              ) VALUES (
+                ${id_compte}, ${id_dossier}, ${id_exercice}, '${row.id}', '${type}',
+                '${controle.id_controle}', '${messageAnomalie.replace(/'/g, "''")}',
+                ${savedData.valide || false}, '${(savedData.commentaire || '').replace(/'/g, "''")}', ${savedData.id_periode || idPeriode || 'NULL'}, NOW(), NOW()
+              )
+              ON CONFLICT (id_compte, id_dossier, id_exercice, id_jnl, id_controle) DO NOTHING
+            `;
+            await db.sequelize.query(insertQuery, { type: db.Sequelize.QueryTypes.INSERT });
+          }
         }
 
         // Mettre à jour les contrôles
@@ -1173,6 +1186,7 @@ exports.executeAll = async (req, res) => {
                 moyenne: a.moyenne,
                 ecartType: a.ecartType,
                 seuil: a.seuil,
+                k: a.k, // Afficher le K utilisé
                 message: a.message
               }))).replace(/'/g, "''")
             : JSON.stringify([{ message: 'Pas d\'anomalie atypique détectée' }]).replace(/'/g, "''");
@@ -1186,7 +1200,7 @@ exports.executeAll = async (req, res) => {
           await db.sequelize.query(updateQuery, { type: db.Sequelize.QueryTypes.UPDATE });
         }
 
-        console.log('DEBUG ATYPIQUE -', anomaliesDetectees.length, 'anomalies détectées');
+        console.log('DEBUG ATYPIQUE -', anomaliesDetectees.length, 'anomalies détectées au total');
       }
 
       resultsByType[type] = {
