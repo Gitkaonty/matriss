@@ -35,7 +35,8 @@ exports.addOrUpdateControleMatrix = async (req, res) => {
       anomalies,
       details,
       Valider,
-      Commentaire
+      Commentaire,
+      paramUn
     } = req.body;
 
     // Validation des données requises
@@ -56,7 +57,8 @@ exports.addOrUpdateControleMatrix = async (req, res) => {
       anomalies: anomalies ? anomalies.toString().trim() : null,
       details: details ? details.toString().trim() : null,
       Valider: Boolean(Valider),
-      Commentaire: Commentaire ? Commentaire.toString().trim() : null
+      Commentaire: Commentaire ? Commentaire.toString().trim() : null,
+      paramUn: paramUn ? parseInt(paramUn) : null
     };
 
     console.log('Creating/updating controle matrix with data:', cleanedData);
@@ -71,6 +73,23 @@ exports.addOrUpdateControleMatrix = async (req, res) => {
     if (!created) {
       // Mise à jour si la matrice existe déjà
       await matrix.update(cleanedData);
+    }
+
+    // Synchroniser paramUn vers les contrôles existants (table_revisions_controles)
+    // Important: on met à jour toutes les lignes liées à l'id_controle, pour éviter les cas
+    // où la lecture en exécution (réviser) voit encore paramUn=null.
+    if (cleanedData.paramUn !== null && cleanedData.paramUn !== undefined) {
+      const [updatedCount] = await db.revisionControle.update(
+        { paramUn: cleanedData.paramUn },
+        {
+          where: {
+            id_controle: cleanedData.id_controle
+          }
+        }
+      );
+      console.log(
+        `Synchronisé paramUn=${cleanedData.paramUn} pour id_controle=${cleanedData.id_controle} (lignes mises à jour: ${updatedCount})`
+      );
     }
 
     res.json({

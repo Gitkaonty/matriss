@@ -52,6 +52,11 @@ module.exports = (sequelize) => {
       validate: {
         isIn: [['ligne', 'ecriture']]
       }
+    },
+    paramUn: {
+      type: DataTypes.BIGINT,
+      allowNull: true,
+      field: 'paramUn'
     }
   }, {
     tableName: 'revisions_controles_matrices',

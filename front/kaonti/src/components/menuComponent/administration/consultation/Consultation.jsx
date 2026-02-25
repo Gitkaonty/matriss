@@ -1008,16 +1008,16 @@ export default function ConsultationComponent() {
                                                 onChange={(event, newValue) => {
                                                     setValSelectedCompte(newValue?.id || null);
                                                 }}
-                                                // renderOption={(props, option) => (
-                                                //     <li {...props}>
-                                                //         <span>
-                                                //             {option.compte} - {option.libelle}{' '}
-                                                //             <span style={{ color: '#1976d2', fontWeight: 600, fontSize: 14 }}>
-                                                //                 ({option.dossier})
-                                                //             </span>
-                                                //         </span>
-                                                //     </li>
-                                                // )}
+                                                renderOption={(props, option) => (
+                                                    <li {...props}>
+                                                        <span>
+                                                            {option.compte} - {option.libelle}{' '}
+                                                            {/* <span style={{ color: '#1976d2', fontWeight: 600, fontSize: 14 }}>
+                                                                ({option.dossier})
+                                                            </span> */}
+                                                        </span>
+                                                    </li>
+                                                )}
                                                 options={listePlanComptable}
                                                 getOptionLabel={(option) => `${option.compte || ''} - ${option.libelle || ''}`}
                                                 renderInput={(params) => <TextField {...params} label="" placeholder="Sélectionner un compte" variant="standard" />}
