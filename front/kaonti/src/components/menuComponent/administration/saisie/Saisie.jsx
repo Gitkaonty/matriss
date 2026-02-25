@@ -225,16 +225,16 @@ export default function SaisieComponent() {
 
     //Header
     const SaisieColumnHeader = [
-        {
-            field: 'dossier',
-            headerName: 'Dossier',
-            type: 'string',
-            sortable: true,
-            flex: 0.6,
-            headerAlign: 'left',
-            align: 'left',
-            headerClassName: 'HeaderbackColor',
-        },
+        // {
+        //     field: 'dossier',
+        //     headerName: 'Dossier',
+        //     type: 'string',
+        //     sortable: true,
+        //     flex: 0.6,
+        //     headerAlign: 'left',
+        //     align: 'left',
+        //     headerClassName: 'HeaderbackColor',
+        // },
         {
             field: 'dateecriture',
             headerName: 'Date',
@@ -894,16 +894,16 @@ export default function SaisieComponent() {
                                                             onChange={(e, value) => {
                                                                 formSaisieRecherche.setFieldValue('compte', value);
                                                             }}
-                                                            renderOption={(props, option) => (
-                                                                <li {...props}>
-                                                                    <span>
-                                                                        {option.compte} - {option.libelle}{' '}
-                                                                        <span style={{ color: '#1976d2', fontWeight: 600, fontSize: 14 }}>
-                                                                            ({option.dossier})
-                                                                        </span>
-                                                                    </span>
-                                                                </li>
-                                                            )}
+                                                            // renderOption={(props, option) => (
+                                                            //     <li {...props}>
+                                                            //         <span>
+                                                            //             {option.compte} - {option.libelle}{' '}
+                                                            //             <span style={{ color: '#1976d2', fontWeight: 600, fontSize: 14 }}>
+                                                            //                 ({option.dossier})
+                                                            //             </span>
+                                                            //         </span>
+                                                            //     </li>
+                                                            // )}
                                                             renderInput={(params) => (
                                                                 <TextField
                                                                     {...params}
