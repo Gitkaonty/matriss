@@ -193,7 +193,7 @@ export default function AddNewFile({ confirmationState }) {
         immo_amort_base_jours: '365',
         portefeuille: [],
         typecomptabilite: 'Français',
-        devisepardefaut: 'MGA',
+        devisepardefaut: 'EUR',
         consolidation: false,
         listeConsolidation: [],
         pays: '',
@@ -1838,7 +1838,7 @@ export default function AddNewFile({ confirmationState }) {
                                                                 value={values.devisepardefaut}
                                                                 onChange={(e) => setFieldValue("devisepardefaut", e.target.value)}
                                                             >
-                                                                <FormControlLabel value="MGA" control={<Radio />} label="MGA" />
+                                                                <FormControlLabel value="EUR" control={<Radio />} label="EUR" />
                                                                 <FormControlLabel value="Autres" control={<Radio />} label="Autres" />
                                                             </RadioGroup>
                                                             <ErrorMessage name='devisepardefaut' component="div" style={{ color: 'red', fontSize: 12, marginTop: -2 }} />
