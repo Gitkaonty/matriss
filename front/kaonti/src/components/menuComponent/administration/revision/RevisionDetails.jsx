@@ -320,27 +320,124 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
         setConfirmPopup({ open: true, anomalie, action: anomalie.valide ? 'annuler' : 'valider' });
     };
 
+    // Validation groupée pour ATYPIQUE - valider toutes les anomalies du compte courant
+    const handleValidateAllAtypiqueForCompte = () => {
+        if (!atypiqueCurrentData || !atypiqueCurrentData.anomalies || atypiqueCurrentData.anomalies.length === 0) return;
+        
+        // Ouvrir popup de confirmation pour validation groupée
+        setConfirmPopup({ 
+            open: true, 
+            anomalie: null, 
+            action: 'valider_tout_le_compte',
+            compte: atypiqueCurrentCompte,
+            anomalies: atypiqueCurrentData.anomalies
+        });
+    };
+
+    // Annulation groupée pour ATYPIQUE - annuler toutes les validations du compte courant
+    const handleCancelAllAtypiqueForCompte = () => {
+        if (!atypiqueCurrentData || !atypiqueCurrentData.anomalies || atypiqueCurrentData.anomalies.length === 0) return;
+        
+        // Ouvrir popup de confirmation pour annulation groupée
+        setConfirmPopup({ 
+            open: true, 
+            anomalie: null, 
+            action: 'annuler_tout_le_compte',
+            compte: atypiqueCurrentCompte,
+            anomalies: atypiqueCurrentData.anomalies
+        });
+    };
+
     const handleConfirmValidation = async (confirmed) => {
-        if (!confirmed || !confirmPopup.anomalie) {
+        if (!confirmed) {
             setConfirmPopup({ open: false, anomalie: null, action: null });
             return;
         }
 
+        // Validation groupée pour ATYPIQUE (tout le compte)
+        if (confirmPopup.action === 'valider_tout_le_compte') {
+            setConfirmLoading(true);
+            isValidatingRef.current = true;
+            try {
+                const anomaliesToValidate = confirmPopup.anomalies.filter(a => !a.valide);
+                if (anomaliesToValidate.length === 0) {
+                    alert('Toutes les anomalies de ce compte sont déjà validées');
+                    return;
+                }
+                
+                // Valider toutes les anomalies non validées du compte
+                await Promise.all(
+                    anomaliesToValidate.map(anomaly => 
+                        updateAnomaly(anomaly.id, { valide: true })
+                    )
+                );
+                
+                // Rafraîchir la liste des contrôles dans le parent
+                if (onValidationChange) {
+                    await onValidationChange();
+                }
+            } catch (error) {
+                console.error('Error validating all anomalies for compte:', error);
+                alert('Erreur lors de la validation groupée');
+            } finally {
+                setConfirmLoading(false);
+                setConfirmPopup({ open: false, anomalie: null, action: null });
+                isValidatingRef.current = false;
+            }
+            return;
+        }
+
+        // Annulation groupée pour ATYPIQUE (tout le compte)
+        if (confirmPopup.action === 'annuler_tout_le_compte') {
+            setConfirmLoading(true);
+            isValidatingRef.current = true;
+            try {
+                const anomaliesToCancel = confirmPopup.anomalies.filter(a => a.valide);
+                if (anomaliesToCancel.length === 0) {
+                    alert('Aucune anomalie validée à annuler pour ce compte');
+                    return;
+                }
+                
+                // Annuler toutes les anomalies validées du compte
+                await Promise.all(
+                    anomaliesToCancel.map(anomaly => 
+                        updateAnomaly(anomaly.id, { valide: false })
+                    )
+                );
+                
+                // Rafraîchir la liste des contrôles dans le parent
+                if (onValidationChange) {
+                    await onValidationChange();
+                }
+            } catch (error) {
+                console.error('Error cancelling all validations for compte:', error);
+                alert('Erreur lors de l\'annulation groupée');
+            } finally {
+                setConfirmLoading(false);
+                setConfirmPopup({ open: false, anomalie: null, action: null });
+                isValidatingRef.current = false;
+            }
+            return;
+        }
+
+        // Validation simple (une seule anomalie)
+        if (!confirmPopup.anomalie) {
+            setConfirmPopup({ open: false, anomalie: null, action: null });
+            return;
+        }
+        
         setConfirmLoading(true);
-        isValidatingRef.current = true; // Marquer qu'on est en train de valider
+        isValidatingRef.current = true;
         try {
-            console.log('DEBUG - Validation avant:', confirmPopup.anomalie);
             await updateAnomaly(confirmPopup.anomalie.id, { valide: !confirmPopup.anomalie.valide });
-            console.log('DEBUG - Validation après updateAnomaly');
             // Rafraîchir la liste des contrôles dans le parent
             if (onValidationChange) {
-                console.log('DEBUG - Appel onValidationChange');
-                await onValidationChange(); // Attendre que le parent finisse
+                await onValidationChange();
             }
         } finally {
             setConfirmLoading(false);
             setConfirmPopup({ open: false, anomalie: null, action: null });
-            isValidatingRef.current = false; // Reset le flag
+            isValidatingRef.current = false;
         }
     };
 
@@ -839,7 +936,32 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                         </Button>
                                     </Box>
                                 )}
-                            {/* Navigation IMMO - SUPPRIMÉE : on affiche par écriture, pas par compte */}
+                            {/* Navigation compte IMMO */}
+                            {currentItem?.Type && String(currentItem.Type).toUpperCase().includes('IMMO') && immobComptesList.length > 1 && (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mx: 'auto' }}>
+                                    <Button
+                                        variant="outlined"
+                                        size="small"
+                                        disabled={immobSafeCompteIndex === 0}
+                                        onClick={() => setImmobCompteIndex((prev) => Math.max(0, prev - 1))}
+                                        sx={{ minWidth: '30px', px: 0.5, fontSize: '0.75rem' }}
+                                    >
+                                        {"<"}
+                                    </Button>
+                                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#1976d2', whiteSpace: 'nowrap' }}>
+                                        Compte {immobCurrentCompte} ({immobSafeCompteIndex + 1} / {immobComptesList.length})
+                                    </Typography>
+                                    <Button
+                                        variant="outlined"
+                                        size="small"
+                                        disabled={immobSafeCompteIndex === immobComptesList.length - 1}
+                                        onClick={() => setImmobCompteIndex((prev) => Math.min(immobComptesList.length - 1, prev + 1))}
+                                        sx={{ minWidth: '30px', px: 0.5, fontSize: '0.75rem' }}
+                                    >
+                                        {">"}
+                                    </Button>
+                                </Box>
+                            )}
                         </Box>
                     </Box>
 
@@ -1400,115 +1522,135 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                 <Alert severity="success">Aucune anomalie de TVA détectée</Alert>
                             )
                         ) : (currentItem?.Type && String(currentItem.Type).toUpperCase().includes('IMMO')) ? (
-                            // Mode IMMO (IMMOB, IMMO_CHARGE, etc.) - Afficher une seule anomalie par compte
+                            // Mode IMMO (IMMOB, IMMO_CHARGE, etc.) - Afficher une seule anomalie par compte avec navigation
                             anomalies.length > 0 ? (
                                 <Box sx={{ maxHeight: 400, overflowY: 'auto' }}>
                                     {(() => {
-                                        // Trouver l'anomalie du compte courant
+                                        // Récupérer toutes les anomalies pour le compte courant
                                         const currentCompte = immobComptesList[immobSafeCompteIndex];
-                                        const currentAnomaly = anomalies.find(a =>
+                                        const currentAnomalies = anomalies.filter(a =>
                                             a.compteNum === currentCompte ||
-                                            a.journalLines?.[0]?.comptegen === currentCompte
+                                            a.journalLines?.[0]?.comptegen === currentCompte ||
+                                            a.compte === currentCompte
                                         );
 
-                                        if (!currentAnomaly) return <Alert severity="info">Aucune anomalie pour le compte {currentCompte}</Alert>;
+                                        if (currentAnomalies.length === 0) return <Alert severity="info">Aucune anomalie pour le compte {currentCompte}</Alert>;
 
                                         return (
                                             <Box>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                                                    <Alert severity="warning" sx={{ flex: 1, fontSize: '0.9rem' }}>
-                                                        {currentAnomaly.message || 'Anomalie'}
-                                                    </Alert>
-                                                    <Button
-                                                        variant="contained"
-                                                        size="small"
-                                                        onClick={() => handleToggleValidateAnomaly(currentAnomaly)}
-                                                        sx={{
-                                                            ...buttonStyle,
-                                                            backgroundColor: initial.auth_gradient_end,
-                                                            color: 'white',
-                                                            borderColor: initial.auth_gradient_end,
-                                                            '&:hover': {
-                                                                backgroundColor: initial.auth_gradient_end,
-                                                                none: 'none',
-                                                            },
-                                                            '&.Mui-disabled': {
-                                                                backgroundColor: initial.auth_gradient_end,
-                                                                color: 'white',
-                                                                cursor: 'not-allowed',
-                                                            },
-                                                        }}
-                                                    >
-                                                        {currentAnomaly.valide ? 'Annuler' : 'Valider'}
-                                                    </Button>
-                                                    <Button
-                                                        variant="outlined"
-                                                        size="small"
-                                                        onClick={() => handleCommentAnomaly(currentAnomaly)}
-                                                        sx={{
-                                                            ...buttonStyle,
-                                                            backgroundColor: initial.add_new_line_bouton_color,
-                                                            color: 'white',
-                                                            borderColor: initial.add_new_line_bouton_color,
-                                                            '&:hover': {
-                                                                backgroundColor: initial.add_new_line_bouton_color,
-                                                                none: 'none',
-                                                            },
-                                                            '&.Mui-disabled': {
-                                                                backgroundColor: initial.add_new_line_bouton_color,
-                                                                color: 'white',
-                                                                cursor: 'not-allowed',
-                                                            },
-                                                        }}
-                                                    >
-                                                        Commenter
-                                                    </Button>
-                                                </Box>
-
-                                                {/* Tableau des lignes de l'anomalie courante */}
-                                                {currentAnomaly.journalLines?.length > 0 ? (
-                                                    <TableContainer component={Paper} variant="outlined">
-                                                        <Table size="small">
-                                                            <TableHead>
-                                                                <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                                                                    <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
-                                                                    <TableCell sx={{ fontWeight: 600 }}>Compte</TableCell>
-                                                                    <TableCell sx={{ fontWeight: 600 }}>Pièce</TableCell>
-                                                                    <TableCell sx={{ fontWeight: 600 }}>Libellé</TableCell>
-                                                                    <TableCell sx={{ fontWeight: 600, textAlign: "right" }}>Débit</TableCell>
-                                                                    <TableCell sx={{ fontWeight: 600, textAlign: "right" }}>Crédit</TableCell>
-                                                                    <TableCell sx={{ fontWeight: 600, textAlign: "center" }}>Validé</TableCell>
-                                                                    <TableCell sx={{ fontWeight: 600 }}>Commentaire</TableCell>
-                                                                </TableRow>
-                                                            </TableHead>
-                                                            <TableBody>
-                                                                {currentAnomaly.journalLines.map((line, lineIdx) => (
-                                                                    <TableRow key={line?.id || lineIdx} hover>
-                                                                        <TableCell>{line?.dateecriture ? new Date(line.dateecriture).toLocaleDateString('fr-FR') : '-'}</TableCell>
-                                                                        <TableCell>{line?.comptegen || line?.compteaux || '-'}</TableCell>
-                                                                        <TableCell>{line?.piece || '-'}</TableCell>
-                                                                        <TableCell>{line?.libelle || '-'}</TableCell>
-                                                                        <TableCell sx={{ textAlign: "right" }}>{line?.debit ? formatMontant(line.debit) : "-"}</TableCell>
-                                                                        <TableCell sx={{ textAlign: "right" }}>{line?.credit ? formatMontant(line.credit) : "-"}</TableCell>
-                                                                        <TableCell sx={{ textAlign: "center" }}>
-                                                                            {lineIdx === 0 && (
-                                                                                <Chip
-                                                                                    label={currentAnomaly.valide ? "Oui" : "Non"}
-                                                                                    color={currentAnomaly.valide ? "success" : "error"}
-                                                                                    size="small"
-                                                                                    sx={{ fontWeight: 600 }}
-                                                                                />
-                                                                            )}
-                                                                        </TableCell>
-                                                                        <TableCell>{lineIdx === 0 ? (currentAnomaly.commentaire || '-') : ''}</TableCell>
-                                                                    </TableRow>
-                                                                ))}
-                                                            </TableBody>
-                                                        </Table>
-                                                    </TableContainer>
-                                                ) : (
-                                                    <Alert severity="info">Aucune ligne pour ce compte</Alert>
+                                                {/* Navigation entre anomalies du même compte */}
+                                                {currentAnomalies.length > 1 && (
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, p: 1, bgcolor: '#e3f2fd', borderRadius: 1 }}>
+                                                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#1976d2' }}>
+                                                            Anomalies pour le compte {currentCompte}:
+                                                        </Typography>
+                                                        <Chip 
+                                                            size="small" 
+                                                            label={`${currentAnomalies.length} anomalies`} 
+                                                            color="primary"
+                                                        />
+                                                    </Box>
                                                 )}
+                                                
+                                                {/* Afficher chaque anomalie du compte */}
+                                                {currentAnomalies.map((currentAnomaly, idx) => (
+                                                    <Box key={currentAnomaly.id || idx} sx={{ mb: 3 }}>
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                                                            <Alert severity="warning" sx={{ flex: 1, fontSize: '0.9rem' }}>
+                                                                {currentAnomaly.message || 'Anomalie'}
+                                                            </Alert>
+                                                            <Button
+                                                                variant="contained"
+                                                                size="small"
+                                                                onClick={() => handleToggleValidateAnomaly(currentAnomaly)}
+                                                                sx={{
+                                                                    ...buttonStyle,
+                                                                    backgroundColor: initial.auth_gradient_end,
+                                                                    color: 'white',
+                                                                    borderColor: initial.auth_gradient_end,
+                                                                    '&:hover': {
+                                                                        backgroundColor: initial.auth_gradient_end,
+                                                                        none: 'none',
+                                                                    },
+                                                                    '&.Mui-disabled': {
+                                                                        backgroundColor: initial.auth_gradient_end,
+                                                                        color: 'white',
+                                                                        cursor: 'not-allowed',
+                                                                    },
+                                                                }}
+                                                            >
+                                                                {currentAnomaly.valide ? 'Annuler' : 'Valider'}
+                                                            </Button>
+                                                            <Button
+                                                                variant="outlined"
+                                                                size="small"
+                                                                onClick={() => handleCommentAnomaly(currentAnomaly)}
+                                                                sx={{
+                                                                    ...buttonStyle,
+                                                                    backgroundColor: initial.add_new_line_bouton_color,
+                                                                    color: 'white',
+                                                                    borderColor: initial.add_new_line_bouton_color,
+                                                                    '&:hover': {
+                                                                        backgroundColor: initial.add_new_line_bouton_color,
+                                                                        none: 'none',
+                                                                    },
+                                                                    '&.Mui-disabled': {
+                                                                        backgroundColor: initial.add_new_line_bouton_color,
+                                                                        color: 'white',
+                                                                        cursor: 'not-allowed',
+                                                                    },
+                                                                }}
+                                                            >
+                                                                Commenter
+                                                            </Button>
+                                                        </Box>
+
+                                                        {/* Tableau des lignes de l'anomalie courante */}
+                                                        {currentAnomaly.journalLines?.length > 0 ? (
+                                                            <TableContainer component={Paper} variant="outlined">
+                                                                <Table size="small">
+                                                                    <TableHead>
+                                                                        <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                                                                            <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
+                                                                            <TableCell sx={{ fontWeight: 600 }}>Compte</TableCell>
+                                                                            <TableCell sx={{ fontWeight: 600 }}>Pièce</TableCell>
+                                                                            <TableCell sx={{ fontWeight: 600 }}>Libellé</TableCell>
+                                                                            <TableCell sx={{ fontWeight: 600, textAlign: "right" }}>Débit</TableCell>
+                                                                            <TableCell sx={{ fontWeight: 600, textAlign: "right" }}>Crédit</TableCell>
+                                                                            <TableCell sx={{ fontWeight: 600, textAlign: "center" }}>Validé</TableCell>
+                                                                            <TableCell sx={{ fontWeight: 600 }}>Commentaire</TableCell>
+                                                                        </TableRow>
+                                                                    </TableHead>
+                                                                    <TableBody>
+                                                                        {currentAnomaly.journalLines.map((line, lineIdx) => (
+                                                                            <TableRow key={line?.id || lineIdx} hover>
+                                                                                <TableCell>{line?.dateecriture ? new Date(line.dateecriture).toLocaleDateString('fr-FR') : '-'}</TableCell>
+                                                                                <TableCell>{line?.comptegen || line?.compteaux || '-'}</TableCell>
+                                                                                <TableCell>{line?.piece || '-'}</TableCell>
+                                                                                <TableCell>{line?.libelle || '-'}</TableCell>
+                                                                                <TableCell sx={{ textAlign: "right" }}>{line?.debit ? formatMontant(line.debit) : "-"}</TableCell>
+                                                                                <TableCell sx={{ textAlign: "right" }}>{line?.credit ? formatMontant(line.credit) : "-"}</TableCell>
+                                                                                <TableCell sx={{ textAlign: "center" }}>
+                                                                                    {lineIdx === 0 && (
+                                                                                        <Chip
+                                                                                            label={currentAnomaly.valide ? "Oui" : "Non"}
+                                                                                            color={currentAnomaly.valide ? "success" : "error"}
+                                                                                            size="small"
+                                                                                            sx={{ fontWeight: 600 }}
+                                                                                        />
+                                                                                    )}
+                                                                                </TableCell>
+                                                                                <TableCell>{lineIdx === 0 ? (currentAnomaly.commentaire || '-') : ''}</TableCell>
+                                                                            </TableRow>
+                                                                        ))}
+                                                                    </TableBody>
+                                                                </Table>
+                                                            </TableContainer>
+                                                        ) : (
+                                                            <Alert severity="info">Aucune ligne pour cette anomalie</Alert>
+                                                        )}
+                                                    </Box>
+                                                ))}
                                             </Box>
                                         );
                                     })()}
@@ -1530,7 +1672,7 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                         <Alert severity="warning" sx={{ flex: 1, fontSize: '0.85rem', py: 0.5 }}>
                                                             {globalAnomaly.message || `Anomalie atypique (${atypiqueCurrentData.anomalies.length})`}
                                                         </Alert>
-                                                        <Button
+                                                        {/* <Button
                                                             variant="contained"
                                                             size="small"
                                                             onClick={() => handleToggleValidateAnomaly(globalAnomaly)}
@@ -1551,6 +1693,28 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                             }}
                                                         >
                                                             {globalAnomaly.valide ? 'Annuler' : 'Valider'}
+                                                        </Button> */}
+                                                        <Button
+                                                            variant="contained"
+                                                            size="small"
+                                                            onClick={() => {
+                                                                const allValidated = atypiqueCurrentData.anomalies.every(a => a.valide);
+                                                                if (allValidated) {
+                                                                    handleCancelAllAtypiqueForCompte();
+                                                                } else {
+                                                                    handleValidateAllAtypiqueForCompte();
+                                                                }
+                                                            }}
+                                                            sx={{
+                                                                ...buttonStyle,
+                                                                backgroundColor: atypiqueCurrentData.anomalies.every(a => a.valide) ? '#d32f2f' : '#ff9800',
+                                                                color: 'white',
+                                                                '&:hover': {
+                                                                    backgroundColor: atypiqueCurrentData.anomalies.every(a => a.valide) ? '#b71c1c' : '#f57c00',
+                                                                },
+                                                            }}
+                                                        >
+                                                            {atypiqueCurrentData.anomalies.every(a => a.valide) ? 'Annuler tout' : 'Valider tout'}
                                                         </Button>
                                                         <Button
                                                             variant="outlined"
@@ -1742,11 +1906,15 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
             </Grid>
 
             {/* POPUP DE CONFIRMATION POUR VALIDATION */}
-            {confirmPopup.open && (
+            {(confirmPopup.open || confirmPopup.action) && (
                 <PopupActionConfirm
-                    msg={confirmPopup.action === 'valider'
-                        ? `Voulez-vous valider cette anomalie ?`
-                        : `Voulez-vous annuler la validation de cette anomalie ?`}
+                    msg={confirmPopup.action === 'valider_tout_le_compte'
+                        ? `Voulez-vous valider toutes les anomalies du compte ${confirmPopup.compte} ?`
+                        : confirmPopup.action === 'annuler_tout_le_compte'
+                            ? `Voulez-vous annuler toutes les validations du compte ${confirmPopup.compte} ?`
+                            : confirmPopup.action === 'valider'
+                                ? `Voulez-vous valider cette anomalie ?`
+                                : `Voulez-vous annuler la validation de cette anomalie ?`}
                     confirmationState={handleConfirmValidation}
                     isLoading={confirmLoading}
                 />
