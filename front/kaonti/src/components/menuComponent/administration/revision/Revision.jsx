@@ -54,6 +54,9 @@ export default function Revision() {
     // === Popup pour résultat de révision ===
     const [reviserPopup, setReviserPopup] = useState({ open: false, message: '', success: true });
 
+    const [confirmReviserPopup, setConfirmReviserPopup] = useState(false);
+    const [confirmReviserLoading, setConfirmReviserLoading] = useState(false);
+
     // === État de chargement pour les détails ===
     const [detailsLoading, setDetailsLoading] = useState(false);
 
@@ -177,15 +180,15 @@ export default function Revision() {
         return byType;
     }, [controles]);
 
-    const handleControler = async () => {
+    const executeControler = async () => {
         if (!selectedExerciceId) return;
 
         const { id_compte, id_dossier, id_exercice } = getIds();
 
+        setConfirmReviserLoading(true);
         try {
             let url = `/administration/revisionControleAuto/${id_compte}/${id_dossier}/${id_exercice}/executeAll`;
 
-            // Ajouter les dates de période si sélectionnée
             if (selectedPeriodeDates) {
                 const params = new URLSearchParams();
                 params.append('date_debut', selectedPeriodeDates.date_debut);
@@ -218,7 +221,24 @@ export default function Revision() {
                 message: 'Erreur lors de l\'exécution du contrôle global',
                 success: false
             });
+        } finally {
+            setConfirmReviserLoading(false);
         }
+    };
+
+    const handleControler = () => {
+        if (!selectedExerciceId) return;
+        setConfirmReviserPopup(true);
+    };
+
+    const handleConfirmReviser = async (confirmed) => {
+        if (!confirmed) {
+            setConfirmReviserPopup(false);
+            return;
+        }
+
+        await executeControler();
+        setConfirmReviserPopup(false);
     };
 
     const handleToggleValidateType = async (type, nextValider) => {
@@ -326,6 +346,13 @@ export default function Revision() {
 
     return (
         <Box sx={{ p: 2, height: '100vh', backgroundColor: '#f5f5f5' }}>
+            {confirmReviserPopup && (
+                <PopupActionConfirm
+                    msg="Confirmer l'exécution de la révision ?"
+                    confirmationState={handleConfirmReviser}
+                    isLoading={confirmReviserLoading}
+                />
+            )}
             <Box
                 sx={{
                     mb: 3,

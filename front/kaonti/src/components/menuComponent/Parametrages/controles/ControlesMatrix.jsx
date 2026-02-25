@@ -24,6 +24,7 @@ import { Delete, Add, Edit } from '@mui/icons-material';
 import useAxiosPrivate from '../../../../hooks/useAxiosPrivate';
 import axios from '../../../../../config/axios';
 import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFile';
+import PopupActionConfirm from '../../../componentsTools/popupActionConfirm';
 
 export default function ControlesMatrix() {
   const axiosPrivate = useAxiosPrivate();
@@ -39,6 +40,10 @@ export default function ControlesMatrix() {
   const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
   const [editingMatrix, setEditingMatrix] = useState(null);
+
+  // Popup de confirmation pour Activer/Désactiver
+  const [confirmTogglePopup, setConfirmTogglePopup] = useState({ open: false, matrix: null, action: '' });
+  const [confirmToggleLoading, setConfirmToggleLoading] = useState(false);
 
   const GetInfosIdDossier = (id) => {
     axios.get(`/home/FileInfos/${id}`).then((response) => {
@@ -185,15 +190,32 @@ export default function ControlesMatrix() {
     }
   };
 
-  const handleValidationToggle = async (matrix) => {
+  const handleValidationToggleClick = (matrix) => {
+    setConfirmTogglePopup({ 
+      open: true, 
+      matrix, 
+      action: matrix.Valider ? 'desactiver' : 'activer' 
+    });
+  };
+
+  const handleConfirmToggle = async (confirmed) => {
+    if (!confirmed || !confirmTogglePopup.matrix) {
+      setConfirmTogglePopup({ open: false, matrix: null, action: '' });
+      return;
+    }
+
+    setConfirmToggleLoading(true);
     try {
-      await axiosPrivate.put(`/param/revisionControleMatrix/validation/${matrix.id}`, {
-        Valider: !matrix.Valider,
-        Commentaire: matrix.Commentaire
+      await axiosPrivate.put(`/param/revisionControleMatrix/validation/${confirmTogglePopup.matrix.id}`, {
+        Valider: !confirmTogglePopup.matrix.Valider,
+        Commentaire: confirmTogglePopup.matrix.Commentaire
       });
       fetchMatrices();
     } catch (error) {
       console.error('Error updating validation:', error);
+    } finally {
+      setConfirmToggleLoading(false);
+      setConfirmTogglePopup({ open: false, matrix: null, action: '' });
     }
   };
   return (
@@ -207,6 +229,15 @@ export default function ControlesMatrix() {
           :
           null
       }
+      {confirmTogglePopup.open && (
+        <PopupActionConfirm
+          msg={confirmTogglePopup.action === 'activer' 
+            ? `Voulez-vous activer cette matrice de contrôle ?` 
+            : `Voulez-vous désactiver cette matrice de contrôle ?`}
+          confirmationState={handleConfirmToggle}
+          isLoading={confirmToggleLoading}
+        />
+      )}
       <Box sx={{ p: 2, height: '100vh', backgroundColor: '#f5f5f5' }}>
         {/* Header */}
         <Box sx={{
@@ -306,8 +337,7 @@ export default function ControlesMatrix() {
                           color="success"
                           variant="contained"
                           size="small"
-                          // startIcon={<Check />}
-                          onClick={() => handleValidationToggle(matrix)}
+                          onClick={() => handleValidationToggleClick(matrix)}
                           sx={{ height: '25px', borderRadius: '1px', textTransform: 'none' }}
                         >
                           {matrix.Valider ? 'Désactiver' : 'Activer'}
