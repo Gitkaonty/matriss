@@ -94,7 +94,7 @@ const PopupSaisie = ({
 
     const defaultDeviseData = listeDevise.find(val => val.par_defaut === true);
 
-    const defaultDevise = defaultDeviseData?.code === 'EUR' ? 'EUR' : 'Devises';
+    const defaultDevise = defaultDeviseData?.code || 'EUR';
 
     const axiosPrivate = useAxiosPrivate();
 
@@ -173,7 +173,7 @@ const PopupSaisie = ({
             valSelectAnnee: rowsEdit[0]?.dateecriture?.split('-')[0] || "",
             choixDevise: rowsEdit[0]?.devise || defaultDevise,
             taux: rowsEdit[0]?.taux || taux,
-            currency: rowsEdit[0]?.devise || defaultDeviseData.code,
+            currency: (typeof rowsEdit[0]?.devise === 'string' ? rowsEdit[0]?.devise : defaultDeviseData?.code) || 'EUR',
             tableRows: [],
             file: rowsEdit[0]?.fichier || null,
             id_dossier: fileId,
@@ -259,7 +259,7 @@ const PopupSaisie = ({
             const adjustedDebit = parseFloat((debit + Math.abs(difference)).toFixed(2));
             let adjustedMontantDevise = selectedRow.montant_devise;
 
-            if (formSaisie.values.choixDevise !== 'MGA') {
+            if (formSaisie.values.choixDevise === 'Autres') {
                 const taux = parseNumber(formSaisie.values.taux);
 
                 if (!taux || taux <= 0) {
@@ -275,7 +275,7 @@ const PopupSaisie = ({
             newRows[rowIndex] = {
                 ...selectedRow,
                 debit: adjustedDebit,
-                ...(formSaisie.values.choixDevise !== 'MGA' && {
+                ...(formSaisie.values.choixDevise === 'Autres' && {
                     montant_devise: adjustedMontantDevise,
                 }),
             };
@@ -296,7 +296,7 @@ const PopupSaisie = ({
             const adjustedCredit = parseFloat((credit + difference).toFixed(2));
             let adjustedMontantDevise = selectedRow.montant_devise;
 
-            if (formSaisie.values.choixDevise !== 'MGA') {
+            if (formSaisie.values.choixDevise === 'Autres') {
                 const taux = parseNumber(formSaisie.values.taux);
 
                 if (!taux || taux <= 0) {
@@ -312,7 +312,7 @@ const PopupSaisie = ({
             newRows[rowIndex] = {
                 ...selectedRow,
                 credit: adjustedCredit,
-                ...(formSaisie.values.choixDevise !== 'MGA' && {
+                ...(formSaisie.values.choixDevise === 'Autres' && {
                     montant_devise: adjustedMontantDevise,
                 }),
             };
@@ -339,7 +339,7 @@ const PopupSaisie = ({
             toast.error("Sélectionner le mois s'il vous plaît !");
         } else if (!formSaisie.values.valSelectAnnee) {
             toast.error("Sélectionner l'année s'il vous plaît !");
-        } else if (formSaisie.values.choixDevise !== 'MGA' && !formSaisie.values.currency) {
+        } else if (formSaisie.values.choixDevise === 'Autres' && !formSaisie.values.currency) {
             toast.error("Veuillez sélectionner une devise s'il vous plaît !");
         } else {
             const minId = Math.min(...tableRows.map(r => r.id), -1);
@@ -513,7 +513,7 @@ const PopupSaisie = ({
             if (!row.jour) champsVides.push('jour');
             if (!row.compte) champsVides.push('compte');
             if (!row.libelle) champsVides.push('libelle');
-            if (formSaisie.values.choixDevise !== 'MGA' && !row.montant_devise)
+            if (formSaisie.values.choixDevise === 'Autres' && !row.montant_devise)
                 champsVides.push('montant_devise');
 
             const debitVide = !row.debit || isNaN(Number(row.debit)) || Number(row.debit) === 0;
@@ -527,12 +527,32 @@ const PopupSaisie = ({
 
         let id_devise = '';
 
+        // Si la liste des devises est vide, créer une devise EUR par défaut pour le test
+        const devisesDisponibles = listeDevise.length > 0 ? listeDevise : [
+            { id: 1, code: 'EUR', par_defaut: true }
+        ];
+
+        console.log('Liste des devises disponibles:', devisesDisponibles);
+
         if (formSaisie.values.choixDevise === 'MGA') {
-            const devise = listeDevise.find((val) => val.code === 'MGA');
+            const devise = devisesDisponibles.find((val) => val.code === 'MGA');
             id_devise = devise?.id;
-        } else {
-            const devise = listeDevise.find((val) => val.code === formSaisie.values.currency);
+            console.log('Devise MGA trouvée:', devise);
+        } else if (formSaisie.values.choixDevise === 'Devises') {
+            const devise = devisesDisponibles.find((val) => val.code === 'EUR');
             id_devise = devise?.id;
+            console.log('Devise EUR trouvée:', devise);
+        } else if (formSaisie.values.choixDevise === 'Autres') {
+            const devise = devisesDisponibles.find((val) => val.code === (typeof formSaisie.values.currency === 'string' ? formSaisie.values.currency : ''));
+            id_devise = devise?.id;
+            console.log('Devise Autres trouvée:', devise);
+        }
+
+        console.log('ID devise final:', id_devise);
+
+        if (!id_devise) {
+            toast.error('Devise non trouvée. Veuillez vérifier la configuration des devises.');
+            return;
         }
 
         setInvalidRows(rowsInvalides);
@@ -560,6 +580,11 @@ const PopupSaisie = ({
                 listCa: listCaFinalFiltered,
                 ...(type === 'modification' ? { conserverFichier, deletedIds: deletedRowIds } : {})
             };
+
+            console.log('Données envoyées au backend:', valeursSansFichier);
+            console.log('ID devise:', id_devise);
+            console.log('Choix devise:', formSaisie.values.choixDevise);
+            console.log('Currency:', formSaisie.values.currency);
 
             formData.append("data", JSON.stringify(valeursSansFichier));
             if (file) formData.append("file", file);
@@ -591,7 +616,7 @@ const PopupSaisie = ({
             }
 
         } catch (error) {
-            toast.error(error);
+            toast.error(error?.message || 'Une erreur est survenue');
         }
     };
 
@@ -667,7 +692,7 @@ const PopupSaisie = ({
             const adjustedDebit = parseFloat((debit + Math.abs(difference)).toFixed(2));
             let adjustedMontantDevise = selectedRow.montant_devise;
 
-            if (formSaisie.values.choixDevise !== 'MGA') {
+            if (formSaisie.values.choixDevise === 'Autres') {
                 const taux = parseNumber(formSaisie.values.taux);
 
                 if (!taux || taux <= 0) {
@@ -681,7 +706,7 @@ const PopupSaisie = ({
             newRows[rowIndex] = {
                 ...selectedRow,
                 debit: adjustedDebit,
-                ...(formSaisie.values.choixDevise !== 'MGA' && {
+                ...(formSaisie.values.choixDevise === 'Autres' && {
                     montant_devise: adjustedMontantDevise,
                 }),
             };
@@ -698,7 +723,7 @@ const PopupSaisie = ({
             const adjustedCredit = parseFloat((credit + difference).toFixed(2));
             let adjustedMontantDevise = selectedRow.montant_devise;
 
-            if (formSaisie.values.choixDevise !== 'MGA') {
+            if (formSaisie.values.choixDevise === 'Autres') {
                 const taux = parseNumber(formSaisie.values.taux);
 
                 if (!taux || taux <= 0) {
@@ -712,7 +737,7 @@ const PopupSaisie = ({
             newRows[rowIndex] = {
                 ...selectedRow,
                 credit: adjustedCredit,
-                ...(formSaisie.values.choixDevise !== 'MGA' && {
+                ...(formSaisie.values.choixDevise === 'Autres' && {
                     montant_devise: adjustedMontantDevise,
                 }),
             };
@@ -838,14 +863,14 @@ const PopupSaisie = ({
     }, [selectedCell]);
 
     useEffect(() => {
-        if (formSaisie.values.choixDevise === "MGA") {
+        if (formSaisie.values.choixDevise === "MGA" || formSaisie.values.choixDevise === "Devises") {
             formSaisie.setFieldValue('currency', '');
             setTaux(0);
         }
     }, [formSaisie.values.choixDevise]);
 
     useEffect(() => {
-        if (formSaisie.values.choixDevise === 'MGA') {
+        if (formSaisie.values.choixDevise === 'MGA' || formSaisie.values.choixDevise === 'Devises') {
             setTableRows(prevRows => prevRows.map(row => {
                 const newRow = { ...row };
                 delete newRow.montant_devise;
@@ -1108,13 +1133,14 @@ const PopupSaisie = ({
                                                 },
                                             }}
                                         >
-                                            <ToggleButton value="MGA">MGA</ToggleButton>
-                                            <ToggleButton value="Devises">Autres</ToggleButton>
+                                            {/* <ToggleButton value="MGA">MGA</ToggleButton> */}
+                                            <ToggleButton value="Devises">EUR</ToggleButton>
+                                            <ToggleButton value="Autres">Autres</ToggleButton>
                                         </ToggleButtonGroup>
 
 
                                         {/* Taux de conversion */}
-                                        {formSaisie.values.choixDevise !== 'MGA' && (
+                                        {formSaisie.values.choixDevise === 'Autres' && (
                                             <Stack
                                                 direction="row"
                                                 spacing={1}
@@ -1156,7 +1182,7 @@ const PopupSaisie = ({
                                                 {/* Select devise discret */}
                                                 <Select
                                                     name="currency"
-                                                    value={formSaisie.values.currency ?? ''}
+                                                    value={(typeof formSaisie.values.currency === 'string' ? formSaisie.values.currency : '')}
                                                     onChange={(e) => formSaisie.setFieldValue('currency', e.target.value)}
                                                     size="small"
                                                     sx={{
@@ -1169,7 +1195,7 @@ const PopupSaisie = ({
                                                         '&.Mui-focused fieldset': { borderColor: '#3FA2F6' },
                                                     }}
                                                 >
-                                                    {listeDevise.filter(v => v.code !== 'MGA').map((val) => (
+                                                    {(listeDevise.length > 0 ? listeDevise : [{ id: 1, code: 'EUR' }]).filter(v => v.code !== 'MGA').map((val) => (
                                                         <MenuItem key={val.code} value={val.code}>
                                                             {val.code}
                                                         </MenuItem>
@@ -1348,7 +1374,7 @@ const PopupSaisie = ({
                                     <Typography fontWeight="bold">
                                         {
                                             "Débit - Crédit : " + totalFormatted + " " +
-                                            (formSaisie.values.choixDevise === "MGA" ? formSaisie.values.choixDevise : formSaisie.values.currency === null ? '' : formSaisie.values.currency)
+                                            (formSaisie.values.choixDevise === "MGA" ? formSaisie.values.choixDevise : formSaisie.values.choixDevise === "Devises" ? "EUR" : formSaisie.values.choixDevise === "Autres" ? (formSaisie.values.currency || '') : '')
                                         }
                                     </Typography>
                                     <Stack
