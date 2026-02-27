@@ -1176,7 +1176,33 @@ export default function ParamCodeJournalComponent() {
                                     disableSelectionOnClick={true}
                                     localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
                                     slots={{ toolbar: QuickFilter }}
-                                    sx={DataGridStyle.sx}
+                                    sx={{
+                                    ...DataGridStyle.sx,
+                                    '& .MuiDataGrid-columnHeaders': {
+                                        backgroundColor: initial.tableau_theme,
+                                        color: initial.text_theme,
+                                    },
+                                    '& .MuiDataGrid-columnHeaderTitle': {
+                                        color: initial.text_theme,
+                                        fontWeight: 600,
+                                    },
+                                    '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
+                                        color: initial.text_theme,
+                                    },
+                                    '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+                                        outline: 'none',
+                                        border: 'none',
+                                    },
+                                    '& .highlight-separator': {
+                                        borderBottom: '1px solid red'
+                                    },
+                                    '& .MuiDataGrid-row.highlight-separator': {
+                                        borderBottom: '1px solid red',
+                                    },
+                                    '& .MuiDataGrid-virtualScroller': {
+                                        maxHeight: '700px',
+                                    },
+                                }}
                                     rowHeight={DataGridStyle.rowHeight}
                                     columnHeaderHeight={DataGridStyle.columnHeaderHeight}
                                     editMode='row'

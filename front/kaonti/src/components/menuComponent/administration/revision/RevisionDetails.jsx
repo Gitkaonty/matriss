@@ -36,7 +36,7 @@ const formatMontant = (value, options = {}) => {
     return formatted.replace(/\u00A0/g, ' ');
 };
 
-export default function RevisionDetails({ type, controles, onClose, onSaveComment, idCompte, idDossier, idExercice, dateDebut, dateFin, onValidationChange }) {
+export default function RevisionDetails({ type, controles, onClose, onSaveComment, idCompte, idDossier, idExercice, dateDebut, dateFin, isPeriodeSelected, onValidationChange }) {
     const initial = init[0];
     const axiosPrivate = useAxiosPrivate();
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -856,7 +856,10 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                 Période:
                             </Typography>
                             <Typography variant="body2" fontWeight={500}>
-                                {new Date().toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}
+                                {isPeriodeSelected 
+                                    ? `${dateDebut ? new Date(dateDebut).toLocaleDateString('fr-FR') : '-'} au ${dateFin ? new Date(dateFin).toLocaleDateString('fr-FR') : '-'}`
+                                    : `${dateDebut ? new Date(dateDebut).toLocaleDateString('fr-FR') : '-'} au ${dateFin ? new Date(dateFin).toLocaleDateString('fr-FR') : '-'}`
+                                }
                             </Typography>
                         </Box>
 
@@ -1524,7 +1527,7 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                         ) : (currentItem?.Type && String(currentItem.Type).toUpperCase().includes('IMMO')) ? (
                             // Mode IMMO (IMMOB, IMMO_CHARGE, etc.) - Afficher une seule anomalie par compte avec navigation
                             anomalies.length > 0 ? (
-                                <Box sx={{ maxHeight: 400, overflowY: 'auto' }}>
+                                <Box sx={{ maxHeight: 600, overflowY: 'auto' }}>
                                     {(() => {
                                         // Récupérer toutes les anomalies pour le compte courant
                                         const currentCompte = immobComptesList[immobSafeCompteIndex];
@@ -1661,7 +1664,7 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                         ) : currentItem?.Type === 'ATYPIQUE' ? (
                             // Mode ATYPIQUE - Affichage paginé par compte avec tableau unique
                             anomalies.length > 0 ? (
-                                <Box sx={{ maxHeight: 400, overflowY: 'auto' }}>
+                                <Box sx={{ maxHeight: 600, overflowY: 'auto' }}>
                                     {!atypiqueCurrentData ? null : (
                                         <Box>
                                             {(() => {
@@ -1707,14 +1710,14 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                             }}
                                                             sx={{
                                                                 ...buttonStyle,
-                                                                backgroundColor: atypiqueCurrentData.anomalies.every(a => a.valide) ? '#d32f2f' : '#ff9800',
+                                                                backgroundColor: atypiqueCurrentData.anomalies.every(a => a.valide) ? '#d32f2f' : '#31916cff',
                                                                 color: 'white',
                                                                 '&:hover': {
-                                                                    backgroundColor: atypiqueCurrentData.anomalies.every(a => a.valide) ? '#b71c1c' : '#f57c00',
+                                                                    backgroundColor: atypiqueCurrentData.anomalies.every(a => a.valide) ? '#b71c1c' : '#31916cff',
                                                                 },
                                                             }}
                                                         >
-                                                            {atypiqueCurrentData.anomalies.every(a => a.valide) ? 'Annuler tout' : 'Valider tout'}
+                                                            {atypiqueCurrentData.anomalies.every(a => a.valide) ? 'Annuler' : 'Valider'}
                                                         </Button>
                                                         <Button
                                                             variant="outlined"
@@ -1800,7 +1803,7 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                             )
                         ) : anomalies.length > 0 ? (
                             // Mode par défaut (autres types)
-                            <Box sx={{ maxHeight: 400, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <Box sx={{ maxHeight: 600, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
                                 {anomalies.map((anomalie) => (
                                     <Box key={anomalie.id}>
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>

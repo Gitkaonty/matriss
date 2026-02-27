@@ -8,6 +8,7 @@ import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
+import { init } from '../../../../../init';
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialogContent-root': {
@@ -19,6 +20,7 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
 }));
 
 export default function Periode({ selectedExercice, idCompte, idDossier, axiosPrivate, canAdd, canDelete }) {
+    const initial = init[0];
     const [listePeriodes, setListePeriodes] = useState([]);
     const [openDialogCreatePeriode, setOpenDialogCreatePeriode] = useState(false);
     const [selectedPeriodeRow, setSelectedPeriodeRow] = useState([]);
@@ -128,7 +130,7 @@ export default function Periode({ selectedExercice, idCompte, idDossier, axiosPr
             date_fin: '',
         },
         validationSchema: Yup.object({
-           // libelle: Yup.string().required('Libellé requis'),
+            // libelle: Yup.string().required('Libellé requis'),
             date_debut: Yup.string().required('La date est requise'),
             date_fin: Yup.string().required('La date est requise'),
         }),
@@ -189,6 +191,15 @@ export default function Periode({ selectedExercice, idCompte, idDossier, axiosPr
             valueFormatter: (params) => format(params.value, 'dd/MM/yyyy')
         },
     ]), []);
+    const buttonStyle = {
+        minWidth: 120,
+        height: 32,
+        px: 2,
+        borderRadius: 1,
+        textTransform: 'none',
+        fontWeight: 600,
+        boxShadow: 'none',
+    };
 
     return (
         <Box sx={{ width: '100%', mt: 2 }}>
@@ -222,12 +233,15 @@ export default function Periode({ selectedExercice, idCompte, idDossier, axiosPr
                     >
                         <Button
                             disabled={!canAdd || !selectedExercice?.id}
-                            onClick={() => setOpenDialogCreatePeriode(true)}
+                            onClick={() => {
+                                // Pré-remplir la date début avec la date de l'exercice
+                                if (selectedExercice?.date_debut) {
+                                    periodeForm.setFieldValue('date_debut', selectedExercice.date_debut.split('T')[0]);
+                                }
+                                setOpenDialogCreatePeriode(true);
+                            }}
                             sx={{
-                                minWidth: 120,
-                                height: 32,
-                                px: 2,
-                                borderRadius: 1,
+                                ...buttonStyle,
                                 textTransform: 'none',
                                 fontWeight: 600,
                                 boxShadow: 'none',
@@ -291,12 +305,29 @@ export default function Periode({ selectedExercice, idCompte, idDossier, axiosPr
                         slots={{ toolbar: QuickFilter }}
                         sx={{
                             ...DataGridStyle.sx,
+                            '& .MuiDataGrid-columnHeaders': {
+                                backgroundColor: initial.tableau_theme,
+                                color: initial.text_theme,
+                            },
+                            '& .MuiDataGrid-columnHeaderTitle': {
+                                color: initial.text_theme,
+                                fontWeight: 600,
+                            },
+                            '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
+                                color: initial.text_theme,
+                            },
                             '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
                                 outline: 'none',
                                 border: 'none',
                             },
+                            '& .highlight-separator': {
+                                borderBottom: '1px solid red'
+                            },
+                            '& .MuiDataGrid-row.highlight-separator': {
+                                borderBottom: '1px solid red',
+                            },
                             '& .MuiDataGrid-virtualScroller': {
-                                maxHeight: '350px',
+                                maxHeight: '700px',
                             },
                         }}
                         rowHeight={DataGridStyle.rowHeight}
@@ -352,7 +383,7 @@ export default function Periode({ selectedExercice, idCompte, idDossier, axiosPr
                                 <Typography sx={{ ml: 0, flex: 1 }} variant="h7" component="div">
                                     Création d'une période
                                 </Typography>
-{/* 
+                                {/* 
                                 <FormControl sx={{ width: '450px' }} error={periodeForm.errors.libelle && periodeForm.touched.libelle}>
                                     <FormLabel id="libelle-label" htmlFor="libelle">
                                         <Typography level="title-libelle">Libellé :</Typography>
@@ -381,6 +412,7 @@ export default function Periode({ selectedExercice, idCompte, idDossier, axiosPr
                                             value={periodeForm.values.date_debut}
                                             onChange={periodeForm.handleChange}
                                             onBlur={periodeForm.handleBlur}
+                                            disabled
                                             required
                                         />
                                         <FormHelperText>
@@ -415,8 +447,21 @@ export default function Periode({ selectedExercice, idCompte, idDossier, axiosPr
                         <DialogActions>
                             <Button
                                 autoFocus
-                                style={{ backgroundColor: '#e79754ff', color: 'white', width: '100px', textTransform: 'none', outline: 'none' }}
-                                onClick={handleCloseDialogCreatePeriode}
+                                sx={{
+                                    ...buttonStyle,
+                                    backgroundColor: initial.annuler_bouton_color,
+                                    color: 'white',
+                                    borderColor: initial.annuler_bouton_color,
+                                    '&:hover': {
+                                        backgroundColor: initial.annuler_bouton_color,
+                                        border: 'none',
+                                    },
+                                    '&.Mui-disabled': {
+                                        backgroundColor: initial.annuler_bouton_color,
+                                        color: 'white',
+                                        cursor: 'not-allowed',
+                                    },
+                                }} onClick={handleCloseDialogCreatePeriode}
                             >
                                 Annuler
                             </Button>
@@ -425,8 +470,32 @@ export default function Periode({ selectedExercice, idCompte, idDossier, axiosPr
                                 disabled={!periodeForm.isValid}
                                 type='button'
                                 onClick={periodeForm.handleSubmit}
-                                style={{ backgroundColor: '#e79754ff', color: 'white', width: '100px', textTransform: 'none', outline: 'none' }}
-                            >
+                                sx={{
+                                    ...buttonStyle,
+                                    backgroundColor: '#e79754ff',
+                                    color: 'white',
+                                    borderColor: '#e79754ff',
+                                    boxShadow: 'none',
+
+                                    '&:hover': {
+                                        backgroundColor: '#e79754ff',
+                                        border: 'none',
+                                        boxShadow: 'none',       // enlève l’effet bleu shadow
+                                    },
+                                    '&:focus': {
+                                        backgroundColor: '#e79754ff',
+                                        border: 'none',
+                                        boxShadow: 'none',       // enlève le focus bleu
+                                    },
+                                    '&.Mui-disabled': {
+                                        backgroundColor: '#e79754ff',
+                                        color: 'white',
+                                        cursor: 'not-allowed',
+                                    },
+                                    '&::before': {
+                                        display: 'none',         // supprime l’overlay bleu de ButtonGroup
+                                    },
+                                }}                            >
                                 Créer
                             </Button>
                         </DialogActions>
