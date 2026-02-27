@@ -606,8 +606,21 @@ export default function ParamExerciceComponent() {
 
                     <DialogActions>
                         <Button autoFocus
-                            style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
-                            type='submit'
+                            sx={{
+                                ...buttonStyle,
+                                backgroundColor: initial.annuler_bouton_color,
+                                color: 'white',
+                                borderColor: initial.annuler_bouton_color,
+                                '&:hover': {
+                                    backgroundColor: initial.annuler_bouton_color,
+                                    border: 'none',
+                                },
+                                '&.Mui-disabled': {
+                                    backgroundColor: initial.annuler_bouton_color,
+                                    color: 'white',
+                                    cursor: 'not-allowed',
+                                },
+                            }} type='submit'
                             onClick={handleCloseDialogCreateFirstExercice}
                         >
                             Annuler
@@ -615,8 +628,32 @@ export default function ParamExerciceComponent() {
                         <Button autoFocus
                             disabled={!firstExerciceForm.isValid}
                             onClick={createFirstExercice}
-                            style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
-                        >
+                            sx={{
+                                ...buttonStyle,
+                                backgroundColor: '#e79754ff',
+                                color: 'white',
+                                borderColor: '#e79754ff',
+                                boxShadow: 'none',
+
+                                '&:hover': {
+                                    backgroundColor: '#e79754ff',
+                                    border: 'none',
+                                    boxShadow: 'none',       // enlève l’effet bleu shadow
+                                },
+                                '&:focus': {
+                                    backgroundColor: '#e79754ff',
+                                    border: 'none',
+                                    boxShadow: 'none',       // enlève le focus bleu
+                                },
+                                '&.Mui-disabled': {
+                                    backgroundColor: '#e79754ff',
+                                    color: 'white',
+                                    cursor: 'not-allowed',
+                                },
+                                '&::before': {
+                                    display: 'none',         // supprime l’overlay bleu de ButtonGroup
+                                },
+                            }}                        >
                             Créer
                         </Button>
                     </DialogActions>
@@ -679,7 +716,7 @@ export default function ParamExerciceComponent() {
                                             <Button
                                                 disabled={!canAdd}
                                                 onClick={handleCreateNextExercicePrev}
-                                                 sx={{
+                                                sx={{
                                                     ...buttonStyle,
                                                     backgroundColor: '#e79754ff',
                                                     color: 'white',
@@ -716,7 +753,7 @@ export default function ParamExerciceComponent() {
                                             <Button
                                                 disabled={!canAdd}
                                                 onClick={handleCreateNextExercice}
-                                                 sx={{
+                                                sx={{
                                                     ...buttonStyle,
                                                     backgroundColor: '#e79754ff',
                                                     color: 'white',
@@ -812,7 +849,7 @@ export default function ParamExerciceComponent() {
                                                     borderColor: initial.annuler_bouton_color,
                                                     '&:hover': {
                                                         backgroundColor: initial.annuler_bouton_color,
-                                                        border : 'none',
+                                                        border: 'none',
                                                     },
                                                     '&.Mui-disabled': {
                                                         backgroundColor: initial.annuler_bouton_color,

@@ -116,17 +116,7 @@ export default function Revision() {
             console.error('Error fetching exercices:', error);
         }
     };
-
-    useEffect(() => {
-        fetchExercices();
-    }, []);
-
-    useEffect(() => {
-        if (selectedExerciceId > 0) {
-            fetchControles();
-        }
-    }, [selectedExerciceId, fetchControles]);
-
+    
     const fetchPeriodes = useCallback(async (exerciceId) => {
         if (!exerciceId) return;
         try {
@@ -142,9 +132,21 @@ export default function Revision() {
         }
     }, [axiosPrivate]);
 
+    useEffect(() => {
+        fetchExercices();
+    }, []);
+
+    useEffect(() => {
+        if (selectedExerciceId > 0) {
+            fetchControles();
+            fetchPeriodes(selectedExerciceId);
+        }
+    }, [selectedExerciceId, fetchControles, fetchPeriodes]);
+
+
     const handleChangeExercice = (exerciceId) => {
         setSelectedExerciceId(exerciceId);
-        setSelectedPeriodeId('');
+        setSelectedPeriodeId('exercice');
         setSelectedPeriodeDates(null);
         setSelectedTypeDetails('');
         fetchPeriodes(exerciceId);
@@ -152,7 +154,7 @@ export default function Revision() {
 
     const handleChangePeriode = (periodeId) => {
         setSelectedPeriodeId(periodeId);
-        if (periodeId) {
+        if (periodeId && periodeId !== 'exercice') {
             const periode = listePeriodes.find(p => p.id === periodeId);
             if (periode) {
                 console.log('Période sélectionnée:', periode);
@@ -344,6 +346,19 @@ export default function Revision() {
         return Array.from(byType.values()).sort((a, b) => a.Type.localeCompare(b.Type));
     }, [controles]);
 
+    // Récupérer les dates de l'exercice courant
+    const currentExerciceDates = useMemo(() => {
+        const exercice = listeExercice.find(e => e.id === selectedExerciceId);
+        if (exercice) {
+            return {
+                date_debut: exercice.date_debut,
+                date_fin: exercice.date_fin,
+                libelle_rang: exercice.libelle_rang
+            };
+        }
+        return null;
+    }, [listeExercice, selectedExerciceId]);
+
     return (
         <Box sx={{ p: 2, height: '100vh', backgroundColor: '#f5f5f5' }}>
             {confirmReviserPopup && (
@@ -407,8 +422,8 @@ export default function Revision() {
                                     }}
                                     MenuProps={{ disableScrollLock: true }}
                                 >
-                                    <MenuItem value="">
-                                        <em>Tout l'exercice</em>
+                                    <MenuItem value="exercice">
+                                        {currentExerciceDates ? `${formatDate(currentExerciceDates.date_debut)} au ${formatDate(currentExerciceDates.date_fin)}` : 'Tout l\'exercice'}
                                     </MenuItem>
                                     {listePeriodes.map((periode) => (
                                         <MenuItem key={periode.id} value={periode.id}>
@@ -637,8 +652,9 @@ export default function Revision() {
                     idCompte={getIds().id_compte}
                     idDossier={getIds().id_dossier}
                     idExercice={selectedExerciceId}
-                    dateDebut={selectedPeriodeDates?.date_debut}
-                    dateFin={selectedPeriodeDates?.date_fin}
+                    dateDebut={selectedPeriodeDates?.date_debut || currentExerciceDates?.date_debut}
+                    dateFin={selectedPeriodeDates?.date_fin || currentExerciceDates?.date_fin}
+                    isPeriodeSelected={!!selectedPeriodeDates}
                     onValidationChange={fetchControles}
                 />
             )}
