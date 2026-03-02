@@ -295,14 +295,13 @@ export default function RevuAnalytiqueMensuelle({ compteId, dossierId, exerciceI
 
     const headerCellStyle = {
         ...stickyHeaderStyle,
-        padding: '2px 8px',
-        height: 18,
+        padding: '1px 6px',
+        fontSize: '14px'
     };
 
     const cellStyle = {
-        padding: '2px 8px',
-        height: 18,
-        fontSize: '12px',
+        padding: '1px 6px',
+        fontSize: '13px',
     };
 
     return (
@@ -331,8 +330,8 @@ export default function RevuAnalytiqueMensuelle({ compteId, dossierId, exerciceI
                         minWidth: 280 + moisColumns.length * 110 + 530,
 
                         '& .MuiTableCell-root': {
-                            padding: '2px 6px',
-                            fontSize: '11px',
+                            padding: '1px 4px',
+                            fontSize: '14px',
                             lineHeight: 1.2,
                             borderBottom: 'none',
                         },

@@ -18,11 +18,15 @@ export default function SubMenuList({ list, navigatePath }) {
   }, []);
 
   const navigateToPage = (item) => {
-    if (item.urldynamic == true) {
-      const path = `${item.path}/${fileId}`;
+    console.log('Navigating:', item.text, 'urldynamic:', item.urldynamic, 'type:', typeof item.urldynamic, 'fileId:', fileId);
+    if (item.urldynamic === true) {
+      const validFileId = fileId && fileId !== 'null' && !isNaN(fileId) ? fileId : 0;
+      const path = `${item.path}/${validFileId}`;
+      console.log('Dynamic path:', path);
       navigatePath(path);
     } else {
       const path = item.path;
+      console.log('Static path:', path);
       navigatePath(path);
     }
   }

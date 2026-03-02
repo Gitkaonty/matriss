@@ -28,7 +28,7 @@ import ParamTVAComponent from './components/menuComponent/Parametrages/Tva/Param
 import ParamDeviseComponent from './components/ParamDeviseComponent';
 import ParamExerciceComponent from './components/menuComponent/Parametrages/Exercice/Exercice';
 import ParamCRM from './components/menuComponent/Parametrages/crm/ParamCRM';
-import Controles from './components/menuComponent/parametrages/controles/ControlesMatrix';
+import ControlesMatrix from './components/menuComponent/Parametrages/controles/ControlesMatrix';
 import ParamMappingComponent from './components/menuComponent/Parametrages/mappingcompte/ParamMapping';
 import AnalitiqueComponent from './components/menuComponent/Parametrages/analytiques/AnalitiqueComponent';
 import DeclarationComm from './components/menuComponent/Declaration/Dcom/DeclarationComm';
@@ -63,7 +63,7 @@ const ROLES = {
   'SuperAdmin': 3355,
   'User': 2001,
   'Editor': 1984,
-  'Admin': 5150
+  'Admin': 5150 
 }
 
 export default function App() {
@@ -92,6 +92,7 @@ export default function App() {
                 <Route path='/tab/parametrages/paramPlanComptableModele' element={<ParamPCModele />} />
                 <Route path='/tab/administration/importAnnexeDeclarationFiscale' element={<ImportAnnexeDeclarationFiscaleComponent />} />
                 <Route path='/tab/parametrages/paramPortefeuille' element={<PortefeuilleComponent />} />
+                <Route path='/tab/parametrages/controles' element={<ControlesMatrix />} />
 
                 <Route element={<RequireAuth allowedRoles={[ROLES.Admin, ROLES.SuperAdmin]} />} >
                   <Route path='/tab/parametrages/role-permission' element={<RolePermission />} />
@@ -130,7 +131,6 @@ export default function App() {
                   <Route path='/tab/parametrages/paramFonctions/:id' element={<FonctionsComponent />} />
                   <Route path='/tab/parametrages/chiffreDaffaires/:id' element={<ParamChiffreAffaires />} />
                   <Route path='/tab/parametrages/paramMapping-externe/:id' element={<ParamMappingExterne />} />
-                  <Route path='/tab/parametrages/controles/:id' element={<Controles />} />
 
                   <Route element={<ProtectedDossierConsolidation />}>
                     <Route path='/tab/parametrages/consolidation-correpondance/:id' element={<Consolidation />} />

@@ -473,26 +473,15 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
     });
   }
 
-  // listeCompteRubrique.map(async (item) => {
-  //   const copycompterubriques = await compterubriques.create({
-  //     id_compte: id_compte,
-  //     id_dossier: id_dossier,
-  //     id_exercice: createExercice.id,
-  //     id_etat: item.id_etat,
-  //     id_rubrique: item.id_rubrique,
-  //     compte: item.compte,
-  //     nature: item.nature,
-  //     senscalcul: item.senscalcul,
-  //     condition: item.condition,
-  //     equation: item.equation,
-  //     par_default: item.par_default,
-  //     active: item.active,
-  //     exercice: item.exercice,
-  //   });
-  // });
   // Copier les matrices de contrôles dans les contrôles de l'exercice
-  const listeControleMatrix = await revisionControleMatrix.findAll({});
-  listeControleMatrix.map(async (item) => {
+  const listeControleMatrix = await revisionControleMatrix.findAll({
+    where: { Valider: true }
+  });
+  
+  // Récupérer les IDs des contrôles copiés pour remettre Valider à false après
+  const controlesCopiesIds = [];
+  
+  for (const item of listeControleMatrix) {
     await revisionControle.create({
       id_compte: id_compte,
       id_dossier: id_dossier,
@@ -508,7 +497,16 @@ const copydata = async (id_compte, id_dossier, createExercice, action) => {
       Commentaire: item.Commentaire,
       paramUn: item.paramUn
     });
-  });
+    controlesCopiesIds.push(item.id);
+  }
+  
+  // Remettre Valider à false dans la table après copie
+  if (controlesCopiesIds.length > 0) {
+    await revisionControle.update(
+      { Valider: false },
+      { where: { id: controlesCopiesIds } }
+    );
+  }
 }
 
 const createFirstExercice = async (req, res) => {
