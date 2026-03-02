@@ -29,7 +29,7 @@ const comptaList = [
         text: 'Controles',
         name: "controles",
         path: "/tab/parametrages/controles",
-        urldynamic: true
+        urldynamic: false
     },
     {
         text: 'Devises',

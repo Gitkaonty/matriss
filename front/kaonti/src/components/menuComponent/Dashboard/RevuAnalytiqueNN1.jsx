@@ -241,7 +241,8 @@ export default function RevuAnalytiqueNN1({ compteId, dossierId, exerciceId }) {
                         soldeN1: row.soldeN1,
                         var: row.var,
                         varPourcent: row.varPourcent,
-                        anomalies: row.anomalies,
+                        // Ne pas marquer comme anomalie si le journal N-1 n'existe pas (soldeN1 null/undefined)
+                        anomalies: (row.soldeN1 === null || row.soldeN1 === undefined) ? false : row.anomalies,
                         commentaire: row.commentaire,
                         valide_anomalie: row.valide_anomalie
                     }));

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -22,19 +21,10 @@ import {
 } from '@mui/material';
 import { Delete, Add, Edit } from '@mui/icons-material';
 import useAxiosPrivate from '../../../../hooks/useAxiosPrivate';
-import axios from '../../../../../config/axios';
-import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFile';
 import PopupActionConfirm from '../../../componentsTools/popupActionConfirm';
 
 export default function ControlesMatrix() {
   const axiosPrivate = useAxiosPrivate();
-  const navigate = useNavigate();
-
-  // récupération information du dossier sélectionné
-  const { id } = useParams();
-  const [fileId, setFileId] = useState(0);
-  const [fileInfos, setFileInfos] = useState('');
-  const [noFile, setNoFile] = useState(false);
 
   const [matrices, setMatrices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,25 +34,6 @@ export default function ControlesMatrix() {
   // Popup de confirmation pour Activer/Désactiver
   const [confirmTogglePopup, setConfirmTogglePopup] = useState({ open: false, matrix: null, action: '' });
   const [confirmToggleLoading, setConfirmToggleLoading] = useState(false);
-
-  const GetInfosIdDossier = (id) => {
-    axios.get(`/home/FileInfos/${id}`).then((response) => {
-      const resData = response.data;
-
-      if (resData.state) {
-        setFileInfos(resData.fileInfos[0]);
-        setNoFile(false);
-      } else {
-        setFileInfos([]);
-        setNoFile(true);
-      }
-    });
-  };
-
-  const sendToHome = (value) => {
-    setNoFile(!value);
-    navigate('/tab/home');
-  };
 
   const fetchMatrices = async () => {
     try {
@@ -77,35 +48,6 @@ export default function ControlesMatrix() {
 
   useEffect(() => {
     fetchMatrices();
-  }, []);
-
-  // récupérer les informations du dossier sélectionné
-  useEffect(() => {
-    const navigationEntries = performance.getEntriesByType('navigation');
-    let idFile = 0;
-
-    if (navigationEntries.length > 0) {
-      const navigationType = navigationEntries[0].type;
-      if (navigationType === 'reload') {
-        const idDossier = sessionStorage.getItem('fileId');
-        setFileId(idDossier);
-        idFile = idDossier;
-      } else {
-        if (id) {
-          sessionStorage.setItem('fileId', id);
-          setFileId(id);
-          idFile = id;
-        } else {
-          const idDossier = sessionStorage.getItem('fileId');
-          setFileId(idDossier);
-          idFile = idDossier;
-        }
-      }
-    }
-
-    if (idFile) {
-      GetInfosIdDossier(idFile);
-    }
   }, []);
 
   const [formData, setFormData] = useState({
@@ -220,15 +162,6 @@ export default function ControlesMatrix() {
   };
   return (
     <>
-      {
-        noFile
-          ?
-          <PopupTestSelectedFile
-            confirmationState={sendToHome}
-          />
-          :
-          null
-      }
       {confirmTogglePopup.open && (
         <PopupActionConfirm
           msg={confirmTogglePopup.action === 'activer' 

@@ -323,11 +323,11 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
     // Validation groupée pour ATYPIQUE - valider toutes les anomalies du compte courant
     const handleValidateAllAtypiqueForCompte = () => {
         if (!atypiqueCurrentData || !atypiqueCurrentData.anomalies || atypiqueCurrentData.anomalies.length === 0) return;
-        
+
         // Ouvrir popup de confirmation pour validation groupée
-        setConfirmPopup({ 
-            open: true, 
-            anomalie: null, 
+        setConfirmPopup({
+            open: true,
+            anomalie: null,
             action: 'valider_tout_le_compte',
             compte: atypiqueCurrentCompte,
             anomalies: atypiqueCurrentData.anomalies
@@ -337,11 +337,11 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
     // Annulation groupée pour ATYPIQUE - annuler toutes les validations du compte courant
     const handleCancelAllAtypiqueForCompte = () => {
         if (!atypiqueCurrentData || !atypiqueCurrentData.anomalies || atypiqueCurrentData.anomalies.length === 0) return;
-        
+
         // Ouvrir popup de confirmation pour annulation groupée
-        setConfirmPopup({ 
-            open: true, 
-            anomalie: null, 
+        setConfirmPopup({
+            open: true,
+            anomalie: null,
             action: 'annuler_tout_le_compte',
             compte: atypiqueCurrentCompte,
             anomalies: atypiqueCurrentData.anomalies
@@ -364,14 +364,14 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                     alert('Toutes les anomalies de ce compte sont déjà validées');
                     return;
                 }
-                
+
                 // Valider toutes les anomalies non validées du compte
                 await Promise.all(
-                    anomaliesToValidate.map(anomaly => 
+                    anomaliesToValidate.map(anomaly =>
                         updateAnomaly(anomaly.id, { valide: true })
                     )
                 );
-                
+
                 // Rafraîchir la liste des contrôles dans le parent
                 if (onValidationChange) {
                     await onValidationChange();
@@ -397,14 +397,14 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                     alert('Aucune anomalie validée à annuler pour ce compte');
                     return;
                 }
-                
+
                 // Annuler toutes les anomalies validées du compte
                 await Promise.all(
-                    anomaliesToCancel.map(anomaly => 
+                    anomaliesToCancel.map(anomaly =>
                         updateAnomaly(anomaly.id, { valide: false })
                     )
                 );
-                
+
                 // Rafraîchir la liste des contrôles dans le parent
                 if (onValidationChange) {
                     await onValidationChange();
@@ -425,7 +425,7 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
             setConfirmPopup({ open: false, anomalie: null, action: null });
             return;
         }
-        
+
         setConfirmLoading(true);
         isValidatingRef.current = true;
         try {
@@ -445,6 +445,95 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
         if (!anomalie) return;
         setCommentInput(anomalie.commentaire || '');
         setCommentDialog({ open: true, anomalie });
+    };
+
+    // Valider une ligne spécifique (au niveau de la ligne, pas de l'anomalie globale)
+    const handleValidateLine = async (line, anomalie) => {
+        if (!line || !anomalie) return;
+        
+        try {
+            // Déterminer quel id_jnl utiliser selon le type
+            let idJnl;
+            if (currentItem?.Type === 'SENS_SOLDE' || currentItem?.Type === 'SENS_ECRITURE' || currentItem?.Type === 'IMMO_CHARGE') {
+                // Pour ces types, id_jnl = compte (mais on valide par ligne donc on utilise l'ID de la ligne)
+                idJnl = line.id;
+            } else if (currentItem?.Type === 'UTIL_CPT_TVA') {
+                // Pour UTIL_CPT_TVA, id_jnl = id_ecriture
+                idJnl = line.id_ecriture;
+            } else if (currentItem?.Type === 'ATYPIQUE') {
+                // Pour ATYPIQUE, id_jnl = row.id (ID de la ligne)
+                idJnl = line.id;
+            } else {
+                // Par défaut, utiliser l'ID de la ligne
+                idJnl = line.id;
+            }
+
+            const response = await axiosPrivate.post(
+                `/administration/revisionControleAuto/${idCompte}/${idDossier}/${idExercice}/controle/${encodeURIComponent(currentItem.id_controle)}/validateLine`,
+                {
+                    id_ligne_journal: String(line.id),
+                    id_jnl: String(idJnl),
+                    valide: true,
+                    codeCtrl: currentItem.Type,
+                    message: `Validation ligne ${line.id}`,
+                    commentaire: ''
+                }
+            );
+
+            if (response.data.state) {
+                // Rafraîchir la liste des anomalies
+                await fetchAnomalies();
+                if (onValidationChange) {
+                    await onValidationChange();
+                }
+            }
+        } catch (error) {
+            console.error('Error validating line:', error);
+            alert('Erreur lors de la validation de la ligne');
+        }
+    };
+
+    // Commenter une ligne spécifique
+    const handleCommentLine = async (line, anomalie) => {
+        if (!line || !anomalie) return;
+        
+        const commentaire = prompt('Entrez votre commentaire pour cette ligne:', '');
+        if (commentaire === null) return; // Annulé
+        
+        try {
+            // Déterminer quel id_jnl utiliser selon le type
+            let idJnl;
+            if (currentItem?.Type === 'SENS_SOLDE' || currentItem?.Type === 'SENS_ECRITURE' || currentItem?.Type === 'IMMO_CHARGE') {
+                idJnl = line.id;
+            } else if (currentItem?.Type === 'UTIL_CPT_TVA') {
+                idJnl = line.id_ecriture;
+            } else if (currentItem?.Type === 'ATYPIQUE') {
+                idJnl = line.id;
+            } else {
+                idJnl = line.id;
+            }
+
+            const response = await axiosPrivate.post(
+                `/administration/revisionControleAuto/${idCompte}/${idDossier}/${idExercice}/controle/${encodeURIComponent(currentItem.id_controle)}/commentLine`,
+                {
+                    id_ligne_journal: String(line.id),
+                    id_jnl: String(idJnl),
+                    commentaire: commentaire,
+                    codeCtrl: currentItem.Type,
+                    message: `Commentaire ligne ${line.id}`
+                }
+            );
+
+            if (response.data.state) {
+                await fetchAnomalies();
+                if (onValidationChange) {
+                    await onValidationChange();
+                }
+            }
+        } catch (error) {
+            console.error('Error commenting line:', error);
+            alert('Erreur lors de l\'ajout du commentaire');
+        }
     };
 
     const handleSaveCommentDialog = async () => {
@@ -856,7 +945,7 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                 Période:
                             </Typography>
                             <Typography variant="body2" fontWeight={500}>
-                                {isPeriodeSelected 
+                                {isPeriodeSelected
                                     ? `${dateDebut ? new Date(dateDebut).toLocaleDateString('fr-FR') : '-'} au ${dateFin ? new Date(dateFin).toLocaleDateString('fr-FR') : '-'}`
                                     : `${dateDebut ? new Date(dateDebut).toLocaleDateString('fr-FR') : '-'} au ${dateFin ? new Date(dateFin).toLocaleDateString('fr-FR') : '-'}`
                                 }
@@ -877,7 +966,7 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                         <Box sx={{ display: "flex", alignItems: "center", justifyContent: atypiqueComptesList.length > 1 ? "center" : "flex-start", flexWrap: "wrap", gap: 2, mt: 1, p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}>
                             <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
                                 <Typography variant="body2" color="textSecondary">
-                                    Total des Anomalies validées:
+                                    Total des Anomalies à valider:
                                 </Typography>
                                 <Chip
                                     size="small"
@@ -1013,31 +1102,110 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                     }}
                                                     onClick={() => handleToggleValidateAnomaly(anomalie)}
                                                 >
-                                                    {anomalie.valide ? 'Annuler' : 'Valider'}
-                                                </Button>
-                                                <Button
-                                                    variant="outlined"
-                                                    size="small"
-                                                    sx={{
-                                                        ...buttonStyle,
-                                                        backgroundColor: initial.add_new_line_bouton_color,
-                                                        color: 'white',
-                                                        borderColor: initial.add_new_line_bouton_color,
-                                                        '&:hover': {
-                                                            backgroundColor: initial.add_new_line_bouton_color,
-                                                            none: 'none',
-                                                        },
-                                                        '&.Mui-disabled': {
-                                                            backgroundColor: initial.add_new_line_bouton_color,
-                                                            color: 'white',
-                                                            cursor: 'not-allowed',
-                                                        },
-                                                    }}
-                                                    onClick={() => handleCommentAnomaly(anomalie)}
-                                                >
-                                                    Commenter
+                                                    {anomalie.valide ? 'Annuler tout' : 'Valider tout'}
                                                 </Button>
                                             </Box>
+                                            {anomalie.journalLines?.length > 0 ? (
+                                                <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 200 }}>
+                                                    <Table size="small" stickyHeader>
+                                                        <TableHead>
+                                                            <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
+                                                                <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
+                                                                <TableCell sx={{ fontWeight: 600 }}>Compte</TableCell>
+                                                                <TableCell sx={{ fontWeight: 600 }}>Pièce</TableCell>
+                                                                <TableCell sx={{ fontWeight: 600 }}>Libellé</TableCell>
+                                                                <TableCell sx={{ fontWeight: 600, textAlign: "right" }}>Débit</TableCell>
+                                                                <TableCell sx={{ fontWeight: 600, textAlign: "right" }}>Crédit</TableCell>
+                                                                <TableCell sx={{ fontWeight: 600 }}>Lettrage</TableCell>
+                                                                <TableCell sx={{ fontWeight: 600 }}>Analytique</TableCell>
+                                                                <TableCell sx={{ fontWeight: 600, textAlign: 'center' }}>Validé</TableCell>
+                                                                <TableCell sx={{ fontWeight: 600 }}>Commentaire</TableCell>
+                                                                <TableCell sx={{ fontWeight: 600, textAlign: 'center' }}>Action</TableCell>
+                                                            </TableRow>
+                                                        </TableHead>
+                                                        <TableBody>
+                                                            {anomalie.journalLines.map((line, lineIdx) => (
+                                                                <TableRow key={lineIdx} hover>
+                                                                    <TableCell>{line?.dateecriture ? new Date(line.dateecriture).toLocaleDateString('fr-FR') : '-'}</TableCell>
+                                                                    <TableCell>{line?.comptegen || line?.compteaux || '-'}</TableCell>
+                                                                    <TableCell>{line?.piece || '-'}</TableCell>
+                                                                    <TableCell>{line?.libelle || '-'}</TableCell>
+                                                                    <TableCell sx={{ textAlign: "right" }}>
+                                                                        {line?.debit ? formatMontant(line.debit) : "-"}
+                                                                    </TableCell>
+                                                                    <TableCell sx={{ textAlign: "right" }}>
+                                                                        {line?.credit ? formatMontant(line.credit) : "-"}
+                                                                    </TableCell>
+                                                                    <TableCell>{line?.lettrage || '-'}</TableCell>
+                                                                    <TableCell>{line?.analytique || '-'}</TableCell>
+                                                                    <TableCell sx={{ textAlign: 'center' }}>
+                                                                        <Chip
+                                                                            label={anomalie?.valide ? 'Oui' : 'Non'}
+                                                                            color={anomalie?.valide ? 'success' : 'default'}
+                                                                            size="small"
+                                                                        />
+                                                                    </TableCell>
+                                                                    <TableCell sx={{ maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                                        {anomalie?.commentaire || '-'}
+                                                                    </TableCell>
+                                                                    <TableCell sx={{ textAlign: 'center' }}>
+                                                                        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+                                                                            <Button
+                                                                                variant="contained"
+                                                                                size="small"
+                                                                                onClick={() => handleValidateLine(line, anomalie)}
+                                                                                sx={{
+                                                                                    ...buttonStyle,
+                                                                                    backgroundColor: initial.auth_gradient_end,
+                                                                                    color: 'white',
+                                                                                    borderColor: initial.auth_gradient_end,
+                                                                                    '&:hover': {
+                                                                                        backgroundColor: initial.auth_gradient_end,
+                                                                                        none: 'none',
+                                                                                    },
+                                                                                    '&.Mui-disabled': {
+                                                                                        backgroundColor: initial.auth_gradient_end,
+                                                                                        color: 'white',
+                                                                                        cursor: 'not-allowed',
+                                                                                    },
+                                                                                }}
+                                                                            >
+                                                                                Valider
+                                                                            </Button>
+                                                                            <Button
+                                                                                variant="outlined"
+                                                                                size="small"
+                                                                                onClick={() => handleCommentAnomaly(anomalie)}
+                                                                                sx={{
+                                                                                    ...buttonStyle,
+                                                                                    backgroundColor: initial.add_new_line_bouton_color,
+                                                                                    color: 'white',
+                                                                                    borderColor: initial.add_new_line_bouton_color,
+                                                                                    '&:hover': {
+                                                                                        backgroundColor: initial.add_new_line_bouton_color,
+                                                                                        none: 'none',
+                                                                                    },
+                                                                                    '&.Mui-disabled': {
+                                                                                        backgroundColor: initial.add_new_line_bouton_color,
+                                                                                        color: 'white',
+                                                                                        cursor: 'not-allowed',
+                                                                                    },
+                                                                                }}
+                                                                            >
+                                                                                Commenter
+                                                                            </Button>
+                                                                        </Box>
+                                                                    </TableCell>
+                                                                </TableRow>
+                                                            ))}
+                                                        </TableBody>
+                                                    </Table>
+                                                </TableContainer>
+                                            ) : (
+                                                <Typography variant="caption" color="text.secondary">
+                                                    Aucune ligne de journal pour ce compte
+                                                </Typography>
+                                            )}
                                         </Box>
                                     ))}
                             </Box>
@@ -1137,29 +1305,7 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                             }}
                                                             onClick={() => handleToggleValidateAnomaly(anomalie)}
                                                         >
-                                                            {anomalie.valide ? 'Annuler' : 'Valider'}
-                                                        </Button>
-                                                        <Button
-                                                            variant="outlined"
-                                                            size="small"
-                                                            sx={{
-                                                                ...buttonStyle,
-                                                                backgroundColor: initial.add_new_line_bouton_color,
-                                                                color: 'white',
-                                                                borderColor: initial.add_new_line_bouton_color,
-                                                                '&:hover': {
-                                                                    backgroundColor: initial.add_new_line_bouton_color,
-                                                                    none: 'none',
-                                                                },
-                                                                '&.Mui-disabled': {
-                                                                    backgroundColor: initial.add_new_line_bouton_color,
-                                                                    color: 'white',
-                                                                    cursor: 'not-allowed',
-                                                                },
-                                                            }}
-                                                            onClick={() => handleCommentAnomaly(anomalie)}
-                                                        >
-                                                            Commenter
+                                                            {anomalie.valide ? 'Annuler tout' : 'Valider tout'}
                                                         </Button>
                                                     </Box>
 
@@ -1178,6 +1324,7 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                                         <TableCell sx={{ fontWeight: 600 }}>Analytique</TableCell>
                                                                         <TableCell sx={{ fontWeight: 600, textAlign: 'center' }}>Validé</TableCell>
                                                                         <TableCell sx={{ fontWeight: 600 }}>Commentaire</TableCell>
+                                                                        <TableCell sx={{ fontWeight: 600, textAlign: 'center' }}>Action</TableCell>
                                                                     </TableRow>
                                                                 </TableHead>
                                                                 <TableBody>
@@ -1205,6 +1352,59 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                                             <TableCell sx={{ maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                                                                 {anomalie?.commentaire || '-'}
                                                                             </TableCell>
+                                                                            <TableCell sx={{ textAlign: 'center' }}>
+                                                                                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+                                                                                    {(() => {
+                                                                                        const isValidated = isLineValidated(line, anomalie);
+                                                                                        return (
+                                                                                            <Button
+                                                                                                variant="contained"
+                                                                                                size="small"
+                                                                                                onClick={() => handleValidateLine(line, anomalie)}
+                                                                                                sx={{
+                                                                                                    ...buttonStyle,
+                                                                                                    backgroundColor: isValidated ? '#d32f2f' : initial.auth_gradient_end,
+                                                                                                    color: 'white',
+                                                                                                    borderColor: isValidated ? '#d32f2f' : initial.auth_gradient_end,
+                                                                                                    '&:hover': {
+                                                                                                        backgroundColor: isValidated ? '#b71c1c' : initial.auth_gradient_end,
+                                                                                                        none: 'none',
+                                                                                                    },
+                                                                                                    '&.Mui-disabled': {
+                                                                                                        backgroundColor: isValidated ? '#d32f2f' : initial.auth_gradient_end,
+                                                                                                        color: 'white',
+                                                                                                        cursor: 'not-allowed',
+                                                                                                    },
+                                                                                                }}
+                                                                                            >
+                                                                                                {isValidated ? 'Annuler' : 'Valider'}
+                                                                                            </Button>
+                                                                                        );
+                                                                                    })()}
+                                                                                    <Button
+                                                                                        variant="outlined"
+                                                                                        size="small"
+                                                                                        onClick={() => handleCommentAnomaly(anomalie)}
+                                                                                        sx={{
+                                                                                            ...buttonStyle,
+                                                                                            backgroundColor: initial.add_new_line_bouton_color,
+                                                                                            color: 'white',
+                                                                                            borderColor: initial.add_new_line_bouton_color,
+                                                                                            '&:hover': {
+                                                                                                backgroundColor: initial.add_new_line_bouton_color,
+                                                                                                none: 'none',
+                                                                                            },
+                                                                                            '&.Mui-disabled': {
+                                                                                                backgroundColor: initial.add_new_line_bouton_color,
+                                                                                                color: 'white',
+                                                                                                cursor: 'not-allowed',
+                                                                                            },
+                                                                                        }}
+                                                                                    >
+                                                                                        Commenter
+                                                                                    </Button>
+                                                                                </Box>
+                                                                            </TableCell>
                                                                         </TableRow>
                                                                     ))}
                                                                     <TableRow sx={{ backgroundColor: "#e3f2fd", fontWeight: "bold" }}>
@@ -1215,14 +1415,14 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                                         <TableCell sx={{ textAlign: "right", fontWeight: 600 }}>
                                                                             {totalCredit.toLocaleString("fr-FR", { minimumFractionDigits: 2 }).replace(/\u00A0/g, ' ')}
                                                                         </TableCell>
-                                                                        <TableCell colSpan={4} />
+                                                                        <TableCell colSpan={5} />
                                                                     </TableRow>
                                                                     <TableRow sx={{ backgroundColor: "#fff3e0" }}>
                                                                         <TableCell colSpan={4} sx={{ fontWeight: 600 }}>Solde</TableCell>
                                                                         <TableCell colSpan={2} sx={{ textAlign: "center", fontWeight: 600 }}>
                                                                             {soldeNormalise > 0 ? `Débiteur: ${soldeNormalise.toFixed(2)}` : soldeNormalise < 0 ? `Créditeur: ${Math.abs(soldeNormalise).toFixed(2)}` : 'Solde nul'}
                                                                         </TableCell>
-                                                                        <TableCell colSpan={4} />
+                                                                        <TableCell colSpan={5} />
                                                                     </TableRow>
                                                                 </TableBody>
                                                             </Table>
@@ -1313,29 +1513,7 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                                 },
                                                             }}
                                                         >
-                                                            {anomalie.valide ? 'Annuler' : 'Valider'}
-                                                        </Button>
-                                                        <Button
-                                                            variant="outlined"
-                                                            size="small"
-                                                            onClick={() => handleCommentAnomaly(anomalie)}
-                                                            sx={{
-                                                                ...buttonStyle,
-                                                                backgroundColor: initial.add_new_line_bouton_color,
-                                                                color: 'white',
-                                                                borderColor: initial.add_new_line_bouton_color,
-                                                                '&:hover': {
-                                                                    backgroundColor: initial.add_new_line_bouton_color,
-                                                                    none: 'none',
-                                                                },
-                                                                '&.Mui-disabled': {
-                                                                    backgroundColor: initial.add_new_line_bouton_color,
-                                                                    color: 'white',
-                                                                    cursor: 'not-allowed',
-                                                                },
-                                                            }}
-                                                        >
-                                                            Commenter
+                                                            {anomalie.valide ? 'Annuler tout' : 'Valider tout'}
                                                         </Button>
                                                     </Box>
 
@@ -1354,6 +1532,7 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                                         <TableCell sx={{ fontWeight: 600 }}>Analytique</TableCell>
                                                                         <TableCell sx={{ fontWeight: 600, textAlign: 'center' }}>Validé</TableCell>
                                                                         <TableCell sx={{ fontWeight: 600 }}>Commentaire</TableCell>
+                                                                        <TableCell sx={{ fontWeight: 600, textAlign: 'center' }}>Action</TableCell>
                                                                     </TableRow>
                                                                 </TableHead>
                                                                 <TableBody>
@@ -1381,6 +1560,59 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                                             <TableCell sx={{ maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                                                                 {anomalie?.commentaire || '-'}
                                                                             </TableCell>
+                                                                            <TableCell sx={{ textAlign: 'center' }}>
+                                                                                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+                                                                                    {(() => {
+                                                                                        const isValidated = isLineValidated(line, anomalie);
+                                                                                        return (
+                                                                                            <Button
+                                                                                                variant="contained"
+                                                                                                size="small"
+                                                                                                onClick={() => handleValidateLine(line, anomalie)}
+                                                                                                sx={{
+                                                                                                    ...buttonStyle,
+                                                                                                    backgroundColor: isValidated ? '#d32f2f' : initial.auth_gradient_end,
+                                                                                                    color: 'white',
+                                                                                                    borderColor: isValidated ? '#d32f2f' : initial.auth_gradient_end,
+                                                                                                    '&:hover': {
+                                                                                                        backgroundColor: isValidated ? '#b71c1c' : initial.auth_gradient_end,
+                                                                                                        none: 'none',
+                                                                                                    },
+                                                                                                    '&.Mui-disabled': {
+                                                                                                        backgroundColor: isValidated ? '#d32f2f' : initial.auth_gradient_end,
+                                                                                                        color: 'white',
+                                                                                                        cursor: 'not-allowed',
+                                                                                                    },
+                                                                                                }}
+                                                                                            >
+                                                                                                {isValidated ? 'Annuler' : 'Valider'}
+                                                                                            </Button>
+                                                                                        );
+                                                                                    })()}
+                                                                                    <Button
+                                                                                        variant="outlined"
+                                                                                        size="small"
+                                                                                        onClick={() => handleCommentAnomaly(anomalie)}
+                                                                                        sx={{
+                                                                                            ...buttonStyle,
+                                                                                            backgroundColor: initial.add_new_line_bouton_color,
+                                                                                            color: 'white',
+                                                                                            borderColor: initial.add_new_line_bouton_color,
+                                                                                            '&:hover': {
+                                                                                                backgroundColor: initial.add_new_line_bouton_color,
+                                                                                                none: 'none',
+                                                                                            },
+                                                                                            '&.Mui-disabled': {
+                                                                                                backgroundColor: initial.add_new_line_bouton_color,
+                                                                                                color: 'white',
+                                                                                                cursor: 'not-allowed',
+                                                                                            },
+                                                                                        }}
+                                                                                    >
+                                                                                        Commenter
+                                                                                    </Button>
+                                                                                </Box>
+                                                                            </TableCell>
                                                                         </TableRow>
                                                                     ))}
                                                                     <TableRow sx={{ backgroundColor: "#e3f2fd", fontWeight: "bold" }}>
@@ -1391,7 +1623,7 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                                         <TableCell sx={{ textAlign: "right", fontWeight: 600 }}>
                                                                             {filteredLines.reduce((sum, line) => sum + (parseFloat(line.credit) || 0), 0).toLocaleString("fr-FR", { minimumFractionDigits: 2 }).replace(/\u00A0/g, ' ')}
                                                                         </TableCell>
-                                                                        <TableCell colSpan={4} />
+                                                                        <TableCell colSpan={5} />
                                                                     </TableRow>
                                                                 </TableBody>
                                                             </Table>
@@ -1443,7 +1675,7 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                             },
                                                         }}
                                                     >
-                                                        {anomalie.valide ? 'Annuler' : 'Valider'}
+                                                        {anomalie.valide ? 'Annuler tout' : 'Valider tout'}
                                                     </Button>
                                                     <Button
                                                         variant="outlined"
@@ -1547,14 +1779,14 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                         <Typography variant="body2" sx={{ fontWeight: 600, color: '#1976d2' }}>
                                                             Anomalies pour le compte {currentCompte}:
                                                         </Typography>
-                                                        <Chip 
-                                                            size="small" 
-                                                            label={`${currentAnomalies.length} anomalies`} 
+                                                        <Chip
+                                                            size="small"
+                                                            label={`${currentAnomalies.length} anomalies`}
                                                             color="primary"
                                                         />
                                                     </Box>
                                                 )}
-                                                
+
                                                 {/* Afficher chaque anomalie du compte */}
                                                 {currentAnomalies.map((currentAnomaly, idx) => (
                                                     <Box key={currentAnomaly.id || idx} sx={{ mb: 3 }}>
@@ -1582,29 +1814,7 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                                     },
                                                                 }}
                                                             >
-                                                                {currentAnomaly.valide ? 'Annuler' : 'Valider'}
-                                                            </Button>
-                                                            <Button
-                                                                variant="outlined"
-                                                                size="small"
-                                                                onClick={() => handleCommentAnomaly(currentAnomaly)}
-                                                                sx={{
-                                                                    ...buttonStyle,
-                                                                    backgroundColor: initial.add_new_line_bouton_color,
-                                                                    color: 'white',
-                                                                    borderColor: initial.add_new_line_bouton_color,
-                                                                    '&:hover': {
-                                                                        backgroundColor: initial.add_new_line_bouton_color,
-                                                                        none: 'none',
-                                                                    },
-                                                                    '&.Mui-disabled': {
-                                                                        backgroundColor: initial.add_new_line_bouton_color,
-                                                                        color: 'white',
-                                                                        cursor: 'not-allowed',
-                                                                    },
-                                                                }}
-                                                            >
-                                                                Commenter
+                                                                {currentAnomaly.valide ? 'Annuler tout' : 'Valider tout'}
                                                             </Button>
                                                         </Box>
 
@@ -1622,6 +1832,7 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                                             <TableCell sx={{ fontWeight: 600, textAlign: "right" }}>Crédit</TableCell>
                                                                             <TableCell sx={{ fontWeight: 600, textAlign: "center" }}>Validé</TableCell>
                                                                             <TableCell sx={{ fontWeight: 600 }}>Commentaire</TableCell>
+                                                                            <TableCell sx={{ fontWeight: 600, textAlign: 'center' }}>Action</TableCell>
                                                                         </TableRow>
                                                                     </TableHead>
                                                                     <TableBody>
@@ -1634,16 +1845,67 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                                                 <TableCell sx={{ textAlign: "right" }}>{line?.debit ? formatMontant(line.debit) : "-"}</TableCell>
                                                                                 <TableCell sx={{ textAlign: "right" }}>{line?.credit ? formatMontant(line.credit) : "-"}</TableCell>
                                                                                 <TableCell sx={{ textAlign: "center" }}>
-                                                                                    {lineIdx === 0 && (
-                                                                                        <Chip
-                                                                                            label={currentAnomaly.valide ? "Oui" : "Non"}
-                                                                                            color={currentAnomaly.valide ? "success" : "error"}
-                                                                                            size="small"
-                                                                                            sx={{ fontWeight: 600 }}
-                                                                                        />
-                                                                                    )}
+                                                                                    <Chip
+                                                                                        label={currentAnomaly.valide ? "Oui" : "Non"}
+                                                                                        color={currentAnomaly.valide ? "success" : "error"}
+                                                                                        size="small"
+                                                                                        sx={{ fontWeight: 600 }}
+                                                                                    />
                                                                                 </TableCell>
-                                                                                <TableCell>{lineIdx === 0 ? (currentAnomaly.commentaire || '-') : ''}</TableCell>
+                                                                                <TableCell>{currentAnomaly.commentaire || '-'}</TableCell>
+                                                                                <TableCell sx={{ textAlign: 'center' }}>
+                                                                                    <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+                                                                                        {(() => {
+                                                                                            const isValidated = isLineValidated(line, currentAnomaly);
+                                                                                            return (
+                                                                                                <Button
+                                                                                                    variant="contained"
+                                                                                                    size="small"
+                                                                                                    onClick={() => handleValidateLine(line, currentAnomaly)}
+                                                                                                    sx={{
+                                                                                                        ...buttonStyle,
+                                                                                                        backgroundColor: isValidated ? '#d32f2f' : initial.auth_gradient_end,
+                                                                                                        color: 'white',
+                                                                                                        borderColor: isValidated ? '#d32f2f' : initial.auth_gradient_end,
+                                                                                                        '&:hover': {
+                                                                                                            backgroundColor: isValidated ? '#b71c1c' : initial.auth_gradient_end,
+                                                                                                            none: 'none',
+                                                                                                        },
+                                                                                                        '&.Mui-disabled': {
+                                                                                                            backgroundColor: isValidated ? '#d32f2f' : initial.auth_gradient_end,
+                                                                                                            color: 'white',
+                                                                                                            cursor: 'not-allowed',
+                                                                                                        },
+                                                                                                    }}
+                                                                                                >
+                                                                                                    {isValidated ? 'Annuler' : 'Valider'}
+                                                                                                </Button>
+                                                                                            );
+                                                                                        })()}
+                                                                                        <Button
+                                                                                            variant="outlined"
+                                                                                            size="small"
+                                                                                            onClick={() => handleCommentAnomaly(currentAnomaly)}
+                                                                                            sx={{
+                                                                                                ...buttonStyle,
+                                                                                                backgroundColor: initial.add_new_line_bouton_color,
+                                                                                                color: 'white',
+                                                                                                borderColor: initial.add_new_line_bouton_color,
+                                                                                                '&:hover': {
+                                                                                                    backgroundColor: initial.add_new_line_bouton_color,
+                                                                                                    none: 'none',
+                                                                                                },
+                                                                                                '&.Mui-disabled': {
+                                                                                                    backgroundColor: initial.add_new_line_bouton_color,
+                                                                                                    color: 'white',
+                                                                                                    cursor: 'not-allowed',
+                                                                                                },
+                                                                                            }}
+                                                                                        >
+                                                                                            Commenter
+                                                                                        </Button>
+                                                                                    </Box>
+                                                                                </TableCell>
                                                                             </TableRow>
                                                                         ))}
                                                                     </TableBody>
@@ -1717,29 +1979,7 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                                 },
                                                             }}
                                                         >
-                                                            {atypiqueCurrentData.anomalies.every(a => a.valide) ? 'Annuler' : 'Valider'}
-                                                        </Button>
-                                                        <Button
-                                                            variant="outlined"
-                                                            size="small"
-                                                            onClick={() => handleCommentAnomaly(globalAnomaly)}
-                                                            sx={{
-                                                                ...buttonStyle,
-                                                                backgroundColor: initial.add_new_line_bouton_color,
-                                                                color: 'white',
-                                                                borderColor: initial.add_new_line_bouton_color,
-                                                                '&:hover': {
-                                                                    backgroundColor: initial.add_new_line_bouton_color,
-                                                                    none: 'none',
-                                                                },
-                                                                '&.Mui-disabled': {
-                                                                    backgroundColor: initial.add_new_line_bouton_color,
-                                                                    color: 'white',
-                                                                    cursor: 'not-allowed',
-                                                                },
-                                                            }}
-                                                        >
-                                                            Commenter
+                                                            {atypiqueCurrentData.anomalies.every(a => a.valide) ? 'Annuler tout' : 'Valider tout'}
                                                         </Button>
                                                     </Box>
                                                 );
@@ -1760,6 +2000,7 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                                     <TableCell sx={{ fontWeight: 600, textAlign: "right" }}>Crédit</TableCell>
                                                                     <TableCell sx={{ fontWeight: 600, textAlign: "center" }}>Validé</TableCell>
                                                                     <TableCell sx={{ fontWeight: 600 }}>Commentaire</TableCell>
+                                                                    <TableCell sx={{ fontWeight: 600, textAlign: 'center' }}>Action</TableCell>
                                                                 </TableRow>
                                                             </TableHead>
                                                             <TableBody>
@@ -1785,6 +2026,61 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                                                 />
                                                                             </TableCell>
                                                                             <TableCell>{relatedAnomaly?.commentaire || '-'}</TableCell>
+                                                                            <TableCell sx={{ textAlign: 'center' }}>
+                                                                                {relatedAnomaly ? (
+                                                                                    <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+                                                                                        {(() => {
+                                                                                            const isValidated = isLineValidated(line, relatedAnomaly);
+                                                                                            return (
+                                                                                                <Button
+                                                                                                    variant="contained"
+                                                                                                    size="small"
+                                                                                                    onClick={() => handleValidateLine(line, relatedAnomaly)}
+                                                                                                    sx={{
+                                                                                                        ...buttonStyle,
+                                                                                                        backgroundColor: isValidated ? '#d32f2f' : initial.auth_gradient_end,
+                                                                                                        color: 'white',
+                                                                                                        borderColor: isValidated ? '#d32f2f' : initial.auth_gradient_end,
+                                                                                                        '&:hover': {
+                                                                                                            backgroundColor: isValidated ? '#b71c1c' : initial.auth_gradient_end,
+                                                                                                            none: 'none',
+                                                                                                        },
+                                                                                                        '&.Mui-disabled': {
+                                                                                                            backgroundColor: isValidated ? '#d32f2f' : initial.auth_gradient_end,
+                                                                                                            color: 'white',
+                                                                                                            cursor: 'not-allowed',
+                                                                                                        },
+                                                                                                    }}
+                                                                                                >
+                                                                                                    {isValidated ? 'Annuler' : 'Valider'}
+                                                                                                </Button>
+                                                                                            );
+                                                                                        })()}
+                                                                                        <Button
+                                                                                            variant="outlined"
+                                                                                            size="small"
+                                                                                            onClick={() => handleCommentAnomaly(relatedAnomaly)}
+                                                                                            sx={{
+                                                                                                ...buttonStyle,
+                                                                                                backgroundColor: initial.add_new_line_bouton_color,
+                                                                                                color: 'white',
+                                                                                                borderColor: initial.add_new_line_bouton_color,
+                                                                                                '&:hover': {
+                                                                                                    backgroundColor: initial.add_new_line_bouton_color,
+                                                                                                    none: 'none',
+                                                                                                },
+                                                                                                '&.Mui-disabled': {
+                                                                                                    backgroundColor: initial.add_new_line_bouton_color,
+                                                                                                    color: 'white',
+                                                                                                    cursor: 'not-allowed',
+                                                                                                },
+                                                                                            }}
+                                                                                        >
+                                                                                            Commenter
+                                                                                        </Button>
+                                                                                    </Box>
+                                                                                ) : null}
+                                                                            </TableCell>
                                                                         </TableRow>
                                                                     );
                                                                 })}
@@ -1830,29 +2126,7 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                     },
                                                 }}
                                             >
-                                                {anomalie.valide ? 'Annuler' : 'Valider'}
-                                            </Button>
-                                            <Button
-                                                variant="outlined"
-                                                size="small"
-                                                onClick={() => handleCommentAnomaly(anomalie)}
-                                                sx={{
-                                                    ...buttonStyle,
-                                                    backgroundColor: initial.add_new_line_bouton_color,
-                                                    color: 'white',
-                                                    borderColor: initial.add_new_line_bouton_color,
-                                                    '&:hover': {
-                                                        backgroundColor: initial.add_new_line_bouton_color,
-                                                        none: 'none',
-                                                    },
-                                                    '&.Mui-disabled': {
-                                                        backgroundColor: initial.add_new_line_bouton_color,
-                                                        color: 'white',
-                                                        cursor: 'not-allowed',
-                                                    },
-                                                }}
-                                            >
-                                                Commenter
+                                                {anomalie.valide ? 'Annuler tout' : 'Valider tout'}
                                             </Button>
                                         </Box>
 
@@ -1871,6 +2145,7 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                             <TableCell sx={{ fontWeight: 600 }}>Analytique</TableCell>
                                                             <TableCell sx={{ fontWeight: 600, textAlign: "center" }}>Valider</TableCell>
                                                             <TableCell sx={{ fontWeight: 600 }}>Commentaire</TableCell>
+                                                            <TableCell sx={{ fontWeight: 600, textAlign: 'center' }}>Action</TableCell>
                                                         </TableRow>
                                                     </TableHead>
                                                     <TableBody>
@@ -1893,6 +2168,59 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                                                                     />
                                                                 </TableCell>
                                                                 <TableCell>{anomalie.commentaire || '-'}</TableCell>
+                                                                <TableCell sx={{ textAlign: 'center' }}>
+                                                                    <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+                                                                        {(() => {
+                                                                            const isValidated = isLineValidated(line, anomalie);
+                                                                            return (
+                                                                                <Button
+                                                                                    variant="contained"
+                                                                                    size="small"
+                                                                                    onClick={() => handleValidateLine(line, anomalie)}
+                                                                                    sx={{
+                                                                                        ...buttonStyle,
+                                                                                        backgroundColor: isValidated ? '#d32f2f' : initial.auth_gradient_end,
+                                                                                        color: 'white',
+                                                                                        borderColor: isValidated ? '#d32f2f' : initial.auth_gradient_end,
+                                                                                        '&:hover': {
+                                                                                            backgroundColor: isValidated ? '#b71c1c' : initial.auth_gradient_end,
+                                                                                            none: 'none',
+                                                                                        },
+                                                                                        '&.Mui-disabled': {
+                                                                                            backgroundColor: isValidated ? '#d32f2f' : initial.auth_gradient_end,
+                                                                                            color: 'white',
+                                                                                            cursor: 'not-allowed',
+                                                                                        },
+                                                                                    }}
+                                                                                >
+                                                                                    {isValidated ? 'Annuler' : 'Valider'}
+                                                                                </Button>
+                                                                            );
+                                                                        })()}
+                                                                        <Button
+                                                                            variant="outlined"
+                                                                            size="small"
+                                                                            onClick={() => handleCommentAnomaly(anomalie)}
+                                                                            sx={{
+                                                                                ...buttonStyle,
+                                                                                backgroundColor: initial.add_new_line_bouton_color,
+                                                                                color: 'white',
+                                                                                borderColor: initial.add_new_line_bouton_color,
+                                                                                '&:hover': {
+                                                                                    backgroundColor: initial.add_new_line_bouton_color,
+                                                                                    none: 'none',
+                                                                                },
+                                                                                '&.Mui-disabled': {
+                                                                                    backgroundColor: initial.add_new_line_bouton_color,
+                                                                                    color: 'white',
+                                                                                    cursor: 'not-allowed',
+                                                                                },
+                                                                            }}
+                                                                        >
+                                                                            Commenter
+                                                                        </Button>
+                                                                    </Box>
+                                                                </TableCell>
                                                             </TableRow>
                                                         ))}
                                                     </TableBody>

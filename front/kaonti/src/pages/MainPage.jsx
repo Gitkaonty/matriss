@@ -123,7 +123,7 @@ export default function HomePage() {
       { text: 'Analytique', name: 'analytique', path: '/tab/parametrages/paramAnalytique', urldynamic: true },
       { text: 'Code journaux', name: 'codejournaux', path: '/tab/parametrages/paramCodeJournal', urldynamic: true },
       { text: 'CRM', name: 'crm', path: '/tab/parametrages/paramCrm', urldynamic: true },
-      { text: 'Controles', name: 'controles', path: '/tab/parametrages/controles', urldynamic: true},
+      { text: 'Controles', name: 'controles', path: '/tab/parametrages/controles', urldynamic: false},
       { text: 'Devises', name: 'devises', path: '/tab/parametrages/paramDevise', urldynamic: true },
       { text: 'Exercices', name: 'exercices', path: '/tab/parametrages/paramExercice', urldynamic: true },
       { text: 'Plan comptable', name: 'planComptable', path: '/tab/parametrages/paramPlanComptable', urldynamic: true },

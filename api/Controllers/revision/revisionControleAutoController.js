@@ -342,8 +342,8 @@ exports.executeAll = async (req, res) => {
     `, { type: db.Sequelize.QueryTypes.DELETE });
     console.log('Old controles and anomalies deleted');
 
-    // 2. Recopier depuis la matrice (avec Affichage) (SQL)
-    const matricesQuery = `SELECT * FROM revisions_controles_matrices`;
+    // 2. Recopier depuis la matrice (avec Affichage) (SQL) - SEULEMENT les contrôles validés
+    const matricesQuery = `SELECT * FROM revisions_controles_matrices WHERE "Valider" = true`;
     const matrices = await db.sequelize.query(matricesQuery, { type: db.Sequelize.QueryTypes.SELECT });
     
     const newControles = [];
@@ -356,7 +356,7 @@ exports.executeAll = async (req, res) => {
           ${id_compte}, ${id_dossier}, ${id_exercice}, '${matrix.id_controle}',
           '${matrix.Type}', '${matrix.compte || ''}', '${matrix.test || ''}',
           '${(matrix.description || '').replace(/'/g, "''")}', 0, '${(matrix.details || '').replace(/'/g, "''")}',
-          ${matrix.Valider || false}, '${(matrix.Commentaire || '').replace(/'/g, "''")}',
+          false, '${(matrix.Commentaire || '').replace(/'/g, "''")}',
           '${matrix.Affichage || 'ligne'}', NOW(), NOW()
         )
         RETURNING *
@@ -366,10 +366,34 @@ exports.executeAll = async (req, res) => {
     }
     console.log(`Created ${newControles.length} controles from matrices`);
 
+    // Si aucun contrôle n'a été créé, ne pas continuer (sinon Object.keys(undefined) => 500)
+    // Cela arrive notamment quand aucune matrice n'est "Valider" = true.
+    if (newControles.length === 0) {
+      return res.status(400).json({
+        message: 'Aucun contrôle n\'a été créé depuis la matrice (aucune ligne matrice validée).',
+        matricesCount: matrices.length,
+        id_compte,
+        id_dossier,
+        id_exercice,
+      });
+    }
+
+    // 2b. Remettre Valider à false dans la matrice après copie
+    // SUPPRIMÉ: L'utilisateur veut que Valider reste à true dans la matrice
+    // if (matrices.length > 0) {
+    //   const matrixIds = matrices.map(m => m.id).join(',');
+    //   await db.sequelize.query(`
+    //     UPDATE revisions_controles_matrices 
+    //     SET "Valider" = false 
+    //     WHERE id IN (${matrixIds})
+    //   `, { type: db.Sequelize.QueryTypes.UPDATE });
+    //   console.log(`Reset Valider to false for ${matrices.length} matrices`);
+    // }
+
     // 3. Grouper les contrôles par Type
     const controlesByType = {};
     console.log('First controle object:', newControles[0]);
-    console.log('First controle keys:', Object.keys(newControles[0]));
+    console.log('First controle keys:', newControles[0] ? Object.keys(newControles[0]) : []);
     for (const controleWrapper of newControles) {
       // Le résultat de la requête SQL est un tableau, prendre le premier élément
       const controle = Array.isArray(controleWrapper) ? controleWrapper[0] : controleWrapper;
