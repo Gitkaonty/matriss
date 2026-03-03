@@ -51,29 +51,37 @@ exports.getAnomaliesByControle = async (req, res) => {
     const idJnlKeys = [...new Set(anomalies.map(a => a.id_jnl).filter(Boolean))];
     
     let journalLines = [];
-    let comptesList = []; // Pour SENS_SOLDE
+    let comptesList = []; // Pour SENS_SOLDE (comptes concernés, pas les IDs de lignes)
     
     console.log(`getAnomaliesByControle - Type: ${controle?.Type}, anomalies count: ${anomalies.length}, idJnlKeys:`, idJnlKeys);
     
-    // Type spécial SENS_SOLDE, SENS_ECRITURE et IMMO_CHARGE: id_jnl = numéro de compte
-    // On récupère les lignes du journal où comptegen = id_jnl
+    // Type spécial: id_jnl = ID de ligne journal individuelle (nouveau comportement)
+    // Utilisé par SENS_SOLDE, SENS_ECRITURE, IMMO_CHARGE avec anomalies individuelles par ligne
     if (controle?.Type === 'SENS_SOLDE' || controle?.Type === 'SENS_ECRITURE' || controle?.Type === 'IMMO_CHARGE') {
-      comptesList = idJnlKeys;
-      if (idJnlKeys.length > 0) {
+      // Nouveau comportement: id_jnl = ID de ligne journal individuelle
+      // On récupère les lignes par leur ID
+      const lineIds = idJnlKeys
+        .map(v => parseInt(v, 10))
+        .filter(v => Number.isFinite(v));
+      
+      if (lineIds.length > 0) {
         const whereClause = {
-          comptegen: { [Op.in]: idJnlKeys },
+          id: { [Op.in]: lineIds },
           id_compte: id_compte,
           id_dossier: id_dossier,
           id_exercice: id_exercice,
           ...dateFilter
         };
-        console.log('getAnomaliesByControle SENS_SOLDE/SENS_ECRITURE/IMMO_CHARGE - where:', whereClause);
+        console.log('getAnomaliesByControle ligne mode (individuel) - where:', whereClause);
         const lines = await db.journals.findAll({
           where: whereClause,
           order: [['dateecriture', 'ASC'], ['id', 'ASC']]
         });
         journalLines = lines;
-        console.log(`getAnomaliesByControle - ${lines.length} lignes de journal trouvees pour comptes:`, idJnlKeys);
+        console.log(`getAnomaliesByControle - ${lines.length} lignes individuelles trouvées`);
+        
+        // Extraire la liste des comptes pour l'affichage
+        comptesList = [...new Set(lines.map(l => l.comptegen).filter(Boolean))];
       }
     } else if (controle?.Type === 'UTIL_CPT_TVA') {
       // Pour UTIL_CPT_TVA, id_jnl = id_ecriture (l'ID de l'écriture complète)
@@ -134,15 +142,10 @@ exports.getAnomaliesByControle = async (req, res) => {
     // Joindre les lignes aux anomalies
     const payload = anomalies.map(a => {
       let lines = [];
-      if (controle?.Type === 'SENS_SOLDE' || controle?.Type === 'SENS_ECRITURE') {
-        // Pour SENS_SOLDE et SENS_ECRITURE, id_jnl = compte, on filtre par comptegen
-        lines = journalLines.filter(l => String(l.comptegen) === String(a.id_jnl));
-      } else if (controle?.Type === 'IMMO_CHARGE') {
-        // Pour IMMO_CHARGE, afficher uniquement les lignes avec débit > 500 (anomalies)
-        lines = journalLines.filter(l => {
-          const debit = parseFloat(l.debit) || 0;
-          return String(l.comptegen) === String(a.id_jnl) && debit > 500;
-        });
+      if (controle?.Type === 'SENS_SOLDE' || controle?.Type === 'SENS_ECRITURE' || controle?.Type === 'IMMO_CHARGE') {
+        // Pour ces types, id_jnl = ID de ligne journal individuelle
+        // On filtre par ID de ligne
+        lines = journalLines.filter(l => String(l.id) === String(a.id_jnl));
       } else if (controle?.Type === 'UTIL_CPT_TVA') {
         // Pour UTIL_CPT_TVA, id_jnl = id_ecriture, on filtre par id_ecriture
         lines = journalLines.filter(l => String(l.id_ecriture) === String(a.id_jnl));
@@ -156,11 +159,16 @@ exports.getAnomaliesByControle = async (req, res) => {
         console.log(`DEBUG ATYPIQUE PAYLOAD - id_jnl=${a.id_jnl}, journalLines total=${journalLines.length}, lines filtrées=${lines.length}`);
       }
       
+      // Pour SENS_SOLDE, SENS_ECRITURE, IMMO_CHARGE: compteNum = compte de la ligne
+      const compteNum = (controle?.Type === 'SENS_SOLDE' || controle?.Type === 'SENS_ECRITURE' || controle?.Type === 'IMMO_CHARGE') 
+        ? (lines[0]?.comptegen || a.id_jnl) 
+        : null;
+      
       return {
         ...a.toJSON(),
         affichage,
         journalLines: lines,
-        compteNum: (controle?.Type === 'SENS_SOLDE' || controle?.Type === 'SENS_ECRITURE' || controle?.Type === 'IMMO_CHARGE') ? a.id_jnl : null
+        compteNum: compteNum
       };
     });
 
@@ -190,11 +198,11 @@ exports.getAnomaliesByControle = async (req, res) => {
 exports.updateAnomaly = async (req, res) => {
   try {
     const { id_compte, id_dossier, id_exercice, id_anomalie } = req.params;
-    const { valide, commentaire, id_periode } = req.body;
+    const { valide, commentaire, id_periode, validateAllByEcriture } = req.body;
 
     console.log('=== UPDATE ANOMALY ===');
     console.log('Params:', { id_compte, id_dossier, id_exercice, id_anomalie });
-    console.log('Body:', { valide, commentaire, id_periode });
+    console.log('Body:', { valide, commentaire, id_periode, validateAllByEcriture });
 
     const anomaly = await db.tableControleAnomalies.findOne({
       where: {
@@ -213,7 +221,20 @@ exports.updateAnomaly = async (req, res) => {
       });
     }
 
-    console.log('Anomalie trouvée:', { id: anomaly.id, valide: anomaly.valide, id_periode: anomaly.id_periode });
+    console.log('Anomalie trouvée:', { id: anomaly.id, valide: anomaly.valide, id_periode: anomaly.id_periode, id_jnl: anomaly.id_jnl, id_controle: anomaly.id_controle });
+
+    // Récupérer le contrôle pour connaître son type
+    const controle = await db.revisionControle.findOne({
+      where: {
+        id_compte,
+        id_dossier,
+        id_exercice,
+        id_controle: anomaly.id_controle
+      }
+    });
+
+    const isUtilCptTva = controle?.Type === 'UTIL_CPT_TVA';
+    console.log('Type de contrôle:', controle?.Type, '- isUtilCptTva:', isUtilCptTva);
 
     const updatePayload = {};
     if (typeof valide === 'boolean') updatePayload.valide = valide;
@@ -272,9 +293,28 @@ exports.updateAnomaly = async (req, res) => {
 
     console.log('Update payload:', updatePayload);
 
-    await anomaly.update(updatePayload);
-
-    console.log('Anomalie mise à jour avec succès');
+    // Pour UTIL_CPT_TVA avec validateAllByEcriture=true, valider toutes les anomalies du même id_ecriture
+    let updatedCount = 1;
+    if (isUtilCptTva && validateAllByEcriture && typeof valide === 'boolean' && anomaly.id_jnl) {
+      console.log(`UTIL_CPT_TVA - Validation groupée pour id_ecriture=${anomaly.id_jnl}`);
+      
+      const [updated] = await db.tableControleAnomalies.update(updatePayload, {
+        where: {
+          id_compte,
+          id_dossier,
+          id_exercice,
+          id_controle: anomaly.id_controle,
+          id_jnl: anomaly.id_jnl
+        }
+      });
+      
+      updatedCount = updated;
+      console.log(`${updated} anomalies mises à jour pour l'écriture ${anomaly.id_jnl}`);
+    } else {
+      // Mise à jour standard d'une seule anomalie
+      await anomaly.update(updatePayload);
+      console.log('Anomalie mise à jour avec succès');
+    }
 
     // Mettre à jour le compteur d'anomalies dans table_revisions_controles
     const updateControleQuery = `
@@ -310,7 +350,9 @@ exports.updateAnomaly = async (req, res) => {
 
     return res.json({
       state: true,
-      anomaly: anomaly.toJSON()
+      anomaly: anomaly.toJSON(),
+      updatedCount: updatedCount,
+      validateAllByEcriture: isUtilCptTva && validateAllByEcriture
     });
   } catch (error) {
     console.error('Error in updateAnomaly:', error);

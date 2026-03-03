@@ -981,22 +981,10 @@ const createPeriode = async (req, res) => {
       return res.json(resData);
     }
 
-    // Vérifier que la période ne chevauche pas une autre période
+    // Récupérer les périodes existantes pour calculer le rang
     const periodesExistantes = await periodes.findAll({
       where: { id_exercice }
     });
-
-    for (const periode of periodesExistantes) {
-      const debutExistant = new Date(periode.date_debut);
-      const finExistant = new Date(periode.date_fin);
-
-      if ((debutPeriode >= debutExistant && debutPeriode <= finExistant) ||
-          (finPeriode >= debutExistant && finPeriode <= finExistant) ||
-          (debutPeriode <= debutExistant && finPeriode >= finExistant)) {
-        resData.msg = 'La période chevauche une période existante';
-        return res.json(resData);
-      }
-    }
 
     const createPeriode = await periodes.create({
       id_exercice,
@@ -1049,26 +1037,6 @@ const updatePeriode = async (req, res) => {
     if (debutPeriode < debutExercice || finPeriode > finExercice) {
       resData.msg = 'Les dates de la période doivent être comprises entre les dates de l\'exercice';
       return res.json(resData);
-    }
-
-    // Vérifier que la période ne chevauche pas une autre période (sauf elle-même)
-    const periodesExistantes = await periodes.findAll({
-      where: { 
-        id_exercice: periode.id_exercice,
-        id: { [Op.ne]: id_periode }
-      }
-    });
-
-    for (const p of periodesExistantes) {
-      const debutExistant = new Date(p.date_debut);
-      const finExistant = new Date(p.date_fin);
-
-      if ((debutPeriode >= debutExistant && debutPeriode <= finExistant) ||
-          (finPeriode >= debutExistant && finPeriode <= finExistant) ||
-          (debutPeriode <= debutExistant && finPeriode >= finExistant)) {
-        resData.msg = 'La période chevauche une période existante';
-        return res.json(resData);
-      }
     }
 
     const updated = await periodes.update({

@@ -1,12 +1,96 @@
 const db = require('../../Models');
 const { Op, Sequelize } = require('sequelize');
 
+/**
+ * Helper function to insert an anomaly for a specific journal line
+ * Creates individual anomalies per line (not grouped by account)
+ * Used for all control types except UTIL_CPT_TVA
+ * 
+ * @param {Object} params - Parameters for the anomaly
+ * @param {number} params.id_compte - Account ID
+ * @param {number} params.id_dossier - Dossier ID  
+ * @param {number} params.id_exercice - Exercise ID
+ * @param {Object} params.line - The journal line object
+ * @param {string} params.type - Control type (e.g., 'IMMO_CHARGE', 'SENS_SOLDE', etc.)
+ * @param {string} params.id_controle - Control ID
+ * @param {string} params.message - Anomaly message
+ * @param {Object} params.savedData - Previously saved validation/comment data
+ * @param {number|null} params.idPeriode - Period ID
+ * @param {number|null} params.periodeId - Alternative period ID
+ */
+const insertLineAnomaly = async ({
+  id_compte,
+  id_dossier,
+  id_exercice,
+  line,
+  type,
+  id_controle,
+  message,
+  savedData = {},
+  idPeriode = null,
+  periodeId = null
+}) => {
+  // Use the journal line ID as id_jnl (individual per line)
+  const lineId = line.id;
+  // Extract the account number from the line (comptegen or compteaux)
+  const numCompte = line.comptegen || line.compteaux || '';
+  
+  const valide = savedData.valide || false;
+  const commentaire = savedData.commentaire || '';
+  const finalPeriodeId = savedData.id_periode || periodeId || idPeriode || 'NULL';
+
+  const insertQuery = `
+    INSERT INTO table_controle_anomalies (
+      id_compte, id_dossier, id_exercice, id_jnl, id_num_compte, "codeCtrl", id_controle, message, 
+      valide, commentaire, id_periode, "createdAt", "updatedAt"
+    ) VALUES (
+      ${id_compte}, ${id_dossier}, ${id_exercice}, '${lineId}', '${numCompte.replace(/'/g, "''")}', '${type}', 
+      '${id_controle}', '${message.replace(/'/g, "''")}', 
+      ${valide}, '${(commentaire || '').replace(/'/g, "''")}', ${finalPeriodeId}, NOW(), NOW()
+    )
+    ON CONFLICT (id_compte, id_dossier, id_exercice, id_jnl, id_controle) DO NOTHING
+  `;
+  
+  await db.sequelize.query(insertQuery, { type: db.Sequelize.QueryTypes.INSERT });
+};
+
 // Récupérer les contrôles de révision pour un exercice, et les créer s'ils n'existent pas
 exports.getOrCreateRevisionControles = async (req, res) => {
   try {
     const { id_compte, id_dossier, id_exercice } = req.params;
+    const { date_debut, date_fin } = req.query;
 
-    console.log('Getting or creating revision controles for:', { id_compte, id_dossier, id_exercice });
+    console.log('Getting or creating revision controles for:', { id_compte, id_dossier, id_exercice, date_debut, date_fin });
+
+    // Rechercher la période correspondante si dates fournies
+    let idPeriode = null;
+    if (date_debut && date_fin) {
+      // Tronquer les dates au format YYYY-MM-DD pour la comparaison
+      const debut = date_debut.split('T')[0];
+      const fin = date_fin.split('T')[0];
+      
+      // Chercher une période qui chevauche la plage de dates
+      // (la période commence avant ou à la date de fin ET finit après ou à la date de début)
+      const periodeQuery = `
+        SELECT id, date_debut, date_fin FROM periodes 
+        WHERE id_compte = ${id_compte} 
+          AND id_dossier = ${id_dossier} 
+          AND id_exercice = ${id_exercice}
+          AND date_debut <= '${fin}' 
+          AND date_fin >= '${debut}'
+        ORDER BY date_debut ASC
+        LIMIT 1
+      `;
+      console.log('DEBUG BACK getOrCreate - periodeQuery:', periodeQuery);
+      const periodeResult = await db.sequelize.query(periodeQuery, { type: db.Sequelize.QueryTypes.SELECT });
+      console.log('DEBUG BACK getOrCreate - periodeResult:', periodeResult);
+      if (periodeResult.length > 0) {
+        idPeriode = periodeResult[0].id;
+        console.log('Période trouvée pour getOrCreate:', idPeriode, 'dates:', periodeResult[0].date_debut, 'à', periodeResult[0].date_fin);
+      } else {
+        console.log('Aucune période trouvée pour getOrCreate, dates recherchées:', debut, 'à', fin);
+      }
+    }
 
     // Vérifier si les contrôles existent déjà pour cet exercice (SQL)
     const existingQuery = `
@@ -26,23 +110,33 @@ exports.getOrCreateRevisionControles = async (req, res) => {
     if (existingControles.length === 0) {
       console.log('No controles found, creating from matrices...');
       
+      // Vérifier qu'une période est sélectionnée (date_debut et date_fin fournis)
+      if (!date_debut || !date_fin) {
+        console.log('No period selected, returning empty controles list');
+        return res.json({
+          state: true,
+          controles: [],
+          message: 'Veuillez sélectionner une période pour créer les contrôles de révision'
+        });
+      }
+      
       // Récupérer toutes les matrices (SQL)
       const matricesQuery = `SELECT * FROM revisions_controles_matrices`;
       const matrices = await db.sequelize.query(matricesQuery, { type: db.Sequelize.QueryTypes.SELECT });
       
-      // Insérer les nouveaux contrôles
+      // Insérer les nouveaux contrôles avec id_periode
       const insertedControles = [];
       for (const matrix of matrices) {
         const insertQuery = `
           INSERT INTO table_revisions_controles (
             id_compte, id_dossier, id_exercice, id_controle, "Type", compte, test, 
-            description, anomalies, details, "Valider", "Commentaire", "Affichage", "createdAt", "updatedAt"
+            description, anomalies, details, "Valider", "Commentaire", "Affichage", id_periode, "createdAt", "updatedAt"
           ) VALUES (
             ${id_compte}, ${id_dossier}, ${id_exercice}, '${matrix.id_controle}', 
             '${matrix.Type}', '${matrix.compte || ''}', '${matrix.test || ''}', 
             '${(matrix.description || '').replace(/'/g, "''")}', 0, '${(matrix.details || '').replace(/'/g, "''")}', 
             ${matrix.Valider || false}, '${(matrix.Commentaire || '').replace(/'/g, "''")}', 
-            '${matrix.Affichage || 'ligne'}', NOW(), NOW()
+            '${matrix.Affichage || 'ligne'}', ${idPeriode || 'NULL'}, NOW(), NOW()
           )
           RETURNING *
         `;
@@ -52,7 +146,7 @@ exports.getOrCreateRevisionControles = async (req, res) => {
         insertedControles.push(newControle);
       }
 
-      console.log(`Created ${insertedControles.length} controles from matrices`);
+      console.log(`Created ${insertedControles.length} controles from matrices with id_periode=${idPeriode}`);
 
       res.json({
         state: true,
@@ -342,6 +436,35 @@ exports.executeAll = async (req, res) => {
     `, { type: db.Sequelize.QueryTypes.DELETE });
     console.log('Old controles and anomalies deleted');
 
+    // Rechercher la période correspondante si dates fournies (AVANT création des contrôles)
+    let idPeriode = null;
+    if (date_debut && date_fin) {
+      // Tronquer les dates au format YYYY-MM-DD pour la comparaison
+      const debut = date_debut.split('T')[0];
+      const fin = date_fin.split('T')[0];
+      
+      // Chercher une période qui chevauche la plage de dates
+      const periodeQuery = `
+        SELECT id, date_debut, date_fin FROM periodes 
+        WHERE id_compte = ${id_compte} 
+          AND id_dossier = ${id_dossier} 
+          AND id_exercice = ${id_exercice}
+          AND date_debut <= '${fin}' 
+          AND date_fin >= '${debut}'
+        ORDER BY date_debut ASC
+        LIMIT 1
+      `;
+      console.log('DEBUG BACK - periodeQuery:', periodeQuery);
+      const periodeResult = await db.sequelize.query(periodeQuery, { type: db.Sequelize.QueryTypes.SELECT });
+      console.log('DEBUG BACK - periodeResult:', periodeResult);
+      if (periodeResult.length > 0) {
+        idPeriode = periodeResult[0].id;
+        console.log('Période trouvée:', idPeriode, 'dates:', periodeResult[0].date_debut, 'à', periodeResult[0].date_fin);
+      } else {
+        console.log('Aucune période trouvée pour les dates:', debut, 'à', fin);
+      }
+    }
+
     // 2. Recopier depuis la matrice (avec Affichage) (SQL) - SEULEMENT les contrôles validés
     const matricesQuery = `SELECT * FROM revisions_controles_matrices WHERE "Valider" = true`;
     const matrices = await db.sequelize.query(matricesQuery, { type: db.Sequelize.QueryTypes.SELECT });
@@ -351,20 +474,20 @@ exports.executeAll = async (req, res) => {
       const insertQuery = `
         INSERT INTO table_revisions_controles (
           id_compte, id_dossier, id_exercice, id_controle, "Type", compte, test,
-          description, anomalies, details, "Valider", "Commentaire", "Affichage", "createdAt", "updatedAt"
+          description, anomalies, details, "Valider", "Commentaire", "Affichage", id_periode, "createdAt", "updatedAt"
         ) VALUES (
           ${id_compte}, ${id_dossier}, ${id_exercice}, '${matrix.id_controle}',
           '${matrix.Type}', '${matrix.compte || ''}', '${matrix.test || ''}',
           '${(matrix.description || '').replace(/'/g, "''")}', 0, '${(matrix.details || '').replace(/'/g, "''")}',
           false, '${(matrix.Commentaire || '').replace(/'/g, "''")}',
-          '${matrix.Affichage || 'ligne'}', NOW(), NOW()
+          '${matrix.Affichage || 'ligne'}', ${idPeriode || 'NULL'}, NOW(), NOW()
         )
         RETURNING *
       `;
       const [newControle] = await db.sequelize.query(insertQuery, { type: db.Sequelize.QueryTypes.INSERT });
       newControles.push(newControle);
     }
-    console.log(`Created ${newControles.length} controles from matrices`);
+    console.log(`Created ${newControles.length} controles from matrices with id_periode=${idPeriode}`);
 
     // Si aucun contrôle n'a été créé, ne pas continuer (sinon Object.keys(undefined) => 500)
     // Cela arrive notamment quand aucune matrice n'est "Valider" = true.
@@ -408,28 +531,6 @@ exports.executeAll = async (req, res) => {
     // 4. Exécuter le contrôle pour chaque Type
     const resultsByType = {};
 
-    // Rechercher la période correspondante si dates fournies
-    let idPeriode = null;
-    if (date_debut && date_fin) {
-      const periodeQuery = `
-        SELECT id FROM periodes 
-        WHERE id_compte = ${id_compte} 
-          AND id_dossier = ${id_dossier} 
-          AND id_exercice = ${id_exercice}
-          AND date_debut >= '${date_debut}' 
-          AND date_fin <= '${date_fin}'
-        ORDER BY date_debut ASC
-        LIMIT 1
-      `;
-      const periodeResult = await db.sequelize.query(periodeQuery, { type: db.Sequelize.QueryTypes.SELECT });
-      if (periodeResult.length > 0) {
-        idPeriode = periodeResult[0].id;
-        console.log('Période trouvée:', idPeriode);
-      } else {
-        console.log('Aucune période trouvée pour les dates:', date_debut, 'à', date_fin);
-      }
-    }
-
     for (const [type, controles] of Object.entries(controlesByType)) {
       console.log(`Processing type: ${type}, controles: ${controles.length}`);
       
@@ -472,10 +573,10 @@ exports.executeAll = async (req, res) => {
             // Insérer dans table_controle_anomalies pour EXISTENCE
             const insertExistenceQuery = `
               INSERT INTO table_controle_anomalies (
-                id_compte, id_dossier, id_exercice, id_jnl, "codeCtrl", id_controle, message, 
+                id_compte, id_dossier, id_exercice, id_jnl, id_num_compte, "codeCtrl", id_controle, message, 
                 valide, commentaire, id_periode, "createdAt", "updatedAt"
               ) VALUES (
-                ${id_compte}, ${id_dossier}, ${id_exercice}, '${controle.compte}', '${type}', 
+                ${id_compte}, ${id_dossier}, ${id_exercice}, '${controle.compte}', '${controle.compte.replace(/'/g, "''")}', '${type}', 
                 '${controle.id_controle}', '${messageAnomalie.replace(/'/g, "''")}', 
                 ${valide}, '${(commentaire || '').replace(/'/g, "''")}', ${periodeId}, NOW(), NOW()
               )
@@ -579,40 +680,39 @@ exports.executeAll = async (req, res) => {
           }
 
           if (anomalieMessage) {
+            // Créer une anomalie individuelle pour CHAQUE ligne du compte
+            for (const ligne of ecrituresCompte) {
+              const key = `${ligne.id}_${controle.id_controle}`;
+              const savedData = anomaliesMap[key] || {};
+              
+              console.log(`DEBUG SENS_SOLDE - Recherche clé: ${key}, Trouvé:`, !!savedData.valide, 'valide:', savedData.valide);
+
+              // Insérer une anomalie individuelle pour cette ligne
+              await insertLineAnomaly({
+                id_compte,
+                id_dossier,
+                id_exercice,
+                line: ligne,  // Ligne individuelle
+                type,
+                id_controle: controle.id_controle,
+                message: anomalieMessage,
+                savedData,
+                idPeriode
+              });
+              
+              console.log(`DEBUG SENS_SOLDE - Insertion anomalie individuelle: ligne=${ligne.id}, compte=${compte}, valide=${savedData.valide || false}`);
+            }
+            
+            // Ajouter au résultat (une seule entrée pour l'affichage)
             anomaliesDetectees.push({
               controleId: controle.id,
               compte: compte,
               test: testType,
               solde: solde,
               soldeNormalise: soldeNormalise,
-              message: anomalieMessage
+              message: anomalieMessage,
+              nbLignes: ecrituresCompte.length
             });
-
-            // Récupérer les données sauvegardées si elles existent
-            const key = `${compte}_${controle.id_controle}`;
-            const savedData = anomaliesMap[key] || {};
-            
-            console.log(`DEBUG - Recherche clé: ${key}, Trouvé:`, !!savedData.valide, 'valide:', savedData.valide);
-            
-            const valide = savedData.valide || false;
-            const commentaire = savedData.commentaire || '';
-            const periodeId = savedData.id_periode || idPeriode || 'NULL';
-
-            // Insérer dans table_controle_anomalies - SQL pour SENS_SOLDE avec données préservées
-            const messageSimple = controle.message || `Anomalie de solde pour le compte ${compte}`;
-            const insertQuery = `
-              INSERT INTO table_controle_anomalies (
-                id_compte, id_dossier, id_exercice, id_jnl, "codeCtrl", id_controle, message, 
-                valide, commentaire, id_periode, "createdAt", "updatedAt"
-              ) VALUES (
-                ${id_compte}, ${id_dossier}, ${id_exercice}, '${compte}', '${type}', 
-                '${controle.id_controle}', '${messageSimple.replace(/'/g, "''")}', 
-                ${valide}, '${(commentaire || '').replace(/'/g, "''")}', ${periodeId}, NOW(), NOW()
-              )
-              ON CONFLICT (id_compte, id_dossier, id_exercice, id_jnl, id_controle) DO NOTHING
-            `;
-            await db.sequelize.query(insertQuery, { type: db.Sequelize.QueryTypes.INSERT });
-            console.log(`DEBUG - Insertion anomalie: compte=${compte}, valide=${valide}`);
           }
         }
 
@@ -681,7 +781,7 @@ exports.executeAll = async (req, res) => {
           ecrituresByCompte[compte].push(ecriture);
         }
 
-        // Vérifier chaque compte - une seule anomalie par compte
+        // Vérifier chaque compte - une anomalie par ligne anormale
         for (const [compte, ecrituresCompte] of Object.entries(ecrituresByCompte)) {
           // Trouver le contrôle correspondant
           const comptePrefix = compte.substring(0, 2);
@@ -692,10 +792,6 @@ exports.executeAll = async (req, res) => {
           if (!controle) continue;
 
           const testType = controle.test ? controle.test.toUpperCase() : null;
-          
-          // Calculer totaux pour ce compte
-          const totalDebit = ecrituresCompte.reduce((sum, e) => sum + (parseFloat(e.debit) || 0), 0);
-          const totalCredit = ecrituresCompte.reduce((sum, e) => sum + (parseFloat(e.credit) || 0), 0);
           
           // Trouver les lignes anormales selon le test
           let lignesAnormales = [];
@@ -710,7 +806,31 @@ exports.executeAll = async (req, res) => {
             console.log(`SENS_ECRITURE - Lignes anormales:`, lignesAnormales.map(l => ({id: l.id, debit: l.debit, credit: l.credit})));
           }
 
-          // Ne créer l'anomalie que s'il y a des lignes anormales
+          // Créer une anomalie individuelle pour CHAQUE ligne anormale
+          for (const ligne of lignesAnormales) {
+            const key = `${ligne.id}_${controle.id_controle}`;
+            const savedData = anomaliesMap[key] || {};
+            const messageSimple = controle.message || `Anomalie de sens d'imputation pour le compte ${compte}`;
+            
+            console.log(`SENS_ECRITURE DEBUG - Création anomalie: ligne=${ligne.id}, compte=${compte}, controle.id=${controle.id}, controle.id_controle=${controle.id_controle}`);
+            
+            // Insérer une anomalie individuelle pour cette ligne
+            await insertLineAnomaly({
+              id_compte,
+              id_dossier,
+              id_exercice,
+              line: ligne,  // Ligne individuelle anormale
+              type,
+              id_controle: controle.id_controle,
+              message: messageSimple,
+              savedData,
+              idPeriode
+            });
+            
+            console.log(`SENS_ECRITURE - Insertion anomalie individuelle: ligne=${ligne.id}, compte=${compte}, id_controle=${controle.id_controle}`);
+          }
+          
+          // Ajouter au résultat si des lignes anormales existent
           if (lignesAnormales.length > 0) {
             const messageSimple = controle.message || `Anomalie de sens d'imputation pour le compte ${compte}`;
             
@@ -721,27 +841,6 @@ exports.executeAll = async (req, res) => {
               nbLignesAnormales: lignesAnormales.length,
               message: messageSimple
             });
-
-            // Récupérer les données sauvegardées si elles existent
-            const key = `${compte}_${controle.id_controle}`;
-            const savedData = anomaliesMap[key] || {};
-            const valide = savedData.valide || false;
-            const commentaire = savedData.commentaire || '';
-            const periodeId = savedData.id_periode || idPeriode || 'NULL';
-
-            // Insérer dans table_controle_anomalies avec données préservées
-            const insertQuerySensEcriture = `
-              INSERT INTO table_controle_anomalies (
-                id_compte, id_dossier, id_exercice, id_jnl, "codeCtrl", id_controle, message, 
-                valide, commentaire, id_periode, "createdAt", "updatedAt"
-              ) VALUES (
-                ${id_compte}, ${id_dossier}, ${id_exercice}, '${compte}', '${type}',
-                '${controle.id_controle}', '${messageSimple.replace(/'/g, "''")}', 
-                ${valide}, '${(commentaire || '').replace(/'/g, "''")}', ${periodeId}, NOW(), NOW()
-              )
-              ON CONFLICT (id_compte, id_dossier, id_exercice, id_jnl, id_controle) DO NOTHING
-            `;
-            await db.sequelize.query(insertQuerySensEcriture, { type: db.Sequelize.QueryTypes.INSERT });
           }
         }
 
@@ -820,91 +919,70 @@ exports.executeAll = async (req, res) => {
           return await db.sequelize.query(query, { type: db.Sequelize.QueryTypes.SELECT });
         };
 
-        // Regrouper les écritures anormales par compte
-        const comptesImmoAnormaux = {};
+        // Traiter les anomalies d'immobilisations (une anomalie par ligne individuelle)
         for (const ecriture of ecrituresImmoAnormales) {
           const compte = ecriture.comptegen || ecriture.compteaux;
-          if (!comptesImmoAnormaux[compte]) {
-            comptesImmoAnormaux[compte] = [];
-          }
-          comptesImmoAnormaux[compte].push(ecriture);
-        }
-
-        const comptesChargesAnormaux = {};
-        for (const ecriture of ecrituresChargesAnormales) {
-          const compte = ecriture.comptegen || ecriture.compteaux;
-          if (!comptesChargesAnormaux[compte]) {
-            comptesChargesAnormaux[compte] = [];
-          }
-          comptesChargesAnormaux[compte].push(ecriture);
-        }
-
-        // Traiter les anomalies d'immobilisations (par compte)
-        for (const [compte, ecritures] of Object.entries(comptesImmoAnormaux)) {
-          const montant = ecritures.reduce((sum, e) => sum + ((parseFloat(e.debit) || 0) - (parseFloat(e.credit) || 0)), 0);
-          const key = `${compte}_${controles[0]?.id_controle || 'IMMO_CHARGE'}`;
+          const key = `${ecriture.id}_${controles[0]?.id_controle || 'IMMO_CHARGE'}`;
           const savedData = anomaliesMap[key] || {};
           
-          // Récupérer l'écriture complète de la première écriture
-          const ecritureComplete = await getEcritureComplete(ecritures[0].id_ecriture);
+          // Récupérer l'écriture complète de cette ligne
+          const ecritureComplete = await getEcritureComplete(ecriture.id_ecriture);
           
           anomaliesDetectees.push({
             controleId: controles[0]?.id,
             compte: compte,
-            montant: montant,
+            montant: (parseFloat(ecriture.debit) || 0) - (parseFloat(ecriture.credit) || 0),
             type: 'IMMO_INSUFFISANT',
             message: `${messageAnomalie} - Immobilisation ${compte} inf a ${SEUIL_CAPITALISATION}`,
             ecritureComplete: ecritureComplete,
-            ligneAnormale: ecritures[0]
+            ligneAnormale: ecriture
           });
           
-          // Insérer dans table_controle_anomalies
-          const insertQuery = `
-            INSERT INTO table_controle_anomalies (
-              id_compte, id_dossier, id_exercice, id_jnl, "codeCtrl", id_controle, message, 
-              valide, commentaire, id_periode, "createdAt", "updatedAt"
-            ) VALUES (
-              ${id_compte}, ${id_dossier}, ${id_exercice}, '${compte}', '${type}', 
-              '${controles[0]?.id_controle || 'IMMO_CHARGE'}', '${messageAnomalie.replace(/'/g, "''")} - Immobilisation ${compte}: inf a ${SEUIL_CAPITALISATION}', 
-              ${savedData.valide || false}, '${(savedData.commentaire || '').replace(/'/g, "''")}', ${savedData.id_periode || idPeriode || 'NULL'}, NOW(), NOW()
-            )
-            ON CONFLICT (id_compte, id_dossier, id_exercice, id_jnl, id_controle) DO NOTHING
-          `;
-          await db.sequelize.query(insertQuery, { type: db.Sequelize.QueryTypes.INSERT });
+          // Insérer une anomalie individuelle pour cette ligne (utilise l'ID de la ligne)
+          await insertLineAnomaly({
+            id_compte,
+            id_dossier,
+            id_exercice,
+            line: ecriture,  // Ligne individuelle
+            type,
+            id_controle: controles[0]?.id_controle || 'IMMO_CHARGE',
+            message: `${messageAnomalie} - Immobilisation ${compte}: inf a ${SEUIL_CAPITALISATION}`,
+            savedData,
+            idPeriode
+          });
         }
         
-        // Traiter les anomalies de charges (par compte)
-        for (const [compte, ecritures] of Object.entries(comptesChargesAnormaux)) {
-          const montant = ecritures.reduce((sum, e) => sum + ((parseFloat(e.debit) || 0) - (parseFloat(e.credit) || 0)), 0);
-          const key = `${compte}_${controles[0]?.id_controle || 'IMMO_CHARGE'}`;
+        // Traiter les anomalies de charges (une anomalie par ligne individuelle)
+        for (const ecriture of ecrituresChargesAnormales) {
+          const compte = ecriture.comptegen || ecriture.compteaux;
+          const key = `${ecriture.id}_${controles[0]?.id_controle || 'IMMO_CHARGE'}`;
           const savedData = anomaliesMap[key] || {};
           
-          // Récupérer l'écriture complète de la première écriture
-          const ecritureComplete = await getEcritureComplete(ecritures[0].id_ecriture);
+          // Récupérer l'écriture complète de cette ligne
+          const ecritureComplete = await getEcritureComplete(ecriture.id_ecriture);
           
           anomaliesDetectees.push({
             controleId: controles[0]?.id,
             compte: compte,
-            montant: montant,
+            montant: parseFloat(ecriture.debit) || 0,
             type: 'CHARGE_A_CAPITALISER',
             message: `${messageAnomalie} - Charge ${compte} débit suppérieur à ${SEUIL_CAPITALISATION}`,
             ecritureComplete: ecritureComplete,
-            ligneAnormale: ecritures[0]
+            ligneAnormale: ecriture
           });
           
-          // Insérer dans table_controle_anomalies
-          const insertQuery = `
-            INSERT INTO table_controle_anomalies (
-              id_compte, id_dossier, id_exercice, id_jnl, "codeCtrl", id_controle, message, 
-              valide, commentaire, id_periode, "createdAt", "updatedAt"
-            ) VALUES (
-              ${id_compte}, ${id_dossier}, ${id_exercice}, '${compte}', '${type}', 
-              '${controles[0]?.id_controle || 'IMMO_CHARGE'}', '${messageAnomalie.replace(/'/g, "''")} - Charge ${compte}: débit suppérieur à ${SEUIL_CAPITALISATION}', 
-              ${savedData.valide || false}, '${(savedData.commentaire || '').replace(/'/g, "''")}', ${savedData.id_periode || idPeriode || 'NULL'}, NOW(), NOW()
-            )
-            ON CONFLICT (id_compte, id_dossier, id_exercice, id_jnl, id_controle) DO NOTHING
-          `;
-          await db.sequelize.query(insertQuery, { type: db.Sequelize.QueryTypes.INSERT });
+          // Insérer une anomalie individuelle pour cette ligne (utilise l'ID de la ligne)
+          await insertLineAnomaly({
+            id_compte,
+            id_dossier,
+            id_exercice,
+            line: ecriture,  // Ligne individuelle
+            type,
+            id_controle: controles[0]?.id_controle || 'IMMO_CHARGE',
+            message: `${messageAnomalie} - Charge ${compte}: débit suppérieur à ${SEUIL_CAPITALISATION}`,
+            savedData,
+            idPeriode
+          });
         }
         
         // Mettre à jour les contrôles avec les anomalies
@@ -1054,13 +1132,15 @@ exports.executeAll = async (req, res) => {
               hasTvaImmo
             });
             
-            // Insérer dans table_controle_anomalies
+            // Insérer dans table_controle_anomalies - UTIL_CPT_TVA utilise id_ecriture comme id_jnl
+            // et on met le compte de la première ligne dans id_num_compte
+            const firstLineCompte = lignes[0]?.comptegen || lignes[0]?.compteaux || '';
             const insertQuery = `
               INSERT INTO table_controle_anomalies (
-                id_compte, id_dossier, id_exercice, id_jnl, "codeCtrl", id_controle, message, 
+                id_compte, id_dossier, id_exercice, id_jnl, id_num_compte, "codeCtrl", id_controle, message, 
                 valide, commentaire, id_periode, "createdAt", "updatedAt"
               ) VALUES (
-                ${id_compte}, ${id_dossier}, ${id_exercice}, '${idEcriture}', '${type}', 
+                ${id_compte}, ${id_dossier}, ${id_exercice}, '${idEcriture}', '${firstLineCompte.replace(/'/g, "''")}', '${type}', 
                 '${controles[0]?.id_controle || 'UTIL_CPT_TVA'}', '${anomalieMessage.replace(/'/g, "''")}', 
                 ${valide}, '${(commentaire || '').replace(/'/g, "''")}', ${periodeId}, NOW(), NOW()
               )
@@ -1183,18 +1263,18 @@ exports.executeAll = async (req, res) => {
               message: messageAnomalie
             });
 
-            const insertQuery = `
-              INSERT INTO table_controle_anomalies (
-                id_compte, id_dossier, id_exercice, id_jnl, "codeCtrl", id_controle, message,
-                valide, commentaire, id_periode, "createdAt", "updatedAt"
-              ) VALUES (
-                ${id_compte}, ${id_dossier}, ${id_exercice}, '${row.id}', '${type}',
-                '${controle.id_controle}', '${messageAnomalie.replace(/'/g, "''")}',
-                ${savedData.valide || false}, '${(savedData.commentaire || '').replace(/'/g, "''")}', ${savedData.id_periode || idPeriode || 'NULL'}, NOW(), NOW()
-              )
-              ON CONFLICT (id_compte, id_dossier, id_exercice, id_jnl, id_controle) DO NOTHING
-            `;
-            await db.sequelize.query(insertQuery, { type: db.Sequelize.QueryTypes.INSERT });
+            // Utiliser insertLineAnomaly comme les autres contrôles
+            await insertLineAnomaly({
+              id_compte,
+              id_dossier,
+              id_exercice,
+              line: row,  // row contient id (line.id) et comptegen
+              type,
+              id_controle: controle.id_controle,
+              message: messageAnomalie,
+              savedData,
+              idPeriode
+            });
           }
         }
 

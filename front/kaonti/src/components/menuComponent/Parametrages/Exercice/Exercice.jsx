@@ -929,7 +929,7 @@ export default function ParamExerciceComponent() {
 
                         <Periode
                             selectedExercice={selectedExercice}
-                            idCompte={id}
+                            idCompte={compteId}
                             idDossier={fileId}
                             axiosPrivate={axiosPrivate}
                             canAdd={canAdd}
