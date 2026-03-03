@@ -70,7 +70,6 @@ exports.getOrCreateRevisionControles = async (req, res) => {
       const fin = date_fin.split('T')[0];
       
       // Chercher une période qui chevauche la plage de dates
-      // (la période commence avant ou à la date de fin ET finit après ou à la date de début)
       const periodeQuery = `
         SELECT id, date_debut, date_fin FROM periodes 
         WHERE id_compte = ${id_compte} 
@@ -420,7 +419,7 @@ exports.executeAll = async (req, res) => {
     console.log(`Sauvegarde de ${existingAnomalies.length} anomalies existantes`);
     console.log('DEBUG - Clés sauvegardées:', Object.keys(anomaliesMap).slice(0, 5));
 
-    // 2. débit suppérieur àrimer les anciens contrôles pour cet exercice + nettoyer controle_anomalies (SQL)
+    // 2. Supprimer les anciens contrôles pour cet exercice + nettoyer controle_anomalies (SQL)
     await db.sequelize.query(`
       DELETE FROM table_revisions_controles
       WHERE id_compte = ${id_compte}
@@ -465,7 +464,7 @@ exports.executeAll = async (req, res) => {
       }
     }
 
-    // 2. Recopier depuis la matrice (avec Affichage) (SQL) - SEULEMENT les contrôles validés
+    // 2. Recopier depuis la matrice (avec Affichage et id_periode) (SQL) - SEULEMENT les contrôles validés
     const matricesQuery = `SELECT * FROM revisions_controles_matrices WHERE "Valider" = true`;
     const matrices = await db.sequelize.query(matricesQuery, { type: db.Sequelize.QueryTypes.SELECT });
     
@@ -479,7 +478,7 @@ exports.executeAll = async (req, res) => {
           ${id_compte}, ${id_dossier}, ${id_exercice}, '${matrix.id_controle}',
           '${matrix.Type}', '${matrix.compte || ''}', '${matrix.test || ''}',
           '${(matrix.description || '').replace(/'/g, "''")}', 0, '${(matrix.details || '').replace(/'/g, "''")}',
-          false, '${(matrix.Commentaire || '').replace(/'/g, "''")}',
+          ${matrix.Valider || false}, '${(matrix.Commentaire || '').replace(/'/g, "''")}',
           '${matrix.Affichage || 'ligne'}', ${idPeriode || 'NULL'}, NOW(), NOW()
         )
         RETURNING *
