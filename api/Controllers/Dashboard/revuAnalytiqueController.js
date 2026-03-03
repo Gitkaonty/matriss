@@ -64,7 +64,7 @@ exports.getRevuAnalytiqueNN1 = async (req, res) => {
                     COALESCE(jn.compte_key, jn1.compte_key) AS compte,
                     COALESCE(jn.libellecompte, jn1.libellecompte) AS libelle,
                     COALESCE(jn.solde, 0) AS "soldeN",
-                    COALESCE(jn1.solde, 0) AS "soldeN1",
+                    jn1.solde AS "soldeN1",
                     COALESCE(jn.solde, 0) - COALESCE(jn1.solde, 0) AS var,
                     CASE
                         WHEN jn1.compte_key IS NULL THEN 100
@@ -78,7 +78,7 @@ exports.getRevuAnalytiqueNN1 = async (req, res) => {
                     END AS "varPourcent",
                     COALESCE(ca.valide_anomalie, false) AS "valide_anomalie",
                     CASE
-                        WHEN jn1.compte_key IS NULL THEN true
+                        WHEN jn1.compte_key IS NULL THEN false
                         WHEN COALESCE(jn1.solde, 0) != 0
                         AND ABS((COALESCE(jn.solde, 0) - COALESCE(jn1.solde, 0)) / jn1.solde) >= 0.3
                             THEN true
@@ -134,7 +134,7 @@ exports.getRevuAnalytiqueNN1 = async (req, res) => {
                     SUM(COALESCE(debit, 0) - COALESCE(credit, 0)) AS var,
                     100 AS "varPourcent",
                     COALESCE(ca.valide_anomalie, false) AS "valide_anomalie",
-                    true AS anomalies,
+                    false AS anomalies,
                     COALESCE(ca.commentaire, '') AS commentaire
                 FROM journals j
                 LEFT JOIN commentaireanalytiques ca
@@ -226,7 +226,7 @@ exports.getRevuAnalytiqueNN1 = async (req, res) => {
             compte: row.compte || '',
             libelle: row.libelle || '',
             soldeN: round2(parseFloat(row.soldeN) || 0),
-            soldeN1: round2(parseFloat(row.soldeN1) || 0),
+            soldeN1: row.soldeN1 !== null && row.soldeN1 !== undefined ? round2(parseFloat(row.soldeN1)) : null,
             var: round2(parseFloat(row.var) || 0),
             varPourcent: row.varPourcent !== null && row.varPourcent !== undefined ? round2(parseFloat(row.varPourcent)) : null,
             valide_anomalie: !!row.valide_anomalie,
