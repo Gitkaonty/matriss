@@ -17,11 +17,13 @@ import {
     DialogContent,
     DialogActions
 } from '@mui/material';
+
 import { DataGrid } from '@mui/x-data-grid';
 import { init } from '../../../../../init';
 import useAxiosPrivate from '../../../../hooks/useAxiosPrivate';
 import RevisionDetails from './RevisionDetails';
 import PopupActionConfirm from "../../../componentsTools/popupActionConfirm";
+import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
 
 // Format date as dd-mm-yy
 const formatDate = (dateString) => {
@@ -64,6 +66,10 @@ export default function Revision() {
     const [listePeriodes, setListePeriodes] = useState([]);
     const [selectedPeriodeId, setSelectedPeriodeId] = useState('');
     const [selectedPeriodeDates, setSelectedPeriodeDates] = useState(null);
+    const [fileInfos, setFileInfos] = useState(null);
+
+    // Popup pour erreur de période non sélectionnée
+    const [periodeErrorPopup, setPeriodeErrorPopup] = useState({ open: false, message: '' });
 
     const getIds = () => {
         const pathParts = window.location.pathname.split('/');
@@ -116,7 +122,20 @@ export default function Revision() {
             console.error('Error fetching exercices:', error);
         }
     };
-    
+
+    const fetchDossierInfos = async () => {
+        try {
+            const { id_dossier } = getIds();
+            const response = await axiosPrivate.get(`/home/FileInfos/${id_dossier}`);
+            const resData = response.data;
+            if (resData.state && resData.fileInfos && resData.fileInfos.length > 0) {
+                setFileInfos(resData.fileInfos[0]);
+            }
+        } catch (error) {
+            console.error('Error fetching dossier infos:', error);
+        }
+    };
+
     const fetchPeriodes = useCallback(async (exerciceId) => {
         if (!exerciceId) return;
         try {
@@ -134,6 +153,7 @@ export default function Revision() {
 
     useEffect(() => {
         fetchExercices();
+        fetchDossierInfos();
     }, []);
 
     useEffect(() => {
@@ -141,12 +161,12 @@ export default function Revision() {
             fetchControles();
             fetchPeriodes(selectedExerciceId);
         }
-    }, [selectedExerciceId, fetchControles, fetchPeriodes]);
+    }, [selectedExerciceId, selectedPeriodeDates, fetchControles, fetchPeriodes]);
 
 
     const handleChangeExercice = (exerciceId) => {
         setSelectedExerciceId(exerciceId);
-        setSelectedPeriodeId('exercice');
+        setSelectedPeriodeId('');
         setSelectedPeriodeDates(null);
         setSelectedTypeDetails('');
         fetchPeriodes(exerciceId);
@@ -230,6 +250,16 @@ export default function Revision() {
 
     const handleControler = () => {
         if (!selectedExerciceId) return;
+
+        // Vérifier qu'une période spécifique est sélectionnée
+        if (!selectedPeriodeId || selectedPeriodeId === 'exercice') {
+            setPeriodeErrorPopup({
+                open: true,
+                message: 'Veuillez sélectionner une période spécifique avant de lancer la révision.'
+            });
+            return;
+        }
+
         setConfirmReviserPopup(true);
     };
 
@@ -246,15 +276,15 @@ export default function Revision() {
     const handleToggleValidateType = async (type, nextValider) => {
         try {
             const items = (controlesByType.get(type) || []).filter((c) => c?.id);
-            
+
             // Si on essaie de valider (pas d'annuler), vérifier que toutes les anomalies sont validées
             if (nextValider) {
                 const { id_compte, id_dossier, id_exercice } = getIds();
-                
+
                 // Récupérer toutes les anomalies pour ce type de contrôle
                 let hasUnvalidatedAnomalies = false;
                 let totalUnvalidated = 0;
-                
+
                 for (const controle of items) {
                     try {
                         let url = `/administration/revisionControleAuto/${id_compte}/${id_dossier}/${id_exercice}/anomalies/controle/${encodeURIComponent(controle.id_controle)}`;
@@ -264,7 +294,7 @@ export default function Revision() {
                             params.append('date_fin', selectedPeriodeDates.date_fin);
                             url += `?${params.toString()}`;
                         }
-                        
+
                         const response = await axiosPrivate.get(url);
                         if (response.data.state && response.data.anomalies) {
                             const unvalidated = response.data.anomalies.filter(a => !a.valide);
@@ -277,7 +307,7 @@ export default function Revision() {
                         console.error('Error fetching anomalies for controle:', controle.id_controle, err);
                     }
                 }
-                
+
                 if (hasUnvalidatedAnomalies) {
                     setErrorPopup({
                         open: true,
@@ -286,7 +316,7 @@ export default function Revision() {
                     return;
                 }
             }
-            
+
             // Ouvrir le popup de confirmation
             setConfirmPopup({ open: true, type, nextValider });
         } catch (error) {
@@ -299,7 +329,7 @@ export default function Revision() {
             setConfirmPopup({ open: false, type: null, nextValider: null });
             return;
         }
-        
+
         setConfirmLoading(true);
         try {
             const items = (controlesByType.get(confirmPopup.type) || []).filter((c) => c?.id);
@@ -368,6 +398,9 @@ export default function Revision() {
                     isLoading={confirmReviserLoading}
                 />
             )}
+            <Box sx={{ mb: 1, width: '100px' }}>
+                {InfoFileStyle(fileInfos?.dossier)}
+            </Box>
             <Box
                 sx={{
                     mb: 3,
@@ -377,9 +410,12 @@ export default function Revision() {
                     boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                 }}
             >
-                <Typography component="div" variant="h7" sx={{ fontWeight: 600, color: '#333', mb: 2, display: 'block' }}>
-                    Administration-Révision
-                </Typography>
+
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                    <Typography component="div" variant="h7" sx={{ fontWeight: 600, color: '#333' }}>
+                        Administration-Révision
+                    </Typography>
+                </Box>
 
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
                     <Stack direction="row" spacing={0} alignItems="center" sx={{ flex: '0 0 auto' }}>
@@ -415,6 +451,14 @@ export default function Revision() {
                                 <Select
                                     value={selectedPeriodeId}
                                     onChange={(e) => handleChangePeriode(e.target.value)}
+                                    displayEmpty
+                                    renderValue={(selected) => {
+                                        if (!selected) {
+                                            return <em>Sélectionner une période...</em>;
+                                        }
+                                        const periode = listePeriodes.find(p => p.id === selected);
+                                        return periode ? `${formatDate(periode.date_debut)} au ${formatDate(periode.date_fin)}` : '';
+                                    }}
                                     sx={{
                                         height: 32,
                                         fontSize: 15,
@@ -422,8 +466,8 @@ export default function Revision() {
                                     }}
                                     MenuProps={{ disableScrollLock: true }}
                                 >
-                                    <MenuItem value="exercice">
-                                        {currentExerciceDates ? `${formatDate(currentExerciceDates.date_debut)} au ${formatDate(currentExerciceDates.date_fin)}` : 'Tout l\'exercice'}
+                                    <MenuItem value="" disabled>
+                                        <em>Sélectionner une période...</em>
                                     </MenuItem>
                                     {listePeriodes.map((periode) => (
                                         <MenuItem key={periode.id} value={periode.id}>
@@ -438,7 +482,7 @@ export default function Revision() {
                     <Button
                         variant="contained"
                         onClick={handleControler}
-                        disabled={!selectedExerciceId}
+                        disabled={!selectedExerciceId || !selectedPeriodeId}
                         style={{
                             textTransform: 'none',
                             outline: 'none',
@@ -489,24 +533,24 @@ export default function Revision() {
                             <DataGrid
                                 rows={controlesGrouped.map((c, idx) => ({ id: idx, ...c }))}
                                 columns={[
-                                    // {
-                                    //     field: 'Type',
-                                    //     headerName: 'Type',
-                                    //     width: 150, // largeur fixe
-                                    //     renderCell: (params) => (
-                                    //         <Typography
-                                    //             variant="body2"
-                                    //             sx={{
-                                    //                 fontSize: 13,
-                                    //                 whiteSpace: 'nowrap',
-                                    //                 overflow: 'hidden',
-                                    //                 textOverflow: 'ellipsis',
-                                    //             }}
-                                    //         >
-                                    //             {params.value}
-                                    //         </Typography>
-                                    //     ),
-                                    // },
+                                    {
+                                        field: 'Type',
+                                        headerName: 'Type',
+                                        width: 150, // largeur fixe
+                                        renderCell: (params) => (
+                                            <Typography
+                                                variant="body2"
+                                                sx={{
+                                                    fontSize: 13,
+                                                    whiteSpace: 'nowrap',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                }}
+                                            >
+                                                {params.value}
+                                            </Typography>
+                                        ),
+                                    },
                                     {
                                         field: 'description',
                                         headerName: 'Description',
@@ -688,6 +732,32 @@ export default function Revision() {
                     <Button
                         variant="contained"
                         onClick={() => setErrorPopup({ open: false, message: '' })}
+                        sx={{ backgroundColor: initial.theme }}
+                    >
+                        OK
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* POPUP D'ERREUR POUR PÉRIODE NON SÉLECTIONNÉE */}
+            <Dialog
+                open={periodeErrorPopup.open}
+                onClose={() => setPeriodeErrorPopup({ open: false, message: '' })}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle sx={{ color: 'warning.main', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <span>⚠️</span> Période requise
+                </DialogTitle>
+                <DialogContent>
+                    <Typography sx={{ mt: 1 }}>
+                        {periodeErrorPopup.message}
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        variant="contained"
+                        onClick={() => setPeriodeErrorPopup({ open: false, message: '' })}
                         sx={{ backgroundColor: initial.theme }}
                     >
                         OK
