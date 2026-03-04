@@ -324,9 +324,9 @@ exports.updateAnomaly = async (req, res) => {
     const { id_compte, id_dossier, id_exercice, id_anomalie } = req.params;
     const { valide, commentaire, id_periode, validateAllByEcriture } = req.body;
 
-    console.log('=== UPDATE ANOMALY ===');
-    console.log('Params:', { id_compte, id_dossier, id_exercice, id_anomalie });
-    console.log('Body:', { valide, commentaire, id_periode, validateAllByEcriture });
+    // console.log('=== UPDATE ANOMALY ===');
+    // console.log('Params:', { id_compte, id_dossier, id_exercice, id_anomalie });
+    // console.log('Body:', { valide, commentaire, id_periode, validateAllByEcriture });
 
     const anomaly = await db.tableControleAnomalies.findOne({
       where: {
@@ -338,14 +338,14 @@ exports.updateAnomaly = async (req, res) => {
     });
 
     if (!anomaly) {
-      console.log('Anomalie non trouvée:', id_anomalie);
+      // console.log('Anomalie non trouvée:', id_anomalie);
       return res.status(404).json({
         state: false,
         message: 'Anomalie non trouvée. Elle a peut-être été supprimée lors d\'un re-contrôle si elle n\'est plus détectée.'
       });
     }
 
-    console.log('Anomalie trouvée:', { id: anomaly.id, valide: anomaly.valide, id_periode: anomaly.id_periode, id_jnl: anomaly.id_jnl, id_controle: anomaly.id_controle });
+    // console.log('Anomalie trouvée:', { id: anomaly.id, valide: anomaly.valide, id_periode: anomaly.id_periode, id_jnl: anomaly.id_jnl, id_controle: anomaly.id_controle });
 
     // Récupérer le contrôle pour connaître son type
     const controle = await db.revisionControle.findOne({
@@ -358,7 +358,7 @@ exports.updateAnomaly = async (req, res) => {
     });
 
     const isUtilCptTva = controle?.Type === 'UTIL_CPT_TVA';
-    console.log('Type de contrôle:', controle?.Type, '- isUtilCptTva:', isUtilCptTva);
+    // console.log('Type de contrôle:', controle?.Type, '- isUtilCptTva:', isUtilCptTva);
 
     const updatePayload = {};
     if (typeof valide === 'boolean') updatePayload.valide = valide;
@@ -367,14 +367,14 @@ exports.updateAnomaly = async (req, res) => {
     // Si id_periode fourni, l'utiliser, sinon utiliser l'id_periode de l'anomalie existante ou chercher une période pour l'exercice si l'anomalie n'en a pas
     if (id_periode !== undefined) {
       updatePayload.id_periode = id_periode;
-      console.log('id_periode fourni dans body:', id_periode);
+      // console.log('id_periode fourni dans body:', id_periode);
     } else if (anomaly.id_periode) {
       // Utiliser l'id_periode de l'anomalie existante
       updatePayload.id_periode = anomaly.id_periode;
-      console.log('Utilisation id_periode de l\'anomalie existante:', anomaly.id_periode);
+      // console.log('Utilisation id_periode de l\'anomalie existante:', anomaly.id_periode);
     } else {
-      console.log('Anomalie sans id_periode, recherche d\'une période...');
-      console.log('Recherche avec:', { id_compte, id_dossier, id_exercice });
+      // console.log('Anomalie sans id_periode, recherche d\'une période...');
+      // console.log('Recherche avec:', { id_compte, id_dossier, id_exercice });
 
       // Chercher une période pour cet exercice avec tous les critères
       let periode = await db.periodes.findOne({
@@ -388,7 +388,7 @@ exports.updateAnomaly = async (req, res) => {
 
       // Si pas trouvé, chercher avec id_dossier = 0 (valeur par défaut)
       if (!periode) {
-        console.log('Pas trouvé avec id_dossier=' + id_dossier + ', essai avec id_dossier=0');
+        // console.log('Pas trouvé avec id_dossier=' + id_dossier + ', essai avec id_dossier=0');
         periode = await db.periodes.findOne({
           where: {
             id_compte,
@@ -401,7 +401,7 @@ exports.updateAnomaly = async (req, res) => {
 
       // Si toujours pas trouvé, chercher seulement par id_exercice
       if (!periode) {
-        console.log('Pas trouvé avec id_dossier=0, essai avec id_exercice seul');
+        // console.log('Pas trouvé avec id_dossier=0, essai avec id_exercice seul');
         periode = await db.periodes.findOne({
           where: {
             id_exercice
@@ -409,20 +409,20 @@ exports.updateAnomaly = async (req, res) => {
           order: [['date_debut', 'ASC']]
         });
       }
-      console.log('Résultat recherche période:', periode ? { id: periode.id, libelle: periode.libelle, id_dossier: periode.id_dossier } : 'Aucune période trouvée');
+      // console.log('Résultat recherche période:', periode ? { id: periode.id, libelle: periode.libelle, id_dossier: periode.id_dossier } : 'Aucune période trouvée');
 
       if (periode) {
         updatePayload.id_periode = periode.id;
-        console.log('Période auto-assignée lors de la validation:', periode.id);
+        // console.log('Période auto-assignée lors de la validation:', periode.id);
       }
     }
 
-    console.log('Update payload:', updatePayload);
+    // console.log('Update payload:', updatePayload);
 
     // Pour UTIL_CPT_TVA avec validateAllByEcriture=true, valider toutes les anomalies du même id_ecriture
     let updatedCount = 1;
     if (isUtilCptTva && validateAllByEcriture && typeof valide === 'boolean' && anomaly.id_jnl) {
-      console.log(`UTIL_CPT_TVA - Validation groupée pour id_ecriture=${anomaly.id_jnl}`);
+      // console.log(`UTIL_CPT_TVA - Validation groupée pour id_ecriture=${anomaly.id_jnl}`);
 
       // Récupérer toutes les anomalies du même id_ecriture
       const relatedAnomalies = await db.tableControleAnomalies.findAll({
