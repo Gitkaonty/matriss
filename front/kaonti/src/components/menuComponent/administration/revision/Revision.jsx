@@ -89,10 +89,11 @@ export default function Revision() {
             let url = `/administration/revisionControleAuto/${id_compte}/${id_dossier}/${id_exercice}`;
 
             // Ajouter les dates de période si sélectionnée
-            if (selectedPeriodeDates) {
+            if (selectedPeriodeDates && selectedPeriodeId) {
                 const params = new URLSearchParams();
                 params.append('date_debut', selectedPeriodeDates.date_debut);
                 params.append('date_fin', selectedPeriodeDates.date_fin);
+                params.append('id_periode', selectedPeriodeId);
                 url += `?${params.toString()}`;
                 console.log('DEBUG FRONT - URL fetchControles:', url);
             }
@@ -105,7 +106,7 @@ export default function Revision() {
         } catch (error) {
             console.error('Error fetching controles:', error);
         }
-    }, [axiosPrivate, selectedExerciceId, selectedPeriodeDates]);
+    }, [axiosPrivate, selectedExerciceId, selectedPeriodeDates, selectedPeriodeId]);
 
     const fetchExercices = async () => {
         try {
@@ -161,7 +162,7 @@ export default function Revision() {
             fetchControles();
             fetchPeriodes(selectedExerciceId);
         }
-    }, [selectedExerciceId, selectedPeriodeDates, fetchControles, fetchPeriodes]);
+    }, [selectedExerciceId, selectedPeriodeDates, fetchControles, fetchPeriodes, selectedPeriodeId]);
 
 
     const handleChangeExercice = (exerciceId) => {
@@ -211,10 +212,11 @@ export default function Revision() {
         try {
             let url = `/administration/revisionControleAuto/${id_compte}/${id_dossier}/${id_exercice}/executeAll`;
 
-            if (selectedPeriodeDates) {
+            if (selectedPeriodeDates && selectedPeriodeId) {
                 const params = new URLSearchParams();
                 params.append('date_debut', selectedPeriodeDates.date_debut);
                 params.append('date_fin', selectedPeriodeDates.date_fin);
+                params.append('id_periode', selectedPeriodeId);
                 url += `?${params.toString()}`;
                 console.log('DEBUG FRONT - URL handleControler:', url);
             }
@@ -288,10 +290,11 @@ export default function Revision() {
                 for (const controle of items) {
                     try {
                         let url = `/administration/revisionControleAuto/${id_compte}/${id_dossier}/${id_exercice}/anomalies/controle/${encodeURIComponent(controle.id_controle)}`;
-                        if (selectedPeriodeDates) {
+                        if (selectedPeriodeDates && selectedPeriodeId) {
                             const params = new URLSearchParams();
                             params.append('date_debut', selectedPeriodeDates.date_debut);
                             params.append('date_fin', selectedPeriodeDates.date_fin);
+                            params.append('id_periode', selectedPeriodeId);
                             url += `?${params.toString()}`;
                         }
 

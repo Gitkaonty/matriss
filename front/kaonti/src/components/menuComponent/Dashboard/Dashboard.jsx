@@ -316,7 +316,7 @@ export default function DashboardComponent() {
     await axios.get(`/devises/devise/compte/${compteId}/${fileId}`).then((reponse => {
       const resData = reponse.data;
       const deviseParDefaut = resData.find(val => val.par_defaut === true);
-      setDeviseParDefaut(deviseParDefaut?.code || 'MGA');
+      setDeviseParDefaut(deviseParDefaut?.code || 'EUR');
     }))
   }
 

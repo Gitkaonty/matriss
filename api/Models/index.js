@@ -123,6 +123,7 @@ db.revision = require('./revisionModel.js')(sequelize, DataTypes);
 db.revisionControle = require('./revisionControleModel.js')(sequelize, DataTypes);
 db.revisionControleMatrix = require('./revisionControleMatrixModel.js')(sequelize, DataTypes);
 db.tableControleAnomalies = require('./tableControleAnomaliesModel.js')(sequelize, DataTypes);
+db.revisionCommentaireAnomalies = require('./revisionCommentaireAnomaliesModel.js')(sequelize, DataTypes);
 
 //
 db.caSections = require('./caSectionMolel')(sequelize, DataTypes);
