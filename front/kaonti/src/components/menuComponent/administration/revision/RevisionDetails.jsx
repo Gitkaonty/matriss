@@ -42,8 +42,6 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
     const axiosPrivate = useAxiosPrivate();
     const [currentIndex, setCurrentIndex] = useState(0);
     const isValidatingRef = useRef(false);
-    const pendingRestoreSoldeCompteRef = useRef(null);
-    const pendingRestoreEcritureCompteRef = useRef(null);
     const [comment, setComment] = useState('');
     const [originalComment, setOriginalComment] = useState('');
     const [ecritures, setEcritures] = useState([]);
@@ -74,9 +72,11 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
 
     // Pagination spécifique SENS_SOLDE (par compte)
     const [soldeCompteIndex, setSoldeCompteIndex] = useState(0);
+    const pendingSoldeIdControleRef = useRef(null);
 
     // Pagination spécifique SENS_ECRITURE (par compte)
     const [ecritureCompteIndex, setEcritureCompteIndex] = useState(0);
+    const pendingEcritureIdControleRef = useRef(null);
 
     // Pagination spécifique IMMOB (par compte) - indépendante
     const [immobCompteIndex, setImmobCompteIndex] = useState(0);
@@ -91,6 +91,49 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
     const safeCurrentIndex = Math.min(Math.max(0, currentIndex), Math.max(0, total - 1));
     const currentItem = items[safeCurrentIndex] || null;
 
+        // Extraction des comptes uniques pour SENS_SOLDE (depuis journalLines)
+    const soldeComptesList = useMemo(() => {
+        const comptes = new Set();
+        anomalies.forEach(a => {
+            if (Array.isArray(a.journalLines)) {
+                a.journalLines.forEach(l => {
+                    const c = l?.comptegen || l?.compteaux;
+                    if (c) comptes.add(c);
+                });
+            }
+        });
+        const result = Array.from(comptes).sort();
+        // console.log('DEBUG SENS_SOLDE - soldeComptesList:', result);
+        return result;
+    }, [anomalies]);
+
+    
+    // Extraction des comptes uniques pour SENS_ECRITURE (depuis journalLines)
+    const ecritureComptesList = useMemo(() => {
+        const comptes = new Set();
+        anomalies.forEach(a => {
+            if (Array.isArray(a.journalLines)) {
+                a.journalLines.forEach(l => {
+                    const c = l?.comptegen || l?.compteaux;
+                    if (c) comptes.add(c);
+                });
+            }
+        });
+        return Array.from(comptes).sort();
+    }, [anomalies]);
+
+    // Index calculé - clampé aux bornes valides
+    const ecritureSafeCompteIndex = useMemo(() => {
+        if (ecritureComptesList.length === 0) return 0;
+        // Ne pas changer l'index, juste le clamp si hors bornes
+        return Math.min(Math.max(0, ecritureCompteIndex), ecritureComptesList.length - 1);
+    }, [ecritureComptesList.length, ecritureCompteIndex]);
+
+    const ecritureCurrentCompte = useMemo(() => {
+        if (ecritureComptesList.length === 0) return null;
+        return ecritureComptesList[ecritureSafeCompteIndex];
+    }, [ecritureComptesList, ecritureSafeCompteIndex]);
+
     // Réinitialiser la pagination quand les anomalies ou le contrôle changent
     useEffect(() => {
         setAnomaliesPage(0);
@@ -102,12 +145,34 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
     }, [anomalies.length, currentItem?.id_controle]);
 
     // Réinitialiser l'index de compte SENS_SOLDE quand le contrôle change
+    // mais restaurer vers le compte sauvegardé si on vient d'une action
     useEffect(() => {
+        const pendingIdControle = pendingSoldeIdControleRef.current;
+        if (pendingIdControle && currentItem?.id_controle !== pendingIdControle) {
+            // On est en train de restaurer vers un autre contrôle, chercher son index
+            const idx = items.findIndex(item => item.id_controle === pendingIdControle);
+            if (idx >= 0 && idx !== safeCurrentIndex) {
+                // Trouvé - restaurer vers ce contrôle
+                setCurrentIndex(idx);
+            }
+        }
+        pendingSoldeIdControleRef.current = null;
         setSoldeCompteIndex(0);
     }, [currentItem?.id_controle]);
 
     // Réinitialiser l'index de compte SENS_ECRITURE quand le contrôle change
+    // mais restaurer vers le compte sauvegardé si on vient d'une action
     useEffect(() => {
+        const pendingIdControle = pendingEcritureIdControleRef.current;
+        if (pendingIdControle && currentItem?.id_controle !== pendingIdControle) {
+            // On est en train de restaurer vers un autre contrôle, chercher son index
+            const idx = items.findIndex(item => item.id_controle === pendingIdControle);
+            if (idx >= 0 && idx !== safeCurrentIndex) {
+                // Trouvé - restaurer vers ce contrôle
+                setCurrentIndex(idx);
+            }
+        }
+        pendingEcritureIdControleRef.current = null;
         setEcritureCompteIndex(0);
     }, [currentItem?.id_controle]);
 
@@ -118,7 +183,6 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
 
     // Réinitialiser l'index d'écriture TVA quand les anomalies ou le contrôle changent
     useEffect(() => {
-        if (isValidatingRef.current) return;
         setTvaEcritureIndex(0);
     }, [anomalies.length, currentItem?.id_controle]);
 
@@ -154,23 +218,13 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
         return Array.from(comptes).sort();
     }, [anomalies]);
 
-    // Extraction des comptes uniques pour SENS_SOLDE (depuis journalLines)
-    const soldeComptesList = useMemo(() => {
-        const comptes = new Set();
-        anomalies.forEach(a => {
-            if (Array.isArray(a.journalLines)) {
-                a.journalLines.forEach(l => {
-                    const c = l?.comptegen || l?.compteaux;
-                    if (c) comptes.add(c);
-                });
-            }
-        });
-        return Array.from(comptes).sort();
-    }, [anomalies]);
-
+    // Index calculé - clampé aux bornes valides
     const soldeSafeCompteIndex = useMemo(() => {
         if (soldeComptesList.length === 0) return 0;
-        return Math.min(Math.max(0, soldeCompteIndex), soldeComptesList.length - 1);
+        // Ne pas changer l'index, juste le clamp si hors bornes
+        const result = Math.min(Math.max(0, soldeCompteIndex), soldeComptesList.length - 1);
+        // console.log('DEBUG SENS_SOLDE - soldeCompteIndex:', soldeCompteIndex, 'list.length:', soldeComptesList.length, 'result:', result);
+        return result;
     }, [soldeComptesList.length, soldeCompteIndex]);
 
     const soldeCurrentCompte = useMemo(() => {
@@ -178,53 +232,6 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
         return soldeComptesList[soldeSafeCompteIndex];
     }, [soldeComptesList, soldeSafeCompteIndex]);
 
-    useEffect(() => {
-        const pending = pendingRestoreSoldeCompteRef.current;
-        if (!pending) return;
-        if (isValidatingRef.current) return;
-
-        const idx = soldeComptesList.findIndex(c => String(c) === String(pending));
-        if (idx >= 0) {
-            setSoldeCompteIndex(idx);
-        }
-        pendingRestoreSoldeCompteRef.current = null;
-    }, [soldeComptesList]);
-
-    // Extraction des comptes uniques pour SENS_ECRITURE (depuis journalLines)
-    const ecritureComptesList = useMemo(() => {
-        const comptes = new Set();
-        anomalies.forEach(a => {
-            if (Array.isArray(a.journalLines)) {
-                a.journalLines.forEach(l => {
-                    const c = l?.comptegen || l?.compteaux;
-                    if (c) comptes.add(c);
-                });
-            }
-        });
-        return Array.from(comptes).sort();
-    }, [anomalies]);
-
-    const ecritureSafeCompteIndex = useMemo(() => {
-        if (ecritureComptesList.length === 0) return 0;
-        return Math.min(Math.max(0, ecritureCompteIndex), ecritureComptesList.length - 1);
-    }, [ecritureComptesList.length, ecritureCompteIndex]);
-
-    const ecritureCurrentCompte = useMemo(() => {
-        if (ecritureComptesList.length === 0) return null;
-        return ecritureComptesList[ecritureSafeCompteIndex];
-    }, [ecritureComptesList, ecritureSafeCompteIndex]);
-
-    useEffect(() => {
-        const pending = pendingRestoreEcritureCompteRef.current;
-        if (!pending) return;
-        if (isValidatingRef.current) return;
-
-        const idx = ecritureComptesList.findIndex(c => String(c) === String(pending));
-        if (idx >= 0) {
-            setEcritureCompteIndex(idx);
-        }
-        pendingRestoreEcritureCompteRef.current = null;
-    }, [ecritureComptesList]);
 
     // Extraction des comptes uniques pour IMMOB (tous les comptes des anomalies, y compris ecritureComplete)
     const immobComptesList = useMemo(() => {
@@ -341,24 +348,18 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
 
     // Réinitialiser l'index quand les contrôles changent significativement (changement de type ou nombre)
     useEffect(() => {
-        // Ne pas reset si on est en train de valider une anomalie
-        if (isValidatingRef.current) {
-            console.log('DEBUG - Validation en cours, pas de reset de currentIndex');
-            return;
-        }
-
-        console.log('DEBUG useEffect controles - items.length:', items.length);
-        console.log('DEBUG useEffect controles - currentIndex:', currentIndex);
+        // console.log('DEBUG useEffect controles - items.length:', items.length);
+        // console.log('DEBUG useEffect controles - currentIndex:', currentIndex);
 
         // Toujours reset à 0 si les contrôles changent (nouveau type)
         // ou si l'index actuel est hors limites
         if (items.length > 0) {
             if (currentIndex >= items.length) {
-                console.log('DEBUG - currentIndex hors limites, reset à 0');
+                // console.log('DEBUG - currentIndex hors limites, reset à 0');
                 setCurrentIndex(0);
             } else if (currentIndex === 0) {
                 // Déjà à 0, pas besoin de changer
-                console.log('DEBUG - currentIndex déjà à 0');
+                // console.log('DEBUG - currentIndex déjà à 0');
             }
         }
     }, [controles, items.length]);
@@ -517,17 +518,16 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
         }
 
         setConfirmLoading(true);
-        isValidatingRef.current = true;
         try {
             await updateAnomaly(confirmPopup.anomalie.id, { valide: !confirmPopup.anomalie.valide });
-            // Rafraîchir la liste des contrôles dans le parent
+            // Rafraîchir la liste des anomalies
+            await fetchAnomalies();
             if (onValidationChange) {
                 await onValidationChange();
             }
         } finally {
             setConfirmLoading(false);
             setConfirmPopup({ open: false, anomalie: null, action: null, line: null });
-            isValidatingRef.current = false;
         }
     };
 
@@ -546,21 +546,23 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
             open: true,
             anomalie: anomalie,
             line: line,
-            action: line.valide ? 'annuler_ligne' : 'valider_ligne'
+            action: anomalie.valide ? 'annuler_ligne' : 'valider_ligne'
         });
     };
 
     // Exécuter la validation de ligne après confirmation
     const executeValidateLine = async (line, anomalie, valide) => {
+        // console.log('DEBUG executeValidateLine - Type:', currentItem?.Type, 'current soldeCompteIndex:', soldeCompteIndex);
         try {
+            // Sauvegarder l'id_controle actuel avant l'action pour pouvoir restaurer après le refresh
             if (currentItem?.Type === 'SENS_SOLDE') {
-                pendingRestoreSoldeCompteRef.current = soldeCurrentCompte;
+                pendingSoldeIdControleRef.current = currentItem?.id_controle;
             }
             if (currentItem?.Type === 'SENS_ECRITURE') {
-                pendingRestoreEcritureCompteRef.current = ecritureCurrentCompte;
+                pendingEcritureIdControleRef.current = currentItem?.id_controle;
             }
 
-            // Déterminer quel id_jnl utiliser selon le type
+            // Determiner quel id_jnl utiliser selon le type
             let idJnl;
             if (currentItem?.Type === 'SENS_SOLDE' || currentItem?.Type === 'SENS_ECRITURE' || currentItem?.Type === 'IMMO_CHARGE') {
                 idJnl = line.id;
@@ -580,44 +582,54 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                 message: `Validation ligne ${line.id}`
             };
 
-            // IMPORTANT: ne pas envoyer `commentaire` ici sinon on risque de l'effacer
-            // (updateAnomaly préserve correctement seulement si le champ n'est pas envoyé).
-
             const response = await axiosPrivate.post(
                 `/administration/revisionControleAuto/${idCompte}/${idDossier}/${idExercice}/controle/${encodeURIComponent(currentItem.id_controle)}/validateLine`,
                 payload
             );
 
             if (response.data.state) {
-                isValidatingRef.current = true;
-                await fetchAnomalies();
+                // console.log('DEBUG executeValidateLine - avant fetchAnomalies, soldeCompteIndex:', soldeCompteIndex);
+                
+                // Optimistic update: mettre à jour l'anomalie localement immédiatement
+                if (anomalie && anomalie.id) {
+                    setAnomalies(prev => prev.map(a => 
+                        String(a.id) === String(anomalie.id) 
+                            ? { ...a, valide: valide } 
+                            : a
+                    ));
+                }
+                
+                // Pour SENS_SOLDE et SENS_ECRITURE, ne pas fetchAnomalies ici car onValidationChange
+                // va rafraichir le parent et declencher un nouveau fetch automatiquement
+                if (currentItem?.Type !== 'SENS_SOLDE' && currentItem?.Type !== 'SENS_ECRITURE') {
+                    await fetchAnomalies();
+                }
+                // console.log('DEBUG executeValidateLine - après fetchAnomalies, soldeCompteIndex:', soldeCompteIndex);
                 if (onValidationChange) {
                     await onValidationChange();
                 }
-                // Remettre isValidatingRef à false après un petit délai
-                setTimeout(() => {
-                    isValidatingRef.current = false;
-                }, 100);
             }
         } catch (error) {
             console.error('Error validating line:', error);
             alert('Erreur lors de la validation de la ligne');
+            pendingSoldeIdControleRef.current = null;
+            pendingEcritureIdControleRef.current = null;
         }
     };
 
     // Commenter une ligne spécifique - Ouvrir dialog
     // Dans handleCommentLine (ligne ~566)
     const handleCommentLine = (line, anomalie) => {
-        console.log('=== handleCommentLine called ===');
-        console.log('line:', line);
-        console.log('anomalie:', anomalie);
+        // console.log('=== handleCommentLine called ===');
+        // console.log('line:', line);
+        // console.log('anomalie:', anomalie);
         if (!line) {
-            console.log('ERROR: line is null/undefined');
+            // console.log('ERROR: line is null/undefined');
             return;
         }
 
         setCommentInput(line.commentaire || anomalie?.commentaire || '');
-        console.log('Opening comment dialog with line:', line.id);
+        // console.log('Opening comment dialog with line:', line.id);
         setCommentDialog({ open: true, anomalie: anomalie, line: line });
     };
 
@@ -629,14 +641,15 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
         const anomalie = commentDialog.anomalie;
 
         try {
+            // Sauvegarder l'id_controle actuel avant l'action pour pouvoir restaurer après le refresh
             if (currentItem?.Type === 'SENS_SOLDE') {
-                pendingRestoreSoldeCompteRef.current = soldeCurrentCompte;
+                pendingSoldeIdControleRef.current = currentItem?.id_controle;
             }
             if (currentItem?.Type === 'SENS_ECRITURE') {
-                pendingRestoreEcritureCompteRef.current = ecritureCurrentCompte;
+                pendingEcritureIdControleRef.current = currentItem?.id_controle;
             }
 
-            // Déterminer quel id_jnl utiliser selon le type
+            // Determiner quel id_jnl utiliser selon le type
             let idJnl;
             if (currentItem?.Type === 'SENS_SOLDE' || currentItem?.Type === 'SENS_ECRITURE' || currentItem?.Type === 'IMMO_CHARGE') {
                 idJnl = line.id;
@@ -656,27 +669,22 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                 commentaire: commentInput
             };
 
-            // IMPORTANT: ne pas envoyer `valide` ici sinon on risque de l'annuler.
-
             const response = await axiosPrivate.post(
                 `/administration/revisionControleAuto/${idCompte}/${idDossier}/${idExercice}/controle/${encodeURIComponent(currentItem.id_controle)}/validateLine`,
                 payload
             );
 
             if (response.data.state) {
-                isValidatingRef.current = true;
                 await fetchAnomalies();
                 if (onValidationChange) {
                     await onValidationChange();
                 }
-                // Remettre isValidatingRef à false après un petit délai
-                setTimeout(() => {
-                    isValidatingRef.current = false;
-                }, 100);
             }
         } catch (error) {
             console.error('Error commenting line:', error);
             alert('Erreur lors de l\'ajout du commentaire');
+            pendingSoldeIdControleRef.current = null;
+            pendingEcritureIdControleRef.current = null;
         } finally {
             // Fermer le dialog dans tous les cas
             setCommentDialog({ open: false, anomalie: null, line: null });
@@ -763,8 +771,8 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
 
     // Charger les anomalies depuis table_controle_anomalies
     useEffect(() => {
-        console.log('DEBUG useEffect - currentItem:', currentItem);
-        console.log('DEBUG useEffect - id_controle:', currentItem?.id_controle);
+        // console.log('DEBUG useEffect - currentItem:', currentItem);
+        // console.log('DEBUG useEffect - id_controle:', currentItem?.id_controle);
         if (currentItem?.id_controle && idCompte && idDossier && idExercice) {
             fetchAnomalies();
         }
@@ -784,18 +792,18 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                 url += `?${params.toString()}`;
             }
 
-            console.log('DEBUG fetchAnomalies - URL:', url);
-            console.log('DEBUG fetchAnomalies - currentItem.Type:', currentItem?.Type);
+            // console.log('DEBUG fetchAnomalies - URL:', url);
+            // console.log('DEBUG fetchAnomalies - currentItem.Type:', currentItem?.Type);
 
             const response = await axiosPrivate.get(url);
-            console.log('DEBUG fetchAnomalies - response:', response.data);
+            // console.log('DEBUG fetchAnomalies - response:', response.data);
 
             if (response.data.state) {
-                console.log('DEBUG fetchAnomalies - anomalies count:', response.data.anomalies?.length);
-                console.log('DEBUG fetchAnomalies - anomalies:', response.data.anomalies);
+                // console.log('DEBUG fetchAnomalies - anomalies count:', response.data.anomalies?.length);
+                // console.log('DEBUG fetchAnomalies - anomalies:', response.data.anomalies);
                 setAnomalies(response.data.anomalies);
             } else {
-                console.log('DEBUG fetchAnomalies - no state in response');
+                // console.log('DEBUG fetchAnomalies - no state in response');
             }
         } catch (error) {
             console.error('Error fetching anomalies:', error);
@@ -919,8 +927,8 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
     // Grouper par anomalie (chaque anomalie avec ses journalLines)
     const anomaliesWithLines = useMemo(() => {
         const result = anomalies.filter(a => Array.isArray(a.journalLines) && a.journalLines.length > 0);
-        console.log('DEBUG anomaliesWithLines:', result.length, 'anomalies avec lignes sur', anomalies.length, 'total');
-        console.log('DEBUG anomalies:', anomalies.map(a => ({ id: a.id, valide: a.valide, linesCount: a.journalLines?.length })));
+        // console.log('DEBUG anomaliesWithLines:', result.length, 'anomalies avec lignes sur', anomalies.length, 'total');
+        // console.log('DEBUG anomalies:', anomalies.map(a => ({ id: a.id, valide: a.valide, linesCount: a.journalLines?.length })));
         return result;
     }, [anomalies]);
 
@@ -1262,9 +1270,9 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
 
                     {/* TABLE - Affichage selon type: SENS_SOLDE, SENS_ECRITURE, EXISTENCE, ou autre */}
                     {(() => {
-                        console.log('DEBUG RENDER - currentItem.Type:', currentItem?.Type);
-                        console.log('DEBUG RENDER - anomalies.length:', anomalies.length);
-                        console.log('DEBUG RENDER - anomaliesWithLines.length:', anomaliesWithLines.length);
+                        // console.log('DEBUG RENDER - currentItem.Type:', currentItem?.Type);
+                        // console.log('DEBUG RENDER - anomalies.length:', anomalies.length);
+                        // console.log('DEBUG RENDER - anomaliesWithLines.length:', anomaliesWithLines.length);
                         return null;
                     })()}
                     {anomaliesLoading ? (
@@ -2542,7 +2550,7 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
             )}
 
             {/* DIALOG POUR COMMENTAIRE */}
-            {console.log('Dialog render - commentDialog.open:', commentDialog.open, 'line:', commentDialog.line)}
+            {/* {console.log('Dialog render - commentDialog.open:', commentDialog.open, 'line:', commentDialog.line)} */}
             <Dialog
                 open={commentDialog.open}
                 onClose={handleCloseCommentDialog}
