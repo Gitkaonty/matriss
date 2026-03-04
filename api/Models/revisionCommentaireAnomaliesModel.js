@@ -23,9 +23,17 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER,
       allowNull: true
     },
+    id_controle: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    id_jnl: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     id_anomalie: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: true
     },
     valide: {
       type: DataTypes.BOOLEAN,
