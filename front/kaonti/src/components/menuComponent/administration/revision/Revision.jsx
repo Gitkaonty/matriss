@@ -95,13 +95,13 @@ export default function Revision() {
                 params.append('date_fin', selectedPeriodeDates.date_fin);
                 params.append('id_periode', selectedPeriodeId);
                 url += `?${params.toString()}`;
-                console.log('DEBUG FRONT - URL fetchControles:', url);
+                // console.log('DEBUG FRONT - URL fetchControles:', url);
             }
 
             const response = await axiosPrivate.get(url);
             if (response.data.state) {
                 setControles(response.data.controles);
-                console.log('Controles fetched:', response.data.controles.length, response.data.message);
+ //               console.log('Controles fetched:', response.data.controles.length, response.data.message);
             }
         } catch (error) {
             console.error('Error fetching controles:', error);
@@ -178,15 +178,15 @@ export default function Revision() {
         if (periodeId && periodeId !== 'exercice') {
             const periode = listePeriodes.find(p => p.id === periodeId);
             if (periode) {
-                console.log('Période sélectionnée:', periode);
-                console.log('Dates de période:', { date_debut: periode.date_debut, date_fin: periode.date_fin });
+                // console.log('Période sélectionnée:', periode);
+                // console.log('Dates de période:', { date_debut: periode.date_debut, date_fin: periode.date_fin });
                 setSelectedPeriodeDates({
                     date_debut: periode.date_debut,
                     date_fin: periode.date_fin
                 });
             }
         } else {
-            console.log('Aucune période sélectionnée - filtre sur tout l\'exercice');
+            // console.log('Aucune période sélectionnée - filtre sur tout l\'exercice');
             setSelectedPeriodeDates(null);
         }
     };
@@ -218,17 +218,17 @@ export default function Revision() {
                 params.append('date_fin', selectedPeriodeDates.date_fin);
                 params.append('id_periode', selectedPeriodeId);
                 url += `?${params.toString()}`;
-                console.log('DEBUG FRONT - URL handleControler:', url);
+                // console.log('DEBUG FRONT - URL handleControler:', url);
             }
 
             const response = await axiosPrivate.post(url);
 
             if (response.data.state) {
-                console.log('Contrôle global exécuté:', response.data);
+                // console.log('Contrôle global exécuté:', response.data);
                 await fetchControles();
                 setReviserPopup({
                     open: true,
-                    message: `Contrôle terminé! ${response.data.totalEcritures} écritures liées au total.`,
+                    message: `Contrôle terminé!`,
                     success: true
                 });
             } else {
