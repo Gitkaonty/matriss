@@ -28,9 +28,9 @@ const formatValue = (value) => {
     return value;
 };
 
-const BarChartComponent = ({ xAxis, dataN, dataN1, label }) => {
+const BarChartComponent = ({ xAxis,xAxis1, dataN, dataN1, label }) => {
     const dataNOnAllLabels = xAxis.map((lbl, idx) => dataN[idx] ?? null);
-    const dataN1OnAllLabels = xAxis.map((lbl, idx) => dataN1?.[idx] ?? null);
+    const dataN1OnAllLabels = xAxis1.map((lbl, idx) => dataN1?.[idx] ?? null);
 
     const shadowPlugin = {
         id: 'shadowPlugin',
@@ -55,7 +55,7 @@ const BarChartComponent = ({ xAxis, dataN, dataN1, label }) => {
     };
 
     const chartData = {
-        labels: xAxis,
+        labels: xAxis,xAxis1,
         datasets: [
             {
                 label: `N`,

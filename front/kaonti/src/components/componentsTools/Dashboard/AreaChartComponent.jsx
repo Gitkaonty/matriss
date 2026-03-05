@@ -25,16 +25,16 @@ ChartJS.register(
     ChartDataLabels
 );
 
-const formatValue = (value) => {
-    if (Math.abs(value) >= 1_000_000_000) return (value / 1_000_000_000).toFixed(1) + 'B';
-    if (Math.abs(value) >= 1_000_000) return (value / 1_000_000).toFixed(1) + 'M';
-    if (Math.abs(value) >= 1_000) return (value / 1_000).toFixed(0) + 'k';
-    return value;
-};
+// const formatValue = (value) => {
+//     if (Math.abs(value) >= 1_000_000_000) return (value / 1_000_000_000).toFixed(1) + 'B';
+//     if (Math.abs(value) >= 1_000_000) return (value / 1_000_000).toFixed(1) + 'M';
+//     if (Math.abs(value) >= 1_000) return (value / 1_000).toFixed(0) + 'k';
+//     return value;
+// };
 
-const AreaChartComponent = ({ xAxis, dataN, dataN1, label }) => {
+const AreaChartComponent = ({ xAxis,xAxis1, dataN, dataN1, label }) => {
     const dataNOnAllLabels = xAxis.map((lbl, idx) => dataN[idx] ?? null);
-    const dataN1OnAllLabels = xAxis.map((lbl, idx) => dataN1?.[idx] ?? null);
+    const dataN1OnAllLabels = xAxis1.map((lbl, idx) => dataN1?.[idx] ?? null);
 
     const shadowPlugin = {
         id: 'shadowPlugin',
@@ -59,7 +59,7 @@ const AreaChartComponent = ({ xAxis, dataN, dataN1, label }) => {
     };
 
     const chartData = {
-        labels: xAxis,
+        labels: xAxis,xAxis1,
         datasets: [
             {
                 label: `N`,

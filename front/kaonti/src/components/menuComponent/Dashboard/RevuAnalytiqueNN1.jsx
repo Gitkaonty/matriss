@@ -7,7 +7,7 @@ import { init } from '../../../../init';
 import useAxiosPrivate from '../../../hooks/useAxiosPrivate';
 import PopupCommentaireAnalytique from './PopupCommentaireAnalytique';
 
-export default function RevuAnalytiqueNN1({ compteId, dossierId, exerciceId }) {
+export default function RevuAnalytiqueNN1({ compteId, dossierId, exerciceId, dateDebut, dateFin }) {
     let initial = init[0];
     const axiosPrivate = useAxiosPrivate();
 
@@ -229,10 +229,14 @@ export default function RevuAnalytiqueNN1({ compteId, dossierId, exerciceId }) {
                     return;
                 }
 
-                const response = await axiosPrivate.get(`/dashboard/revuAnalytiqueNN1/${compteId}/${dossierId}/${exerciceId}`);
+                let url = `/dashboard/revuAnalytiqueNN1/${compteId}/${dossierId}/${exerciceId}`;
+                if (dateDebut && dateFin) {
+                    url += `?date_debut=${dateDebut}&date_fin=${dateFin}`;
+                }
+                const response = await axiosPrivate.get(url);
 
                 if (response.data.state) {
-                    console.log('[RevuAnalytiqueNN1] Données reçues du backend:', response.data.data);
+                    // console.log('[RevuAnalytiqueNN1] Données reçues du backend:', response.data.data);
                     const formattedRows = response.data.data.map((row, index) => ({
                         id: index,
                         compte: row.compte,
@@ -246,7 +250,7 @@ export default function RevuAnalytiqueNN1({ compteId, dossierId, exerciceId }) {
                         commentaire: row.commentaire,
                         valide_anomalie: row.valide_anomalie
                     }));
-                    console.log('[RevuAnalytiqueNN1] Données formatées:', formattedRows);
+                    // console.log('[RevuAnalytiqueNN1] Données formatées:', formattedRows);
                     setRows(formattedRows);
                 }
             } catch (error) {
@@ -257,7 +261,7 @@ export default function RevuAnalytiqueNN1({ compteId, dossierId, exerciceId }) {
         };
 
         fetchRevuAnalytique();
-    }, [axiosPrivate, compteId, dossierId, exerciceId]);
+    }, [axiosPrivate, compteId, dossierId, exerciceId, dateDebut, dateFin]);
 
     const handleSaveCommentaire = (savedCommentaire) => {
         // Mettre à jour la ligne dans le tableau avec le nouveau commentaire

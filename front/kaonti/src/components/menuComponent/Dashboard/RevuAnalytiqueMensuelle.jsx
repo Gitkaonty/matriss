@@ -5,7 +5,7 @@ import { init } from '../../../../init';
 import useAxiosPrivate from '../../../hooks/useAxiosPrivate';
 import PopupCommentaireAnalytique from './PopupCommentaireAnalytique';
 
-export default function RevuAnalytiqueMensuelle({ compteId, dossierId, exerciceId }) {
+export default function RevuAnalytiqueMensuelle({ compteId, dossierId, exerciceId, dateDebut, dateFin }) {
     let initial = init[0];
     const axiosPrivate = useAxiosPrivate();
 
@@ -230,7 +230,11 @@ export default function RevuAnalytiqueMensuelle({ compteId, dossierId, exerciceI
                     return;
                 }
 
-                const response = await axiosPrivate.get(`/dashboard/revuAnalytiqueMensuelle/${compteId}/${dossierId}/${exerciceId}`);
+                let url = `/dashboard/revuAnalytiqueMensuelle/${compteId}/${dossierId}/${exerciceId}`;
+                if (dateDebut && dateFin) {
+                    url += `?date_debut=${dateDebut}&date_fin=${dateFin}`;
+                }
+                const response = await axiosPrivate.get(url);
 
                 if (response.data.state) {
                     setRows(response.data.data);
@@ -246,7 +250,7 @@ export default function RevuAnalytiqueMensuelle({ compteId, dossierId, exerciceI
         };
 
         fetchRevuAnalytiqueMensuelle();
-    }, [axiosPrivate, compteId, dossierId, exerciceId]);
+    }, [axiosPrivate, compteId, dossierId, exerciceId, dateDebut, dateFin]);
 
     const handleSaveCommentaire = (savedCommentaire) => {
         const savedCompte = savedCommentaire?.compte;
