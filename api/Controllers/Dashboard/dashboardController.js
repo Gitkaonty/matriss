@@ -276,6 +276,7 @@ const getJournalData = async (id_compte, id_dossier, id_exercice) => {
 exports.getAllInfo = async (req, res) => {
     try {
         const { id_compte, id_dossier, id_exercice } = req.params;
+        const { date_debut, date_fin, id_periode } = req.query; // Dates et id de periode si selectionnee
 
         if (!id_compte || !id_dossier || !id_exercice) {
             return res.status(400).json({ state: false, message: 'Paramètres manquants' });
@@ -286,10 +287,23 @@ exports.getAllInfo = async (req, res) => {
             return res.status(404).json({ state: false, message: "Exercice non trouvé" });
         }
 
-        const moisN = getMonthsBetween(exerciceNData?.date_debut, exerciceNData?.date_fin);
+        // Utiliser les dates de periode si fournies, sinon utiliser les dates de l'exercice
+        const periodeDebut = date_debut || exerciceNData?.date_debut;
+        const periodeFin = date_fin || exerciceNData?.date_fin;
+
+        const moisN = getMonthsBetween(periodeDebut, periodeFin);
+
+        const moisNMapped = moisN.map(val => val?.label + val?.year);
+        // Construire la clause where avec filtre de periode si applicable
+        const whereClause = { id_compte, id_dossier, id_exercice };
+        if (date_debut && date_fin) {
+            whereClause.dateecriture = {
+                [Op.between]: [new Date(date_debut), new Date(date_fin)]
+            };
+        }
 
         const journalData = await journals.findAll({
-            where: { id_compte, id_dossier, id_exercice },
+            where: whereClause,
             include: [
                 { model: DossierPlan, attributes: ['compte'], required: true },
                 { model: codejournals, attributes: ['code'] }
@@ -324,6 +338,7 @@ exports.getAllInfo = async (req, res) => {
             tresorerieBanqueN1 = [],
             tresorerieCaisseN1 = [],
             moisN1 = [],
+            moisN1Mapped = [],
 
             resultatN1 = 0,
             resultatN2 = 0,
@@ -385,6 +400,8 @@ exports.getAllInfo = async (req, res) => {
         if (id_exerciceN1) {
             const exerciceN1Data = await exercices.findByPk(id_exerciceN1);
             moisN1 = getMonthsBetween(exerciceN1Data?.date_debut, exerciceN1Data?.date_fin);
+
+            moisN1Mapped = moisN1.map(val => val?.label + val?.year);
 
             const mappedDataN1 = await getJournalData(id_compte, id_dossier, id_exerciceN1);
 
@@ -534,6 +551,9 @@ exports.getAllInfo = async (req, res) => {
             evolutionResultatN,
             evolutionResultatN1,
 
+            moisN: moisNMapped,
+            moisN1 : moisN1Mapped,
+
             state: true,
         });
     } catch (error) {
@@ -545,16 +565,26 @@ exports.getAllInfo = async (req, res) => {
 exports.getListeJournalEnAttente = async (req, res) => {
     try {
         const { id_dossier, id_compte, id_exercice } = req.params;
+        const { date_debut, date_fin } = req.query; // Dates de periode si selectionnee
+
         if (!id_compte || !id_dossier || !id_exercice) {
             return res.status(400).json({ state: false, message: 'Paramètres manquants' });
         }
 
+        // Construire la clause where avec filtre de periode si applicable
+        const whereClause = {
+            id_dossier,
+            id_compte,
+            id_exercice,
+        };
+        if (date_debut && date_fin) {
+            whereClause.dateecriture = {
+                [Op.between]: [new Date(date_debut), new Date(date_fin)]
+            };
+        }
+
         const journaleEnAttente = await journals.findAll({
-            wherer: {
-                id_dossier,
-                id_compte,
-                id_exercice,
-            },
+            where: whereClause,
             include: [
                 {
                     model: DossierPlan,

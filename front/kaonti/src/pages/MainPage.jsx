@@ -99,7 +99,6 @@ export default function HomePage() {
   const adminTraitementList = useMemo(() => (
     [
       { text: 'Consultation', name: 'consultation', path: '/tab/administration/consultation', urldynamic: true },
-      { text: 'Révision', name: 'revision', path: '/tab/administration/revision', urldynamic: true },
       { text: 'Saisie', name: 'saisie', path: '/tab/administration/saisie', urldynamic: true },
     ]
   ), []);
@@ -117,6 +116,16 @@ export default function HomePage() {
       { text: 'Journal comptable', name: 'journalComptable', path: '/tab/administration/exportJournal', urldynamic: true },
     ]
   ), []);
+
+  const revision = useMemo (() => (
+    [
+    { text: 'Révision Globale', name: 'revision', path: '/tab/administration/revision', urldynamic: true },
+    { text: 'Analyse Fournisseur/Client', name: 'revisionFournisseurClient', path: '/tab/administration/revisionFournisseurClient', urldynamic: true },
+    { text: 'Révision Doublon', name: 'revisionDoublon', path: '/tab/administration/revisionDoublon', urldynamic: true },
+
+    ]
+  
+  ),[]);
 
   const paramComptaList = useMemo(() => (
     [
@@ -377,6 +386,11 @@ export default function HomePage() {
                   <MenuItem disabled><Typography fontWeight={700}>Traitement</Typography></MenuItem>
                   {adminTraitementList.map((it) => (
                     <MenuItem key={`t-${it.name}`} onClick={() => navigateToMenuItem(it)}>{it.text}</MenuItem>
+                  ))}      
+                  <Divider sx={{ my: 0 }} />
+                  <MenuItem disabled><Typography fontWeight={700}>Révision</Typography></MenuItem>
+                  {revision.map((it) => (
+                    <MenuItem key={`r-${it.name}`} onClick={() => navigateToMenuItem(it)}>{it.text}</MenuItem>
                   ))}
                   <Divider sx={{ my: 0 }} />
                   <MenuItem disabled><Typography fontWeight={700}>Import</Typography></MenuItem>

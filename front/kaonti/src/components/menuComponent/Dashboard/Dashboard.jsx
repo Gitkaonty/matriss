@@ -28,6 +28,17 @@ import { Line } from 'react-chartjs-2';
 import RevuAnalytiqueNN1 from './RevuAnalytiqueNN1';
 import RevuAnalytiqueMensuelle from './RevuAnalytiqueMensuelle';
 
+// Format date as dd/mm/yy (comme dans Revision)
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return '';
+  const dd = String(date.getDate()).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const yy = String(date.getFullYear()).slice(-2);
+  return `${dd}/${mm}/${yy}`;
+};
+
 const columns = [
   {
     id: 'compte',
@@ -105,12 +116,15 @@ export default function DashboardComponent() {
   const userId = decoded.UserInfo.userId || null;
 
   const [selectedExerciceId, setSelectedExerciceId] = useState(0);
-  const [selectedPeriodeId, setSelectedPeriodeId] = useState(0);
-  const [selectedPeriodeChoiceId, setSelectedPeriodeChoiceId] = useState(0);
+  const [selectedPeriodeId, setSelectedPeriodeId] = useState('');
+  const [selectedPeriodeDates, setSelectedPeriodeDates] = useState(null);
   const [deviseParDefaut, setDeviseParDefaut] = useState([]);
 
   const [chiffresAffairesNGraph, setChiffresAffairesNGraph] = useState([]);
   const [chiffresAffairesN1Graph, setChiffresAffairesN1Graph] = useState([]);
+
+  const [moisN, setmoisN] = useState([]);
+  const [moisN1, setmoisN1] = useState([]);
 
   const [margeBruteNGraph, setMargeBruteNGraph] = useState([]);
   const [margeBruteN1Graph, setMargeBruteN1Graph] = useState([]);
@@ -191,9 +205,9 @@ export default function DashboardComponent() {
   //Choix exercice
   const handleChangeExercice = (exercice_id) => {
     setSelectedExerciceId(exercice_id);
-    setSelectedPeriodeChoiceId("0");
-    setListeSituation(listeExercice?.filter((item) => item.id === exercice_id));
-    setSelectedPeriodeId(exercice_id);
+    setSelectedPeriodeId('');
+    setSelectedPeriodeDates(null);
+    GetListePeriodes(exercice_id);
   }
 
   //Récupérer la liste des exercices
@@ -207,8 +221,13 @@ export default function DashboardComponent() {
         setListeSituation(exerciceNId);
 
         setSelectedExerciceId(exerciceNId[0]?.id);
-        setSelectedPeriodeChoiceId(0);
-        setSelectedPeriodeId(exerciceNId[0]?.id);
+        setSelectedPeriodeId('');
+        setSelectedPeriodeDates(null);
+
+        // Charger les periodes de l'exercice N
+        if (exerciceNId[0]?.id) {
+          GetListePeriodes(exerciceNId[0]?.id);
+        }
 
       } else {
         setListeExercice([]);
@@ -217,37 +236,43 @@ export default function DashboardComponent() {
     })
   }
 
-  //Récupérer la liste des exercices
-  const GetListeSituation = (id) => {
-    axios.get(`/paramExercice/listeSituation/${id}`).then((response) => {
+  //Choix periode (comme dans Revision)
+  const handleChangePeriode = (periodeId) => {
+    setSelectedPeriodeId(periodeId);
+    if (periodeId) {
+      const periode = listeSituation.find(p => p.id === periodeId);
+      if (periode) {
+        setSelectedPeriodeDates({
+          date_debut: periode.date_debut,
+          date_fin: periode.date_fin
+        });
+      }
+    } else {
+      setSelectedPeriodeDates(null);
+    }
+  }
+
+  //Récupérer la liste des periodes liees a l'exercice
+  const GetListePeriodes = (id_exercice) => {
+    axios.get(`/paramExercice/listePeriodes/${id_exercice}`).then((response) => {
       const resData = response.data;
       if (resData.state) {
-        const list = resData.list;
-        setListeSituation(resData.list);
-        if (list.length > 0) {
-          setSelectedPeriodeId(list[0].id);
-        }
+        setListeSituation(resData.list || []);
       } else {
         setListeSituation([]);
-        toast.error("une erreur est survenue lors de la récupération de la liste des exercices");
       }
     })
   }
 
-  //Choix période
-  const handleChangePeriode = (choix) => {
-    setSelectedPeriodeChoiceId(choix);
-    if (choix === 0) {
-      setListeSituation(listeExercice?.filter((item) => item.id === selectedExerciceId));
-      setSelectedPeriodeId(selectedExerciceId);
-    } else if (choix === 1) {
-      GetListeSituation(selectedExerciceId);
-    }
-  }
-
   // Récupération de toutes les informations
   const getAllInfo = () => {
-    axios.get(`/dashboard/getAllInfo/${Number(compteId)}/${Number(fileId)}/${Number(selectedExerciceId)}`)
+    // Utiliser exerciceId pour l'API, avec dates de periode si selectionnee
+    let url = `/dashboard/getAllInfo/${Number(compteId)}/${Number(fileId)}/${Number(selectedExerciceId)}`;
+    if (selectedPeriodeDates && selectedPeriodeId) {
+      url += `?date_debut=${selectedPeriodeDates.date_debut}&date_fin=${selectedPeriodeDates.date_fin}&id_periode=${selectedPeriodeId}`;
+    }
+
+    axios.get(url)
       .then((response) => {
         if (response?.data?.state) {
           setChiffresAffairesNGraph(response?.data?.chiffreAffaireN);
@@ -303,6 +328,9 @@ export default function DashboardComponent() {
           setVariationDTresorerieCaisseN1(response?.data?.variationTresorerieCaisseN1);
           setEvolutionTresorerieCaisseN(response?.data?.evolutionTresorerieCaisseN);
           setEvolutionTresorerieCaisseN1(response?.data?.evolutionTresorerieCaisseN1);
+
+          setmoisN(response?.data?.moisN);
+          setmoisN1(response?.data?.moisN1);
         }
       })
       .catch((err) => {
@@ -321,7 +349,12 @@ export default function DashboardComponent() {
   }
 
   const getListeJournalEnAttente = () => {
-    axios.get(`/dashboard/getListeJournalEnAttente/${Number(compteId)}/${Number(fileId)}/${Number(selectedExerciceId)}`)
+    // Utiliser les dates de periode si selectionnee, sinon exercice complet
+    const url = selectedPeriodeDates
+      ? `/dashboard/getListeJournalEnAttente/${Number(compteId)}/${Number(fileId)}/${Number(selectedExerciceId)}?date_debut=${selectedPeriodeDates.date_debut}&date_fin=${selectedPeriodeDates.date_fin}`
+      : `/dashboard/getListeJournalEnAttente/${Number(compteId)}/${Number(fileId)}/${Number(selectedExerciceId)}`;
+
+    axios.get(url)
       .then((response) => {
         if (response?.data) {
           setJournalData(response?.data);
@@ -335,7 +368,7 @@ export default function DashboardComponent() {
 
   const xAxis = [
     "Jan", "Fév", "Mar", "Avr", "Mai", "Juin",
-    "Juil", "Août", "Sep", "Oct", "Nov", "Déc"
+    "Juil", "Août", "Sep", "Oct", "Nov", "Déc",
   ];
 
   useEffect(() => {
@@ -365,7 +398,7 @@ export default function DashboardComponent() {
       getParDefaut();
       getListeJournalEnAttente();
     }
-  }, [compteId, fileId, selectedExerciceId]);
+  }, [compteId, fileId, selectedExerciceId, selectedPeriodeDates]);
 
   return (
     <>
@@ -424,44 +457,40 @@ export default function DashboardComponent() {
                     </Select>
                   </FormControl>
 
-                  <FormControl variant="standard" sx={{ m: 1, minWidth: 150 }}>
-                    <InputLabel id="demo-simple-select-standard-label">Période</InputLabel>
-                    <Select
-                      disabled
-                      labelId="demo-simple-select-standard-label"
-                      id="demo-simple-select-standard"
-                      value={selectedPeriodeChoiceId}
-                      label={"valSelect"}
-                      onChange={(e) => handleChangePeriode(e.target.value)}
-                      sx={{ width: "150px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                      MenuProps={{
-                        disableScrollLock: true
-                      }}
-                    >
-                      <MenuItem value={0}>Toutes</MenuItem>
-                      <MenuItem value={1}>Situations</MenuItem>
-                    </Select>
-                  </FormControl>
-
-                  <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                    <InputLabel id="demo-simple-select-standard-label">Du</InputLabel>
-                    <Select
-                      labelId="demo-simple-select-standard-label"
-                      id="demo-simple-select-standard"
-                      value={selectedPeriodeId}
-                      label={"valSelect"}
-                      onChange={(e) => handleChangeDateIntervalle(e.target.value)}
+                  {/* always show the selector; disable/grey if no periods */}
+                  {
+                   <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
+                      <InputLabel id="periode-select-label"></InputLabel>
+                      <Select
+                        labelId="periode-select-label"
+                        id="periode-select"
+                        value={selectedPeriodeId}
+                        onChange={(e) => handleChangePeriode(e.target.value)}
+                        displayEmpty
+                        disabled={listeSituation.length === 0}
+                        renderValue={(selected) => {
+                          if (!selected) {
+                            return <em>Sélectionner une période...</em>;
+                          }
+                          const periode = listeSituation.find(p => p.id === selected);
+                          return periode ? `${periode.libelle || ''}${formatDate(periode.date_debut)} au ${formatDate(periode.date_fin)}` : '';
+                        }}
                       sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                      MenuProps={{
-                        disableScrollLock: true
-                      }}
-                    >
-                      {listeSituation?.map((option) => (
-                        <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                      ))
-                      }
-                    </Select>
-                  </FormControl>
+                        MenuProps={{
+                          disableScrollLock: true
+                        }}
+                      >
+                        <MenuItem value="" disabled>
+                          <em>Sélectionner une période...</em>
+                        </MenuItem>
+                        {listeSituation?.map((periode) => (
+                          <MenuItem key={periode.id} value={periode.id}>
+                            {periode.libelle || ''}{formatDate(periode.date_debut)} au {formatDate(periode.date_fin)}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  }
                 </Stack>
               </Stack>
 
@@ -596,7 +625,8 @@ export default function DashboardComponent() {
                       }}
                     >
                       <AreaChartComponent
-                        xAxis={xAxis}
+                        xAxis={moisN}
+                        xAxis1={moisN1}
                         dataN={chiffresAffairesNGraph}
                         dataN1={chiffresAffairesN1Graph}
                         label={'Chiffre d\'affaires'}
@@ -621,7 +651,8 @@ export default function DashboardComponent() {
                   >
                     <Box sx={{ backgroundColor: 'white', boxShadow: "0 1px 3px rgba(0,0,0,0.08)", borderRadius: 1, p: 1, minWidth: 0, minHeight: 0 }}>
                       <AreaChartComponent
-                        xAxis={xAxis}
+                        xAxis={moisN}
+                        xAxis1={moisN1}
                         dataN={margeBruteNGraph}
                         dataN1={margeBruteN1Graph}
                         label={'Marges brutes'}
@@ -630,7 +661,8 @@ export default function DashboardComponent() {
 
                     <Box sx={{ backgroundColor: 'white', boxShadow: "0 1px 3px rgba(0,0,0,0.08)", borderRadius: 0, p: 1, minWidth: 0, minHeight: 0 }}>
                       <BarChartComponent
-                        xAxis={xAxis}
+                        xAxis={moisN}
+                        xAxis1={moisN1}
                         dataN={tresorerieBanqueNGraph}
                         dataN1={tresorerieBanqueN1Graph}
                         label={'Trésoreries (Banques)'}
@@ -639,7 +671,8 @@ export default function DashboardComponent() {
 
                     <Box sx={{ backgroundColor: 'white', boxShadow: "0 1px 3px rgba(0,0,0,0.08)", borderRadius: 0, p: 1, minWidth: 0, minHeight: 0 }}>
                       <BarChartComponent
-                        xAxis={xAxis}
+                        xAxis={moisN}
+                        xAxis1={moisN1}
                         dataN={tresorerieCaisseNGraph}
                         dataN1={tresorerieCaisseN1Graph}
                         label={'Trésoreries (Caisses)'}
@@ -662,7 +695,9 @@ export default function DashboardComponent() {
                     <RevuAnalytiqueNN1
                       compteId={compteId}
                       dossierId={fileId}
-                      exerciceId={selectedPeriodeId}
+                      exerciceId={selectedExerciceId}
+                      dateDebut={selectedPeriodeDates?.date_debut}
+                      dateFin={selectedPeriodeDates?.date_fin}
                     />
                   </TabPanel>
 
@@ -670,7 +705,9 @@ export default function DashboardComponent() {
                     <RevuAnalytiqueMensuelle
                       compteId={compteId}
                       dossierId={fileId}
-                      exerciceId={selectedPeriodeId}
+                      exerciceId={selectedExerciceId}
+                      dateDebut={selectedPeriodeDates?.date_debut}
+                      dateFin={selectedPeriodeDates?.date_fin}
                     />
                   </TabPanel>
                 </TabContext>
