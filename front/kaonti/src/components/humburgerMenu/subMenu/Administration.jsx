@@ -18,12 +18,6 @@ const traitementList = [
         path: "/tab/administration/consultation",
         urldynamic: true
     },
-    {
-        text: 'Révision',
-        name: "revision",
-        path: "/tab/administration/revision",
-        urldynamic: true
-    },
     // {
     //     text: 'Personnel',
     //     name: "personnel",
@@ -42,6 +36,27 @@ const traitementList = [
     //     path: "/tab/administration/immobilisations",
     //     urldynamic: true
     // },
+];
+
+const revision = [
+  {
+        text: 'Analyse globale',
+        name: "revision",
+        path: "/tab/administration/revision",
+        urldynamic: true
+    },
+    {
+        text: 'Analyse Fournisseur/Client',
+        name: "revisionFournisseurClient",
+        path: "/tab/administration/revisionFournisseurClient",
+        urldynamic: true
+    },
+    {
+        text: 'Recherche Doublon',
+        name: "revisionDoublon",
+        path: "/tab/administration/revisionDoublon",
+        urldynamic: true
+    },
 ];
 
 const importList = [
@@ -229,6 +244,14 @@ export default function Administration({ onWindowState, pathToNavigate, closeDra
                         sx={menuButtonSx}
                     >
                         Traitement
+                    </Button>
+                    <Button
+                        onMouseEnter={(e) => { closeAllMenus(); setAnchorTraitement(e.currentTarget); }}
+                        disableRipple
+                        disableFocusRipple
+                        sx={menuButtonSx}
+                    >
+                        Révision
                     </Button>
                     <Button
                         onMouseEnter={(e) => { closeAllMenus(); setAnchorImport(e.currentTarget); }}
