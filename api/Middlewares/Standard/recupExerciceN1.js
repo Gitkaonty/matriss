@@ -7,38 +7,51 @@ const exercices = db.exercices;
 const recupInfos = async (id_compte, id_dossier, id_exerciceN) => {
     try {
         const currentExercice = await exercices.findByPk(id_exerciceN);
-        if (!currentExercice) {
-            return { id_exerciceN1: null };
-        }
-
-        const currentDebutExerciceN = currentExercice.date_debut;
-
+        const rangN = currentExercice.rang;
+ 
+        const currentDebutExerciceN = currentExercice?.date_debut;
+ 
         if (!currentDebutExerciceN) {
             return { id_exerciceN1: null };
         }
-
-        // Calcul date N-1
+ 
         const dateDebut = new Date(currentDebutExerciceN);
         dateDebut.setDate(dateDebut.getDate() - 1);
-
+ 
         const dateFinN1Formatted = dateDebut.toISOString().split('T')[0];
-
-        // Chercher l'exercice N-1
-        const n1Exercice = await exercices.findOne({
-            where: {
-                id_compte: Number(id_compte),
-                id_dossier: Number(id_dossier),
-                date_fin: { [Op.eq]: new Date(dateFinN1Formatted) }
-            }
+ 
+        // const rows = await db.sequelize.query(`
+        //     SELECT id
+        //     FROM exercices
+        //     WHERE
+        //         id_compte = :id_compte
+        //         AND id_dossier = :id_dossier
+        //         AND date_fin = :date_fin
+        // `, {
+        //     type: db.Sequelize.QueryTypes.SELECT,
+        //     replacements: { id_compte, id_dossier, date_fin: new Date(dateFinN1Formatted) }
+        // })
+ 
+        const rows = await db.sequelize.query(`
+            SELECT id
+            FROM exercices
+            WHERE
+                id_compte = :id_compte
+                AND id_dossier = :id_dossier
+                AND rang = :rangNMinus1
+            LIMIT 1
+        `, {
+            type: db.Sequelize.QueryTypes.SELECT,
+            replacements: { id_compte, id_dossier, rangNMinus1: rangN - 1 }
         });
-
-        const id_exerciceN1 = n1Exercice?.id || null;
-
+ 
+        const id_exerciceN1 = rows[0]?.id || null;
+ 
         return { id_exerciceN1 }
-
+ 
     } catch (error) {
         console.log(error);
-
+ 
         return {
             id_exerciceN1: 0,
             date_debutN1: null,

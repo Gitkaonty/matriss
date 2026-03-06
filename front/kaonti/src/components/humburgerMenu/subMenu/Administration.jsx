@@ -45,12 +45,8 @@ const revision = [
         path: "/tab/administration/revision",
         urldynamic: true
     },
-    {
-        text: 'Analyse Fournisseur/Client',
-        name: "revisionFournisseurClient",
-        path: "/tab/administration/revisionFournisseurClient",
-        urldynamic: true
-    },
+    
+    
     {
         text: 'Recherche Doublon',
         name: "revisionDoublon",

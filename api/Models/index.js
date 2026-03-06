@@ -125,6 +125,14 @@ db.revisionControleMatrix = require('./revisionControleMatrixModel.js')(sequeliz
 db.tableControleAnomalies = require('./tableControleAnomaliesModel.js')(sequelize, DataTypes);
 db.revisionCommentaireAnomalies = require('./revisionCommentaireAnomaliesModel.js')(sequelize, DataTypes);
 
+// Analyse Fournisseur/Client
+db.analyseFournisseurLignes = require('./analyseFournisseurLigneModel')(sequelize, DataTypes);
+db.analyseFournisseurAnomalies = require('./analyseFournisseurAnomalieModel')(sequelize, DataTypes);
+
+// Analyse Client
+db.analyseClientLignes = require('./analyseClientLigneModel')(sequelize, DataTypes);
+db.analyseClientAnomalies = require('./analyseClientAnomalieModel')(sequelize, DataTypes);
+
 //
 db.caSections = require('./caSectionMolel')(sequelize, DataTypes);
 db.caAxes = require('./caAxeModel')(sequelize, DataTypes);

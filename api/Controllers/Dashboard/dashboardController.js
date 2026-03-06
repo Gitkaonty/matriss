@@ -399,6 +399,18 @@ exports.getAllInfo = async (req, res) => {
 
         if (id_exerciceN1) {
             const exerciceN1Data = await exercices.findByPk(id_exerciceN1);
+
+            const startYearN1 = new Date(exerciceN1Data[0]?.date_debut).getFullYear();
+
+            const moisN1Aligned = moisN.map(({ month, label }, idx) => {
+                const totalMonth = month;
+                return {
+                    label,
+                    month: totalMonth,
+                    year: startYearN1 + (month < moisN[0].month ? 1 : 0)
+                };
+            });
+
             moisN1 = getMonthsBetween(exerciceN1Data?.date_debut, exerciceN1Data?.date_fin);
 
             moisN1Mapped = moisN1.map(val => val?.label + val?.year);
@@ -408,11 +420,11 @@ exports.getAllInfo = async (req, res) => {
             const { id_exerciceN1: id_exerciceN2Temp } = await recupExerciceN1.recupInfos(id_compte, id_dossier, id_exerciceN1);
             id_exerciceN2 = id_exerciceN2Temp || null;
 
-            chiffreAffaireN1 = calculateChiffreAffaire(mappedDataN1, moisN1);
-            margeBruteN1 = calculateMargeBrute(mappedDataN1, moisN1);
+            chiffreAffaireN1 = calculateChiffreAffaire(mappedDataN1, moisN1Aligned);
+            margeBruteN1 = calculateMargeBrute(mappedDataN1, moisN1Aligned);
             margeBruteTotalN1 = chiffreAffaireN1.map((val, i) => round2(val + margeBruteN1[i]));
-            tresorerieBanqueN1 = calculateTresorerieBanque(mappedDataN1, moisN1);
-            tresorerieCaisseN1 = calculateTresorerieCaisse(mappedDataN1, moisN1);
+            tresorerieBanqueN1 = calculateTresorerieBanque(mappedDataN1, moisN1Aligned);
+            tresorerieCaisseN1 = calculateTresorerieCaisse(mappedDataN1, moisN1Aligned);
 
             resultatN1 = calculateResultat(mappedDataN1);
 
@@ -552,7 +564,7 @@ exports.getAllInfo = async (req, res) => {
             evolutionResultatN1,
 
             moisN: moisNMapped,
-            moisN1 : moisN1Mapped,
+            moisN1: moisN1Mapped,
 
             state: true,
         });
