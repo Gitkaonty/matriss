@@ -24,7 +24,6 @@ import ImportProgressBar from '../../../componentsTools/ImportProgressBar';
 import VirtualTableImportJournal from '../../../componentsTools/Administration/VirtualTableImportJournal';
 import usePermission from '../../../../hooks/usePermission';
 import useSSEImport from '../../../../hooks/useSSEImport';
-import PopupCodeJouralNotExist from '../../../componentsTools/PopupCodeJournalNotExist';
 
 export default function ImportJournal() {
     const [valSelectCptDispatch, setValSelectCptDispatch] = useState('None');
@@ -41,7 +40,6 @@ export default function ImportJournal() {
     const [selectedPeriodeChoiceId, setSelectedPeriodeChoiceId] = useState(0);
     const [listeExercice, setListeExercice] = useState([]);
     const [listeSituation, setListeSituation] = useState([]);
-    const [openPopupCodejournal, setOpenPopupCodeJournal] = useState(false);
 
     const [journalData, setJournalData] = useState([]);
     const [planComptable, setPlanComptable] = useState([]);
@@ -60,7 +58,6 @@ export default function ImportJournal() {
     const [traitementJournalWaiting, setTraitementJournalWaiting] = useState(false);
     const [traitementJournalMsg, setTraitementJournalMsg] = useState('');
     const [progressValue, setProgressValue] = useState(0);
-    const [longeurCompteStd, setLongeurCompteStd] = useState(0);
 
     //récupération infos de connexion
     const { auth } = useAuth();
@@ -112,7 +109,6 @@ export default function ImportJournal() {
 
             if (resData.state) {
                 setFileInfos(resData.fileInfos[0]);
-                setLongeurCompteStd(resData.fileInfos[0]?.longcomptestd);
                 setNoFile(false);
             } else {
                 setFileInfos([]);
@@ -164,7 +160,7 @@ export default function ImportJournal() {
         },
         {
             id: 'EcritureLib',
-            label: 'Libellé gen.',
+            label: 'Libellé',
             minWidth: 380,
             align: 'left',
             isnumber: false
@@ -277,8 +273,7 @@ export default function ImportJournal() {
 
             } else {
                 setListeExercice([]);
-                //toast.error("une erreur est survenue lors de la récupération de la liste des exercices");
-                return
+                toast.error("une erreur est survenue lors de la récupération de la liste des exercices");
             }
         })
     }
@@ -295,8 +290,7 @@ export default function ImportJournal() {
                 }
             } else {
                 setListeSituation([]);
-                //toast.error("une erreur est survenue lors de la récupération de la liste des exercices");
-                return
+                toast.error("une erreur est survenue lors de la récupération de la liste des exercices");
             }
         })
     }
@@ -319,6 +313,12 @@ export default function ImportJournal() {
         } else if (choix === 1) {
             GetListeSituation(selectedExerciceId);
         }
+    }
+
+    const handleChangeSelectedPeriod = (periodeId) => {
+        setSelectedPeriodeId(periodeId);
+        setSelectedExerciceId(periodeId);
+        formikImport.setFieldValue('idExercice', periodeId);
     }
 
     //Récupération du plan comptable
@@ -410,7 +410,7 @@ export default function ImportJournal() {
 
     //download modele d'import
     const handleDownloadModel = () => {
-        const fileUrl = '../../../../../public/modeleImport/modeleImportJournal.csv';
+        const fileUrl = '/modeleImport/modeleImportJournal.csv';
         const link = document.createElement('a');
         link.href = fileUrl;
         link.download = 'ModeleImportJournal';
@@ -450,7 +450,7 @@ export default function ImportJournal() {
         if (val === null || val === undefined) return "";
         const s = String(val).trim();
         if (s === "" || s === "0") return "";
-        return s.padEnd(longeurCompteStd, "0").slice(0, longeurCompteStd);
+        return s;
     };
 
     const parseCSVNumber = (value) => {
@@ -465,84 +465,11 @@ export default function ImportJournal() {
         return isNaN(num) ? 0 : num;
     };
 
-    const pluralizeCompte = (nbr) => {
-        if (nbr === 1) {
-            return `Ce compte n'existe`;
-        }
-        if (nbr > 1) {
-            return `Ces ${nbr} comptes n'existent`;
-        }
-    }
-
-    const pluralizeDevise = (nbr) => {
-        if (nbr === 1) {
-            return `Ce devise n'existe`;
-        }
-        if (nbr > 1) {
-            return `Ces ${nbr} devises n'existent`;
-        }
-    }
-
-    const pluralizeCodeJournal = (nbr) => {
-        if (nbr === 1) {
-            return `Ce code journal n'existe`;
-        }
-        if (nbr > 1) {
-            return `Ces ${nbr} codes journaux n'existent`;
-        }
-    }
-
-    const formatDate = (dateStr) => {
-        const date = new Date(dateStr);
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
-        return `${day}/${month}/${year}`;
-    };
-
-    const testIfRanExist = async () => {
-        try {
-            const response = await axios.post('/administration/ImportJournal/testIfRanExist', {
-                id_dossier: Number(fileId),
-                id_compte: Number(compteId)
-            });
-            const resData = response?.data;
-
-            if (resData?.state) {
-                return resData?.exist;
-            } else {
-                toast.error(resData?.message || "Erreur inconnue");
-                return false;
-            }
-        } catch (error) {
-            toast.error(error.message);
-            return false;
-        }
-    };
-
-    const getAllCodeRan = async () => {
-        try {
-            const response = await axios.post('/administration/ImportJournal/getAllCodeRan', {
-                id_dossier: Number(fileId),
-                id_compte: Number(compteId)
-            });
-            const resData = response?.data;
-            return resData?.list;
-        } catch (error) {
-            toast.error(error.message);
-        }
-    }
-
-    const handleFileSelect = async (event) => {
+    const handleFileSelect = (event) => {
         const file = event.target.files[0];
 
         if (file) {
-            const ranExist = await testIfRanExist();
-            if (!ranExist) {
-                setOpenPopupCodeJournal(true);
-                return;
-            }
-            const codeJournauxRan = await getAllCodeRan();
+            // Utilise PapaParse pour parser le fichier CSV
             Papa.parse(file, {
                 complete: (result) => {
                     const headers = result.meta.fields;
@@ -567,15 +494,18 @@ export default function ImportJournal() {
                         const listeUniqueCompteInitial = [
                             ...new Set(
                                 result.data.flatMap(item => [
-                                    item.CompteNum,
-                                    item.CompAuxNum
+                                    padCompte(item.CompteNum),
+                                    padCompte(item.CompAuxNum)
                                 ]).filter(Boolean)
                             )
                         ];
 
-                        const listeUniqueCompte = listeUniqueCompteInitial
-                            .filter(item => item !== '')
-                            .map(val => val.toString().padEnd(longeurCompteStd, "0").slice(0, longeurCompteStd))
+                        const listeUniqueCompte = listeUniqueCompteInitial.filter(item => item !== '');
+
+                        // const compteNonValideStd = result.data.some(item => {
+                        //     return item.CompteNum && item.CompteNum.length !== longeurCompteStd;
+                        // });
+
 
                         let DataWithId = [];
                         if (fileTypeCSV) {
@@ -583,19 +513,6 @@ export default function ImportJournal() {
                         } else {
                             DataWithId = result.data;
                         }
-
-                        const activeData = DataWithId.filter(r => {
-                            return (
-                                r &&
-                                (
-                                    r.EcritureNum ||
-                                    r.CompteNum ||
-                                    r.JournalCode ||
-                                    r.Debit ||
-                                    r.Credit
-                                )
-                            );
-                        });
 
                         const totalDebit = DataWithId.reduce((acc, item) => acc + parseCSVNumber(item.Debit), 0);
                         const totalCredit = DataWithId.reduce((acc, item) => acc + parseCSVNumber(item.Credit), 0);
@@ -623,36 +540,28 @@ export default function ImportJournal() {
 
                             nbrAnom += 1;
                             setNbrAnomalie(nbrAnom);
-                        }
-
-                        const compteNonValideStd = Number(longeurCompteStd) > 0
-                            ? listeUniqueCompte.some((c) => String(c || '').trim() !== '' && String(c || '').trim().length !== Number(longeurCompteStd))
-                            : false;
-
-                        if (compteNonValideStd) {
-                            msg.push('Attention, la longueur des comptes dans le fichier csv est différente de celle des comptes dans le paramétrage CRM du dossier.');
-                            nbrAnom = nbrAnom + 1;
-                            setNbrAnomalie(nbrAnom);
                             setCouleurBoutonAnomalie(couleurAnom);
                         }
+
+                        const compteNonValideStd = false;
 
                         //stocker en 2 variables les comptes généraux et comptesaux pour la création
                         const listeUniqueCompteGenInitial = [
                             ...new Set(
-                                activeData
+                                result.data
                                     .map(item => item.CompteNum)
                                     .filter(val => val && val !== 0)
-                                    .map(val => val.toString().padEnd(longeurCompteStd, "0").slice(0, longeurCompteStd))
+                                    .map(val => val.toString().trim())
                             )
                         ];
                         const listeUniqueCompteGen = listeUniqueCompteGenInitial.filter(item => item !== '');
 
                         const listeUniqueCompteAuxInitial = [
                             ...new Set(
-                                activeData
+                                result.data
                                     .map(item => item.CompAuxNum)
                                     .filter(val => val && val !== 0)
-                                    .map(val => val.toString().padEnd(longeurCompteStd, "0").slice(0, longeurCompteStd))
+                                    .map(val => val.toString().trim())
                             )
                         ];
                         const listeUniqueCompteAux = listeUniqueCompteAuxInitial.filter(item => item !== '');
@@ -660,33 +569,30 @@ export default function ImportJournal() {
                         const ListeCodeJnlParams = [...new Set(codeJournal.map(item => normalizeCode(item.code)))];
                         const ListeCompteParams = [...new Set(planComptable.map(item => item.compte))];
 
-                        const codeJournalNotInParams = existance(ListeCodeJnlParams, listeUniqueCodeJnl);
-                        // const codeJournalNotInParams = [];
-                        const compteNotInParams = existance(ListeCompteParams, listeUniqueCompte);
-                        // const compteNotInParams = [];
-
+                        //const codeJournalNotInParams = existance(ListeCodeJnlParams, listeUniqueCodeJnl);
+                        const codeJournalNotInParams = [];
+                        //const compteNotInParams = existance(ListeCompteParams, listeUniqueCompte);
+                        const compteNotInParams = [];
                         const compteNotInParamsGen = existance(ListeCompteParams, listeUniqueCompteGen);
                         const compteNotInParamsAux = existance(ListeCompteParams, listeUniqueCompteAux);
 
                         // Devises: détecter les codes manquants et les vides
-                        const listeUniqueDevisesInitial = [...new Set(activeData.map(item => (item.Idevise || '').trim()))];
+                        const listeUniqueDevisesInitial = [...new Set(result.data.map(item => (item.Idevise || '').trim()))];
                         const listeUniqueDevises = listeUniqueDevisesInitial.filter(item => item !== '');
                         const listeDevisesParams = [...new Set((devises || []).map(d => d.code))];
-                        const devisesNotInParams = existance(listeDevisesParams, listeUniqueDevises);
-                        // const devisesNotInParams = [];
-                        const numberOfEmptyDevises = activeData.filter(row => !row.Idevise || row.Idevise.trim() === '').length;
+                        //const devisesNotInParams = existance(listeDevisesParams, listeUniqueDevises);
+                        const devisesNotInParams = [];
+                        const numberOfEmptyDevises = result.data.filter(row => !row.Idevise || row.Idevise.trim() === '').length;
 
-                        const codeJournalNotInParamsFiltered = [...new Set(codeJournalNotInParams.map(val => val))];
-
-                        if (codeJournalNotInParamsFiltered.length > 0) {
-                            msg.push(`${pluralizeCodeJournal(codeJournalNotInParamsFiltered.length)} pas encore dans votre dossier : ${codeJournalNotInParamsFiltered.join(', ')}`);
+                        if (codeJournalNotInParams.length > 0) {
+                            msg.push(`Les codes journaux suivants n'existent pas encore dans votre dossier : ${codeJournalNotInParams.join(', ')}`);
                             nbrAnom = nbrAnom + 1;
                             setNbrAnomalie(nbrAnom);
                             setCouleurBoutonAnomalie(couleurAnom);
 
                             // Construire { code, libelle } à partir du fichier importé (JournalLib si présent)
-                            const missingCodeWithLib = codeJournalNotInParamsFiltered.map((code) => {
-                                const row = activeData.find(r => normalizeCode(r.JournalCode) === code);
+                            const missingCodeWithLib = codeJournalNotInParams.map((code) => {
+                                const row = result.data.find(r => normalizeCode(r.JournalCode) === code);
                                 const libelle = row && (row.JournalLib || row.JournalLabel || row.Journal || '')
                                     ? (row.JournalLib || row.JournalLabel || row.Journal)
                                     : `Journal ${code}`;
@@ -695,31 +601,27 @@ export default function ImportJournal() {
                             setCodeJournalToCreate(missingCodeWithLib);
                         }
 
-                        const compteNotInParamsFiltered = [...new Set(compteNotInParams.map(val => padCompte(val)))];
-
-                        if (compteNotInParamsFiltered.length > 0) {
-                            msg.push(`${pluralizeCompte(compteNotInParamsFiltered.length)} pas encore dans votre dossier : ${compteNotInParamsFiltered.join(', ')}`);
+                        if (compteNotInParams.length > 0) {
+                            msg.push(`Les numéros de compte suivants n'existent pas encore dans votre dossier : ${compteNotInParams.join(', ')}`);
 
                             nbrAnom = nbrAnom + 1;
                             setNbrAnomalie(nbrAnom);
                             setCouleurBoutonAnomalie(couleurAnom);
                         }
-
-                        const devisesNotInParamsFiltered = [... new Set(devisesNotInParams.map(val => val))];
 
                         // Anomalies devises manquantes (seront créées automatiquement)
-                        if (devisesNotInParamsFiltered.length > 0) {
-                            msg.push(`${pluralizeDevise(devisesNotInParamsFiltered.length)} pas encore dans votre dossier : ${devisesNotInParamsFiltered.join(', ')}`);
+                        if (devisesNotInParams.length > 0) {
+                            msg.push(`Les devises suivantes n'existent pas encore dans votre dossier et seront créées automatiquement : ${devisesNotInParams.join(', ')}`);
                             nbrAnom = nbrAnom + 1;
                             setNbrAnomalie(nbrAnom);
                             setCouleurBoutonAnomalie(couleurAnom);
                         }
 
-                        // Anomalies devises vides (par défaut MGA)
+                        // Anomalies devises vides (par défaut EURO)
                         if (numberOfEmptyDevises > 0) {
-                            const hasMGA = listeDevisesParams.includes('MGA') || devisesNotInParamsFiltered.includes('MGA');
-                            const suffix = hasMGA ? '' : " (MGA sera créé au besoin)";
-                            msg.push(`Certaines lignes n'ont pas de devise : elles utiliseront la devise par défaut 'MGA'${suffix}.`);
+                            const hasEURO = listeDevisesParams.includes('EUR') || devisesNotInParams.includes('EUR');
+                            const suffix = hasEURO ? '' : " (EUR sera créé au besoin)";
+                            msg.push(`Certaines lignes n'ont pas de devise : elles utiliseront la devise par défaut 'EUR'${suffix}.`);
                             nbrAnom = nbrAnom + 1;
                             setNbrAnomalie(nbrAnom);
                             setCouleurBoutonAnomalie(couleurAnom);
@@ -762,32 +664,26 @@ export default function ImportJournal() {
                         let finalData = DataWithId;
                         const dStart = parseToDate(start);
                         const dEnd = parseToDate(end);
-
-                        const dateDebut = formatDate(start);
-                        const dateFin = formatDate(end);
-
                         if (dStart || dEnd) {
-                            const missingDate = activeData.filter(r => !parseToDate(r.EcritureDate) && !codeJournauxRan.includes(r.JournalCode));
-                            const withDate = activeData.filter(r => !!parseToDate(r.EcritureDate));
-
+                            // Séparer dates manquantes et hors bornes pour des messages cohérents
+                            const missingDate = DataWithId.filter(r => !parseToDate(r.EcritureDate));
+                            const withDate = DataWithId.filter(r => !!parseToDate(r.EcritureDate));
                             const outOfRange = withDate.filter(r => {
                                 const d = parseToDate(r.EcritureDate);
                                 const afterStart = dStart ? (d && d >= dStart) : true;
                                 const beforeEnd = dEnd ? (d && d <= dEnd) : true;
-
-                                if (codeJournauxRan.includes(r.JournalCode)) return false;
-
-                                return !(afterStart && beforeEnd);
+                                const isRAN = r.JournalCode && r.JournalCode.toString().trim().toUpperCase() === 'RAN';
+                                return !(afterStart && beforeEnd) && !isRAN;
                             });
-
+                            
                             if (missingDate.length > 0) {
-                                msg.push("Certaines lignes n'ont pas de date d'écriture valide, elles seront ignorées.");
+                                msg.push("Certaines lignes n'ont pas de date d'écriture valide: elles seront ignorées.");
                                 nbrAnom = nbrAnom + 1;
                                 setNbrAnomalie(nbrAnom);
                                 setCouleurBoutonAnomalie(couleurAnom);
                             }
                             if (outOfRange.length > 0) {
-                                msg.push(`Certaines lignes ne seront pas importées car leur date d'écriture n'est pas entre ${dateDebut} et ${dateFin}.`);
+                                msg.push("Certaines lignes ne seront pas importées car leur date d'écriture est en dehors de l'exercice.");
                                 nbrAnom = nbrAnom + 1;
                                 setNbrAnomalie(nbrAnom);
                                 setCouleurBoutonAnomalie(couleurAnom);
@@ -797,24 +693,17 @@ export default function ImportJournal() {
                                 const d = parseToDate(r.EcritureDate);
                                 const afterStart = dStart ? (d && d >= dStart) : true;
                                 const beforeEnd = dEnd ? (d && d <= dEnd) : true;
-
-                                if (codeJournauxRan.includes(r.JournalCode)) return true;
-
-                                return afterStart && beforeEnd;
+                                const isRAN = r.JournalCode && r.JournalCode.toString().trim().toUpperCase() === 'RAN';
+                                // Autoriser les journaux RAN même hors exercice
+                                return (afterStart && beforeEnd) || isRAN;
                             });
                         }
 
-                        const finalDataCompteFormatted = finalData.map(item => {
-                            const date = new Date(start);
-                            const exerciceStartFormatted = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
-
-                            return {
-                                ...item,
-                                CompteNum: padCompte(item.CompteNum),
-                                CompAuxNum: padCompte(item.CompAuxNum),
-                                exerciceStart: exerciceStartFormatted
-                            };
-                        });
+                        const finalDataCompteFormatted = finalData.map(item => ({
+                            ...item,
+                            CompteNum: padCompte(item.CompteNum),
+                            CompAuxNum: padCompte(item.CompAuxNum)
+                        }));
 
                         setJournalData(finalDataCompteFormatted);
                         formikImport.setFieldValue('journalData', finalDataCompteFormatted);
@@ -839,15 +728,13 @@ export default function ImportJournal() {
                         const mapAux = new Map();
 
                         DataWithId.forEach(item => {
-                            const compte = item.CompAuxNum?.toString()
-                                .padEnd(longeurCompteStd, "0")
-                                .slice(0, longeurCompteStd);
+                            const compte = item.CompAuxNum?.toString()?.trim();
 
                             if (compteNotInParamsAux.includes(compte) && !mapAux.has(compte)) {
                                 mapAux.set(compte, {
                                     CompAuxNum: compte,
-                                    CompAuxLib: item.EcritureLib,
-                                    CompteNum: item.CompteNum?.toString()?.padEnd(longeurCompteStd, "0")?.slice(0, longeurCompteStd) || ''
+                                    CompAuxLib: item.CompteLib,
+                                    CompteNum: item.CompteNum?.toString()?.trim() || ''
                                 });
                             }
                         });
@@ -861,7 +748,6 @@ export default function ImportJournal() {
 
                         event.target.value = null;
                         setProgressValue(100);
-
                         setTimeout(() => {
                             setTraitementJournalWaiting(false);
                             setProgressValue(0);
@@ -902,7 +788,7 @@ export default function ImportJournal() {
     const createCodeJournalNotExisting = async () => {
         const response = await axios.post(`/administration/importJournal/createNotExistingCodeJournal`, { compteId, fileId, codeJournalToCreate });
         const resData = response.data;
-        return resData.list;
+        return resData;
     }
 
     //création des comptes qui n'existe pas encore avant import journal
@@ -924,10 +810,11 @@ export default function ImportJournal() {
     const handleImportJournal = async (value) => {
         if (value) {
             const UpdatedPlanComptable = await createCompteNotExisting();
-            const UpdatedCodeJournal = await createCodeJournalNotExisting();
+            const codeJournalRes = await createCodeJournalNotExisting();
+            const UpdatedCodeJournal = codeJournalRes?.list;
 
             if (!Array.isArray(UpdatedCodeJournal)) {
-                toast.error("Un problème est survenu lors de la création des codes journaux manquants.");
+                toast.error(codeJournalRes?.msg || "Un problème est survenu lors de la création des codes journaux manquants.");
             }
 
             if (!Array.isArray(UpdatedPlanComptable)) {
@@ -943,11 +830,10 @@ export default function ImportJournal() {
                 const selectedObj = allPeriods.find(x => x.id === selectedPeriodeId) || {};
                 const periodeStart = selectedObj.datedebut || selectedObj.date_debut || selectedObj.debut || selectedObj.startDate || null;
                 const periodeEnd = selectedObj.datefin || selectedObj.date_fin || selectedObj.fin || selectedObj.endDate || null;
-
                 // Utiliser SSE pour la progression en temps réel
                 startImport(
                     '/administration/importJournal/importJournalWithProgress',
-                    { compteId, userId, fileId, selectedPeriodeId, fileTypeCSV, valSelectCptDispatch, journalData, longeurCompteStd, periodeStart, periodeEnd },
+                    { compteId, userId, fileId, selectedPeriodeId, fileTypeCSV, valSelectCptDispatch, journalData, periodeStart, periodeEnd },
                     (eventData) => {
                         // Succès
                         setTimeout(() => {
@@ -981,7 +867,7 @@ export default function ImportJournal() {
             handleCloseDialogConfirmImport();
         }
     }
-        const buttonStyle = {
+    const buttonStyle = {
         minWidth: 120,
         height: 32,
         px: 2,
@@ -1042,14 +928,7 @@ export default function ImportJournal() {
                     :
                     null
             }
-            {
-                openPopupCodejournal && (
-                    <PopupCodeJouralNotExist
-                        title={"L'importation a été interrompue"}
-                        handleClose={() => setOpenPopupCodeJournal(false)}
-                    />
-                )
-            }
+
             <TabContext value={"1"}>
                 <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                     <TabList aria-label="lab API tabs example">
@@ -1069,240 +948,259 @@ export default function ImportJournal() {
                         <Stack width={"100%"} height={"100%"} spacing={4} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
                             <Typography variant='h6' sx={{ color: "black" }} align='left'>Administration - Import Journal</Typography>
 
-                            <Stack width={"100%"} height={"80px"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "20px" }}>
-                                <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-                                    <Box
-                                        sx={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: 0.3,
-                                            minWidth: "250px",
-                                        }}
-                                    >
-                                        <Typography
+                            <Stack width={"100%"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"column"} style={{ marginLeft: "0px", marginTop: "20px" }}>
+                                <Stack
+                                    width={"100%"}
+                                    spacing={2}
+                                    alignItems={"center"}
+                                    alignContent={"center"}
+                                    direction={"row"}
+                                    style={{ marginLeft: "0px", marginTop: "0px", flexWrap: 'wrap', marginBottom: "20px" }} // <-- ici
+                                >
+                                    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                                        <Box
                                             sx={{
-                                                fontWeight: "bold",
-                                                minWidth: "70px",
-                                                flexShrink: 0,
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 0.3,
+                                                minWidth: "250px",
                                             }}
                                         >
-                                            Exercice:
-                                        </Typography>
-                                        <Select
-                                            labelId="demo-simple-select-standard-label"
-                                            id="demo-simple-select-standard"
-                                            value={selectedExerciceId}
-                                            label={"valSelect"}
-                                            onChange={(e) => handleChangeExercice(e.target.value)}
-                                            sx={{
-                                                border: "1px solid #ccc",
-                                                borderRadius: "4px",
-                                                minWidth: "300px",
-                                                height: "32px",
-                                                paddingX: 1,
-                                                "& .MuiSelect-select": {
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    paddingY: 0,
-                                                    whiteSpace: "nowrap",
-                                                    overflow: "hidden",
-                                                    textOverflow: "ellipsis",
-                                                },
-                                            }}
-                                        >
-                                            {listeExercice.map((option) => (
-                                                <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                                            ))
-                                            }
-                                        </Select>
-                                    </Box>
-                                </Box>
-                            </Stack>
-
-                            <Stack width={"100%"} height={"60px"} spacing={2} alignItems={"center"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-                                    {/* Ligne Label + Select */}
-                                    <Box
-                                        sx={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: 1,
-                                            minWidth: "250px",
-                                        }}
-                                    >
-                                        {/* Label à côté */}
-                                        <Typography sx={{ fontWeight: "bold", minWidth: "120px" }}>
-                                            Type de fichier:
-                                        </Typography>
-
-                                        <Select
-                                            labelId="demo-simple-select-standard-label"
-                                            id="demo-simple-select-standard"
-                                            value={formikImport.values.type}
-                                            label={"valSelectType"}
-                                            onChange={handleChangeType}
-                                            sx={{
-                                                border: "1px solid #ccc", // contour gris clair
-                                                borderRadius: "4px",
-                                                minWidth: "140px",
-                                                height: "32px", // hauteur réduite
-                                                paddingX: 1,
-                                                "& .MuiSelect-select": {
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    paddingY: 0,
-                                                },
-                                            }}                                        >
-                                            <MenuItem key={"CSV"} value={"CSV"}>CSV</MenuItem>
-                                            <MenuItem key={"FEC"} value={"FEC"}>FEC</MenuItem>
-                                        </Select>
-                                    </Box>
-                                    {formikImport.errors.type && formikImport.touched.type && (
-                                        <FormHelperText sx={{ color: "red", marginLeft: "120px" }}>
-                                            {formikImport.errors.type}
-                                        </FormHelperText>
-                                    )}
-
-                                </Box>
-
-                                <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-                                    <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                                            <Typography sx={{ fontWeight: "bold", minWidth: "100px" }}> {/* minWidth réduit */}
-                                                Choix d'import:
-                                            </Typography>
-                                            <Select
-                                                labelId="demo-simple-select-standard-label"
-                                                id="demo-simple-select-standard"
-                                                value={formikImport.values.choixImport}
-                                                label={"valSelectCptDispatch"}
-                                                onChange={handleChangeCptDispatch}
+                                            <Typography
                                                 sx={{
-                                                    border: "1px solid #1976d2",
+                                                    fontWeight: "bold",
+                                                    minWidth: "70px",
+                                                    flexShrink: 0,
+                                                }}
+                                            >
+                                                Exercice:
+                                            </Typography>
+
+                                            <Select
+                                                value={selectedPeriodeId}
+                                                onChange={(e) => handleChangeSelectedPeriod(e.target.value)}
+                                                displayEmpty
+                                                sx={{
+                                                    border: "1px solid #ccc",
                                                     borderRadius: "4px",
-                                                    width: "320px",         // largeur fixe
-                                                    height: "32px",          // hauteur réduite
+                                                    minWidth: "300px",
+                                                    height: "32px",
                                                     paddingX: 1,
                                                     "& .MuiSelect-select": {
                                                         display: "flex",
                                                         alignItems: "center",
                                                         paddingY: 0,
-                                                        whiteSpace: "nowrap",        // pas de retour à la ligne
-                                                        overflow: "hidden",          // cacher le dépassement
-                                                        textOverflow: "ellipsis",    // tronquer le texte avec "…"
+                                                        whiteSpace: "nowrap",
+                                                        overflow: "hidden",
+                                                        textOverflow: "ellipsis",
                                                     },
                                                 }}
                                             >
-                                                <MenuItem key={"None"} value={""}>
-                                                    <em>None</em>
-                                                </MenuItem>
-                                                <MenuItem key={"ECRASER"} value={"ECRASER"}>Ecraser les données déjà existantes</MenuItem>
-                                                <MenuItem key={"UPDATE"} value={"UPDATE"}>Importer sans écraser</MenuItem>
+                                                {listeExercice.map((option) => (
+                                                    <MenuItem key={option.id} value={option.id}>
+                                                        {option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}
+                                                    </MenuItem>
+                                                ))}
                                             </Select>
-                                        </Box> {/* gap réduit */}
-                                        {/* Message d'erreur */}
-                                        {formikImport.errors.choixImport && formikImport.touched.choixImport && (
-                                            <FormHelperText sx={{ color: "red", marginLeft: "100px" }}> {/* aligné avec label */}
-                                                {formikImport.errors.choixImport}
-                                            </FormHelperText>
-                                        )}
-                                    </FormControl>
-                                </Box>
+                                        </Box>
+                                    </Box>
+                                </Stack>
 
-
-                                <Stack direction="row" alignItems="center" spacing={0.5} sx={{ ml: 4 }}>
-                                  <Button
-                                        variant="contained"
-                                        disabled={!fileTypeCSV}
-                                        onClick={fileTypeCSV ? handleDownloadModel : undefined}
-                                        style={{
-                                            ...buttonStyle,
-                                            backgroundColor: initial.auth_gradient_end
-                                        }}
-                                    >
-                                        Télécharger le Modèle
-                                    </Button>
-
-                                    <input
-                                        type="file"
-                                        accept={fileTypeCSV ? ".csv" : ".txt"}
-                                        onChange={handleFileSelect}
-                                        style={{ display: "none" }}
-                                        id="fileInput"
-                                    />
-
-                                    <Button
-                                        variant="contained"
-                                        onClick={() => document.getElementById("fileInput").click()}
-                                        style={{
-                                            ...buttonStyle,
-                                            backgroundColor: initial.auth_gradient_end
-                                        }}
-                                    >
-                                        Choisir un fichier
-                                    </Button>
-
-                                    <Badge badgeContent={nbrAnomalie} color="warning">
-                                        <Button
-                                            onClick={handleOpenAnomalieDetails}
-                                            variant="contained"
-                                            style={{
-                                                ...buttonStyle,
-                                                backgroundColor: nbrAnomalie > 0 ? couleurBoutonAnomalie : initial.delete_line_bouton_color,
-                                                color: 'white'
+                                <Stack
+                                    width={"100%"}
+                                    spacing={1}
+                                    alignItems={"center"}
+                                    alignContent={"center"}
+                                    direction={"row"}
+                                    style={{ marginLeft: "0px", marginTop: "0px", flexWrap: 'wrap' }}
+                                >
+                                    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                                        {/* Ligne Label + Select */}
+                                        <Box
+                                            sx={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 1,
+                                                minWidth: "250px",
                                             }}
                                         >
-                                            Anomalies
-                                        </Button>
-                                    </Badge>
-                                    <Button
-                                        type='submit'
-                                        variant="contained"
-                                        sx={{
-                                            ...buttonStyle,
-                                            backgroundColor: '#e79754ff',
-                                            color: 'white',
-                                            borderColor: '#e79754ff',
-                                            boxShadow: 'none',
+                                            {/* Label à côté */}
+                                            <Typography sx={{ fontWeight: "bold", minWidth: "120px" }}>
+                                                Type de fichier:
+                                            </Typography>
 
-                                            '&:hover': {
-                                                backgroundColor: '#e79754ff',
-                                                border: 'none',
-                                                boxShadow: 'none',       // enlève l’effet bleu shadow
-                                            },
-                                            '&:focus': {
-                                                backgroundColor: '#e79754ff',
-                                                border: 'none',
-                                                boxShadow: 'none',       // enlève le focus bleu
-                                            },
-                                            '&.Mui-disabled': {
+                                            {/* Select style compact, sans contour bleu */}
+                                            <Select
+                                                value={formikImport.values.type}
+                                                onChange={handleChangeType}
+                                                displayEmpty
+                                                sx={{
+                                                    border: "1px solid #ccc", // contour gris clair
+                                                    borderRadius: "4px",
+                                                    minWidth: "140px",
+                                                    height: "32px", // hauteur réduite
+                                                    paddingX: 1,
+                                                    "& .MuiSelect-select": {
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        paddingY: 0,
+                                                    },
+                                                }}
+                                            >
+                                                <MenuItem value={"CSV"}>CSV</MenuItem>
+                                                <MenuItem value={"FEC"}>FEC</MenuItem>
+                                            </Select>
+                                        </Box>
+
+                                        {/* Message d'erreur */}
+                                        {formikImport.errors.type && formikImport.touched.type && (
+                                            <FormHelperText sx={{ color: "red", marginLeft: "120px" }}>
+                                                {formikImport.errors.type}
+                                            </FormHelperText>
+                                        )}
+                                    </Box>
+
+                                    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                                        <FormControl sx={{ m: 1, minWidth: 250 }}>
+                                            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}> {/* gap réduit */}
+                                                {/* Label à côté */}
+                                                <Typography sx={{ fontWeight: "bold", minWidth: "100px" }}> {/* minWidth réduit */}
+                                                    Choix d'import:
+                                                </Typography>
+
+                                                {/* Select avec hauteur réduite */}
+                                                <Select
+                                                    value={formikImport.values.choixImport}
+                                                    onChange={handleChangeCptDispatch}
+                                                    displayEmpty
+                                                    sx={{
+                                                        border: "1px solid #1976d2",
+                                                        borderRadius: "4px",
+                                                        width: "320px",         // largeur fixe
+                                                        height: "32px",          // hauteur réduite
+                                                        paddingX: 1,
+                                                        "& .MuiSelect-select": {
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            paddingY: 0,
+                                                            whiteSpace: "nowrap",        // pas de retour à la ligne
+                                                            overflow: "hidden",          // cacher le dépassement
+                                                            textOverflow: "ellipsis",    // tronquer le texte avec "…"
+                                                        },
+                                                    }}
+                                                >
+                                                    <MenuItem value={""}>
+                                                        <em>None</em>
+                                                    </MenuItem>
+                                                    <MenuItem value={"ECRASER"}>Ecraser les données déjà existantes</MenuItem>
+                                                    <MenuItem value={"UPDATE"}>Importer sans écraser</MenuItem>
+                                                </Select>
+
+                                            </Box>
+
+                                            {/* Message d'erreur */}
+                                            {formikImport.errors.choixImport && formikImport.touched.choixImport && (
+                                                <FormHelperText sx={{ color: "red", marginLeft: "100px" }}> {/* aligné avec label */}
+                                                    {formikImport.errors.choixImport}
+                                                </FormHelperText>
+                                            )}
+                                        </FormControl>
+                                    </Box>
+
+                                    <Stack direction="row" alignItems="center" spacing={0.5} sx={{ ml: 4 }}>
+                                        <Button
+                                            variant="contained"
+                                            disabled={!fileTypeCSV}
+                                            onClick={fileTypeCSV ? handleDownloadModel : undefined}
+                                            style={{
+                                                ...buttonStyle,
+                                                backgroundColor: initial.auth_gradient_end
+                                            }}
+                                        >
+                                            Télécharger le Modèle
+                                        </Button>
+
+                                        <input
+                                            type="file"
+                                            accept={fileTypeCSV ? ".csv" : ".txt"}
+                                            onChange={handleFileSelect}
+                                            style={{ display: "none" }}
+                                            id="fileInput"
+                                        />
+
+                                        <Button
+                                            variant="contained"
+                                            onClick={() => document.getElementById("fileInput").click()}
+                                            style={{
+                                                ...buttonStyle,
+                                                backgroundColor: initial.auth_gradient_end
+                                            }}
+                                        >
+                                            Choisir un fichier
+                                        </Button>
+                                
+                                        <Badge badgeContent={nbrAnomalie} color="warning">
+                                            <Button
+                                                onClick={handleOpenAnomalieDetails}
+                                                variant="contained"
+                                                style={{
+                                                    ...buttonStyle,
+                                                    backgroundColor: nbrAnomalie > 0 ? couleurBoutonAnomalie : initial.delete_line_bouton_color,
+                                                    color: 'white'
+                                                }}
+                                            >
+                                                Anomalies
+                                            </Button>
+                                        </Badge>
+                                        <Button
+                                            type='submit'
+                                            variant="contained"
+                                            sx={{
+                                                ...buttonStyle,
                                                 backgroundColor: '#e79754ff',
                                                 color: 'white',
-                                                cursor: 'not-allowed',
-                                            },
-                                            '&::before': {
-                                                display: 'none',         // supprime l’overlay bleu de ButtonGroup
-                                            },
-                                        }}
-                                    >
-                                        Importer
-                                    </Button>
+                                                borderColor: '#e79754ff',
+                                                boxShadow: 'none',
+
+                                                '&:hover': {
+                                                    backgroundColor: '#e79754ff',
+                                                    border: 'none',
+                                                    boxShadow: 'none',       // enlève l’effet bleu shadow
+                                                },
+                                                '&:focus': {
+                                                    backgroundColor: '#e79754ff',
+                                                    border: 'none',
+                                                    boxShadow: 'none',       // enlève le focus bleu
+                                                },
+                                                '&.Mui-disabled': {
+                                                    backgroundColor: '#e79754ff',
+                                                    color: 'white',
+                                                    cursor: 'not-allowed',
+                                                },
+                                                '&::before': {
+                                                    display: 'none',         // supprime l’overlay bleu de ButtonGroup
+                                                },
+                                            }}
+                                        >
+                                            Importer
+                                        </Button>
+                                    </Stack>
                                 </Stack>
+
+                                <ImportProgressBar
+                                    isVisible={traitementJournalWaiting}
+                                    message={traitementJournalMsg}
+                                    variant="determinate"
+                                    progress={progressValue}
+                                />
+
+                                <VirtualTableImportJournal tableHeader={columnsTable} tableRow={journalData} />
+
                             </Stack>
-
-                            <ImportProgressBar
-                                isVisible={traitementJournalWaiting}
-                                message={traitementJournalMsg}
-                                variant="determinate"
-                                progress={progressValue}
-                            />
-
-                            <VirtualTableImportJournal tableHeader={columnsTable} tableRow={journalData} />
-
                         </Stack>
                     </form>
                 </TabPanel>
             </TabContext>
-        </Box >
+        </Box>
     )
 }

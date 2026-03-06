@@ -2413,9 +2413,17 @@ exports.getAllJournal = async (req, res) => {
         const dossierData = await dossiers.findByPk(id_dossier);
         const exerciceData = await exercices.findByPk(id_exercice);
 
+        if (!exerciceData || !exerciceData.date_debut || !exerciceData.date_fin) {
+            return res.status(400).json({ state: false, message: 'Exercice invalide ou dates manquantes' });
+        }
+
         const consolidation = dossierData?.consolidation || false;
-        const date_debut_exercice = new Date(exerciceData?.date_debut);
-        const date_fin_exercice = new Date(exerciceData?.date_fin);
+        const date_debut_exercice = new Date(exerciceData.date_debut);
+        const date_fin_exercice = new Date(exerciceData.date_fin);
+
+        if (isNaN(date_debut_exercice.getTime()) || isNaN(date_fin_exercice.getTime())) {
+            return res.status(400).json({ state: false, message: 'Dates d\'exercice invalides' });
+        }
 
         let id_dossiers_a_utiliser = [Number(id_dossier)];
 
@@ -2504,9 +2512,17 @@ exports.getJournalFiltered = async (req, res) => {
         const dossierData = await dossiers.findByPk(id_dossier);
         const exerciceData = await exercices.findByPk(id_exercice);
 
+        if (!exerciceData || !exerciceData.date_debut || !exerciceData.date_fin) {
+            return res.status(400).json({ state: false, message: 'Exercice invalide ou dates manquantes' });
+        }
+
         const consolidation = dossierData?.consolidation || false;
-        const date_debut_exercice = new Date(exerciceData?.date_debut);
-        const date_fin_exercice = new Date(exerciceData?.date_fin);
+        const date_debut_exercice = new Date(exerciceData.date_debut);
+        const date_fin_exercice = new Date(exerciceData.date_fin);
+
+        if (isNaN(date_debut_exercice.getTime()) || isNaN(date_fin_exercice.getTime())) {
+            return res.status(400).json({ state: false, message: 'Dates d\'exercice invalides' });
+        }
 
         let id_dossiers_a_utiliser = [Number(id_dossier)];
 
