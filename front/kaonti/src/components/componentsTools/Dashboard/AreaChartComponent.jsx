@@ -34,7 +34,7 @@ ChartJS.register(
 
 const AreaChartComponent = ({ xAxis,xAxis1, dataN, dataN1, label }) => {
     const dataNOnAllLabels = xAxis.map((lbl, idx) => dataN[idx] ?? null);
-    const dataN1OnAllLabels = xAxis1.map((lbl, idx) => dataN1?.[idx] ?? null);
+    const dataN1OnAllLabels = xAxis.map((lbl, idx) => dataN1?.[idx] ?? null);
 
     const shadowPlugin = {
         id: 'shadowPlugin',
@@ -59,7 +59,7 @@ const AreaChartComponent = ({ xAxis,xAxis1, dataN, dataN1, label }) => {
     };
 
     const chartData = {
-        labels: xAxis,xAxis1,
+        labels: xAxis,
         datasets: [
             {
                 label: `N`,

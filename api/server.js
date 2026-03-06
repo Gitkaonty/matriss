@@ -102,6 +102,12 @@ app.use('/administration/revision', require('./Routes/revision/revisionRoutes'))
 
 app.use('/administration/revisionControleAuto', require('./Routes/revision/revisionControleAutoRoutes'));
 
+// Routes pour l'analyse fournisseur/client
+app.use('/administration/analyseFournisseurClient', require('./Routes/Administration/analyseFournisseurRoutes'));
+
+// Routes pour l'analyse client
+app.use('/administration/analyseClient', require('./Routes/Administration/analyseClientRoutes'));
+
 
 //export
 app.use('/administration/exportBalance', require('./Routes/Administration/exportBalanceRoute'));
