@@ -81,6 +81,7 @@ db.compterubriques = require('./compterubriqueModel')(sequelize, DataTypes);
 db.compterubriquematrices = require('./compterubriqueMatriceModel')(sequelize, DataTypes);
 db.situations = require('./situationsModel')(sequelize, DataTypes);
 db.journals = require('./journalsModel')(sequelize, DataTypes);
+db.rechercheDoublons = require('./rechercheDoublonModel')(sequelize, DataTypes);
 db.detailsimmo = require('./detailsImmoModel')(sequelize, DataTypes);
 db.detailsImmoLignes = require('./detailsImmoLignesModel')(sequelize, DataTypes);
 db.balanceimportees = require('./balanceimporteesModel')(sequelize, DataTypes);
@@ -132,6 +133,9 @@ db.analyseFournisseurAnomalies = require('./analyseFournisseurAnomalieModel')(se
 // Analyse Client
 db.analyseClientLignes = require('./analyseClientLigneModel')(sequelize, DataTypes);
 db.analyseClientAnomalies = require('./analyseClientAnomalieModel')(sequelize, DataTypes);
+
+//Doublon
+db.rechercheDoublons = require('./rechercheDoublonModel')(sequelize, DataTypes);
 
 //
 db.caSections = require('./caSectionMolel')(sequelize, DataTypes);

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Box,
     Typography,
@@ -24,6 +25,8 @@ import useAxiosPrivate from '../../../../hooks/useAxiosPrivate';
 import RevisionDetails from './RevisionDetails';
 import PopupActionConfirm from "../../../componentsTools/popupActionConfirm";
 import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
+import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFile';
+
 
 // Format date as dd-mm-yy
 const formatDate = (dateString) => {
@@ -39,6 +42,7 @@ const formatDate = (dateString) => {
 export default function Revision() {
     let initial = init[0];
     const axiosPrivate = useAxiosPrivate();
+    const navigate = useNavigate();
 
     const [controles, setControles] = useState([]);
     const [showControles, setShowControles] = useState(true);
@@ -68,6 +72,9 @@ export default function Revision() {
     const [selectedPeriodeDates, setSelectedPeriodeDates] = useState(null);
     const [fileInfos, setFileInfos] = useState(null);
 
+    const [noFile, setNoFile] = useState(false);
+    const [fileId, setFileId] = useState(0);
+
     // Popup pour erreur de période non sélectionnée
     const [periodeErrorPopup, setPeriodeErrorPopup] = useState({ open: false, message: '' });
 
@@ -80,6 +87,21 @@ export default function Revision() {
             id_exercice: selectedExerciceId || parseInt(sessionStorage.getItem('exerciceId')) || 1
         };
     };
+    const sendToHome = (value) => {
+        setNoFile(!value);
+        navigate('/tab/home');
+    };
+
+    // Vérifier si un dossier est sélectionné au chargement
+    useEffect(() => {
+        const idDossier = sessionStorage.getItem('fileId');
+        if (!idDossier || idDossier === '0') {
+            setNoFile(true);
+        } else {
+            setFileId(parseInt(idDossier));
+            setNoFile(false);
+        }
+    }, []);
 
     const fetchControles = useCallback(async () => {
         if (!selectedExerciceId) return;
@@ -101,7 +123,7 @@ export default function Revision() {
             const response = await axiosPrivate.get(url);
             if (response.data.state) {
                 setControles(response.data.controles);
- //               console.log('Controles fetched:', response.data.controles.length, response.data.message);
+                //               console.log('Controles fetched:', response.data.controles.length, response.data.message);
             }
         } catch (error) {
             console.error('Error fetching controles:', error);
@@ -393,406 +415,414 @@ export default function Revision() {
     }, [listeExercice, selectedExerciceId]);
 
     return (
-        <Box sx={{ p: 2, height: '100vh', backgroundColor: '#f5f5f5' }}>
-            {confirmReviserPopup && (
-                <PopupActionConfirm
-                    msg="Confirmer l'exécution de la révision ?"
-                    confirmationState={handleConfirmReviser}
-                    isLoading={confirmReviserLoading}
+        <>
+            {noFile ? (
+                <PopupTestSelectedFile
+                    confirmationState={sendToHome}
                 />
-            )}
-            <Box sx={{ mb: 1, width: '100px' }}>
-                {InfoFileStyle(fileInfos?.dossier)}
-            </Box>
-            <Box
-                sx={{
-                    mb: 3,
-                    backgroundColor: 'white',
-                    p: 2,
-                    borderRadius: 1,
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                }}
-            >
-
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                    <Typography component="div" variant="h7" sx={{ fontWeight: 600, color: '#333' }}>
-                        Administration-Révision
-                    </Typography>
-                </Box>
-
-                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <Stack direction="row" spacing={0} alignItems="center" sx={{ flex: '0 0 auto' }}>
-                        <Typography sx={{ minWidth: 70, fontSize: 15, mr: 1, whiteSpace: 'nowrap' }}>
-                            Exercice :
-                        </Typography>
-                        <FormControl size="small" variant="outlined" sx={{ minWidth: 200 }}>
-                            <Select
-                                value={selectedExerciceId}
-                                onChange={(e) => handleChangeExercice(e.target.value)}
-                                sx={{
-                                    height: 32,
-                                    fontSize: 15,
-                                    '& .MuiSelect-select': { py: 0.5 },
-                                }}
-                                MenuProps={{ disableScrollLock: true }}
-                            >
-                                {listeExercice.map((exercice) => (
-                                    <MenuItem key={exercice.id} value={exercice.id}>
-                                        {exercice.libelle_rang} - {formatDate(exercice.date_debut)} au {formatDate(exercice.date_fin)}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                    </Stack>
-
-                    {listePeriodes.length > 0 && (
-                        <Stack direction="row" spacing={0} alignItems="center" sx={{ flex: '0 0 auto' }}>
-                            <Typography sx={{ minWidth: 70, fontSize: 15, mr: 1, whiteSpace: 'nowrap' }}>
-                                Période :
-                            </Typography>
-                            <FormControl size="small" variant="outlined" sx={{ minWidth: 200 }}>
-                                <Select
-                                    value={selectedPeriodeId}
-                                    onChange={(e) => handleChangePeriode(e.target.value)}
-                                    displayEmpty
-                                    renderValue={(selected) => {
-                                        if (!selected) {
-                                            return <em>Sélectionner une période...</em>;
-                                        }
-                                        const periode = listePeriodes.find(p => p.id === selected);
-                                        return periode ? `${formatDate(periode.date_debut)} au ${formatDate(periode.date_fin)}` : '';
-                                    }}
-                                    sx={{
-                                        height: 32,
-                                        fontSize: 15,
-                                        '& .MuiSelect-select': { py: 0.5 },
-                                    }}
-                                    MenuProps={{ disableScrollLock: true }}
-                                >
-                                    <MenuItem value="" disabled>
-                                        <em>Sélectionner une période...</em>
-                                    </MenuItem>
-                                    {listePeriodes.map((periode) => (
-                                        <MenuItem key={periode.id} value={periode.id}>
-                                            {periode.libelle}{formatDate(periode.date_debut)} au {formatDate(periode.date_fin)}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Stack>
-                    )}
-
-                    <Button
-                        variant="contained"
-                        onClick={handleControler}
-                        disabled={!selectedExerciceId || !selectedPeriodeId}
-                        style={{
-                            textTransform: 'none',
-                            outline: 'none',
-                            backgroundColor: initial.theme,
-                            color: "white",
-                            height: "32px",
-                        }}
-                    >
-                        Réviser
-                    </Button>
-                    {controlesGrouped.length > 0 && (
-                        <Chip
-                            label={`${controlesGrouped.reduce((sum, c) => sum + (c.anomalies || 0), 0)} anomalies`}
-                            color="warning"
-                            size="small"
-                            sx={{ ml: 1 }}
+            ) : (
+                <Box sx={{ p: 2, height: '100vh', backgroundColor: '#f5f5f5' }}>
+                    {confirmReviserPopup && (
+                        <PopupActionConfirm
+                            msg="Confirmer l'exécution de la révision ?"
+                            confirmationState={handleConfirmReviser}
+                            isLoading={confirmReviserLoading}
                         />
                     )}
-                </Box>
-            </Box>
-
-            <Paper sx={{ p: 2, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                <Box
-                    sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        mb: 2,
-                    }}
-                >
-                    <Button
-                        variant="outlined"
-                        size="small"
-                        onClick={() => setShowControles(!showControles)}
-                        sx={{ height: 32, borderRadius: 1 }}
+                    <Box sx={{ mb: 1, width: '100px' }}>
+                        {InfoFileStyle(fileInfos?.dossier)}
+                    </Box>
+                    <Box
+                        sx={{
+                            mb: 3,
+                            backgroundColor: 'white',
+                            p: 2,
+                            borderRadius: 1,
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                        }}
                     >
-                        {showControles ? 'Masquer' : 'Afficher'} ({controlesGrouped.length})
-                    </Button>
-                </Box>
 
-                {showControles &&
-                    (controlesGrouped.length === 0 ? (
-                        <Alert severity="info">
-                            Aucun contrôle trouvé pour cet exercice. Les contrôles seront créés automatiquement.
-                        </Alert>
-                    ) : (
-                        <Box sx={{ height: 400, width: '100%' }}>
-                            <DataGrid
-                                rows={controlesGrouped.map((c, idx) => ({ id: idx, ...c }))}
-                                columns={[
-                                    {
-                                        field: 'Type',
-                                        headerName: 'Type',
-                                        width: 150, // largeur fixe
-                                        renderCell: (params) => (
-                                            <Typography
-                                                variant="body2"
-                                                sx={{
-                                                    fontSize: 13,
-                                                    whiteSpace: 'nowrap',
-                                                    overflow: 'hidden',
-                                                    textOverflow: 'ellipsis',
-                                                }}
-                                            >
-                                                {params.value}
-                                            </Typography>
-                                        ),
-                                    },
-                                    {
-                                        field: 'description',
-                                        headerName: 'Description',
-                                        width: 500
-                                    },
-                                    {
-                                        field: 'anomalies',
-                                        headerName: 'Anomalies',
-                                        width: 110,
-                                        align: 'center',
-                                        headerAlign: 'center',
-                                        renderCell: (params) => (
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                <Chip
-                                                    label={params.value || 0}
-                                                    color={params.value > 0 ? 'warning' : 'success'}
-                                                    size="small"
-                                                />
-                                            </Box>
-                                        )
-                                    },
-                                    {
-                                        field: 'Valider',
-                                        headerName: 'Validé',
-                                        width: 80,
-                                        align: 'center',
-                                        headerAlign: 'center',
-                                        renderCell: (params) => (
-                                            <Chip
-                                                label={params.value ? 'Oui' : 'Non'}
-                                                color={params.value ? 'success' : 'default'}
-                                                size="small"
-                                            />
-                                        )
-                                    },
-                                    {
-                                        field: 'actions',
-                                        headerName: 'Action',
-                                        width: 220,
-                                        align: 'center',
-                                        headerAlign: 'center',
-                                        sortable: false,
-                                        renderCell: (params) => (
-                                            <ButtonGroup
-                                                variant="outlined"
-                                                sx={{
-                                                    boxShadow: 'none',
-                                                    display: 'flex',
-                                                    gap: '2px',
-                                                    '& .MuiButton-root': {
-                                                        borderRadius: 0,
-                                                        minWidth: '80px',
-                                                        height: '28px',
-                                                        fontSize: '0.75rem',
-                                                        textTransform: 'none',
-                                                    },
-                                                    '& .MuiButtonGroup-grouped': {
-                                                        boxShadow: 'none',
-                                                        outline: 'none',
-                                                        borderColor: 'inherit',
-                                                        marginLeft: 0,
-                                                        borderRadius: 1,
-                                                        border: 'none',
-                                                    },
-                                                    '& .MuiButtonGroup-grouped:hover': {
-                                                        boxShadow: 'none',
-                                                        borderColor: 'inherit',
-                                                        border: 'none',
-                                                    },
-                                                }}
-                                            >
-                                                <Button
-                                                    variant="contained"
-                                                    size="small"
-                                                    disableElevation
-                                                    sx={{
-                                                        backgroundColor: initial.theme,
-                                                        color: 'white',
-                                                        '&:hover': {
-                                                            backgroundColor: initial.theme,
-                                                        },
-                                                    }}
-                                                    onClick={() => handleToggleValidateType(params.row.Type, !params.row.Valider)}
-                                                >
-                                                    {params.row.Valider ? 'Annuler' : 'Valider'}
-                                                </Button>
-
-                                                <Button
-                                                    variant="contained"
-                                                    size="small"
-                                                    disableElevation
-                                                    sx={{
-                                                        backgroundColor: initial.add_new_line_bouton_color,
-                                                        color: 'white',
-                                                        '&:hover': {
-                                                            backgroundColor: initial.add_new_line_bouton_color,
-                                                        },
-                                                    }}
-                                                    disabled={detailsLoading}
-                                                    onClick={() => {
-                                                        const type = params.row.Type;
-                                                        const items = controlesByType.get(type);
-                                                        if (!items || items.length === 0) {
-                                                            console.warn('Aucun contrôle trouvé pour le type:', type);
-                                                            return;
-                                                        }
-                                                        setDetailsLoading(true);
-                                                        setSelectedTypeDetails(type);
-                                                        setTimeout(() => setDetailsLoading(false), 500);
-                                                    }}
-                                                >
-                                                    Détails
-                                                </Button>
-                                            </ButtonGroup>
-                                        )
-                                    }
-                                ]}
-                                pageSizeOptions={[5, 10, 25]}
-                                initialState={{
-                                    pagination: { paginationModel: { pageSize: 10 } }
-                                }}
-                                disableRowSelectionOnClick
-                                density="compact"
-                                sx={{
-                                    '& .MuiDataGrid-cell:focus': {
-                                        outline: 'none',
-                                    },
-                                    '& .MuiDataGrid-cell:focus-within': {
-                                        outline: 'none',
-                                    },
-                                }}
-                            />
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                            <Typography component="div" variant="h7" sx={{ fontWeight: 600, color: '#333' }}>
+                                Administration-Révision
+                            </Typography>
                         </Box>
-                    ))}
-            </Paper>
 
-            {/* DETAILS */}
-            {selectedTypeDetails && (
-                <RevisionDetails
-                    type={selectedTypeDetails}
-                    controles={controlesByType.get(selectedTypeDetails) || []}
-                    onClose={() => setSelectedTypeDetails('')}
-                    idCompte={getIds().id_compte}
-                    idDossier={getIds().id_dossier}
-                    idExercice={selectedExerciceId}
-                    dateDebut={selectedPeriodeDates?.date_debut || currentExerciceDates?.date_debut}
-                    dateFin={selectedPeriodeDates?.date_fin || currentExerciceDates?.date_fin}
-                    isPeriodeSelected={!!selectedPeriodeDates}
-                    onValidationChange={fetchControles}
-                />
+                        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+                            <Stack direction="row" spacing={0} alignItems="center" sx={{ flex: '0 0 auto' }}>
+                                <Typography sx={{ minWidth: 70, fontSize: 15, mr: 1, whiteSpace: 'nowrap' }}>
+                                    Exercice :
+                                </Typography>
+                                <FormControl size="small" variant="outlined" sx={{ minWidth: 200 }}>
+                                    <Select
+                                        value={selectedExerciceId}
+                                        onChange={(e) => handleChangeExercice(e.target.value)}
+                                        sx={{
+                                            height: 32,
+                                            fontSize: 15,
+                                            '& .MuiSelect-select': { py: 0.5 },
+                                        }}
+                                        MenuProps={{ disableScrollLock: true }}
+                                    >
+                                        {listeExercice.map((exercice) => (
+                                            <MenuItem key={exercice.id} value={exercice.id}>
+                                                {exercice.libelle_rang} - {formatDate(exercice.date_debut)} au {formatDate(exercice.date_fin)}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Stack>
+
+                            {listePeriodes.length > 0 && (
+                                <Stack direction="row" spacing={0} alignItems="center" sx={{ flex: '0 0 auto' }}>
+                                    <Typography sx={{ minWidth: 70, fontSize: 15, mr: 1, whiteSpace: 'nowrap' }}>
+                                        Période :
+                                    </Typography>
+                                    <FormControl size="small" variant="outlined" sx={{ minWidth: 200 }}>
+                                        <Select
+                                            value={selectedPeriodeId}
+                                            onChange={(e) => handleChangePeriode(e.target.value)}
+                                            displayEmpty
+                                            renderValue={(selected) => {
+                                                if (!selected) {
+                                                    return <em>Sélectionner une période...</em>;
+                                                }
+                                                const periode = listePeriodes.find(p => p.id === selected);
+                                                return periode ? `${formatDate(periode.date_debut)} au ${formatDate(periode.date_fin)}` : '';
+                                            }}
+                                            sx={{
+                                                height: 32,
+                                                fontSize: 15,
+                                                '& .MuiSelect-select': { py: 0.5 },
+                                            }}
+                                            MenuProps={{ disableScrollLock: true }}
+                                        >
+                                            <MenuItem value="" disabled>
+                                                <em>Sélectionner une période...</em>
+                                            </MenuItem>
+                                            {listePeriodes.map((periode) => (
+                                                <MenuItem key={periode.id} value={periode.id}>
+                                                    {periode.libelle}{formatDate(periode.date_debut)} au {formatDate(periode.date_fin)}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                </Stack>
+                            )}
+
+                            <Button
+                                variant="contained"
+                                onClick={handleControler}
+                                disabled={!selectedExerciceId}
+                                style={{
+                                    textTransform: 'none',
+                                    outline: 'none',
+                                    backgroundColor: initial.theme,
+                                    color: "white",
+                                    height: "32px",
+                                }}
+                            >
+                                Réviser
+                            </Button>
+                            {controlesGrouped.length > 0 && (
+                                <Chip
+                                    label={`${controlesGrouped.reduce((sum, c) => sum + (c.anomalies || 0), 0)} anomalies`}
+                                    color="warning"
+                                    size="small"
+                                    sx={{ ml: 1 }}
+                                />
+                            )}
+                        </Box>
+                    </Box>
+
+                    <Paper sx={{ p: 2, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                mb: 2,
+                            }}
+                        >
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                onClick={() => setShowControles(!showControles)}
+                                sx={{ height: 32, borderRadius: 1 }}
+                            >
+                                {showControles ? 'Masquer' : 'Afficher'} ({controlesGrouped.length})
+                            </Button>
+                        </Box>
+
+                        {showControles &&
+                            (controlesGrouped.length === 0 ? (
+                                <Alert severity="info">
+                                    Aucun contrôle trouvé pour cet exercice. Les contrôles seront créés automatiquement.
+                                </Alert>
+                            ) : (
+                                <Box sx={{ height: 400, width: '100%' }}>
+                                    <DataGrid
+                                        rows={controlesGrouped.map((c, idx) => ({ id: idx, ...c }))}
+                                        columns={[
+                                            {
+                                                field: 'Type',
+                                                headerName: 'Type',
+                                                width: 150, // largeur fixe
+                                                renderCell: (params) => (
+                                                    <Typography
+                                                        variant="body2"
+                                                        sx={{
+                                                            fontSize: 13,
+                                                            whiteSpace: 'nowrap',
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
+                                                        }}
+                                                    >
+                                                        {params.value}
+                                                    </Typography>
+                                                ),
+                                            },
+                                            {
+                                                field: 'description',
+                                                headerName: 'Description',
+                                                width: 500
+                                            },
+                                            {
+                                                field: 'anomalies',
+                                                headerName: 'Anomalies',
+                                                width: 110,
+                                                align: 'center',
+                                                headerAlign: 'center',
+                                                renderCell: (params) => (
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                        <Chip
+                                                            label={params.value || 0}
+                                                            color={params.value > 0 ? 'warning' : 'success'}
+                                                            size="small"
+                                                        />
+                                                    </Box>
+                                                )
+                                            },
+                                            {
+                                                field: 'Valider',
+                                                headerName: 'Validé',
+                                                width: 80,
+                                                align: 'center',
+                                                headerAlign: 'center',
+                                                renderCell: (params) => (
+                                                    <Chip
+                                                        label={params.value ? 'Oui' : 'Non'}
+                                                        color={params.value ? 'success' : 'default'}
+                                                        size="small"
+                                                    />
+                                                )
+                                            },
+                                            {
+                                                field: 'actions',
+                                                headerName: 'Action',
+                                                width: 220,
+                                                align: 'center',
+                                                headerAlign: 'center',
+                                                sortable: false,
+                                                renderCell: (params) => (
+                                                    <ButtonGroup
+                                                        variant="outlined"
+                                                        sx={{
+                                                            boxShadow: 'none',
+                                                            display: 'flex',
+                                                            gap: '2px',
+                                                            '& .MuiButton-root': {
+                                                                borderRadius: 0,
+                                                                minWidth: '80px',
+                                                                height: '28px',
+                                                                fontSize: '0.75rem',
+                                                                textTransform: 'none',
+                                                            },
+                                                            '& .MuiButtonGroup-grouped': {
+                                                                boxShadow: 'none',
+                                                                outline: 'none',
+                                                                borderColor: 'inherit',
+                                                                marginLeft: 0,
+                                                                borderRadius: 1,
+                                                                border: 'none',
+                                                            },
+                                                            '& .MuiButtonGroup-grouped:hover': {
+                                                                boxShadow: 'none',
+                                                                borderColor: 'inherit',
+                                                                border: 'none',
+                                                            },
+                                                        }}
+                                                    >
+                                                        <Button
+                                                            variant="contained"
+                                                            size="small"
+                                                            disableElevation
+                                                            sx={{
+                                                                backgroundColor: initial.theme,
+                                                                color: 'white',
+                                                                '&:hover': {
+                                                                    backgroundColor: initial.theme,
+                                                                },
+                                                            }}
+                                                            onClick={() => handleToggleValidateType(params.row.Type, !params.row.Valider)}
+                                                        >
+                                                            {params.row.Valider ? 'Annuler' : 'Valider'}
+                                                        </Button>
+
+                                                        <Button
+                                                            variant="contained"
+                                                            size="small"
+                                                            disableElevation
+                                                            sx={{
+                                                                backgroundColor: initial.add_new_line_bouton_color,
+                                                                color: 'white',
+                                                                '&:hover': {
+                                                                    backgroundColor: initial.add_new_line_bouton_color,
+                                                                },
+                                                            }}
+                                                            disabled={detailsLoading}
+                                                            onClick={() => {
+                                                                const type = params.row.Type;
+                                                                const items = controlesByType.get(type);
+                                                                if (!items || items.length === 0) {
+                                                                    console.warn('Aucun contrôle trouvé pour le type:', type);
+                                                                    return;
+                                                                }
+                                                                setDetailsLoading(true);
+                                                                setSelectedTypeDetails(type);
+                                                                setTimeout(() => setDetailsLoading(false), 500);
+                                                            }}
+                                                        >
+                                                            Détails
+                                                        </Button>
+                                                    </ButtonGroup>
+                                                )
+                                            }
+                                        ]}
+                                        pageSizeOptions={[5, 10, 25]}
+                                        initialState={{
+                                            pagination: { paginationModel: { pageSize: 10 } }
+                                        }}
+                                        disableRowSelectionOnClick
+                                        density="compact"
+                                        sx={{
+                                            '& .MuiDataGrid-cell:focus': {
+                                                outline: 'none',
+                                            },
+                                            '& .MuiDataGrid-cell:focus-within': {
+                                                outline: 'none',
+                                            },
+                                        }}
+                                    />
+                                </Box>
+                            ))}
+                    </Paper>
+
+                    {/* DETAILS */}
+                    {selectedTypeDetails && (
+                        <RevisionDetails
+                            type={selectedTypeDetails}
+                            controles={controlesByType.get(selectedTypeDetails) || []}
+                            onClose={() => setSelectedTypeDetails('')}
+                            idCompte={getIds().id_compte}
+                            idDossier={getIds().id_dossier}
+                            idExercice={selectedExerciceId}
+                            dateDebut={selectedPeriodeDates?.date_debut || currentExerciceDates?.date_debut}
+                            dateFin={selectedPeriodeDates?.date_fin || currentExerciceDates?.date_fin}
+                            isPeriodeSelected={!!selectedPeriodeDates}
+                            onValidationChange={fetchControles}
+                        />
+                    )}
+                    {/* POPUP DE CONFIRMATION POUR VALIDATION */}
+                    {confirmPopup.open && (
+                        <PopupActionConfirm
+                            msg={confirmPopup.nextValider
+                                ? `Voulez-vous valider tous les contrôles de type "${confirmPopup.type}" ?`
+                                : `Voulez-vous annuler la validation de tous les contrôles de type "${confirmPopup.type}" ?`}
+                            confirmationState={handleConfirmValidation}
+                            isLoading={confirmLoading}
+                        />
+                    )}
+
+                    {/* POPUP D'ERREUR POUR ANOMALIES NON VALIDÉES */}
+                    <Dialog
+                        open={errorPopup.open}
+                        onClose={() => setErrorPopup({ open: false, message: '' })}
+                        maxWidth="sm"
+                        fullWidth
+                    >
+                        <DialogTitle sx={{ color: 'error.main', display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <span>⚠️</span> Validation impossible
+                        </DialogTitle>
+                        <DialogContent>
+                            <Typography sx={{ mt: 1 }}>
+                                {errorPopup.message}
+                            </Typography>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button
+                                variant="contained"
+                                onClick={() => setErrorPopup({ open: false, message: '' })}
+                                sx={{ backgroundColor: initial.theme }}
+                            >
+                                OK
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
+
+                    {/* POPUP D'ERREUR POUR PÉRIODE NON SÉLECTIONNÉE */}
+                    <Dialog
+                        open={periodeErrorPopup.open}
+                        onClose={() => setPeriodeErrorPopup({ open: false, message: '' })}
+                        maxWidth="sm"
+                        fullWidth
+                    >
+                        <DialogTitle sx={{ color: 'warning.main', display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <span>⚠️</span> Période requise
+                        </DialogTitle>
+                        <DialogContent>
+                            <Typography sx={{ mt: 1 }}>
+                                {periodeErrorPopup.message}
+                            </Typography>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button
+                                variant="contained"
+                                onClick={() => setPeriodeErrorPopup({ open: false, message: '' })}
+                                sx={{ backgroundColor: initial.theme }}
+                            >
+                                OK
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
+
+                    {/* POPUP DE RÉSULTAT DE RÉVISION */}
+                    <Dialog
+                        open={reviserPopup.open}
+                        onClose={() => setReviserPopup({ open: false, message: '', success: true })}
+                        maxWidth="sm"
+                        fullWidth
+                    >
+                        <DialogTitle sx={{ color: reviserPopup.success ? 'success.main' : 'error.main', display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <span>{reviserPopup.success ? '✅' : '❌'}</span> {reviserPopup.success ? 'Contrôle terminé' : 'Erreur'}
+                        </DialogTitle>
+                        <DialogContent>
+                            <Typography sx={{ mt: 1 }}>
+                                {reviserPopup.message}
+                            </Typography>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button
+                                variant="contained"
+                                onClick={() => setReviserPopup({ open: false, message: '', success: true })}
+                                sx={{ backgroundColor: initial.theme }}
+                            >
+                                OK
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
+                </Box>
             )}
-            {/* POPUP DE CONFIRMATION POUR VALIDATION */}
-            {confirmPopup.open && (
-                <PopupActionConfirm
-                    msg={confirmPopup.nextValider
-                        ? `Voulez-vous valider tous les contrôles de type "${confirmPopup.type}" ?`
-                        : `Voulez-vous annuler la validation de tous les contrôles de type "${confirmPopup.type}" ?`}
-                    confirmationState={handleConfirmValidation}
-                    isLoading={confirmLoading}
-                />
-            )}
-
-            {/* POPUP D'ERREUR POUR ANOMALIES NON VALIDÉES */}
-            <Dialog
-                open={errorPopup.open}
-                onClose={() => setErrorPopup({ open: false, message: '' })}
-                maxWidth="sm"
-                fullWidth
-            >
-                <DialogTitle sx={{ color: 'error.main', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <span>⚠️</span> Validation impossible
-                </DialogTitle>
-                <DialogContent>
-                    <Typography sx={{ mt: 1 }}>
-                        {errorPopup.message}
-                    </Typography>
-                </DialogContent>
-                <DialogActions>
-                    <Button
-                        variant="contained"
-                        onClick={() => setErrorPopup({ open: false, message: '' })}
-                        sx={{ backgroundColor: initial.theme }}
-                    >
-                        OK
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* POPUP D'ERREUR POUR PÉRIODE NON SÉLECTIONNÉE */}
-            <Dialog
-                open={periodeErrorPopup.open}
-                onClose={() => setPeriodeErrorPopup({ open: false, message: '' })}
-                maxWidth="sm"
-                fullWidth
-            >
-                <DialogTitle sx={{ color: 'warning.main', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <span>⚠️</span> Période requise
-                </DialogTitle>
-                <DialogContent>
-                    <Typography sx={{ mt: 1 }}>
-                        {periodeErrorPopup.message}
-                    </Typography>
-                </DialogContent>
-                <DialogActions>
-                    <Button
-                        variant="contained"
-                        onClick={() => setPeriodeErrorPopup({ open: false, message: '' })}
-                        sx={{ backgroundColor: initial.theme }}
-                    >
-                        OK
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* POPUP DE RÉSULTAT DE RÉVISION */}
-            <Dialog
-                open={reviserPopup.open}
-                onClose={() => setReviserPopup({ open: false, message: '', success: true })}
-                maxWidth="sm"
-                fullWidth
-            >
-                <DialogTitle sx={{ color: reviserPopup.success ? 'success.main' : 'error.main', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <span>{reviserPopup.success ? '✅' : '❌'}</span> {reviserPopup.success ? 'Contrôle terminé' : 'Erreur'}
-                </DialogTitle>
-                <DialogContent>
-                    <Typography sx={{ mt: 1 }}>
-                        {reviserPopup.message}
-                    </Typography>
-                </DialogContent>
-                <DialogActions>
-                    <Button
-                        variant="contained"
-                        onClick={() => setReviserPopup({ open: false, message: '', success: true })}
-                        sx={{ backgroundColor: initial.theme }}
-                    >
-                        OK
-                    </Button>
-                </DialogActions>
-            </Dialog>
-        </Box>
+        </>
     );
 }

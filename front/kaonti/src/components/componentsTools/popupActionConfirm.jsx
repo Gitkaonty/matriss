@@ -6,6 +6,35 @@ import { init } from '../../../init';
 
 const initial = init[0];
 
+const buttonStyle = {
+    minWidth: 100,
+    height: 32,
+    px: 2,
+    textTransform: 'none',
+    fontSize: '0.85rem',
+    borderRadius: '6px',
+    boxShadow: 'none',
+    color: 'white',
+    '& .MuiTouchRipple-root': {
+        display: 'none',
+    },
+    '&:focus': {
+        outline: 'none',
+    },
+    '&.Mui-focusVisible': {
+        outline: 'none',
+        boxShadow: 'none',
+    },
+    '&:hover': {
+        boxShadow: 'none',
+        border: 'none',
+    },
+    '&.Mui-disabled': {
+        opacity: 0.4,
+        color: 'white',
+    },
+};
+
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialogContent-root': {
         padding: theme.spacing(3),
@@ -63,9 +92,15 @@ const PopupActionConfirm = ({ msg, confirmationState, isLoading }) => {
                 <Button
                     disabled={isLoading}
                     autoFocus
-                    style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
-                    type='submit'
                     onClick={handleClose}
+                    sx={{
+                        ...buttonStyle,
+                        backgroundColor: initial.annuler_bouton_color,
+                        borderColor: initial.annuler_bouton_color,
+                        '&:hover': {
+                            backgroundColor: initial.annuler_bouton_color,
+                        },
+                    }}
                 >
                     Annuler
                 </Button>
@@ -73,16 +108,18 @@ const PopupActionConfirm = ({ msg, confirmationState, isLoading }) => {
                     autoFocus
                     onClick={handleConfirm}
                     disabled={isLoading}
-                    style={{
-                        backgroundColor: initial.add_new_line_bouton_color,
-                        color: 'white',
+                    sx={{
+                        ...buttonStyle,
+                        backgroundColor: initial.auth_gradient_end,
+                        borderColor: initial.auth_gradient_end,
                         width: isLoading ? '130px' : '100px',
-                        textTransform: 'none',
-                        outline: 'none',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: '8px',
+                        '&:hover': {
+                            backgroundColor: initial.auth_gradient_end,
+                        },
                     }}
                 >
                     <span>Poursuivre</span>

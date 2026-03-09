@@ -50,6 +50,7 @@ import Sig from './components/menuComponent/administration/SIG/Sig';
 import EtatFinancierAnalytique from './components/menuComponent/administration/etatFinancierAnalytique/EtatFinancierAnalytique';
 import Revision from './components/menuComponent/administration/revision/Revision';
 import RevisionFournisseurClient from './components/menuComponent/administration/revision/RevisionFournisseurClient';
+import RevisionRechercheDoublon from './components/menuComponent/administration/revision/RevisionRechercheDoublon';
 import PortefeuilleComponent from './components/menuComponent/Parametrages/portefeuille/Portefeuille';
 import RolePermission from './components/menuComponent/Parametrages/rolePermission/RolePermission';
 import Consolidation from './components/menuComponent/Parametrages/Consolidation/Consolidation';
@@ -120,6 +121,8 @@ export default function App() {
                   <Route path='/tab/administration/sig/:id' element={<Sig />} />
                   <Route path='/tab/administration/revision/:id' element={<Revision />} />
                   <Route path='/tab/administration/revisionFournisseurClient/:id' element={<RevisionFournisseurClient />} />
+                  <Route path='/tab/administration/revisionDoublon/:id' element={<RevisionRechercheDoublon />} />
+
 
                   <Route path='/tab/parametrages/paramCodeJournal/:id' element={<ParamCodeJournalComponent />} />
                   <Route path='/tab/parametrages/paramPlanComptable/:id' element={<ParamPlanComptableComponent />} />

@@ -108,6 +108,9 @@ app.use('/administration/analyseFournisseurClient', require('./Routes/Administra
 // Routes pour l'analyse client
 app.use('/administration/analyseClient', require('./Routes/Administration/analyseClientRoutes'));
 
+// Routes pour la recherche de doublons
+app.use('/administration/rechercheDoublon', require('./Routes/Administration/rechercheDoublonRoute'));
+
 
 //export
 app.use('/administration/exportBalance', require('./Routes/Administration/exportBalanceRoute'));
