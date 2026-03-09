@@ -988,7 +988,7 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
         return (
             <Paper sx={{ mt: 2, p: 2, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="h6" sx={{ fontWeight: 600, color: '#333' }}>
+                    <Typography variant="h7" sx={{ fontWeight: 600, color: '#333' }}>
                         Détail de l'Anomalie
                     </Typography>
                     <Button variant="outlined" size="small" onClick={onClose}>
@@ -1034,7 +1034,7 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
             {/* HEADER */}
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, bgcolor: '#f5f5f5' }}>
-                    <Typography variant="h6" sx={{ fontWeight: 600, color: "#2c3e50" }}>
+                    <Typography variant="h7" sx={{ fontWeight: 600, color: "#2c3e50" }}>
                         Détails
                     </Typography>
                     {/* Pagination de page déplacée ici */}
