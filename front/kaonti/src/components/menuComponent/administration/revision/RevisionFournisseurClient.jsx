@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Box,
     Typography,
@@ -26,6 +27,7 @@ import { DataGrid } from '@mui/x-data-grid';
 import { init } from '../../../../../init';
 import useAxiosPrivate from '../../../../hooks/useAxiosPrivate';
 import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
+import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFile';
 import { DataGridStyle } from '../../../componentsTools/DatagridToolsStyle';
 
 // Format date as dd-mm-yy
@@ -50,12 +52,15 @@ const ANOMALIE_TYPES = {
 export default function RevisionFournisseurClient() {
     let initial = init[0];
     const axiosPrivate = useAxiosPrivate();
+    const navigate = useNavigate();
 
     const [activeTab, setActiveTab] = useState(0); // 0 = Fournisseur, 1 = Client
     const [listeExercice, setListeExercice] = useState([]);
     const [selectedExerciceId, setSelectedExerciceId] = useState(0);
     const [fileInfos, setFileInfos] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [noFile, setNoFile] = useState(false);
+    const [fileId, setFileId] = useState(0);
     
     // === Résultats séparés par onglet ===
     const [resultatsFournisseur, setResultatsFournisseur] = useState([]);
@@ -80,6 +85,8 @@ export default function RevisionFournisseurClient() {
     // === Dialog confirmation analyse ===
     const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
 
+    const [periodeErrorPopup, setPeriodeErrorPopup] = useState({ open: false, message: '' });
+
     // === Pagination par compte (séparée par onglet) ===
     const [compteIndexFournisseur, setCompteIndexFournisseur] = useState(0);
     const [compteIndexClient, setCompteIndexClient] = useState(0);
@@ -91,6 +98,13 @@ export default function RevisionFournisseurClient() {
     };
 
     const handleAnalyserClick = () => {
+        if (!selectedPeriodeId || selectedPeriodeId === 'exercice') {
+            setPeriodeErrorPopup({
+                open: true,
+                message: 'Veuillez sélectionner une période spécifique avant de lancer l\'analyse.'
+            });
+            return;
+        }
         setOpenConfirmDialog(true);
     };
 
@@ -98,6 +112,22 @@ export default function RevisionFournisseurClient() {
         setOpenConfirmDialog(false);
         await handleAnalyser();
     };
+
+    const sendToHome = (value) => {
+        setNoFile(!value);
+        navigate('/tab/home');
+    };
+
+    // Vérifier si un dossier est sélectionné au chargement
+    useEffect(() => {
+        const idDossier = sessionStorage.getItem('fileId');
+        if (!idDossier || idDossier === '0') {
+            setNoFile(true);
+        } else {
+            setFileId(parseInt(idDossier));
+            setNoFile(false);
+        }
+    }, []);
 
     const getIds = () => {
         const pathParts = window.location.pathname.split('/');
@@ -576,7 +606,13 @@ export default function RevisionFournisseurClient() {
     };
 
     return (
-        <Box sx={{ p: 2, height: '100vh', backgroundColor: '#f5f5f5' }}>
+        <>
+            {noFile ? (
+                <PopupTestSelectedFile
+                    confirmationState={sendToHome}
+                />
+            ) : (
+                <Box sx={{ p: 2, height: '100vh', backgroundColor: '#f5f5f5' }}>
             {/* Dossier info */}
             <Box sx={{ mb: 1, width: '100px' }}>
                 {InfoFileStyle(fileInfos?.dossier)}
@@ -593,7 +629,7 @@ export default function RevisionFournisseurClient() {
                 }}
             >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                    <Typography component="div" variant="h6" sx={{ fontWeight: 600, color: '#333' }}>
+                    <Typography component="div" variant="h7" sx={{ color: '#333' }}>
                         Administration - Analyse Fournisseur/Client
                     </Typography>
                 </Box>
@@ -664,7 +700,7 @@ export default function RevisionFournisseurClient() {
                         variant="contained"
                         onClick={handleAnalyserClick}
                         disabled={!selectedExerciceId || loading}
-                        startIcon={<Refresh />}
+                        // startIcon={<Refresh />}
                         style={{
                             textTransform: 'none',
                             outline: 'none',
@@ -1045,6 +1081,33 @@ export default function RevisionFournisseurClient() {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            <Dialog
+                open={periodeErrorPopup.open}
+                onClose={() => setPeriodeErrorPopup({ open: false, message: '' })}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle sx={{ color: 'warning.main', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <span>⚠️</span> Période requise
+                </DialogTitle>
+                <DialogContent>
+                    <Typography sx={{ mt: 1 }}>
+                        {periodeErrorPopup.message}
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        variant="contained"
+                        onClick={() => setPeriodeErrorPopup({ open: false, message: '' })}
+                        sx={{ backgroundColor: initial.theme }}
+                    >
+                        OK
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
+        )}
+    </>
     );
 }
