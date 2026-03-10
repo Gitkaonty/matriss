@@ -897,14 +897,12 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
       for (let ecritureNum of batch) {
         const lines = grouped[ecritureNum];
         const newIdEcriture = buildIdEcriture(lines[0]);
- 
+
         for (let item of lines) {
           try {
             const rawAux = String(item.CompAuxNum || '').trim();
             const rawGen = String(item.CompteNum || '').trim();
-            const isGenDigits = /^\d+$/.test(rawGen);
-            const paddedGen = isGenDigits ? rawGen.padEnd(longeurCompteStd, '0').slice(0, longeurCompteStd) : rawGen;
- 
+
             const normCode = String(item.JournalCode || '').trim().toUpperCase();
             let idCodeJournal = await codejournals.findOne({
               where: { id_compte: compteId, id_dossier: fileId, code: normCode },
@@ -913,37 +911,37 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
               idCodeJournal = await codejournals.create({ id_compte: compteId, id_dossier: fileId, code: normCode, libelle: normCode, type: 'OD' });
             }
             const codeJournalId = idCodeJournal?.id || 0;
- 
+
             let foundCompte = null;
             let foundAux = null;
             let foundGen = null;
- 
+
             if (rawAux) {
               foundAux = await dossierPlanComptable.findOne({ where: { id_compte: compteId, id_dossier: fileId, compte: rawAux } });
             }
- 
+
             foundGen = await dossierPlanComptable.findOne({
               where: {
                 id_compte: compteId,
                 id_dossier: fileId,
-                [Op.or]: [{ compte: rawGen }, { compte: paddedGen }]
+                compte: rawGen
               },
             });
             foundCompte = foundAux || foundGen;
- 
+
             if (!foundCompte) {
               let genCompte = null;
-              if (isGenDigits && paddedGen) {
-                genCompte = await dossierPlanComptable.findOne({ where: { id_compte: compteId, id_dossier: fileId, compte: paddedGen } });
+              if (rawGen) {
+                genCompte = await dossierPlanComptable.findOne({ where: { id_compte: compteId, id_dossier: fileId, compte: rawGen } });
                 if (!genCompte) {
                   genCompte = await dossierPlanComptable.create({
                     id_compte: compteId,
                     id_dossier: fileId,
-                    compte: paddedGen,
+                    compte: rawGen,
                     libelle: '',
                     nature: 'General',
                     typetier: 'general',
-                    baseaux: paddedGen,
+                    baseaux: rawGen,
                     pays: 'Madagascar',
                   });
                   await db.sequelize.query(
@@ -971,18 +969,14 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
                 foundCompte = genCompte;
               }
               if (!foundCompte) {
-                // LOG: Compte introuvable
                 skippedNoCompte++;
                 skippedDetails.push({
                   reason: 'COMPTE_INTRouvable',
                   ecritureNum: item.EcritureNum,
                   compteNum: rawGen,
                   compteAux: rawAux,
-                  paddedGen: paddedGen,
-                  isGenDigits: isGenDigits,
                   ligne: item
                 });
-                // console.log(`[SKIP COMPTE] Ecriture:${item.EcritureNum}, Compte:${rawGen}, Aux:${rawAux}, Padded:${paddedGen}`);
                 continue;
               }
             }
@@ -1151,12 +1145,6 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
       ? `${importedCount} lignes importées, ${skippedCount} ignorées (Compte:${skippedNoCompte}, Date:${skippedNoDate}, Erreur:${skippedError})`
       : `${importedCount} lignes ont été importées avec succès`;
 
-    // LOG final détaillé
-    // console.log('=== RAPPORT IMPORT ===');
-    // console.log(`Total: ${totalLines}, Importées: ${importedCount}, Ignorées: ${skippedCount}`);
-    // console.log(`Détail ignorées: Compte introuvable=${skippedNoCompte}, Date invalide=${skippedNoDate}, Erreurs=${skippedError}`);
-    // console.log('Premières lignes ignorées:', skippedDetails.slice(0, 10));
-    // console.log('======================');
  
     progress.complete(
       finalMsg,

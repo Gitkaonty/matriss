@@ -450,7 +450,7 @@ export default function ImportJournal() {
         if (val === null || val === undefined) return "";
         const s = String(val).trim();
         if (s === "" || s === "0") return "";
-        return s.padEnd(longeurCompteStd, "0").slice(0, longeurCompteStd);
+        return s;
     };
 
     const parseCSVNumber = (value) => {
@@ -575,7 +575,7 @@ export default function ImportJournal() {
 
                         const listeUniqueCompte = listeUniqueCompteInitial
                             .filter(item => item !== '')
-                            .map(val => val.toString().padEnd(longeurCompteStd, "0").slice(0, longeurCompteStd))
+                            .map(val => String(val).trim())
 
                         let DataWithId = [];
                         if (fileTypeCSV) {
@@ -642,7 +642,7 @@ export default function ImportJournal() {
                                 activeData
                                     .map(item => item.CompteNum)
                                     .filter(val => val && val !== 0)
-                                    .map(val => val.toString().padEnd(longeurCompteStd, "0").slice(0, longeurCompteStd))
+                                    .map(val => String(val).trim())
                             )
                         ];
                         const listeUniqueCompteGen = listeUniqueCompteGenInitial.filter(item => item !== '');
@@ -652,7 +652,7 @@ export default function ImportJournal() {
                                 activeData
                                     .map(item => item.CompAuxNum)
                                     .filter(val => val && val !== 0)
-                                    .map(val => val.toString().padEnd(longeurCompteStd, "0").slice(0, longeurCompteStd))
+                                    .map(val => String(val).trim())
                             )
                         ];
                         const listeUniqueCompteAux = listeUniqueCompteAuxInitial.filter(item => item !== '');
@@ -810,8 +810,8 @@ export default function ImportJournal() {
 
                             return {
                                 ...item,
-                                CompteNum: padCompte(item.CompteNum),
-                                CompAuxNum: padCompte(item.CompAuxNum),
+                                CompteNum: String(item.CompteNum || '').trim(),
+                                CompAuxNum: String(item.CompAuxNum || '').trim(),
                                 exerciceStart: exerciceStartFormatted
                             };
                         });
@@ -839,15 +839,13 @@ export default function ImportJournal() {
                         const mapAux = new Map();
 
                         DataWithId.forEach(item => {
-                            const compte = item.CompAuxNum?.toString()
-                                .padEnd(longeurCompteStd, "0")
-                                .slice(0, longeurCompteStd);
+                            const compte = String(item.CompAuxNum || '').trim();
 
                             if (compteNotInParamsAux.includes(compte) && !mapAux.has(compte)) {
                                 mapAux.set(compte, {
                                     CompAuxNum: compte,
                                     CompAuxLib: item.EcritureLib,
-                                    CompteNum: item.CompteNum?.toString()?.padEnd(longeurCompteStd, "0")?.slice(0, longeurCompteStd) || ''
+                                    CompteNum: String(item.CompteNum || '').trim() || ''
                                 });
                             }
                         });

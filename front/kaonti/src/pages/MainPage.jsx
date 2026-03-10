@@ -122,6 +122,7 @@ export default function HomePage() {
     { text: 'Révision Globale', name: 'revision', path: '/tab/administration/revision', urldynamic: true },
     { text: 'Analyse Fournisseur/Client', name: 'revisionFournisseurClient', path: '/tab/administration/revisionFournisseurClient', urldynamic: true },
     { text: 'Révision Doublon', name: 'revisionDoublon', path: '/tab/administration/revisionDoublon', urldynamic: true },
+    { text: 'Révision Analytique', name: 'revisionAnalytique', path: '/tab/administration/revisionAnalytique', urldynamic: true },
 
     ]
   
