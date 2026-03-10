@@ -266,10 +266,16 @@ export default function DashboardComponent() {
 
   // Récupération de toutes les informations
   const getAllInfo = () => {
+    // console.log('>>> getAllInfo APPELÉ <<<');
+    // console.log('selectedExerciceId:', selectedExerciceId, '| selectedPeriodeDates:', selectedPeriodeDates);
+    
     // Utiliser exerciceId pour l'API, avec dates de periode si selectionnee
     let url = `/dashboard/getAllInfo/${Number(compteId)}/${Number(fileId)}/${Number(selectedExerciceId)}`;
     if (selectedPeriodeDates && selectedPeriodeId) {
       url += `?date_debut=${selectedPeriodeDates.date_debut}&date_fin=${selectedPeriodeDates.date_fin}&id_periode=${selectedPeriodeId}`;
+      // console.log('URL avec période:', url);
+    } else {
+      // console.log('URL sans période (exercice complet):', url);
     }
 
     axios.get(url)
@@ -331,6 +337,23 @@ export default function DashboardComponent() {
 
           setmoisN(response?.data?.moisN);
           setmoisN1(response?.data?.moisN1);
+
+          // Logs pour debug des variations
+          // console.log('=== DEBUG VARIATIONS ===');
+          // console.log('Période:', selectedPeriodeDates ? `${selectedPeriodeDates.date_debut} - ${selectedPeriodeDates.date_fin}` : 'Exercice complet');
+          // console.log('--- RÉSULTAT ---');
+          // console.log('N:', response?.data?.resultatN, '| N-1:', response?.data?.resultatN1, '| Variation:', response?.data?.variationResultatN?.toFixed(2) + '%');
+          // console.log('--- CHIFFRE D\'AFFAIRES ---');
+          // console.log('N:', response?.data?.resultatChiffreAffaireN, '| N-1:', response?.data?.resultatChiffreAffaireN1, '| Variation:', response?.data?.variationChiffreAffaireN?.toFixed(2) + '%');
+          // console.log('--- DÉPENSES ACHATS ---');
+          // console.log('N:', response?.data?.resultatDepenseAchatN, '| N-1:', response?.data?.resultatDepenseAchatN1, '| Variation:', response?.data?.variationDepenseAchatN?.toFixed(2) + '%');
+          // console.log('--- DÉPENSES SALARIALES ---');
+          // console.log('N:', response?.data?.resultatDepenseSalarialeN, '| N-1:', response?.data?.resultatDepenseSalarialeN1, '| Variation:', response?.data?.variationDepenseSalarialeN?.toFixed(2) + '%');
+          // console.log('--- TRÉSORERIE BANQUE ---');
+          // console.log('N:', response?.data?.resultatTresorerieBanqueN, '| N-1:', response?.data?.resultatTresorerieBanqueN1, '| Variation:', response?.data?.variationTresorerieBanqueN?.toFixed(2) + '%');
+          // console.log('--- TRÉSORERIE CAISSE ---');
+          // console.log('N:', response?.data?.resultatTresorerieCaisseN, '| N-1:', response?.data?.resultatTresorerieCaisseN1, '| Variation:', response?.data?.variationTresorerieCaisseN?.toFixed(2) + '%');
+          // console.log('========================');
         }
       })
       .catch((err) => {
@@ -510,13 +533,15 @@ export default function DashboardComponent() {
                     text={'Résultat'}
                     type={'total'}
                     montant={'$5000'}
-                    backgroundColor={'#1f7a8c'}
+                    backgroundColor={'#037934'}
                     resultatN={resultatN}
                     resultatN1={resultatN1}
                     variationN={variationResultatN}
                     variationN1={variationResultatN1}
                     evolutionN={evolutionResultatN}
                     evolutionN1={evolutionResultatN1}
+                    trendLabels={moisN}
+                    trendN={margeBruteNGraph}
                     devise={deviseParDefaut}
                     compact
                     sx={{
@@ -527,13 +552,16 @@ export default function DashboardComponent() {
                     text={'Chiffre d\'affaires'}
                     type={'comparaison'}
                     pourcentage={'10'}
-                    backgroundColor={'#1f7a8c'}
+                    backgroundColor={'#037934'}
                     resultatN={resultatChiffreAffaireN}
                     resultatN1={resultatChiffreAffaireN1}
                     variationN={variationChiffreAffaireN}
                     variationN1={variationChiffreAffaireN1}
                     evolutionN={evolutionChiffreAffaireN}
                     evolutionN1={evolutionChiffreAffaireN1}
+                    trendLabels={moisN}
+                    trendN={chiffresAffairesNGraph}
+                    trendN1={chiffresAffairesN1Graph}
                     devise={deviseParDefaut}
                     compact
                     sx={{
@@ -543,13 +571,15 @@ export default function DashboardComponent() {
                   <DashboardCard
                     text={'Dépenses (Achats)'}
                     type={'comparaison'}
-                    backgroundColor={'#1f7a8c'}
+                    backgroundColor={'#fb8c00'}
                     resultatN={resultatDepenseAchatN}
                     resultatN1={resultatDepenseAchatN1}
                     variationN={variationDepenseAchatN}
                     variationN1={variationDepenseAchatN1}
                     evolutionN={evolutionDepenseAchatN}
                     evolutionN1={evolutionDepenseAchatN1}
+                    trendLabels={moisN}
+                    trendN={chiffresAffairesNGraph}
                     devise={deviseParDefaut}
                     compact
                     sx={{
@@ -559,13 +589,15 @@ export default function DashboardComponent() {
                   <DashboardCard
                     text={'Dépenses salariales'}
                     type={'comparaison'}
-                    backgroundColor={'#faa609ff'}
+                    backgroundColor={'#fb8c00'}
                     resultatN={resultatDepenseSalarialeN}
                     resultatN1={resultatDepenseSalarialeN1}
                     variationN={variationDepenseSalarialeN}
                     variationN1={variationDepenseSalarialeN1}
                     evolutionN={evolutionDepenseSalarialeN}
                     evolutionN1={evolutionDepenseSalarialeN1}
+                    trendLabels={moisN}
+                    trendN={margeBruteNGraph}
                     devise={deviseParDefaut}
                     compact
                     sx={{
@@ -575,13 +607,16 @@ export default function DashboardComponent() {
                   <DashboardCard
                     text={'Trésoreries (Banques)'}
                     type={'comparaison'}
-                    backgroundColor={'#1f7a8c'}
+                    backgroundColor={'#095a9c'}
                     resultatN={resultatTresorerieBanqueN}
                     resultatN1={resultatTresorerieBanqueN1}
                     variationN={variationTresorerieBanqueN}
                     variationN1={variationTresorerieBanqueN1}
                     evolutionN={evolutionTresorerieBanqueN}
                     evolutionN1={evolutionTresorerieBanqueN1}
+                    trendLabels={moisN}
+                    trendN={tresorerieBanqueNGraph}
+                    trendN1={tresorerieBanqueN1Graph}
                     devise={deviseParDefaut}
                     compact
                     sx={{
@@ -591,13 +626,16 @@ export default function DashboardComponent() {
                   <DashboardCard
                     text={'Trésoreries (Caisse)'}
                     type={'comparaison'}
-                    backgroundColor={'#1f7a8c'}
+                    backgroundColor={'#095a9c'}
                     resultatN={resultatTresorerieCaisseN}
                     resultatN1={resultatTresorerieCaisseN1}
                     variationN={variationTresorerieCaisseN}
                     variationN1={variationTresorerieCaisseN1}
                     evolutionN={evolutionTresorerieCaisseN}
                     evolutionN1={evolutionTresorerieCaisseN1}
+                    trendLabels={moisN}
+                    trendN={tresorerieCaisseNGraph}
+                    trendN1={tresorerieCaisseN1Graph}
                     devise={deviseParDefaut}
                     compact
                     sx={{

@@ -332,6 +332,37 @@ exports.getAllInfo = async (req, res) => {
 
         // === Exercice N-1 ===
         const { id_exerciceN1 } = await recupExerciceN1.recupInfos(id_compte, id_dossier, id_exercice);
+
+        // Calcul du facteur de proratisation
+        let facteurProrata = 1;
+        let nbrMoisPeriodeN = null;
+        let nbrMoisTotalN1 = null;
+
+        if (id_exerciceN1) {
+            const exerciceN1DataForProrata = await exercices.findByPk(id_exerciceN1);
+            if (exerciceN1DataForProrata && exerciceN1DataForProrata.date_debut && exerciceN1DataForProrata.date_fin) {
+                // Nombre de mois total de l'exercice N-1
+                const debutN1 = new Date(exerciceN1DataForProrata.date_debut);
+                const finN1 = new Date(exerciceN1DataForProrata.date_fin);
+                nbrMoisTotalN1 = (finN1.getFullYear() - debutN1.getFullYear()) * 12 +
+                    (finN1.getMonth() - debutN1.getMonth()) + 1;
+
+                // Si une période est sélectionnée dans N, calculer sa durée en mois
+                if (date_debut && date_fin) {
+                    const debutPeriode = new Date(date_debut);
+                    const finPeriode = new Date(date_fin);
+                    nbrMoisPeriodeN = (finPeriode.getFullYear() - debutPeriode.getFullYear()) * 12 +
+                        (finPeriode.getMonth() - debutPeriode.getMonth()) + 1;
+
+                    // Calculer le facteur de proratisation
+                    if (nbrMoisTotalN1 > 0) {
+                        facteurProrata = nbrMoisPeriodeN / nbrMoisTotalN1;
+                    }
+                }
+            }
+            // console.log(' PRORATA:', { nbrMoisPeriodeN, nbrMoisTotalN1, facteurProrata: facteurProrata.toFixed(4) });
+        }
+
         let chiffreAffaireN1 = [],
             margeBruteN1 = [],
             margeBruteTotalN1 = [],
@@ -400,7 +431,7 @@ exports.getAllInfo = async (req, res) => {
         if (id_exerciceN1) {
             const exerciceN1Data = await exercices.findByPk(id_exerciceN1);
 
-            const startYearN1 = new Date(exerciceN1Data[0]?.date_debut).getFullYear();
+            const startYearN1 = new Date(exerciceN1Data?.date_debut).getFullYear();
 
             const moisN1Aligned = moisN.map(({ month, label }, idx) => {
                 const totalMonth = month;
@@ -426,13 +457,20 @@ exports.getAllInfo = async (req, res) => {
             tresorerieBanqueN1 = calculateTresorerieBanque(mappedDataN1, moisN1Aligned);
             tresorerieCaisseN1 = calculateTresorerieCaisse(mappedDataN1, moisN1Aligned);
 
-            resultatN1 = calculateResultat(mappedDataN1);
+            resultatN1 = round2(calculateResultat(mappedDataN1) * facteurProrata);
 
-            resultatChiffreAffaireN1 = calculateResultatChiffreAffaire(mappedDataN1);
-            resultatDepenseAchatN1 = calculateResultatDepensesAchats(mappedDataN1);
-            resultatDepenseSalarialeN1 = calculateResultatDepensesSalariales(mappedDataN1);
-            resultatTresorerieBanqueN1 = calculateResultatTresoreriesBanques(mappedDataN1);
-            resultatTresorerieCaisseN1 = calculateResultatTresoreriesCaisses(mappedDataN1);
+            resultatChiffreAffaireN1 = round2(calculateResultatChiffreAffaire(mappedDataN1) * facteurProrata);
+            resultatDepenseAchatN1 = round2(calculateResultatDepensesAchats(mappedDataN1) * facteurProrata);
+            resultatDepenseSalarialeN1 = round2(calculateResultatDepensesSalariales(mappedDataN1) * facteurProrata);
+            resultatTresorerieBanqueN1 = round2(calculateResultatTresoreriesBanques(mappedDataN1) * facteurProrata);
+            resultatTresorerieCaisseN1 = round2(calculateResultatTresoreriesCaisses(mappedDataN1) * facteurProrata);
+
+            // console.log(' Valeurs N-1 après prorata:', {
+            //     resultatN1,
+            //     resultatChiffreAffaireN1,
+            //     resultatDepenseAchatN1,
+            //     facteurProrata
+            // });
         }
 
         if (id_exerciceN2) {

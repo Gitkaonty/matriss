@@ -1269,7 +1269,7 @@ export default function ParamPlanComptableModele() {
                 })
                 .catch((error) => {
                     if (error.code === 'ERR_CANCELED' || error.message?.includes('aborted')) {
-                        console.log('[DEBUG] processRowUpdate: requête annulée');
+                        // console.log('[DEBUG] processRowUpdate: requête annulée');
                         reject(oldRow);
                         return;
                     }

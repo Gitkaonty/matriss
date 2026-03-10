@@ -502,7 +502,7 @@ export default function PersonnelComponent() {
         cin_ou_carte_resident: item.cin_ou_carte_resident,
         nombre_enfants_charge: item.nombre_enfants_charge
       })) : [];
-      console.log('PERSONNELS APRES FETCH', data);
+      // console.log('PERSONNELS APRES FETCH', data);
       setRows(data);
     })
     .catch(() => setRows([]));
@@ -518,9 +518,9 @@ export default function PersonnelComponent() {
             dossierId = sessionStorage.getItem("fileId");
         }
         if (!dossierId) return;
-        console.log("Appel API classifications sur dossier", dossierId);
+        // console.log("Appel API classifications sur dossier", dossierId);
         axios.get(`/parametres/classification/dossier/${Number(compteId)}/${Number(dossierId)}`).then(res => {
-            console.log("Réponse API classifications", res.data);
+            // console.log("Réponse API classifications", res.data);
             setClassifications(res.data.list || []);
         });
     }, [id]);
@@ -683,7 +683,7 @@ export default function PersonnelComponent() {
         }
 
         const dataToSend = { ...formNewParam.values, fileId, compteId };
-        console.log('[PERSONNEL][SAVE] payload envoyé à /administration/personnel :', dataToSend);
+        // console.log('[PERSONNEL][SAVE] payload envoyé à /administration/personnel :', dataToSend);
 
         axiosPrivate.post(`/administration/personnel`, dataToSend)
             .then((response) => {

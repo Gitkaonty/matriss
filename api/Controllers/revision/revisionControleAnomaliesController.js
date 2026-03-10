@@ -7,10 +7,10 @@ exports.getAnomaliesByControle = async (req, res) => {
     const { id_compte, id_dossier, id_exercice, id_controle } = req.params;
     const { date_debut, date_fin } = req.query;
 
-    console.log('\n========================================');
-    console.log('🚀 GET ANOMALIES BY CONTROLE APPELÉ');
-    console.log('========================================');
-    console.log('Params:', { id_compte, id_dossier, id_exercice, id_controle, date_debut, date_fin });
+    // console.log('\n========================================');
+    // console.log('🚀 GET ANOMALIES BY CONTROLE APPELÉ');
+    // console.log('========================================');
+    // console.log('Params:', { id_compte, id_dossier, id_exercice, id_controle, date_debut, date_fin });
 
     let dateFilter = {};
     let idPeriode = null;
@@ -18,7 +18,7 @@ exports.getAnomaliesByControle = async (req, res) => {
     // Si id_periode est fourni explicitement, l'utiliser directement
     if (req.query.id_periode) {
       idPeriode = parseInt(req.query.id_periode, 10);
-      console.log('id_periode fourni explicitement:', idPeriode);
+      // console.log('id_periode fourni explicitement:', idPeriode);
     } else if (date_debut && date_fin) {
       // Sinon, chercher la période par dates (fallback)
       dateFilter = {
@@ -27,7 +27,7 @@ exports.getAnomaliesByControle = async (req, res) => {
           [Op.lte]: date_fin
         }
       };
-      console.log('Filtre date appliqué:', dateFilter);
+      // console.log('Filtre date appliqué:', dateFilter);
       
       // Déterminer la période correspondante - chercher la période exacte
       const periode = await db.periodes.findOne({
@@ -43,7 +43,7 @@ exports.getAnomaliesByControle = async (req, res) => {
       
       if (periode) {
         idPeriode = periode.id;
-        console.log('Période EXACTE trouvée:', idPeriode);
+        // console.log('Période EXACTE trouvée:', idPeriode);
       } else {
         // Fallback: chercher une période qui chevauche
         const periodeChevauche = await db.periodes.findOne({
@@ -59,7 +59,7 @@ exports.getAnomaliesByControle = async (req, res) => {
         
         if (periodeChevauche) {
           idPeriode = periodeChevauche.id;
-          console.log('Période CHEVAUCHE trouvée:', idPeriode);
+          // console.log('Période CHEVAUCHE trouvée:', idPeriode);
         }
       }
     }
@@ -88,8 +88,8 @@ exports.getAnomaliesByControle = async (req, res) => {
       periodeFilter = `AND a.id_periode = ${idPeriode}`;
     }
 
-    console.log(`DEBUG - idPeriode:`, idPeriode);
-    console.log(`DEBUG - periodeFilter:`, periodeFilter);
+    // console.log(`DEBUG - idPeriode:`, idPeriode);
+    // console.log(`DEBUG - periodeFilter:`, periodeFilter);
 
     const anomaliesRaw = await db.sequelize.query(`
       SELECT 
@@ -125,12 +125,12 @@ exports.getAnomaliesByControle = async (req, res) => {
     `, { type: db.Sequelize.QueryTypes.SELECT });
 
     // DEBUG: Afficher les résultats bruts de la requête SQL
-    console.log('DEBUG SQL RAW RESULTS:', anomaliesRaw.map(r => ({
-      id: r.id,
-      commentaire_valide: r.commentaire_valide,
-      commentaire_text: r.commentaire_text,
-      commentaire_periode: r.commentaire_periode
-    })));
+    // console.log('DEBUG SQL RAW RESULTS:', anomaliesRaw.map(r => ({
+    //   id: r.id,
+    //   commentaire_valide: r.commentaire_valide,
+    //   commentaire_text: r.commentaire_text,
+    //   commentaire_periode: r.commentaire_periode
+    // })));
 
     // Transformer les résultats pour avoir la structure attendue par le frontend
     const anomalies = anomaliesRaw.map(row => {
@@ -150,7 +150,7 @@ exports.getAnomaliesByControle = async (req, res) => {
         createdAt: row.createdAt,
         updatedAt: row.updatedAt
       };
-      console.log(`DEBUG getAnomaliesByControle - Anomalie ${row.id}: id_periode=${result.id_periode}, valide=${result.valide}, commentaire="${result.commentaire}"`);
+      // console.log(`DEBUG getAnomaliesByControle - Anomalie ${row.id}: id_periode=${result.id_periode}, valide=${result.valide}, commentaire="${result.commentaire}"`);
       return result;
     });
 
@@ -160,7 +160,7 @@ exports.getAnomaliesByControle = async (req, res) => {
     let journalLines = [];
     let comptesList = []; // Pour SENS_SOLDE (comptes concernés, pas les IDs de lignes)
 
-    console.log(`getAnomaliesByControle - Type: ${controle?.Type}, anomalies count: ${anomalies.length}, idJnlKeys:`, idJnlKeys);
+    // console.log(`getAnomaliesByControle - Type: ${controle?.Type}, anomalies count: ${anomalies.length}, idJnlKeys:`, idJnlKeys);
 
     // Type spécial: id_jnl = ID de ligne journal individuelle (nouveau comportement)
     // Utilisé par SENS_SOLDE, SENS_ECRITURE, IMMO_CHARGE avec anomalies individuelles par ligne
@@ -179,13 +179,13 @@ exports.getAnomaliesByControle = async (req, res) => {
           id_exercice: id_exercice,
           ...dateFilter
         };
-        console.log('getAnomaliesByControle ligne mode (individuel) - where:', whereClause);
+        // console.log('getAnomaliesByControle ligne mode (individuel) - where:', whereClause);
         const lines = await db.journals.findAll({
           where: whereClause,
           order: [['dateecriture', 'ASC'], ['id', 'ASC']]
         });
         journalLines = lines;
-        console.log(`getAnomaliesByControle - ${lines.length} lignes individuelles trouvées`);
+        // console.log(`getAnomaliesByControle - ${lines.length} lignes individuelles trouvées`);
 
         // Extraire la liste des comptes pour l'affichage
         comptesList = [...new Set(lines.map(l => l.comptegen).filter(Boolean))];
@@ -201,13 +201,13 @@ exports.getAnomaliesByControle = async (req, res) => {
           id_exercice: id_exercice,
           ...dateFilter
         };
-        console.log('getAnomaliesByControle UTIL_CPT_TVA - where:', whereClause);
+        // console.log('getAnomaliesByControle UTIL_CPT_TVA - where:', whereClause);
         const lines = await db.journals.findAll({
           where: whereClause,
           order: [['dateecriture', 'ASC'], ['id', 'ASC']]
         });
         journalLines = lines;
-        console.log(`getAnomaliesByControle UTIL_CPT_TVA - ${lines.length} lignes trouvées pour écritures:`, idJnlKeys);
+        // console.log(`getAnomaliesByControle UTIL_CPT_TVA - ${lines.length} lignes trouvées pour écritures:`, idJnlKeys);
       }
     } else if (affichage === 'ecriture') {
       // Mode ecriture: id_jnl = id_ecriture (string)
@@ -218,7 +218,7 @@ exports.getAnomaliesByControle = async (req, res) => {
         id_exercice: id_exercice,
         ...dateFilter
       };
-      console.log('getAnomaliesByControle ecriture mode - where:', whereClause);
+      // console.log('getAnomaliesByControle ecriture mode - where:', whereClause);
       const lines = await db.journals.findAll({
         where: whereClause,
         order: [['dateecriture', 'ASC'], ['id', 'ASC']]
@@ -238,7 +238,7 @@ exports.getAnomaliesByControle = async (req, res) => {
           id_exercice: id_exercice,
           ...dateFilter
         };
-        console.log('getAnomaliesByControle ligne mode - where:', whereClause);
+        // console.log('getAnomaliesByControle ligne mode - where:', whereClause);
         const lines = await db.journals.findAll({
           where: whereClause
         });
@@ -263,7 +263,7 @@ exports.getAnomaliesByControle = async (req, res) => {
       }
 
       if (controle?.Type === 'ATYPIQUE') {
-        console.log(`DEBUG ATYPIQUE PAYLOAD - id_jnl=${a.id_jnl}, journalLines total=${journalLines.length}, lines filtrées=${lines.length}`);
+        // console.log(`DEBUG ATYPIQUE PAYLOAD - id_jnl=${a.id_jnl}, journalLines total=${journalLines.length}, lines filtrées=${lines.length}`);
       }
 
       // Pour SENS_SOLDE, SENS_ECRITURE, IMMO_CHARGE: compteNum = compte de la ligne
@@ -279,26 +279,26 @@ exports.getAnomaliesByControle = async (req, res) => {
       };
     });
 
-    if (controle?.Type === 'ATYPIQUE') {
-      console.log('DEBUG ATYPIQUE FINAL - payload:', payload.map(p => ({ id: p.id, id_jnl: p.id_jnl, journalLinesCount: p.journalLines?.length })));
-    }
+    // if (controle?.Type === 'ATYPIQUE') {
+    //   //console.log('DEBUG ATYPIQUE FINAL - payload:', payload.map(p => ({ id: p.id, id_jnl: p.id_jnl, journalLinesCount: p.journalLines?.length })));
+    // }
 
-    console.log('DEBUG FINAL RESPONSE - First anomaly:', payload[0] ? {
-      id: payload[0].id,
-      valide: payload[0].valide,
-      commentaire: payload[0].commentaire,
-      id_controle: payload[0].id_controle,
-      id_jnl: payload[0].id_jnl
-    } : 'No anomalies');
+    // console.log('DEBUG FINAL RESPONSE - First anomaly:', payload[0] ? {
+    //   id: payload[0].id,
+    //   valide: payload[0].valide,
+    //   commentaire: payload[0].commentaire,
+    //   id_controle: payload[0].id_controle,
+    //   id_jnl: payload[0].id_jnl
+    // } : 'No anomalies');
 
-    console.log('DEBUG FINAL RESPONSE - Complete response:', {
-      state: true,
-      anomalies: payload,
-      controle: controle ? controle.toJSON() : null,
-      affichage,
-      comptesList: (controle?.Type === 'SENS_SOLDE' || controle?.Type === 'SENS_ECRITURE' || controle?.Type === 'IMMO_CHARGE') ? comptesList : null,
-      count: payload.length
-    });
+    // console.log('DEBUG FINAL RESPONSE - Complete response:', {
+    //   state: true,
+    //   anomalies: payload,
+    //   controle: controle ? controle.toJSON() : null,
+    //   affichage,
+    //   comptesList: (controle?.Type === 'SENS_SOLDE' || controle?.Type === 'SENS_ECRITURE' || controle?.Type === 'IMMO_CHARGE') ? comptesList : null,
+    //   count: payload.length
+    // });
 
     res.json({
       state: true,
@@ -483,7 +483,7 @@ exports.updateAnomaly = async (req, res) => {
               )
             `);
           }
-          console.log(`Anomalie ${relAnomaly.id} (controle: ${relAnomaly.id_controle}, jnl: ${relAnomaly.id_jnl}) insérée/mise à jour avec succès`);
+          // console.log(`Anomalie ${relAnomaly.id} (controle: ${relAnomaly.id_controle}, jnl: ${relAnomaly.id_jnl}) insérée/mise à jour avec succès`);
         } catch (insertError) {
           console.error(`Erreur insertion anomalie ${relAnomaly.id}:`, insertError.message);
           throw insertError;
@@ -491,7 +491,7 @@ exports.updateAnomaly = async (req, res) => {
       }
 
       updatedCount = relatedAnomalies.length;
-      console.log(`${updatedCount} anomalies mises à jour pour l'écriture ${anomaly.id_jnl}`);
+      // console.log(`${updatedCount} anomalies mises à jour pour l'écriture ${anomaly.id_jnl}`);
     } else {
       // Mise à jour standard d'une seule anomalie
       try {
@@ -519,14 +519,14 @@ exports.updateAnomaly = async (req, res) => {
         const finalValide = typeof valide === 'boolean' ? valide : (existingValide !== undefined ? existingValide : false);
         const finalCommentaire = commentaire !== undefined ? commentaire : (existingCommentaire || '');
 
-        console.log('UPSERT manuel avec valeurs:', {
-          idCompteNum, idDossierNum, idExerciceNum,
-          finalPeriodeId,
-          id_controle: anomaly.id_controle,
-          id_jnl: anomaly.id_jnl,
-          finalValide,
-          finalCommentaire
-        });
+        // console.log('UPSERT manuel avec valeurs:', {
+        //   idCompteNum, idDossierNum, idExerciceNum,
+        //   finalPeriodeId,
+        //   id_controle: anomaly.id_controle,
+        //   id_jnl: anomaly.id_jnl,
+        //   finalValide,
+        //   finalCommentaire
+        // });
 
         // Vérifier si un enregistrement existe déjà (par id_controle + id_jnl)
         const existing = await db.sequelize.query(`
@@ -554,7 +554,7 @@ exports.updateAnomaly = async (req, res) => {
               AND id_jnl = '${anomaly.id_jnl}'
               AND id_periode = ${finalPeriodeId || 'NULL'}
           `);
-          console.log('Anomalie mise à jour avec UPDATE (par id_controle + id_jnl)');
+          // console.log('Anomalie mise à jour avec UPDATE (par id_controle + id_jnl)');
         } else {
           // INSERT avec id_controle et id_jnl
           await db.sequelize.query(`
@@ -566,7 +566,7 @@ exports.updateAnomaly = async (req, res) => {
               ${finalValide}, '${finalCommentaire.replace(/'/g, "''")}', NOW(), NOW()
             )
           `);
-          console.log('Anomalie insérée avec INSERT (avec id_controle + id_jnl)');
+          // console.log('Anomalie insérée avec INSERT (avec id_controle + id_jnl)');
         }
       } catch (insertError) {
         console.error('Erreur insertion anomalie:', insertError.message);
@@ -575,7 +575,7 @@ exports.updateAnomaly = async (req, res) => {
       }
     }
 
-    console.log('Update payload:', { valide, commentaire, id_periode });
+    // console.log('Update payload:', { valide, commentaire, id_periode });
 
     // Mettre à jour le compteur d'anomalies dans table_revisions_controles
     // Compter les anomalies non validées depuis la nouvelle table revision_commentaire_anomalies
@@ -622,7 +622,7 @@ exports.updateAnomaly = async (req, res) => {
         AND id_controle = '${anomaly.id_controle}'
     `;
     await db.sequelize.query(updateControleQuery, { type: db.Sequelize.QueryTypes.UPDATE });
-    console.log('Compteur d\'anomalies et statut Valider mis à jour dans table_revisions_controles');
+    // console.log('Compteur d\'anomalies et statut Valider mis à jour dans table_revisions_controles');
 
     // Récupérer les valeurs finales depuis revision_commentaire_anomalies pour la réponse
     const finalPeriodeId = id_periode || updatePayload.id_periode || null;
@@ -670,9 +670,9 @@ exports.validateLineAnomaly = async (req, res) => {
     const { id_compte, id_dossier, id_exercice, id_controle } = req.params;
     const { id_jnl, valide, commentaire, id_periode } = req.body;
 
-    console.log('=== VALIDATE LINE ANOMALY ===');
-    console.log('Params:', { id_compte, id_dossier, id_exercice, id_controle });
-    console.log('Body:', { id_jnl, valide, commentaire, id_periode });
+    // console.log('=== VALIDATE LINE ANOMALY ===');
+    // console.log('Params:', { id_compte, id_dossier, id_exercice, id_controle });
+    // console.log('Body:', { id_jnl, valide, commentaire, id_periode });
 
     if (!id_jnl) {
       return res.status(400).json({
@@ -693,14 +693,14 @@ exports.validateLineAnomaly = async (req, res) => {
     });
 
     if (!anomaly) {
-      console.log('Anomalie non trouvée pour:', { id_controle, id_jnl });
+      // console.log('Anomalie non trouvée pour:', { id_controle, id_jnl });
       return res.status(404).json({
         state: false,
         message: 'Anomalie non trouvée pour ce contrôle et cette ligne'
       });
     }
 
-    console.log('Anomalie trouvée:', { id: anomaly.id, id_jnl: anomaly.id_jnl, id_controle: anomaly.id_controle });
+    // console.log('Anomalie trouvée:', { id: anomaly.id, id_jnl: anomaly.id_jnl, id_controle: anomaly.id_controle });
 
     // Simuler un appel à updateAnomaly avec l'id_anomalie trouvé
     req.params.id_anomalie = anomaly.id;

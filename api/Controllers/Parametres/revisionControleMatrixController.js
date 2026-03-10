@@ -3,12 +3,12 @@ const db = require('../../Models');
 // Récupérer toutes les matrices de contrôles
 exports.getControleMatrices = async (req, res) => {
   try {
-    console.log('Fetching controle matrices...');
+    // console.log('Fetching controle matrices...');
     const matrices = await db.revisionControleMatrix.findAll({
       order: [['id_controle', 'ASC']]
     });
     
-    console.log('Found matrices:', matrices.length);
+    // console.log('Found matrices:', matrices.length);
 
     res.json({
       state: true,
@@ -61,7 +61,7 @@ exports.addOrUpdateControleMatrix = async (req, res) => {
       paramUn: paramUn ? parseInt(paramUn) : null
     };
 
-    console.log('Creating/updating controle matrix with data:', cleanedData);
+    // console.log('Creating/updating controle matrix with data:', cleanedData);
 
     const [matrix, created] = await db.revisionControleMatrix.findOrCreate({
       where: {
@@ -87,9 +87,9 @@ exports.addOrUpdateControleMatrix = async (req, res) => {
           }
         }
       );
-      console.log(
-        `Synchronisé paramUn=${cleanedData.paramUn} pour id_controle=${cleanedData.id_controle} (lignes mises à jour: ${updatedCount})`
-      );
+      // console.log(
+      //   `Synchronisé paramUn=${cleanedData.paramUn} pour id_controle=${cleanedData.id_controle} (lignes mises à jour: ${updatedCount})`
+      // );
     }
 
     res.json({

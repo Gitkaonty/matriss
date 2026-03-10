@@ -55,8 +55,8 @@ const createNotExistingCodeJournal = async (req, res) => {
       }
     });
 
-    console.log('DEBUG createNotExistingCodeJournal: compteId', compteId, 'fileId', fileId);
-    console.log('DEBUG createNotExistingCodeJournal: ranJournal trouvé ?', ranJournal?.toJSON?.() || ranJournal);
+    // console.log('DEBUG createNotExistingCodeJournal: compteId', compteId, 'fileId', fileId);
+    // console.log('DEBUG createNotExistingCodeJournal: ranJournal trouvé ?', ranJournal?.toJSON?.() || ranJournal);
 
     if (!ranJournal) {
       resData.state = false;
@@ -110,7 +110,7 @@ const createNotExistingCodeJournal = async (req, res) => {
 
     return res.json(resData);
   } catch (error) {
-    console.log(error);
+    // console.log(error);
   }
 }
 
@@ -199,7 +199,7 @@ const createNotExistingCompte = async (req, res) => {
     return res.json(resData);
 
   } catch (error) {
-    console.log("Erreur createNotExistingCompte :", error);
+    // console.log("Erreur createNotExistingCompte :", error);
     return res.status(500).json({ state: false, error: error.message });
   }
 };
@@ -242,20 +242,20 @@ function parseDate(str) {
 
   // Format: yyyymmdd
   if (/^\d{8}$/.test(s)) {
-    console.log('🔍 PARSE - Format yyyymmdd détecté:', s);
+    // // console.log('🔍 PARSE - Format yyyymmdd détecté:', s);
     const year = s.substring(0, 4);
     const month = s.substring(4, 6);
     const day = s.substring(6, 8);
     // Forcer 12:00 GMT pour éviter le décalage horaire
     const d = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
-    console.log('🔍 PARSE - Date créée yyyymmdd:', d);
+    // // console.log('🔍 PARSE - Date créée yyyymmdd:', d);
     return isNaN(d.getTime()) ? null : d;
   }
 
   // Fallback
-  console.log('🔍 PARSE - Fallback pour:', s);
+  // // console.log('🔍 PARSE - Fallback pour:', s);
   const d = new Date(s);
-  console.log('🔍 PARSE - Date créée fallback:', d);
+  // // console.log('🔍 PARSE - Date créée fallback:', d);
   return isNaN(d.getTime()) ? null : d;
 }
 
@@ -343,7 +343,7 @@ const importJournal = async (req, res) => {
 
       for (let ecritureNum in grouped) {
         const lines = grouped[ecritureNum];
-        console.log('DEBUG traitement écriture:', ecritureNum, 'lignes:', lines.length);
+        // console.log('DEBUG traitement écriture:', ecritureNum, 'lignes:', lines.length);
         // const newIdEcriture = Date.now() + Math.floor(Math.random() * 1000);
         const newIdEcriture = buildIdEcriture(lines[0]);
 
@@ -538,7 +538,7 @@ const importJournal = async (req, res) => {
               libelleaux: item.EcritureLibAux
             });
 
-            console.log('DEBUG écriture créée (importJournal): id_ecriture:', newIdEcriture, 'dateecriture:', dateEcritureImportee, 'vraie_date:', vraieDate);
+            // console.log('DEBUG écriture créée (importJournal): id_ecriture:', newIdEcriture, 'dateecriture:', dateEcritureImportee, 'vraie_date:', vraieDate);
 
             importSuccess = importSuccess * 1;
             importedCount++;
@@ -579,7 +579,7 @@ const importJournal = async (req, res) => {
   } catch (error) {
     //let importSuccess = importSuccess * 0;
     let resData = { state: false, msg: '', details: null };
-    console.log(error);
+    // console.log(error);
   }
 }
 
@@ -685,7 +685,7 @@ const testIfRanExist = async (req, res) => {
     });
  
   } catch (error) {
-    console.log(error);
+    // console.log(error);
     return res.json({ exist: false, state: false, message: error.message });
   }
 }
@@ -710,7 +710,7 @@ const getAllCodeRan = async (req, res) => {
     return res.json({ list: codes });
  
   } catch (error) {
-    console.log(error);
+    // console.log(error);
     return res.json({ existe: false, state: false, message: error.message });
   }
 }
@@ -982,7 +982,7 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
                   isGenDigits: isGenDigits,
                   ligne: item
                 });
-                console.log(`[SKIP COMPTE] Ecriture:${item.EcritureNum}, Compte:${rawGen}, Aux:${rawAux}, Padded:${paddedGen}`);
+                // console.log(`[SKIP COMPTE] Ecriture:${item.EcritureNum}, Compte:${rawGen}, Aux:${rawAux}, Padded:${paddedGen}`);
                 continue;
               }
             }
@@ -1059,7 +1059,7 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
                 isRAN: idCodeJournal?.type === 'RAN',
                 ligne: item
               });
-              console.log(`[SKIP DATE] Ecriture:${item.EcritureNum}, DateEcriture:${item.EcritureDate}, ExerciceStart:${item.exerciceStart}, isRAN:${idCodeJournal?.type === 'RAN'}`);
+              // console.log(`[SKIP DATE] Ecriture:${item.EcritureNum}, DateEcriture:${item.EcritureDate}, ExerciceStart:${item.exerciceStart}, isRAN:${idCodeJournal?.type === 'RAN'}`);
               skippedCount++;
               processedLines++;
               continue;
@@ -1131,7 +1131,7 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
               error: String(error),
               ligne: item
             });
-            console.log(`[SKIP ERREUR] Ecriture:${item?.EcritureNum}, Compte:${item?.CompteNum}, Error:${error?.message}`);
+            // console.log(`[SKIP ERREUR] Ecriture:${item?.EcritureNum}, Compte:${item?.CompteNum}, Error:${error?.message}`);
             console.error('Erreur ligne:', error);
             skippedCount++;
             if (!firstLineErrorMessage) {
@@ -1152,11 +1152,11 @@ const importJournalWithProgressLogic = async (req, res, progress) => {
       : `${importedCount} lignes ont été importées avec succès`;
 
     // LOG final détaillé
-    console.log('=== RAPPORT IMPORT ===');
-    console.log(`Total: ${totalLines}, Importées: ${importedCount}, Ignorées: ${skippedCount}`);
-    console.log(`Détail ignorées: Compte introuvable=${skippedNoCompte}, Date invalide=${skippedNoDate}, Erreurs=${skippedError}`);
-    console.log('Premières lignes ignorées:', skippedDetails.slice(0, 10));
-    console.log('======================');
+    // console.log('=== RAPPORT IMPORT ===');
+    // console.log(`Total: ${totalLines}, Importées: ${importedCount}, Ignorées: ${skippedCount}`);
+    // console.log(`Détail ignorées: Compte introuvable=${skippedNoCompte}, Date invalide=${skippedNoDate}, Erreurs=${skippedError}`);
+    // console.log('Premières lignes ignorées:', skippedDetails.slice(0, 10));
+    // console.log('======================');
  
     progress.complete(
       finalMsg,

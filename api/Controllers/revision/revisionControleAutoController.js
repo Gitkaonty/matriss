@@ -134,7 +134,7 @@ exports.getOrCreateRevisionControles = async (req, res) => {
       const periodeResult = await db.sequelize.query(periodeQuery, { type: db.Sequelize.QueryTypes.SELECT });
       if (periodeResult.length > 0) {
         idPeriode = periodeResult[0].id;
-        console.log('Période trouvée par dates:', idPeriode);
+        // console.log('Période trouvée par dates:', idPeriode);
       }
     }
 
@@ -154,11 +154,11 @@ exports.getOrCreateRevisionControles = async (req, res) => {
 
     // Si aucun contrôle n'existe, les créer à partir des matrices
     if (existingControles.length === 0) {
-      console.log('No controles found, creating from matrices...');
+      // console.log('No controles found, creating from matrices...');
       
       // Vérifier qu'une période est sélectionnée (date_debut et date_fin fournis)
       if (!date_debut || !date_fin) {
-        console.log('No period selected, returning empty controles list');
+        // console.log('No period selected, returning empty controles list');
         return res.json({
           state: true,
           controles: [],
@@ -192,7 +192,7 @@ exports.getOrCreateRevisionControles = async (req, res) => {
         insertedControles.push(newControle);
       }
 
-      console.log(`Created ${insertedControles.length} controles from matrices with id_periode=${idPeriode}`);
+      // console.log(`Created ${insertedControles.length} controles from matrices with id_periode=${idPeriode}`);
 
       res.json({
         state: true,
@@ -200,7 +200,7 @@ exports.getOrCreateRevisionControles = async (req, res) => {
         message: 'Contrôles créés automatiquement à partir des matrices'
       });
     } else {
-      console.log(`Found ${existingControles.length} existing controles`);
+      // console.log(`Found ${existingControles.length} existing controles`);
 
       res.json({
         state: true,
@@ -222,7 +222,7 @@ exports.getControlesByType = async (req, res) => {
   try {
     const { id_compte, id_dossier, id_exercice, type } = req.params;
 
-    console.log('Getting controles by type:', { id_compte, id_dossier, id_exercice, type });
+    // console.log('Getting controles by type:', { id_compte, id_dossier, id_exercice, type });
 
     const controles = await db.sequelize.query(`
       SELECT 
@@ -308,7 +308,7 @@ exports.executeControle = async (req, res) => {
   try {
     const { id_compte, id_dossier, id_exercice, type } = req.params;
 
-    console.log('Executing controle:', { id_compte, id_dossier, id_exercice, type });
+    // console.log('Executing controle:', { id_compte, id_dossier, id_exercice, type });
 
     // 1. Récupérer tous les contrôles de ce Type (SQL)
     const controlesQuery = `
@@ -430,16 +430,16 @@ exports.executeAll = async (req, res) => {
     const { id_compte, id_dossier, id_exercice } = req.params;
     const { date_debut, date_fin, id_periode } = req.query;
 
-    console.log('=== DEBUG executeAll ===');
-    console.log('Params reçus:', { id_compte, id_dossier, id_exercice });
-    console.log('Query params date_debut:', date_debut);
-    console.log('Query params date_fin:', date_fin);
-    console.log('Query params id_periode:', id_periode);
+    // console.log('=== DEBUG executeAll ===');
+    // console.log('Params reçus:', { id_compte, id_dossier, id_exercice });
+    // console.log('Query params date_debut:', date_debut);
+    // console.log('Query params date_fin:', date_fin);
+    // console.log('Query params id_periode:', id_periode);
 
     let idPeriode = null;
     if (id_periode) {
       idPeriode = parseInt(id_periode, 10);
-      console.log('id_periode fourni explicitement:', idPeriode);
+      // console.log('id_periode fourni explicitement:', idPeriode);
     } else if (date_debut && date_fin) {
       // Fallback: chercher par dates
       const debut = date_debut.split('T')[0];

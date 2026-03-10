@@ -116,7 +116,7 @@ export default function ParamDeviseComponent() {
                     libelle: item.libelle,
                     id_compte: item.id_compte
                 })) : [];
-                console.log("data : ", data);
+                // console.log("data : ", data);
                 setRows(data);
             })
             .catch(() => setRows([]));
@@ -239,7 +239,7 @@ export default function ParamDeviseComponent() {
             const idToDelete = selectedRowId[0];
             axios.delete(`/devises/devise/${idToDelete}`)
                 .then(res => {
-                    console.log('Réponse suppression:', res.data);
+                    // console.log('Réponse suppression:', res.data);
                     if (res.data && res.data.state) {
                         setRows(rows.filter((row) => row.id !== idToDelete));
                         setEditRow(null);
