@@ -86,20 +86,22 @@ const TextCard = ({
             <Typography variant="h6" color={color} fontWeight={750}>
                 {text}
             </Typography>
-            <Typography fontSize={'18px'} color={color} textAlign={'right'} sx={{ width: '100%' }} fontWeight={500}>
-                {formatMontant(montant)}
-            </Typography>
             <Stack
                 direction="row"
-                alignItems="end"
-                justifyContent="flex-end"
+                alignItems="baseline"
+                justifyContent="space-between"
                 sx={{ width: '100%' }}
                 spacing={1}
             >
-                <IconVariation />
-                <Typography variant="h5" color={color} fontWeight={500}>
-                    {formatePourcentage(variation, evolution)}
+                <Typography fontSize={'18px'} color={color} fontWeight={500}>
+                    {formatMontant(montant)}
                 </Typography>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                    <IconVariation />
+                    <Typography variant="h5" color={color} fontWeight={500}>
+                        {formatePourcentage(variation, evolution)}
+                    </Typography>
+                </Stack>
             </Stack>
             <Typography fontSize={'18px'} color={color} fontWeight={600}>
                 {exercice}

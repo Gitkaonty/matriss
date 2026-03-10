@@ -35,9 +35,9 @@ export default function PaieImportExportDialog({ open, onClose, paieColumns, onI
   };
 
   const handleAnomaliesReceived = (detectedAnomalies) => {
-    console.log('[DEBUG] PaieImportExportDialog - Anomalies reçues:', detectedAnomalies);
+    // console.log('[DEBUG] PaieImportExportDialog - Anomalies reçues:', detectedAnomalies);
     setAnomalies(detectedAnomalies);
-    console.log('[DEBUG] PaieImportExportDialog - État anomalies mis à jour, longueur:', detectedAnomalies.length);
+    // console.log('[DEBUG] PaieImportExportDialog - État anomalies mis à jour, longueur:', detectedAnomalies.length);
     // Afficher automatiquement le tableau des anomalies en bas
     if (detectedAnomalies && detectedAnomalies.length > 0) {
       setShowAnomaliesInline(true);
@@ -45,8 +45,8 @@ export default function PaieImportExportDialog({ open, onClose, paieColumns, onI
   };
 
   const handleShowAnomalies = () => {
-    console.log('[DEBUG] PaieImportExportDialog - Bouton Anomalie cliqué');
-    console.log('[DEBUG] PaieImportExportDialog - Anomalies actuelles:', anomalies);
+    // console.log('[DEBUG] PaieImportExportDialog - Bouton Anomalie cliqué');
+    // console.log('[DEBUG] PaieImportExportDialog - Anomalies actuelles:', anomalies);
     // Toggle affichage inline
     setShowAnomaliesInline(prev => !prev);
   };

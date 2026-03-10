@@ -84,15 +84,15 @@ export default function ParamPlanComptable() {
     // Récupérer la liste des comptes collectifs pour le dropdown (avec logs)
     const recupererListeCptCollectif = useCallback(() => {
         if (!fileId || !compteId) {
-            console.log('[DEBUG] recupererListeCptCollectif: fileId ou compteId manquant', { fileId, compteId });
+            // console.log('[DEBUG] recupererListeCptCollectif: fileId ou compteId manquant', { fileId, compteId });
             return;
         }
         if (loadingCollectifRef.current) {
-            console.log('[DEBUG] recupererListeCptCollectif: déjà en chargement');
+            // console.log('[DEBUG] recupererListeCptCollectif: déjà en chargement');
             return;
         }
         
-        console.log('[DEBUG] recupererListeCptCollectif: début chargement...', { fileId, compteId });
+        // console.log('[DEBUG] recupererListeCptCollectif: début chargement...', { fileId, compteId });
         loadingCollectifRef.current = true;
         setIsLoadingCollectif(true);
         const startTime = Date.now();
@@ -100,13 +100,13 @@ export default function ParamPlanComptable() {
         axios.post(`/paramPlanComptable/pc`, { fileId: Number(fileId), compteId: Number(compteId) })
             .then((response) => {
                 const elapsed = Date.now() - startTime;
-                console.log(`[DEBUG] recupererListeCptCollectif: reçu en ${elapsed}ms`);
+                // console.log(`[DEBUG] recupererListeCptCollectif: reçu en ${elapsed}ms`);
                 
                 const resData = response.data;
                 if (resData.state) {
                     const listePc = resData.liste || [];
                     const collectifs = listePc.filter(item => item.nature === 'Collectif');
-                    console.log(`[DEBUG] recupererListeCptCollectif: ${listePc.length} total, ${collectifs.length} collectifs`);
+                    // console.log(`[DEBUG] recupererListeCptCollectif: ${listePc.length} total, ${collectifs.length} collectifs`);
                     setListeCptCollectif(collectifs);
                 } else {
                     console.error('[DEBUG] recupererListeCptCollectif: API error', resData.msg);
@@ -118,7 +118,7 @@ export default function ParamPlanComptable() {
             .finally(() => {
                 loadingCollectifRef.current = false;
                 setIsLoadingCollectif(false);
-                console.log('[DEBUG] recupererListeCptCollectif: terminé');
+                // console.log('[DEBUG] recupererListeCptCollectif: terminé');
             });
     }, [fileId, compteId]);
 
@@ -132,11 +132,11 @@ export default function ParamPlanComptable() {
         const currentNature = currentRow?.nature ?? row.nature;
         const currentCompte = currentRow?.compte ?? row.compte;
 
-        console.log('[DEBUG] BaseCompteEditCell: render', { id, value, nature: currentNature, listeCptCollectifLength: listeCptCollectif.length });
+        // console.log('[DEBUG] BaseCompteEditCell: render', { id, value, nature: currentNature, listeCptCollectifLength: listeCptCollectif.length });
 
         // Synchroniser la valeur avec le state externe
         useEffect(() => {
-            console.log('[DEBUG] BaseCompteEditCell: useEffect value/liste', { value, nature: currentNature });
+            // console.log('[DEBUG] BaseCompteEditCell: useEffect value/liste', { value, nature: currentNature });
             
             if (currentNature === 'General' || currentNature === 'Collectif') {
                 const compteValue = currentCompte || '';
@@ -147,11 +147,11 @@ export default function ParamPlanComptable() {
                 if (value != null && value !== '' && listeCptCollectif.length > 0) {
                     const found = listeCptCollectif.find(item => String(item.id) === String(value) || String(item.compte) === String(value));
                     if (found) {
-                        console.log('[DEBUG] BaseCompteEditCell: valeur trouvée', found.compte);
+                        // console.log('[DEBUG] BaseCompteEditCell: valeur trouvée', found.compte);
                         setLocalValue(String(found.id));
                         apiRef.current.setEditCellValue({ id, field, value: String(found.id) });
                     } else {
-                        console.log('[DEBUG] BaseCompteEditCell: valeur non trouvée dans liste', value);
+                        // console.log('[DEBUG] BaseCompteEditCell: valeur non trouvée dans liste', value);
                         setLocalValue('');
                         apiRef.current.setEditCellValue({ id, field, value: '' });
                     }
@@ -179,7 +179,7 @@ export default function ParamPlanComptable() {
 
         const handleChange = (event) => {
             const newValue = event.target.value;
-            console.log('[DEBUG] BaseCompteEditCell: handleChange', newValue);
+            // console.log('[DEBUG] BaseCompteEditCell: handleChange', newValue);
             setLocalValue(newValue);
             apiRef.current.setEditCellValue({ id, field, value: newValue });
         };
@@ -245,7 +245,7 @@ export default function ParamPlanComptable() {
 
     // Gestion du mode édition
     const handleRowModesModelChange = (newRowModesModel) => {
-        console.log('[DEBUG] handleRowModesModelChange:', newRowModesModel);
+        // console.log('[DEBUG] handleRowModesModelChange:', newRowModesModel);
         if (newRowModesModel && Object.prototype.hasOwnProperty.call(newRowModesModel, 'undefined')) {
             const { undefined: _discard, ...rest } = newRowModesModel;
             setRowModesModel(rest);
@@ -293,7 +293,7 @@ export default function ParamPlanComptable() {
                 }
                 
                 const itemId = isNewRow ? 0 : newRow.id;
-                console.log('[DEBUG] processRowUpdate: itemId =', itemId);
+                // console.log('[DEBUG] processRowUpdate: itemId =', itemId);
                 
                 // Quand nature = General ou Collectif: baseCompte doit être le numéro de compte
                 // Quand nature = Auxiliaire: baseCompte est l'ID du compte collectif sélectionné
@@ -337,12 +337,12 @@ export default function ParamPlanComptable() {
                     libelleautre: newRow.libelleautre || ''
                 };
                 
-                console.log('[DEBUG] processRowUpdate: envoi API avec payload', { action: payload.action, itemId: payload.itemId });
+                // console.log('[DEBUG] processRowUpdate: envoi API avec payload', { action: payload.action, itemId: payload.itemId });
 
                 axiosPrivate.post(`/paramPlanComptable/AddCpt`, payload)
                     .then((response) => {
                         const resData = response.data;
-                        console.log('[DEBUG] processRowUpdate: réponse API', resData);
+                        // console.log('[DEBUG] processRowUpdate: réponse API', resData);
                         
                         if (resData.state === true) {
                             toast.success(resData.msg || 'Compte enregistré avec succès');
@@ -371,7 +371,7 @@ export default function ParamPlanComptable() {
                     .catch((error) => {
                         // Ne pas afficher d'erreur si c'est une annulation (Request aborted)
                         if (error.code === 'ERR_CANCELED' || error.message?.includes('aborted')) {
-                            console.log('[DEBUG] processRowUpdate: requête annulée (normal si changement rapide)');
+                            // console.log('[DEBUG] processRowUpdate: requête annulée (normal si changement rapide)');
                             reject(oldRow);
                             return;
                         }
@@ -392,7 +392,7 @@ export default function ParamPlanComptable() {
     const handleAddNewRow = () => {
         // Charger les comptes collectifs si ce n'est pas déjà fait
         if (listeCptCollectif.length === 0 && !loadingCollectifRef.current) {
-            console.log('[DEBUG] handleAddNewRow: chargement comptes collectifs avant ajout');
+            // console.log('[DEBUG] handleAddNewRow: chargement comptes collectifs avant ajout');
             recupererListeCptCollectif();
         }
         
@@ -417,7 +417,7 @@ export default function ParamPlanComptable() {
         if (selectedRowId != null && selectedRow) {
             // Charger les comptes collectifs si ce n'est pas déjà fait
             if (listeCptCollectif.length === 0 && !loadingCollectifRef.current) {
-                console.log('[DEBUG] handleEditRow: chargement comptes collectifs avant édition');
+                // console.log('[DEBUG] handleEditRow: chargement comptes collectifs avant édition');
                 recupererListeCptCollectif();
             }
             setRowModesModel((prev) => ({
@@ -1048,7 +1048,7 @@ export default function ParamPlanComptable() {
                     }, {})
                 );
 
-                console.log('[DEBUG] showPc: first item', unique[0]);
+                // console.log('[DEBUG] showPc: first item', unique[0]);
                 setPc(unique);
             } else {
                 toast.error(resData.msg);
@@ -1133,7 +1133,7 @@ export default function ParamPlanComptable() {
         if (canView && fileId && compteId) {
             showPc();
             // Précharger les comptes collectifs pour l'édition
-            console.log('[DEBUG] useEffect: chargement comptes collectifs...');
+            // console.log('[DEBUG] useEffect: chargement comptes collectifs...');
             recupererListeCptCollectif();
         }
     }, [fileId, compteId, compte, isRefresh]);

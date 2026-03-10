@@ -532,23 +532,23 @@ const PopupSaisie = ({
             { id: 1, code: 'EUR', par_defaut: true }
         ];
 
-        console.log('Liste des devises disponibles:', devisesDisponibles);
+        // console.log('Liste des devises disponibles:', devisesDisponibles);
 
         if (formSaisie.values.choixDevise === 'MGA') {
             const devise = devisesDisponibles.find((val) => val.code === 'MGA');
             id_devise = devise?.id;
-            console.log('Devise MGA trouvée:', devise);
+            // console.log('Devise MGA trouvée:', devise);
         } else if (formSaisie.values.choixDevise === 'Devises') {
             const devise = devisesDisponibles.find((val) => val.code === 'EUR');
             id_devise = devise?.id;
-            console.log('Devise EUR trouvée:', devise);
+            // console.log('Devise EUR trouvée:', devise);
         } else if (formSaisie.values.choixDevise === 'Autres') {
             const devise = devisesDisponibles.find((val) => val.code === (typeof formSaisie.values.currency === 'string' ? formSaisie.values.currency : ''));
             id_devise = devise?.id;
-            console.log('Devise Autres trouvée:', devise);
+            // console.log('Devise Autres trouvée:', devise);
         }
 
-        console.log('ID devise final:', id_devise);
+        // console.log('ID devise final:', id_devise);
 
         if (!id_devise) {
             toast.error('Devise non trouvée. Veuillez vérifier la configuration des devises.');
@@ -581,10 +581,10 @@ const PopupSaisie = ({
                 ...(type === 'modification' ? { conserverFichier, deletedIds: deletedRowIds } : {})
             };
 
-            console.log('Données envoyées au backend:', valeursSansFichier);
-            console.log('ID devise:', id_devise);
-            console.log('Choix devise:', formSaisie.values.choixDevise);
-            console.log('Currency:', formSaisie.values.currency);
+            // console.log('Données envoyées au backend:', valeursSansFichier);
+            // console.log('ID devise:', id_devise);
+            // console.log('Choix devise:', formSaisie.values.choixDevise);
+            // console.log('Currency:', formSaisie.values.currency);
 
             formData.append("data", JSON.stringify(valeursSansFichier));
             if (file) formData.append("file", file);

@@ -104,13 +104,13 @@ export default function ControlesMatrix() {
     try {
       const payload = { ...formData };
 
-      console.log('Editing matrix ID:', editingMatrix?.id);
-      console.log('Editing matrix id_controle:', editingMatrix?.id_controle);
-      console.log('Payload to send:', payload);
+      // console.log('Editing matrix ID:', editingMatrix?.id);
+      // console.log('Editing matrix id_controle:', editingMatrix?.id_controle);
+      // console.log('Payload to send:', payload);
 
       // Utiliser le même endpoint POST pour l'ajout et la modification
       // Le backend gère automatiquement la mise à jour si id_controle existe
-      console.log('Sending to addOrUpdate endpoint:', payload);
+      // console.log('Sending to addOrUpdate endpoint:', payload);
       await axiosPrivate.post('/param/revisionControleMatrix', payload);
 
       fetchMatrices();

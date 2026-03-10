@@ -69,7 +69,7 @@ exports.addOrUpdateControle = async (req, res) => {
       id_revision: id_revision || null
     };
 
-    console.log('Creating/updating controle with data:', cleanedData);
+    // console.log('Creating/updating controle with data:', cleanedData);
 
     const [controle, created] = await revisionControle.findOrCreate({
       where: {

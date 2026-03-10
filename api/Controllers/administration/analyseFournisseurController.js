@@ -87,14 +87,14 @@ const getFactures3MoisNonReglees = async (id_dossier, id_exercice, date_debut, d
   const dateFinFormatted = date_fin ? new Date(date_fin).toISOString().split('T')[0] : null;
   const dateControleFormatted = date_controle ? new Date(date_controle).toISOString().split('T')[0] : null;
   
-  console.log('[DEBUG] Dates formatées:', { dateDebutFormatted, dateFinFormatted, dateControleFormatted });
+  // console.log('[DEBUG] Dates formatées:', { dateDebutFormatted, dateFinFormatted, dateControleFormatted });
   
   // Calculer la date limite (date_controle - 90 jours)
   const dateLimite = new Date(date_controle);
   dateLimite.setDate(dateLimite.getDate() - 90);
   const dateLimiteFormatted = dateLimite.toISOString().split('T')[0];
   
-  console.log('[DEBUG] Date limite (90j avant):', dateLimiteFormatted);
+  // console.log('[DEBUG] Date limite (90j avant):', dateLimiteFormatted);
   
   const query = `
     SELECT 
@@ -137,7 +137,7 @@ const getFactures3MoisNonReglees = async (id_dossier, id_exercice, date_debut, d
       AND cj.type = 'ACHAT'
   `;
   const debugResult = await db.sequelize.query(debugQuery, { type: db.Sequelize.QueryTypes.SELECT });
-  console.log('[DEBUG] Stats ACHAT:', debugResult[0]);
+  // console.log('[DEBUG] Stats ACHAT:', debugResult[0]);
   
   // Debug: voir les factures ACHAT sans lettrage dans la période
   const debugQuery2 = `
@@ -155,13 +155,13 @@ const getFactures3MoisNonReglees = async (id_dossier, id_exercice, date_debut, d
     ORDER BY j.dateecriture
   `;
   const debugResult2 = await db.sequelize.query(debugQuery2, { type: db.Sequelize.QueryTypes.SELECT });
-  console.log('[DEBUG] ACHAT sans lettrage dans période:', debugResult2.length);
-  console.log('[DEBUG] Détail:', debugResult2);
+  // console.log('[DEBUG] ACHAT sans lettrage dans période:', debugResult2.length);
+  // console.log('[DEBUG] Détail:', debugResult2);
   
   const results = await db.sequelize.query(query, { type: db.Sequelize.QueryTypes.SELECT });
   
-  console.log('[DEBUG] Nombre de factures >90j:', results.length);
-  console.log('[DEBUG] Résultats:', results);
+  // console.log('[DEBUG] Nombre de factures >90j:', results.length);
+  // console.log('[DEBUG] Résultats:', results);
   
   return results;
 };
@@ -170,7 +170,7 @@ const getFactures3MoisNonReglees = async (id_dossier, id_exercice, date_debut, d
  * Récupérer les ajustements non traités (journal != ACHAT/BANQUE/RAN + lettrage vide)
  */
 const getAjustementsNonTraites = async (id_dossier, id_exercice, date_debut, date_fin) => {
-  console.log('[DEBUG] getAjustementsNonTraites - Paramètres:', { id_dossier, id_exercice, date_debut, date_fin });
+  // console.log('[DEBUG] getAjustementsNonTraites - Paramètres:', { id_dossier, id_exercice, date_debut, date_fin });
   
   // Convertir les dates au format YYYY-MM-DD
   const dateDebutFormatted = date_debut ? new Date(date_debut).toISOString().split('T')[0] : null;
@@ -201,12 +201,12 @@ const getAjustementsNonTraites = async (id_dossier, id_exercice, date_debut, dat
     ORDER BY j.compteaux, j.dateecriture
   `;
   
-  console.log('[DEBUG] SQL Query ajustements:', query);
+  // console.log('[DEBUG] SQL Query ajustements:', query);
   
   const results = await db.sequelize.query(query, { type: db.Sequelize.QueryTypes.SELECT });
   
-  console.log('[DEBUG] Nombre d\'ajustements non traités:', results.length);
-  console.log('[DEBUG] Résultats:', results);
+  // console.log('[DEBUG] Nombre d\'ajustements non traités:', results.length);
+  // console.log('[DEBUG] Résultats:', results);
   
   return results;
 };
@@ -215,7 +215,7 @@ const getAjustementsNonTraites = async (id_dossier, id_exercice, date_debut, dat
  * Récupérer les soldes en suspens (journal RAN + lettrage vide)
  */
 const getSoldesSuspens = async (id_dossier, id_exercice, date_debut, date_fin) => {
-  console.log('[DEBUG] getSoldesSuspens - Paramètres:', { id_dossier, id_exercice, date_debut, date_fin });
+  // console.log('[DEBUG] getSoldesSuspens - Paramètres:', { id_dossier, id_exercice, date_debut, date_fin });
   
   // Convertir les dates au format YYYY-MM-DD
   const dateDebutFormatted = date_debut ? new Date(date_debut).toISOString().split('T')[0] : null;
@@ -246,12 +246,12 @@ const getSoldesSuspens = async (id_dossier, id_exercice, date_debut, date_fin) =
     ORDER BY j.compteaux, j.dateecriture
   `;
   
-  console.log('[DEBUG] SQL Query RAN:', query);
+  // console.log('[DEBUG] SQL Query RAN:', query);
   
   const results = await db.sequelize.query(query, { type: db.Sequelize.QueryTypes.SELECT });
   
-  console.log('[DEBUG] Nombre de soldes suspens:', results.length);
-  console.log('[DEBUG] Résultats:', results);
+  // console.log('[DEBUG] Nombre de soldes suspens:', results.length);
+  // console.log('[DEBUG] Résultats:', results);
   
   return results;
 };
@@ -325,24 +325,24 @@ exports.executerAnalyse = async (req, res) => {
     const { id_compte, id_dossier, id_exercice } = req.params;
     const { date_debut, date_fin, id_periode } = req.query;
     
-    console.log('[DEBUG] executerAnalyse - req.params:', req.params);
-    console.log('[DEBUG] executerAnalyse - req.query:', req.query);
+    // console.log('[DEBUG] executerAnalyse - req.params:', req.params);
+    // console.log('[DEBUG] executerAnalyse - req.query:', req.query);
 
     // Validation des paramètres
     if (!date_debut || !date_fin) {
-      console.log('[DEBUG] Validation échouée - dates manquantes');
+      // console.log('[DEBUG] Validation échouée - dates manquantes');
       return res.status(400).json({
         state: false,
         message: 'Les dates de début et fin sont requises'
       });
     }
 
-    console.log('[DEBUG] Nettoyage des anciennes données...');
+    // console.log('[DEBUG] Nettoyage des anciennes données...');
     // Nettoyer les anciennes données
     await cleanupOldData(id_compte, id_dossier, id_exercice, id_periode || null);
 
     // ========== RÈGLE 1: Paiement sans facture (BANQUE sans lettrage) ==========
-    console.log('[DEBUG] === RÈGLE 1: Paiement sans facture ===');
+    // console.log('[DEBUG] === RÈGLE 1: Paiement sans facture ===');
     const ecrituresBanque = await getFournisseurEcritures(
       id_compte, 
       id_dossier, 
@@ -350,10 +350,10 @@ exports.executerAnalyse = async (req, res) => {
       date_debut, 
       date_fin
     );
-    console.log('[DEBUG] BANQUE trouvées:', ecrituresBanque.length);
+    // console.log('[DEBUG] BANQUE trouvées:', ecrituresBanque.length);
 
     // ========== RÈGLE 2: Facture +3 mois non réglée ==========
-    console.log('[DEBUG] === RÈGLE 2: Facture >3 mois non réglée ===');
+    // console.log('[DEBUG] === RÈGLE 2: Facture >3 mois non réglée ===');
     const ecrituresAchat = await getFactures3MoisNonReglees(
       id_dossier, 
       id_exercice, 
@@ -361,27 +361,27 @@ exports.executerAnalyse = async (req, res) => {
       date_fin,
       date_fin  // date de contrôle = date fin période
     );
-    console.log('[DEBUG] ACHAT >90j trouvées:', ecrituresAchat.length);
+    // console.log('[DEBUG] ACHAT >90j trouvées:', ecrituresAchat.length);
 
     // ========== RÈGLE 3: Ajustements non traités ==========
-    console.log('[DEBUG] === RÈGLE 3: Ajustements non traités ===');
+    // console.log('[DEBUG] === RÈGLE 3: Ajustements non traités ===');
     const ecrituresAjustement = await getAjustementsNonTraites(
       id_dossier, 
       id_exercice, 
       date_debut, 
       date_fin
     );
-    console.log('[DEBUG] Ajustements trouvés:', ecrituresAjustement.length);
+    // console.log('[DEBUG] Ajustements trouvés:', ecrituresAjustement.length);
 
     // ========== RÈGLE 4: Soldes suspens (RAN sans lettrage) ==========
-    console.log('[DEBUG] === RÈGLE 4: Soldes suspens ===');
+    // console.log('[DEBUG] === RÈGLE 4: Soldes suspens ===');
     const ecrituresRan = await getSoldesSuspens(
       id_dossier, 
       id_exercice, 
       date_debut, 
       date_fin
     );
-    console.log('[DEBUG] RAN trouvés:', ecrituresRan.length);
+    // console.log('[DEBUG] RAN trouvés:', ecrituresRan.length);
 
     // Analyser chaque ligne et stocker les résultats
     const lignesAvecAnomalies = [];

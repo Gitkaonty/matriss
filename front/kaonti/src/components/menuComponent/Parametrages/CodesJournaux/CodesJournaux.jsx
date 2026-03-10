@@ -187,12 +187,12 @@ export default function ParamCodeJournalComponent() {
 
     //Récupération du plan comptable
     const showPc = () => {
-        console.log('[showPc] Chargement du plan comptable pour fileId:', fileId, 'compteId:', compteId);
+        // console.log('[showPc] Chargement du plan comptable pour fileId:', fileId, 'compteId:', compteId);
         axiosPrivate.post(`/paramPlanComptable/pc`, { fileId, compteId }).then((response) => {
             const resData = response.data;
-            console.log('[showPc] Réponse reçue:', resData);
+            // console.log('[showPc] Réponse reçue:', resData);
             if (resData.state) {
-                console.log('[showPc] Plan comptable chargé, nombre de comptes:', resData.liste?.length);
+                // console.log('[showPc] Plan comptable chargé, nombre de comptes:', resData.liste?.length);
                 setPc(resData.liste);
             } else {
                 console.error('[showPc] Erreur lors du chargement:', resData.msg);
@@ -205,7 +205,7 @@ export default function ParamCodeJournalComponent() {
     }
 
     useEffect(() => {
-        console.log('[useEffect] canView:', canView, 'fileId:', fileId);
+        // console.log('[useEffect] canView:', canView, 'fileId:', fileId);
         if (canView && fileId) {
             showPc();
             GetListeCodeJournaux(fileId);
@@ -215,15 +215,15 @@ export default function ParamCodeJournalComponent() {
     // Mettre à jour listeCptAssocie quand pc est chargé et qu'un type BANQUE/CAISSE est sélectionné
     useEffect(() => {
         if (pc && pc.length > 0 && formikNewCodeJournal.values.type) {
-            console.log('[useEffect pc] Plan comptable chargé, mise à jour de listeCptAssocie pour type:', formikNewCodeJournal.values.type);
+            // console.log('[useEffect pc] Plan comptable chargé, mise à jour de listeCptAssocie pour type:', formikNewCodeJournal.values.type);
             const listBank = pc.filter((row) => row.compte.startsWith('512') || row.compte.startsWith('52'));
             const listCash = pc.filter((row) => row.compte.startsWith('53'));
             
             if (formikNewCodeJournal.values.type === 'BANQUE') {
-                console.log('[useEffect pc] Mise à jour liste BANQUE:', listBank.length, 'comptes');
+                // console.log('[useEffect pc] Mise à jour liste BANQUE:', listBank.length, 'comptes');
                 setListeCptAssocie(listBank);
             } else if (formikNewCodeJournal.values.type === 'CAISSE') {
-                console.log('[useEffect pc] Mise à jour liste CAISSE:', listCash.length, 'comptes');
+                // console.log('[useEffect pc] Mise à jour liste CAISSE:', listCash.length, 'comptes');
                 setListeCptAssocie(listCash);
             }
         }
@@ -241,24 +241,24 @@ export default function ParamCodeJournalComponent() {
 
     //liste compte banque et caisse
     const recupListeCptBanqueCaisse = (typeTreso) => {
-        console.log('[recupListeCptBanqueCaisse] Type sélectionné:', typeTreso);
-        console.log('[recupListeCptBanqueCaisse] Plan comptable (pc) length:', pc?.length);
+        // console.log('[recupListeCptBanqueCaisse] Type sélectionné:', typeTreso);
+        // console.log('[recupListeCptBanqueCaisse] Plan comptable (pc) length:', pc?.length);
         
         const listBank = pc?.filter((row) => row.compte.startsWith('512') || row.compte.startsWith('52'));
         const listCash = pc?.filter((row) => row.compte.startsWith('53'));
         
-        console.log('[recupListeCptBanqueCaisse] Comptes BANQUE (512 ou 52) trouvés:', listBank?.length);
-        console.log('[recupListeCptBanqueCaisse] Comptes CAISSE (53) trouvés:', listCash?.length);
+        // console.log('[recupListeCptBanqueCaisse] Comptes BANQUE (512 ou 52) trouvés:', listBank?.length);
+        // console.log('[recupListeCptBanqueCaisse] Comptes CAISSE (53) trouvés:', listCash?.length);
 
         formikNewCodeJournal.setFieldValue("type", typeTreso);
 
         if (typeTreso === 'BANQUE') {
             setListeCptAssocie(listBank);
-            console.log('[recupListeCptBanqueCaisse] Liste BANQUE définie:', listBank);
+            // console.log('[recupListeCptBanqueCaisse] Liste BANQUE définie:', listBank);
             setCompteAssocieValidationColor('#F6D6D6');
         } else if (typeTreso === 'CAISSE') {
             setListeCptAssocie(listCash);
-            console.log('[recupListeCptBanqueCaisse] Liste CAISSE définie:', listCash);
+            // console.log('[recupListeCptBanqueCaisse] Liste CAISSE définie:', listCash);
             setCompteAssocieValidationColor('#F6D6D6');
         } else {
             // Pour les autres types

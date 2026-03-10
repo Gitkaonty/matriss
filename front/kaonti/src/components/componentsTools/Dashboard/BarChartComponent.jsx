@@ -69,7 +69,7 @@ const BarChartComponent = ({ xAxis, xAxis1, dataN, dataN1, label }) => {
                     display: false,
                 },
             },
-            ...(dataN1 ? [{
+            ...(dataN1 && dataN1.length > 0 ? [{
                 label: `N-1`,
                 data: dataN1OnAllLabels,
                 borderColor: '#de5f23',
