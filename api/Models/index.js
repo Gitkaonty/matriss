@@ -125,6 +125,7 @@ db.revisionControle = require('./revisionControleModel.js')(sequelize, DataTypes
 db.revisionControleMatrix = require('./revisionControleMatrixModel.js')(sequelize, DataTypes);
 db.tableControleAnomalies = require('./tableControleAnomaliesModel.js')(sequelize, DataTypes);
 db.revisionCommentaireAnomalies = require('./revisionCommentaireAnomaliesModel.js')(sequelize, DataTypes);
+db.revisionAnalytiqueResultats = require('./revisionAnalytiqueResultatModel.js')(sequelize, DataTypes);
 
 // Analyse Fournisseur/Client
 db.analyseFournisseurLignes = require('./analyseFournisseurLigneModel')(sequelize, DataTypes);
@@ -633,6 +634,19 @@ db.exercices.hasMany(db.etatsdeclarations, { foreignKey: 'id_exercice', sourceKe
 
 db.etatsdeclarations.belongsTo(db.userscomptes, { foreignKey: 'id_compte', targetKey: 'id' });
 db.userscomptes.hasMany(db.etatsdeclarations, { foreignKey: 'id_compte', sourceKey: 'id' });
+
+// Revision analytique resultats associations
+db.revisionAnalytiqueResultats.belongsTo(db.dossiers, { foreignKey: 'id_dossier', targetKey: 'id' });
+db.dossiers.hasMany(db.revisionAnalytiqueResultats, { foreignKey: 'id_dossier', sourceKey: 'id' });
+
+db.revisionAnalytiqueResultats.belongsTo(db.exercices, { foreignKey: 'id_exercice', targetKey: 'id' });
+db.exercices.hasMany(db.revisionAnalytiqueResultats, { foreignKey: 'id_exercice', sourceKey: 'id' });
+
+db.revisionAnalytiqueResultats.belongsTo(db.userscomptes, { foreignKey: 'id_compte', targetKey: 'id' });
+db.userscomptes.hasMany(db.revisionAnalytiqueResultats, { foreignKey: 'id_compte', sourceKey: 'id' });
+
+db.revisionAnalytiqueResultats.belongsTo(db.journals, { foreignKey: 'id_jnl', targetKey: 'id' });
+db.journals.hasMany(db.revisionAnalytiqueResultats, { foreignKey: 'id_jnl', sourceKey: 'id' });
 
 //exporting the module
 module.exports = db;

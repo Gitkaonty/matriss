@@ -564,24 +564,24 @@ export default function Revision() {
                                     <DataGrid
                                         rows={controlesGrouped.map((c, idx) => ({ id: idx, ...c }))}
                                         columns={[
-                                            {
-                                                field: 'Type',
-                                                headerName: 'Type',
-                                                width: 150, // largeur fixe
-                                                renderCell: (params) => (
-                                                    <Typography
-                                                        variant="body2"
-                                                        sx={{
-                                                            fontSize: 13,
-                                                            whiteSpace: 'nowrap',
-                                                            overflow: 'hidden',
-                                                            textOverflow: 'ellipsis',
-                                                        }}
-                                                    >
-                                                        {params.value}
-                                                    </Typography>
-                                                ),
-                                            },
+                                            // {
+                                            //     field: 'Type',
+                                            //     headerName: 'Type',
+                                            //     width: 150, // largeur fixe
+                                            //     renderCell: (params) => (
+                                            //         <Typography
+                                            //             variant="body2"
+                                            //             sx={{
+                                            //                 fontSize: 13,
+                                            //                 whiteSpace: 'nowrap',
+                                            //                 overflow: 'hidden',
+                                            //                 textOverflow: 'ellipsis',
+                                            //             }}
+                                            //         >
+                                            //             {params.value}
+                                            //         </Typography>
+                                            //     ),
+                                            // },
                                             {
                                                 field: 'description',
                                                 headerName: 'Description',

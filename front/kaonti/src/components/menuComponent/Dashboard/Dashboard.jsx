@@ -28,15 +28,15 @@ import { Line } from 'react-chartjs-2';
 import RevuAnalytiqueNN1 from './RevuAnalytiqueNN1';
 import RevuAnalytiqueMensuelle from './RevuAnalytiqueMensuelle';
 
-// Format date as dd/mm/yy (comme dans Revision)
+// Format date as dd/mm/yyyy
 const formatDate = (dateString) => {
   if (!dateString) return '';
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return '';
   const dd = String(date.getDate()).padStart(2, '0');
   const mm = String(date.getMonth() + 1).padStart(2, '0');
-  const yy = String(date.getFullYear()).slice(-2);
-  return `${dd}/${mm}/${yy}`;
+  const yyyy = String(date.getFullYear());
+  return `${dd}/${mm}/${yyyy}`;
 };
 
 const columns = [
