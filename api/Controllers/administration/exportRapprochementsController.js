@@ -36,7 +36,7 @@ module.exports = {
       }
 
       try {
-        console.log('[RAPPRO][EXPORT][PDF][PARAMS]', { fileId: rawFileId, compteId: rawCompteId, exerciceId: rawExerciceId, pcId: rawPcId, rapproId });
+        // console.log('[RAPPRO][EXPORT][PDF][PARAMS]', { fileId: rawFileId, compteId: rawCompteId, exerciceId: rawExerciceId, pcId: rawPcId, rapproId });
       } catch (e) { }
 
       // On récupère d'abord la ligne réelle à partir de son id, puis on en déduit les autres ids
@@ -116,7 +116,7 @@ module.exports = {
       }
 
       try {
-        console.log('[RAPPRO][EXPORT][EXCEL][PARAMS]', { fileId: rawFileId, compteId: rawCompteId, exerciceId: rawExerciceId, pcId: rawPcId, rapproId });
+        // console.log('[RAPPRO][EXPORT][EXCEL][PARAMS]', { fileId: rawFileId, compteId: rawCompteId, exerciceId: rawExerciceId, pcId: rawPcId, rapproId });
       } catch (e) { }
 
       const row = await rapprochements.findByPk(rapproId);

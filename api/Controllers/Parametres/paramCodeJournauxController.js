@@ -35,7 +35,7 @@ const getListeCodeJournaux = async (req, res) => {
 
     return res.json(resData);
   } catch (error) {
-    console.log(error);
+    // console.log(error);
   }
 }
 
@@ -117,7 +117,7 @@ const addCodeJournal = async (req, res) => {
 
     return res.json(resData);
   } catch (error) {
-    console.log(error);
+    // console.log(error);
   }
 }
 
@@ -134,7 +134,7 @@ const codeJournauxDelete = async (req, res) => {
       fileInfos: []
     }
 
-    // console.log('[codeJournauxDelete] Input parsed', { fileIdNum, compteIdNum, idToDeleteNum });
+    // // console.log('[codeJournauxDelete] Input parsed', { fileIdNum, compteIdNum, idToDeleteNum });
 
     // Vérifier l'utilisation dans la table journals (sans filtrer par exercice)
     const usageCount = await journals.count({
@@ -145,16 +145,16 @@ const codeJournauxDelete = async (req, res) => {
       }
     });
 
-    // console.log('[codeJournauxDelete] Journals usageCount', usageCount);
+    // // console.log('[codeJournauxDelete] Journals usageCount', usageCount);
 
     if (usageCount > 0) {
       resData.state = false;
       resData.msg = "Impossible de supprimer ce code journal: il est utilisé dans des écritures.";
-      // console.log('[codeJournauxDelete] Deletion blocked due to usage');
+      // // console.log('[codeJournauxDelete] Deletion blocked due to usage');
       return res.json(resData);
     }
 
-    // console.log('[codeJournauxDelete] Attempt destroy (id,id_dossier,id_compte)');
+    // // console.log('[codeJournauxDelete] Attempt destroy (id,id_dossier,id_compte)');
     let deletedCodeJournal = await codejournals.destroy({
       where: {
         id: idToDeleteNum,
@@ -162,23 +162,23 @@ const codeJournauxDelete = async (req, res) => {
         id_compte: compteIdNum
       }
     });
-    // console.log('[codeJournauxDelete] First destroy affected rows', deletedCodeJournal);
+    // // console.log('[codeJournauxDelete] First destroy affected rows', deletedCodeJournal);
     // on retente la suppression en se basant sur (id, id_dossier) uniquement.
     if (!deletedCodeJournal) {
-      // console.log('[codeJournauxDelete] Fallback destroy (id,id_dossier)');
+      // // console.log('[codeJournauxDelete] Fallback destroy (id,id_dossier)');
       deletedCodeJournal = await codejournals.destroy({
         where: {
           id: idToDeleteNum,
           id_dossier: fileIdNum,
         }
       });
-      // console.log('[codeJournauxDelete] Fallback destroy affected rows', deletedCodeJournal);
+      // // console.log('[codeJournauxDelete] Fallback destroy affected rows', deletedCodeJournal);
     }
 
     if (deletedCodeJournal) {
       resData.state = true;
       resData.msg = "Code journal supprimé avec succès.";
-      // console.log('[codeJournauxDelete] Deletion success');
+      // // console.log('[codeJournauxDelete] Deletion success');
     } else {
       resData.state = false;
       resData.msg = "Une erreur est survenue au moment du traitement des données.";
@@ -216,11 +216,11 @@ const importCodeJournaux = async (req, res) => {
       where: { id_dossier: idDossier },
       attributes: ['id', 'compte']
     });
-    console.log('[importCodeJournaux] Plan comptable count:', planComptable.length);
+    // console.log('[importCodeJournaux] Plan comptable count:', planComptable.length);
     const planComptableMap = new Map();
     planComptable.forEach(pc => {
       if (!pc.compte) {
-        console.log('[importCodeJournaux] Compte null trouvé, ignoré');
+        // console.log('[importCodeJournaux] Compte null trouvé, ignoré');
         return;
       }
       const compteKey = pc.compte.trim().toUpperCase();
@@ -230,7 +230,7 @@ const importCodeJournaux = async (req, res) => {
       planComptableMap.set(compteKey, compteData);
       // Log quelques exemples pour déboguer
       if (compteKey.startsWith('512') || compteKey.startsWith('52')) {
-        console.log('[importCodeJournaux] Compte 512xxx ou 52xxx:', compteKey, compteData);
+        // console.log('[importCodeJournaux] Compte 512xxx ou 52xxx:', compteKey, compteData);
       }
     });
 
@@ -266,12 +266,12 @@ const importCodeJournaux = async (req, res) => {
             } else {
               // Vérifier si le compte existe dans le plan comptable
               const compteKey = row.compteassocie.trim().toUpperCase();
-              console.log(`[importCodeJournaux] Ligne ${lineNum}: Recherche compte "${compteKey}"`);
+              // console.log(`[importCodeJournaux] Ligne ${lineNum}: Recherche compte "${compteKey}"`);
               if (planComptableMap.has(compteKey)) {
                 compteInfo = planComptableMap.get(compteKey);
-                console.log(`[importCodeJournaux] Ligne ${lineNum}: Compte trouvé:`, compteInfo);
+                // console.log(`[importCodeJournaux] Ligne ${lineNum}: Compte trouvé:`, compteInfo);
               } else {
-                console.log(`[importCodeJournaux] Ligne ${lineNum}: Compte "${compteKey}" NON TROUVÉ`);
+                // console.log(`[importCodeJournaux] Ligne ${lineNum}: Compte "${compteKey}" NON TROUVÉ`);
                 anomalies.push(`Ligne ${lineNum}: Le compte associé "${row.compteassocie}" n'existe pas dans le plan comptable.`);
                 hasError = true;
               }

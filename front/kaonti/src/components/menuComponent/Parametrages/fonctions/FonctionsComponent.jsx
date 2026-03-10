@@ -376,7 +376,7 @@ export default function FonctionsComponent() {
             }
             axiosPrivate.delete(`/parametres/fonction/${idToDelete}`)
                 .then(res => {
-                    console.log('Réponse suppression:', res.data);
+                    // console.log('Réponse suppression:', res.data);
                     if (res.data && res.data.state) {
                         setRows(rows.filter((row) => row.id !== idToDelete));
                         setOpenDialogDeleteRow(false);

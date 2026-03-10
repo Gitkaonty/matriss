@@ -188,8 +188,8 @@ export default function PopupImportCodeJournaux({ open, onClose, fileId, compteI
                                 return mappedRow;
                             });
 
-                            console.log('Headers found:', headers);
-                            console.log('Total rows:', DataWithId.length);
+                            // console.log('Headers found:', headers);
+                            // console.log('Total rows:', DataWithId.length);
 
                             validationData(DataWithId);
                             setCodeJournauxData(DataWithId);
