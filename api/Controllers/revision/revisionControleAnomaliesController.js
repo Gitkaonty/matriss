@@ -1,6 +1,7 @@
 const db = require('../../Models');
 const { Op } = require('sequelize');
 
+
 // Récupérer les anomalies depuis table_controle_anomalies pour un contrôle donné (par id_controle code)
 exports.getAnomaliesByControle = async (req, res) => {
   try {
@@ -14,7 +15,7 @@ exports.getAnomaliesByControle = async (req, res) => {
 
     let dateFilter = {};
     let idPeriode = null;
-    
+
     // Si id_periode est fourni explicitement, l'utiliser directement
     if (req.query.id_periode) {
       idPeriode = parseInt(req.query.id_periode, 10);
@@ -28,7 +29,7 @@ exports.getAnomaliesByControle = async (req, res) => {
         }
       };
       // console.log('Filtre date appliqué:', dateFilter);
-      
+
       // Déterminer la période correspondante - chercher la période exacte
       const periode = await db.periodes.findOne({
         where: {
@@ -40,7 +41,7 @@ exports.getAnomaliesByControle = async (req, res) => {
         },
         order: [['date_debut', 'ASC']]
       });
-      
+
       if (periode) {
         idPeriode = periode.id;
         // console.log('Période EXACTE trouvée:', idPeriode);
@@ -56,7 +57,7 @@ exports.getAnomaliesByControle = async (req, res) => {
           },
           order: [['date_debut', 'ASC']]
         });
-        
+
         if (periodeChevauche) {
           idPeriode = periodeChevauche.id;
           // console.log('Période CHEVAUCHE trouvée:', idPeriode);
@@ -88,8 +89,9 @@ exports.getAnomaliesByControle = async (req, res) => {
       periodeFilter = `AND a.id_periode = ${idPeriode}`;
     }
 
-    // console.log(`DEBUG - idPeriode:`, idPeriode);
-    // console.log(`DEBUG - periodeFilter:`, periodeFilter);
+    console.log(`[DEBUG ANOMALIES] idPeriode:`, idPeriode);
+    console.log(`[DEBUG ANOMALIES] periodeFilter:`, periodeFilter);
+    console.log(`[DEBUG ANOMALIES] id_controle:`, id_controle);
 
     const anomaliesRaw = await db.sequelize.query(`
       SELECT 
@@ -123,6 +125,8 @@ exports.getAnomaliesByControle = async (req, res) => {
         ${periodeFilter}
       ORDER BY a.id ASC
     `, { type: db.Sequelize.QueryTypes.SELECT });
+    console.error(`[DEBUG ANOMALIES] Nombre d'anomalies`, { type: db.Sequelize.QueryTypes.SELECT });
+    console.error(`[DEBUG ANOMALIES] Nombre d'anomalies trouvées: ${anomaliesRaw.length}`);
 
     // DEBUG: Afficher les résultats bruts de la requête SQL
     // console.log('DEBUG SQL RAW RESULTS:', anomaliesRaw.map(r => ({
@@ -578,43 +582,82 @@ exports.updateAnomaly = async (req, res) => {
     // console.log('Update payload:', { valide, commentaire, id_periode });
 
     // Mettre à jour le compteur d'anomalies dans table_revisions_controles
-    // Compter les anomalies non validées depuis la nouvelle table revision_commentaire_anomalies
+    // IMPORTANT: le comptage est "cas par cas" selon codeCtrl (par compte / écriture / ligne)
     const updateControleQuery = `
       UPDATE table_revisions_controles
       SET anomalies = (
-        SELECT COUNT(*) 
-        FROM table_controle_anomalies a
-        LEFT JOIN revision_commentaire_anomalies c 
-          ON a.id_controle = c.id_controle 
-          AND a.id_jnl = c.id_jnl
-          AND a.id_compte = c.id_compte 
-          AND a.id_dossier = c.id_dossier 
-          AND a.id_exercice = c.id_exercice
-          AND a.id_periode = c.id_periode
-        WHERE a.id_compte = ${id_compte} 
-          AND a.id_dossier = ${id_dossier} 
-          AND a.id_exercice = ${id_exercice}
-          AND a.id_controle = '${anomaly.id_controle}'
-          AND (c.valide = false OR c.valide IS NULL)
+        WITH base AS (
+          SELECT
+            a.id,
+            a.id_jnl,
+            a.id_num_compte,
+            a."codeCtrl" AS code_ctrl,
+            COALESCE(c.valide, false) AS valide,
+            CASE
+              WHEN a."codeCtrl" IN ('SENS_ECRITURE', 'SENS_SOLDE') THEN CONCAT(a."codeCtrl", '::COMPTE::', COALESCE(a.id_num_compte, ''))
+              WHEN a."codeCtrl" IN ('UTIL_CPT_TVA') THEN CONCAT(a."codeCtrl", '::ECRITURE::', COALESCE(a.id_jnl, ''))
+              WHEN a."codeCtrl" IN ('ATYPIQUE', 'IMMO_CHARGE') THEN CONCAT(a."codeCtrl", '::LIGNE::', a.id::text)
+              ELSE CONCAT(a."codeCtrl", '::LIGNE::', a.id::text)
+            END AS group_key
+          FROM table_controle_anomalies a
+          LEFT JOIN revision_commentaire_anomalies c
+            ON c.id_controle = a.id_controle
+            AND c.id_jnl = a.id_jnl
+            AND a.id_compte = c.id_compte
+            AND a.id_dossier = c.id_dossier
+            AND a.id_exercice = c.id_exercice
+            AND ((a.id_periode IS NULL AND c.id_periode IS NULL) OR (a.id_periode = c.id_periode))
+          WHERE a.id_compte = ${id_compte}
+            AND a.id_dossier = ${id_dossier}
+            AND a.id_exercice = ${id_exercice}
+            AND a.id_controle = '${anomaly.id_controle}'
+        ), grouped AS (
+          SELECT
+            group_key,
+            BOOL_AND(valide = true) AS group_valide
+          FROM base
+          GROUP BY group_key
+        )
+        SELECT COUNT(*)
+        FROM grouped
+        WHERE group_valide = false
       ),
       "Valider" = (
-        SELECT CASE 
-          WHEN COUNT(*) = 0 THEN true 
-          WHEN COUNT(CASE WHEN c.valide = true THEN 1 END) = COUNT(*) THEN true 
-          ELSE false 
-        END
-        FROM table_controle_anomalies a
-        LEFT JOIN revision_commentaire_anomalies c 
-          ON a.id_controle = c.id_controle 
-          AND a.id_jnl = c.id_jnl
-          AND a.id_compte = c.id_compte 
-          AND a.id_dossier = c.id_dossier 
-          AND a.id_exercice = c.id_exercice
-          AND a.id_periode = c.id_periode
-        WHERE a.id_compte = ${id_compte} 
-          AND a.id_dossier = ${id_dossier} 
-          AND a.id_exercice = ${id_exercice}
-          AND a.id_controle = '${anomaly.id_controle}'
+        WITH base AS (
+          SELECT
+            a.id,
+            a.id_jnl,
+            a.id_num_compte,
+            a."codeCtrl" AS code_ctrl,
+            COALESCE(c.valide, false) AS valide,
+            CASE
+              WHEN a."codeCtrl" IN ('SENS_ECRITURE', 'SENS_SOLDE') THEN CONCAT(a."codeCtrl", '::COMPTE::', COALESCE(a.id_num_compte, ''))
+              WHEN a."codeCtrl" IN ('UTIL_CPT_TVA') THEN CONCAT(a."codeCtrl", '::ECRITURE::', COALESCE(a.id_jnl, ''))
+              WHEN a."codeCtrl" IN ('ATYPIQUE', 'IMMO_CHARGE') THEN CONCAT(a."codeCtrl", '::LIGNE::', a.id::text)
+              ELSE CONCAT(a."codeCtrl", '::LIGNE::', a.id::text)
+            END AS group_key
+          FROM table_controle_anomalies a
+          LEFT JOIN revision_commentaire_anomalies c
+            ON c.id_controle = a.id_controle
+            AND c.id_jnl = a.id_jnl
+            AND a.id_compte = c.id_compte
+            AND a.id_dossier = c.id_dossier
+            AND a.id_exercice = c.id_exercice
+            AND ((a.id_periode IS NULL AND c.id_periode IS NULL) OR (a.id_periode = c.id_periode))
+          WHERE a.id_compte = ${id_compte}
+            AND a.id_dossier = ${id_dossier}
+            AND a.id_exercice = ${id_exercice}
+            AND a.id_controle = '${anomaly.id_controle}'
+        ), grouped AS (
+          SELECT
+            group_key,
+            BOOL_AND(valide = true) AS group_valide
+          FROM base
+          GROUP BY group_key
+        )
+        SELECT CASE WHEN COUNT(*) = 0 THEN true ELSE false END
+        FROM grouped
+        WHERE group_valide = false
       )
       WHERE id_compte = ${id_compte}
         AND id_dossier = ${id_dossier}
@@ -642,6 +685,13 @@ exports.updateAnomaly = async (req, res) => {
 
     const responseValide = finalRecord[0]?.valide !== undefined ? finalRecord[0].valide : false;
     const responseCommentaire = finalRecord[0]?.commentaire || '';
+
+    console.log('[updateAnomaly] ✅ Sauvegardé:', {
+      id_controle: anomaly.id_controle,
+      id_jnl: anomaly.id_jnl,
+      valide: responseValide,
+      id_periode: finalPeriodeId
+    });
 
     return res.json({
       state: true,
@@ -704,7 +754,7 @@ exports.validateLineAnomaly = async (req, res) => {
 
     // Simuler un appel à updateAnomaly avec l'id_anomalie trouvé
     req.params.id_anomalie = anomaly.id;
-    
+
     // Appeler la fonction updateAnomaly existante
     return exports.updateAnomaly(req, res);
 
@@ -713,6 +763,111 @@ exports.validateLineAnomaly = async (req, res) => {
     return res.status(500).json({
       state: false,
       message: 'Erreur lors de la validation de la ligne',
+      error: error.message
+    });
+  }
+};
+
+// GET /administration/revisionControleAuto/:id_compte/:id_dossier/:id_exercice/stats
+// Récupère les statistiques des anomalies de contrôle
+exports.getStats = async (req, res) => {
+  try {
+    const { id_compte, id_dossier, id_exercice } = req.params;
+    const { id_periode } = req.query;
+
+    const whereClause = {
+      id_compte,
+      id_dossier,
+      id_exercice
+    };
+
+    if (id_periode) {
+      whereClause.id_periode = id_periode;
+    }
+
+    const statsQuery = `
+      WITH base AS (
+        SELECT
+          a.id,
+          a.id_jnl,
+          a.id_num_compte,
+          a."codeCtrl" AS code_ctrl,
+          COALESCE(c.valide, false) AS valide,
+          CASE
+            WHEN a."codeCtrl" IN ('SENS_ECRITURE', 'SENS_SOLDE') THEN CONCAT(a."codeCtrl", '::COMPTE::', COALESCE(a.id_num_compte, ''))
+            WHEN a."codeCtrl" IN ('UTIL_CPT_TVA') THEN CONCAT(a."codeCtrl", '::ECRITURE::', COALESCE(a.id_jnl, ''))
+            WHEN a."codeCtrl" IN ('ATYPIQUE', 'IMMO_CHARGE') THEN CONCAT(a."codeCtrl", '::LIGNE::', a.id::text)
+            ELSE CONCAT(a."codeCtrl", '::LIGNE::', a.id::text)
+          END AS group_key
+        FROM table_controle_anomalies a
+        LEFT JOIN revision_commentaire_anomalies c
+          ON c.id_controle = a.id_controle
+          AND c.id_jnl = a.id_jnl
+          AND a.id_compte = c.id_compte
+          AND a.id_dossier = c.id_dossier
+          AND a.id_exercice = c.id_exercice
+          AND ((a.id_periode IS NULL AND c.id_periode IS NULL) OR (a.id_periode = c.id_periode))
+        WHERE a.id_compte = :id_compte
+          AND a.id_dossier = :id_dossier
+          AND a.id_exercice = :id_exercice
+          ${id_periode ? 'AND a.id_periode = :id_periode' : ''}
+      ), grouped AS (
+        SELECT
+          group_key,
+          BOOL_AND(valide = true) AS group_valide
+        FROM base
+        GROUP BY group_key
+      )
+      SELECT
+        COUNT(*) AS total_anomalies,
+        COALESCE(SUM(CASE WHEN group_valide = true THEN 1 ELSE 0 END), 0) AS valide_anomalies
+      FROM grouped
+    `;
+
+    const [statsRow] = await db.sequelize.query(statsQuery, {
+      type: db.Sequelize.QueryTypes.SELECT,
+      replacements: {
+        id_compte,
+        id_dossier,
+        id_exercice,
+        ...(id_periode ? { id_periode } : {})
+      }
+    });
+
+    const totalAnomalies = parseInt(statsRow?.total_anomalies || 0, 10);
+    const valideAnomalies = parseInt(statsRow?.valide_anomalies || 0, 10);
+
+    // Total par type de contrôle depuis table_revisions_controles
+    const controlesQuery = `
+      SELECT 
+        "Type" as type,
+        SUM(CAST(anomalies AS INTEGER)) as total_anomalies
+      FROM table_revisions_controles
+      WHERE id_compte = ${id_compte}
+      AND id_dossier = ${id_dossier}
+      AND id_exercice = ${id_exercice}
+      ${id_periode ? `AND id_periode = ${id_periode}` : ''}
+      GROUP BY "Type"
+    `;
+    const controlesByType = await db.sequelize.query(controlesQuery, { type: db.Sequelize.QueryTypes.SELECT });
+
+    return res.status(200).json({
+      state: true,
+      data: {
+        total_anomalies: totalAnomalies,
+        total: totalAnomalies,
+        valide: valideAnomalies,
+        restantes: Math.max(totalAnomalies - valideAnomalies, 0),
+        nonValide: Math.max(totalAnomalies - valideAnomalies, 0),
+        details: controlesByType
+      }
+    });
+
+  } catch (error) {
+    console.error('Erreur stats anomalies contrôle:', error);
+    return res.status(500).json({
+      state: false,
+      message: 'Erreur lors de la récupération des statistiques',
       error: error.message
     });
   }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
     Box,
     Typography,
@@ -16,17 +16,20 @@ import {
     Dialog,
     DialogTitle,
     DialogContent,
-    DialogActions
+    DialogActions,
+    Collapse,
+    Divider
 } from '@mui/material';
 
-import { DataGrid } from '@mui/x-data-grid';
 import { init } from '../../../../../init';
 import useAxiosPrivate from '../../../../hooks/useAxiosPrivate';
 import RevisionDetails from './RevisionDetails';
 import PopupActionConfirm from "../../../componentsTools/popupActionConfirm";
 import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
 import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFile';
-
+import { ErrorOutline, CheckCircle, KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
+import ExercicePeriodeSelector from '../../../componentsTools/ExercicePeriodeSelector/ExercicePeriodeSelector';
+import { useExercicePeriode } from '../../../../context/ExercicePeriodeContext';
 
 // Format date as dd-mm-yy
 const formatDate = (dateString) => {
@@ -44,10 +47,22 @@ export default function Revision() {
     const axiosPrivate = useAxiosPrivate();
     const navigate = useNavigate();
 
+    // Utiliser le contexte global pour exercice et période
+    const {
+        selectedExerciceId,
+        selectedPeriodeId,
+        selectedPeriodeDates,
+        handleChangeExercice,
+        handleChangePeriode,
+        loading: contextLoading
+    } = useExercicePeriode();
+
+    const [activeTab, setActiveTab] = useState(0); // 0 = Fournisseur, 1 = Client
+    const [loading, setLoading] = useState(false);
+
+
     const [controles, setControles] = useState([]);
     const [showControles, setShowControles] = useState(true);
-    const [listeExercice, setListeExercice] = useState([]);
-    const [selectedExerciceId, setSelectedExerciceId] = useState(0);
     const [selectedTypeDetails, setSelectedTypeDetails] = useState('');
 
     // === Popup de confirmation pour validation ===
@@ -66,25 +81,70 @@ export default function Revision() {
     // === État de chargement pour les détails ===
     const [detailsLoading, setDetailsLoading] = useState(false);
 
-    // === Périodes ===
-    const [listePeriodes, setListePeriodes] = useState([]);
-    const [selectedPeriodeId, setSelectedPeriodeId] = useState('');
-    const [selectedPeriodeDates, setSelectedPeriodeDates] = useState(null);
+    // === Variables restantes pour logique spécifique ===
+    const [searchParams] = useSearchParams();
     const [fileInfos, setFileInfos] = useState(null);
 
     const [noFile, setNoFile] = useState(false);
     const [fileId, setFileId] = useState(0);
 
-    // Popup pour erreur de période non sélectionnée
+    // Debug multi-onglets: log quand l'onglet reprend le focus
+    useEffect(() => {
+        const onFocus = () => {
+            const ids = getIds();
+            console.log('[Revision] window focus:', {
+                pathname: window.location.pathname,
+                search: window.location.search,
+                ids,
+                selectedExerciceId,
+                selectedPeriodeId,
+                selectedPeriodeDates
+            });
+        };
+        window.addEventListener('focus', onFocus);
+        return () => window.removeEventListener('focus', onFocus);
+    }, [selectedExerciceId, selectedPeriodeId, selectedPeriodeDates]);
+
+    // Lecture des paramètres d'URL pour date_debut et date_fin
+    useEffect(() => {
+        const dateDebutFromUrl = searchParams.get('date_debut');
+        const dateFinFromUrl = searchParams.get('date_fin');
+        const idPeriodeFromUrl = searchParams.get('id_periode');
+
+        console.log('[Revision] URL params:', {
+            date_debut: dateDebutFromUrl,
+            date_fin: dateFinFromUrl,
+            id_periode: idPeriodeFromUrl
+        });
+        // La logique URL sera gérée par le contexte maintenant
+    }, [searchParams]);
+
+    // Synchroniser l'exercice depuis l'URL
+    useEffect(() => {
+        const { id_exercice } = getIds();
+        if (id_exercice && id_exercice > 0 && id_exercice !== selectedExerciceId) {
+            console.log('[Revision] Sync exercice from URL:', { id_exercice });
+            // Le contexte gérera la synchronisation
+        }
+    }, []);
+
+    // Logique URL simplifiée - gérée par le contexte
+    // useEffect(() => {
+    //     if (!listePeriodes || listePeriodes.length === 0) return;
+    //     // ... logique déplacée dans le contexte
+    // }, [listePeriodes, searchParams]);
+
     const [periodeErrorPopup, setPeriodeErrorPopup] = useState({ open: false, message: '' });
 
     const getIds = () => {
         const pathParts = window.location.pathname.split('/');
         const idIndex = pathParts.indexOf('revision') + 1;
+        const dossierFromUrl = parseInt(pathParts[idIndex]);
+        const exerciceFromUrl = parseInt(pathParts[idIndex + 1]);
         return {
             id_compte: parseInt(sessionStorage.getItem('compteId')) || 1,
-            id_dossier: parseInt(sessionStorage.getItem('fileId')) || parseInt(pathParts[idIndex]) || 1,
-            id_exercice: selectedExerciceId || parseInt(sessionStorage.getItem('exerciceId')) || 1
+            id_dossier: dossierFromUrl || parseInt(sessionStorage.getItem('fileId')) || 1,
+            id_exercice: exerciceFromUrl || selectedExerciceId || parseInt(sessionStorage.getItem('exerciceId')) || 1
         };
     };
     const sendToHome = (value) => {
@@ -111,40 +171,32 @@ export default function Revision() {
             let url = `/administration/revisionControleAuto/${id_compte}/${id_dossier}/${id_exercice}`;
 
             // Ajouter les dates de période si sélectionnée
-            if (selectedPeriodeDates && selectedPeriodeId) {
+            if (selectedPeriodeDates) {
                 const params = new URLSearchParams();
                 params.append('date_debut', selectedPeriodeDates.date_debut);
                 params.append('date_fin', selectedPeriodeDates.date_fin);
-                params.append('id_periode', selectedPeriodeId);
+                if (selectedPeriodeId) {
+                    params.append('id_periode', selectedPeriodeId);
+                }
                 url += `?${params.toString()}`;
-                // console.log('DEBUG FRONT - URL fetchControles:', url);
             }
 
             const response = await axiosPrivate.get(url);
+            console.log('[Revision fetchControles] Controles reçus:', response.data.controles.map(c => ({
+                Type: c.Type,
+                anomalies: c.anomalies,
+                id_periode: c.id_periode
+            })));
             if (response.data.state) {
                 setControles(response.data.controles);
-                //               console.log('Controles fetched:', response.data.controles.length, response.data.message);
+                console.log('Types de contrôles reçus:', response.data.controles.map(c => c.Type));
+                setControles(response.data.controles);
             }
         } catch (error) {
             console.error('Error fetching controles:', error);
         }
     }, [axiosPrivate, selectedExerciceId, selectedPeriodeDates, selectedPeriodeId]);
 
-    const fetchExercices = async () => {
-        try {
-            const { id_dossier } = getIds();
-            const response = await axiosPrivate.get(`/paramExercice/listeExercice/${id_dossier}`);
-            const resData = response.data;
-            if (resData.state) {
-                setListeExercice(resData.list);
-                if (resData.list && resData.list.length > 0 && selectedExerciceId === 0) {
-                    setSelectedExerciceId(resData.list[0].id);
-                }
-            }
-        } catch (error) {
-            console.error('Error fetching exercices:', error);
-        }
-    };
 
     const fetchDossierInfos = async () => {
         try {
@@ -159,59 +211,9 @@ export default function Revision() {
         }
     };
 
-    const fetchPeriodes = useCallback(async (exerciceId) => {
-        if (!exerciceId) return;
-        try {
-            const response = await axiosPrivate.get(`/paramExercice/listePeriodes/${exerciceId}`);
-            if (response.data.state) {
-                setListePeriodes(response.data.list || []);
-            } else {
-                setListePeriodes([]);
-            }
-        } catch (error) {
-            console.error('Error fetching periodes:', error);
-            setListePeriodes([]);
-        }
-    }, [axiosPrivate]);
-
     useEffect(() => {
-        fetchExercices();
         fetchDossierInfos();
     }, []);
-
-    useEffect(() => {
-        if (selectedExerciceId > 0) {
-            fetchControles();
-            fetchPeriodes(selectedExerciceId);
-        }
-    }, [selectedExerciceId, selectedPeriodeDates, fetchControles, fetchPeriodes, selectedPeriodeId]);
-
-
-    const handleChangeExercice = (exerciceId) => {
-        setSelectedExerciceId(exerciceId);
-        setSelectedPeriodeId('');
-        setSelectedPeriodeDates(null);
-        setSelectedTypeDetails('');
-        fetchPeriodes(exerciceId);
-    };
-
-    const handleChangePeriode = (periodeId) => {
-        setSelectedPeriodeId(periodeId);
-        if (periodeId && periodeId !== 'exercice') {
-            const periode = listePeriodes.find(p => p.id === periodeId);
-            if (periode) {
-                // console.log('Période sélectionnée:', periode);
-                // console.log('Dates de période:', { date_debut: periode.date_debut, date_fin: periode.date_fin });
-                setSelectedPeriodeDates({
-                    date_debut: periode.date_debut,
-                    date_fin: periode.date_fin
-                });
-            }
-        } else {
-            // console.log('Aucune période sélectionnée - filtre sur tout l\'exercice');
-            setSelectedPeriodeDates(null);
-        }
-    };
 
     const controlesByType = useMemo(() => {
         const byType = new Map();
@@ -402,17 +404,27 @@ export default function Revision() {
     }, [controles]);
 
     // Récupérer les dates de l'exercice courant
-    const currentExerciceDates = useMemo(() => {
-        const exercice = listeExercice.find(e => e.id === selectedExerciceId);
-        if (exercice) {
-            return {
-                date_debut: exercice.date_debut,
-                date_fin: exercice.date_fin,
-                libelle_rang: exercice.libelle_rang
-            };
+    // const currentExerciceDates = useMemo(() => {
+    //     const exercice = listeExercice.find(e => e.id === selectedExerciceId);
+    //     if (exercice) {
+    //         return {
+    //             date_debut: exercice.date_debut,
+    //             date_fin: exercice.date_fin,
+    //             libelle_rang: exercice.libelle_rang
+    //         };
+    //     }
+    //     return null;
+    // }, [listeExercice, selectedExerciceId]);
+
+    const [expandedType, setExpandedType] = useState('');
+
+    const handleToggleExpand = (type) => {
+        if (expandedType === type) {
+            setExpandedType('');
+        } else {
+            setExpandedType(type);
         }
-        return null;
-    }, [listeExercice, selectedExerciceId]);
+    };
 
     return (
         <>
@@ -429,9 +441,6 @@ export default function Revision() {
                             isLoading={confirmReviserLoading}
                         />
                     )}
-                    <Box sx={{ mb: 1, width: '100px' }}>
-                        {InfoFileStyle(fileInfos?.dossier)}
-                    </Box>
                     <Box
                         sx={{
                             mb: 3,
@@ -443,73 +452,21 @@ export default function Revision() {
                     >
 
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                            <Typography component="div" variant="h7" sx={{ fontWeight: 600, color: '#333' }}>
-                                Administration-Révision
+                            <Typography component="div" variant="h6" sx={{ fontWeight: 800, color: '#333' }}>
+                               Révision Globale
                             </Typography>
                         </Box>
 
                         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-                            <Stack direction="row" spacing={0} alignItems="center" sx={{ flex: '0 0 auto' }}>
-                                <Typography sx={{ minWidth: 70, fontSize: 15, mr: 1, whiteSpace: 'nowrap' }}>
-                                    Exercice :
-                                </Typography>
-                                <FormControl size="small" variant="outlined" sx={{ minWidth: 200 }}>
-                                    <Select
-                                        value={selectedExerciceId}
-                                        onChange={(e) => handleChangeExercice(e.target.value)}
-                                        sx={{
-                                            height: 32,
-                                            fontSize: 15,
-                                            '& .MuiSelect-select': { py: 0.5 },
-                                        }}
-                                        MenuProps={{ disableScrollLock: true }}
-                                    >
-                                        {listeExercice.map((exercice) => (
-                                            <MenuItem key={exercice.id} value={exercice.id}>
-                                                {exercice.libelle_rang} - {formatDate(exercice.date_debut)} au {formatDate(exercice.date_fin)}
-                                            </MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
-                            </Stack>
 
-                            {listePeriodes.length > 0 && (
-                                <Stack direction="row" spacing={0} alignItems="center" sx={{ flex: '0 0 auto' }}>
-                                    <Typography sx={{ minWidth: 70, fontSize: 15, mr: 1, whiteSpace: 'nowrap' }}>
-                                        Période :
-                                    </Typography>
-                                    <FormControl size="small" variant="outlined" sx={{ minWidth: 200 }}>
-                                        <Select
-                                            value={selectedPeriodeId}
-                                            onChange={(e) => handleChangePeriode(e.target.value)}
-                                            displayEmpty
-                                            renderValue={(selected) => {
-                                                if (!selected) {
-                                                    return <em>Sélectionner une période...</em>;
-                                                }
-                                                const periode = listePeriodes.find(p => p.id === selected);
-                                                return periode ? `${formatDate(periode.date_debut)} au ${formatDate(periode.date_fin)}` : '';
-                                            }}
-                                            sx={{
-                                                height: 32,
-                                                fontSize: 15,
-                                                '& .MuiSelect-select': { py: 0.5 },
-                                            }}
-                                            MenuProps={{ disableScrollLock: true }}
-                                        >
-                                            <MenuItem value="" disabled>
-                                                <em>Sélectionner une période...</em>
-                                            </MenuItem>
-                                            {listePeriodes.map((periode) => (
-                                                <MenuItem key={periode.id} value={periode.id}>
-                                                    {periode.libelle}{formatDate(periode.date_debut)} au {formatDate(periode.date_fin)}
-                                                </MenuItem>
-                                            ))}
-                                        </Select>
-                                    </FormControl>
-                                </Stack>
-                            )}
-
+                            <ExercicePeriodeSelector
+                                selectedExerciceId={selectedExerciceId}
+                                selectedPeriodeId={selectedPeriodeId}
+                                onExerciceChange={handleChangeExercice}
+                                onPeriodeChange={handleChangePeriode}
+                                disabled={loading}
+                                size="small"
+                            />
                             <Button
                                 variant="contained"
                                 onClick={handleControler}
@@ -536,203 +493,124 @@ export default function Revision() {
                     </Box>
 
                     <Paper sx={{ p: 2, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                mb: 2,
-                            }}
-                        >
-                            <Button
-                                variant="outlined"
-                                size="small"
-                                onClick={() => setShowControles(!showControles)}
-                                sx={{ height: 32, borderRadius: 1 }}
-                            >
-                                {showControles ? 'Masquer' : 'Afficher'} ({controlesGrouped.length})
-                            </Button>
-                        </Box>
-
                         {showControles &&
                             (controlesGrouped.length === 0 ? (
                                 <Alert severity="info">
                                     Aucun contrôle trouvé pour cet exercice. Les contrôles seront créés automatiquement.
                                 </Alert>
                             ) : (
-                                <Box sx={{ height: 400, width: '100%' }}>
-                                    <DataGrid
-                                        rows={controlesGrouped.map((c, idx) => ({ id: idx, ...c }))}
-                                        columns={[
-                                            // {
-                                            //     field: 'Type',
-                                            //     headerName: 'Type',
-                                            //     width: 150, // largeur fixe
-                                            //     renderCell: (params) => (
-                                            //         <Typography
-                                            //             variant="body2"
-                                            //             sx={{
-                                            //                 fontSize: 13,
-                                            //                 whiteSpace: 'nowrap',
-                                            //                 overflow: 'hidden',
-                                            //                 textOverflow: 'ellipsis',
-                                            //             }}
-                                            //         >
-                                            //             {params.value}
-                                            //         </Typography>
-                                            //     ),
-                                            // },
-                                            {
-                                                field: 'description',
-                                                headerName: 'Description',
-                                                width: 500
-                                            },
-                                            {
-                                                field: 'anomalies',
-                                                headerName: 'Anomalies',
-                                                width: 110,
-                                                align: 'center',
-                                                headerAlign: 'center',
-                                                renderCell: (params) => (
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                        <Chip
-                                                            label={params.value || 0}
-                                                            color={params.value > 0 ? 'warning' : 'success'}
-                                                            size="small"
+                                <Stack spacing={1.5} sx={{ width: '100%' }}>
+                                    {controlesGrouped.map((item) => {
+                                        // Déterminer si tout est OK (0 anomalies)
+                                        const isAllGood = item.anomalies === 0;
+                                        // Calculer le restant (si on avait une donnée, sinon on affiche 0 ou le total)
+                                        const restant = item.anomalies || 0;
+
+                                        return (
+                                            <Paper key={item.Type} elevation={0} sx={{ borderRadius: '10px', border: '1px solid #E2E8F0', overflow: 'hidden', width: '100%' }}>
+                                                <Box
+                                                    onClick={() => handleToggleExpand(item.Type)}
+                                                    sx={{
+                                                        p: 2,
+                                                        cursor: 'pointer',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        position: 'relative',
+                                                        bgcolor: expandedType === item.Type ? '#F8FAFC' : 'white'
+                                                    }}
+                                                >
+                                                    {/* Bordure latérale : Verte si 0 anomalies, Rouge sinon */}
+                                                    <Box sx={{
+                                                        position: 'absolute',
+                                                        left: 0,
+                                                        top: 0,
+                                                        bottom: 0,
+                                                        width: '5px',
+                                                        bgcolor: isAllGood ? '#10B981' : '#EF4444'
+                                                    }} />
+
+                                                    <Stack direction="row" sx={{ width: '100%' }} alignItems="center" spacing={3}>
+                                                        <Box sx={{ ml: 1 }}>
+                                                            {isAllGood ?
+                                                                <CheckCircle sx={{ color: '#10B981', fontSize: 26 }} /> :
+                                                                <ErrorOutline sx={{ color: '#EF4444', fontSize: 26 }} />
+                                                            }
+                                                        </Box>
+
+                                                        <Box sx={{ flexGrow: 1 }}>
+                                                            <Typography sx={{ fontWeight: 800, color: '#0F172A', fontSize: '1rem' }}>
+                                                                {item.description}
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ color: '#64748B', fontSize: '0.8rem', mb: 0.5 }}>
+                                                                {item.Type}
+                                                            </Typography>
+                                                        </Box>
+
+                                                        <Stack direction="row" spacing={2} alignItems="center">
+                                                            {/* TOTAL ANOMALIES */}
+                                                            <Chip
+                                                                label={`${item.anomalies || 0} TOTAL`}
+                                                                sx={{
+                                                                    bgcolor: item.anomalies > 0 ? '#FEE2E2' : '#DCFCE7',
+                                                                    color: item.anomalies > 0 ? '#B91C1C' : '#15803D',
+                                                                    fontWeight: 900,
+                                                                    borderRadius: '6px',
+                                                                    fontSize: '0.75rem',
+                                                                    minWidth: '80px'
+                                                                }}
+                                                            />
+
+                                                            {/* RESTANT - affiché seulement s'il y a des anomalies */}
+                                                            {item.anomalies > 0 && (
+                                                                <Chip
+                                                                    label={`${restant} RESTANT`}
+                                                                    sx={{
+                                                                        bgcolor: '#E0F7FA',
+                                                                        color: '#00ACC1',
+                                                                        fontWeight: 900,
+                                                                        borderRadius: '6px',
+                                                                        fontSize: '0.75rem',
+                                                                        minWidth: '90px'
+                                                                    }}
+                                                                />
+                                                            )}
+
+                                                            <Box sx={{ minWidth: '40px', textAlign: 'center' }}>
+                                                                {expandedType === item.Type ?
+                                                                    <KeyboardArrowUp color="action" /> :
+                                                                    <KeyboardArrowDown color="action" />
+                                                                }
+                                                            </Box>
+                                                        </Stack>
+                                                    </Stack>
+                                                </Box>
+
+                                                {/* Détails dans le pavé */}
+                                                <Collapse in={expandedType === item.Type} timeout="auto" unmountOnExit>
+                                                    <Divider />
+                                                    <Box sx={{ p: 2, bgcolor: '#F8FAFC' }}>
+                                                        <RevisionDetails
+                                                            type={item.Type}
+                                                            controles={controlesByType.get(item.Type) || []}
+                                                            onClose={() => setExpandedType('')}
+                                                            idCompte={getIds().id_compte}
+                                                            idDossier={getIds().id_dossier}
+                                                            idExercice={selectedExerciceId}
+                                                            idPeriode={selectedPeriodeId}
+                                                            dateDebut={selectedPeriodeDates?.date_debut || currentExerciceDates?.date_debut}
+                                                            dateFin={selectedPeriodeDates?.date_fin || currentExerciceDates?.date_fin}
+                                                            isPeriodeSelected={!!selectedPeriodeDates}
+                                                            onValidationChange={fetchControles}
                                                         />
                                                     </Box>
-                                                )
-                                            },
-                                            {
-                                                field: 'Valider',
-                                                headerName: 'Validé',
-                                                width: 80,
-                                                align: 'center',
-                                                headerAlign: 'center',
-                                                renderCell: (params) => (
-                                                    <Chip
-                                                        label={params.value ? 'Oui' : 'Non'}
-                                                        color={params.value ? 'success' : 'default'}
-                                                        size="small"
-                                                    />
-                                                )
-                                            },
-                                            {
-                                                field: 'actions',
-                                                headerName: 'Action',
-                                                width: 220,
-                                                align: 'center',
-                                                headerAlign: 'center',
-                                                sortable: false,
-                                                renderCell: (params) => (
-                                                    <ButtonGroup
-                                                        variant="outlined"
-                                                        sx={{
-                                                            boxShadow: 'none',
-                                                            display: 'flex',
-                                                            gap: '2px',
-                                                            '& .MuiButton-root': {
-                                                                borderRadius: 0,
-                                                                minWidth: '80px',
-                                                                height: '28px',
-                                                                fontSize: '0.75rem',
-                                                                textTransform: 'none',
-                                                            },
-                                                            '& .MuiButtonGroup-grouped': {
-                                                                boxShadow: 'none',
-                                                                outline: 'none',
-                                                                borderColor: 'inherit',
-                                                                marginLeft: 0,
-                                                                borderRadius: 1,
-                                                                border: 'none',
-                                                            },
-                                                            '& .MuiButtonGroup-grouped:hover': {
-                                                                boxShadow: 'none',
-                                                                borderColor: 'inherit',
-                                                                border: 'none',
-                                                            },
-                                                        }}
-                                                    >
-                                                        <Button
-                                                            variant="contained"
-                                                            size="small"
-                                                            disableElevation
-                                                            sx={{
-                                                                backgroundColor: initial.theme,
-                                                                color: 'white',
-                                                                '&:hover': {
-                                                                    backgroundColor: initial.theme,
-                                                                },
-                                                            }}
-                                                            onClick={() => handleToggleValidateType(params.row.Type, !params.row.Valider)}
-                                                        >
-                                                            {params.row.Valider ? 'Annuler' : 'Valider'}
-                                                        </Button>
-
-                                                        <Button
-                                                            variant="contained"
-                                                            size="small"
-                                                            disableElevation
-                                                            sx={{
-                                                                backgroundColor: initial.add_new_line_bouton_color,
-                                                                color: 'white',
-                                                                '&:hover': {
-                                                                    backgroundColor: initial.add_new_line_bouton_color,
-                                                                },
-                                                            }}
-                                                            disabled={detailsLoading}
-                                                            onClick={() => {
-                                                                const type = params.row.Type;
-                                                                const items = controlesByType.get(type);
-                                                                if (!items || items.length === 0) {
-                                                                    console.warn('Aucun contrôle trouvé pour le type:', type);
-                                                                    return;
-                                                                }
-                                                                setDetailsLoading(true);
-                                                                setSelectedTypeDetails(type);
-                                                                setTimeout(() => setDetailsLoading(false), 500);
-                                                            }}
-                                                        >
-                                                            Détails
-                                                        </Button>
-                                                    </ButtonGroup>
-                                                )
-                                            }
-                                        ]}
-                                        pageSizeOptions={[5, 10, 25]}
-                                        initialState={{
-                                            pagination: { paginationModel: { pageSize: 10 } }
-                                        }}
-                                        disableRowSelectionOnClick
-                                        density="compact"
-                                        sx={{
-                                            '& .MuiDataGrid-cell:focus': {
-                                                outline: 'none',
-                                            },
-                                            '& .MuiDataGrid-cell:focus-within': {
-                                                outline: 'none',
-                                            },
-                                        }}
-                                    />
-                                </Box>
+                                                </Collapse>
+                                            </Paper>
+                                        );
+                                    })}
+                                </Stack>
                             ))}
                     </Paper>
 
-                    {/* DETAILS */}
-                    {selectedTypeDetails && (
-                        <RevisionDetails
-                            type={selectedTypeDetails}
-                            controles={controlesByType.get(selectedTypeDetails) || []}
-                            onClose={() => setSelectedTypeDetails('')}
-                            idCompte={getIds().id_compte}
-                            idDossier={getIds().id_dossier}
-                            idExercice={selectedExerciceId}
-                            dateDebut={selectedPeriodeDates?.date_debut || currentExerciceDates?.date_debut}
-                            dateFin={selectedPeriodeDates?.date_fin || currentExerciceDates?.date_fin}
-                            isPeriodeSelected={!!selectedPeriodeDates}
-                            onValidationChange={fetchControles}
-                        />
-                    )}
                     {/* POPUP DE CONFIRMATION POUR VALIDATION */}
                     {confirmPopup.open && (
                         <PopupActionConfirm

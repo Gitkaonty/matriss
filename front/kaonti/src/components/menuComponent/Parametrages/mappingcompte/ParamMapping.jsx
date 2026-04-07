@@ -808,7 +808,7 @@ export default function ParamMappingComponent() {
             <Box>
 
                 <TabContext value={"1"}>
-                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                    {/* <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                         <TabList aria-label="lab API tabs example">
                             <Tab
                                 style={{
@@ -820,7 +820,7 @@ export default function ParamMappingComponent() {
                                 label={InfoFileStyle(fileInfos?.dossier)} value="1"
                             />
                         </TabList>
-                    </Box>
+                    </Box> */}
                     <TabPanel value="1" style={{ height: '85%' }}>
                         <Stack width={"100%"} height={"95%"} spacing={1} alignItems={"flex-start"} justifyContent={"stretch"}>
                             <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages: Mapping des comptes</Typography>

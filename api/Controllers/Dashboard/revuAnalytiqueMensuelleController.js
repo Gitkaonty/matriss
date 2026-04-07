@@ -58,8 +58,11 @@ function buildDynamicQuery(moisExercice) {
 
 exports.getRevuAnalytiqueMensuelle = async (req, res) => {
     try {
+        console.log('[DEBUG MENSUELLE] === DÉBUT getRevuAnalytiqueMensuelle ===');
+        console.log('[DEBUG MENSUELLE] Route appelée avec params:', req.params, 'query:', req.query);
         const { id_compte, id_dossier, id_exercice } = req.params;
-        const { date_debut, date_fin } = req.query; // Dates de periode si selectionnee
+        const { date_debut, date_fin, id_periode } = req.query; // Ajout de id_periode
+        console.log('[DEBUG MENSUELLE] Dates reçues - date_debut:', date_debut, 'date_fin:', date_fin, 'id_periode:', id_periode);
 
         if (!id_compte || !id_dossier || !id_exercice) {
             return res.status(400).json({ state: false, message: 'Paramètres manquants' });
@@ -132,7 +135,6 @@ exports.getRevuAnalytiqueMensuelle = async (req, res) => {
                 type: db.Sequelize.QueryTypes.SELECT
             }
         );
-        // // console.log('[revuAnalytiqueMensuelle] comptes distincts (exo N) count', comptesDistincts?.length || 0);
 
         /**
          * 4️⃣ Données mensuelles (avec filtre de dates si periode selectionnee)
@@ -165,12 +167,9 @@ exports.getRevuAnalytiqueMensuelle = async (req, res) => {
             }
         );
 
-        // // console.log('[revuAnalytiqueMensuelle] monthlyResults rows count', monthlyResults?.length || 0);
         const comptesMonthly = new Set((monthlyResults || []).map(r => r.compte_key));
         const comptesAll = new Set((allComptes || []).map(r => r.compte_key));
         const comptesAllSansMonthly = Array.from(comptesAll).filter(c => c && !comptesMonthly.has(c));
-        // // console.log('[revuAnalytiqueMensuelle] comptes présents dans allComptes mais absents de monthlyResults count', comptesAllSansMonthly.length);
-        // // console.log('[revuAnalytiqueMensuelle] comptes allComptes sans monthlyResults sample', comptesAllSansMonthly.slice(0, 30));
 
         /**
          * 5️⃣ Initialisation pivot (tous les comptes, tous les mois à 0)
@@ -241,7 +240,24 @@ exports.getRevuAnalytiqueMensuelle = async (req, res) => {
             map.set(c.compte_key, row);
         });
 
-        // Charger les commentaires mensuels (table dédiée)
+        // Charger les données de revu_analytique (nouvelle table pour anomalies)
+        const revuAnalytiqueData = await db.RevuAnalytique.findAll({
+            where: {
+                id_compte,
+                id_dossier,
+                id_exercice,
+                type_revue: 'analytiqueMensuelle'
+            }
+        });
+
+        revuAnalytiqueData.forEach((ra) => {
+            const row = map.get(ra.compte);
+            if (!row) return;
+            row.anomalies = (ra.nbr_anomalies || 0) > 0;
+            row.valide_anomalie = (ra.anomalies_valides || 0) > 0;
+        });
+
+        // Charger les commentaires mensuels (table dédiée - sans anomalies)
         const commentaireAnalytiqueMensuelle = db.commentaireAnalytiqueMensuelle;
         if (commentaireAnalytiqueMensuelle) {
             const commentaires = await commentaireAnalytiqueMensuelle.findAll({
@@ -256,8 +272,7 @@ exports.getRevuAnalytiqueMensuelle = async (req, res) => {
                 const row = map.get(c.compte);
                 if (!row) return;
                 row.commentaire = c.commentaire || '';
-                row.valide_anomalie = !!c.valide_anomalie;
-                row.anomalies = !!c.anomalies; // Charger la valeur sauvegardée par l'utilisateur
+                // valide_anomalie est maintenant géré par revu_analytique
             });
         }
 
@@ -350,6 +365,62 @@ exports.getRevuAnalytiqueMensuelle = async (req, res) => {
         // NOTE: La détection automatique d'anomalies est désactivée pour la revue mensuelle
         // L'utilisateur confirme manuellement s'il y a anomalie ou non
         // Les anomalies sont chargées depuis la base de données (commentaireAnalytiqueMensuelle)
+        
+        // Sauvegarder les anomalies pour la Synthèse si une période est sélectionnée
+        if (id_periode) {
+            try {
+                console.log('[DEBUG MENSUELLE] Sauvegarde des anomalies mensuelles pour id_periode:', id_periode);
+                
+                // D'abord, supprimer les anciennes anomalies mensuelles pour ce contexte
+                const deleteWhereClause = {
+                    id_compte,
+                    id_exercice,
+                    id_dossier,
+                    id_periode: Number(id_periode),
+                    type_revue: 'analytiqueMensuelle'
+                };
+                
+                await db.RevuAnalytique.destroy({ where: deleteWhereClause });
+                
+                // Compter les anomalies depuis commentaireAnalytiqueMensuelle
+                const anomaliesCount = await db.commentaireAnalytiqueMensuelle.count({
+                    where: {
+                        id_compte,
+                        id_dossier,
+                        id_exercice,
+                        anomalies: true
+                    }
+                });
+                
+                const validatedCount = await db.commentaireAnalytiqueMensuelle.count({
+                    where: {
+                        id_compte,
+                        id_dossier,
+                        id_exercice,
+                        anomalies: true,
+                        valide_anomalie: true
+                    }
+                });
+                
+                // Créer une entrée globale pour les statistiques
+                if (anomaliesCount > 0) {
+                    await db.RevuAnalytique.create({
+                        id_compte,
+                        id_exercice,
+                        id_dossier,
+                        id_periode: Number(id_periode),
+                        compte: 'GLOBAL_MENSUEL',
+                        type_revue: 'analytiqueMensuelle',
+                        nbr_anomalies: anomaliesCount,
+                        anomalies_valides: validatedCount
+                    });
+                }
+                
+                console.log(`[DEBUG MENSUELLE] Sauvegardé ${anomaliesCount} anomalies mensuelles, ${validatedCount} validées`);
+            } catch (saveError) {
+                console.error('[DEBUG MENSUELLE] Erreur sauvegarde anomalies mensuelles:', saveError);
+            }
+        }
 
         // // console.log('\n=== COMPARAISON TOTAUX MENSUELLE vs N/N-1 ===');
         

@@ -1,18 +1,20 @@
 import { useState, useEffect } from 'react';
-import { Stack, Box, FormControl, Input, TextField, Dialog, DialogContent, DialogActions, Button, Typography } from '@mui/material';
+import { Stack, Box, FormControl, Input, TextField, Dialog, DialogContent, DialogActions, Button, Typography, Paper } from '@mui/material';
 import { IconButton, Tooltip, Checkbox } from '@mui/material';
 
-import { IoMdTrash } from "react-icons/io";
-import { TbPlaylistAdd } from "react-icons/tb";
-import { FaRegPenToSquare } from "react-icons/fa6";
-import { VscClose } from 'react-icons/vsc';
-import { MdFileUpload } from 'react-icons/md';
+import CancelIcon from '@mui/icons-material/Cancel';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/EditOutlined';
+import DeleteIcon from '@mui/icons-material/DeleteOutline';
+import SaveIcon from '@mui/icons-material/CheckCircleOutline';
 
+const NAV_DARK = '#0B1120';
+const NEON_MINT = '#00FF94';
 import { init } from '../../../../../init';
 import axios from '../../../../../config/axios';
 import toast from 'react-hot-toast';
 import { DataGridStyle } from '../../../componentsTools/DatagridToolsStyle';
-import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes, useGridApiRef } from '@mui/x-data-grid';
+import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes, useGridApiRef, GridToolbarQuickFilter } from '@mui/x-data-grid';
 import QuickFilter from '../../../componentsTools/DatagridToolsStyle';
 import { TfiSave } from 'react-icons/tfi';
 
@@ -75,7 +77,6 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
         validationSchema: Yup.object({
             section: Yup.string().required("Ce champ est obligatoire"),
             intitule: Yup.string().required("Ce champ est obligatoire"),
-            compte: Yup.string().required("Ce champ est obligatoire"),
             pourcentage: Yup.number().required("Ce champ est obligatoire"),
         }),
         onSubmit: (values) => {
@@ -118,12 +119,12 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
     const columnHeader = [
         {
             field: 'section',
-            headerName: 'Section',
+            headerName: 'SECTION',
             flex: 0.5,
             sortable: true,
             headerAlign: 'left',
             align: 'left',
-            headerClassName: 'HeaderbackColor',
+            headerClassName: 'analytics-header',
             editable: editableRow,
             renderEditCell: (params) => {
                 return (
@@ -144,15 +145,20 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
                     </FormControl>
                 );
             },
+            renderCell: (params) => (
+                <Typography sx={{ fontSize: '13px', fontWeight: 700, color: '#1E293B' }}>
+                    {params.value}
+                </Typography>
+            ),
         },
         {
             field: 'intitule',
-            headerName: 'Intitulé',
+            headerName: 'INTITULÉ',
             flex: 1,
             sortable: true,
             headerAlign: 'left',
             align: 'left',
-            headerClassName: 'HeaderbackColor',
+            headerClassName: 'analytics-header',
             editable: editableRow,
             renderEditCell: (params) => {
                 return (
@@ -173,15 +179,20 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
                     </FormControl>
                 );
             },
+            renderCell: (params) => (
+                <Typography sx={{ fontSize: '13px', color: '#475569' }}>
+                    {params.value}
+                </Typography>
+            ),
         },
         {
             field: 'compte',
-            headerName: 'Compte',
+            headerName: 'COMPTE',
             flex: 1,
             sortable: true,
             headerAlign: 'left',
             align: 'left',
-            headerClassName: 'HeaderbackColor',
+            headerClassName: 'analytics-header',
             editable: editableRow,
             renderEditCell: (params) => {
                 return (
@@ -202,16 +213,21 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
                     </FormControl>
                 );
             },
+            renderCell: (params) => (
+                <Typography sx={{ fontSize: '13px', color: '#475569' }}>
+                    {params.value}
+                </Typography>
+            ),
         },
         {
             field: 'pourcentage',
-            headerName: 'Pourcentage',
+            headerName: '%',
             type: 'string',
             flex: 0.4,
             sortable: true,
             headerAlign: 'left',
             align: 'left',
-            headerClassName: 'HeaderbackColor',
+            headerClassName: 'analytics-header',
             editable: editableRow,
             renderEditCell: (params) => {
                 let localValue = params.formattedValue ?? '';
@@ -249,18 +265,22 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
                     maximumFractionDigits: 2,
                 });
 
-                return `${formatted.replace(/\u202f/g, ' ')}%`;
+                return (
+                    <Typography sx={{ fontSize: '13px', color: '#475569' }}>
+                        {`${formatted.replace(/\u202f/g, ' ')}%`}
+                    </Typography>
+                );
             },
         },
         {
             field: 'par_defaut',
-            headerName: 'Par défaut',
+            headerName: 'PAR DÉFAUT',
             type: 'boolean',
             flex: 0.3,
             sortable: true,
-            headerAlign: 'left',
+            headerAlign: 'center',
             align: 'center',
-            headerClassName: 'HeaderbackColor',
+            headerClassName: 'analytics-header',
             editable: editableRow,
             renderEditCell: (params) => {
                 return (
@@ -271,16 +291,23 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
                     />
                 );
             },
+            renderCell: (params) => (
+                <Checkbox
+                    checked={params.value}
+                    disabled
+                    sx={{ '&.Mui-disabled': { color: '#64748B' } }}
+                />
+            ),
         },
         {
             field: 'fermer',
-            headerName: 'Fermer',
+            headerName: 'FERMER',
             type: 'boolean',
             flex: 0.3,
             sortable: true,
-            headerAlign: 'left',
+            headerAlign: 'center',
             align: 'center',
-            headerClassName: 'HeaderbackColor',
+            headerClassName: 'analytics-header',
             editable: editableRow,
             renderEditCell: (params) => {
                 return (
@@ -289,6 +316,76 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
                         type="checkbox"
                         onChange={(e) => handleChangeFermer(e.target.checked)}
                     />
+                );
+            },
+            renderCell: (params) => (
+                <Checkbox
+                    checked={params.value}
+                    disabled
+                    sx={{ '&.Mui-disabled': { color: '#64748B' } }}
+                />
+            ),
+        },
+        {
+            field: 'actions',
+            headerName: 'ACTIONS',
+            flex: 0.5,
+            sortable: false,
+            headerAlign: 'right',
+            align: 'right',
+            headerClassName: 'analytics-header',
+            editable: false,
+            renderCell: (params) => {
+                const isEditing = rowModesModel[params.id]?.mode === GridRowModes.Edit;
+                const isSelected = selectedRowId.includes(params.id);
+
+                return (
+                    <Stack direction="row" spacing={0.5} justifyContent="flex-end" sx={{ pr: 1 }}>
+                        {isEditing ? (
+                            <>
+                                <IconButton
+                                    disabled={(!canAdd && !canModify) || !formNewParam.isValid}
+                                    onClick={handleSaveClick(selectedRowId)}
+                                    size="small"
+                                    sx={{ color: '#10B981' }}
+                                    title="Sauvegarder"
+                                >
+                                    <SaveIcon sx={{ fontSize: 20 }} />
+                                </IconButton>
+                                <IconButton
+                                    disabled={disableCancelBouton}
+                                    onClick={handleCancelClick(selectedRowId)}
+                                    size="small"
+                                    sx={{ color: '#F43F5E' }}
+                                    title="Annuler"
+                                >
+                                    <CancelIcon sx={{ fontSize: 20 }} />
+                                </IconButton>
+                            </>
+                        ) : (
+                            <>
+                                <IconButton
+                                    disabled={(!canModify && selectedRowId > 0) || disableModifyBouton}
+                                    onClick={handleEditClick(selectedRowId)}
+                                    size="small"
+                                    sx={{ color: '#CBD5E1', '&:hover': { color: NAV_DARK } }}
+                                    title="Modifier"
+                                >
+                                    <EditIcon sx={{ fontSize: 20 }} />
+                                </IconButton>
+                                <IconButton
+                                    disabled={!canDelete || disableDeleteBouton}
+                                    onClick={handleOpenDialogConfirmDeleteRow}
+                                    size="small"
+                                    sx={{ color: '#CBD5E1', '&:hover': { color: '#EF4444' } }}
+                                    title="Supprimer"
+                                >
+                                    <DeleteIcon sx={{ fontSize: 20 }} />
+                                </IconButton>
+                            </>
+                        )
+                        }
+                    </Stack>
                 );
             },
         }
@@ -349,7 +446,7 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
 
         let saveBoolSection = false;
         let saveBoolIntitule = false;
-        let saveBoolCompte = false;
+        let saveBoolCompte = true;
         let saveBoolPourcentage = false;
 
         setSectionValidationColor('transparent');
@@ -373,13 +470,13 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
             saveBoolIntitule = true;
         }
 
-        if (formNewParam.values.compte === '') {
-            setCompteValidationColor('#F6D6D6');
-            saveBoolCompte = false;
-        } else {
-            setCompteValidationColor('transparent');
-            saveBoolCompte = true;
-        }
+        // if (formNewParam.values.compte === '') {
+        //     setCompteValidationColor('#F6D6D6');
+        //     saveBoolCompte = false;
+        // } else {
+        //     setCompteValidationColor('transparent');
+        //     saveBoolCompte = true;
+        // }
 
         if (formNewParam.values.pourcentage === '') {
             setPourcentageValidationColor('#F6D6D6');
@@ -712,35 +809,6 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
         checkTotalPourcentage(sectionsData);
     }, [sectionsData])
 
-    const buttonStyle = {
-        minWidth: 120,
-        height: 32,
-        px: 2,
-        textTransform: 'none',
-        fontSize: '0.85rem',
-        borderRadius: '6px',
-        boxShadow: 'none',
-        '& .MuiTouchRipple-root': {
-            display: 'none',
-        },
-        '&:focus': {
-            outline: 'none',
-        },
-        '&.Mui-focusVisible': {
-            outline: 'none',
-            boxShadow: 'none',
-        },
-
-        '&:hover': {
-            boxShadow: 'none',
-            backgroundColor: 'action.hover',
-            border: 'none',
-        },
-
-        '&.Mui-disabled': {
-            opacity: 0.4
-        },
-    };
     return (
         <>
             {openRecalcPopup ? (
@@ -801,18 +869,16 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
             <Box
                 sx={{ width: '100%' }}
             >
-                <Stack
-                    sx={{
-                        width: '100%',
-                        justifyContent: 'flex-end',
-                        alignItems: 'flex-start',
-                        padding: '10px',
-                    }}
-                    direction={'row'}
-                    spacing={0.5}
-                >
-                    {pourcentageError && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
+
+                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+
+                    <Typography sx={{ fontWeight: 900, color: '#1E293B', fontSize: '18px' }}>
+                        Sections
+                    </Typography>
+
+                    <Stack direction="row" alignItems="center" spacing={1}>
+
+                        {pourcentageError && (
                             <Typography
                                 variant="body2"
                                 sx={{
@@ -827,298 +893,199 @@ const DatagridAnalitiqueSection = ({ selectedRowAxeId, id_compte, id_dossier, is
                             >
                                 ⚠️ {pourcentageError}
                             </Typography>
-                        </Box>
-                    )}
+                        )}
 
-                    <Tooltip title="Importer des sections">
-                        <Stack>
-                            <Button
-                                disabled={!canAdd || !isCaActive || !(selectedRowAxeId.length > 0)}
-                                variant="contained"
-                                onClick={() => setOpenImportPopup(true)}
-                                sx={{
-                                    ...buttonStyle,
-                                    backgroundColor: '#e79754ff',
-                                    color: 'white',
-                                    borderColor: '#e79754ff',
-                                    boxShadow: 'none',
+                        <Button
+                            variant="contained"
+                            size="small"
+                            onClick={() => setOpenImportPopup(true)}
+                            sx={{
+                                bgcolor: '#e79754ff',
+                                textTransform: 'none',
+                                fontSize: '12px',
+                                fontWeight: 700,
+                                color: '#000',
+                                borderRadius: '6px',
+                                px: 2,
+                                '&:hover': {
+                                    bgcolor: '#e79754ff',
+                                    transform: 'translateY(-1px)'
+                                },
+                            }}
+                        >
+                            Importer
+                        </Button>
 
-                                    '&:hover': {
-                                        backgroundColor: '#e79754ff',
-                                        border: 'none',
-                                        boxShadow: 'none',       // enlève l’effet bleu shadow
-                                    },
-                                    '&:focus': {
-                                        backgroundColor: '#e79754ff',
-                                        border: 'none',
-                                        boxShadow: 'none',       // enlève le focus bleu
-                                    },
-                                    '&.Mui-disabled': {
-                                        backgroundColor: '#e79754ff',
-                                        color: 'white',
-                                        cursor: 'not-allowed',
-                                    },
-                                    '&::before': {
-                                        display: 'none',         // supprime l’overlay bleu de ButtonGroup
-                                    },
-                                }}
-                            >
-                                Importer
-                            </Button>
-                        </Stack>
-                    </Tooltip>
+                        <Button
+                            variant="contained"
+                            size="small"
+                            onClick={handleOpenDialogAddNewRow}
+                            startIcon={<AddIcon sx={{ fontSize: '16px !important' }} />}
+                            sx={{
+                                bgcolor: NEON_MINT,
+                                textTransform: 'none',
+                                fontSize: '12px',
+                                fontWeight: 700,
+                                color: '#000',
+                                borderRadius: '6px',
+                                px: 2,
+                                '&:hover': {
+                                    bgcolor: '#00E685',
+                                    transform: 'translateY(-1px)'
+                                },
+                            }}
+                        >
+                            Ajouter section
+                        </Button>
 
-                    <Tooltip title="Ajouter une ligne">
-                        <Stack>
-                            <Button
-                                disabled={!canAdd || disableAddRowBouton || !isCaActive || !(selectedRowAxeId.length > 0)}
-                                variant="contained"
-                                onClick={handleOpenDialogAddNewRow}
-                                sx={{
-                                    ...buttonStyle,
-                                    backgroundColor: initial.auth_gradient_end,
-                                    color: 'white',
-                                    borderColor: initial.auth_gradient_end,
-                                    '&:hover': {
-                                        backgroundColor: initial.auth_gradient_end,
-                                        boxShadow: 'none',
-                                    },
-                                    '&:focus': {
-                                        backgroundColor: initial.auth_gradient_end,
-                                        boxShadow: 'none',
-                                    },
-                                    '&.Mui-disabled': {
-                                        backgroundColor: initial.auth_gradient_end,
-                                        color: 'white',
-                                        cursor: 'not-allowed',
-                                    },
-                                    '&::before': {
-                                        display: 'none',
-                                    },
-                                }}
-                            >
-                                Ajouter
-                            </Button>
-                        </Stack>
-                    </Tooltip>
-
-                    <Tooltip title="Modifier la ligne sélectionnée">
-                        <Stack>
-                            <Button
-                                disabled={(!canModify && selectedRowId > 0) || disableModifyBouton || !isCaActive || !(selectedRowAxeId.length > 0)}
-                                variant="contained"
-                                onClick={handleEditClick(selectedRowId)}
-                                sx={{
-                                    ...buttonStyle,
-                                    backgroundColor: initial.auth_gradient_end,
-                                    color: 'white',
-                                    borderColor: initial.auth_gradient_end,
-                                    '&:hover': {
-                                        backgroundColor: initial.auth_gradient_end,
-                                    },
-                                    '&.Mui-disabled': {
-                                        backgroundColor: initial.auth_gradient_end,
-                                        color: 'white',
-                                        cursor: 'not-allowed',
-                                    },
-                                }}
-                            >
-                                Modifier
-                            </Button>
-                        </Stack>
-                    </Tooltip>
-
-                    <Tooltip title="Sauvegarder les modifications">
-                        <Stack>
-                            <Button
-                                disabled={(!canAdd && !canModify) || disableSaveBouton || !formNewParam.isValid || !isCaActive || !(selectedRowAxeId.length > 0)}
-                                variant="contained"
-                                onClick={handleSaveClick(selectedRowId)}
-                                sx={{
-                                    ...buttonStyle,
-                                    backgroundColor: initial.auth_gradient_end,
-                                    color: 'white',
-                                    borderColor: initial.auth_gradient_end,
-                                    '&:hover': {
-                                        backgroundColor: initial.auth_gradient_end,
-                                    },
-                                    '&.Mui-disabled': {
-                                        backgroundColor: initial.auth_gradient_end,
-                                        color: 'white',
-                                        cursor: 'not-allowed',
-                                    },
-                                }}
-                            >
-                                Sauvegarder
-                            </Button>
-                        </Stack>
-                    </Tooltip>
-
-                    <Tooltip title="Annuler les modifications">
-                        <Stack>
-                            <Button
-                                disabled={disableCancelBouton || !isCaActive || !(selectedRowAxeId.length > 0)}
-                                variant="contained"
-                                onClick={handleCancelClick(selectedRowId)}
-                                sx={{
-                                    ...buttonStyle,
-                                    backgroundColor: initial.annuler_bouton_color,
-                                    color: 'white',
-                                    borderColor: initial.annuler_bouton_color,
-                                    '&:hover': {
-                                        backgroundColor: initial.annuler_bouton_color,
-                                    },
-                                    '&.Mui-disabled': {
-                                        backgroundColor: initial.annuler_bouton_color,
-                                        color: 'white',
-                                        cursor: 'not-allowed',
-                                    },
-                                }}
-                            >
-                                Annuler
-                            </Button>
-                        </Stack>
-                    </Tooltip>
-
-                    <Tooltip title="Supprimer la ligne sélectionné">
-                        <Stack>
-                            <Button
-                                disabled={!canDelete || disableDeleteBouton || !isCaActive || !(selectedRowAxeId.length > 0)}
-                                onClick={handleOpenDialogConfirmDeleteRow}
-                                variant="contained"
-                                sx={{
-                                    ...buttonStyle,
-                                    backgroundColor: initial.annuler_bouton_color,
-                                    color: 'white',
-                                    borderColor: initial.annuler_bouton_color,
-                                    '&:hover': {
-                                        backgroundColor: initial.annuler_bouton_color,
-                                    },
-                                    '&.Mui-disabled': {
-                                        backgroundColor: initial.annuler_bouton_color,
-                                        color: 'white',
-                                        cursor: 'not-allowed',
-                                    },
-                                }}
-                            >
-                                Supprimer
-                            </Button>
-                        </Stack>
-                    </Tooltip>
+                    </Stack>
                 </Stack>
 
-                <Stack
-                    sx={{ height: 450 }}
-                    style={{
-                        marginTop: '0px'
-                    }}
-                >
-                    <DataGrid
-                        apiRef={apiRef}
-                        disableMultipleSelection={DataGridStyle.disableMultipleSelection}
-                        disableColumnSelector={DataGridStyle.disableColumnSelector}
-                        disableDensitySelector={DataGridStyle.disableDensitySelector}
+                <Stack spacing={1}>
+                    {/* <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1 }}>
+                        <GridToolbarQuickFilter
+                            size="small"
+                            sx={{
+                                '& .MuiInputBase-root': {
+                                    bgcolor: '#F8FAFC',
+                                    borderRadius: '8px',
+                                    border: '1px solid #E2E8F0',
+                                    height: '36px',
+                                }
+                            }}
+                        />
+                    </Stack> */}
 
-                        localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
-                        disableRowSelectionOnClick
-                        disableSelectionOnClick={true}
-                        slots={{ toolbar: QuickFilter }}
+
+
+                    <Paper
+                        elevation={0}
                         sx={{
-                            ...DataGridStyle.sx,
-                            '& .MuiDataGrid-columnHeaders': {
-                                backgroundColor: initial.tableau_theme,
-                                color: initial.text_theme,
-                            },
-                            '& .MuiDataGrid-columnHeaderTitle': {
-                                color: initial.text_theme,
-                                fontWeight: 600,
-                            },
-                            '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
-                                color: initial.text_theme,
-                            },
-                            '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
-                                outline: 'none',
-                                border: 'none',
-                            },
-                            '& .highlight-separator': {
-                                borderBottom: '1px solid red'
-                            },
-                            '& .MuiDataGrid-row.highlight-separator': {
-                                borderBottom: '1px solid red',
-                            },
-                            '& .MuiDataGrid-virtualScroller': {
-                                maxHeight: '700px',
-                            },
+                            borderRadius: '16px',
+                            border: '1px solid #E2E8F0',
+                            overflow: 'hidden',
+                            height: 450
                         }}
-                        rowHeight={DataGridStyle.rowHeight}
-                        columnHeaderHeight={DataGridStyle.columnHeaderHeight}
-                        editMode='row'
-                        onRowClick={(e) => handleCellEditCommit(e.row)}
-                        onRowSelectionModelChange={ids => {
-                            setSelectedRowSectionId(ids);
-                            saveSelectedRow(ids);
-                            deselectRow(ids);
-                        }}
-                        rowModesModel={rowModesModel}
-                        onRowModesModelChange={handleRowModesModelChange}
-                        onRowEditStop={handleRowEditStop}
-                        processRowUpdate={processRowUpdate}
-                        rows={sectionsData}
-                        columns={columnHeader}
-                        initialState={{
-                            pagination: {
-                                paginationModel: { page: 0, pageSize: 100 },
-                            },
-                        }}
-                        pageSizeOptions={[50, 100]}
-                        pagination={DataGridStyle.pagination}
-                        checkboxSelection={DataGridStyle.checkboxSelection}
-                        columnVisibilityModel={{
-                            id: false,
-                        }}
-                        rowSelectionModel={selectedRowSectionId}
-                        onRowEditStart={(params, event) => {
-                            const rowId = params.id;
-                            const rowData = params.row;
+                    >
+                        <DataGrid
+                            apiRef={apiRef}
+                            disableMultipleSelection={DataGridStyle.disableMultipleSelection}
+                            disableColumnSelector={DataGridStyle.disableColumnSelector}
+                            disableDensitySelector={DataGridStyle.disableDensitySelector}
+                            localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                            disableRowSelectionOnClick
+                            disableSelectionOnClick={true}
+                            sx={{
+                                ...DataGridStyle.sx,
+                                '& .analytics-header': {
+                                    backgroundColor: '#F8FAFC',
+                                    '& .MuiDataGrid-columnHeaderTitle': {
+                                        fontWeight: 800,
+                                        color: '#64748B',
+                                        fontSize: '10px',
+                                        textTransform: 'uppercase'
+                                    },
+                                    '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
+                                        color: '#64748B',
+                                    },
+                                },
+                                '& .MuiDataGrid-columnHeaders': {
+                                    backgroundColor: '#F8FAFC',
+                                    borderBottom: '1px solid #E2E8F0',
+                                },
+                                '& .MuiDataGrid-row': {
+                                    '&:hover': {
+                                        backgroundColor: '#F1F5F9',
+                                    },
+                                    borderBottom: '1px solid #E2E8F0',
+                                },
+                                '& .MuiDataGrid-cell': {
+                                    borderBottom: 'none',
+                                    '&:focus, &:focus-within': {
+                                        outline: 'none',
+                                        border: 'none',
+                                    },
+                                },
+                                '& .MuiDataGrid-virtualScroller': {
+                                    maxHeight: '700px',
+                                },
+                                '& .highlight-separator': {
+                                    borderBottom: '1px solid red'
+                                },
+                                '& .MuiDataGrid-row.highlight-separator': {
+                                    borderBottom: '1px solid red',
+                                },
+                            }}
+                            rowHeight={DataGridStyle.rowHeight}
+                            columnHeaderHeight={DataGridStyle.columnHeaderHeight}
+                            editMode='row'
+                            onRowClick={(e) => handleCellEditCommit(e.row)}
+                            onRowSelectionModelChange={ids => {
+                                setSelectedRowSectionId(ids);
+                                saveSelectedRow(ids);
+                                deselectRow(ids);
+                            }}
+                            rowModesModel={rowModesModel}
+                            onRowModesModelChange={handleRowModesModelChange}
+                            onRowEditStop={handleRowEditStop}
+                            processRowUpdate={processRowUpdate}
+                            rows={sectionsData}
+                            columns={columnHeader}
+                            initialState={{
+                                pagination: {
+                                    paginationModel: { page: 0, pageSize: 100 },
+                                },
+                            }}
+                            pageSizeOptions={[50, 100]}
+                            pagination={DataGridStyle.pagination}
+                            checkboxSelection={DataGridStyle.checkboxSelection}
+                            columnVisibilityModel={{
+                                id: false,
+                            }}
+                            rowSelectionModel={selectedRowSectionId}
+                            onRowEditStart={(params, event) => {
+                                const rowId = params.id;
+                                const rowData = params.row;
 
-                            const isNewRow = rowId < 0;
+                                const isNewRow = rowId < 0;
 
-                            if (!canModify && !isNewRow) {
-                                event.defaultMuiPrevented = true;
-                                return;
-                            }
+                                if (!canModify && !isNewRow) {
+                                    event.defaultMuiPrevented = true;
+                                    return;
+                                }
 
-                            event.stopPropagation();
+                                event.stopPropagation();
 
-                            setSectionValidationColor('transparent');
-                            setIntituleValidationColor('transparent');
-                            setCompteValidationColor('transparent');
-                            setPourcentageValidationColor('transparent');
+                                setSectionValidationColor('transparent');
+                                setIntituleValidationColor('transparent');
+                                setCompteValidationColor('transparent');
+                                setPourcentageValidationColor('transparent');
 
-                            if (rowData.par_default) {
-                                setDisableDefaultFieldModif(true);
-                            } else {
-                                setDisableDefaultFieldModif(false);
-                            }
+                                if (rowData.par_default) {
+                                    setDisableDefaultFieldModif(true);
+                                } else {
+                                    setDisableDefaultFieldModif(false);
+                                }
 
-                            formNewParam.setFieldValue("id", rowData.id ?? 0);
-                            formNewParam.setFieldValue("section", rowData.section ?? '');
-                            formNewParam.setFieldValue("intitule", rowData.intitule ?? '');
-                            formNewParam.setFieldValue("compte", rowData.compte ?? 0);
-                            formNewParam.setFieldValue("pourcentage", rowData.pourcentage ?? '');
-                            formNewParam.setFieldValue("par_defaut", rowData.par_defaut ?? false);
-                            formNewParam.setFieldValue("fermer", rowData.fermer ?? false);
+                                formNewParam.setFieldValue("id", rowData.id ?? 0);
+                                formNewParam.setFieldValue("section", rowData.section ?? '');
+                                formNewParam.setFieldValue("intitule", rowData.intitule ?? '');
+                                formNewParam.setFieldValue("compte", rowData.compte ?? 0);
+                                formNewParam.setFieldValue("pourcentage", rowData.pourcentage ?? '');
+                                formNewParam.setFieldValue("par_defaut", rowData.par_defaut ?? false);
+                                formNewParam.setFieldValue("fermer", rowData.fermer ?? false);
 
-                            setRowModesModel((oldModel) => ({
-                                ...oldModel,
-                                [rowId]: { mode: GridRowModes.Edit },
-                            }));
+                                setRowModesModel((oldModel) => ({
+                                    ...oldModel,
+                                    [rowId]: { mode: GridRowModes.Edit },
+                                }));
 
-                            setDisableAddRowBouton(true);
-                            setDisableSaveBouton(false);
-                        }}
-                        onCellKeyDown={handleCellKeyDown}
-                    />
+                                setDisableAddRowBouton(true);
+                                setDisableSaveBouton(false);
+                            }}
+                            onCellKeyDown={handleCellKeyDown}
+                        />
+                    </Paper>
                 </Stack>
             </Box>
         </>

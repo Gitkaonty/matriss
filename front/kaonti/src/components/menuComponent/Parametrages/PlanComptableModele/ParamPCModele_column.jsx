@@ -1,11 +1,34 @@
-import { Chip, MenuItem, Select, Stack, Tooltip } from "@mui/material";
+import {
+    Typography, Stack, Paper, RadioGroup, FormControlLabel, Radio, FormControl,
+    InputLabel, Select, MenuItem, TextField, Box, Tab,
+    FormHelperText, Autocomplete, ButtonGroup, IconButton, Chip,
+    AppBar, Toolbar, GlobalStyles, InputAdornment, Breadcrumbs, Table, TableBody,
+    TableCell, TableContainer, TableHead, TableRow, Checkbox, Grid
+} from '@mui/material';
 import { TbCircleLetterCFilled, TbCircleLetterGFilled, TbCircleLetterAFilled } from "react-icons/tb";
 import { format } from 'date-fns';
 import { BsCheckCircleFill } from "react-icons/bs";
 import { PiIdentificationCardFill } from "react-icons/pi";
 import { BsPersonFillSlash } from "react-icons/bs";
 import { FaGlobeAmericas } from "react-icons/fa";
+import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes, useGridApiRef } from '@mui/x-data-grid';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
+
+
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/EditOutlined';
+import DeleteIcon from '@mui/icons-material/DeleteOutline';
+import CheckIcon from '@mui/icons-material/Check';
+import CloseIcon from '@mui/icons-material/Close';
+import SaveIcon from '@mui/icons-material/CheckCircleOutline';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import SearchIcon from '@mui/icons-material/Search';
+import CancelIcon from '@mui/icons-material/HighlightOff';
+
+
+// const [rowModesModel, setRowModesModel] = useState({});
+// const [selectedRowId, setSelectedRowId] = useState(null);
 
 //Tableau list Modèle Header
 const columnHeaderModel = [
@@ -19,42 +42,65 @@ const columnHeaderModel = [
     //   headerClassName: 'MuiDataGrid-ColumnHeader'
     // },
     {
-      field: 'nom', 
-      headerName: "Nom du modèle", 
-      type: 'string', 
-      sortable : true, 
-      width: 800, 
-      headerAlign: 'left',
-      headerClassName: 'MuiDataGrid-ColumnHeader'
+        field: 'nom',
+        headerName: "Nom du modèle",
+        type: 'string',
+        sortable: true,
+        width: 200,
+        headerAlign: 'left',
+        headerClassName: 'MuiDataGrid-ColumnHeader'
     },
     {
-        field: 'pardefault', 
-        headerName: "Par défaut", 
-        type: 'boolean', 
-        sortable : true, 
-        width: 100, 
+        field: 'pardefault',
+        headerName: "Par défaut",
+        type: 'boolean',
+        sortable: true,
+        width: 100,
         headerAlign: 'center',
         headerClassName: 'MuiDataGrid-ColumnHeader'
-      },
-  ]
+    },
+    {
+        field: 'actions',
+        headerName: 'ACTIONS',
+        width: 80,
+        sortable: false,
+        headerAlign: 'right',
+        align: 'right',
+        headerClassName: 'HeaderbackColor',
+        editable: false,
+        renderCell: (params) => {
+            return (
+                <Stack direction="row" spacing={0}>
+
+                    <IconButton
+                        size="small"
+                        sx={{ color: '#CBD5E1' }}
+                    >
+                        <DeleteIcon fontSize="inherit" />
+                    </IconButton>
+                </Stack>
+            );
+        },
+    },
+]
 
 //Header pour le tableau détail du modèle
 const columnHeaderDetail = (handleShowCptInfos) => [
     {
-        field: 'id', 
-        headerName: 'ID', 
-        type: 'number', 
-        sortable : true, 
-        width: 70, 
+        field: 'id',
+        headerName: 'ID',
+        type: 'number',
+        sortable: true,
+        width: 70,
         headerAlign: 'right',
         headerClassName: 'HeaderbackColor',
     },
     {
-        field: 'compte', 
-        headerName: <strong>Compte</strong>, 
-        type: 'string', 
-        sortable : true, 
-        width: 130, 
+        field: 'compte',
+        headerName: <strong>Compte</strong>,
+        type: 'string',
+        sortable: true,
+        width: 130,
         headerAlign: 'left',
         headerClassName: 'HeaderbackColor',
         renderCell: (params) => {
@@ -69,73 +115,73 @@ const columnHeaderDetail = (handleShowCptInfos) => [
         }
     },
     {
-        field: 'libelle', 
-        headerName: <strong>Libellé</strong>, 
-        type: 'string', 
-        sortable : true, 
-        width: 300, 
+        field: 'libelle',
+        headerName: <strong>Libellé</strong>,
+        type: 'string',
+        sortable: true,
+        width: 300,
         headerAlign: 'left',
         headerClassName: 'HeaderbackColor',
     },
     {
-        field: 'nature', 
-        headerName: <strong>Nature</strong>, 
-        type: 'string', 
-        sortable : true, 
-        width: 130, 
+        field: 'nature',
+        headerName: <strong>Nature</strong>,
+        type: 'string',
+        sortable: true,
+        width: 130,
         headerAlign: 'left',
         headerClassName: 'HeaderbackColor',
         renderCell: (params) => {
-            if(params.row.nature === 'General'){
+            if (params.row.nature === 'General') {
                 return (
-                <Stack width={'100%'} style={{display:'flex',alignContent:'center', alignItems:'center', justifyContent:'center'}}>    
-                    <Chip 
-                    icon={<TbCircleLetterGFilled style={{color: 'white', width: 18, height:18, marginLeft:10}}/>} 
-                    label="Général"
-                    
-                    style={{
-                        width: "100%",
-                        display: 'flex', // ou block, selon le rendu souhaité
-                        justifyContent: 'space-between',
-                        backgroundColor: '#48A6A7',
-                        color:'white'
-                    }}
-                    />
-                </Stack>
-                )
-            }else if(params.row.nature === 'Collectif'){
-                return (
-                    <Stack width={'100%'} style={{display:'flex',alignContent:'center', alignItems:'center', justifyContent:'center'}}>
-                       
-                        <Chip 
-                        icon={<TbCircleLetterCFilled style={{color: 'white', width: 18, height:18, marginLeft:10}}/>} 
-                        label="Collectif"
-                        
-                        style={{
-                            width: "100%",
-                            display: 'flex', // ou block, selon le rendu souhaité
-                            justifyContent: 'space-between',
-                            backgroundColor: '#A6D6D6',
-                            color:'white'
-                        }}
+                    <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
+                        <Chip
+                            icon={<TbCircleLetterGFilled style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
+                            label="Général"
+
+                            style={{
+                                width: "100%",
+                                display: 'flex', // ou block, selon le rendu souhaité
+                                justifyContent: 'space-between',
+                                backgroundColor: '#48A6A7',
+                                color: 'white'
+                            }}
                         />
                     </Stack>
                 )
-            }else{
+            } else if (params.row.nature === 'Collectif') {
                 return (
-                    <Stack width={'100%'} style={{display:'flex',alignContent:'center', alignItems:'center', justifyContent:'center'}}>
-                      
-                        <Chip 
-                        icon={<TbCircleLetterAFilled style={{color: 'white', width: 18, height:18, marginLeft:10}}/>} 
-                        label="Auxiliaire"
-                        
-                        style={{
-                            width: "100%",
-                            display: 'flex', // ou block, selon le rendu souhaité
-                            justifyContent: 'space-between',
-                            backgroundColor: '#123458',
-                            color:'white'
-                        }}
+                    <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
+
+                        <Chip
+                            icon={<TbCircleLetterCFilled style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
+                            label="Collectif"
+
+                            style={{
+                                width: "100%",
+                                display: 'flex', // ou block, selon le rendu souhaité
+                                justifyContent: 'space-between',
+                                backgroundColor: '#A6D6D6',
+                                color: 'white'
+                            }}
+                        />
+                    </Stack>
+                )
+            } else {
+                return (
+                    <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
+
+                        <Chip
+                            icon={<TbCircleLetterAFilled style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
+                            label="Auxiliaire"
+
+                            style={{
+                                width: "100%",
+                                display: 'flex', // ou block, selon le rendu souhaité
+                                justifyContent: 'space-between',
+                                backgroundColor: '#123458',
+                                color: 'white'
+                            }}
                         />
                     </Stack>
                 )
@@ -143,11 +189,11 @@ const columnHeaderDetail = (handleShowCptInfos) => [
         }
     },
     {
-        field: 'baseaux', 
-        headerName: <strong>Centr. / base Aux</strong>, 
-        type: 'string', 
-        sortable : true, 
-        width: 175, 
+        field: 'baseaux',
+        headerName: <strong>Centr. / base Aux</strong>,
+        type: 'string',
+        sortable: true,
+        width: 175,
         headerAlign: 'left',
         headerClassName: 'HeaderbackColor'
     },
@@ -191,7 +237,7 @@ const columnHeaderDetail = (handleShowCptInfos) => [
     //                     {params.row.cptcharge}
     //                 </div>
     //                 </Stack>
-                    
+
     //             )
     //         }
     //     }
@@ -236,7 +282,7 @@ const columnHeaderDetail = (handleShowCptInfos) => [
     //                         {params.row.cpttva}
     //                     </div>
     //                 </Stack>
-                    
+
     //             )
     //         }
     //     }
@@ -256,7 +302,7 @@ const columnHeaderDetail = (handleShowCptInfos) => [
     //                     <Chip 
     //                     icon={<BsPersonFillSlash style={{color: 'white', width: 18, height:18, marginLeft:10}}/>} 
     //                     label="Sans NIF"
-                        
+
     //                     style={{
     //                         width: "100%",
     //                         display: 'flex', // ou block, selon le rendu souhaité
@@ -273,7 +319,7 @@ const columnHeaderDetail = (handleShowCptInfos) => [
     //                     <Chip 
     //                     icon={<PiIdentificationCardFill style={{color: 'white', width: 18, height:18, marginLeft:10}}/>} 
     //                     label="Avec NIF"
-                        
+
     //                     style={{
     //                         width: "100%",
     //                         display: 'flex', // ou block, selon le rendu souhaité
@@ -290,7 +336,7 @@ const columnHeaderDetail = (handleShowCptInfos) => [
     //                     <Chip 
     //                     icon={<BsCheckCircleFill style={{color: 'white', width: 18, height:18, marginLeft:10}}/>} 
     //                     label="Général"
-                        
+
     //                     style={{
     //                         width: "100%",
     //                         display: 'flex', // ou block, selon le rendu souhaité
@@ -473,9 +519,9 @@ const columnHeaderDetail = (handleShowCptInfos) => [
     //     headerClassName: 'HeaderbackColor'
     // },
 
-  ]
+]
 
-  //données pour le tableau compte de charge détail pour ajout infos nouveau détail du modèle sélectionné
+//données pour le tableau compte de charge détail pour ajout infos nouveau détail du modèle sélectionné
 const columnHeaderAddNewRowModelDetail = [
     // {
     //   field: 'id', 
@@ -487,25 +533,25 @@ const columnHeaderAddNewRowModelDetail = [
     //   headerClassName: 'HeaderbackColor'
     // },
     {
-      field: 'compte', 
-      headerName: "Compte", 
-      type: 'string', 
-      sortable : true, 
-      width: 200, 
-      headerAlign: 'left',
-      headerClassName: 'HeaderbackColor',
-      editable: false,
+        field: 'compte',
+        headerName: "Compte",
+        type: 'string',
+        sortable: true,
+        width: 200,
+        headerAlign: 'left',
+        headerClassName: 'HeaderbackColor',
+        editable: false,
     },
     {
-        field: 'libelle', 
-        headerName: "Libellé", 
-        type: 'string', 
-        sortable : true, 
-        width: 850, 
+        field: 'libelle',
+        headerName: "Libellé",
+        type: 'string',
+        sortable: true,
+        width: 850,
         headerAlign: 'left',
         headerClassName: 'HeaderbackColor',
         editable: false
-      },
-  ]
-  
+    },
+]
+
 export default { columnHeaderModel, columnHeaderDetail, columnHeaderAddNewRowModelDetail };

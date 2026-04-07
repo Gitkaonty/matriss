@@ -16,6 +16,8 @@ import useAxiosPrivate from '../../../../hooks/useAxiosPrivate';
 import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
 import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFile';
 import { DataGridStyle } from '../../../componentsTools/DatagridToolsStyle';
+import { useExercicePeriode } from '../../../../context/ExercicePeriodeContext';
+import ExercicePeriodeSelector from '../../../componentsTools/ExercicePeriodeSelector/ExercicePeriodeSelector';
 
 // Format date as dd-mm-yy
 const formatDate = (dateString) => {
@@ -33,17 +35,21 @@ export default function RevisionAnalytique() {
     const axiosPrivate = useAxiosPrivate();
     const navigate = useNavigate();
 
-    const [listeExercice, setListeExercice] = useState([]);
-    const [selectedExerciceId, setSelectedExerciceId] = useState(0);
+    // Utiliser le contexte global pour exercice et période
+    const {
+        selectedExerciceId,
+        selectedPeriodeId,
+        selectedPeriodeDates,
+        handleChangeExercice,
+        handleChangePeriode,
+        loading: contextLoading,
+        getApiParams
+    } = useExercicePeriode();
+
     const [fileInfos, setFileInfos] = useState(null);
     const [loading, setLoading] = useState(false);
     const [noFile, setNoFile] = useState(false);
     const [fileId, setFileId] = useState(0);
-
-    // === Périodes ===
-    const [listePeriodes, setListePeriodes] = useState([]);
-    const [selectedPeriodeId, setSelectedPeriodeId] = useState('');
-    const [selectedPeriodeDates, setSelectedPeriodeDates] = useState(null);
 
     // === Résultats ===
     const [resultats, setResultats] = useState([]);
@@ -129,28 +135,6 @@ export default function RevisionAnalytique() {
         }
     }, [selectedExerciceId, fetchPeriodes]);
 
-    const handleChangeExercice = (exerciceId) => {
-        setSelectedExerciceId(exerciceId);
-        setSelectedPeriodeId('');
-        setSelectedPeriodeDates(null);
-        setResultats([]);
-        fetchPeriodes(exerciceId);
-    };
-
-    const handleChangePeriode = (periodeId) => {
-        setSelectedPeriodeId(periodeId);
-        if (periodeId && periodeId !== 'exercice') {
-            const periode = listePeriodes.find(p => p.id === periodeId);
-            if (periode) {
-                setSelectedPeriodeDates({
-                    date_debut: periode.date_debut,
-                    date_fin: periode.date_fin
-                });
-            }
-        } else {
-            setSelectedPeriodeDates(null);
-        }
-    };
 
     const handleControler = async () => {
         if (!selectedExerciceId) return;
@@ -227,10 +211,6 @@ export default function RevisionAnalytique() {
                 />
             ) : (
                 <Box sx={{ p: 2, height: '100vh', backgroundColor: '#f5f5f5' }}>
-                    {/* Dossier info */}
-                    <Box sx={{ mb: 1, width: '100px' }}>
-                        {InfoFileStyle(fileInfos?.dossier)}
-                    </Box>
 
                     {/* Header with Exercise, Period and Controler button */}
                     <Box
@@ -238,6 +218,7 @@ export default function RevisionAnalytique() {
                             mb: 3,
                             backgroundColor: 'white',
                             p: 2,
+                            mr: 0,
                             borderRadius: 1,
                             boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                         }}
@@ -249,67 +230,14 @@ export default function RevisionAnalytique() {
                         </Box>
 
                         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-                            <Stack direction="row" spacing={0} alignItems="center" sx={{ flex: '0 0 auto' }}>
-                                <Typography sx={{ minWidth: 70, fontSize: 15, mr: 1, whiteSpace: 'nowrap' }}>
-                                    Exercice :
-                                </Typography>
-                                <FormControl size="small" variant="outlined" sx={{ minWidth: 200 }}>
-                                    <Select
-                                        value={selectedExerciceId}
-                                        onChange={(e) => handleChangeExercice(e.target.value)}
-                                        sx={{
-                                            height: 32,
-                                            fontSize: 15,
-                                            '& .MuiSelect-select': { py: 0.5 },
-                                        }}
-                                        MenuProps={{ disableScrollLock: true }}
-                                    >
-                                        {listeExercice.map((exercice) => (
-                                            <MenuItem key={exercice.id} value={exercice.id}>
-                                                {exercice.libelle_rang} - {formatDate(exercice.date_debut)} au {formatDate(exercice.date_fin)}
-                                            </MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
-                            </Stack>
-
-                            {listePeriodes.length > 0 && (
-                                <Stack direction="row" spacing={0} alignItems="center" sx={{ flex: '0 0 auto' }}>
-                                    <Typography sx={{ minWidth: 70, fontSize: 15, mr: 1, whiteSpace: 'nowrap' }}>
-                                        Période :
-                                    </Typography>
-                                    <FormControl size="small" variant="outlined" sx={{ minWidth: 200 }}>
-                                        <Select
-                                            value={selectedPeriodeId}
-                                            onChange={(e) => handleChangePeriode(e.target.value)}
-                                            displayEmpty
-                                            renderValue={(selected) => {
-                                                if (!selected) {
-                                                    return <em>Sélectionner une période...</em>;
-                                                }
-                                                const periode = listePeriodes.find(p => p.id === selected);
-                                                return periode ? `${formatDate(periode.date_debut)} au ${formatDate(periode.date_fin)}` : '';
-                                            }}
-                                            sx={{
-                                                height: 32,
-                                                fontSize: 15,
-                                                '& .MuiSelect-select': { py: 0.5 },
-                                            }}
-                                            MenuProps={{ disableScrollLock: true }}
-                                        >
-                                            <MenuItem value="" disabled>
-                                                <em>Sélectionner une période...</em>
-                                            </MenuItem>
-                                            {listePeriodes.map((periode) => (
-                                                <MenuItem key={periode.id} value={periode.id}>
-                                                    {periode.libelle} {formatDate(periode.date_debut)} au {formatDate(periode.date_fin)}
-                                                </MenuItem>
-                                            ))}
-                                        </Select>
-                                    </FormControl>
-                                </Stack>
-                            )}
-
+                            <ExercicePeriodeSelector
+                                selectedExerciceId={selectedExerciceId}
+                                selectedPeriodeId={selectedPeriodeId}
+                                onExerciceChange={handleChangeExercice}
+                                onPeriodeChange={handleChangePeriode}
+                                disabled={loading}
+                                size="small"
+                            />
                             <Button
                                 variant="contained"
                                 onClick={handleControler}
@@ -328,7 +256,7 @@ export default function RevisionAnalytique() {
                     </Box>
 
                     {/* Résultats */}
-                    <Paper sx={{ boxShadow: '0 2px 4px rgba(0,0,0,0.1)', p: 2, height: 'calc(100vh - 200px)' }}>
+                    <Paper sx={{ boxShadow: '0 2px 4px rgba(0,0,0,0.1)', p: 2, height: 'calc(100vh - 200px)' , mr: 0}}>
                         <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
                             Résultats de la révision analytique
                         </Typography>

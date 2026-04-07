@@ -79,6 +79,7 @@ app.use('/dashboard', require('./Routes/Dashboard/dashboardRoutes'));
 //routes pour commentaires analytiques
 app.use('/commentaireAnalytique', require('./Routes/Dashboard/commentaireAnalytiqueRoutes'));
 app.use('/commentaireAnalytiqueMensuelle', require('./Routes/Dashboard/commentaireAnalytiqueMensuelleRoutes'));
+app.use('/revuAnalytiqueStats', require('./Routes/Dashboard/revuAnalytiqueStatsRoutes'));
 
 
 
@@ -103,6 +104,7 @@ app.use('/administration/revision', require('./Routes/revision/revisionRoutes'))
 app.use('/administration/revisionControleAuto', require('./Routes/revision/revisionControleAutoRoutes'));
 
 // Routes pour l'analyse fournisseur/client
+app.use('/administration/revisionFournisseurClient', require('./Routes/Administration/analyseFournisseurRoutes'));
 app.use('/administration/analyseFournisseurClient', require('./Routes/Administration/analyseFournisseurRoutes'));
 
 // Routes pour l'analyse client
