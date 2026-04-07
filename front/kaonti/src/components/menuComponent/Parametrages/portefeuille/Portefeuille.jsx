@@ -1,15 +1,12 @@
+import {
+    Box, Typography, Button,
+    GlobalStyles, TextField, Paper, Table, TableBody,
+    TableCell, TableContainer, TableHead, TableRow,
+    Checkbox, IconButton, InputAdornment, Breadcrumbs, Stack, FormControl, FormHelperText, Input
+} from '@mui/material';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Typography, Stack, Button, FormControl, Input } from '@mui/material';
-import { TbPlaylistAdd } from "react-icons/tb";
-import { FaRegPenToSquare } from "react-icons/fa6";
-import { TfiSave } from "react-icons/tfi";
-import { VscClose } from "react-icons/vsc";
-import { IoMdTrash } from "react-icons/io";
-import Tooltip from '@mui/material/Tooltip';
-import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
 import { useParams } from 'react-router-dom';
-import Box from '@mui/material/Box';
 import Tab from '@mui/material/Tab';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
@@ -27,7 +24,22 @@ import { useFormik } from 'formik';
 import usePermission from '../../../../hooks/usePermission';
 import useAxiosPrivate from '../../../../../config/axiosPrivate';
 
-export default function PortefeuilleComponent() {
+// Icônes
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/EditOutlined';
+import DeleteIcon from '@mui/icons-material/DeleteOutline';
+import SearchIcon from '@mui/icons-material/Search';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import CloseIcon from '@mui/icons-material/Close';
+import SaveIcon from '@mui/icons-material/CheckCircleOutline';
+import CancelIcon from '@mui/icons-material/HighlightOff';
+
+const NAV_DARK = '#0B1120';
+const BG_SOFT = '#F8FAFC';
+const BORDER_COLOR = '#E2E8F0';
+
+const PortefeuillePage = () => {
+
     const apiRef = useGridApiRef();
     const { canAdd, canModify, canDelete, canView } = usePermission();
     const axiosPrivate = useAxiosPrivate();
@@ -110,6 +122,65 @@ export default function PortefeuilleComponent() {
         formNewParam.setFieldValue(name, value);
     };
 
+    const handleRowModesModelChange = (newRowModesModel) => {
+        setRowModesModel(newRowModesModel);
+    };
+
+    const handleCellKeyDown = (params, event) => {
+        const api = apiRef.current;
+
+        const allCols = api.getAllColumns().filter(c => c.editable);
+        const sortedRowIds = api.getSortedRowIds();
+        const currentColIndex = allCols.findIndex(c => c.field === params.field);
+        const currentRowIndex = sortedRowIds.indexOf(params.id);
+
+        let nextColIndex = currentColIndex;
+        let nextRowIndex = currentRowIndex;
+
+        if (event.key === 'Tab' && !event.shiftKey) {
+            event.preventDefault();
+            nextColIndex = currentColIndex + 1;
+            if (nextColIndex >= allCols.length) {
+                nextColIndex = 0;
+                nextRowIndex = currentRowIndex + 1;
+            }
+        } else if (event.key === 'Tab' && event.shiftKey) {
+            event.preventDefault();
+            nextColIndex = currentColIndex - 1;
+            if (nextColIndex < 0) {
+                nextColIndex = allCols.length - 1;
+                nextRowIndex = currentRowIndex - 1;
+            }
+        } else if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            nextColIndex = currentColIndex + 1;
+            if (nextColIndex >= allCols.length) nextColIndex = allCols.length - 1;
+        } else if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            nextColIndex = currentColIndex - 1;
+            if (nextColIndex < 0) nextColIndex = 0;
+        }
+
+        const nextRowId = sortedRowIds[nextRowIndex];
+        const targetCol = allCols[nextColIndex];
+
+        if (!nextRowId || !targetCol) return;
+
+        try {
+            api.stopCellEditMode({ id: params.id, field: params.field });
+        } catch (err) {
+            console.warn('Erreur stopCellEditMode ignorée:', err);
+        }
+
+        setTimeout(() => {
+            const cellInput = document.querySelector(
+                `[data-id="${nextRowId}"] [data-field="${targetCol.field}"] input, 
+             [data-id="${nextRowId}"] [data-field="${targetCol.field}"] textarea`
+            );
+            if (cellInput) cellInput.focus();
+        }, 50);
+    };
+
     const isRequiredEmpty = (name) => {
         const v = formNewParam.values[name];
         return submitAttempt && (v === '' || v === null || v === undefined);
@@ -127,7 +198,7 @@ export default function PortefeuilleComponent() {
         {
             field: 'nom',
             headerName: 'Nom du portefeuille',
-            flex: 1,
+            flex: 1,    
             editable: true,
             headerAlign: 'left',
             align: 'left',
@@ -148,6 +219,65 @@ export default function PortefeuilleComponent() {
                             disableUnderline={true}
                         />
                     </FormControl>
+                );
+            },
+        },
+        {
+            field: 'actions',
+            headerName: 'Actions',
+            width: 150,
+            sortable: false,
+            filterable: false,
+            align: 'right',
+            headerAlign: 'right',
+
+            renderCell: (params) => {
+                const isInEditMode = rowModesModel[params.id]?.mode === GridRowModes.Edit;
+
+                // MODE EDIT
+                if (isInEditMode) {
+                    return (
+                        <Stack direction="row" spacing={0}>
+                            <IconButton
+                                size="small"
+                                sx={{ color: '#10B981' }}
+                                onClick={handleSaveClick(selectedRowId)}
+                            >
+                                <SaveIcon fontSize="inherit" />
+                            </IconButton>
+
+                            <IconButton
+                                size="small"
+                                sx={{ color: '#EF4444' }}
+                                onClick={handleCancelClick(selectedRowId)}
+                            >
+                                <CloseIcon fontSize="inherit" />
+                            </IconButton>
+                        </Stack>
+                    );
+                }
+
+                // MODE NORMAL
+                return (
+                    <Stack direction="row" spacing={0}>
+                        <IconButton
+                            size="small"
+                            sx={{ color: '#64748B' }}
+                            disabled={(!canModify && selectedRowId > 0) || disableModifyBouton}
+                            onClick={handleEditClick(selectedRowId)}
+                        >
+                            <EditIcon fontSize="inherit" />
+                        </IconButton>
+
+                        <IconButton
+                            size="small"
+                            sx={{ color: '#CBD5E1' }}
+                            disabled={!canDelete || disableDeleteBouton}
+                            onClick={handleOpenDialogConfirmDeleteAssocieRow}
+                        >
+                            <DeleteIcon fontSize="inherit" />
+                        </IconButton>
+                    </Stack>
                 );
             },
         },
@@ -378,325 +508,246 @@ export default function PortefeuilleComponent() {
         return updatedRow;
     };
 
-    const handleRowModesModelChange = (newRowModesModel) => {
-        setRowModesModel(newRowModesModel);
-    };
+    const dataGridStyle = {
+        borderRadius: '12px',
+        border: `1px solid ${BORDER_COLOR}`,
+        bgcolor: '#fff',
+        overflow: 'hidden',
 
-    const handleCellKeyDown = (params, event) => {
-        const api = apiRef.current;
+        // HEADER CONTAINER
+        '& .MuiDataGrid-columnHeaders': {
+            backgroundColor: '#F8FAFC',
+            minHeight: '35px !important',
+            maxHeight: '35px !important',
+            borderBottom: `1px solid ${BORDER_COLOR}`,
+        },
 
-        const allCols = api.getAllColumns().filter(c => c.editable);
-        const sortedRowIds = api.getSortedRowIds();
-        const currentColIndex = allCols.findIndex(c => c.field === params.field);
-        const currentRowIndex = sortedRowIds.indexOf(params.id);
+        // HEADER CELL
+        '& .MuiDataGrid-columnHeader': {
+            bgcolor: '#F8FAFC',
+            minHeight: '35px !important',
+            maxHeight: '35px !important',
+            paddingTop: 0,
+            paddingBottom: 0,
+        },
 
-        let nextColIndex = currentColIndex;
-        let nextRowIndex = currentRowIndex;
+        // HEADER TEXT (équivalent headerStyle)
+        '& .MuiDataGrid-columnHeaderTitle': {
 
-        if (event.key === 'Tab' && !event.shiftKey) {
-            event.preventDefault();
-            nextColIndex = currentColIndex + 1;
-            if (nextColIndex >= allCols.length) {
-                nextColIndex = 0;
-                nextRowIndex = currentRowIndex + 1;
-            }
-        } else if (event.key === 'Tab' && event.shiftKey) {
-            event.preventDefault();
-            nextColIndex = currentColIndex - 1;
-            if (nextColIndex < 0) {
-                nextColIndex = allCols.length - 1;
-                nextRowIndex = currentRowIndex - 1;
-            }
-        } else if (event.key === 'ArrowRight') {
-            event.preventDefault();
-            nextColIndex = currentColIndex + 1;
-            if (nextColIndex >= allCols.length) nextColIndex = allCols.length - 1;
-        } else if (event.key === 'ArrowLeft') {
-            event.preventDefault();
-            nextColIndex = currentColIndex - 1;
-            if (nextColIndex < 0) nextColIndex = 0;
-        }
+            fontWeight: 800,
+            color: '#94A3B8',
+            fontSize: '10px',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+        },
 
-        const nextRowId = sortedRowIds[nextRowIndex];
-        const targetCol = allCols[nextColIndex];
+        // ROW
+        '& .MuiDataGrid-row': {
+            height: 32,
+            '&:hover': { backgroundColor: '#F8FAFC' },
+        },
 
-        if (!nextRowId || !targetCol) return;
+        // CELL (équivalent cellStyle)
+        '& .MuiDataGrid-cell': {
+            fontSize: '13px',
+            paddingTop: '6px',
+            paddingBottom: '6px',
+        },
 
-        try {
-            api.stopCellEditMode({ id: params.id, field: params.field });
-        } catch (err) {
-            console.warn('Erreur stopCellEditMode ignorée:', err);
-        }
+        // enlève les bordures verticales
+        '& .MuiDataGrid-columnSeparator': {
+            display: 'none',
+        },
 
-        setTimeout(() => {
-            const cellInput = document.querySelector(
-                `[data-id="${nextRowId}"] [data-field="${targetCol.field}"] input, 
-             [data-id="${nextRowId}"] [data-field="${targetCol.field}"] textarea`
-            );
-            if (cellInput) cellInput.focus();
-        }, 50);
-    };
-     const buttonStyle = {
-        minWidth: 120,
-        height: 32,
-        px: 2,
-        borderRadius: 1,
-        textTransform: 'none',
-        fontWeight: 600,
-        boxShadow: 'none',
+        // enlève le focus bleu moche
+        '& .MuiDataGrid-cell:focus': {
+            outline: 'none',
+        },
     };
 
     return (
-        <>
-            {
-                (openDialogDeleteRow && canDelete)
-                    ?
-                    <PopupConfirmDelete
-                        msg={"Voulez-vous vraiment supprimer la fonction sélectionnée ?"}
-                        confirmationState={deleteRow}
-                    />
-                    :
-                    null
-            }
-            <Box>
+        <Box sx={{ width: '100vw', minHeight: '100vh', bgcolor: BG_SOFT, display: 'flex', flexDirection: 'column' }}>
+            <GlobalStyles styles={{ body: { margin: 0, padding: 0 }, '*': { boxSizing: 'border-box' } }} />
 
-                <TabContext value={"1"}>
-                    <TabPanel value="1">
-                        <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages : Portefeuille</Typography>
-                        <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"}
-                            direction={"column"} style={{ marginLeft: "0px", marginTop: "20px", justifyContent: "right" }}>
-                            <Stack width={"100%"} height={"30px"} spacing={0.3} alignItems={"center"} alignContent={"center"}
-                                direction={"row"} justifyContent={"right"}>
-                                <Tooltip title="Ajouter une ligne">
-                                    <span>
-                                        <Button
-                                            disabled={!canAdd || disableAddRowBouton}
-                                            variant="contained"
-                                            onClick={handleOpenDialogAddNewAssocie}
-                                            sx={{
-                                                ...buttonStyle,
-                                                backgroundColor: initial.auth_gradient_end,
-                                                color: 'white',
-                                                borderColor: initial.auth_gradient_end,
-                                                '&:hover': {
-                                                    backgroundColor: initial.auth_gradient_end,
-                                                    boxShadow: 'none',
-                                                    border: 'none',
-                                                },
-                                                '&:focus': {
-                                                    backgroundColor: initial.auth_gradient_end,
-                                                    boxShadow: 'none',
-                                                },
-                                                '&.Mui-disabled': {
-                                                    backgroundColor: initial.auth_gradient_end,
-                                                    color: 'white',
-                                                    cursor: 'not-allowed',
-                                                    border: 'none',
-                                                },
-                                                '&::before': {
-                                                    display: 'none',
-                                                },
-                                            }}
-                                        >
-                                            Ajouter
-                                        </Button>
-                                    </span>
-                                </Tooltip>
-                                <Tooltip title="Modifier la ligne sélectionnée">
-                                    <span>
-                                        <Button
-                                            disabled={(!canModify && selectedRowId > 0) || disableModifyBouton}
-                                            variant="contained"
-                                            onClick={handleEditClick(selectedRowId)}
-                                            sx={{
-                                                ...buttonStyle,
-                                                backgroundColor: initial.auth_gradient_end,
-                                                color: 'white',
-                                                borderColor: initial.auth_gradient_end,
-                                                '&:hover': {
-                                                    backgroundColor: initial.auth_gradient_end,
-                                                    boxShadow: 'none',
-                                                    border: 'none',
-                                                },
-                                                '&.Mui-disabled': {
-                                                    backgroundColor: initial.auth_gradient_end,
-                                                    color: 'white',
-                                                    cursor: 'not-allowed',
-                                                    border: 'none',
-                                                },
-                                            }}
-                                        >
-                                            Modifier
-                                        </Button>
-                                    </span>
-                                </Tooltip>
-                                <Tooltip title="Sauvegarder les modifications">
-                                    <span>
-                                        <Button
-                                           // disabled={(!canAdd && !canModify) || disableSaveBouton}
-                                            variant="contained"
-                                            onClick={handleSaveClick(selectedRowId)}
-                                            sx={{
-                                                ...buttonStyle,
-                                                backgroundColor: '#4caf50',
-                                                color: 'white',
-                                                borderColor: '#4caf50',
-                                                '&:hover': {
-                                                    backgroundColor: '#4caf50',
-                                                    boxShadow: 'none',
-                                                    border: 'none',
-                                                },
-                                            }}
-                                        >
-                                            Sauvegarder
-                                        </Button>
-                                    </span>
-                                </Tooltip>
-                                <Tooltip title="Annuler les modifications">
-                                    <span>
-                                        <Button
-                                           // disabled={disableCancelBouton}
-                                            variant="contained"
-                                            onClick={handleCancelClick(selectedRowId)}
-                                            sx={{
-                                                ...buttonStyle,
-                                                backgroundColor: initial.annuler_bouton_color,
-                                                color: 'white',
-                                                borderColor: initial.annuler_bouton_color,
-                                                '&:hover': {
-                                                    backgroundColor: initial.annuler_bouton_color,
-                                                    boxShadow: 'none',
-                                                    border: 'none',
-                                                },
-                                            }}
-                                        >
-                                            Annuler
-                                        </Button>
-                                    </span>
-                                </Tooltip>
-                                <Tooltip title="Supprimer la ligne sélectionnée">
-                                    <span>
-                                        <Button
-                                            disabled={!canDelete || disableDeleteBouton}
-                                            onClick={handleOpenDialogConfirmDeleteAssocieRow}
-                                            variant="contained"
-                                            sx={{
-                                                ...buttonStyle,
-                                                backgroundColor: initial.annuler_bouton_color,
-                                                color: 'white',
-                                                borderColor: initial.annuler_bouton_color,
-                                                '&:hover': {
-                                                    backgroundColor: initial.annuler_bouton_color,
-                                                    border: 'none',
-                                                },
-                                                '&.Mui-disabled': {
-                                                    backgroundColor: initial.annuler_bouton_color,
-                                                    color: 'white',
-                                                    cursor: 'not-allowed',
-                                                    border: 'none',
-                                                },
-                                            }}
-                                        >
-                                            Supprimer
-                                        </Button>
-                                    </span>
-                                </Tooltip>
-                            </Stack>
-                            <Stack width={"100%"} height={'100%'} minHeight={'600px'}>
-                                <DataGrid
-                                    apiRef={apiRef}
-                                    key={dataGridKey}
-                                    columns={fonctionsColumns}
-                                    rows={rows}
-                                    disableMultipleSelection={DataGridStyle.disableMultipleSelection}
-                                    disableColumnSelector={DataGridStyle.disableColumnSelector}
-                                    disableDensitySelector={DataGridStyle.disableDensitySelector}
-                                    localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
-                                    disableRowSelectionOnClick
-                                    disableSelectionOnClick={true}
-                                    slots={{ toolbar: QuickFilter }}
-                                    sx={{
-                                        ...DataGridStyle.sx,
-                                        '& .MuiDataGrid-columnHeaders': {
-                                            backgroundColor: initial.tableau_theme,
-                                            color: initial.text_theme,
-                                        },
-                                        '& .MuiDataGrid-columnHeaderTitle': {
-                                            color: initial.text_theme,
-                                            fontWeight: 600,
-                                        },
-                                        '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
-                                            color: initial.text_theme,
-                                        },
-                                        '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
-                                            outline: 'none',
-                                            border: 'none',
-                                        },
-                                        '& .highlight-separator': {
-                                            borderBottom: '1px solid red'
-                                        },
-                                        '& .MuiDataGrid-row.highlight-separator': {
-                                            borderBottom: '1px solid red',
-                                        },
-                                        '& .MuiDataGrid-virtualScroller': {
-                                            maxHeight: '700px',
-                                        },
-                                    }}
-                                    rowHeight={DataGridStyle.rowHeight}
-                                    columnHeaderHeight={DataGridStyle.columnHeaderHeight}
-                                    editMode='row'
-                                    onRowClick={(e) => handleCellEditCommit(e.row)}
-                                    onRowSelectionModelChange={ids => {
-                                        const single = Array.isArray(ids) && ids.length ? [ids[ids.length - 1]] : [];
-                                        setSelectedRow(single);
-                                        saveSelectedRow(single);
-                                        deselectRow(single);
-                                    }}
-                                    rowModesModel={rowModesModel}
-                                    onRowModesModelChange={handleRowModesModelChange}
-                                    onRowEditStop={handleRowEditStop}
-                                    processRowUpdate={processRowUpdate}
-                                    initialState={{
-                                        pagination: {
-                                            paginationModel: { page: 0, pageSize: 100 },
-                                        },
-                                    }}
-                                    pageSizeOptions={[50, 100]}
-                                    pagination={DataGridStyle.pagination}
-                                    checkboxSelection={DataGridStyle.checkboxSelection}
-                                    columnVisibilityModel={{
-                                        id: false,
-                                    }}
-                                    rowSelectionModel={selectedRow}
-                                    onRowEditStart={(params, event) => {
-                                        if (!selectedRow.length || selectedRow[0] !== params.id) {
-                                            event.defaultMuiPrevented = true;
-                                        }
-                                        if (selectedRow.includes(params.id)) {
-                                            setDisableAddRowBouton(true);
-                                            event.stopPropagation();
+            <Box sx={{ p: 4, width: '100%' }}>
+                {/* <Breadcrumbs separator={<NavigateNextIcon fontSize="small" sx={{ color: '#94A3B8' }} />} sx={{ mb: 1 }}>
+                    <Typography sx={{ fontSize: '12px', fontWeight: 500, color: '#64748B' }}>Paramétrages</Typography>
+                    <Typography sx={{ fontSize: '12px', fontWeight: 700, color: NAV_DARK }}>Portefeuille</Typography>
+                </Breadcrumbs> */}
 
-                                            const rowId = params.id;
-                                            const rowData = params.row;
-
-                                            formNewParam.setFieldValue("idPortefeuille", rowId);
-                                            formNewParam.setFieldValue("nom", rowData.nom ?? '');
-
-                                            setRowModesModel((oldModel) => ({
-                                                ...oldModel,
-                                                [rowId]: { mode: GridRowModes.Edit },
-                                            }));
-
-                                            setDisableSaveBouton(false);
-                                        }
-                                    }}
-                                    onCellKeyDown={handleCellKeyDown}
-                                />
-                            </Stack>
+                {/* SECTION TABLEAU */}
+                <Box sx={{ maxWidth: '800px' }}> {/* Limite la largeur pour éviter l'étirement */}
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2, height: '32px' }}>
+                        <Typography variant="h6" sx={{ fontWeight: 800, color: NAV_DARK }}>Liste des portefeuilles</Typography>
+                        <Stack direction="row" spacing={1}>
+                            <TextField
+                                placeholder="Recherche..."
+                                size="small"
+                                sx={searchStyle}
+                                InputProps={{
+                                    startAdornment: (<InputAdornment position="start"><SearchIcon sx={{ fontSize: 16, color: '#94A3B8' }} /></InputAdornment>),
+                                }}
+                            />
+                            <Button
+                                size="small"
+                                startIcon={<AddIcon />}
+                                disabled={!canAdd || disableAddRowBouton}
+                                onClick={handleOpenDialogAddNewAssocie}
+                                sx={btnStyle}
+                            >
+                                Ajouter
+                            </Button>
                         </Stack>
-                    </TabPanel>
-                </TabContext>
+                    </Stack>
+
+                    {/* <TableContainer component={Paper} elevation={0} sx={tableContainerStyle}>
+                        <Table size="small">
+                            <TableHead sx={{ bgcolor: '#F8FAFC' }}>
+                                <TableRow sx={{ height: '35px' }}>
+                                    <TableCell padding="checkbox" sx={{ width: '40px' }}><Checkbox size="small" /></TableCell>
+                                    <TableCell sx={headerStyle(400)}>Nom du portefeuille</TableCell>
+                                    <TableCell align="right" sx={headerStyle(120, true)}>Actions</TableCell>
+                                    <TableCell sx={{ bgcolor: '#F8FAFC' }} /> {/* Absorbe l'espace restant */}
+                    {/* </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                <TableRow sx={{ height: '36px', '&:hover': { bgcolor: '#F1F5F9' } }}>
+                                    <TableCell padding="checkbox"><Checkbox size="small" /></TableCell>
+                                    <TableCell sx={cellStyle}>Test</TableCell>
+                                    <TableCell align="right" sx={{ py: 0 }}>
+                                        <Stack direction="row" spacing={0} justifyContent="flex-end">
+                                            <IconButton size="small" sx={{ color: '#64748B' }}><EditIcon fontSize="inherit" /></IconButton>
+                                            <IconButton size="small" sx={{ color: '#CBD5E1' }}><DeleteIcon fontSize="inherit" /></IconButton>
+                                        </Stack>
+                                    </TableCell>
+                                    <TableCell />
+                                </TableRow> */}
+                    {/* <TableRow sx={{ height: '36px', '&:hover': { bgcolor: '#F1F5F9' } }}>
+                                    <TableCell padding="checkbox"><Checkbox size="small" /></TableCell>
+                                    <TableCell sx={cellStyle}>f</TableCell>
+                                    <TableCell align="right" sx={{ py: 0 }}>
+                                        <Stack direction="row" spacing={0} justifyContent="flex-end">
+                                            <IconButton size="small" sx={{ color: '#64748B' }}><EditIcon fontSize="inherit" /></IconButton>
+                                            <IconButton size="small" sx={{ color: '#CBD5E1' }}><DeleteIcon fontSize="inherit" /></IconButton>
+                                        </Stack>
+                                    </TableCell>
+                                    <TableCell />
+                                </TableRow>
+                            </TableBody> */}
+                    {/* </Table> */}
+                    {/* </TableContainer> */}
+                    <div style={{ width: '100%', height: '100%' }}>
+                        <DataGrid
+                            apiRef={apiRef}
+                            key={dataGridKey}
+                            columns={fonctionsColumns}
+                            rows={rows}
+                            disableMultipleSelection={DataGridStyle.disableMultipleSelection}
+                            disableColumnSelector={DataGridStyle.disableColumnSelector}
+                            disableDensitySelector={DataGridStyle.disableDensitySelector}
+                            localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                            disableRowSelectionOnClick
+                            disableSelectionOnClick={true}
+                            // slots={{ toolbar: QuickFilter }}
+                            rowHeight={36}
+                            headerHeight={35}
+                            sx={dataGridStyle}
+                            editMode='row'
+                            onRowClick={(e) => handleCellEditCommit(e.row)}
+                            onRowSelectionModelChange={ids => {
+                                const single = Array.isArray(ids) && ids.length ? [ids[ids.length - 1]] : [];
+                                setSelectedRow(single);
+                                saveSelectedRow(single);
+                                deselectRow(single);
+                            }}
+                            rowModesModel={rowModesModel}
+                            onRowModesModelChange={handleRowModesModelChange}
+                            onRowEditStop={handleRowEditStop}
+                            processRowUpdate={processRowUpdate}
+                            hideFooter
+                            initialState={{
+                                pagination: {
+                                    paginationModel: { page: 0, pageSize: 100 },
+                                },
+                            }}
+                            pageSizeOptions={[50, 100]}
+                            pagination={DataGridStyle.pagination}
+                            checkboxSelection={DataGridStyle.checkboxSelection}
+                            columnVisibilityModel={{
+                                id: false,
+                            }}
+                            rowSelectionModel={selectedRow}
+                            onRowEditStart={(params, event) => {
+                                if (!selectedRow.length || selectedRow[0] !== params.id) {
+                                    event.defaultMuiPrevented = true;
+                                }
+                                if (selectedRow.includes(params.id)) {
+                                    setDisableAddRowBouton(true);
+                                    event.stopPropagation();
+
+                                    const rowId = params.id;
+                                    const rowData = params.row;
+
+                                    formNewParam.setFieldValue("idPortefeuille", rowId);
+                                    formNewParam.setFieldValue("nom", rowData.nom ?? '');
+
+                                    setRowModesModel((oldModel) => ({
+                                        ...oldModel,
+                                        [rowId]: { mode: GridRowModes.Edit },
+                                    }));
+
+                                    setDisableSaveBouton(false);
+                                }
+                            }}
+                            onCellKeyDown={handleCellKeyDown}
+                        />
+                    </div>
+                </Box>
             </Box>
-        </>
-    )
-}
+        </Box>
+    );
+};
+
+// --- STYLES REUTILISABLES ---
+const tableContainerStyle = {
+    borderRadius: '12px',
+    border: `1px solid ${BORDER_COLOR}`,
+    bgcolor: '#fff',
+    overflow: 'hidden'
+};
+
+const cellStyle = { fontSize: '13px', py: '6px' };
+
+const headerStyle = (width, last = false) => ({
+    fontWeight: 800,
+    color: '#94A3B8',
+    fontSize: '10px',
+    textTransform: 'uppercase',
+    width: width,
+    minWidth: width,
+    paddingY: '4px',
+    pr: last ? 2 : 1
+});
+
+const btnStyle = {
+    bgcolor: '#10B981',
+    color: '#fff',
+    textTransform: 'none',
+    fontWeight: 700,
+    borderRadius: '6px',
+    height: '28px',
+    fontSize: '11px',
+    '&:hover': { bgcolor: '#059669' }
+};
+
+const searchStyle = {
+    width: 160,
+    '& .MuiOutlinedInput-root': {
+        borderRadius: '6px',
+        bgcolor: '#fff',
+        height: '28px',
+        fontSize: '11px'
+    }
+};
+
+export default PortefeuillePage;

@@ -1,6 +1,11 @@
 import { React, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Typography, Stack, Paper, IconButton, FormLabel, FormControl, Select, Input, FormHelperText, Button, ButtonGroup } from '@mui/material';
+import {
+    Typography, Stack, Paper, IconButton, FormLabel, FormControl, Select, Input, FormHelperText, Button, ButtonGroup,
+    Grid, Breadcrumbs, TextField, InputAdornment
+} from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
+
 import Tooltip from '@mui/material/Tooltip';
 import { DataGridStyle } from '../../../componentsTools/DatagridToolsStyle';
 import { DataGrid, frFR } from '@mui/x-data-grid';
@@ -27,9 +32,17 @@ import { jwtDecode } from 'jwt-decode';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import PopupActionConfirm from '../../../componentsTools/popupActionConfirm';
+import PopupConfirmDelete from '../../../componentsTools/popupConfirmDelete';
 import usePermission from '../../../../hooks/usePermission';
 import useAxiosPrivate from '../../../../../config/axiosPrivate';
 import Periode from './Periode';
+
+import DeleteIcon from '@mui/icons-material/DeleteOutline';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
+import LockIcon from "@mui/icons-material/Lock";
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialogContent-root': {
@@ -40,12 +53,52 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     },
 }));
 
+const BORDER_COLOR = '#E2E8F0';
+const NAV_DARK = '#0B1120';
+const BG_SOFT = '#F8FAFC';
+const NEON_MINT = '#00FF94';
+
+const tableContainerStyle = {
+    borderRadius: '12px',
+    border: `1px solid ${BORDER_COLOR}`,
+    bgcolor: '#fff',
+    overflow: 'hidden',
+    height: 'calc(100vh - 280px)',
+    minHeight: '500px'
+};
+
+const cellStyle = { fontSize: '13px', py: '6px', color: '#334155' };
+
+const headerStyle = (width, last = false) => ({
+    fontWeight: 800,
+    color: '#94A3B8',
+    fontSize: '10px',
+    textTransform: 'uppercase',
+    width: width,
+    minWidth: width,
+    paddingY: '4px',
+    pr: last ? 2 : 1
+});
+
+const btnStyle = {
+    bgcolor: '#10B981',
+    color: '#fff',
+    textTransform: 'none',
+    fontWeight: 700,
+    borderRadius: '6px',
+    height: '28px',
+    fontSize: '11px',
+    '&:hover': { bgcolor: '#059669' }
+};
+
+
 export default function ParamExerciceComponent() {
     const { canAdd, canModify, canDelete, canView } = usePermission();
     const axiosPrivate = useAxiosPrivate();
 
     const initial = init[0];
     const navigate = useNavigate();
+    const [findText, setFindText] = useState('');
     //récupération information du dossier sélectionné
     const { id } = useParams();
     const [fileId, setFileId] = useState(0);
@@ -70,6 +123,8 @@ export default function ParamExerciceComponent() {
 
     const [loadingCreateNextExercice, setLoadingCreateNextExercice] = useState(false);
     const [loadingCreatePreviousExercice, setLoadingPreviousExercice] = useState(false);
+
+    const [rowModesModel, setRowModesModel] = useState({});
 
 
     const buttonStyle = {
@@ -135,6 +190,34 @@ export default function ParamExerciceComponent() {
             headerAlign: 'center',
             align: 'center',
             headerClassName: 'HeaderbackColor',
+        },
+        {
+            field: 'actions',
+            headerName: 'ACTIONS',
+            width: 80,
+            sortable: false,
+            headerAlign: 'right',
+            align: 'right',
+            headerClassName: 'HeaderbackColor',
+            editable: false,
+            renderCell: (params) => {
+
+                return (
+                    <Stack direction="row" spacing={0.5} justifyContent="flex-end" sx={{ pr: 1 }}>
+
+                        <IconButton
+                            disabled={!canDelete || selectedExerciceRow.length === 0}
+                            onClick={handleDeleteExercice}
+                            size="small"
+                            sx={{ color: '#CBD5E1', '&:hover': { color: '#EF4444' } }}
+                            title="Supprimer"
+                        >
+                            <DeleteIcon sx={{ fontSize: 20 }} />
+                        </IconButton>
+
+                    </Stack>
+                );
+            },
         },
     ];
 
@@ -492,454 +575,410 @@ export default function ParamExerciceComponent() {
         setOpenActionConfirmDeleteExercice(false);
     }
 
-    return (
-        <Box>
-            {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
+    const btnStyle = {
+        bgcolor: NEON_MINT,
+        color: '#000',
+        textTransform: 'none',
+        fontWeight: 700,
+        borderRadius: '6px',
+        height: '28px',
+        fontSize: '11px',
+        '&:hover': {
+            bgcolor: '#00E685',
+            transform: 'translateY(-1px)'
+        }
+    };
 
-            {openActionConfirm ? <PopupActionConfirm msg={"Voulez-vous vraiment continuer la création de l'exercice suivant ?"} confirmationState={createNextExercice} isLoading={loadingCreateNextExercice} /> : null}
-            {openActionConfirmPrev ? <PopupActionConfirm msg={"Voulez-vous vraiment continuer la création de l'exercice précédent ?"} confirmationState={createPreviewExercice} isLoading={loadingCreatePreviousExercice} /> : null}
-            {openActionConfirmVerrExercice ? <PopupActionConfirm msg={msgVerrExercice} confirmationState={verrouillerExercice} /> : null}
-            {openActionConfirmDeverrExercice ? <PopupActionConfirm msg={msgDeverrExercice} confirmationState={deverrouillerExercice} /> : null}
-            {openActionConfirmDeleteExercice ? <PopupActionConfirm msg={msgDeleteExercice} confirmationState={deleteExercice} /> : null}
+        const handleChangeFindText = (e) => {
+            setFindText(e.target.value);
+            if (e.target.value === '') {
+                setFinalListeDossier(listeDossier);  // Si vide : montre tout
+            } else {
+                const filterValue = e.target.value.toLowerCase();
+                const filtered = listeDossier.filter(dossier =>
+                    dossier.dossier.toLowerCase().includes(filterValue)  // Filtre automatique
+                );
+                setFinalListeDossier(filtered);
+            }
+        };
 
-            <form onSubmit={firstExerciceForm.handleSubmit}>
-                <BootstrapDialog
-                    onClose={handleCloseDialogCreateFirstExercice}
-                    aria-labelledby="customized-dialog-title"
-                    open={openDialogCreateFirstExercice}
+        return(
+    <Box>
+        { noFile?<PopupTestSelectedFile confirmationState = { sendToHome } /> : null
+}
+
+{ openActionConfirm ? <PopupActionConfirm msg={"Voulez-vous vraiment continuer la création de l'exercice suivant ?"} confirmationState={createNextExercice} isLoading={loadingCreateNextExercice} /> : null }
+{ openActionConfirmPrev ? <PopupActionConfirm msg={"Voulez-vous vraiment continuer la création de l'exercice précédent ?"} confirmationState={createPreviewExercice} isLoading={loadingCreatePreviousExercice} /> : null }
+{ openActionConfirmVerrExercice ? <PopupActionConfirm msg={msgVerrExercice} confirmationState={verrouillerExercice} /> : null }
+{ openActionConfirmDeverrExercice ? <PopupActionConfirm msg={msgDeverrExercice} confirmationState={deverrouillerExercice} /> : null }
+{ openActionConfirmDeleteExercice ? <PopupConfirmDelete msg={msgDeleteExercice} confirmationState={deleteExercice} /> : null }
+
+        <form onSubmit={firstExerciceForm.handleSubmit}>
+            <BootstrapDialog
+                onClose={handleCloseDialogCreateFirstExercice}
+                aria-labelledby="customized-dialog-title"
+                open={openDialogCreateFirstExercice}
+            >
+                <DialogTitle sx={{ m: 0, p: 2 }} id="customized-dialog-title" style={{ fontWeight: 'bold', width: '600px', height: '50px', backgroundColor: 'transparent' }}>
+
+                </DialogTitle>
+
+                <IconButton
+                    style={{ color: 'red', textTransform: 'none', outline: 'none' }}
+                    aria-label="close"
+                    onClick={handleCloseDialogCreateFirstExercice}
+                    sx={{
+                        position: 'absolute',
+                        right: 8,
+                        top: 8,
+                        color: (theme) => theme.palette.grey[500],
+                    }}
                 >
-                    <DialogTitle sx={{ m: 0, p: 2 }} id="customized-dialog-title" style={{ fontWeight: 'bold', width: '600px', height: '50px', backgroundColor: 'transparent' }}>
+                    <CloseIcon />
+                </IconButton>
 
-                    </DialogTitle>
-
-                    <IconButton
-                        style={{ color: 'red', textTransform: 'none', outline: 'none' }}
-                        aria-label="close"
-                        onClick={handleCloseDialogCreateFirstExercice}
-                        sx={{
-                            position: 'absolute',
-                            right: 8,
-                            top: 8,
-                            color: (theme) => theme.palette.grey[500],
-                        }}
-                    >
-                        <CloseIcon />
-                    </IconButton>
-
-                    <DialogContent >
-                        <Stack width={"95%"} height={"100%"} spacing={0} alignItems={'center'} alignContent={"center"}
-                            direction={"column"} justifyContent={"center"} style={{ marginLeft: '10px' }}>
-                            <Typography sx={{ ml: 0, flex: 1 }} variant="h7" component="div" >
-                                Création du premier exercice
-                            </Typography>
+                <DialogContent >
+                    <Stack width={"95%"} height={"100%"} spacing={0} alignItems={'center'} alignContent={"center"}
+                        direction={"column"} justifyContent={"center"} style={{ marginLeft: '10px' }}>
+                        <Typography sx={{ ml: 0, flex: 1 }} variant="h7" component="div" >
+                            Création du premier exercice
+                        </Typography>
 
 
-                            <Stack style={{ marginTop: 40, width: "450px" }} display={'flex'} direction={'row'} alignItems={'end'} alignContent={'center'} spacing={4}>
-                                <FormControl
-                                    sx={{ width: "200px" }}
-                                    error={firstExerciceForm.errors.date_debut && firstExerciceForm.touched.date_debut}
-                                >
-                                    <FormLabel id="datedebut-label" htmlFor="date_debut">
-                                        <Typography level="title-date_debut">
-                                            Date début :
-                                        </Typography>
+                        <Stack style={{ marginTop: 40, width: "450px" }} display={'flex'} direction={'row'} alignItems={'end'} alignContent={'center'} spacing={4}>
+                            <FormControl
+                                sx={{ width: "200px" }}
+                                error={firstExerciceForm.errors.date_debut && firstExerciceForm.touched.date_debut}
+                            >
+                                <FormLabel id="datedebut-label" htmlFor="date_debut">
+                                    <Typography level="title-date_debut">
+                                        Date début :
+                                    </Typography>
 
-                                    </FormLabel>
-                                    <Input
-                                        type='date'
-                                        name="date_debut"
-                                        value={firstExerciceForm.values.date_debut}
-                                        onChange={firstExerciceForm.handleChange}
-                                        onBlur={firstExerciceForm.handleBlur}
-                                        required
-                                        slotProps={{
-                                            button: {
-                                                id: "niveau",
-                                                "aria-labelledby": "niveau-label",
-                                            },
-                                        }}
-                                    />
-                                    <FormHelperText>
-                                        {firstExerciceForm.errors.date_debut &&
-                                            firstExerciceForm.touched.date_debut &&
-                                            firstExerciceForm.errors.date_debut}
-                                    </FormHelperText>
-                                </FormControl>
-
-                                <Typography sx={{ ml: 0, pb: 1, flex: 1, }} variant="h7" component="div" >
-                                    au
-                                </Typography>
-
-                                <FormControl
-                                    sx={{ width: "200px" }}
-                                    error={firstExerciceForm.errors.date_fin && firstExerciceForm.touched.date_fin}
-                                >
-                                    <FormLabel id="datefint-label" htmlFor="date_fin">
-                                        <Typography level="title-date_fin">
-                                            Date fin :
-                                        </Typography>
-
-                                    </FormLabel>
-                                    <Input
-                                        type='date'
-                                        name="date_fin"
-                                        value={firstExerciceForm.values.date_fin}
-                                        onChange={firstExerciceForm.handleChange}
-                                        onBlur={firstExerciceForm.handleBlur}
-                                        required
-                                        slotProps={{
-                                            button: {
-                                                id: "niveau",
-                                                "aria-labelledby": "niveau-label",
-                                            },
-                                        }}
-                                    />
-                                    <FormHelperText>
-                                        {firstExerciceForm.errors.date_fin &&
-                                            firstExerciceForm.touched.date_fin &&
-                                            firstExerciceForm.errors.date_fin}
-                                    </FormHelperText>
-                                </FormControl>
-                            </Stack>
-                        </Stack>
-                    </DialogContent>
-
-                    <DialogActions>
-                        <Button autoFocus
-                            sx={{
-                                ...buttonStyle,
-                                backgroundColor: initial.annuler_bouton_color,
-                                color: 'white',
-                                borderColor: initial.annuler_bouton_color,
-                                '&:hover': {
-                                    backgroundColor: initial.annuler_bouton_color,
-                                    border: 'none',
-                                },
-                                '&.Mui-disabled': {
-                                    backgroundColor: initial.annuler_bouton_color,
-                                    color: 'white',
-                                    cursor: 'not-allowed',
-                                },
-                            }} type='submit'
-                            onClick={handleCloseDialogCreateFirstExercice}
-                        >
-                            Annuler
-                        </Button>
-                        <Button autoFocus
-                            disabled={!firstExerciceForm.isValid}
-                            onClick={createFirstExercice}
-                            sx={{
-                                ...buttonStyle,
-                                backgroundColor: '#e79754ff',
-                                color: 'white',
-                                borderColor: '#e79754ff',
-                                boxShadow: 'none',
-
-                                '&:hover': {
-                                    backgroundColor: '#e79754ff',
-                                    border: 'none',
-                                    boxShadow: 'none',       // enlève l’effet bleu shadow
-                                },
-                                '&:focus': {
-                                    backgroundColor: '#e79754ff',
-                                    border: 'none',
-                                    boxShadow: 'none',       // enlève le focus bleu
-                                },
-                                '&.Mui-disabled': {
-                                    backgroundColor: '#e79754ff',
-                                    color: 'white',
-                                    cursor: 'not-allowed',
-                                },
-                                '&::before': {
-                                    display: 'none',         // supprime l’overlay bleu de ButtonGroup
-                                },
-                            }}                        >
-                            Créer
-                        </Button>
-                    </DialogActions>
-                </BootstrapDialog>
-            </form>
-
-
-            <TabContext value={"1"}>
-                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                    <TabList aria-label="lab API tabs example">
-                        <Tab
-                            style={{
-                                textTransform: 'none',
-                                outline: 'none',
-                                border: 'none',
-                                margin: -5
-                            }}
-                            label={InfoFileStyle(fileInfos?.dossier)} value="1"
-                        />
-                    </TabList>
-                </Box>
-                <TabPanel value="1">
-                    <Stack style={{ marginTop: 0 }} width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"} justifyContent={"stretch"}>
-                        <Typography variant='h7' sx={{ color: "black" }} align='left'>Paramétrages : Exercices</Typography>
-
-                        <Stack width={"100%"} height={"30px"} spacing={0} alignItems={"center"} alignContent={"center"}
-                            direction={"row"} style={{ marginLeft: "0px", marginTop: "20px", justifyContent: "right" }}>
-                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                direction={"row"} justifyContent={"right"}>
-
-                                <ButtonGroup
-                                    variant="outlined"
-                                    sx={{
-                                        boxShadow: 'none',
-                                        display: 'flex',
-                                        gap: '2px',
-                                        '& .MuiButton-root': {
-                                            borderRadius: 0,
-                                        },
-                                        '& .MuiButtonGroup-grouped': {
-                                            boxShadow: 'none',
-                                            outline: 'none',
-                                            borderColor: 'inherit',
-                                            marginLeft: 0,
-                                            borderRadius: 1,
-                                            border: 'none',
-                                        },
-                                        '& .MuiButtonGroup-grouped:hover': {
-                                            boxShadow: 'none',
-                                            borderColor: 'inherit',
-                                        },
-                                        '& .MuiButtonGroup-grouped.Mui-focusVisible': {
-                                            boxShadow: 'none',
-                                            borderColor: 'inherit',
+                                </FormLabel>
+                                <Input
+                                    type='date'
+                                    name="date_debut"
+                                    value={firstExerciceForm.values.date_debut}
+                                    onChange={firstExerciceForm.handleChange}
+                                    onBlur={firstExerciceForm.handleBlur}
+                                    required
+                                    slotProps={{
+                                        button: {
+                                            id: "niveau",
+                                            "aria-labelledby": "niveau-label",
                                         },
                                     }}
-                                >
+                                />
+                                <FormHelperText>
+                                    {firstExerciceForm.errors.date_debut &&
+                                        firstExerciceForm.touched.date_debut &&
+                                        firstExerciceForm.errors.date_debut}
+                                </FormHelperText>
+                            </FormControl>
+
+                            <Typography sx={{ ml: 0, pb: 1, flex: 1, }} variant="h7" component="div" >
+                                au
+                            </Typography>
+
+                            <FormControl
+                                sx={{ width: "200px" }}
+                                error={firstExerciceForm.errors.date_fin && firstExerciceForm.touched.date_fin}
+                            >
+                                <FormLabel id="datefint-label" htmlFor="date_fin">
+                                    <Typography level="title-date_fin">
+                                        Date fin :
+                                    </Typography>
+
+                                </FormLabel>
+                                <Input
+                                    type='date'
+                                    name="date_fin"
+                                    value={firstExerciceForm.values.date_fin}
+                                    onChange={firstExerciceForm.handleChange}
+                                    onBlur={firstExerciceForm.handleBlur}
+                                    required
+                                    slotProps={{
+                                        button: {
+                                            id: "niveau",
+                                            "aria-labelledby": "niveau-label",
+                                        },
+                                    }}
+                                />
+                                <FormHelperText>
+                                    {firstExerciceForm.errors.date_fin &&
+                                        firstExerciceForm.touched.date_fin &&
+                                        firstExerciceForm.errors.date_fin}
+                                </FormHelperText>
+                            </FormControl>
+                        </Stack>
+                    </Stack>
+                </DialogContent>
+
+                <DialogActions>
+                    <Button autoFocus
+                        sx={{
+                            ...buttonStyle,
+                            backgroundColor: initial.annuler_bouton_color,
+                            color: 'white',
+                            borderColor: initial.annuler_bouton_color,
+                            '&:hover': {
+                                backgroundColor: initial.annuler_bouton_color,
+                                border: 'none',
+                            },
+                            '&.Mui-disabled': {
+                                backgroundColor: initial.annuler_bouton_color,
+                                color: 'white',
+                                cursor: 'not-allowed',
+                            },
+                        }} type='submit'
+                        onClick={handleCloseDialogCreateFirstExercice}
+                    >
+                        Annuler
+                    </Button>
+                    <Button autoFocus
+                        disabled={!firstExerciceForm.isValid}
+                        onClick={createFirstExercice}
+                        sx={{
+                            ...buttonStyle,
+                            backgroundColor: '#e79754ff',
+                            color: 'white',
+                            borderColor: '#e79754ff',
+                            boxShadow: 'none',
+
+                            '&:hover': {
+                                backgroundColor: '#e79754ff',
+                                border: 'none',
+                                boxShadow: 'none',       // enlève l’effet bleu shadow
+                            },
+                            '&:focus': {
+                                backgroundColor: '#e79754ff',
+                                border: 'none',
+                                boxShadow: 'none',       // enlève le focus bleu
+                            },
+                            '&.Mui-disabled': {
+                                backgroundColor: '#e79754ff',
+                                color: 'white',
+                                cursor: 'not-allowed',
+                            },
+                            '&::before': {
+                                display: 'none',         // supprime l’overlay bleu de ButtonGroup
+                            },
+                        }}                        >
+                        Créer
+                    </Button>
+                </DialogActions>
+            </BootstrapDialog>
+        </form>
+
+
+        <TabContext value={"1"}>
+            {/* <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                <TabList aria-label="lab API tabs example">
+                    <Tab
+                        style={{
+                            textTransform: 'none',
+                            outline: 'none',
+                            border: 'none',
+                            margin: -5
+                        }}
+                        label={InfoFileStyle(fileInfos?.dossier)} value="1"
+                    />
+                </TabList>
+            </Box> */}
+            <TabPanel value="1" sx={{ p: 0 }}>
+                <Box sx={{ p: 3, width: '100%' }}>
+                    {/* BREADCRUMBS */}
+                    {/* <Breadcrumbs
+                        separator={<NavigateNextIcon fontSize="small" sx={{ color: '#94A3B8' }} />}
+                        sx={{ mb: 1 }}
+                    >
+                        <Typography sx={{ fontSize: '12px', fontWeight: 500, color: '#64748B' }}>
+                            Paramétrages
+                        </Typography>
+                        <Typography sx={{ fontSize: '12px', fontWeight: 700, color: NAV_DARK }}>
+                            Exercices & Périodes
+                        </Typography>
+                    </Breadcrumbs> */}
+
+                    {/* TITRE */}
+                    <Typography
+                        variant="h6"
+                        sx={{
+                            fontWeight: 800,
+                            color: '#1E293B',
+                            letterSpacing: '-0.5px',
+                            mb: 3
+                        }}
+                    >
+                        Gestion des Exercices
+                    </Typography>
+
+                    <Grid container spacing={3}>
+                        {/* COLONNE GAUCHE - EXERCICE (5 colonnes) */}
+                        <Grid item xs={12} lg={7}>
+                            {/* BARRE D'OUTILS EXERCICE */}
+                            <Stack
+                                direction="row"
+                                justifyContent="space-between"
+                                alignItems="center"
+                                sx={{
+                                    mb: 2,
+                                    // height: '40px',
+                                    // bgcolor: '#fff',
+                                    // borderRadius: '8px',
+                                    // p: 1
+                                    // border: `1px solid ${BORDER_COLOR}`
+                                }}
+                            >
+                                <Typography sx={{ fontWeight: 700, fontSize: '14px', color: NAV_DARK, ml: 1 }}>
+                                    Exercices
+                                </Typography>
+                                <Stack direction="row" spacing={1}>
+                                    {/* <TextField
+                                            placeholder="Recherche..."
+                                            size="small"
+                                            value={findText}
+                                            onChange={handleChangeFindText}
+                                            sx={{
+                                                width: 140,
+                                                '& .MuiOutlinedInput-root': {
+                                                    borderRadius: '6px',
+                                                    height: '28px',
+                                                    fontSize: '12px'
+                                                }
+                                            }}
+                                            InputProps={{
+                                                startAdornment: (
+                                                    <InputAdornment position="start">
+                                                        <SearchIcon sx={{ fontSize: 16, color: '#94A3B8' }} />
+                                                    </InputAdornment>
+                                                ),
+                                            }}
+                                        /> */}
                                     <Tooltip title="Ajouter l'exercice précédent">
                                         <span>
-                                            <Button
+                                            <IconButton
+                                                size="small"
                                                 disabled={!canAdd}
                                                 onClick={handleCreateNextExercicePrev}
-                                                sx={{
-                                                    ...buttonStyle,
-                                                    backgroundColor: '#e79754ff',
-                                                    color: 'white',
-                                                    borderColor: '#e79754ff',
-                                                    boxShadow: 'none',
-
-                                                    '&:hover': {
-                                                        backgroundColor: '#e79754ff',
-                                                        border: 'none',
-                                                        boxShadow: 'none',       // enlève l’effet bleu shadow
-                                                    },
-                                                    '&:focus': {
-                                                        backgroundColor: '#e79754ff',
-                                                        border: 'none',
-                                                        boxShadow: 'none',       // enlève le focus bleu
-                                                    },
-                                                    '&.Mui-disabled': {
-                                                        backgroundColor: '#e79754ff',
-                                                        color: 'white',
-                                                        cursor: 'not-allowed',
-                                                    },
-                                                    '&::before': {
-                                                        display: 'none',         // supprime l’overlay bleu de ButtonGroup
-                                                    },
-                                                }}
+                                                sx={btnStyle}
                                             >
-                                                Précédent
-                                            </Button>
+                                                <ChevronLeftIcon />
+                                            </IconButton>
                                         </span>
                                     </Tooltip>
 
                                     <Tooltip title="Ajouter l'exercice suivant">
                                         <span>
-                                            <Button
+                                            <IconButton
+                                                size="small"
                                                 disabled={!canAdd}
                                                 onClick={handleCreateNextExercice}
-                                                sx={{
-                                                    ...buttonStyle,
-                                                    backgroundColor: '#e79754ff',
-                                                    color: 'white',
-                                                    borderColor: '#e79754ff',
-                                                    boxShadow: 'none',
-
-                                                    '&:hover': {
-                                                        backgroundColor: '#e79754ff',
-                                                        border: 'none',
-                                                        boxShadow: 'none',       // enlève l’effet bleu shadow
-                                                    },
-                                                    '&:focus': {
-                                                        backgroundColor: '#e79754ff',
-                                                        border: 'none',
-                                                        boxShadow: 'none',       // enlève le focus bleu
-                                                    },
-                                                    '&.Mui-disabled': {
-                                                        backgroundColor: '#e79754ff',
-                                                        color: 'white',
-                                                        cursor: 'not-allowed',
-                                                    },
-                                                    '&::before': {
-                                                        display: 'none',         // supprime l’overlay bleu de ButtonGroup
-                                                    },
-                                                }}
+                                                sx={btnStyle}
                                             >
-                                                Suivant
-                                            </Button>
+                                                <ChevronRightIcon />
+                                            </IconButton>
                                         </span>
                                     </Tooltip>
-
                                     <Tooltip title="Vérrouiller un exercice">
                                         <span>
-                                            <Button
+                                            <IconButton
+                                                size="small"
                                                 disabled={!canModify}
                                                 onClick={handleVerrouillerExercice}
-                                                sx={{
-                                                    ...buttonStyle,
-                                                    backgroundColor: initial.auth_gradient_end,
-                                                    color: 'white',
-                                                    borderColor: initial.auth_gradient_end,
-                                                    '&:hover': {
-                                                        backgroundColor: initial.auth_gradient_end,
-                                                        border: 'none',
-                                                    },
-                                                    '&.Mui-disabled': {
-                                                        backgroundColor: initial.auth_gradient_end,
-                                                        color: 'white',
-                                                        cursor: 'not-allowed',
-                                                    },
-                                                }}
+                                                sx={btnStyle}
                                             >
-                                                Verrouiller
-                                            </Button>
+                                                <LockIcon />
+                                            </IconButton>
                                         </span>
                                     </Tooltip>
 
                                     <Tooltip title="Déverrouiller un exercice">
                                         <span>
-                                            <Button
+                                            <IconButton
+                                                size="small"
                                                 disabled={!canModify}
                                                 onClick={handleDeverrouillerExercice}
-                                                sx={{
-                                                    ...buttonStyle,
-                                                    backgroundColor: initial.auth_gradient_end,
-                                                    color: 'white',
-                                                    borderColor: initial.auth_gradient_end,
-                                                    '&:hover': {
-                                                        backgroundColor: initial.auth_gradient_end,
-                                                        border: 'none',
-                                                    },
-                                                    '&.Mui-disabled': {
-                                                        backgroundColor: initial.auth_gradient_end,
-                                                        color: 'white',
-                                                        cursor: 'not-allowed',
-                                                    },
-                                                }}
+                                                sx={btnStyle}
                                             >
-                                                Déverrouiller
-                                            </Button>
+                                                <LockOpenIcon />
+                                            </IconButton>
                                         </span>
                                     </Tooltip>
 
-                                    <Tooltip title="Supprimer un exercice">
-                                        <span>
-                                            <Button
-                                                disabled={!canDelete || selectedExerciceRow.length === 0}
-                                                onClick={handleDeleteExercice}
-                                                sx={{
-                                                    ...buttonStyle,
-                                                    backgroundColor: initial.annuler_bouton_color,
-                                                    color: 'white',
-                                                    borderColor: initial.annuler_bouton_color,
-                                                    '&:hover': {
-                                                        backgroundColor: initial.annuler_bouton_color,
-                                                        border: 'none',
-                                                    },
-                                                    '&.Mui-disabled': {
-                                                        backgroundColor: initial.annuler_bouton_color,
-                                                        color: 'white',
-                                                        cursor: 'not-allowed',
-                                                    },
-                                                }}
-                                            >
-                                                Supprimer
-                                            </Button>
-                                        </span>
-                                    </Tooltip>
-                                </ButtonGroup>
+                                </Stack>
                             </Stack>
-                        </Stack>
 
-                        <Stack width={"100%"} height={'100%'} minHeight={'600px'}>
-                            <DataGrid
-                                disableMultipleSelection={DataGridStyle.disableMultipleSelection}
-                                disableColumnSelector={DataGridStyle.disableColumnSelector}
-                                disableDensitySelector={DataGridStyle.disableDensitySelector}
-                                disableRowSelectionOnClick
-                                disableSelectionOnClick={true}
-                                localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
-                                slots={{ toolbar: QuickFilter }}
-                                sx={{
-                                    ...DataGridStyle.sx,
-                                    '& .MuiDataGrid-columnHeaders': {
-                                        backgroundColor: initial.tableau_theme,
-                                        color: initial.text_theme,
-                                    },
-                                    '& .MuiDataGrid-columnHeaderTitle': {
-                                        color: initial.text_theme,
-                                        fontWeight: 600,
-                                    },
-                                    '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
-                                        color: initial.text_theme,
-                                    },
-                                    '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
-                                        outline: 'none',
+                            {/* DATAGRID EXERCICE */}
+                            <Paper
+                                elevation={0}
+                                sx={tableContainerStyle}
+                            >
+                                <DataGrid
+                                    disableMultipleSelection={DataGridStyle.disableMultipleSelection}
+                                    disableColumnSelector={DataGridStyle.disableColumnSelector}
+                                    disableDensitySelector={DataGridStyle.disableDensitySelector}
+                                    disableRowSelectionOnClick
+                                    disableSelectionOnClick={true}
+                                    localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                                    sx={{
                                         border: 'none',
-                                    },
-                                    '& .highlight-separator': {
-                                        borderBottom: '1px solid red'
-                                    },
-                                    '& .MuiDataGrid-row.highlight-separator': {
-                                        borderBottom: '1px solid red',
-                                    },
-                                    '& .MuiDataGrid-virtualScroller': {
-                                        maxHeight: '700px',
-                                    },
-                                }}
-                                rowHeight={DataGridStyle.rowHeight}
-                                columnHeaderHeight={DataGridStyle.columnHeaderHeight}
-                                editMode='row'
-                                columns={ExerciceColumnHeader}
-                                rows={listeExercice}
-                                onRowSelectionModelChange={ids => {
-                                    const single = Array.isArray(ids) && ids.length ? [ids[ids.length - 1]] : [];
-                                    saveSelectedExercice(single);
-                                }}
-                                initialState={{
-                                    pagination: {
-                                        paginationModel: { page: 0, pageSize: 100 },
-                                    },
-                                }}
-                                experimentalFeatures={{ newEditingApi: true }}
-                                pageSizeOptions={[50, 100]}
-                                pagination={DataGridStyle.pagination}
-                                checkboxSelection={DataGridStyle.checkboxSelection}
-                                columnVisibilityModel={{
-                                    id: false,
-                                }}
-                                rowSelectionModel={selectedExerciceRow}
+                                        '& .MuiDataGrid-columnHeaders': {
+                                            bgcolor: '#F8FAFC',
+                                            borderBottom: `1px solid ${BORDER_COLOR}`,
+                                        },
+                                        '& .MuiDataGrid-columnHeaderTitle': headerStyle(),
+                                        '& .MuiDataGrid-cell': cellStyle,
+                                        '& .MuiDataGrid-row': {
+                                            '&:hover': { bgcolor: '#F1F5F9' },
+                                            '&:nth-of-type(even)': { bgcolor: '#FAFAFA' },
+                                        },
+                                        '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+                                            outline: 'none',
+                                        },
+                                    }}
+                                    rowHeight={40}
+                                    columnHeaderHeight={40}
+                                    editMode='row'
+                                    columns={ExerciceColumnHeader}
+                                    rows={listeExercice}
+                                    onRowSelectionModelChange={ids => {
+                                        const single = Array.isArray(ids) && ids.length ? [ids[ids.length - 1]] : [];
+                                        saveSelectedExercice(single);
+                                    }}
+                                    initialState={{
+                                        pagination: {
+                                            paginationModel: { page: 0, pageSize: 100 },
+                                        },
+                                    }}
+                                    pageSizeOptions={[50, 100]}
+                                    checkboxSelection={DataGridStyle.checkboxSelection}
+                                    columnVisibilityModel={{
+                                        id: false,
+                                    }}
+                                    rowSelectionModel={selectedExerciceRow}
+                                />
+                            </Paper>
+                        </Grid>
+
+                        {/* COLONNE DROITE - PERIODE (7 colonnes) */}
+                        <Grid item xs={12} lg={5}>
+                            <Periode
+                                selectedExercice={selectedExercice}
+                                idCompte={compteId}
+                                idDossier={fileId}
+                                axiosPrivate={axiosPrivate}
+                                canAdd={canAdd}
+                                canDelete={canDelete}
+                                canModify={canModify}
                             />
-                        </Stack>
+                        </Grid>
+                    </Grid>
+                </Box>
+            </TabPanel>
+        </TabContext>
 
-                        <Periode
-                            selectedExercice={selectedExercice}
-                            idCompte={compteId}
-                            idDossier={fileId}
-                            axiosPrivate={axiosPrivate}
-                            canAdd={canAdd}
-                            canDelete={canDelete}
-                        />
-                    </Stack>
-                </TabPanel>
-            </TabContext>
-
-
-        </Box>
-    )
+    </Box >
+)
 }

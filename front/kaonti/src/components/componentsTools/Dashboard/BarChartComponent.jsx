@@ -9,7 +9,7 @@ import {
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Bar } from 'react-chartjs-2';
-import { Stack } from '@mui/material';
+import { Box } from '@mui/material';
 
 ChartJS.register(
     CategoryScale,
@@ -28,58 +28,32 @@ const formatValue = (value) => {
     return value;
 };
 
-const BarChartComponent = ({ xAxis, xAxis1, dataN, dataN1, label }) => {
+const BarChartComponent = ({ xAxis, dataN, dataN1, label }) => {
     const dataNOnAllLabels = xAxis.map((lbl, idx) => dataN[idx] ?? null);
     const dataN1OnAllLabels = xAxis.map((lbl, idx) => dataN1?.[idx] ?? null);
-
-    const shadowPlugin = {
-        id: 'shadowPlugin',
-        beforeDatasetDraw(chart, args) {
-            const { ctx } = chart;
-            const datasetIndex = args.index;
-            const dataset = chart.data.datasets[datasetIndex];
-
-            if (!dataset) return;
-
-            const color = dataset.borderColor || 'rgba(0,0,0,0.5)';
-
-            ctx.save();
-            ctx.shadowColor = color;
-            ctx.shadowBlur = 20;
-            ctx.shadowOffsetX = 0;
-            ctx.shadowOffsetY = 10;
-        },
-        afterDatasetDraw(chart, args) {
-            chart.ctx.restore();
-        }
-    };
 
     const chartData = {
         labels: xAxis,
         datasets: [
             {
-                label: `N`,
+                label: 'N',
                 data: dataNOnAllLabels,
-                borderColor: '#349beb',
-                backgroundColor: 'rgba(52, 155, 235, 0.55)',
-                borderWidth: 1,
-                borderRadius: 6,
-                maxBarThickness: 22,
-                datalabels: {
-                    display: false,
-                },
+                backgroundColor: '#3B82F6',
+                borderColor: '#3B82F6',
+                borderWidth: 0,
+                borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 },
+                borderSkipped: false,
+                barThickness: 20,
             },
             ...(dataN1 && dataN1.length > 0 ? [{
-                label: `N-1`,
+                label: 'N-1',
                 data: dataN1OnAllLabels,
-                borderColor: '#de5f23',
-                backgroundColor: 'rgba(222, 95, 35, 0.55)',
-                borderWidth: 1,
-                borderRadius: 6,
-                maxBarThickness: 22,
-                datalabels: {
-                    display: false,
-                },
+                borderColor: '#94A3B8',
+                borderDash: [5, 5],
+                borderWidth: 2,
+                borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 },
+                borderSkipped: false,
+                barThickness: 20,
             }] : [])
         ],
     };
@@ -87,38 +61,65 @@ const BarChartComponent = ({ xAxis, xAxis1, dataN, dataN1, label }) => {
     const options = {
         responsive: true,
         maintainAspectRatio: false,
-        layout: { padding: { right: 20 } },
+        interaction: {
+            mode: 'index',
+            intersect: false,
+        },
         plugins: {
             legend: { display: true, position: 'top' },
             title: { display: true, text: label, font: { size: 18 } },
-            tooltip: { enabled: true },
-            datalabels: {},
+            datalabels: { display: false },
+            tooltip: {
+                enabled: true,
+                backgroundColor: '#1E293B',
+                padding: 12,
+                cornerRadius: 8,
+                callbacks: {
+                    // Affichage du montant dans la bulle au survol
+                    label: (context) => {
+                        return ` ${context.dataset.label} : ${new Intl.NumberFormat('fr-FR').format(context.raw)} €`;
+                    }
+                }
+            },
         },
         scales: {
             y: {
+                beginAtZero: true,
                 grid: {
-                    display: false, // enlève la grille
+                    display: true,
+                    color: '#E2E8F0',
+                    borderDash: [3, 3],
+                    drawBorder: false,
+                },
+                ticks: {
+                    font: { size: 11 },
+                    color: '#64748B',
+                    callback: (value) => formatValue(value),
                 },
                 border: {
-                    display: true, // garde l’axe
+                    display: false,
                 },
             },
             x: {
                 grid: {
                     display: false,
+                    drawBorder: false,
+                },
+                ticks: {
+                    font: { size: 11 },
+                    color: '#64748B',
                 },
                 border: {
-                    display: true,
+                    display: false,
                 },
             },
         },
-
     };
 
     return (
-        <Stack flex={1} height={'100%'} width={'100%'} minHeight={0} alignItems="stretch" direction="column">
-            <Bar data={chartData} options={options} plugins={[shadowPlugin]} style={{ width: '100%', height: '100%' }} />
-        </Stack>
+        <Box sx={{ width: '100%', height: '100%' }}>
+            <Bar data={chartData} options={options} />
+        </Box>
     );
 };
 

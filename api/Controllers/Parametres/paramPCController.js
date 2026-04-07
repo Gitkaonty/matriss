@@ -203,8 +203,7 @@ const AddCptToPc = async (req, res) => {
       }
     });
 
-    const longueurcptaux = DossierParam.longcompteaux;
-    const longueurcptstd = DossierParam.longcomptestd;
+    // Plus de limitation de longueur pour les comptes
     const autocompletion = DossierParam.autocompletion;
 
     if (action === "new") {
@@ -255,19 +254,19 @@ const AddCptToPc = async (req, res) => {
         // Formatage compte & baseaux selon les règles métier
         if (autocompletion) {
           if (nature === "Aux") {
-            compteFormated = compte.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
-            compteFormattedAutre = compteautre.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
-            baseAux = baseauxiliaire.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux) || '';
+            compteFormated = compte.toString();
+            compteFormattedAutre = compteautre.toString();
+            baseAux = baseauxiliaire.toString() || '';
           } else {
-            compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
+            compteFormated = compte.toString();
+            compteFormattedAutre = compteautre.toString();
+            baseAux = baseauxiliaire.toString() || '';
           }
         } else {
           if (nature !== "Aux") {
-            compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
+            compteFormated = compte.toString();
+            compteFormattedAutre = compteautre.toString();
+            baseAux = baseauxiliaire.toString() || '';
           } else {
             compteFormated = compte;
             compteFormattedAutre = compteautre;
@@ -390,19 +389,19 @@ const AddCptToPc = async (req, res) => {
         // Formatage compte & baseaux selon les règles métier
         if (autocompletion) {
           if (nature === "Aux") {
-            compteFormated = compte.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
-            compteFormattedAutre = compteautre.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux0);
-            baseAux = baseauxiliaire.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux) || '';
+            compteFormated = compte.toString();
+            compteFormattedAutre = compteautre.toString();
+            baseAux = baseauxiliaire.toString() || '';
           } else {
-            compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
+            compteFormated = compte.toString();
+            compteFormattedAutre = compteautre.toString();
+            baseAux = baseauxiliaire.toString() || '';
           }
         } else {
           if (nature !== "Aux") {
-            compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
+            compteFormated = compte.toString();
+            compteFormattedAutre = compteautre.toString();
+            baseAux = baseauxiliaire.toString();
           } else {
             compteFormated = compte;
             compteFormattedAutre = compteautre;
@@ -523,19 +522,19 @@ const AddCptToPc = async (req, res) => {
         // Formatage compte & baseaux selon les règles métier
         if (autocompletion) {
           if (nature === "Aux") {
-            compteFormated = compte.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
-            compteFormattedAutre = compteautre.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
-            baseAux = baseauxiliaire.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux) || '';
+            compteFormated = compte.toString();
+            compteFormattedAutre = compteautre.toString();
+            baseAux = baseauxiliaire.toString() || '';
           } else {
-            compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
+            compteFormated = compte.toString();
+            compteFormattedAutre = compteautre.toString();
+            baseAux = baseauxiliaire.toString() || '';
           }
         } else {
           if (nature !== "Aux") {
-            compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
+            compteFormated = compte.toString();
+            compteFormattedAutre = compteautre.toString();
+            baseAux = baseauxiliaire.toString() || '';
           } else {
             compteFormated = compte;
             compteFormattedAutre = compteautre;
@@ -655,19 +654,19 @@ const AddCptToPc = async (req, res) => {
         // Formatage compte & baseaux selon les règles métier
         if (autocompletion) {
           if (nature === "Aux") {
-            compteFormated = compte.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
-            compteFormattedAutre = compteautre.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
-            baseAux = baseauxiliaire.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux) || '';
+            compteFormated = compte.toString();
+            compteFormattedAutre = compteautre.toString();
+            baseAux = baseauxiliaire.toString() || '';
           } else {
-            compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
+            compteFormated = compte.toString();
+            compteFormattedAutre = compteautre.toString();
+            baseAux = baseauxiliaire.toString() || '';
           }
         } else {
           if (nature !== "Aux") {
-            compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
+            compteFormated = compte.toString();
+            compteFormattedAutre = compteautre.toString();
+            baseAux = baseauxiliaire.toString() || '';
           } else {
             compteFormated = compte;
             compteFormattedAutre = compteautre;
@@ -797,19 +796,19 @@ const AddCptToPc = async (req, res) => {
         // Formatage compte & baseaux selon les règles métier
         if (autocompletion) {
           if (nature === "Aux") {
-            compteFormated = compte.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
-            compteFormattedAutre = compteautre.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
-            baseAux = baseauxiliaire.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux) || '';
+            compteFormated = compte.toString();
+            compteFormattedAutre = compteautre.toString();
+            baseAux = baseauxiliaire.toString() || '';
           } else {
-            compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
+            compteFormated = compte.toString();
+            compteFormattedAutre = compteautre.toString();
+            baseAux = baseauxiliaire.toString() || '';
           }
         } else {
           if (nature !== "Aux") {
-            compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
+            compteFormated = compte.toString();
+            compteFormattedAutre = compteautre.toString();
+            baseAux = baseauxiliaire.toString() || '';
           } else {
             compteFormated = compte;
             compteFormattedAutre = compteautre;
@@ -946,19 +945,19 @@ const AddCptToPc = async (req, res) => {
         // Formatage compte & baseaux selon les règles métier
         if (autocompletion) {
           if (nature === "Aux") {
-            compteFormated = compte.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
-            compteFormattedAutre = compteautre.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
-            baseAux = baseauxiliaire.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux) || '';
+            compteFormated = compte.toString();
+            compteFormattedAutre = compteautre.toString();
+            baseAux = baseauxiliaire.toString() || '';
           } else {
-            compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            compteFormattedAutre = compteautre.toString().padEnd(longueurcptdstd, "0").slice(0, longueurcptstd);
-            baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
+            compteFormated = compte.toString();
+            compteFormattedAutre = compteautre.toString();
+            baseAux = baseauxiliaire.toString() || '';
           }
         } else {
           if (nature !== "Aux") {
-            compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
+            compteFormated = compte.toString();
+            compteFormattedAutre = compteautre.toString();
+            baseAux = baseauxiliaire.toString() || '';
           } else {
             compteFormated = compte;
             compteFormattedAutre = compteautre;
@@ -1092,19 +1091,19 @@ const AddCptToPc = async (req, res) => {
         // Formatage compte & baseaux selon les règles métier
         if (autocompletion) {
           if (nature === "Aux") {
-            compteFormated = compte.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
-            compteFormattedAutre = compteautre.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
-            baseAux = baseauxiliaire.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux) || '';
+            compteFormated = compte.toString();
+            compteFormattedAutre = compteautre.toString();
+            baseAux = baseauxiliaire.toString() || '';
           } else {
-            compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
+            compteFormated = compte.toString();
+            compteFormattedAutre = compteautre.toString();
+            baseAux = baseauxiliaire.toString() || '';
           }
         } else {
           if (nature !== "Aux") {
-            compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
+            compteFormated = compte.toString();
+            compteFormattedAutre = compteautre.toString();
+            baseAux = baseauxiliaire.toString() || '';
           } else {
             compteFormated = compte;
             compteFormattedAutre = compteautre;
@@ -1235,19 +1234,19 @@ const AddCptToPc = async (req, res) => {
         // Formatage compte & baseaux selon les règles
         if (autocompletion) {
           if (nature === "Aux") {
-            compteFormated = compte.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
-            compteFormattedAutre = compteautre.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux);
-            baseAux = baseauxiliaire.toString().padEnd(longueurcptaux, "0").slice(0, longueurcptaux) || '';
+            compteFormated = compte.toString();
+            compteFormattedAutre = compteautre.toString();
+            baseAux = baseauxiliaire.toString() || '';
           } else {
-            compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
+            compteFormated = compte.toString();
+            compteFormattedAutre = compteautre.toString();
+            baseAux = baseauxiliaire.toString() || '';
           }
         } else {
           if (nature !== "Aux") {
-            compteFormated = compte.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd);
-            compteFormattedAutre = compteautre.toString().padEnd(longueurcptstc, "0").slice(0, longueurcptstd);
-            baseAux = baseauxiliaire.toString().padEnd(longueurcptstd, "0").slice(0, longueurcptstd) || '';
+            compteFormated = compte.toString();
+            compteFormattedAutre = compteautre.toString();
+            baseAux = baseauxiliaire.toString() || '';
           } else {
             compteFormated = compte;
             compteFormattedAutre = compteautre;

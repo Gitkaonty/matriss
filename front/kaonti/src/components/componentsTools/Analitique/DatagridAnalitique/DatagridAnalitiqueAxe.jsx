@@ -1,11 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Stack, Box, FormControl, Input } from '@mui/material';
+import { Stack, Box, FormControl, Input, Typography, Paper, Grid } from '@mui/material';
 import { IconButton, Tooltip, Button } from '@mui/material';
-
-import { IoMdTrash } from "react-icons/io";
-import { TbPlaylistAdd } from "react-icons/tb";
-import { FaRegPenToSquare } from "react-icons/fa6";
-import { VscClose } from 'react-icons/vsc';
 
 import { init } from '../../../../../init';
 import axios from '../../../../../config/axios';
@@ -13,12 +8,21 @@ import toast from 'react-hot-toast';
 import { DataGridStyle } from '../../../componentsTools/DatagridToolsStyle';
 import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes, useGridApiRef } from '@mui/x-data-grid';
 import QuickFilter from '../../../componentsTools/DatagridToolsStyle';
-import { TfiSave } from 'react-icons/tfi';
 
 import { useFormik } from 'formik';
 import * as Yup from "yup";
 import PopupConfirmDelete from '../../popupConfirmDelete.jsx';
 import useAxiosPrivate from '../../../../../config/axiosPrivate.js';
+
+import CancelIcon from '@mui/icons-material/Cancel';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/EditOutlined';
+import DeleteIcon from '@mui/icons-material/DeleteOutline';
+import SaveIcon from '@mui/icons-material/CheckCircleOutline';
+
+const NEON_MINT = '#00FF94';
+const NAV_DARK = '#0B1120';
+const BG_SOFT = '#F8FAFC';
 
 const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeId, setSelectedRowAxeId, isCaActive, canModify, canAdd, canDelete, canView }) => {
     const apiRef = useGridApiRef();
@@ -77,12 +81,12 @@ const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeId, setSel
     const columnHeader = [
         {
             field: 'code',
-            headerName: 'Code Axe',
+            headerName: 'CODE AXE',
             flex: 0.5,
             sortable: true,
             headerAlign: 'left',
             align: 'left',
-            headerClassName: 'HeaderbackColor',
+            headerClassName: 'analytics-header',
             editable: editableRow,
             renderEditCell: (params) => {
                 return (
@@ -103,15 +107,20 @@ const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeId, setSel
                     </FormControl>
                 );
             },
+            renderCell: (params) => (
+                <Typography sx={{ fontSize: '13px', fontWeight: 700, color: '#1E293B' }}>
+                    {params.value}
+                </Typography>
+            ),
         },
         {
             field: 'libelle',
-            headerName: 'Libellé',
+            headerName: 'LIBELLÉ',
             flex: 1.5,
             sortable: true,
             headerAlign: 'left',
             align: 'left',
-            headerClassName: 'HeaderbackColor',
+            headerClassName: 'analytics-header',
             editable: editableRow,
             renderEditCell: (params) => {
                 return (
@@ -130,6 +139,74 @@ const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeId, setSel
                             disabled={disableDefaultFieldModif}
                         />
                     </FormControl>
+                );
+            },
+            renderCell: (params) => (
+                <Typography sx={{ fontSize: '13px', color: '#475569' }}>
+                    {params.value}
+                </Typography>
+            ),
+        },
+        {
+            field: 'actions',
+            headerName: 'ACTIONS',
+            flex: 0.5,
+            sortable: false,
+            headerAlign: 'right',
+            align: 'right',
+            headerClassName: 'analytics-header',
+            editable: false,
+            renderCell: (params) => {
+                const isEditing = rowModesModel[params.id]?.mode === GridRowModes.Edit;
+                const isSelected = selectedRowId.includes(params.id);
+
+                return (
+                    <Stack direction="row" spacing={0.5} justifyContent="flex-end" sx={{ pr: 1 }}>
+                        {isEditing ? (
+                            <>
+                                <IconButton
+                                    disabled={(!canAdd && !canModify) || !formNewParam.isValid}
+                                    onClick={handleSaveClick(selectedRowId)}
+                                    size="small"
+                                    sx={{ color: '#10B981' }}
+                                    title="Sauvegarder"
+                                >
+                                    <SaveIcon sx={{ fontSize: 20 }} />
+                                </IconButton>
+                                <IconButton
+                                    disabled={disableCancelBouton}
+                                    onClick={handleCancelClick(selectedRowId)}
+                                    size="small"
+                                    sx={{ color: '#F43F5E' }}
+                                    title="Annuler"
+                                >
+                                    <CancelIcon sx={{ fontSize: 20 }} />
+                                </IconButton>
+                            </>
+                        ) : (
+                            <>
+                                <IconButton
+                                    disabled={(!canModify && selectedRowId > 0) || disableModifyBouton}
+                                    onClick={handleEditClick(selectedRowId)}
+                                    size="small"
+                                    sx={{ color: '#CBD5E1', '&:hover': { color: NAV_DARK } }}
+                                    title="Modifier"
+                                >
+                                    <EditIcon sx={{ fontSize: 20 }} />
+                                </IconButton>
+                                <IconButton
+                                    disabled={!canDelete || disableDeleteBouton}
+                                    onClick={handleOpenDialogConfirmDeleteRow}
+                                    size="small"
+                                    sx={{ color: '#CBD5E1', '&:hover': { color: '#EF4444' } }}
+                                    title="Supprimer"
+                                >
+                                    <DeleteIcon sx={{ fontSize: 20 }} />
+                                </IconButton>
+                            </>
+                        )
+                        }
+                    </Stack>
                 );
             },
         },
@@ -170,7 +247,6 @@ const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeId, setSel
             event.defaultMuiPrevented = true;
         }
     };
-
     const handleEditClick = (id) => () => {
         setCodeValidationColor('transparent');
         setLibelleValidationColor('transparent');
@@ -434,166 +510,45 @@ const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeId, setSel
                     :
                     null
             }
+            {/* SECTION AXES */}
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                <Typography sx={{ fontWeight: 900, color: '#1E293B', fontSize: '18px' }}>Axes</Typography>
+                <Button
+                    variant="contained"
+                    size="small"
+                    onClick={handleOpenDialogAddNewRow}
+                    startIcon={<AddIcon sx={{ fontSize: '16px !important' }} />}
+                    sx={{
+                        bgcolor: NEON_MINT,
+                        textTransform: 'none',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        mr: 2,
+                        color: '#000',
+                        borderRadius: '6px',
+                        px: 2,
+                        '&:hover': {
+                            bgcolor: '#00E685',
+                            transform: 'translateY(-1px)'
+                        },
+                    }}
+                >
+                    Ajouter axe
+                </Button>
+            </Stack>
             <Box
                 sx={{ width: '100%' }}
-                style={{
-                    borderRight: '15px solid #F4F9F9'
-                }}
+            // style={{
+            //     borderRight: '15px solid #F4F9F9'
+            // }}
             >
-
-                <Stack
+                <Paper
+                    elevation={0}
                     sx={{
-                        width: '100%',
-                        justifyContent: 'flex-end',
-                        alignItems: 'flex-start',
-                        padding: '10px',
-                    }}
-                    direction={'row'}
-                    spacing={0.5}
-                >
-                    <Tooltip title="Ajouter une ligne">
-                        <Stack>
-                            <Button
-                                disabled={!canAdd || disableAddRowBouton || !isCaActive}
-                                variant="contained"
-                                onClick={handleOpenDialogAddNewRow}
-                                sx={{
-                                    ...buttonStyle,
-                                    backgroundColor: initial.auth_gradient_end,
-                                    color: 'white',
-                                    borderColor: initial.auth_gradient_end,
-                                    '&:hover': {
-                                        backgroundColor: initial.auth_gradient_end,
-                                        boxShadow: 'none',
-                                    },
-                                    '&:focus': {
-                                        backgroundColor: initial.auth_gradient_end,
-                                        boxShadow: 'none',
-                                    },
-                                    '&.Mui-disabled': {
-                                        backgroundColor: initial.auth_gradient_end,
-                                        color: 'white',
-                                        cursor: 'not-allowed',
-                                    },
-                                    '&::before': {
-                                        display: 'none',
-                                    },
-                                }}
-                            >
-                                Ajouter
-                            </Button>
-                        </Stack>
-                    </Tooltip>
-
-                    <Tooltip title="Modifier la ligne sélectionnée">
-                        <Stack>
-                            <Button
-                                disabled={(!canModify && selectedRowId > 0) || disableModifyBouton || !isCaActive}
-                                variant="contained"
-                                onClick={handleEditClick(selectedRowId)}
-                                sx={{
-                                    ...buttonStyle,
-                                    backgroundColor: initial.auth_gradient_end,
-                                    color: 'white',
-                                    borderColor: initial.auth_gradient_end,
-                                    '&:hover': {
-                                        backgroundColor: initial.auth_gradient_end,
-                                    },
-                                    '&.Mui-disabled': {
-                                        backgroundColor: initial.auth_gradient_end,
-                                        color: 'white',
-                                        cursor: 'not-allowed',
-                                    },
-                                }}
-                            >
-                                Modifier
-                            </Button>
-                        </Stack>
-                    </Tooltip>
-
-                    <Tooltip title="Sauvegarder les modifications">
-                        <Stack>
-                            <Button
-                                disabled={(!canAdd && !canModify) || disableSaveBouton || !formNewParam.isValid || !isCaActive}
-                                variant="contained"
-                                onClick={handleSaveClick(selectedRowId)}
-                                sx={{
-                                    ...buttonStyle,
-                                    backgroundColor: initial.auth_gradient_end,
-                                    color: 'white',
-                                    borderColor: initial.auth_gradient_end,
-                                    '&:hover': {
-                                        backgroundColor: initial.auth_gradient_end,
-                                    },
-                                    '&.Mui-disabled': {
-                                        backgroundColor: initial.auth_gradient_end,
-                                        color: 'white',
-                                        cursor: 'not-allowed',
-                                    },
-                                }}
-                            >
-                                Sauvegarder
-                            </Button>
-                        </Stack>
-                    </Tooltip>
-
-                    <Tooltip title="Annuler les modifications">
-                        <Stack>
-                            <Button
-                                disabled={disableCancelBouton || !isCaActive}
-                                variant="contained"
-                                onClick={handleCancelClick(selectedRowId)}
-                                sx={{
-                                    ...buttonStyle,
-                                    backgroundColor: initial.annuler_bouton_color,
-                                    color: 'white',
-                                    borderColor: initial.annuler_bouton_color,
-                                    '&:hover': {
-                                        backgroundColor: initial.annuler_bouton_color,
-                                    },
-                                    '&.Mui-disabled': {
-                                        backgroundColor: initial.annuler_bouton_color,
-                                        color: 'white',
-                                        cursor: 'not-allowed',
-                                    },
-                                }}
-                            >
-                                Annuler
-                            </Button>
-                        </Stack>
-                    </Tooltip>
-
-                    <Tooltip title="Supprimer la ligne sélectionné">
-                        <Stack>
-                            <Button
-                                disabled={!canDelete || disableDeleteBouton || !isCaActive}
-                                onClick={handleOpenDialogConfirmDeleteRow}
-                                variant="contained"
-                                sx={{
-                                    ...buttonStyle,
-                                    backgroundColor: initial.annuler_bouton_color,
-                                    color: 'white',
-                                    borderColor: initial.annuler_bouton_color,
-                                    '&:hover': {
-                                        backgroundColor: initial.annuler_bouton_color,
-                                    },
-                                    '&.Mui-disabled': {
-                                        backgroundColor: initial.annuler_bouton_color,
-                                        color: 'white',
-                                        cursor: 'not-allowed',
-                                    },
-                                }}
-                            >
-                                Supprimer
-                            </Button>
-                        </Stack>
-                    </Tooltip>
-                </Stack>
-
-                <Stack
-                    sx={{ height: 450 }}
-                    style={{
-                        marginTop: '0px'
+                        borderRadius: '16px',
+                        border: '1px solid #E2E8F0',
+                        overflow: 'hidden',
+                        height: 450
                     }}
                 >
                     <DataGrid
@@ -604,32 +559,46 @@ const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeId, setSel
                         localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
                         disableRowSelectionOnClick
                         disableSelectionOnClick={true}
-                        slots={{ toolbar: QuickFilter }}
+                        // slots={{ toolbar: QuickFilter }}
                         sx={{
                             ...DataGridStyle.sx,
+                            '& .analytics-header': {
+                                backgroundColor: '#F8FAFC',
+                                '& .MuiDataGrid-columnHeaderTitle': {
+                                    fontWeight: 800,
+                                    color: '#64748B',
+                                    fontSize: '10px',
+                                    textTransform: 'uppercase'
+                                },
+                                '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
+                                    color: '#64748B',
+                                },
+                            },
                             '& .MuiDataGrid-columnHeaders': {
-                                backgroundColor: initial.tableau_theme,
-                                color: initial.text_theme,
+                                backgroundColor: '#F8FAFC',
+                                borderBottom: '1px solid #E2E8F0',
                             },
-                            '& .MuiDataGrid-columnHeaderTitle': {
-                                color: initial.text_theme,
-                                fontWeight: 600,
+                            '& .MuiDataGrid-row': {
+                                '&:hover': {
+                                    backgroundColor: '#F1F5F9',
+                                },
+                                borderBottom: '1px solid #E2E8F0',
                             },
-                            '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
-                                color: initial.text_theme,
+                            '& .MuiDataGrid-cell': {
+                                borderBottom: 'none',
+                                '&:focus, &:focus-within': {
+                                    outline: 'none',
+                                    border: 'none',
+                                },
                             },
-                            '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
-                                outline: 'none',
-                                border: 'none',
+                            '& .MuiDataGrid-virtualScroller': {
+                                maxHeight: '700px',
                             },
                             '& .highlight-separator': {
                                 borderBottom: '1px solid red'
                             },
                             '& .MuiDataGrid-row.highlight-separator': {
                                 borderBottom: '1px solid red',
-                            },
-                            '& .MuiDataGrid-virtualScroller': {
-                                maxHeight: '700px',
                             },
                         }}
                         rowHeight={DataGridStyle.rowHeight}
@@ -695,7 +664,7 @@ const DatagridAnalitiqueAxe = ({ id_compte, id_dossier, selectedRowAxeId, setSel
                         }}
                         onCellKeyDown={handleCellKeyDown}
                     />
-                </Stack>
+                </Paper>
             </Box>
         </>
     );

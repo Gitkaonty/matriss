@@ -1,9 +1,9 @@
 import { Box, LinearProgress, Typography, Stack } from '@mui/material';
 import { useState, useEffect, useRef } from 'react';
 
-export default function ImportProgressBar({ 
-    isVisible = false, 
-    message = 'Import en cours...', 
+export default function ImportProgressBar({
+    isVisible = false,
+    message = 'Import en cours...',
     progress = null,
     variant = 'indeterminate'
 }) {
@@ -30,16 +30,16 @@ export default function ImportProgressBar({
             intervalRef.current = setInterval(() => {
                 const elapsed = Date.now() - startTimeRef.current;
                 const estimatedDuration = 2500;
-                
+
                 let newProgress = (elapsed / estimatedDuration) * 95;
-                
+
                 if (progress === 100) {
                     newProgress = 100;
                     clearInterval(intervalRef.current);
                 } else {
                     newProgress = Math.min(newProgress, 95);
                 }
-                
+
                 setDisplayProgress(Math.max(0, newProgress));
             }, 50);
 
@@ -60,46 +60,46 @@ export default function ImportProgressBar({
     if (!isVisible) return null;
 
     return (
-        <Box 
-            sx={{ 
-                width: '100%', 
+        <Box
+            sx={{
+                width: '100%',
                 padding: '20px 0',
                 display: 'flex',
                 flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center'
+                alignItems: 'flex-start'
             }}
         >
-            <Stack 
-                spacing={2} 
-                direction="column" 
-                width="100%" 
+            <Stack
+                spacing={0.5}
+                direction="column"
+                width="100%"
                 maxWidth="600px"
-                alignItems="center" 
-                justifyContent="center"
+                alignItems="flex-start"
             >
-                <Typography 
-                    variant="h6" 
-                    style={{ 
+                <Typography
+                    variant="body2"
+                    sx={{
                         color: '#2973B2',
                         fontWeight: 500,
-                        textAlign: 'center'
+                        textAlign: 'left',
+                        width: '100%'
                     }}
                 >
                     {message}
                 </Typography>
-                
-                <Stack 
-                    direction="row" 
-                    spacing={2} 
-                    alignItems="center" 
+
+                <Stack
+                    direction="row"
+                    spacing={1}
+                    alignItems="center"
                     sx={{ width: '100%' }}
                 >
-                    <Box sx={{ flexGrow: 1 }}>
-                        <LinearProgress 
+                    <Box sx={{ flexGrow: 1, display: "flex", alignItems: "center" }}>
+                        <LinearProgress
                             variant={variant}
                             value={variant === 'determinate' ? displayProgress : undefined}
                             sx={{
+                                width: "100%",
                                 height: 8,
                                 borderRadius: 5,
                                 backgroundColor: 'rgba(41, 115, 178, 0.1)',
@@ -110,13 +110,12 @@ export default function ImportProgressBar({
                             }}
                         />
                     </Box>
-                    
+
                     {variant === 'determinate' && (
-                        <Typography 
-                            variant="body1" 
-                            color="text.secondary"
-                            sx={{ 
-                                minWidth: '50px',
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                minWidth: 40,
                                 fontWeight: 600,
                                 color: '#2973B2'
                             }}

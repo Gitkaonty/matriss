@@ -270,7 +270,9 @@ const formatResponse = (items) => items.map(item => ({
     compte: item.compte,
     libelle: item.libelle,
     debit: item.debit,
-    credit: item.credit
+    credit: item.credit,
+    statut: item.statut || 'NON_VALIDE',
+    date_validation: item.date_validation
 }));
 
 // ==========================================
@@ -392,6 +394,55 @@ exports.rechercherDoublons = async (req, res) => {
 };
 
 /**
+ * GET /administration/rechercheDoublon/:id_dossier/:id_exercice/stats
+ * Récupère les statistiques de recherche
+ */
+exports.getStats = async (req, res) => {
+    try {
+        const { id_dossier, id_exercice } = req.params;
+        const { id_periode } = req.query;
+
+        const whereClause = { id_dossier, id_exercice };
+        if (id_periode) whereClause.id_periode = id_periode;
+
+        const nbLignes = await db.rechercheDoublons.count({ where: whereClause });
+        const nbGroupes = await db.rechercheDoublons.count({
+            where: whereClause,
+            distinct: true,
+            col: 'id_doublon'
+        });
+        const nbGroupesValides = await db.rechercheDoublons.count({
+            where: { ...whereClause, statut: 'VALIDE' },
+            distinct: true,
+            col: 'id_doublon'
+        });
+        const nbGroupesNonValides = Math.max(nbGroupes - nbGroupesValides, 0);
+
+        return res.status(200).json({
+            state: true,
+            data: {
+                nbLignes,
+                // Synthèse anomalies: on compte par groupe (id_doublon)
+                total_anomalies: nbGroupes,
+                total: nbGroupes,
+                nbGroupes,
+                nbGroupesValides,
+                nbGroupesNonValides,
+                restantes: nbGroupesNonValides,
+                nonValide: nbGroupesNonValides
+            }
+        });
+    } catch (error) {
+        console.error('Erreur stats doublons:', error);
+        return res.status(500).json({
+            state: false,
+            message: 'Erreur lors de la récupération des statistiques',
+            error: error.message
+        });
+    }
+};
+
+/**
  * GET /administration/rechercheDoublon/:id_dossier/:id_exercice
  * Récupère les résultats d'une recherche précédente
  */
@@ -434,7 +485,6 @@ exports.getResultats = async (req, res) => {
 };
 
 /**
- * DELETE /administration/rechercheDoublon/:id_dossier/:id_exercice
  * Supprime les résultats d'une recherche
  */
 exports.supprimerResultats = async (req, res) => {
@@ -457,6 +507,128 @@ exports.supprimerResultats = async (req, res) => {
         return res.status(500).json({
             state: false,
             message: 'Erreur lors de la suppression des résultats',
+            error: error.message
+        });
+    }
+};
+
+/**
+ * Valide un groupe de doublons
+ */
+
+exports.validerGroupeDoublon = async (req, res) => {
+    const transaction = await db.sequelize.transaction();
+    
+    try {
+        const { id_compte, id_dossier, id_exercice, id_doublon } = req.params;
+        
+        // Validation des paramètres
+        if (!id_compte || !id_dossier || !id_exercice || !id_doublon) {
+            await transaction.rollback();
+            return res.status(400).json({
+                state: false,
+                message: "Paramètres manquants"
+            });
+        }
+
+        // Vérifier que le groupe existe
+        const groupeExistant = await db.rechercheDoublons.findOne({
+            where: { 
+                id_dossier, 
+                id_exercice, 
+                id_doublon: parseInt(id_doublon) 
+            },
+            transaction
+        });
+
+        if (!groupeExistant) {
+            await transaction.rollback();
+            return res.status(404).json({
+                state: false,
+                message: "Groupe de doublons non trouvé"
+            });
+        }
+
+        // Récupérer toutes les écritures du groupe
+        const ecrituresGroupe = await db.rechercheDoublons.findAll({
+            where: { 
+                id_dossier, 
+                id_exercice, 
+                id_doublon: parseInt(id_doublon) 
+            },
+            attributes: ['id_jnl', 'id_doublon'],
+            transaction
+        });
+
+        if (ecrituresGroupe.length === 0) {
+            console.error('❌ [BACK] Aucune écriture trouvée');
+            await transaction.rollback();
+            return res.status(404).json({
+                state: false,
+                message: "Aucune écriture trouvée pour ce groupe"
+            });
+        }
+
+        const idsJnl = ecrituresGroupe.map(e => e.id_jnl);
+        
+        // Vérifier d'abord ce qui existe
+        const avant = await db.rechercheDoublons.findAll({
+            where: { 
+                id_dossier, 
+                id_exercice, 
+                id_doublon: parseInt(id_doublon) 
+            },
+            transaction
+        });
+        
+        const [updateRechercheResult] = await db.rechercheDoublons.update(
+            { 
+                statut: 'VALIDE',
+                date_validation: new Date(),
+                updated_at: new Date()
+            },
+            { 
+                where: { 
+                    id_dossier, 
+                    id_exercice, 
+                    id_doublon: parseInt(id_doublon) 
+                },
+                transaction
+            }
+        );
+        console.log('✅ [BACK] rechercheDoublons mis à jour:', updateRechercheResult, 'lignes');
+        
+        // Vérifier après
+        const apres = await db.rechercheDoublons.findAll({
+            where: { 
+                id_dossier, 
+                id_exercice, 
+                id_doublon: parseInt(id_doublon) 
+            },
+            transaction
+        });
+
+        await transaction.commit();
+
+        return res.status(200).json({
+            state: true,
+            message: `Groupe ${id_doublon} validé avec succès (${updateRechercheResult} écritures)`,
+            data: {
+                id_doublon: parseInt(id_doublon),
+                nb_ecritures_valides: ecrituresGroupe.length,
+                ids_jnl: idsJnl,
+                statut: 'VALIDE',
+                date_validation: new Date().toISOString()
+            }
+        });
+
+    } catch (error) {
+        await transaction.rollback();
+        console.error('❌ [BACK] Erreur validation groupe doublon:', error);
+        console.error('❌ [BACK] Stack trace:', error.stack);
+        return res.status(500).json({
+            state: false,
+            message: "Erreur lors de la validation du groupe",
             error: error.message
         });
     }

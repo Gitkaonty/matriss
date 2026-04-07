@@ -223,6 +223,11 @@ module.exports = (sequelize, DataTypes) => {
         motdepasse: {
             type: DataTypes.STRING(255),
             allowNull: true
+        },
+        seuil_revu_analytique: {
+            type: DataTypes.DOUBLE,
+            allowNull: false,
+            defaultValue: 30.0
         }
     }, { timestamps: true },)
     return dossiers

@@ -70,6 +70,15 @@ module.exports = (sequelize, DataTypes) => {
     id_doublon: {
       type: DataTypes.INTEGER,
       allowNull: false
+    },
+    statut: {
+      type: DataTypes.ENUM('VALIDE', 'NON_VALIDE'),
+      defaultValue: 'NON_VALIDE',
+      allowNull: true
+    },
+    date_validation: {
+      type: DataTypes.DATE,
+      allowNull: true
     }
   }, {
     tableName: 'recherche_doublons',

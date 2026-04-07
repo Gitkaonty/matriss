@@ -202,7 +202,7 @@ exports.addOrUpdateSections = async (req, res) => {
             msg: 'Une erreur est survenue au moment du traitement.',
         }
 
-        if (!compte || !compteId || !fileId || !intitule || !pourcentage || !section) {
+        if (!compteId || !fileId || !intitule || !pourcentage || !section) {
             return res.status(400).json({
                 state: false,
                 message: "Données manquantes ou invalides"

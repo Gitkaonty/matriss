@@ -1,62 +1,17 @@
 import { useCallback, useMemo, useState, useEffect, useRef } from 'react';
-import { Badge, Box, Checkbox, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import { Box, Checkbox, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, alpha, Chip, DialogTitle, Divider } from '@mui/material';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import { init } from '../../../../init';
 import useAxiosPrivate from '../../../hooks/useAxiosPrivate';
-import PopupCommentaireAnalytique from './PopupCommentaireAnalytique';
 
 export default function RevuAnalytiqueMensuelle({ compteId, dossierId, exerciceId, dateDebut, dateFin }) {
     let initial = init[0];
     const axiosPrivate = useAxiosPrivate();
 
-    const [popupOpen, setPopupOpen] = useState(false);
-    const [selectedRow, setSelectedRow] = useState(null);
     const [rows, setRows] = useState([]);
     const [loading, setLoading] = useState(false);
     const [moisColumns, setMoisColumns] = useState([]);
     const scrollContainerRef = useRef(null);
-
-    const handleToggleAnomalie = useCallback(
-        async (row, checked) => {
-            try {
-                await axiosPrivate.post('/commentaireAnalytiqueMensuelle/addOrUpdate', {
-                    id_compte: compteId,
-                    id_exercice: exerciceId,
-                    id_dossier: dossierId,
-                    compte: row.compte,
-                    commentaire: row.commentaire || '',
-                    valide_anomalie: row.valide_anomalie,
-                    anomalies: checked,
-                });
-
-                setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, anomalies: checked } : r)));
-            } catch (error) {
-                console.error('Erreur lors de la mise à jour anomalie:', error);
-            }
-        },
-        [axiosPrivate, compteId, dossierId, exerciceId]
-    );
-
-    const handleToggleValide = useCallback(
-        async (row, checked) => {
-            try {
-                await axiosPrivate.post('/commentaireAnalytiqueMensuelle/addOrUpdate', {
-                    id_compte: compteId,
-                    id_exercice: exerciceId,
-                    id_dossier: dossierId,
-                    compte: row.compte,
-                    commentaire: row.commentaire || '',
-                    valide_anomalie: checked,
-                    anomalies: row.anomalies,
-                });
-
-                setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, valide_anomalie: checked } : r)));
-            } catch (error) {
-                console.error('Erreur lors de la validation anomalie:', error);
-            }
-        },
-        [axiosPrivate, compteId, dossierId, exerciceId]
-    );
 
     // Colonnes de base fixes (Compte + Libelle avec classes CSS sticky)
     const baseColumns = [
@@ -144,12 +99,15 @@ export default function RevuAnalytiqueMensuelle({ compteId, dossierId, exerciceI
                     <Checkbox
                         size="small"
                         checked={!!params.value}
-                        onChange={(e) => handleToggleAnomalie(params.row, e.target.checked)}
+                        disabled
                         sx={{
                             color: params.value ? 'orange' : 'green',
                             '&.Mui-checked': {
                                 color: 'orange',
                             },
+                            '&.Mui-disabled': {
+                                color: params.value ? 'orange' : 'green',
+                            }
                         }}
                     />
                 ),
@@ -164,7 +122,12 @@ export default function RevuAnalytiqueMensuelle({ compteId, dossierId, exerciceI
                     <Checkbox
                         size="small"
                         checked={!!params.row.valide_anomalie}
-                        onChange={(e) => handleToggleValide(params.row, e.target.checked)}
+                        disabled
+                        sx={{
+                            '&.Mui-disabled': {
+                                color: params.row.valide_anomalie ? 'success.main' : 'inherit'
+                            }
+                        }}
                     />
                 ),
             },
@@ -176,33 +139,16 @@ export default function RevuAnalytiqueMensuelle({ compteId, dossierId, exerciceI
                 disableColumnMenu: true,
                 renderCell: (params) => (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-                        <Badge
-                            variant={params.row.commentaire && String(params.row.commentaire).trim() ? 'dot' : 'standard'}
-                            color="success"
-                            overlap="circular"
+                        <IconButton
+                            size="small"
+                            disabled
+                            sx={{
+                                backgroundColor: params.row.commentaire ? 'success.main' : 'grey.400',
+                                color: 'white',
+                            }}
                         >
-                            <IconButton
-                                size="small"
-                                sx={{
-                                    backgroundColor: 'primary.main',
-                                    color: 'white',
-                                    '&:hover': {
-                                        backgroundColor: 'primary.dark',
-                                    }
-                                }}
-                                onClick={() => {
-                                    setSelectedRow({
-                                        ...params.row,
-                                        id_compte: compteId,
-                                        id_exercice: exerciceId,
-                                        id_dossier: dossierId,
-                                    });
-                                    setPopupOpen(true);
-                                }}
-                            >
-                                <EditNoteIcon fontSize="small" />
-                            </IconButton>
-                        </Badge>
+                            <EditNoteIcon fontSize="small" />
+                        </IconButton>
                         <Box
                             sx={{
                                 overflow: 'hidden',
@@ -218,7 +164,7 @@ export default function RevuAnalytiqueMensuelle({ compteId, dossierId, exerciceI
             },
         ];
         return finalColumns;
-    }, [monthColumns, compteId, dossierId, exerciceId, handleToggleValide, handleToggleAnomalie]);
+    }, [monthColumns, compteId, dossierId, exerciceId]);
 
     useEffect(() => {
         const fetchRevuAnalytiqueMensuelle = async () => {
@@ -252,77 +198,119 @@ export default function RevuAnalytiqueMensuelle({ compteId, dossierId, exerciceI
         fetchRevuAnalytiqueMensuelle();
     }, [axiosPrivate, compteId, dossierId, exerciceId, dateDebut, dateFin]);
 
-    const handleSaveCommentaire = (savedCommentaire) => {
-        const savedCompte = savedCommentaire?.compte;
-        setRows((prevRows) =>
-            prevRows.map((row) =>
-                row.compte === savedCompte
-                    ? {
-                        ...row,
-                        commentaire: savedCommentaire?.commentaire ?? row.commentaire,
-                        valide_anomalie: savedCommentaire?.valide_anomalie ?? row.valide_anomalie,
-                    }
-                    : row
-            )
-        );
+    const stickyCol0Style = { position: 'sticky', left: 0, zIndex: 2, minWidth: 100 };
+    const stickyCol1Style = { position: 'sticky', left: 121, zIndex: 2, minWidth: 180 };
+
+    const K_COLORS = {
+        black: '#010810',
+        cyan: '#00e5ff',
+        slate: '#64748b',
+        border: '#f1f5f9',
+        white: '#ffffff',
+        rowEven: '#ffffff',
+        rowOdd: '#f8fafc' // Un gris plus subtil
     };
 
-    // Styles pour les colonnes sticky
-    const stickyCol0Style = {
+    // On s'assure que le Header a bien un fond noir et est collé en haut (top: 0)
+    const stickyTotalStyle = {
         position: 'sticky',
-        left: 0,
-        zIndex: 3,
-        borderRight: '1px solid #e0e0e0',
+        right: 311,
+        width: 100,
         minWidth: 100,
         maxWidth: 100,
+        top: 0, // Indispensable pour le Header
+        bgcolor: '#F8FAFC', // On force la couleur ici
     };
 
-    const stickyCol1Style = {
+    const stickyAnomaliesStyle = {
         position: 'sticky',
-        left: 100,
-        zIndex: 3,
-        borderRight: '1px solid #e0e0e0',
-        minWidth: 300,
-        maxWidth: 300,
-        width: 300,
-    };
-
-    const stickyHeaderStyle = {
-        position: 'sticky',
+        right: 204,
+        width: 90,
+        minWidth: 90,
+        maxWidth: 90,
         top: 0,
-        zIndex: 4,
-        backgroundColor: initial.tableau_theme,
-        color: initial.text_theme,
-        fontWeight: 600,
-        fontSize: '12px',
+        bgcolor: '#F8FAFC',
     };
 
+    const stickyValideStyle = {
+        position: 'sticky',
+        right: 118,
+        width: 70,
+        minWidth: 70,
+        maxWidth: 70,
+        top: 0,
+        bgcolor: '#F8FAFC',
+    };
+
+    const stickyCommentaireStyle = {
+        position: 'sticky',
+        right: 0,
+        width: 100,
+        minWidth: 100,
+        maxWidth: 100,
+        top: 0,
+        bgcolor: '#F8FAFC',
+    };
     const headerCellStyle = {
-        ...stickyHeaderStyle,
-        padding: '1px 6px',
-        fontSize: '14px'
-    };
 
+        bgcolor: '#F8FAFC',
+        color: '#64748B',
+        fontSize: '10px',
+        fontWeight: 800,
+        textTransform: 'uppercase',
+        whiteSpace: 'nowrap',
+        py: 1.5,
+        px: 1,
+        borderRight: '1px solid rgba(255,255,255,0.1)'
+
+    };
     const cellStyle = {
-        padding: '1px 6px',
-        fontSize: '13px',
+        py: 1,
+        px: 0.5,
+        fontSize: '13px'
     };
 
     return (
-        <Box sx={{ width: '100%', height: '60vh' }}>
+        <Box sx={{ width: '100%', height: '60vh', borderRadius: '8px', overflow: 'hidden', border: `1px solid ${K_COLORS.border}` }}>
             <TableContainer
                 component={Paper}
                 ref={scrollContainerRef}
+                elevation={0}
                 sx={{
                     height: '100%',
                     overflow: 'auto',
-                    '&::-webkit-scrollbar': {
-                        height: 8,
-                        width: 8,
-                    },
+                    borderRadius: 0,
+                    padding: 0,
+                    margin: 0,
+                    '&::-webkit-scrollbar': { height: 6, width: 6 },
                     '&::-webkit-scrollbar-thumb': {
-                        backgroundColor: '#bdbdbd',
+                        backgroundColor: alpha(K_COLORS.slate, 0.2),
                         borderRadius: 4,
+                    },
+                    // 1. La scrollbar globale
+                    '&::-webkit-scrollbar': {
+                        width: 8,
+                        height: 8
+                    },
+
+                    // 2. LE TRICK : Le fond de la scrollbar (Track)
+                    // On crée un dégradé qui s'arrête pile à la hauteur de ton Header (env. 40px)
+                    '&::-webkit-scrollbar-track': {
+                        background: 'linear-gradient(to bottom, #F8FAFC 0px, #F8FAFC 45px, white 45px, white 100%)',
+                    },
+
+                    // 3. LE COIN (Corner)
+                    // C'est l'intersection en haut à droite : on le met en gris comme le header
+                    '&::-webkit-scrollbar-corner': {
+                        backgroundColor: '#F8FAFC',
+                    },
+
+                    // 4. Le curseur (Thumb)
+                    '&::-webkit-scrollbar-thumb': {
+                        backgroundColor: alpha('#64748B', 0.2),
+                        borderRadius: 4,
+                        border: '2px solid transparent', // Donne un effet de padding interne
+                        backgroundClip: 'content-box',
                     },
                 }}
             >
@@ -332,181 +320,137 @@ export default function RevuAnalytiqueMensuelle({ compteId, dossierId, exerciceI
                     sx={{
                         tableLayout: 'fixed',
                         minWidth: 280 + moisColumns.length * 110 + 530,
-
-                        '& .MuiTableCell-root': {
-                            padding: '1px 4px',
-                            fontSize: '14px',
-                            lineHeight: 1.2,
-                            borderBottom: 'none',
-                        },
-
-                        '& .MuiTableHead .MuiTableCell-root': {
-                            height: 35,
-                        },
-
-                        '& .MuiTableBody .MuiTableCell-root': {
-                            height: 35,
-                        },
-
-                        '& .MuiTableRow-root': {
-                            height: 35,
-                        },
-                        '& .MuiTableBody .MuiTableRow-root:nth-of-type(odd)': {
-                            backgroundColor: '#f5f5f5',
-                        },
-
-                        '& .MuiTableBody .MuiTableRow-root:nth-of-type(even)': {
-                            backgroundColor: '#ffffff',
-                        },
-
                     }}
+                    className="dense-table"
                 >
                     <TableHead>
                         <TableRow>
-                            {/* Colonnes fixes */}
-                            <TableCell sx={{ ...headerCellStyle, ...stickyCol0Style, zIndex: 5, backgroundColor: initial.tableau_theme }}>Compte</TableCell>
-                            <TableCell sx={{ ...headerCellStyle, ...stickyCol1Style, zIndex: 5, backgroundColor: initial.tableau_theme }}>Libellé</TableCell>
+                            {/* Colonnes fixes GAUCHE - zIndex 10 pour écraser tout au scroll */}
+                            <TableCell sx={{ ...headerCellStyle, ...stickyCol0Style, zIndex: 10 }}>Compte</TableCell>
+                            <TableCell sx={{ ...headerCellStyle, ...stickyCol1Style, zIndex: 10 }}>Libellé</TableCell>
 
-                            {/* Colonnes mois */}
+                            {/* Colonnes mois - zIndex standard 5 (stickyHeader) */}
                             {moisColumns.map((mois) => (
                                 <TableCell
                                     key={mois.nom}
                                     align="right"
-                                    sx={{ ...headerCellStyle, minWidth: 110, maxWidth: 110 }}
+                                    sx={{ ...headerCellStyle, minWidth: 110, maxWidth: 110, zIndex: 5 }}
                                 >
                                     {mois.nomAffiche}
                                 </TableCell>
                             ))}
 
-                            {/* Autres colonnes */}
-                            <TableCell align="right" sx={{ ...headerCellStyle, minWidth: 130, maxWidth: 130 }}>Total</TableCell>
-                            <TableCell align="center" sx={{ ...headerCellStyle, minWidth: 90, maxWidth: 90 }}>Anomalies</TableCell>
-                            <TableCell align="center" sx={{ ...headerCellStyle, minWidth: 70, maxWidth: 70 }}>Validé</TableCell>
-                            <TableCell sx={{ ...headerCellStyle, minWidth: 240, maxWidth: 240 }}>Commentaire</TableCell>
+                            {/* Colonnes fixes DROITE - zIndex 10 pour l'angle Header/Sticky */}
+                            <TableCell align="right" sx={{ ...headerCellStyle, ...stickyTotalStyle, zIndex: 10 }}>Total</TableCell>
+                            <TableCell align="center" sx={{ ...headerCellStyle, ...stickyAnomaliesStyle, zIndex: 10 }}>Anomalies</TableCell>
+                            <TableCell align="center" sx={{ ...headerCellStyle, ...stickyValideStyle, zIndex: 10 }}>Validé</TableCell>
+                            <TableCell sx={{ ...headerCellStyle, ...stickyCommentaireStyle, zIndex: 10 }}>Commentaire</TableCell>
                         </TableRow>
                     </TableHead>
+
                     <TableBody>
-                        {rows.map((row, index) => (
-                            <TableRow key={row.id} hover>
-                                {/* Colonnes fixes */}
-                                <TableCell sx={{ ...cellStyle, ...stickyCol0Style, backgroundColor: index % 2 === 0 ? '#ffffff' : '#f5f5f5' }}>{row.compte}</TableCell>
-                                <TableCell sx={{ ...cellStyle, ...stickyCol1Style, backgroundColor: index % 2 === 0 ? '#ffffff' : '#f5f5f5' }}>{row.libelle}</TableCell>
+                        {rows.map((row, index) => {
+                            const isEven = index % 2 === 0;
 
-                                {/* Colonnes mois */}
-                                {moisColumns.map((mois) => {
-                                    const value = row[mois.nom];
-                                    return (
-                                        <TableCell
-                                            key={mois.nom}
-                                            align="right"
-                                            sx={{
-                                                ...cellStyle,
-                                                minWidth: 110,
-                                                maxWidth: 110,
-                                                backgroundColor: index % 2 === 0 ? '#ffffff' : '#f5f5f5',
-                                                color: value > 0 ? 'blue' : value < 0 ? 'red' : 'inherit',
-                                                fontWeight: value !== 0 ? 500 : 400,
-                                            }}
-                                        >
-                                            {value?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}
-                                        </TableCell>
-                                    );
-                                })}
+                            return (
+                                <TableRow key={row.id} sx={{ '&:hover td': { bgcolor: alpha(K_COLORS.white) + ' !important' } }}>
+                                    {/* Colonnes fixes GAUCHE */}
+                                    <TableCell sx={{ ...cellStyle, ...stickyCol0Style, bgcolor: '#fff', fontWeight: 700, zIndex: 2, color: '#000', textOverflow: 'ellipsis' }}>
+                                        {row.compte}
+                                    </TableCell>
+                                    <TableCell sx={{ ...cellStyle, ...stickyCol1Style, bgcolor: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', zIndex: 2, color: '#000' }}>
+                                        {row.libelle}
+                                    </TableCell>
 
-                                {/* Total */}
-                                <TableCell
-                                    align="right"
-                                    sx={{
-                                        ...cellStyle,
-                                        minWidth: 130,
-                                        maxWidth: 130,
-                                        backgroundColor: index % 2 === 0 ? '#ffffff' : '#f5f5f5',
-                                        color: row.total_exercice > 0 ? 'blue' : row.total_exercice < 0 ? 'red' : 'inherit',
-                                        fontWeight: row.total_exercice !== 0 ? 500 : 400,
-                                    }}
-                                >
-                                    {row.total_exercice?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}
-                                </TableCell>
-
-                                {/* Anomalies */}
-                                <TableCell align="center" sx={{ ...cellStyle, minWidth: 90, maxWidth: 90, backgroundColor: index % 2 === 0 ? '#ffffff' : '#f5f5f5' }}>
-                                    <Checkbox
-                                        size="small"
-                                        checked={!!row.anomalies}
-                                        onChange={(e) => handleToggleAnomalie(row, e.target.checked)}
-                                        sx={{
-                                            color: row.anomalies ? 'orange' : 'green',
-                                            '&.Mui-checked': {
-                                                color: 'orange',
-                                            },
-                                        }}
-                                    />
-                                </TableCell>
-
-                                {/* Validé */}
-                                <TableCell align="center" sx={{ ...cellStyle, minWidth: 70, maxWidth: 70, backgroundColor: index % 2 === 0 ? '#ffffff' : '#f5f5f5' }}>
-                                    <Checkbox
-                                        size="small"
-                                        checked={!!row.valide_anomalie}
-                                        onChange={(e) => handleToggleValide(row, e.target.checked)}
-                                    />
-                                </TableCell>
-
-                                {/* Commentaire */}
-                                <TableCell sx={{ ...cellStyle, minWidth: 240, maxWidth: 240, backgroundColor: index % 2 === 0 ? '#ffffff' : '#f5f5f5' }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <Badge
-                                            variant={row.commentaire && String(row.commentaire).trim() ? 'dot' : 'standard'}
-                                            color="success"
-                                            overlap="circular"
-                                        >
-                                            <IconButton
-                                                size="small"
+                                    {/* Colonnes mois */}
+                                    {moisColumns.map((mois) => {
+                                        const value = row[mois.nom];
+                                        return (
+                                            <TableCell
+                                                key={mois.nom}
+                                                align="right"
                                                 sx={{
-                                                    backgroundColor: 'primary.main',
-                                                    color: 'white',
-                                                    '&:hover': {
-                                                        backgroundColor: 'primary.dark',
-                                                    }
-                                                }}
-                                                onClick={() => {
-                                                    setSelectedRow({
-                                                        ...row,
-                                                        id_compte: compteId,
-                                                        id_exercice: exerciceId,
-                                                        id_dossier: dossierId,
-                                                    });
-                                                    setPopupOpen(true);
+                                                    ...cellStyle,
+                                                    minWidth: 110,
+                                                    maxWidth: 110,
+                                                    bgcolor: '#fff',
+                                                    fontFamily: 'monospace',
+                                                    color: value > 0 ? '#2563eb' : value < 0 ? '#dc2626' : K_COLORS.slate,
+                                                    fontWeight: value !== 0 ? 600 : 400,
                                                 }}
                                             >
-                                                <EditNoteIcon fontSize="small" />
-                                            </IconButton>
-                                        </Badge>
-                                        <Box
+                                                {value?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}
+                                            </TableCell>
+                                        );
+                                    })}
+
+                                    {/* Total */}
+                                    <TableCell
+                                        align="right"
+                                        sx={{
+                                            ...cellStyle,
+                                            ...stickyTotalStyle,
+                                            bgcolor: '#fff', // Légère nuance pour le total
+                                            fontFamily: 'monospace',
+                                            fontWeight: 800,
+                                            color: K_COLORS.black
+                                        }}
+                                    >
+                                        {row.total_exercice?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}
+                                    </TableCell>
+
+                                    {/* Anomalies */}
+                                    <TableCell align="center" sx={{ ...cellStyle, ...stickyAnomaliesStyle, bgcolor: '#fff' }}>
+                                        <Checkbox
+                                            size="small"
+                                            checked={!!row.anomalies}
+                                            disabled
+                                            sx={{ p: 0, '&.Mui-disabled': { color: row.anomalies ? '#f59e0b' : '#10b981' } }}
+                                        />
+                                    </TableCell>
+
+                                    {/* Validé */}
+                                    <TableCell align="center" sx={{ ...cellStyle, ...stickyValideStyle, bgcolor: '#fff' }}>
+                                        <Checkbox
+                                            size="small"
+                                            checked={!!row.valide_anomalie}
+                                            disabled
                                             sx={{
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                whiteSpace: 'nowrap',
-                                                flex: 1,
+                                                p: 0,
+                                                '&.Mui-disabled': {
+                                                    color: row.valide_anomalie ? '#16a34a' : alpha(K_COLORS.slate, 0.3)
+                                                }
                                             }}
-                                        >
-                                            {row.commentaire || ''}
+                                        />
+                                    </TableCell>
+
+                                    {/* Commentaire */}
+                                    <TableCell sx={{ ...cellStyle, ...stickyCommentaireStyle, bgcolor: '#fff' }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <IconButton
+                                                size="small"
+                                                disabled
+                                                sx={{
+                                                    width: 20,
+                                                    height: 20,
+                                                    bgcolor: row.commentaire ? '#16a34a' : alpha(K_COLORS.slate, 0.1),
+                                                    color: 'white !important',
+                                                    '&.Mui-disabled': { opacity: 1 }
+                                                }}
+                                            >
+                                                <EditNoteIcon sx={{ fontSize: 14, color: row.commentaire ? '#fff' : '#ccc' }} />
+                                            </IconButton>
+                                            <Box sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, color: K_COLORS.slate, fontSize: '0.65rem' }}>
+                                                {row.commentaire || ''}
+                                            </Box>
                                         </Box>
-                                    </Box>
-                                </TableCell>
-                            </TableRow>
-                        ))}
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
                     </TableBody>
                 </Table>
             </TableContainer>
-
-            <PopupCommentaireAnalytique
-                open={popupOpen}
-                onClose={() => setPopupOpen(false)}
-                compteData={selectedRow}
-                onSave={handleSaveCommentaire}
-                apiBasePath="/commentaireAnalytiqueMensuelle"
-            />
         </Box>
     );
 }

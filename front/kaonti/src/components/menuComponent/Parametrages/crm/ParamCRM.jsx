@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Typography, Stack, TextField, FormControl, InputLabel, Select, MenuItem, Tooltip, Button, IconButton, FormHelperText, Input, Autocomplete, Checkbox, RadioGroup, Radio, Grid } from '@mui/material';
-import Tab from '@mui/material/Tab';
-import Box from '@mui/material/Box';
+import {
+    Box, Typography, AppBar, Toolbar, Stack, Button,
+    GlobalStyles, TextField, MenuItem, Tabs, Tab,
+    Paper, Switch, FormControlLabel, Grid, Autocomplete, Breadcrumbs
+} from '@mui/material';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
@@ -11,7 +13,6 @@ import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import { MdExpandCircleDown } from 'react-icons/md';
 import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
-import FormControlLabel from '@mui/material/FormControlLabel';
 import useAuth from '../../../../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
 import axios from '../../../../../config/axios';
@@ -41,10 +42,19 @@ import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import usePermission from '../../../../hooks/usePermission';
 import useAxiosPrivate from '../../../../../config/axiosPrivate';
 import PasswordField from '../../home/Field/PasswordField';
+import SaveIcon from '@mui/icons-material/CheckCircleOutline';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+
+
+const NEON_MINT = '#00FF94';
+const NAV_DARK = '#0B1120';
+const BG_SOFT = '#F8FAFC';
+const BORDER_COLOR = '#E2E8F0';
 
 const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
 const checkedIcon = <CheckBoxIcon fontSize="small" />;
 export default function ParamCRM() {
+    const [tabValue, setTabValue] = useState(0);
     const apiRef = useGridApiRef();
     const { canAdd, canModify, canDelete, canView } = usePermission();
     const axiosPrivate = useAxiosPrivate();
@@ -253,214 +263,61 @@ export default function ParamCRM() {
 
             idConsolidation: '',
             idCompte: compteId,
-
             idDossier: fileId,
-
-
-
             idDossierAutre: ''
-
-
-
         },
-
-
-
         validateOnChange: false,
-
-
-
         validateOnBlur: true,
-
-
 
     })
     //Form pour l'enregistrement des données
 
     const InfosNewFileInitialValues = {
-
-
-
         action: 'new',
-
-
-
         itemId: 0,
-
-
-
         idCompte: 0,
-
-
-
         idDossier: 0,
-
-
-
         nomdossier: '',
-
-
-
         raisonsociale: '',
-
-
-
         denomination: '',
-
-
-
         nif: '',
-
-
-
         stat: '',
-
-
-
         rcs: '',
-
-
-
         responsable: '',
-
-
-
         expertcomptable: '',
-
-
-
         cac: '',
-
-
-
         forme: '',
-
-
-
         activite: '',
-
-
-
         detailsactivite: '',
-
-
-
         adresse: '',
-
-
-
         email: '',
-
-
-
         telephone: '',
-
-
-
         plancomptable: 0,
-
-
-
         longueurcptstd: 6,
-
-
-
         longueurcptaux: 6,
-
-
-
         autocompletion: true,
-
-
-
         avecanalytique: false,
-
-
-
         tauxir: '',
-
-
-
         pourcentageca: 0,
-
-
-
         montantmin: 0,
-
-
-
         assujettitva: false,
-
-
-
         montantcapital: null,
-
-
-
         nbrpart: 0,
-
-
-
         valeurpart: 0,
-
-
-
         listeAssocies: [],
-
-
-
         listeFiliales: [],
-
-
-
         listeDomBank: [],
-
-
-
         compteisi: '',
-
-
-
         immo_amort_base_jours: '365',
-
-
-
         portefeuille: [],
-
-
-
         typecomptabilite: 'Français',
-
-
-
         devisepardefaut: 0,
-
-
-
         consolidation: false,
-
-
-
         listeConsolidation: [],
-
-
-
         pays: '',
-
-
-
         avecMotDePasse: false,
-
-
-
         motDePasse: '',
-
-
-
         motDePasseConfirmation: ''
-
-
-
     };
 
     const fieldOrder = [
@@ -3282,7 +3139,7 @@ export default function ParamCRM() {
     const handleRowEditStopFiliale = (params, event) => {
 
         if (params.reason === GridRowEditStopReasons.rowFocusOut) {
-           event.defaultMuiPrevented = true;
+            event.defaultMuiPrevented = true;
         }
     };
 
@@ -6561,793 +6418,236 @@ export default function ParamCRM() {
 
     };
 
-
-
-
-
-
-
     // Entête tableau consolidation
-
-
-
     const ConsolidationColumnHeader = [
 
-
-
         {
-
-
-
             field: 'id_dossier_autre',
-
-
-
             headerName: 'Dossier',
-
-
-
             type: 'text',
-
-
-
             sortable: true,
-
-
-
             flex: 1,
-
-
-
             headerAlign: 'left',
-
-
-
             headerClassName: 'HeaderbackColor',
-
-
-
             disableClickEventBubbling: true,
-
-
-
             editable: editableRowConsolidation,
-
-
-
             renderCell: (params) => {
 
 
 
                 const dossier = listeDossier.find(
-
-
-
                     val => val.id === Number(params.value)
-
-
-
                 );
-
-
-
-
-
-
-
                 return <div>{dossier?.dossier || ''}</div>;
-
-
-
             },
 
-
-
             renderEditCell: (params) => {
-
-
-
                 const { id, field, value, api } = params;
 
-
-
-
-
-
-
                 const handleChange = (e) => {
-
-
-
                     useFormikConsolidation.setFieldValue('idDossierAutre', e.target.value);
-
-
-
                     api.setEditCellValue({
-
-
-
                         id,
-
-
-
                         field,
-
-
-
                         value: e.target.value,
-
-
-
                     });
-
-
-
                 };
 
-
-
-
-
-
-
                 const dossier = listeDossier.filter(
-
-
-
                     val => val.id === Number(value)
-
-
-
                 );
-
-
-
-
-
-
 
                 return (
-
-
-
                     <FormControl fullWidth>
-
-
-
                         <InputLabel id="select-compte-label">Choisir...</InputLabel>
-
-
-
                         <Select
-
-
-
                             labelId="select-compte-label"
-
-
-
                             value={value ?? ''}
-
-
-
                             onChange={handleChange}
 
-
-
                         >
-
-
-
                             {(availableDossier.length > 0 ? availableDossier : dossier)
-
-
-
                                 .map((option) => (
-
-
-
                                     <MenuItem key={option.id} value={option.id}>
-
-
-
                                         {option.dossier}
-
-
-
                                     </MenuItem>
-
-
-
                                 ))}
-
-
-
                         </Select>
-
-
-
                     </FormControl>
-
-
-
                 );
-
-
-
             }
-
-
-
         },
-
-
-
     ];
 
-
-
-
-
-
-
     const getListeDossier = () => {
-
-
-
         axios.get(`/home/file/${compteId}`, { params: { userId: userId } }).then((response) => {
-
-
-
             const resData = response.data;
-
-
-
             setListeDossier(resData.fileList);
-
-
-
         })
-
-
-
     }
-
-
-
-
-
-
-
     const getListeConsolidationDossier = () => {
-
-
-
         axios.get(`/param/consolidation/getListeConsolidationDossier/${compteId}/${id}`).then((response) => {
-
-
-
             const resData = response.data;
-
-
-
             setListConsolidation(resData.list);
-
-
-
         })
-
-
-
     }
-
-
-
-
-
-
-
     useEffect(() => {
-
-
-
         getAllPortefeuille();
-
-
-
         getDevises();
-
-
-
         getListeDossier();
-
-
-
         getListeConsolidationDossier();
-
-
-
     }, [compteId]);
 
-
-
-
-
-
-
     return (
-
-
-
         <Box>
-
-
-
             {noFile ? <PopupTestSelectedFile confirmationState={sendToHome} /> : null}
-
-
-
-
-
-
-
             <TabContext value={"1"}>
-
-
-
-                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-
-
-
+                {/* <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                     <TabList aria-label="lab API tabs example">
-
-
-
                         <Tab
-
-
-
                             style={{
-
-
-
                                 textTransform: 'none',
-
-
-
                                 outline: 'none',
-
-
-
                                 border: 'none',
-
-
-
                                 margin: -5
-
-
-
                             }}
-
-
-
                             label={InfoFileStyle(fileInfos?.dossier)} value="1"
-
-
-
                         />
-
-
-
                     </TabList>
-
-
-
-                </Box>
-
-
+                </Box> */}
 
                 <TabPanel value="1">
-
-
-
                     {/* MODAL POUR LA SUPPRESSION D'UNE LIGNE DU TABLEAU ASSOCIE */}
-
-
-
                     {openDialogDeleteAssocieRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer la ligne sélectionnée ?"} confirmationState={deleteAssocieRow} /> : null}
-
-
-
-
-
-
-
-                    {/* MODAL POUR LA SUPPRESSION D'UNE LIGNE DU TABLEAU FILIALE */}
-
-
-
-                    {/* MODAL POUR LA SUPPRESSION D'UNE LIGNE DU TABLEAU FILIALE */}
-
-
-
                     {openDialogDeleteConsolidationRow ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer la ligne sélectionnée ?"} confirmationState={deleteConsolidationRow} /> : null}
 
-
-
-
-
-
-
                     <Formik
-
-
-
                         initialValues={InfosNewFileInitialValues}
-
-
-
                         onSubmit={(values) => {
-
-
-
                             handlSubmitModification(values);
-
-
-
                         }}
-
-
-
                     >
-
-
-
                         {({ handleChange, handleSubmit, setFieldValue, resetForm, values, isValid, errors, setTouched }) => {
-
-
-
-
-
-
-
                             const calculateValeurPart = (capital, nbrPart) => {
-
-
-
                                 const numCapital = parseFloat(capital?.toString().replace(/\s/g, '').replace(',', '.')) || 0;
-
-
-
                                 const numParts = parseFloat(nbrPart) || 0;
-
-
-
                                 if (numParts === 0) return 0;
-
-
-
                                 const valPart = numCapital / numParts;
-
-
-
                                 const valPartFormatted = Number((valPart).toFixed(2));
-
-
-
                                 return valPartFormatted;
-
-
-
                             };
-
-
-
-
-
-
-
                             useEffect(() => {
-
-
-
                                 if (!listePortefeuille || listePortefeuille.length === 0) return;
-
-
-
                                 const id = fileId;
-
-
-
                                 axios.get(`/paramCrm/infoscrm/${id}`).then((response) => {
-
-
-
                                     const resData = response.data;
-
-
-
                                     if (resData.state) {
-
-
-
                                         setCrm(resData.list);
-
-
-
                                         const crmData = resData.list;
-
-
-
-
-
-
-
                                         const mappedPortefeuille = crmData.id_portefeuille.map(id => {
-
-
-
                                             return listePortefeuille.find(p => p.id === Number(id));
-
-
-
                                         }).filter(Boolean);
-
-
-
-
-
-
-
                                         const deviseParDefaut = listeDevise.find(val => val.par_defaut === true);
-
-
-
-
-
-
-
                                         setFieldValue('action', 'modify');
-
-
-
                                         setFieldValue('itemId', crmData.id);
-
-
-
                                         setFieldValue('idDossier', crmData.id);
-
-
-
                                         setFieldValue('idCompte', crmData.id_compte);
-
-
-
                                         setFieldValue('nomdossier', crmData.dossier);
-
-
-
                                         setFieldValue('raisonsociale', crmData.raisonsociale);
-
-
-
                                         setFieldValue('denomination', crmData.denomination);
-
-
-
                                         setFieldValue('nif', crmData.nif);
-
-
-
                                         setFieldValue('stat', crmData.stat);
-
-
-
                                         setFieldValue('rcs', crmData.rcs);
-
-
-
                                         setFieldValue('responsable', crmData.responsable);
-
-
-
                                         setFieldValue('expertcomptable', crmData.expertcomptable);
-
-
-
                                         setFieldValue('cac', crmData.cac);
-
-
-
                                         setFieldValue('forme', crmData.formejuridique);
-
-
-
                                         setFieldValue('activite', crmData.activite);
-
-
-
                                         setFieldValue('detailsactivite', crmData.detailactivite);
-
-
-
                                         setFieldValue('adresse', crmData.adresse);
-
-
-
                                         setFieldValue('email', crmData.email);
-
-
-
                                         setFieldValue('telephone', crmData.telephone);
-
-
-
                                         setFieldValue('plancomptable', crmData.id_plancomptable);
-
-
-
                                         setFieldValue('longueurcptstd', crmData.longcomptestd);
-
-
-
                                         setFieldValue('longueurcptaux', crmData.longcompteaux);
-
-
-
                                         setFieldValue('autocompletion', crmData.autocompletion);
-
-
-
                                         setFieldValue('avecanalytique', crmData.avecanalytique);
-
-
-
                                         setFieldValue('tauxir', crmData.tauxir);
-
-
-
                                         setFieldValue('pourcentageca', crmData.pourcentageca);
-
-
-
                                         setFieldValue('montantmin', crmData.montantmin);
-
-
-
                                         setFieldValue('assujettitva', crmData.assujettitva);
-
-
-
                                         setFieldValue('immo_amort_base_jours', String(crmData.immo_amort_base_jours ?? 365));
-
-
-
                                         const formattedCapital = Number(crmData.capital).toLocaleString('fr-FR', {
-
-
-
                                             minimumFractionDigits: 2,
-
-
-
                                             maximumFractionDigits: 2,
-
-
-
                                         });
-
-
-
+ 
                                         setFieldValue('montantcapital', formattedCapital);
-
-
-
                                         setFieldValue('nbrpart', crmData.nbrpart);
-
-
-
                                         setFieldValue('valeurpart', crmData.valeurpart);
-
-
-
                                         setFieldValue('compteisi', Number(crmData.compteisi));
-
-
-
                                         setFieldValue('typecomptabilite', crmData.typecomptabilite || 'Français');
-
-
-
                                         setFieldValue('portefeuille', mappedPortefeuille);
-
-
-
-
-
-
-
                                         setFieldValue('devisepardefaut', deviseParDefaut?.id || 0);
-
-
-
                                         setFieldValue('consolidation', crmData.consolidation || false);
-
-
-
                                         setFieldValue('pays', crmData.pays || '');
-
-
-
                                         setFieldValue('avecMotDePasse', crmData.avecmotdepasse);
-
-
-
                                         setFieldValue('motDePasse', crmData.motdepasse || '');
-
-
-
                                         setFieldValue('motDePasseConfirmation', crmData.motdepasse || '');
-
-
-
                                         setPassword(crmData.motdepasse || '');
-
-
-
                                     } else {
-
-
-
                                         setCrm([]);
-
-
-
                                     }
-
-
-
                                 })
 
-
-
-
-
-
-
                             }, [fileId, listePortefeuille]);
+                            const labelStyle = {
+                                fontSize: '11px',
+                                fontWeight: 800,
+                                color: '#94A3B8',
+                                textTransform: 'uppercase',
+                                marginBottom: '6px'
+                            };
 
+                            const errorStyle = {
+                                color: 'red',
+                                fontSize: 12,
+                                marginTop: 4
+                            };
 
-
-
-
-
+                            const compactFieldStyle = {
+                                maxWidth: '300px', // Largeur maximale fixée pour rester "pro"
+                                '& .MuiOutlinedInput-root': {
+                                    borderRadius: '10px',
+                                    bgcolor: '#fff',
+                                    fontSize: '14px',
+                                    '& fieldset': { borderColor: BORDER_COLOR },
+                                    '&:hover fieldset': { borderColor: '#CBD5E1' },
+                                    '&.Mui-focused fieldset': { borderColor: NAV_DARK, borderWidth: '1.5px' }
+                                }
+                            };
 
                             return (
+                                <Box sx={{ width: '100%', minHeight: '100vh', bgcolor: BG_SOFT, display: 'flex', flexDirection: 'column' }}>
+                                    <GlobalStyles styles={{
+                                        body: { margin: 0, padding: 0, overflowX: 'hidden' },
+                                        html: { margin: 0, padding: 0 }
+                                    }} />
 
-                                <Form noValidate style={{ width: '100%' }}>
+                                    {/* CONTENEUR CENTRÉ */}
+                                    <Box sx={{ p: 4, width: '100%', boxSizing: 'border-box' }}>
 
+                                        {/* HEADER */}
+                                        {/* <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
+                                            <Typography
+                                                variant="h4"
+                                                sx={{ fontWeight: 900, color: '#1E293B', letterSpacing: '-1px' }}
+                                            >
+                                                Paramétrages CRM
+                                            </Typography>
 
-
-                                    <Stack width={"100%"} height={"85%"} spacing={2} alignItems={"flex-start"} justifyContent={"stretch"}>
-
-
-
-                                        <Stack width={"100%"} height={"30px"} spacing={2} alignItems={"center"} alignContent={"center"}
-
-
-
-                                            direction={"row"} justifyContent={"right"}
-
-
-
-                                        >
-
-
-
-                                            <Typography variant='h7' sx={{ color: "black", width: 'calc(100% - 120px)' }} align='left'>Paramétrages: CRM</Typography>
-
-                                            <Button variant="contained"
+                                            <Button
+                                                variant="contained"
                                                 disabled={!canModify}
                                                 onClick={() => {
                                                     if (!isValid) {
@@ -7356,9 +6656,8 @@ export default function ParamCRM() {
                                                             return acc;
                                                         }, {});
                                                         setTouched(touchedFields);
-                                                        const firstErrorField = fieldOrder.find(
-                                                            field => errors[field]
-                                                        );
+
+                                                        const firstErrorField = fieldOrder.find(field => errors[field]);
                                                         if (firstErrorField) {
                                                             toast.error(errors[firstErrorField]);
                                                         }
@@ -7366,313 +6665,207 @@ export default function ParamCRM() {
                                                     }
                                                     handleSubmit();
                                                 }}
-                                                style={{
-
-                                                    borderRadius: "1",
-
-
-
-                                                    height: '32px', marginLeft: "5px", width: '120px',
-
-
-
-                                                    textTransform: 'none', outline: 'none', border: 'none', backgroundColor: initial.auth_gradient_end,
-
-
-
-                                                    color: 'white'
-
-
-
+                                                sx={{
+                                                    bgcolor: NAV_DARK,
+                                                    textTransform: 'none',
+                                                    fontWeight: 700,
+                                                    px: 3,
+                                                    borderRadius: '8px',
+                                                    '&:hover': { bgcolor: '#1E293B' }
                                                 }}
-
-
-
                                             >
-
-
-
                                                 Sauvegarder
+                                            </Button>
+                                        </Stack> */}
+                                        {/* <Breadcrumbs
+                                            separator={<NavigateNextIcon fontSize="small" sx={{ color: '#94A3B8' }} />}
+                                            sx={{ mb: 1 }}
+                                        >
+                                            <Typography sx={{ fontSize: '12px', fontWeight: 500, color: '#64748B' }}>
+                                                Paramétrages
+                                            </Typography>
+                                            <Typography sx={{ fontSize: '12px', fontWeight: 700, color: NAV_DARK }}>
+                                                CRM
+                                            </Typography>
+                                        </Breadcrumbs> */}
+                                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
+                                            <Typography variant="h6" sx={{ fontWeight: 900, color: '#1E293B', letterSpacing: '-1.2px' }}>
+                                                Configuration Dossier
+                                            </Typography>
+                                            <Button
+                                                variant="contained"
+                                                disabled={!canModify}
+                                                startIcon={<SaveIcon sx={{ fontSize: '18px !important' }} />}
 
+                                                onClick={() => {
+                                                    if (!isValid) {
+                                                        const touchedFields = Object.keys(errors).reduce((acc, field) => {
+                                                            acc[field] = true;
+                                                            return acc;
+                                                        }, {});
+                                                        setTouched(touchedFields);
 
-
+                                                        const firstErrorField = fieldOrder.find(field => errors[field]);
+                                                        if (firstErrorField) {
+                                                            toast.error(errors[firstErrorField]);
+                                                        }
+                                                        return;
+                                                    }
+                                                    handleSubmit();
+                                                }} sx={{
+                                                    bgcolor: NEON_MINT,
+                                                    textTransform: 'none',
+                                                    fontSize: '12px',
+                                                    fontWeight: 700,
+                                                    mr: 2,
+                                                    color: '#000',
+                                                    borderRadius: '6px',
+                                                    px: 2,
+                                                    '&:hover': {
+                                                        bgcolor: '#00E685',
+                                                        transform: 'translateY(-1px)'
+                                                    },
+                                                }}
+                                            >
+                                                Sauvegarder
                                             </Button>
                                         </Stack>
 
-                                        <Box sx={{ width: '100%', typography: 'body1' }}>
-                                            <TabContext value={valueEbilan}>
-                                                <Box sx={{ borderBottom: 1, borderColor: 'transparent' }}>
-                                                    <TabList onChange={handleChangeTAB} aria-label="lab API tabs example" variant='scrollable'>
-                                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="infos société" value="1" />
-                                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="comptabilité" value="2" />
-                                                        <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="fiscales" value="3" />
-                                                    </TabList>
-                                                </Box>
+                                        {/* <Form noValidate style={{ width: '100%' }}> */}
 
-                                                <TabPanel value="1">
-                                                    <Stack spacing={3}> {/* 👈 ESPACE ENTRE LES DEUX BLOCS */}
+                                        <Tabs
+                                            value={tabValue}
+                                            onChange={(e, v) => setTabValue(v)}
+                                            sx={{
+                                                mb: 4,
+                                                '& .MuiTabs-indicator': { bgcolor: NAV_DARK, height: 2 },
+                                                '& .MuiTab-root': {
+                                                    textTransform: 'none', fontWeight: 700, fontSize: '14px', color: '#64748B',
+                                                    outline: 'none !important', minWidth: 120
+                                                },
+                                                '& .Mui-selected': { color: `${NAV_DARK} !important` }
+                                            }}
+                                        >
 
-                                                        {/* Nom du dossier */}
-                                                        <Stack spacing={1} sx={{ width: 250 }}>
-                                                            <InputLabel
-                                                                htmlFor="nomdossier"
-                                                                sx={{ fontSize: 12, color: '#c0c0c0ff' }}
-                                                            >
+                                            <Tab label="Infos société" disableRipple />
+                                            <Tab label="Comptabilité" disableRipple />
+                                            <Tab label="Fiscales" disableRipple />
+                                        </Tabs>
+
+                                        {/* CARD */}
+                                        <Paper
+                                            elevation={0}
+                                            sx={{
+                                                p: 3,
+                                                borderRadius: '16px',
+                                                border: `1px solid ${BORDER_COLOR}`,
+                                                bgcolor: '#fff',
+                                                width: '100%'
+                                            }}
+                                        >
+
+                                            <Grid container spacing={1}>
+                                                {tabValue === 0 && (
+                                                    <>
+                                                        <Grid item xs={12} md={3}> {/* On réduit l'emprise sur la grille */}
+                                                            <Typography sx={{ fontSize: '11px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', mb: 1 }}>
                                                                 Nom du dossier
-                                                            </InputLabel>
-
+                                                            </Typography>
                                                             <Field
                                                                 name="nomdossier"
                                                                 as={TextField}
                                                                 size="small"
-                                                                required
-                                                                sx={{
-                                                                    width: '100%',
-                                                                    '& .MuiOutlinedInput-root': {
-                                                                        height: 32,
-                                                                        fontSize: 14,
-                                                                        borderRadius: 1.5,
-                                                                    },
-                                                                }}
+                                                                fullWidth
+                                                                sx={compactFieldStyle}
                                                             />
-
-                                                            <ErrorMessage
-                                                                name="nomdossier"
-                                                                component="div"
-                                                                style={{ color: 'red', fontSize: 12 }}
-                                                            />
-                                                        </Stack>
-
-                                                        {/* Portefeuille */}
-                                                        <Stack spacing={1} width={400}>
-                                                            <InputLabel sx={{ fontSize: 12, color: '#c0c0c0ff' }}>
+                                                            <ErrorMessage name="nomdossier" component="div" style={errorStyle} />
+                                                        </Grid>
+                                                        <Grid item xs={12} md={4}>
+                                                            <Typography sx={{ fontSize: '11px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', mb: 1 }}>
                                                                 Portefeuille
-                                                            </InputLabel>
-
+                                                            </Typography>
                                                             <Autocomplete
                                                                 multiple
                                                                 options={listePortefeuille}
                                                                 getOptionLabel={(option) => option.nom}
                                                                 value={values.portefeuille || []}
-                                                                onChange={(_, newValue) => setFieldValue("portefeuille", newValue)}
+                                                                onChange={(_, val) => setFieldValue("portefeuille", val)}
                                                                 sx={{
+                                                                    ...compactFieldStyle,
                                                                     '& .MuiOutlinedInput-root': {
-                                                                        minHeight: 32,
+                                                                        height: 36,
+                                                                        borderRadius: '10px'
                                                                     },
-                                                                    '& .MuiChip-root': {
-                                                                        height: 20,
-                                                                    },
+                                                                    '& .MuiChip-root': { height: 20 },
                                                                 }}
-                                                                renderInput={(params) => (
-                                                                    <TextField {...params} size="small" />
-                                                                )}
+                                                                renderInput={(params) => <TextField {...params} size="small" />}
                                                             />
+                                                            <ErrorMessage name="portefeuille" component="div" style={errorStyle} />
+                                                        </Grid>
+                                                    </>
+                                                )}
 
-                                                            <ErrorMessage
-                                                                name="portefeuille"
-                                                                component="div"
-                                                                style={{ color: 'red', fontSize: 12 }}
-                                                            />
-                                                        </Stack>
+                                                {tabValue === 1 && (
+                                                    <>
+                                                        <Grid item xs={12} md={4}>
+                                                            <Typography sx={{ fontSize: '11px', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', mb: 1 }}>
+                                                                Plan comptable
+                                                            </Typography>
+                                                            <Field
+                                                                as={TextField}
+                                                                select
+                                                                name="plancomptable"
+                                                                size="small"
+                                                                fullWidth
+                                                                sx={compactFieldStyle}
+                                                            >
+                                                                <MenuItem value={0}>Aucun</MenuItem>
+                                                                {listModel?.map((item) => (
+                                                                    <MenuItem key={item.id} value={item.id}>
+                                                                        {item.nom}
+                                                                    </MenuItem>
+                                                                ))}
+                                                            </Field>
 
-                                                    </Stack>
-                                                </TabPanel>
-
-
-
-
-                                                <TabPanel value="2">
-                                                    <Stack width="100%" spacing={2}>
-                                                        {/* Plan comptable et Devise */}
-                                                        <Grid container spacing={1} alignItems="flex-start">
-                                                            <Grid item>
-                                                                <Stack spacing={1} sx={{ width: '100%' }}>
-                                                                    <InputLabel sx={{ fontSize: 12, color: '#c0c0c0ff' }}>
-                                                                        Plan comptable
-                                                                    </InputLabel>
-                                                                    <Field
-                                                                        as={Select}
-                                                                        name="plancomptable"
-                                                                        size="small"
-                                                                        sx={{
-                                                                            width: 200, // réduit
-                                                                            '& .MuiInputBase-root': { height: 32 },
-                                                                            '& .MuiOutlinedInput-root': { height: 32 },
-                                                                            borderRadius: 1.5,
-                                                                            fontSize: 14,
-                                                                            '& .MuiSelect-select': {
-                                                                                padding: '4px 8px',
-                                                                                display: 'flex',
-                                                                                alignItems: 'center',
-                                                                                height: '100%',
-                                                                                minHeight: 'unset',
-                                                                                lineHeight: '24px',
-                                                                            },
-                                                                            '& fieldset': { borderColor: '#ccc' },
-                                                                            '&:hover fieldset': { borderColor: '#888' },
-                                                                            '&.Mui-focused fieldset': { borderColor: '#c0c0c0ff' },
-                                                                        }}
-                                                                        onChange={handleOnChangePlanComptableSelect(setFieldValue)}
-                                                                    >
-                                                                        <MenuItem value={0}><em>Aucun</em></MenuItem>
-                                                                        {listModel?.map((item) => (
-                                                                            <MenuItem key={item.id} value={item.id}>{item.nom}</MenuItem>
-                                                                        ))}
-                                                                    </Field>
-                                                                    <ErrorMessage name="plancomptable" component="div" style={{ color: 'red', fontSize: 12, marginTop: 2 }} />
-                                                                </Stack>
-                                                            </Grid>
-
-                                                            {/* <Grid item>
-                                                                <Stack spacing={1} sx={{ width: '100%' }}>
-                                                                    <InputLabel sx={{ fontSize: 12, color: '#c0c0c0ff' }}>
-                                                                        Devise par défaut
-                                                                    </InputLabel>
-                                                                    <Field
-                                                                        as={Select}
-                                                                        name="devisepardefaut"
-                                                                        size="small"
-                                                                        sx={{
-                                                                            width: 120, // réduit
-                                                                            '& .MuiInputBase-root': { height: 32 },
-                                                                            '& .MuiOutlinedInput-root': { height: 32 },
-                                                                            borderRadius: 1.5,
-                                                                            fontSize: 14,
-                                                                            '& .MuiSelect-select': {
-                                                                                padding: '4px 8px',
-                                                                                display: 'flex',
-                                                                                alignItems: 'center',
-                                                                                height: '100%',
-                                                                                minHeight: 'unset',
-                                                                                lineHeight: '24px',
-                                                                            },
-                                                                            '& fieldset': { borderColor: '#ccc' },
-                                                                            '&:hover fieldset': { borderColor: '#888' },
-                                                                            '&.Mui-focused fieldset': { borderColor: '#c0c0c0ff' },
-                                                                        }}
-                                                                        onChange={handleOnChangeDeviseSelect(setFieldValue)}
-                                                                    >
-                                                                        {listeDevise.map((item) => (
-                                                                            <MenuItem key={item.id} value={item.id}>{item.code}</MenuItem>
-                                                                        ))}
-                                                                    </Field>
-                                                                    <ErrorMessage name="devisepardefaut" component="div" style={{ color: 'red', fontSize: 12, marginTop: 2 }} />
-                                                                </Stack>
-                                                            </Grid> */}
+                                                            <ErrorMessage name="plancomptable" component="div" style={errorStyle} />
                                                         </Grid>
 
-                                                        {/* Titre */}
-                                                        {/* <Typography fontWeight={600} fontSize={16} marginTop={1}>
-                                                            Paramétrages de longueur des comptes
-                                                        </Typography> */}
+                                                        <Grid item xs={12}>
+                                                            <Box sx={{ p: 2, bgcolor: '#F8FAFC', borderRadius: '12px', border: `1px dashed ${BORDER_COLOR}`, display: 'inline-flex' }}>
+                                                                <FormControlLabel
+                                                                    control={<Field as={Switch} name="avecanalytique" />}
+                                                                    label={
+                                                                        <Typography sx={{ fontWeight: 700, fontSize: '14px', color: '#1E293B' }}>
+                                                                            Avec analytique
+                                                                        </Typography>
+                                                                    }
+                                                                    sx={{ m: 0 }}
+                                                                />
+                                                            </Box>
+                                                        </Grid>
+                                                    </>
+                                                )}
+                                                {tabValue === 2 && (
+                                                    <>
+                                                    </>
+                                                )}
 
-                                                        {/* Longueurs des comptes et auto-complétion */}
-                                                        {/* <Grid container spacing={1} alignItems="flex-start">
-                                                            <Grid item>
-                                                                <Stack spacing={1}>
-                                                                    <InputLabel sx={{ fontSize: 12, color: '#c0c0c0ff' }}>
-                                                                        Compte standard
-                                                                    </InputLabel>
-                                                                    <Field
-                                                                        as={TextField}
-                                                                        name="longueurcptstd"
-                                                                        size="small"
-                                                                        sx={{
-                                                                            width: 140, // réduit
-                                                                            '& .MuiInputBase-root': { height: 32 },
-                                                                            '& .MuiOutlinedInput-root': { height: 32 },
-                                                                            '& .MuiOutlinedInput-input': { padding: '4px 8px' },
-                                                                        }}
-                                                                    />
-                                                                    <ErrorMessage name="longueurcptstd" component="div" style={{ color: 'red', fontSize: 12, marginTop: 2 }} />
-                                                                </Stack>
-                                                            </Grid>
-
-                                                            <Grid item>
-                                                                <Stack spacing={1}>
-                                                                    <InputLabel sx={{ fontSize: 12, color: '#c0c0c0ff' }}>
-                                                                        Compte auxiliaire
-                                                                    </InputLabel>
-                                                                    <Field
-                                                                        as={TextField}
-                                                                        name="longueurcptaux"
-                                                                        size="small"
-                                                                        sx={{
-                                                                            width: 140, // réduit
-                                                                            '& .MuiInputBase-root': { height: 32 },
-                                                                            '& .MuiOutlinedInput-root': { height: 32 },
-                                                                            '& .MuiOutlinedInput-input': { padding: '4px 8px' },
-                                                                        }}
-                                                                    />
-                                                                    <ErrorMessage name="longueurcptaux" component="div" style={{ color: 'red', fontSize: 12, marginTop: 2 }} />
-                                                                </Stack>
-                                                            </Grid>
-
-                                                            <Grid item>
-                                                                <Stack spacing={1} alignItems="flex-start">
-                                                                    <InputLabel sx={{ fontSize: 12, color: '#c0c0c0ff' }}>
-                                                                        Auto-complétion
-                                                                    </InputLabel>
-                                                                    <Field as={Checkbox} name="autocompletion" sx={{ padding: 0 }} />
-                                                                </Stack>
-                                                            </Grid>
-                                                        </Grid> */}
-
-                                                        <FormControlLabel
-                                                            control={<Field as={Checkbox} name="avecanalytique" />}
-                                                            label="Avec analytique"
-                                                        />
-                                                    </Stack>
-                                                </TabPanel>
-
-                                                <TabPanel value="3"></TabPanel>
-                                            </TabContext>
-
-
-
-                                        </Box>
+                                            </Grid>
 
 
 
 
-
-
-
-                                    </Stack>
-
-
-
-
-
-
-
-                                </Form>
-
+                                        </Paper>
+                                        {/* </Form> */}
+                                    </Box>
+                                </Box>
                             );
 
                         }}
 
                     </Formik>
-
                 </TabPanel>
-
             </TabContext>
-
-
-
-
-
-
-
         </Box >
-
-
-
     )
-
-
-
 }
-
-
-

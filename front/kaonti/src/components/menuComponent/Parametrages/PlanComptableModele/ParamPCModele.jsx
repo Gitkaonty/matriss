@@ -2,19 +2,20 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
     Typography, Stack, Paper, RadioGroup, FormControlLabel, Radio, FormControl,
     InputLabel, Select, MenuItem, TextField, Box, Tab,
-    FormHelperText, Autocomplete, ButtonGroup, IconButton, Chip
+    FormHelperText, Autocomplete, ButtonGroup, IconButton, Chip,
+    AppBar, Toolbar, GlobalStyles, InputAdornment, Breadcrumbs, Table, TableBody,
+    TableCell, TableContainer, TableHead, TableRow, Checkbox, Grid
 } from '@mui/material';
 import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
 import { init } from '../../../../../init';
 import axios from '../../../../../config/axios';
 import toast from 'react-hot-toast';
-import { DataGrid, frFR, useGridApiContext, useGridApiRef } from '@mui/x-data-grid';
+import { DataGrid, frFR, GridRowEditStopReasons, GridRowModes, useGridApiRef, useGridApiContext } from '@mui/x-data-grid';
 import { styled } from '@mui/material/styles';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
-import CloseIcon from '@mui/icons-material/Close';
 import { TbCircleLetterCFilled, TbCircleLetterGFilled, TbCircleLetterAFilled } from "react-icons/tb";
 import { TabContext, TabList, TabPanel } from '@mui/lab';
 import { IoMdTrash } from "react-icons/io";
@@ -34,6 +35,25 @@ import { DetailsInformation } from '../../../componentsTools/DetailsInformation'
 import usePermission from '../../../../hooks/usePermission';
 import useAxiosPrivate from '../../../../../config/axiosPrivate';
 
+
+// Icônes
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/EditOutlined';
+import DeleteIcon from '@mui/icons-material/DeleteOutline';
+import CheckIcon from '@mui/icons-material/Check';
+import CloseIcon from '@mui/icons-material/Close';
+import SaveIcon from '@mui/icons-material/CheckCircleOutline';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import SearchIcon from '@mui/icons-material/Search';
+import CancelIcon from '@mui/icons-material/HighlightOff';
+import FileDownloadIcon from '@mui/icons-material/FileDownloadOutlined';
+
+const NEON_MINT = '#00FF94';
+const NAV_DARK = '#0B1120';
+const BG_SOFT = '#F8FAFC';
+const BORDER_COLOR = '#E2E8F0';
+
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialogContent-root': {
         padding: theme.spacing(2),
@@ -49,7 +69,30 @@ const columnHeaderModel = ParamPCModele_column.columnHeaderModel;
 //header pour le tableau ajouter compte de charge et/ou compte de TVA dans le popup
 const columnHeaderAddNewRowModelDetail = ParamPCModele_column.columnHeaderAddNewRowModelDetail;
 
-export default function ParamPlanComptableModele() {
+
+const PlanComptableModele = () => {
+    const columns = [
+        {
+            field: 'nom',
+            headerName: 'Nom du modèle',
+            width: 300,
+            headerClassName: 'super-header',
+            cellClassName: 'super-cell'
+        },
+        {
+            field: 'defaut',
+            headerName: 'Par défaut',
+            width: 100,
+            align: 'center',
+            headerAlign: 'center',
+            renderCell: (params) => <Checkbox size="small" checked={params.value} />
+        }
+    ];
+
+    const rows = [
+        { id: 1, nom: 'PCG', defaut: true }
+    ];
+
     const { canAdd, canModify, canDelete, canView } = usePermission();
     const axiosPrivate = useAxiosPrivate();
 
@@ -58,6 +101,12 @@ export default function ParamPlanComptableModele() {
 
     let [listeModele, setListeModele] = useState([]);
     const [openNewModel, setOpenNewModel] = useState(false);
+
+    const [filteredModele, setFilteredModele] = useState([]);
+    const [detailModel, setDetailModel] = useState([]);
+    const [filteredDetailModel, setFilteredDetailModel] = useState([]);
+    const [searchTextModele, setSearchTextModele] = useState('');
+    const [searchTextDetail, setSearchTextDetail] = useState('');
     const [modeleLibre, setModeleLibre] = useState(true);
     const [listDossier, setListeDossier] = useState([]);
     const [openImportDialog, setOpenImportDialog] = useState(false);
@@ -67,7 +116,6 @@ export default function ParamPlanComptableModele() {
     const [selectedModelName, setSelectedModelName] = useState(null);
     const [modelId, setModelId] = useState(null);
 
-    const [detailModel, setDetailModel] = useState([]);
     const [detailModelSelectedRow, setDetailModelSelectedRow] = useState([]);
     const [detailModelSelectedRowListChgAssoc, setDetailModelSelectedRowListChgAssoc] = useState([]);
     const [detailModelSelectedRowListTvaAssoc, setDetailModelSelectedRowListTvaAssoc] = useState([]);
@@ -120,6 +168,59 @@ export default function ParamPlanComptableModele() {
     const [selectedCommune, setSelectedCommune] = useState('');
     const [rowCptInfos, setRowCptInfos] = useState([]);
     const [openInfos, setOpenInfos] = useState(false);
+
+    // ===== FONCTIONS DE RECHERCHE =====
+
+    // Recherche pour les modèles
+    const handleSearchModele = (searchValue) => {
+        setSearchTextModele(searchValue);
+
+        if (!searchValue.trim()) {
+            setFilteredModele(listeModele);
+            return;
+        }
+
+        const filtered = listeModele.filter(row => {
+            const searchLower = searchValue.toLowerCase();
+            return (
+                (row.nom && row.nom.toLowerCase().includes(searchLower)) ||
+                (row.pardefault !== undefined && String(row.pardefault).toLowerCase().includes(searchLower))
+            );
+        });
+
+        setFilteredModele(filtered);
+    };
+
+    // Recherche pour le plan de compte
+    const handleSearchDetail = (searchValue) => {
+        setSearchTextDetail(searchValue);
+
+        if (!searchValue.trim()) {
+            setFilteredDetailModel(detailModel);
+            return;
+        }
+
+        const filtered = detailModel.filter(row => {
+            const searchLower = searchValue.toLowerCase();
+            return (
+                (row.compte && row.compte.toLowerCase().includes(searchLower)) ||
+                (row.libelle && row.libelle.toLowerCase().includes(searchLower)) ||
+                (row.nature && row.nature.toLowerCase().includes(searchLower)) ||
+                (row.baseCompte && row.baseCompte.toLowerCase().includes(searchLower))
+            );
+        });
+
+        setFilteredDetailModel(filtered);
+    };
+
+    // Mettre à jour les données filtrées quand les données originales changent
+    useEffect(() => {
+        setFilteredModele(listeModele);
+    }, [listeModele]);
+
+    useEffect(() => {
+        setFilteredDetailModel(detailModel);
+    }, [detailModel]);
 
     // ===== STATES POUR EDITION INLINE =====
     const apiRef = useGridApiRef();
@@ -286,7 +387,7 @@ export default function ParamPlanComptableModele() {
         if (modelId !== null) {
             // Charger d'abord la liste des comptes collectifs
             await recupererListeCptCollectifInline();
-            
+
             resetForm();
             setListCptChg([]);
             setListCptTva([]);
@@ -908,7 +1009,7 @@ export default function ParamPlanComptableModele() {
         if (loadingCollectifRef.current || !modelId) return Promise.resolve([]);
         loadingCollectifRef.current = true;
         setIsLoadingCollectif(true);
-        
+
         try {
             const response = await axios.post(`/paramPlanComptableModele/allCollectifAccounts`, { modelId });
             const resData = response.data;
@@ -982,7 +1083,7 @@ export default function ParamPlanComptableModele() {
                     const foundById = listeCptCollectif.find(item => String(item.id) === String(value));
                     const foundByCompte = listeCptCollectif.find(item => String(item.compte) === String(value));
                     const found = foundById || foundByCompte;
-                    
+
                     if (found) {
                         setLocalValue(String(found.id));
                         // Mettre à jour la valeur dans la cellule avec l'ID
@@ -1065,12 +1166,12 @@ export default function ParamPlanComptableModele() {
 
     // Vérifier si une ligne est en édition
     const isRowInEditMode = (id) => {
-        return rowModesModel[id]?.mode === 'edit';
+        return rowModesModel[id]?.mode === GridRowModes.Edit;
     };
 
     // Vérifier s'il y a une ligne en édition
     const hasRowInEditMode = () => {
-        return Object.values(rowModesModel).some((mode) => mode.mode === 'edit');
+        return Object.values(rowModesModel).some((mode) => mode.mode === GridRowModes.Edit);
     };
 
     // Gestion du clic sur Ajouter
@@ -1101,14 +1202,14 @@ export default function ParamPlanComptableModele() {
         setDetailModel((prev) => [newRow, ...prev]);
         setRowModesModel((prev) => ({
             ...prev,
-            [newId]: { mode: 'edit', fieldToFocus: 'compte' }
+            [newId]: { mode: GridRowModes.Edit, fieldToFocus: 'compte' }
         }));
         setSelectedRowId(newId);
         setPcAllselectedRow([newId]);
     };
 
     // Gestion du clic sur Modifier
-    const handleEditClick = () => {
+    const handleEditClick = (id) => () => {
         if (!detailModelSelectedRow?.id) {
             toast.error("Veuillez sélectionner une ligne à modifier.");
             return;
@@ -1122,44 +1223,43 @@ export default function ParamPlanComptableModele() {
             return;
         }
 
-        const id = detailModelSelectedRow.id;
-        setRowModesModel((prev) => ({
-            ...prev,
-            [id]: { mode: 'edit', fieldToFocus: 'compte' }
-        }));
-        setSelectedRowId(id);
+        const rowId = id[0]; // Récupérer le premier ID du tableau
+        setRowModesModel({ ...rowModesModel, [rowId]: { mode: GridRowModes.Edit } });
+        setSelectedRowId(rowId);
+        setPcAllselectedRow([rowId]);
     };
 
     // Gestion du clic sur Sauvegarder
-    const handleSaveClick = async () => {
-        if (!selectedRowId) {
+    const handleSaveClick = (id) => () => {
+        const rowId = id[0]; // Récupérer le premier ID du tableau
+        if (!rowId) {
             toast.error("Aucune ligne en cours d'édition.");
             return;
         }
 
         try {
-            await apiRef.current.stopRowEditMode({ id: selectedRowId });
+            apiRef.current.stopRowEditMode({ id: rowId });
         } catch (error) {
             console.error('Erreur lors de la sauvegarde:', error);
         }
     };
 
     // Gestion du clic sur Annuler
-    const handleCancelClick = () => {
-        if (!selectedRowId) return;
+    const handleCancelClick = (id) => () => {
+        const rowId = id[0]; // Récupérer le premier ID du tableau
+        if (!rowId) return;
 
-        const isNewRow = String(selectedRowId).startsWith('new-');
+        const isNewRow = String(rowId).startsWith('new-');
 
         if (isNewRow) {
-            setDetailModel((prev) => prev.filter((row) => row.id !== selectedRowId));
+            setDetailModel((prev) => prev.filter((row) => row.id !== rowId));
         }
 
         setRowModesModel((prev) => ({
             ...prev,
-            [selectedRowId]: { mode: 'view' }
+            [rowId]: { mode: GridRowModes.View }
         }));
         setSelectedRowId(null);
-        apiRef.current.stopRowEditMode({ id: selectedRowId, ignoreModifications: true });
     };
 
     // Mise à jour d'une ligne
@@ -1338,40 +1438,57 @@ export default function ParamPlanComptableModele() {
         {
             field: 'nature',
             headerName: 'Nature',
-            type: 'string',
+            type: 'singleSelect',
+            valueOptions: ['General', 'Collectif', 'Auxiliaire'], // les valeurs possibles
             sortable: true,
             width: 130,
             headerAlign: 'left',
+            align: 'left',
             headerClassName: 'HeaderbackColor',
             editable: true,
-            renderEditCell: (params) => <NatureEditCell {...params} />,
+            renderEditCell: (params) => {
+                return (
+                    <FormControl fullWidth>
+                        <InputLabel><em>Choisir...</em></InputLabel>
+                        <Select
+                            style={{ backgroundColor: typeValidationColor, fontSize: '13px' }}
+                            value={formikNewCodeJournal.values.nature}
+                            onChange={(e) => formikNewCodeJournal.setFieldValue('nature', e.target.value)}
+                            label="Nature"
+                        >
+                            {['General', 'Collectif', 'Auxiliaire'].map((option) => (
+                                <MenuItem key={option} value={option}>
+                                    {option}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                        <FormHelperText style={{ color: 'red' }}>
+                            {formikNewCodeJournal.errors.nature && formikNewCodeJournal.touched.nature && formikNewCodeJournal.errors.nature}
+                        </FormHelperText>
+                    </FormControl>
+                );
+            },
             renderCell: (params) => {
-                const nature = params.row.nature;
-                if (nature === 'General') {
-                    return (
-                        <Chip
-                            icon={<TbCircleLetterGFilled style={{ color: 'white', width: 18, height: 18 }} />}
-                            label="Général"
-                            sx={{ width: '100%', justifyContent: 'space-between', backgroundColor: '#48A6A7', color: 'white' }}
-                        />
-                    );
-                } else if (nature === 'Collectif') {
-                    return (
-                        <Chip
-                            icon={<TbCircleLetterCFilled style={{ color: 'white', width: 18, height: 18 }} />}
-                            label="Collectif"
-                            sx={{ width: '100%', justifyContent: 'space-between', backgroundColor: '#A6D6D6', color: 'white' }}
-                        />
-                    );
-                } else {
-                    return (
-                        <Chip
-                            icon={<TbCircleLetterAFilled style={{ color: 'white', width: 18, height: 18 }} />}
-                            label="Auxiliaire"
-                            sx={{ width: '100%', justifyContent: 'space-between', backgroundColor: '#123458', color: 'white' }}
-                        />
-                    );
-                }
+                const natureColors = {
+                    General: '#0369A1',
+                    Collectif: '#3B82F6',
+                    Auxiliaire: '#10B981'
+                };
+                return (
+                    <Chip
+                        label={params.value} // valeur brute
+                        size="small"
+                        sx={{
+                            bgcolor: natureColors[params.value] || '#10B981',
+                            color: '#fff',
+                            fontWeight: 800,
+                            fontSize: '10px',
+                            borderRadius: '6px',
+                            height: '20px',
+                            minWidth: '60px'
+                        }}
+                    />
+                );
             },
         },
         {
@@ -1386,600 +1503,504 @@ export default function ParamPlanComptableModele() {
             renderEditCell: (params) => <BaseCompteEditCell {...params} />,
             renderCell: (params) => <BaseCompteRenderCell {...params} />,
         },
+        {
+            field: 'actions',
+            headerName: 'Actions',
+            width: 150,
+            sortable: false,
+            filterable: false,
+            align: 'right',
+            headerAlign: 'right',
+
+            renderCell: (params) => {
+                const isInEditMode = rowModesModel[params.id]?.mode === GridRowModes.Edit;
+
+                if (isInEditMode) {
+                    return (
+                        <Stack direction="row" spacing={0}>
+                            <IconButton
+                                size="small"
+                                sx={{ color: '#10B981' }}
+                                onClick={handleSaveClick([params.id])}
+                            >
+                                <SaveIcon fontSize="inherit" />
+                            </IconButton>
+
+                            <IconButton
+                                size="small"
+                                sx={{ color: '#EF4444' }}
+                                onClick={handleCancelClick([params.id])}
+                            >
+                                <CloseIcon fontSize="inherit" />
+                            </IconButton>
+                        </Stack>
+                    );
+                }
+
+                return (
+                    <Stack direction="row" spacing={0}>
+                        <IconButton
+                            size="small"
+                            sx={{ color: '#64748B' }}
+                            onClick={handleEditClick([params.id])}
+                        >
+                            <EditIcon fontSize="inherit" />
+                        </IconButton>
+
+                        <IconButton
+                            size="small"
+                            sx={{ color: '#CBD5E1' }}
+                            onClick={handleOpenDialogDetailModelDelete}
+                        >
+                            <DeleteIcon fontSize="inherit" />
+                        </IconButton>
+                    </Stack>
+                );
+            }
+        }
     ];
 
     return (
-        <Box
-            sx={{
-                paddingX: 3,
-                paddingY: 2
-            }}
-        >
-            {openInfos ? <DetailsInformation row={rowCptInfos} confirmOpen={showCptInfos} listCptChg={listCptChg} listCptTva={listCptTva} /> : null}
+        <Box sx={{ width: '100vw', minHeight: '100vh', bgcolor: BG_SOFT, display: 'flex', flexDirection: 'column' }}>
+            <GlobalStyles styles={{ body: { margin: 0, padding: 0 }, '*': { boxSizing: 'border-box' } }} />
 
-            <Stack width={"100%"} height={"100%"} spacing={2} alignItems={"flex-start"} justifyContent={"stretch"}>
-                <Typography variant='h7' sx={{ color: "black" }} align='left'>Paramétrages : Plan comptable - modèle</Typography>
+            <Box sx={{ p: 4, width: '100%' }}>
+                {/* <Breadcrumbs
+                    separator={<NavigateNextIcon fontSize="small" sx={{ color: '#94A3B8' }} />}
+                    sx={{ mb: 1 }}
+                >
+                    <Typography sx={{ fontSize: '12px', fontWeight: 500, color: '#64748B' }}>
+                        Paramétrages
+                    </Typography>
+                    <Typography sx={{ fontSize: '12px', fontWeight: 700, color: NAV_DARK }}>
+                        Plan comptable - modèle
+                    </Typography>
+                </Breadcrumbs> */}
 
-                <Stack width={"100%"} height={"30px"} spacing={0} alignItems={"center"} alignContent={"center"}
-                    direction={"row"} style={{ marginLeft: "0px", marginTop: "10px", justifyContent: "right" }}>
-                    <Typography variant='h7' sx={{ color: "black", fontWeight: "bold" }} align='left'>Modèle</Typography>
-                    <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                        direction={"row"} justifyContent={"right"}>
-                        <ButtonGroup
-                            variant="outlined"
-                            sx={{
-                                boxShadow: 'none',
-                                display: 'flex',
-                                gap: '2px',
-                                '& .MuiButton-root': {
-                                    borderRadius: 0,
-                                },
-                                '& .MuiButtonGroup-grouped': {
-                                    boxShadow: 'none',
-                                    outline: 'none',
-                                    borderColor: 'inherit',
-                                    marginLeft: 0,
-                                    borderRadius: 1,
-                                    border: 'none',
-                                },
-                                '& .MuiButtonGroup-grouped:hover': {
-                                    boxShadow: 'none',
-                                    borderColor: 'inherit',
-                                },
-                                '& .MuiButtonGroup-grouped.Mui-focusVisible': {
-                                    boxShadow: 'none',
-                                    borderColor: 'inherit',
-                                },
-                            }}
-                        >
-                            <Tooltip title="Importer un modèle">
-                                <span>
-                                    <Button
-                                        onClick={() => setOpenImportDialog(true)}
-                                        variant="contained"
-                                        sx={{
-                                            ...buttonStyle,
-                                            backgroundColor: '#e79754ff',
-                                            color: 'white',
-                                            borderColor: '#e79754ff',
-                                            boxShadow: 'none',
+                <Typography variant='h6' sx={{ fontWeight: 800, color: NAV_DARK }}>Plan comptable modèle </Typography>
+                <br />
+                {/* CONTENEUR HORIZONTAL */}
+                <Grid container spacing={3}>
 
-                                            '&:hover': {
-                                                backgroundColor: '#e79754ff',
-                                                border: 'none',
-                                                boxShadow: 'none',       // enlève l’effet bleu shadow
-                                            },
-                                            '&:focus': {
-                                                backgroundColor: '#e79754ff',
-                                                border: 'none',
-                                                boxShadow: 'none',       // enlève le focus bleu
-                                            },
-                                            '&.Mui-disabled': {
-                                                backgroundColor: '#e79754ff',
-                                                color: 'white',
-                                                cursor: 'not-allowed',
-                                            },
-                                            '&::before': {
-                                                display: 'none',         // supprime l’overlay bleu de ButtonGroup
-                                            },
-                                        }}
-                                    >
-                                        Importer
-                                    </Button>
-                                </span>
-                            </Tooltip>
+                    {/* ===================== MODÈLE (PETIT) ===================== */}
+                    <Grid item xs={12} lg={4}>
+                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2, height: '32px' }}>
+                            <Typography sx={{ fontWeight: 800, fontSize: '16px', color: NAV_DARK }}>
+                                Modèle
+                            </Typography>
 
+                            <Stack direction="row" spacing={1}>
+                                <TextField
+                                    placeholder="Rechercher..."
+                                    size="small"
+                                    sx={searchStyle}
+                                    value={searchTextModele}
+                                    onChange={(e) => handleSearchModele(e.target.value)}
+                                    InputProps={{
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <SearchIcon sx={{ fontSize: 16, color: '#94A3B8' }} />
+                                            </InputAdornment>
+                                        )
+                                    }}
+                                />
+                                <Button
+                                    size="small"
+                                    // startIcon={<FileDownloadIcon />}
+                                    onClick={() => setOpenImportDialog(true)}
+                                    sx={{ ...btnStyle, bgcolor: '#F59E0B', '&:hover': { bgcolor: '#D97706' } }}>
+                                    Importer
+                                </Button>
+                                <Button
+                                    disabled={!canAdd}
+                                    onClick={handleClickOpenNewModel}
+                                    size="small"
+                                    startIcon={<AddIcon />}
+                                    sx={btnStyle}
 
-                            <Tooltip title="Ajouter un nouveau modèle">
-                                <span>
-                                    <Button
-                                        disabled={!canAdd}
-                                        onClick={handleClickOpenNewModel}
-                                        sx={{
-                                            ...buttonStyle,
-                                            backgroundColor: initial.auth_gradient_end,
-                                            color: 'white',
-                                            borderColor: initial.auth_gradient_end,
-                                            '&:hover': {
-                                                backgroundColor: initial.auth_gradient_end,
-                                                boxShadow: 'none',
-                                                border: 'none',
-                                            },
-                                            '&:focus': {
-                                                backgroundColor: initial.auth_gradient_end,
-                                                boxShadow: 'none',
-                                            },
-                                            '&.Mui-disabled': {
-                                                backgroundColor: initial.auth_gradient_end,
-                                                color: 'white',
-                                                cursor: 'not-allowed',
-                                                border: 'none',
-                                            },
-                                            '&::before': {
-                                                display: 'none',
-                                            },
-                                        }}
-                                    >
-                                        Ajouter
-                                    </Button>
-                                </span>
-                            </Tooltip>
-
-                            <Tooltip title="Supprimer le modèle sélectionné">
-                                <span>
-                                    <Button
-                                        disabled={!canDelete || !modelSelectedRow}
-                                        onClick={handleClickOpenDialogDeleteModel}
-                                        sx={{
-                                            ...buttonStyle,
-                                            backgroundColor: initial.annuler_bouton_color,
-                                            color: 'white',
-                                            borderColor: initial.annuler_bouton_color,
-                                            '&:hover': {
-                                                backgroundColor: initial.annuler_bouton_color,
-                                                border: 'none',
-                                            },
-                                            '&.Mui-disabled': {
-                                                backgroundColor: initial.annuler_bouton_color,
-                                                color: 'white',
-                                                cursor: 'not-allowed',
-                                                border: 'none',
-                                            },
-                                        }}
-                                    >
-                                        Supprimer
-                                    </Button>
-                                </span>
-                            </Tooltip>
-                        </ButtonGroup>
-
-                    </Stack>
-                </Stack>
-
-                {/* POP-UP POUR LA CREATION D'UN NOUVEAU MODELE */}
-                <form onSubmit={formNewModel.handleSubmit}>
-                    <BootstrapDialog
-                        onClose={handleCloseNewModel}
-                        aria-labelledby="customized-dialog-title"
-                        open={openNewModel}
-                    >
-                        {/* <DialogTitle sx={{ m: 0, p: 2 }} id="customized-dialog-title" style={{fontWeight:'semiBold', width:'600px',backgroundColor : initial.normal_pupup_header_color}}>
-                    Nouveau modèle de plan comptable
-                    </DialogTitle> */}
-                        <IconButton
-                            style={{ color: 'red', textTransform: 'none', outline: 'none' }}
-                            aria-label="close"
-                            onClick={handleCloseNewModel}
-                            sx={{
-                                position: 'absolute',
-                                right: 8,
-                                top: 8,
-                                color: (theme) => theme.palette.grey[500],
-                            }}
-                        >
-                            <CloseIcon />
-                        </IconButton>
-
-                        <Typography style={{ marginTop: 75, marginLeft: 30 }} variant='h5'>Nouveau modèle de plan comptable</Typography>
-
-                        <DialogContent >
-
-                            <Stack width={"90%"} height={"300px"} spacing={0} alignItems={'start'} alignContent={"center"}
-                                direction={"column"} justifyContent={"left"} style={{ marginLeft: '10px' }}>
-                                <Stack width={"100%"} spacing={0} alignItems={"center"} alignContent={"center"}
-                                    direction={"row"} justifyContent={"left"} style={{ marginLeft: '10px' }}>
-                                    <FormControl
-                                        sx={{ width: "100%" }}
-                                        required
-                                        error={formNewModel.errors.model && formNewModel.touched.model}
-                                    >
-                                        <RadioGroup
-                                            row
-                                            aria-labelledby="choixExercice"
-                                            name="choixExercice"
-                                            style={{ marginRight: "10px", marginTop: "0px" }}
-                                            value={formNewModel.values.model}
-                                        >
-                                            <FormControlLabel onChange={(e) => saveModelePcValue(e.target.value)} value="modeleLibre" control={<Radio />} label="Modèle libre" />
-                                            <FormControlLabel onChange={(e) => saveModelePcValue(e.target.value)} value="aPartirModelDossier" control={<Radio />} label="A partir d'un modèle de dossier existant" style={{ marginTop: '-15px' }} />
-                                        </RadioGroup>
-                                        <FormHelperText>
-                                            {formNewModel.errors.model && formNewModel.touched.model && formNewModel.errors.model}
-                                        </FormHelperText>
-                                    </FormControl>
-                                </Stack>
-
-                                <FormControl variant="standard"
-                                    sx={{ m: 1, minWidth: 250 }}
-                                    disabled={modeleLibre}
-                                    error={formNewModel.errors.id_dossier && formNewModel.touched.id_dossier}
                                 >
-                                    <InputLabel id="demo-simple-select-standard-label">Dossier</InputLabel>
-                                    <Select
-                                        labelId="demo-simple-select-standard-label"
-                                        id="demo-simple-select-standard"
-                                        value={formNewModel.values.id_dossier}
-                                        label={"valSelectPC"}
-                                        onChange={(e) => formNewModel.setFieldValue('id_dossier', e.target.value)}
-                                        sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                                    >
-                                        <MenuItem key={0} value={0}><em>Aucun dossier</em></MenuItem>
-                                        {listDossier?.map((dossier) => (
-                                            <MenuItem key={dossier.id} value={dossier.id}>{dossier.dossier}</MenuItem>
-                                        ))}
-                                    </Select>
-
-                                    <FormHelperText>
-                                        {formNewModel.errors.id_dossier && formNewModel.touched.id_dossier && formNewModel.errors.id_dossier}
-                                    </FormHelperText>
-                                </FormControl>
-
-                                <FormControl variant="standard"
-                                    sx={{ m: 1, minWidth: 250 }}
-                                    error={formNewModel.errors.model_name && formNewModel.touched.model_name}
-                                >
-                                    <TextField
-                                        onBlur={(e) => formNewModel.setFieldValue("model_name", e.target.value)}
-                                        id="nom-modele" label="Nom du modèle"
-                                        variant="standard"
-                                        style={{ width: "400px", marginLeft: "10px" }}
-                                    />
-
-                                    <FormHelperText>
-                                        {formNewModel.errors.model_name && formNewModel.touched.model_name && formNewModel.errors.model_name}
-                                    </FormHelperText>
-                                </FormControl>
-
+                                    Ajouter
+                                </Button>
                             </Stack>
+                        </Stack>
 
-                        </DialogContent>
-                        <DialogActions>
-                            <Button
-                                autoFocus
-                                style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
-                                type='submit'
-                                onClick={formNewModel.handleSubmit}
+                        {/* POP-UP POUR LA CREATION D'UN NOUVEAU MODELE */}
+                        <form onSubmit={formNewModel.handleSubmit}>
+                            <BootstrapDialog
+                                onClose={handleCloseNewModel}
+                                aria-labelledby="customized-dialog-title"
+                                open={openNewModel}
                             >
-                                Créer
-                            </Button>
-                        </DialogActions>
-                    </BootstrapDialog>
+                                {/* <DialogTitle sx={{ m: 0, p: 2 }} id="customized-dialog-title" style={{fontWeight:'semiBold', width:'600px',backgroundColor : initial.normal_pupup_header_color}}>
+                                            Nouveau modèle de plan comptable
+                                            </DialogTitle> */}
+                                <IconButton
+                                    style={{ color: 'red', textTransform: 'none', outline: 'none' }}
+                                    aria-label="close"
+                                    onClick={handleCloseNewModel}
+                                    sx={{
+                                        position: 'absolute',
+                                        right: 8,
+                                        top: 8,
+                                        color: (theme) => theme.palette.grey[500],
+                                    }}
+                                >
+                                    <CloseIcon />
+                                </IconButton>
 
-                    <BootstrapDialog
-                        onClose={() => setOpenImportDialog(false)}
-                        aria-labelledby="import-modele-dialog-title"
-                        open={openImportDialog}
-                        maxWidth={"xl"}
-                        fullWidth
-                    >
-                        <IconButton
-                            aria-label="close"
-                            onClick={() => setOpenImportDialog(false)}
-                            sx={{ position: 'absolute', right: 8, top: 8, color: (theme) => theme.palette.grey[500] }}
-                        >
-                            <CloseIcon />
-                        </IconButton>
-                        <DialogContent dividers>
-                            <Box sx={{ width: '100%', height: '70vh' }}>
-                                <PopupImportModelePlanComptable onSuccess={() => { GetListePlanComptableModele(); setOpenImportDialog(false); }} />
-                            </Box>
-                        </DialogContent>
-                        <DialogActions>
-                            <Button onClick={() => setOpenImportDialog(false)} style={{ textTransform: 'none' }}>Fermer</Button>
-                        </DialogActions>
-                    </BootstrapDialog>
-                </form>
+                                <Typography style={{ marginTop: 75, marginLeft: 30 }} variant='h5'>Nouveau modèle de plan comptable</Typography>
 
-                {/* MODAL POUR LA SUPPRESSION D'UN MODELE */}
-                {openDialogDeleteModel ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer le modèle sélectionné ?"} confirmationState={deleteModelPC} /> : null}
+                                <DialogContent >
 
-                {/* TABLEAU LISTE DES MODELES DE PLAN COMPTABLES */}
-                <Stack width={"100%"} height={"500px"} spacing={1} alignItems={"flex-start"} direction={"row"}>
-                    <DataGrid
-                        disableMultipleSelection={DataGridStyle.disableMultipleSelection}
-                        disableColumnSelector={DataGridStyle.disableColumnSelector}
-                        disableDensitySelector={DataGridStyle.disableDensitySelector}
-                        localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
-                        disableRowSelectionOnClick
-                        disableSelectionOnClick={true}
-                        slots={{ toolbar: QuickFilter }}
-                        sx={{
-                            ...DataGridStyle.sx,
-                            '& .MuiDataGrid-columnHeaders': {
-                                backgroundColor: initial.tableau_theme,
-                                color: initial.text_theme,
-                            },
-                            '& .MuiDataGrid-columnHeaderTitle': {
-                                color: initial.text_theme,
-                                fontWeight: 600,
-                            },
-                            '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
-                                color: initial.text_theme,
-                            },
-                            '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
-                                outline: 'none',
-                                border: 'none',
-                            },
-                            '& .highlight-separator': {
-                                borderBottom: '1px solid red'
-                            },
-                            '& .MuiDataGrid-row.highlight-separator': {
-                                borderBottom: '1px solid red',
-                            },
-                            '& .MuiDataGrid-virtualScroller': {
-                                maxHeight: '700px',
-                            },
-                        }}
-                        rowHeight={DataGridStyle.rowHeight}
-                        columnHeaderHeight={DataGridStyle.columnHeaderHeight}
-                        onRowSelectionModelChange={(ids) => {
-                            const single = Array.isArray(ids) && ids.length ? [ids[ids.length - 1]] : [];
-                            listModelPCSelectedRow(single);
-                        }}
-                        rows={listeModele}
-                        columns={columnHeaderModel}
-                        initialState={{
-                            pagination: {
-                                paginationModel: { page: 0, pageSize: 100 },
-                            },
-                        }}
-                        pageSizeOptions={[50, 100]}
-                        pagination={DataGridStyle.pagination}
-                        checkboxSelection={DataGridStyle.checkboxSelection}
-                        columnVisibilityModel={{
-                            id: false,
-                        }}
-                        rowSelectionModel={modelId != null ? [modelId] : []}
-                    />
-                </Stack>
+                                    <Stack width={"90%"} height={"300px"} spacing={0} alignItems={'start'} alignContent={"center"}
+                                        direction={"column"} justifyContent={"left"} style={{ marginLeft: '10px' }}>
+                                        <Stack width={"100%"} spacing={0} alignItems={"center"} alignContent={"center"}
+                                            direction={"row"} justifyContent={"left"} style={{ marginLeft: '10px' }}>
+                                            <FormControl
+                                                sx={{ width: "100%" }}
+                                                required
+                                                error={formNewModel.errors.model && formNewModel.touched.model}
+                                            >
+                                                <RadioGroup
+                                                    row
+                                                    aria-labelledby="choixExercice"
+                                                    name="choixExercice"
+                                                    style={{ marginRight: "10px", marginTop: "0px" }}
+                                                    value={formNewModel.values.model}
+                                                >
+                                                    <FormControlLabel onChange={(e) => saveModelePcValue(e.target.value)} value="modeleLibre" control={<Radio />} label="Modèle libre" />
+                                                    <FormControlLabel onChange={(e) => saveModelePcValue(e.target.value)} value="aPartirModelDossier" control={<Radio />} label="A partir d'un modèle de dossier existant" style={{ marginTop: '-15px' }} />
+                                                </RadioGroup>
+                                                <FormHelperText>
+                                                    {formNewModel.errors.model && formNewModel.touched.model && formNewModel.errors.model}
+                                                </FormHelperText>
+                                            </FormControl>
+                                        </Stack>
 
-                {/* BOUTONS POUR EDITION INLINE */}
-                <Stack width={"100%"} height={"30px"} spacing={0} alignItems={"center"} alignContent={"center"}
-                    direction={"row"} style={{ marginLeft: "0px", marginTop: "30px", justifyContent: "right" }}>
-                    <Typography variant='h7' sx={{ color: "black", fontWeight: "bold", width: "300px" }} align='left'>Plan de compte</Typography>
+                                        <FormControl variant="standard"
+                                            sx={{ m: 1, minWidth: 250 }}
+                                            disabled={modeleLibre}
+                                            error={formNewModel.errors.id_dossier && formNewModel.touched.id_dossier}
+                                        >
+                                            <InputLabel id="demo-simple-select-standard-label">Dossier</InputLabel>
+                                            <Select
+                                                labelId="demo-simple-select-standard-label"
+                                                id="demo-simple-select-standard"
+                                                value={formNewModel.values.id_dossier}
+                                                label={"valSelectPC"}
+                                                onChange={(e) => formNewModel.setFieldValue('id_dossier', e.target.value)}
+                                                sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
+                                            >
+                                                <MenuItem key={0} value={0}><em>Aucun dossier</em></MenuItem>
+                                                {listDossier?.map((dossier) => (
+                                                    <MenuItem key={dossier.id} value={dossier.id}>{dossier.dossier}</MenuItem>
+                                                ))}
+                                            </Select>
 
-                    <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                        direction={"row"} justifyContent={"right"}>
-                        <ButtonGroup
-                            variant="outlined"
-                            sx={{
-                                boxShadow: 'none',
-                                display: 'flex',
-                                gap: '2px',
-                                '& .MuiButton-root': {
-                                    borderRadius: 0,
-                                },
-                                '& .MuiButtonGroup-grouped': {
-                                    boxShadow: 'none',
-                                    outline: 'none',
-                                    borderColor: 'inherit',
-                                    marginLeft: 0,
-                                    borderRadius: 1,
-                                    border: 'none',
-                                },
-                                '& .MuiButtonGroup-grouped:hover': {
-                                    boxShadow: 'none',
-                                    borderColor: 'inherit',
-                                    border: 'none',
-                                },
-                                '& .MuiButtonGroup-grouped.Mui-focusVisible': {
-                                    boxShadow: 'none',
-                                    borderColor: 'inherit',
-                                },
-                            }}
-                        >
-                            <Tooltip title="Ajouter un nouveau compte">
-                                <span>
+                                            <FormHelperText>
+                                                {formNewModel.errors.id_dossier && formNewModel.touched.id_dossier && formNewModel.errors.id_dossier}
+                                            </FormHelperText>
+                                        </FormControl>
+
+                                        <FormControl variant="standard"
+                                            sx={{ m: 1, minWidth: 250 }}
+                                            error={formNewModel.errors.model_name && formNewModel.touched.model_name}
+                                        >
+                                            <TextField
+                                                onBlur={(e) => formNewModel.setFieldValue("model_name", e.target.value)}
+                                                id="nom-modele" label="Nom du modèle"
+                                                variant="standard"
+                                                style={{ width: "400px", marginLeft: "10px" }}
+                                            />
+
+                                            <FormHelperText>
+                                                {formNewModel.errors.model_name && formNewModel.touched.model_name && formNewModel.errors.model_name}
+                                            </FormHelperText>
+                                        </FormControl>
+
+                                    </Stack>
+
+                                </DialogContent>
+                                <DialogActions>
                                     <Button
-                                        disabled={!canAdd || !modelId || hasRowInEditMode()}
-                                        onClick={handleAddClick}
-                                        sx={{
-                                            ...buttonStyle,
-                                            backgroundColor: initial.auth_gradient_end,
-                                            color: 'white',
-                                            borderColor: initial.auth_gradient_end,
-                                            boxShadow: 'none',
-                                            '&:hover': {
-                                                backgroundColor: initial.auth_gradient_end,
-                                                border: 'none',
-                                                boxShadow: 'none',
-                                            },
-                                            '&:focus': {
-                                                backgroundColor: initial.auth_gradient_end,
-                                                border: 'none',
-                                                boxShadow: 'none',
-                                            },
-                                            '&.Mui-disabled': {
-                                                backgroundColor: initial.auth_gradient_end,
-                                                color: 'white',
-                                                cursor: 'not-allowed',
-                                            },
-                                            '&::before': {
-                                                display: 'none',
-                                            },
-                                        }}
+                                        autoFocus
+                                        style={{ backgroundColor: initial.add_new_line_bouton_color, color: 'white', width: "100px", textTransform: 'none', outline: 'none' }}
+                                        type='submit'
+                                        onClick={formNewModel.handleSubmit}
                                     >
-                                        Ajouter
+                                        Créer
                                     </Button>
-                                </span>
-                            </Tooltip>
+                                </DialogActions>
+                            </BootstrapDialog>
 
-                            <Tooltip title="Modifier le compte sélectionné">
-                                <span>
-                                    <Button
-                                        disabled={!canModify || !detailModelSelectedRow?.id || hasRowInEditMode()}
-                                        onClick={handleEditClick}
-                                        sx={{
-                                            ...buttonStyle,
-                                            backgroundColor: initial.auth_gradient_end,
-                                            color: 'white',
-                                            borderColor: initial.auth_gradient_end,
-                                            '&:hover': {
-                                                backgroundColor: initial.auth_gradient_end,
-                                                boxShadow: 'none',
-                                                border: 'none',
-                                            },
-                                            '&.Mui-disabled': {
-                                                backgroundColor: initial.auth_gradient_end,
-                                                color: 'white',
-                                                cursor: 'not-allowed',
-                                                border: 'none',
-                                            },
-                                        }}
-                                    >
-                                        Modifier
-                                    </Button>
-                                </span>
-                            </Tooltip>
+                            <BootstrapDialog
+                                onClose={() => setOpenImportDialog(false)}
+                                aria-labelledby="import-modele-dialog-title"
+                                open={openImportDialog}
+                                maxWidth={"xl"}
+                                fullWidth
+                            >
+                                <IconButton
+                                    aria-label="close"
+                                    onClick={() => setOpenImportDialog(false)}
+                                    sx={{ position: 'absolute', right: 8, top: 8, color: (theme) => theme.palette.grey[500] }}
+                                >
+                                    <CloseIcon />
+                                </IconButton>
+                                <DialogContent dividers>
+                                    <Box sx={{ width: '100%', height: '70vh' }}>
+                                        <PopupImportModelePlanComptable onSuccess={() => { GetListePlanComptableModele(); setOpenImportDialog(false); }} />
+                                    </Box>
+                                </DialogContent>
+                                <DialogActions>
+                                    <Button onClick={() => setOpenImportDialog(false)} style={{ textTransform: 'none' }}>Fermer</Button>
+                                </DialogActions>
+                            </BootstrapDialog>
+                        </form>
 
-                            <Tooltip title="Sauvegarder">
-                                <span>
-                                    <Button
-                                        // disabled={!selectedRowId}
-                                        onClick={handleSaveClick}
-                                        sx={{
-                                            ...buttonStyle,
-                                            backgroundColor: '#4caf50',
-                                            color: 'white',
-                                            borderColor: '#4caf50',
-                                            '&:hover': {
-                                                backgroundColor: '#4caf50',
-                                                boxShadow: 'none',
-                                                border: 'none',
-                                            },
-                                        }}
-                                    >
-                                        Sauvegarder
-                                    </Button>
-                                </span>
-                            </Tooltip>
+                        {/* MODAL POUR LA SUPPRESSION D'UN MODELE */}
+                        {openDialogDeleteModel ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer le modèle sélectionné ?"} confirmationState={deleteModelPC} /> : null}
 
-                            <Tooltip title="Annuler">
-                                <span>
-                                    <Button
-                                        //disabled={!selectedRowId}
-                                        onClick={handleCancelClick}
-                                        sx={{
-                                            ...buttonStyle,
-                                            backgroundColor: initial.annuler_bouton_color,
-                                            color: 'white',
-                                            borderColor: initial.annuler_bouton_color,
-                                            '&:hover': {
-                                                backgroundColor: initial.annuler_bouton_color,
-                                                boxShadow: 'none',
-                                                border: 'none',
-                                            },
-                                        }}
-                                    >
-                                        Annuler
-                                    </Button>
-                                </span>
-                            </Tooltip>
+                        {/* MODAL POUR LA SUPPRESSION DES COMPTES */}
+                        {openDialogDeleteItemsPc ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer les comptes sélectionnés ?"} confirmationState={deleteItemsPC} /> : null}
 
-                            <Tooltip title="Supprimer le compte sélectionné">
-                                <span>
-                                    <Button
-                                        disabled={!canDelete || !detailModelSelectedRow?.id || hasRowInEditMode()}
-                                        onClick={handleOpenDialogDetailModelDelete}
-                                        sx={{
-                                            ...buttonStyle,
-                                            backgroundColor: initial.annuler_bouton_color,
-                                            color: 'white',
-                                            borderColor: initial.annuler_bouton_color,
-                                            '&:hover': {
-                                                backgroundColor: initial.annuler_bouton_color,
-                                                border: 'none',
-                                            },
-                                            '&.Mui-disabled': {
-                                                backgroundColor: initial.annuler_bouton_color,
-                                                color: 'white',
-                                                cursor: 'not-allowed',
-                                                border: 'none',
-                                            },
-                                        }}
-                                    >
-                                        Supprimer
-                                    </Button>
-                                </span>
-                            </Tooltip>
-                        </ButtonGroup>
-                    </Stack>
-                </Stack>
+                        <Stack height={"600px"} width={'100%'}>
+                            <DataGrid
+                                disableMultipleSelection={DataGridStyle.disableMultipleSelection}
+                                disableColumnSelector={DataGridStyle.disableColumnSelector}
+                                disableDensitySelector={DataGridStyle.disableDensitySelector}
+                                localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                                disableRowSelectionOnClick
+                                disableSelectionOnClick={true}
+                                rowHeight={36}
+                                headerHeight={32}
+                                sx={{
+                                    borderRadius: '12px',
+                                    border: `1px solid ${BORDER_COLOR}`,
 
-                {/* MODAL DE CONFIRMATION DE SUPPRESSION D'UN COMPTE DANS LE TABLEAU DU PLAN COMPTABLE */}
-                {openDialogDeleteItemsPc ? <PopupConfirmDelete msg={"Voulez-vous vraiment supprimer les comptes sélectionnés ?"} confirmationState={deleteItemsPC} /> : null}
+                                    '& .MuiDataGrid-columnHeaders': {
+                                        borderBottom: `1px solid ${BORDER_COLOR}`,
+                                        bgcolor: '#F8FAFC',
+                                        minHeight: '32px !important',
+                                        maxHeight: '32px !important'
+                                    },
 
-                <Stack height={"750px"} width={'100%'}>
-                    <DataGrid
-                        disableMultipleSelection={DataGridStyle.disableMultipleSelection}
-                        disableColumnSelector={DataGridStyle.disableColumnSelector}
-                        disableDensitySelector={DataGridStyle.disableDensitySelector}
-                        localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
-                        disableRowSelectionOnClick
-                        disableSelectionOnClick={true}
-                        slots={{ toolbar: QuickFilter }}
-                        sx={{
-                            ...DataGridStyle.sx,
-                            '& .MuiDataGrid-columnHeaders': {
-                                backgroundColor: initial.tableau_theme,
-                                color: initial.text_theme,
-                            },
-                            '& .MuiDataGrid-columnHeaderTitle': {
-                                color: initial.text_theme,
-                                fontWeight: 600,
-                            },
-                            '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
-                                color: initial.text_theme,
-                            },
-                            '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
-                                outline: 'none',
-                                border: 'none',
-                            },
-                            '& .highlight-separator': {
-                                borderBottom: '1px solid red'
-                            },
-                            '& .MuiDataGrid-row.highlight-separator': {
-                                borderBottom: '1px solid red',
-                            },
-                            '& .MuiDataGrid-virtualScroller': {
-                                maxHeight: '700px',
-                            },
-                        }}
-                        apiRef={apiRef}
-                        editMode="row"
-                        rowModesModel={rowModesModel}
-                        onRowModesModelChange={handleRowModesModelChange}
-                        onRowEditStart={handleRowEditStart}
-                        onRowEditStop={handleRowEditStop}
-                        processRowUpdate={processRowUpdate}
-                        onProcessRowUpdateError={(error) => {
-                            console.error('Erreur lors de la mise à jour:', error);
-                        }}
-                        rowHeight={DataGridStyle.rowHeight}
-                        columnHeaderHeight={DataGridStyle.columnHeaderHeight}
-                        onRowSelectionModelChange={(ids) => {
-                            const single = Array.isArray(ids) && ids.length ? [ids[ids.length - 1]] : [];
-                            listDetailModelPCSelectedRow(single);
-                        }}
-                        rows={detailModel}
-                        columns={columnHeaderDetailInline(handleShowCptInfos)}
-                        initialState={{
-                            pagination: {
-                                paginationModel: { page: 0, pageSize: 100 },
-                            },
-                        }}
-                        experimentalFeatures={{ columnPinning: true }}
-                        pageSizeOptions={[50, 100]}
-                        pagination={DataGridStyle.pagination}
-                        checkboxSelection={DataGridStyle.checkboxSelection}
-                        columnVisibilityModel={{
-                            id: false,
-                        }}
-                        rowSelectionModel={pcAllselectedRow}
-                    />
-                </Stack>
+                                    '& .MuiDataGrid-columnHeaderTitle': {
+                                        fontWeight: 800,
+                                        color: '#94A3B8',
+                                        fontSize: '10px',
+                                        textTransform: 'uppercase'
+                                    },
 
-            </Stack>
+                                    '& .MuiDataGrid-columnHeader': {
+                                        paddingTop: '4px',
+                                        paddingBottom: '4px'
+                                    },
+
+                                    '& .MuiDataGrid-cell': {
+                                        bgcolor: '#fff',
+                                        fontSize: '13px',
+                                        paddingTop: '6px',
+                                        paddingBottom: '6px',
+                                        borderBottom: '1px solid #F1F5F9'
+                                    },
+
+                                    '& .MuiCheckbox-root': {
+                                        transform: 'scale(0.9)'
+                                    },
+
+                                    '& .MuiDataGrid-cell:focus': {
+                                        outline: 'none'
+                                    },
+                                    '& .MuiDataGrid-columnHeader:focus': {
+                                        outline: 'none'
+                                    }
+                                }}
+                                onRowSelectionModelChange={(ids) => {
+                                    const single = Array.isArray(ids) && ids.length ? [ids[ids.length - 1]] : [];
+                                    listModelPCSelectedRow(single);
+                                }}
+                                rows={filteredModele}
+                                columns={columnHeaderModel}
+                                initialState={{
+                                    pagination: {
+                                        paginationModel: { page: 0, pageSize: 100 },
+                                    },
+                                }}
+                                pageSizeOptions={[50, 100]}
+                                pagination={DataGridStyle.pagination}
+
+                                checkboxSelection={DataGridStyle.checkboxSelection}
+                                columnVisibilityModel={{
+                                    id: false,
+                                }}
+                                rowSelectionModel={modelId != null ? [modelId] : []}
+
+                            />
+                        </Stack>
+                    </Grid>
+
+                    {/* ===================== PLAN DE COMPTE (TRÈS LARGE EN DATAGRID) ===================== */}
+                    <Grid item xs={12} lg={8}>
+                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2, height: '32px' }}>
+                            <Typography sx={{ fontWeight: 800, fontSize: '16px', color: NAV_DARK }}>
+                                Plan de compte
+                            </Typography>
+
+                            <Stack direction="row" spacing={1}>
+                                <TextField
+                                    placeholder="Rechercher un compte..."
+                                    size="small"
+                                    sx={searchStyle}
+                                    value={searchTextDetail}
+                                    onChange={(e) => handleSearchDetail(e.target.value)}
+                                    InputProps={{
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <SearchIcon sx={{ fontSize: 16, color: '#94A3B8' }} />
+                                            </InputAdornment>
+                                        )
+                                    }}
+                                />
+                                <Button
+                                    size="small"
+                                    startIcon={<AddIcon />}
+                                    onClick={handleAddClick}
+                                    disabled={!canAdd || !modelId || hasRowInEditMode()}
+                                    sx={btnStyle}
+                                >
+                                    Ajouter
+                                </Button>
+                            </Stack>
+                        </Stack>
+                        <Stack height={"600px"} width={'100%'}>
+                            <DataGrid
+                                disableMultipleSelection={DataGridStyle.disableMultipleSelection}
+                                disableColumnSelector={DataGridStyle.disableColumnSelector}
+                                disableDensitySelector={DataGridStyle.disableDensitySelector}
+                                localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                                disableRowSelectionOnClick
+                                disableSelectionOnClick={true}
+                                rows={filteredDetailModel} // ta liste de comptes
+                                columns={columnHeaderDetailInline(handleShowCptInfos)}
+                                checkboxSelection={DataGridStyle.checkboxSelection}
+                                rowHeight={36}
+                                headerHeight={32}
+                                sx={{
+                                    borderRadius: '12px',
+                                    border: `1px solid ${BORDER_COLOR}`,
+
+                                    '& .MuiDataGrid-columnHeaders': {
+                                        borderBottom: `1px solid ${BORDER_COLOR}`,
+                                        bgcolor: '#F8FAFC',
+                                        minHeight: '32px !important',
+                                        maxHeight: '32px !important'
+                                    },
+
+                                    '& .MuiDataGrid-columnHeaderTitle': {
+                                        fontWeight: 800,
+                                        color: '#94A3B8',
+                                        fontSize: '10px',
+                                        textTransform: 'uppercase'
+                                    },
+
+                                    '& .MuiDataGrid-columnHeader': {
+                                        paddingTop: '4px',
+                                        paddingBottom: '4px'
+                                    },
+
+                                    '& .MuiDataGrid-cell': {
+                                        bgcolor: '#fff',
+                                        fontSize: '13px',
+                                        paddingTop: '6px',
+                                        paddingBottom: '6px',
+                                        borderBottom: '1px solid #F1F5F9'
+                                    },
+
+                                    '& .MuiCheckbox-root': {
+                                        transform: 'scale(0.9)'
+                                    },
+
+                                    '& .MuiDataGrid-cell:focus': {
+                                        outline: 'none'
+                                    },
+                                    '& .MuiDataGrid-columnHeader:focus': {
+                                        outline: 'none'
+                                    }
+                                }}
+                                apiRef={apiRef}
+                                editMode="row"
+                                rowModesModel={rowModesModel}
+                                onRowModesModelChange={handleRowModesModelChange}
+                                onRowEditStart={handleRowEditStart}
+                                onRowEditStop={handleRowEditStop}
+                                processRowUpdate={processRowUpdate}
+                                onProcessRowUpdateError={(error) => {
+                                    console.error('Erreur lors de la mise à jour:', error);
+                                }}
+                                onRowSelectionModelChange={(ids) => {
+                                    const single = Array.isArray(ids) && ids.length ? [ids[ids.length - 1]] : [];
+                                    listDetailModelPCSelectedRow(single);
+                                }}
+                                initialState={{
+                                    pagination: {
+                                        paginationModel: { page: 0, pageSize: 100 },
+                                    },
+                                }}
+                                pageSizeOptions={[50, 100]}
+                                pagination={DataGridStyle.pagination}
+                                columnVisibilityModel={{
+                                    id: false,
+                                }}
+                                rowSelectionModel={Array.isArray(pcAllselectedRow) ? pcAllselectedRow.filter(Boolean) : []}
+                            />
+                        </Stack>
+
+                    </Grid>
+
+                </Grid>
+            </Box>
         </Box>
-    )
-}
+    );
+};
+
+// --- STYLES ---
+const tableContainerStyle = { borderRadius: '12px', border: `1px solid ${BORDER_COLOR}`, bgcolor: '#fff', overflow: 'hidden' };
+const cellStyle = { fontSize: '13px', py: '6px' };
+const headerStyle = (width, last = false) => ({
+    fontWeight: 800, color: '#94A3B8', fontSize: '10px', textTransform: 'uppercase',
+    width: width, minWidth: width, paddingY: '4px', pr: last ? 2 : 1
+});
+const btnStyle = {
+    bgcolor: NEON_MINT,
+    color: '#000',
+    textTransform: 'none',
+    fontWeight: 700,
+    borderRadius: '6px',
+    height: '28px',
+    mr: 2,
+    px: 2,
+    fontSize: '12px',
+    '&:hover': {
+        bgcolor: '#00E685',
+        transform: 'translateY(-1px)'
+    },
+};
+// sx={{
+//     bgcolor: NEON_MINT,
+//     textTransform: 'none',
+//     fontSize: '12px',
+//     fontWeight: 700,
+//     mr: 2,
+//     color: '#000',
+//     borderRadius: '6px',
+//     px: 2,
+//     '&:hover': {
+//         bgcolor: '#00E685',
+//         transform: 'translateY(-1px)'
+//     },
+// }}
+
+const searchStyle = { width: 180, '& .MuiOutlinedInput-root': { borderRadius: '6px', bgcolor: '#fff', height: '28px', fontSize: '11px' } };
+
+export default PlanComptableModele;

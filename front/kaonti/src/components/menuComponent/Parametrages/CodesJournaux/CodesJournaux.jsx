@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Typography, Stack, FormControl, InputLabel, Select, MenuItem, Input, FormHelperText, Chip, ButtonGroup, Button } from '@mui/material';
+import { Typography, Stack, FormControl, InputLabel, Select, MenuItem, Input, FormHelperText, Chip, ButtonGroup, Button, Box, AppBar, Toolbar, GlobalStyles, IconButton, Breadcrumbs, InputAdornment, TextField } from '@mui/material';
 import Tooltip from '@mui/material/Tooltip';
 import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
 import { useParams } from 'react-router-dom';
-import Box from '@mui/material/Box';
 import Tab from '@mui/material/Tab';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
@@ -31,17 +30,35 @@ import { MdOutlineSyncLock } from "react-icons/md";
 import usePermission from '../../../../hooks/usePermission';
 import useAxiosPrivate from '../../../../../config/axiosPrivate';
 
-export default function ParamCodeJournalComponent() {
+// Icônes MUI
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/EditOutlined';
+import DeleteIcon from '@mui/icons-material/DeleteOutline';
+import SaveIcon from '@mui/icons-material/CheckCircleOutline';
+import CancelIcon from '@mui/icons-material/HighlightOff';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import SearchIcon from '@mui/icons-material/Search';
+
+export default function ParamCodeJournalComponent({ hideDossier = false }) {
     const apiRef = useGridApiRef();
     const { canAdd, canModify, canDelete, canView } = usePermission();
     const axiosPrivate = useAxiosPrivate();
     const initial = init[0];
+
+    // Constantes de style du design moderne
+    const NEON_MINT = '#00FF94';
+    const NAV_DARK = '#0B1120';
+    const BG_SOFT = '#F8FAFC';
+
     //récupération information du dossier sélectionné
     const { id } = useParams();
     const [fileId, setFileId] = useState(0);
     const [fileInfos, setFileInfos] = useState('');
     const [noFile, setNoFile] = useState(false);
     const [listeCodeJournaux, setListeCodeJournaux] = useState([]);
+    const [filteredCodeJournaux, setFilteredCodeJournaux] = useState([]);
+    const [searchText, setSearchText] = useState('');
 
     const [selectedRow, setSelectedRow] = useState([]);
 
@@ -96,6 +113,33 @@ export default function ParamCodeJournalComponent() {
             opacity: 0.4
         },
     };
+
+    // Fonction de filtrage pour la recherche multi-colonnes
+    const handleSearch = (searchValue) => {
+        setSearchText(searchValue);
+
+        if (!searchValue.trim()) {
+            setFilteredCodeJournaux(listeCodeJournaux);
+            return;
+        }
+
+        const filtered = listeCodeJournaux.filter(row => {
+            const searchLower = searchValue.toLowerCase();
+            return (
+                (row.code && row.code.toLowerCase().includes(searchLower)) ||
+                (row.libelle && row.libelle.toLowerCase().includes(searchLower)) ||
+                (row.type && row.type.toLowerCase().includes(searchLower)) ||
+                (row.compteassocie && row.compteassocie.toLowerCase().includes(searchLower))
+            );
+        });
+
+        setFilteredCodeJournaux(filtered);
+    };
+
+    // Mettre à jour filteredCodeJournaux quand listeCodeJournaux change
+    useEffect(() => {
+        setFilteredCodeJournaux(listeCodeJournaux);
+    }, [listeCodeJournaux]);
 
     //sauvegarde de la nouvelle ligne ajoutée
     const formikNewCodeJournal = useFormik({
@@ -218,7 +262,7 @@ export default function ParamCodeJournalComponent() {
             // console.log('[useEffect pc] Plan comptable chargé, mise à jour de listeCptAssocie pour type:', formikNewCodeJournal.values.type);
             const listBank = pc.filter((row) => row.compte.startsWith('512') || row.compte.startsWith('52'));
             const listCash = pc.filter((row) => row.compte.startsWith('53'));
-            
+
             if (formikNewCodeJournal.values.type === 'BANQUE') {
                 // console.log('[useEffect pc] Mise à jour liste BANQUE:', listBank.length, 'comptes');
                 setListeCptAssocie(listBank);
@@ -243,10 +287,10 @@ export default function ParamCodeJournalComponent() {
     const recupListeCptBanqueCaisse = (typeTreso) => {
         // console.log('[recupListeCptBanqueCaisse] Type sélectionné:', typeTreso);
         // console.log('[recupListeCptBanqueCaisse] Plan comptable (pc) length:', pc?.length);
-        
+
         const listBank = pc?.filter((row) => row.compte.startsWith('512') || row.compte.startsWith('52'));
         const listCash = pc?.filter((row) => row.compte.startsWith('53'));
-        
+
         // console.log('[recupListeCptBanqueCaisse] Comptes BANQUE (512 ou 52) trouvés:', listBank?.length);
         // console.log('[recupListeCptBanqueCaisse] Comptes CAISSE (53) trouvés:', listCash?.length);
 
@@ -275,7 +319,7 @@ export default function ParamCodeJournalComponent() {
             headerName: 'Code',
             type: 'string',
             sortable: true,
-            flex: 0.5,
+            width: 100,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
@@ -289,6 +333,8 @@ export default function ParamCodeJournalComponent() {
                                 height: '100%', alignItems: 'center',
                                 outline: 'none',
                                 backgroundColor: codeValidationColor,
+                                fontSize: '13px',
+                                paddingLeft: '8px'
                             }}
                             type="text"
                             value={formikNewCodeJournal.values.code}
@@ -303,17 +349,27 @@ export default function ParamCodeJournalComponent() {
                     </FormControl>
                 );
             },
+            renderCell: (params) => (
+                <Typography sx={{ fontSize: '13px', fontWeight: 700, color: '#1E293B' }}>
+                    {params.value}
+                </Typography>
+            ),
         },
         {
             field: 'libelle',
             headerName: 'Libellé',
             type: 'string',
             sortable: true,
-            flex: 1,
+            width: 170,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
             editable: editableRow,
+            renderCell: (params) => (
+                <Typography sx={{ fontSize: '13px', color: '#475569' }}>
+                    {params.value}
+                </Typography>
+            ),
             renderEditCell: (params) => {
                 return (
                     <FormControl fullWidth style={{ height: '100%' }}>
@@ -321,7 +377,9 @@ export default function ParamCodeJournalComponent() {
                             style={{
                                 height: '100%', alignItems: 'center',
                                 outline: 'none',
-                                backgroundColor: libelleValidationColor
+                                backgroundColor: libelleValidationColor,
+                                fontSize: '13px',
+                                paddingLeft: '8px'
                             }}
                             type="text"
                             value={formikNewCodeJournal.values.libelle}
@@ -343,7 +401,7 @@ export default function ParamCodeJournalComponent() {
             type: 'singleSelect',
             valueOptions: type.map((code) => code.value),
             sortable: true,
-            flex: 1,
+            width: 120,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
@@ -358,7 +416,9 @@ export default function ParamCodeJournalComponent() {
                     <FormControl fullWidth>
                         <InputLabel><em>Choisir...</em></InputLabel>
                         <Select
-                            style={{ backgroundColor: typeValidationColor }}
+                            style={{
+                                backgroundColor: typeValidationColor, fontSize: '13px'
+                            }}
                             value={formikNewCodeJournal.values.type}
                             onChange={(e) => recupListeCptBanqueCaisse(e.target.value)}
                             label="Type"
@@ -376,182 +436,31 @@ export default function ParamCodeJournalComponent() {
                 );
             },
             renderCell: (params) => {
-                if (params.value === 'BANQUE') {
-                    return (
-                        <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-                            {/* <div style={{
-                                width: 90,             
-                                height: 25,            
-                                backgroundColor: '#3D5300', 
-                                borderRadius: 15,        
-                                display: 'flex',            
-                                justifyContent: 'center',   
-                                alignItems: 'center',  
-                                color: 'white'     
-                            }}>
-                                {params.value}
-                            </div> */}
-
-                            <Chip
-                                icon={<AiFillBank style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
-                                label={params.value}
-
-                                style={{
-                                    width: "100%",
-                                    display: 'flex', // ou block, selon le rendu souhaité
-                                    justifyContent: 'space-between',
-                                    backgroundColor: '#3D5300',
-                                    color: 'white'
-                                }}
-                            />
-                        </Stack>
-                    )
-                }
-
-                if (params.value === 'CAISSE') {
-                    return (
-                        <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-                            {/* <div style={{
-                                width: 90,             
-                                height: 25,            
-                                backgroundColor: '#798645', 
-                                borderRadius: 15,        
-                                display: 'flex',            
-                                justifyContent: 'center',   
-                                alignItems: 'center',
-                                color: 'white'       
-                            }}>
-                                {params.value}
-                            </div> */}
-
-                            <Chip
-                                icon={<SiCashapp style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
-                                label={params.value}
-
-                                style={{
-                                    width: "100%",
-                                    display: 'flex', // ou block, selon le rendu souhaité
-                                    justifyContent: 'space-between',
-                                    backgroundColor: '#798645',
-                                    color: 'white'
-                                }}
-                            />
-                        </Stack>
-                    )
-                }
-
-                if (params.value === 'ACHAT') {
-                    return (
-                        <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-                            {/* <div style={{
-                                width: 90,             
-                                height: 25,            
-                                backgroundColor: '#074799', 
-                                borderRadius: 15,        
-                                display: 'flex',            
-                                justifyContent: 'center',   
-                                alignItems: 'center',
-                                color: 'white'       
-                            }}>
-                                {params.value}
-                            </div> */}
-
-                            <Chip
-                                icon={<BsArrow90DegUp style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
-                                label={params.value}
-
-                                style={{
-                                    width: "100%",
-                                    display: 'flex', // ou block, selon le rendu souhaité
-                                    justifyContent: 'space-between',
-                                    backgroundColor: '#074799',
-                                    color: 'white'
-                                }}
-                            />
-                        </Stack>
-                    )
-                }
-                if (params.value === 'VENTE') {
-                    return (
-                        <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-                            {/* <div style={{
-                                width: 90,             
-                                height: 25,            
-                                backgroundColor: '#FFA62F', 
-                                borderRadius: 15,        
-                                display: 'flex',            
-                                justifyContent: 'center',   
-                                alignItems: 'center',
-                                color: 'white'       
-                            }}>
-                                {params.value}
-                            </div> */}
-
-                            <Chip
-                                icon={<BsArrow90DegDown style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
-                                label={params.value}
-
-                                style={{
-                                    width: "100%",
-                                    display: 'flex', // ou block, selon le rendu souhaité
-                                    justifyContent: 'space-between',
-                                    backgroundColor: '#67AE6E',
-                                    color: 'white'
-                                }}
-                            />
-                        </Stack>
-                    )
-                }
-                if (params.value === 'OD') {
-                    return (
-                        <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-                            {/* <div style={{
-                                width: 90,             
-                                height: 25,            
-                                backgroundColor: '#0B8494', 
-                                borderRadius: 15,        
-                                display: 'flex',            
-                                justifyContent: 'center',   
-                                alignItems: 'center',
-                                color: 'white'       
-                            }}>
-                                {params.value}
-                            </div> */}
-
-                            <Chip
-                                icon={<BsRecord style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
-                                label={params.value}
-
-                                style={{
-                                    width: "100%",
-                                    display: 'flex', // ou block, selon le rendu souhaité
-                                    justifyContent: 'space-between',
-                                    backgroundColor: '#0B8494',
-                                    color: 'white'
-                                }}
-                            />
-                        </Stack>
-                    )
-                }
-                if (params.value === 'RAN') {
-                    return (
-                        <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-                            <Chip
-                                icon={<MdOutlineSyncLock style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
-                                label={params.value}
-
-                                style={{
-                                    width: "100%",
-                                    display: 'flex', // ou block, selon le rendu souhaité
-                                    justifyContent: 'space-between',
-                                    backgroundColor: '#FFA62F',
-                                    color: 'white'
-                                }}
-                            />
-                        </Stack>
-                    )
-                }
-            }
+                const typeColors = {
+                    'BANQUE': '#0369A1',
+                    'CAISSE': '#10B981',
+                    'ACHAT': '#3B82F6',
+                    'VENTE': '#10B981',
+                    'OD': '#64748B',
+                    'RAN': '#FFA62F'
+                };
+                const color = typeColors[params.value] || '#64748B';
+                return (
+                    <Chip
+                        label={params.value}
+                        size="small"
+                        sx={{
+                            bgcolor: color,
+                            color: '#fff',
+                            fontWeight: 800,
+                            fontSize: '10px',
+                            borderRadius: '6px',
+                            height: '20px',
+                            minWidth: '60px'
+                        }}
+                    />
+                );
+            },
         },
         {
             field: 'compteassocie',
@@ -559,7 +468,7 @@ export default function ParamCodeJournalComponent() {
             type: 'singleSelect',
             valueOptions: listeCptAssocie.map((cpt) => cpt.compte),
             sortable: true,
-            flex: 3,
+            width: 160,
             headerAlign: 'left',
             align: 'left',
             headerClassName: 'HeaderbackColor',
@@ -569,9 +478,9 @@ export default function ParamCodeJournalComponent() {
                 return selectedType ? `${selectedType.compte} ${selectedType.libelle}` : params.value;
             },
             renderCell: (params) => (
-                <span style={{ color: (params.row.type !== 'CAISSE' && params.row.type !== 'BANQUE') ? '#999' : '#000' }}>
+                <Typography sx={{ fontSize: '13px', color: '#475569', fontFamily: 'monospace' }}>
                     {params.value}
-                </span>
+                </Typography>
             ),
             renderEditCell: (params) => {
                 const isEditable = formikNewCodeJournal.values.type === 'BANQUE' || formikNewCodeJournal.values.type === 'CAISSE';
@@ -579,7 +488,9 @@ export default function ParamCodeJournalComponent() {
                     <FormControl fullWidth>
                         <InputLabel><em>Choisir...</em></InputLabel>
                         <Select
-                            style={{ backgroundColor: isEditable ? '#fff' : '#f0f0f0' }}
+                            style={{
+                                backgroundColor: isEditable ? '#fff' : '#f0f0f0', fontSize: '13px',
+                            }}
                             value={formikNewCodeJournal.values.compteassocie}
                             onChange={(e) => formikNewCodeJournal.setFieldValue('compteassocie', e.target.value)}
                             disabled={!isEditable} // désactive si non éditable
@@ -596,6 +507,69 @@ export default function ParamCodeJournalComponent() {
                                 formikNewCodeJournal.errors.compteassocie}
                         </FormHelperText>
                     </FormControl>
+                );
+            },
+        },
+        {
+            field: 'actions',
+            headerName: 'ACTIONS',
+            width: 80,
+            sortable: false,
+            headerAlign: 'right',
+            align: 'right',
+            headerClassName: 'HeaderbackColor',
+            editable: false,
+            renderCell: (params) => {
+                const isEditing = rowModesModel[params.id]?.mode === GridRowModes.Edit;
+                const isSelected = selectedRowId.includes(params.id);
+
+                return (
+                    <Stack direction="row" spacing={0.5} justifyContent="flex-end" sx={{ pr: 1 }}>
+                        {isEditing ? (
+                            <>
+                                <IconButton
+                                    disabled={(!canAdd && !canModify) || !formikNewCodeJournal.isValid}
+                                    onClick={handleSaveClick(selectedRowId)}
+                                    size="small"
+                                    sx={{ color: '#10B981' }}
+                                    title="Sauvegarder"
+                                >
+                                    <SaveIcon sx={{ fontSize: 20 }} />
+                                </IconButton>
+                                <IconButton
+                                    disabled={disableCancelBouton}
+                                    onClick={handleCancelClick(selectedRowId)}
+                                    size="small"
+                                    sx={{ color: '#F43F5E' }}
+                                    title="Annuler"
+                                >
+                                    <CancelIcon sx={{ fontSize: 20 }} />
+                                </IconButton>
+                            </>
+                        ) : (
+                            <>
+                                <IconButton
+                                    disabled={(!canModify && selectedRowId > 0) || disableModifyBouton}
+                                    onClick={handleEditClick(selectedRowId)}
+                                    size="small"
+                                    sx={{ color: '#CBD5E1', '&:hover': { color: NAV_DARK } }}
+                                    title="Modifier"
+                                >
+                                    <EditIcon sx={{ fontSize: 20 }} />
+                                </IconButton>
+                                <IconButton
+                                    disabled={!canDelete || disableDeleteBouton}
+                                    onClick={handleOpenDialogConfirmDeleteAssocieRow}
+                                    size="small"
+                                    sx={{ color: '#CBD5E1', '&:hover': { color: '#EF4444' } }}
+                                    title="Supprimer"
+                                >
+                                    <DeleteIcon sx={{ fontSize: 20 }} />
+                                </IconButton>
+                            </>
+                        )
+                        }
+                    </Stack>
                 );
             },
         },
@@ -677,7 +651,7 @@ export default function ParamCodeJournalComponent() {
         }
 
         if (formikNewCodeJournal.values.libelle === '') {
-            setLibelleValidationColor('#F6D6D6'); 
+            setLibelleValidationColor('#F6D6D6');
             saveBoolLibelle = false;
         } else {
             setLibelleValidationColor('transparent');
@@ -911,6 +885,9 @@ export default function ParamCodeJournalComponent() {
 
     return (
         <>
+            <GlobalStyles styles={{
+                body: { margin: 0, padding: 0, overflowX: 'hidden', backgroundColor: BG_SOFT, fontFamily: '"Inter", sans-serif' }
+            }} />
             {
                 noFile
                     ?
@@ -937,342 +914,236 @@ export default function ParamCodeJournalComponent() {
                 compteId={compteId}
                 onImportSuccess={() => GetListeCodeJournaux(fileId)}
             />
-            <Box>
-
-                <TabContext value={"1"}>
-                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                        <TabList aria-label="lab API tabs example">
-                            <Tab
-                                style={{
-                                    textTransform: 'none',
-                                    outline: 'none',
-                                    border: 'none',
-                                    margin: -5
-                                }}
-                                label={InfoFileStyle(fileInfos?.dossier)} value="1"
-                            />
-                        </TabList>
-                    </Box>
-                    <TabPanel value="1">
-                        <Typography variant='h6' sx={{ color: "black" }} align='left'>Paramétrages : codes journaux</Typography>
-
-                        <Stack width={"100%"} height={"30px"} spacing={1} alignItems={"center"} alignContent={"center"}
-                            direction={"column"} style={{ marginLeft: "0px", marginTop: "20px", justifyContent: "right" }}>
-
-                            <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                direction={"row"} justifyContent={"right"}>
-                                <ButtonGroup
-                                    variant="outlined"
-                                    sx={{
-                                        boxShadow: 'none',
-                                        display: 'flex',
-                                        gap: '2px',
-                                        '& .MuiButton-root': {
-                                            borderRadius: 0,
-                                        },
-                                        '& .MuiButtonGroup-grouped': {
-                                            boxShadow: 'none',
-                                            outline: 'none',
-                                            borderColor: 'inherit',
-                                            marginLeft: 0,
-                                            borderRadius: 1,
-                                            border: 'none',
-                                        },
-                                        '& .MuiButtonGroup-grouped:hover': {
-                                            boxShadow: 'none',
-                                            borderColor: 'inherit',
-                                            border: 'none',
-                                        },
-                                        '& .MuiButtonGroup-grouped.Mui-focusVisible': {
-                                            boxShadow: 'none',
-                                            borderColor: 'inherit',
-                                        },
-                                    }}
-                                >
-                                    <Tooltip title="Importer des codes journaux">
-                                        <span>
-                                            <Button
-                                                disabled={!canAdd}
-                                                onClick={() => setOpenImportDialog(true)}
-                                                sx={{
-                                                    ...buttonStyle,
-                                                    backgroundColor: '#e79754ff',
-                                                    color: 'white',
-                                                    borderColor: '#e79754ff',
-                                                    boxShadow: 'none',
-                                                    '&:hover': {
-                                                        backgroundColor: '#e79754ff',
-                                                        border: 'none',
-                                                        boxShadow: 'none',
-                                                    },
-                                                    '&:focus': {
-                                                        backgroundColor: '#e79754ff',
-                                                        border: 'none',
-                                                        boxShadow: 'none',
-                                                    },
-                                                    '&.Mui-disabled': {
-                                                        backgroundColor: '#e79754ff',
-                                                        color: 'white',
-                                                        cursor: 'not-allowed',
-                                                    },
-                                                    '&::before': {
-                                                        display: 'none',
-                                                    },
-                                                }}
-                                            >
-                                                Importer
-                                            </Button>
-                                        </span>
-                                    </Tooltip>
-
-                                    <Tooltip title="Ajouter une ligne">
-                                        <span>
-                                            <Button
-                                                disabled={!canAdd || disableAddRowBouton}
-                                                onClick={handleOpenDialogAddNewAssocie}
-                                                sx={{
-                                                    ...buttonStyle,
-                                                    backgroundColor: initial.auth_gradient_end,
-                                                    color: 'white',
-                                                    borderColor: initial.auth_gradient_end,
-                                                    boxShadow: 'none',
-                                                    '&:hover': {
-                                                        backgroundColor: initial.auth_gradient_end,
-                                                        border: 'none',
-                                                        boxShadow: 'none',
-                                                    },
-                                                    '&:focus': {
-                                                        backgroundColor: initial.auth_gradient_end,
-                                                        border: 'none',
-                                                        boxShadow: 'none',
-                                                    },
-                                                    '&.Mui-disabled': {
-                                                        backgroundColor: initial.auth_gradient_end,
-                                                        color: 'white',
-                                                        cursor: 'not-allowed',
-                                                    },
-                                                    '&::before': {
-                                                        display: 'none',
-                                                    },
-                                                }}
-                                            >
-                                                Ajouter
-                                            </Button>
-                                        </span>
-                                    </Tooltip>
-
-                                    <Tooltip title="Modifier la ligne sélectionnée">
-                                        <span>
-                                            <Button
-                                                disabled={(!canModify && selectedRowId > 0) || disableModifyBouton}
-                                                onClick={handleEditClick(selectedRowId)}
-                                                sx={{
-                                                    ...buttonStyle,
-                                                    backgroundColor: initial.auth_gradient_end,
-                                                    color: 'white',
-                                                    borderColor: initial.auth_gradient_end,
-                                                    '&:hover': {
-                                                        backgroundColor: initial.auth_gradient_end,
-                                                    },
-                                                    '&.Mui-disabled': {
-                                                        backgroundColor: initial.auth_gradient_end,
-                                                        color: 'white',
-                                                        cursor: 'not-allowed',
-                                                    },
-                                                }}
-                                            >
-                                                Modifier
-                                            </Button>
-                                        </span>
-                                    </Tooltip>
-
-                                    <Tooltip title="Sauvegarder les modifications">
-                                        <span>
-                                            <Button
-                                                disabled={(!canAdd && !canModify) || !formikNewCodeJournal.isValid}
-                                                onClick={handleSaveClick(selectedRowId)}
-                                                sx={{
-                                                    ...buttonStyle,
-                                                    backgroundColor: initial.auth_gradient_end,
-                                                    color: 'white',
-                                                    borderColor: initial.auth_gradient_end,
-                                                    '&:hover': {
-                                                        backgroundColor: initial.auth_gradient_end,
-                                                        border: 'none',
-                                                    },
-                                                    '&.Mui-disabled': {
-                                                        backgroundColor: initial.auth_gradient_end,
-                                                        color: 'white',
-                                                        cursor: 'not-allowed',
-                                                    },
-                                                }}
-                                            >
-                                                Sauvegarder
-                                            </Button>
-                                        </span>
-                                    </Tooltip>
-
-                                    <Tooltip title="Annuler les modifications">
-                                        <span>
-                                            <Button
-                                                disabled={disableCancelBouton}
-                                                onClick={handleCancelClick(selectedRowId)}
-                                                sx={{
-                                                    ...buttonStyle,
-                                                    backgroundColor: initial.annuler_bouton_color,
-                                                    color: 'white',
-                                                    borderColor: initial.annuler_bouton_color,
-                                                    '&:hover': {
-                                                        backgroundColor: initial.annuler_bouton_color,
-                                                        none: 'none',
-                                                    },
-                                                    '&.Mui-disabled': {
-                                                        backgroundColor: initial.annuler_bouton_color,
-                                                        color: 'white',
-                                                        cursor: 'not-allowed',
-                                                    },
-                                                }}
-                                            >
-                                                Annuler
-                                            </Button>
-                                        </span>
-                                    </Tooltip>
-
-                                    <Tooltip title="Supprimer la ligne sélectionnée">
-                                        <span>
-                                            <Button
-                                                disabled={!canDelete || disableDeleteBouton}
-                                                onClick={handleOpenDialogConfirmDeleteAssocieRow}
-                                                sx={{
-                                                    ...buttonStyle,
-                                                    backgroundColor: initial.annuler_bouton_color,
-                                                    color: 'white',
-                                                    borderColor: initial.annuler_bouton_color,
-                                                    '&:hover': {
-                                                        backgroundColor: initial.annuler_bouton_color,
-                                                        border: 'none',
-                                                    },
-                                                    '&.Mui-disabled': {
-                                                        backgroundColor: initial.annuler_bouton_color,
-                                                        color: 'white',
-                                                        cursor: 'not-allowed',
-                                                    },
-                                                }}
-                                            >
-                                                Supprimer
-                                            </Button>
-                                        </span>
-                                    </Tooltip>
-                                </ButtonGroup>
-                            </Stack>
-
-                            <Stack width={"100%"} height={'100%'} minHeight={'600px'}>
-                                <DataGrid
-                                    apiRef={apiRef}
-                                    disableMultipleSelection={DataGridStyle.disableMultipleSelection}
-                                    disableColumnSelector={DataGridStyle.disableColumnSelector}
-                                    disableDensitySelector={DataGridStyle.disableDensitySelector}
-                                    disableRowSelectionOnClick
-                                    disableSelectionOnClick={true}
-                                    localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
-                                    slots={{ toolbar: QuickFilter }}
-                                    sx={{
-                                    ...DataGridStyle.sx,
-                                    '& .MuiDataGrid-columnHeaders': {
-                                        backgroundColor: initial.tableau_theme,
-                                        color: initial.text_theme,
-                                    },
-                                    '& .MuiDataGrid-columnHeaderTitle': {
-                                        color: initial.text_theme,
-                                        fontWeight: 600,
-                                    },
-                                    '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
-                                        color: initial.text_theme,
-                                    },
-                                    '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+            <Box sx={{ width: '100%', minHeight: '100vh', bgcolor: BG_SOFT, display: 'flex', flexDirection: 'column' }}>
+                {/* <TabContext>
+                    {!hideDossier && (
+                        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+                            <TabList aria-label="lab API tabs example">
+                                <Tab
+                                    style={{
+                                        textTransform: 'none',
                                         outline: 'none',
                                         border: 'none',
-                                    },
-                                    '& .highlight-separator': {
-                                        borderBottom: '1px solid red'
-                                    },
-                                    '& .MuiDataGrid-row.highlight-separator': {
-                                        borderBottom: '1px solid red',
-                                    },
-                                    '& .MuiDataGrid-virtualScroller': {
-                                        maxHeight: '700px',
-                                    },
-                                }}
-                                    rowHeight={DataGridStyle.rowHeight}
-                                    columnHeaderHeight={DataGridStyle.columnHeaderHeight}
-                                    editMode='row'
-                                    columns={CodeJournauxColumnHeader}
-                                    rows={listeCodeJournaux}
-                                    onRowClick={(e) => handleCellEditCommit(e.row)}
-                                    // onCellClick={(e) => test(e.row)}
-                                    onRowSelectionModelChange={ids => {
-                                        const single = Array.isArray(ids) && ids.length ? [ids[ids.length - 1]] : [];
-                                        setSelectedRow(single);
-                                        saveSelectedRow(single);
-                                        deselectRow(single);
+                                        margin: -5
                                     }}
-                                    rowModesModel={rowModesModel}
-                                    onRowModesModelChange={handleRowModesModelChange}
-                                    onRowEditStop={handleRowEditStop}
-                                    processRowUpdate={processRowUpdate}
-                                    initialState={{
-                                        pagination: {
-                                            paginationModel: { page: 0, pageSize: 100 },
-                                        },
-                                    }}
-                                    experimentalFeatures={{ newEditingApi: true }}
-                                    pageSizeOptions={[50, 100]}
-                                    pagination={DataGridStyle.pagination}
-                                    checkboxSelection={DataGridStyle.checkboxSelection}
-                                    columnVisibilityModel={{
-                                        id: false,
-                                    }}
-                                    rowSelectionModel={selectedRow}
-                                    onCellDoubleClick={(params, event) => {
-                                        const rowId = params.id;
-                                        const rowData = params.row;
-
-                                        const isNewRow = rowId < 0;
-
-                                        if (!canModify && !isNewRow) {
-                                            event.defaultMuiPrevented = true;
-                                            return;
-                                        }
-
-                                        event.stopPropagation();
-                                        setDisableAddRowBouton(true);
-
-                                        setLibelleValidationColor('transparent');
-                                        setTypeValidationColor('transparent');
-                                        setCompteAssocieValidationColor('transparent');
-
-                                        formikNewCodeJournal.setFieldValue("idCode", rowId);
-                                        formikNewCodeJournal.setFieldValue("idDossier", fileId);
-                                        formikNewCodeJournal.setFieldValue("idCompte", compteId);
-                                        formikNewCodeJournal.setFieldValue("code", rowData.code);
-                                        formikNewCodeJournal.setFieldValue("libelle", rowData.libelle);
-                                        formikNewCodeJournal.setFieldValue("type", rowData.type);
-                                        formikNewCodeJournal.setFieldValue("compteassocie", rowData.compteassocie);
-
-                                        setRowModesModel((oldModel) => ({
-                                            ...oldModel,
-                                            [rowId]: { mode: GridRowModes.Edit },
-                                        }));
-
-                                        setDisableSaveBouton(false);
-                                    }}
-                                    onCellKeyDown={handleCellKeyDown}
+                                    label={InfoFileStyle(fileInfos?.dossier)} value="1"
                                 />
+                            </TabList>
+                        </Box>
+                    )}
+                </TabContext> */}
+
+                <Box sx={{ width: '100%' }}>
+                    {/* ENTÊTE AVEC BOUTON SOMBRE */}
+                    <TabContext value={"1"}>
+
+                        <TabPanel value="1" >
+                            <Typography variant='h6' sx={{ fontWeight: 700, color: NAV_DARK }}>
+                                Code journaux
+                            </Typography>
+                            <Stack width={"100%"} spacing={2}>
+                                <Stack direction="row" justifyContent="flex-end" alignItems="center" sx={{ mb: 0, mt: 1, px: 3, py: 1 }} >
+                                    <Stack direction="row" spacing={1} alignItems="center">
+                                        <TextField
+                                            placeholder="Rechercher ..."
+                                            size="small"
+                                            value={searchText}
+                                            onChange={(e) => handleSearch(e.target.value)}
+                                            InputProps={{
+                                                startAdornment: (
+                                                    <InputAdornment position="start">
+                                                        <SearchIcon sx={{ fontSize: 18, color: '#94A3B8' }} />
+                                                    </InputAdornment>
+                                                ),
+                                            }}
+                                            sx={{
+                                                width: 250,
+                                                '& .MuiOutlinedInput-root': {
+                                                    borderRadius: '8px',
+                                                    bgcolor: '#fff',
+                                                    height: '32px',
+                                                    fontSize: '12px'
+                                                }
+                                            }}
+                                        />
+
+                                        <Button
+                                            disabled={!canAdd || disableAddRowBouton}
+                                            onClick={handleOpenDialogAddNewAssocie}
+                                            variant="contained"
+                                            size="small"
+                                            startIcon={<AddIcon sx={{ fontSize: '16px !important' }} />}
+                                            sx={{
+                                                bgcolor: NEON_MINT,
+                                                textTransform: 'none',
+                                                fontSize: '12px',
+                                                fontWeight: 700,
+                                                mr: 2,
+                                                color: '#000',
+                                                borderRadius: '6px',
+                                                px: 2,
+                                                '&:hover': {
+                                                    bgcolor: '#00E685',
+                                                    transform: 'translateY(-1px)'
+                                                },
+                                            }}
+                                        >
+                                            Ajouter journal
+                                        </Button>
+                                    </Stack>
+
+                                </Stack>
+                                <Box sx={{ px: 0, pr: 1 }}>
+                                    <Stack
+                                        maxWidth="98%" // 32px = 16px de chaque côté
+                                        height="500px"
+                                        minHeight="400px"
+                                        sx={{
+                                            borderRadius: '16px',
+                                            border: '1px solid #E2E8F0',
+                                            overflow: 'hidden',
+                                            bgcolor: '#fff',
+                                            mx: 'auto', // centre le stack horizontalement
+                                        }}
+                                    >
+                                        <DataGrid
+                                            apiRef={apiRef}
+                                            disableMultipleSelection={DataGridStyle.disableMultipleSelection}
+                                            disableColumnSelector={DataGridStyle.disableColumnSelector}
+                                            disableDensitySelector={DataGridStyle.disableDensitySelector}
+                                            disableRowSelectionOnClick
+                                            disableSelectionOnClick={true}
+                                            localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                                            // slots={{ toolbar: QuickFilter }}
+                                            sx={{
+                                                ...DataGridStyle.sx,
+                                                border: 'none',
+                                                borderRadius: '16px',
+                                                height: '100%',
+
+                                                '& .MuiDataGrid-main': {
+                                                    height: '100%',
+                                                },
+                                                '& .MuiDataGrid-columnHeaders': {
+                                                    bgcolor: '#F8FAFC',
+                                                    color: '#64748B',
+                                                    fontWeight: 800,
+                                                    fontSize: '10px',
+                                                    textTransform: 'uppercase',
+                                                    borderBottom: '1px solid #E2E8F0',
+                                                    minHeight: '45px !important',
+                                                    maxHeight: '45px !important',
+                                                },
+                                                '& .MuiDataGrid-columnHeader': {
+                                                    height: '45px !important',
+                                                },
+                                                '& .MuiDataGrid-columnHeaderTitle': {
+                                                    color: '#64748B',
+                                                    fontWeight: 800,
+                                                    fontSize: '10px',
+                                                    letterSpacing: '0.5px',
+                                                },
+                                                '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
+                                                    color: '#64748B',
+                                                },
+                                                '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+                                                    outline: 'none',
+                                                    border: 'none',
+                                                },
+                                                '& .highlight-separator': {
+                                                    borderBottom: '1px solid red'
+                                                },
+                                                '& .MuiDataGrid-row.highlight-separator': {
+                                                    borderBottom: '1px solid red',
+                                                },
+                                                '& .MuiDataGrid-virtualScroller': {
+                                                    height: '100%',
+                                                },
+                                                '& .MuiDataGrid-row': {
+                                                    '&:hover': { bgcolor: '#F1F5F9' },
+                                                    transition: '0.2s',
+                                                    minHeight: '34px !important',
+                                                    maxHeight: '34px !important',
+                                                },
+                                                '& .MuiDataGrid-cell': {
+                                                    fontSize: '13px',
+                                                    color: '#475569',
+                                                    borderBottom: '1px solid #F1F5F9',
+                                                    py: 1,
+                                                },
+                                            }}
+                                            rowHeight={34}
+                                            columnHeaderHeight={45}
+                                            editMode='row'
+                                            columns={CodeJournauxColumnHeader}
+                                            rows={filteredCodeJournaux}
+                                            onRowClick={(e) => handleCellEditCommit(e.row)}
+                                            onRowSelectionModelChange={ids => {
+                                                const single = Array.isArray(ids) && ids.length ? [ids[ids.length - 1]] : [];
+                                                setSelectedRow(single);
+                                                saveSelectedRow(single);
+                                                deselectRow(single);
+                                            }}
+                                            rowModesModel={rowModesModel}
+                                            onRowModesModelChange={handleRowModesModelChange}
+                                            onRowEditStop={handleRowEditStop}
+                                            processRowUpdate={processRowUpdate}
+                                            initialState={{
+                                                pagination: {
+                                                    paginationModel: { page: 0, pageSize: 100 },
+                                                },
+                                            }}
+                                            experimentalFeatures={{ newEditingApi: true }}
+                                            pageSizeOptions={[50, 100]}
+                                            pagination={DataGridStyle.pagination}
+                                            checkboxSelection={DataGridStyle.checkboxSelection}
+                                            columnVisibilityModel={{
+                                                id: false,
+                                            }}
+                                            rowSelectionModel={selectedRow}
+                                            onCellDoubleClick={(params, event) => {
+                                                const rowId = params.id;
+                                                const rowData = params.row;
+
+                                                const isNewRow = rowId < 0;
+
+                                                if (!canModify && !isNewRow) {
+                                                    event.defaultMuiPrevented = true;
+                                                    return;
+                                                }
+
+                                                event.stopPropagation();
+                                                setDisableAddRowBouton(true);
+
+                                                setLibelleValidationColor('transparent');
+                                                setTypeValidationColor('transparent');
+                                                setCompteAssocieValidationColor('transparent');
+
+                                                formikNewCodeJournal.setFieldValue("idCode", rowId);
+                                                formikNewCodeJournal.setFieldValue("idDossier", fileId);
+                                                formikNewCodeJournal.setFieldValue("idCompte", compteId);
+                                                formikNewCodeJournal.setFieldValue("code", rowData.code);
+                                                formikNewCodeJournal.setFieldValue("libelle", rowData.libelle);
+                                                formikNewCodeJournal.setFieldValue("type", rowData.type);
+                                                formikNewCodeJournal.setFieldValue("compteassocie", rowData.compteassocie);
+
+                                                setRowModesModel((oldModel) => ({
+                                                    ...oldModel,
+                                                    [rowId]: { mode: GridRowModes.Edit },
+                                                }));
+
+                                                setDisableSaveBouton(false);
+                                            }}
+                                            onCellKeyDown={handleCellKeyDown}
+                                        />
+                                    </Stack>
+                                </Box>
                             </Stack>
-                        </Stack>
-                    </TabPanel>
-                </TabContext>
-            </Box>
+                        </TabPanel>
+                    </TabContext>
+                </Box>
+
+            </Box >
         </>
     )
 }

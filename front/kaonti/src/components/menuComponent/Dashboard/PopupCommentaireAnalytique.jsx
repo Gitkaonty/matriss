@@ -51,6 +51,14 @@ const PopupCommentaireAnalytique = ({ open, onClose, compteData, onSave, apiBase
 
         setLoading(true);
         try {
+            console.log("Payload being sent:", {
+                id_compte: compteData.id_compte,
+                id_exercice: compteData.id_exercice,
+                id_dossier: compteData.id_dossier,
+                compte: compteData.compte,
+                commentaire: commentaire,
+                valide_anomalie: valideAnomalie
+            });
             const response = await axiosPrivate.post(`${apiBasePath}/addOrUpdate`, {
                 id_compte: compteData.id_compte,
                 id_exercice: compteData.id_exercice,
