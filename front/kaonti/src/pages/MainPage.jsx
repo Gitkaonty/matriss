@@ -129,7 +129,7 @@ const FinalUserDashboard = () => {
         { text: 'Consultation', name: 'consultation', path: '/tab/administration/consultation', icon: <MdSearch />, urldynamic: true },
         { text: 'Saisie', name: 'saisie', path: '/tab/administration/saisie', icon: <MdEdit />, urldynamic: true },
         { text: 'Synthese', name: 'synthese', path: '/tab/administration/syntheseAnomalies', icon: <MdAnalytics />, urldynamic: true },
-
+        { text: 'Dossier de révision', name: 'dossierRevision', path: '/tab/administration/dossierRevision', icon: <MdAnalytics />, urldynamic: true },
     ]), []);
 
     const adminImportList = useMemo(() => ([
@@ -224,7 +224,7 @@ const FinalUserDashboard = () => {
         const path = location.pathname.toLowerCase();
         console.log('🔍 Debug - Path:', path);
 
-        if (path.includes('/administration')) return 'Administration';
+        if (path.includes('/administration')) return 'Traitement';
         if (path.includes('/parametrages')) return 'Paramétrages';
         if (path.includes('/dashboard')) return 'Dashboard';
         if (path.includes('/tools')) return 'Outils';
@@ -391,14 +391,14 @@ const FinalUserDashboard = () => {
 
                                 {/* ADMIN DROP-DOWN */}
                                 <Box onMouseEnter={() => setIsHoveredAdmin(true)} onMouseLeave={() => setIsHoveredAdmin(false)} sx={{ position: 'relative', display: 'flex', alignItems: 'center', height: '100%' }}>
-                                    <Button disableRipple startIcon={<DashboardIcon />} endIcon={<KeyboardArrowDownIcon sx={{ transition: '0.3s', transform: isHoveredAdmin ? 'rotate(180deg)' : 'none' }} />} sx={{ color: isHoveredAdmin ? NEON_MINT : 'rgba(255,255,255,0.6)', textTransform: 'none', fontWeight: 700, height: '100%', px: 2 }}>Administration</Button>
+                                    <Button disableRipple startIcon={<DashboardIcon />} endIcon={<KeyboardArrowDownIcon sx={{ transition: '0.3s', transform: isHoveredAdmin ? 'rotate(180deg)' : 'none' }} />} sx={{ color: isHoveredAdmin ? NEON_MINT : 'rgba(255,255,255,0.6)', textTransform: 'none', fontWeight: 700, height: '100%', px: 2 }}>Traitement</Button>
                                     <Box sx={{
                                         position: 'absolute', top: '64px', left: '50%', transform: 'translateX(-50%)',
                                         width: '320px', bgcolor: '#fff', borderRadius: '0 0 16px 16px',
                                         boxShadow: '0 20px 50px rgba(0,0,0,0.3)', border: '1px solid #E2E8F0', borderTop: 'none',
                                         py: 1, display: isHoveredAdmin ? 'block' : 'none', zIndex: 2000, maxHeight: '85vh', overflowY: 'auto'
                                     }}>
-                                        {renderMenuSection("TRAITEMENT", adminTraitementList)}
+                                        {renderMenuSection("TENUE", adminTraitementList)}
                                         <Divider sx={{ my: 1, mx: 2, opacity: 0.6 }} />
                                         {renderMenuSection("IMPORT", adminImportList)}
                                         <Divider sx={{ my: 1, mx: 2, opacity: 0.6 }} />
