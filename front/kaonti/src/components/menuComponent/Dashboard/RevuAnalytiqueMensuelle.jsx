@@ -282,11 +282,6 @@ export default function RevuAnalytiqueMensuelle({ compteId, dossierId, exerciceI
                     borderRadius: 0,
                     padding: 0,
                     margin: 0,
-                    '&::-webkit-scrollbar': { height: 6, width: 6 },
-                    '&::-webkit-scrollbar-thumb': {
-                        backgroundColor: alpha(K_COLORS.slate, 0.2),
-                        borderRadius: 4,
-                    },
                     // 1. La scrollbar globale
                     '&::-webkit-scrollbar': {
                         width: 8,
@@ -294,13 +289,11 @@ export default function RevuAnalytiqueMensuelle({ compteId, dossierId, exerciceI
                     },
 
                     // 2. LE TRICK : Le fond de la scrollbar (Track)
-                    // On crée un dégradé qui s'arrête pile à la hauteur de ton Header (env. 40px)
                     '&::-webkit-scrollbar-track': {
                         background: 'linear-gradient(to bottom, #F8FAFC 0px, #F8FAFC 45px, white 45px, white 100%)',
                     },
 
                     // 3. LE COIN (Corner)
-                    // C'est l'intersection en haut à droite : on le met en gris comme le header
                     '&::-webkit-scrollbar-corner': {
                         backgroundColor: '#F8FAFC',
                     },

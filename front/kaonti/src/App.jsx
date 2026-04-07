@@ -58,6 +58,7 @@ import FinalUserDashboard from './components/menuComponent/administration/revisi
 import RevuAnalytiqueNN1Detail from './components/menuComponent/Dashboard/RevuAnalytiqueNN1Detail';
 import RevuAnalytiqueMensuelleDetail from './components/menuComponent/Dashboard/RevuAnalytiqueMensuelleDetail';
 import RevisionRechercheDoubloncopy from './components/menuComponent/administration/revision/RevisionRechercheDoubloncopy';
+import DossierRevision from './components/menuComponent/administration/revision/DossierRevision';
 
 import PortefeuilleComponent from './components/menuComponent/Parametrages/portefeuille/Portefeuille';
 import RolePermission from './components/menuComponent/Parametrages/rolePermission/RolePermission';
@@ -134,6 +135,7 @@ export default function App() {
                     <Route path='/tab/administration/sig/:id' element={<Sig />} />
                     <Route path='/tab/administration/syntheseAnomalies/:id' element={<SyntheseAnomalies />} />
                     <Route path='/tab/administration/testdashboard' element={<FinalUserDashboard />} />
+                    <Route path='/tab/administration/dossierRevision/:id' element={<DossierRevision />} />
                     <Route path='/tab/administration/revision/:id/:exerciceId?' element={<Revision />} />
                     <Route path='/tab/administration/revisionFournisseurClient/:id_compte/:id_dossier/:id_exercice' element={<RevisionFournisseurClient />} />
                     <Route path='/tab/administration/revisionDoublon/:id_compte/:id_dossier/:id_exercice' element={<RevisionRechercheDoublon />} />
