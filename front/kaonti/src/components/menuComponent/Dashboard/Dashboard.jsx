@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Typography, Stack } from '@mui/material';
+import { Typography, Stack, Paper } from '@mui/material';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
@@ -13,11 +13,12 @@ import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
 import { InfoFileStyle } from '../../componentsTools/InfosFileStyle';
-import DashboardCard from '../../componentsTools/Dashboard/DashboardCard';
+import KPICard from '../../componentsTools/Dashboard/DashboardCard';
 import { format } from 'date-fns';
 import LineChartComponent from '../../componentsTools/Dashboard/LineChartComponent';
 import AreaChartComponent from '../../componentsTools/Dashboard/AreaChartComponent';
 import BarChartComponent from '../../componentsTools/Dashboard/BarChartComponent';
+import AreaComponent from '../../componentsTools/Dashboard/AreaComponent';
 import SparklineChartComponent from '../../componentsTools/Dashboard/SparklineChartComponent';
 import useAuth from '../../../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
@@ -27,6 +28,8 @@ import usePermission from '../../../hooks/usePermission';
 import { Line } from 'react-chartjs-2';
 import RevuAnalytiqueNN1 from './RevuAnalytiqueNN1';
 import RevuAnalytiqueMensuelle from './RevuAnalytiqueMensuelle';
+import { useExercicePeriode } from '../../../context/ExercicePeriodeContext';
+import ExercicePeriodeSelector from '../../componentsTools/ExercicePeriodeSelector/ExercicePeriodeSelector';
 
 // Format date as dd/mm/yyyy
 const formatDate = (dateString) => {
@@ -38,6 +41,8 @@ const formatDate = (dateString) => {
   const yyyy = String(date.getFullYear());
   return `${dd}/${mm}/${yyyy}`;
 };
+
+const NAV_DARK = '#0B1120';
 
 const columns = [
   {
@@ -93,8 +98,8 @@ const columns = [
 
 const gridHeight = '70vh';
 const gridSpacing = 1;
-const dashboardCardHeight = 80;
-const dashboardCardMinWidth = 170;
+const dashboardCardHeight = 100;
+const dashboardCardMinWidth = 80;
 
 export default function DashboardComponent() {
   const { canAdd, canModify, canDelete, canView } = usePermission();
@@ -108,6 +113,18 @@ export default function DashboardComponent() {
   const [fileId, setFileId] = useState(0);
   const [listeExercice, setListeExercice] = useState([]);
   const [listeSituation, setListeSituation] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const {
+    selectedExerciceId,
+    selectedPeriodeId,
+    selectedPeriodeDates,
+    handleChangeExercice,
+    handleChangePeriode,
+    loading: contextLoading,
+    getApiParams
+  } = useExercicePeriode();
+
 
   //récupération des informations de connexion
   const { auth } = useAuth();
@@ -115,9 +132,6 @@ export default function DashboardComponent() {
   const compteId = decoded.UserInfo.compteId || null;
   const userId = decoded.UserInfo.userId || null;
 
-  const [selectedExerciceId, setSelectedExerciceId] = useState(0);
-  const [selectedPeriodeId, setSelectedPeriodeId] = useState('');
-  const [selectedPeriodeDates, setSelectedPeriodeDates] = useState(null);
   const [deviseParDefaut, setDeviseParDefaut] = useState([]);
 
   const [chiffresAffairesNGraph, setChiffresAffairesNGraph] = useState([]);
@@ -202,73 +216,11 @@ export default function DashboardComponent() {
     navigate('/tab/home');
   }
 
-  //Choix exercice
-  const handleChangeExercice = (exercice_id) => {
-    setSelectedExerciceId(exercice_id);
-    setSelectedPeriodeId('');
-    setSelectedPeriodeDates(null);
-    GetListePeriodes(exercice_id);
-  }
-
-  //Récupérer la liste des exercices
-  const GetListeExercice = (id) => {
-    axios.get(`/paramExercice/listeExercice/${id}`).then((response) => {
-      const resData = response.data;
-      if (resData.state) {
-        setListeExercice(resData.list);
-
-        const exerciceNId = resData.list?.filter((item) => item.libelle_rang === "N");
-        setListeSituation(exerciceNId);
-
-        setSelectedExerciceId(exerciceNId[0]?.id);
-        setSelectedPeriodeId('');
-        setSelectedPeriodeDates(null);
-
-        // Charger les periodes de l'exercice N
-        if (exerciceNId[0]?.id) {
-          GetListePeriodes(exerciceNId[0]?.id);
-        }
-
-      } else {
-        setListeExercice([]);
-        toast.error("une erreur est survenue lors de la récupération de la liste des exercices");
-      }
-    })
-  }
-
-  //Choix periode (comme dans Revision)
-  const handleChangePeriode = (periodeId) => {
-    setSelectedPeriodeId(periodeId);
-    if (periodeId) {
-      const periode = listeSituation.find(p => p.id === periodeId);
-      if (periode) {
-        setSelectedPeriodeDates({
-          date_debut: periode.date_debut,
-          date_fin: periode.date_fin
-        });
-      }
-    } else {
-      setSelectedPeriodeDates(null);
-    }
-  }
-
-  //Récupérer la liste des periodes liees a l'exercice
-  const GetListePeriodes = (id_exercice) => {
-    axios.get(`/paramExercice/listePeriodes/${id_exercice}`).then((response) => {
-      const resData = response.data;
-      if (resData.state) {
-        setListeSituation(resData.list || []);
-      } else {
-        setListeSituation([]);
-      }
-    })
-  }
-
   // Récupération de toutes les informations
   const getAllInfo = () => {
     // console.log('>>> getAllInfo APPELÉ <<<');
     // console.log('selectedExerciceId:', selectedExerciceId, '| selectedPeriodeDates:', selectedPeriodeDates);
-    
+
     // Utiliser exerciceId pour l'API, avec dates de periode si selectionnee
     let url = `/dashboard/getAllInfo/${Number(compteId)}/${Number(fileId)}/${Number(selectedExerciceId)}`;
     if (selectedPeriodeDates && selectedPeriodeId) {
@@ -367,7 +319,7 @@ export default function DashboardComponent() {
     await axios.get(`/devises/devise/compte/${compteId}/${fileId}`).then((reponse => {
       const resData = reponse.data;
       const deviseParDefaut = resData.find(val => val.par_defaut === true);
-      setDeviseParDefaut(deviseParDefaut?.code || 'EUR');
+      setDeviseParDefaut(deviseParDefaut?.code || '€');
     }))
   }
 
@@ -412,7 +364,6 @@ export default function DashboardComponent() {
     }
 
     GetListeDossier(idFile);
-    GetListeExercice(idFile);
   }, []);
 
   useEffect(() => {
@@ -423,6 +374,21 @@ export default function DashboardComponent() {
     }
   }, [compteId, fileId, selectedExerciceId, selectedPeriodeDates]);
 
+  const BORDER = '#E2E8F0';
+  const tabStyle = { fontSize: '12px', fontWeight: 800, textTransform: 'none' };
+  const sectionPaperStyle = {
+    p: 2,
+    borderRadius: '8px',
+    // On définit une seule fois la bordure pour tout le contour
+    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+    bgcolor: '#fff',
+    width: '100%',
+    // Important : empêche le contenu interne de déborder sur la bordure
+    overflow: 'hidden',
+    boxSizing: 'border-box',
+    // Ajout d'une marge en bas pour décoller du bord de l'écran
+    mt: -5
+  };
   return (
     <>
       {
@@ -436,230 +402,182 @@ export default function DashboardComponent() {
       }
       <Box>
         <TabContext value={"1"}>
-          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            <TabList aria-label="lab API tabs example">
-              <Tab
-                style={{
-                  textTransform: 'none',
-                  outline: 'none',
-                  border: 'none',
-                  margin: -5
-                }}
-                label={InfoFileStyle(fileInfos?.dossier)} value="1"
-              />
-            </TabList>
-          </Box>
           <TabPanel value="1" style={{ height: '100%' }}>
             <Stack width={"100%"} height={"100%"} spacing={6} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
-              <Typography variant='h6' sx={{ color: "black", }} align='left'>Dashboard</Typography>
+              <Typography variant='h6' sx={{ color: NAV_DARK, fontWeight: 800 }} align='left'>Dashboard</Typography>
 
               <Stack width={"100%"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"column"} style={{ marginLeft: "0px", marginTop: "20px" }}>
                 <Stack
                   direction={"row"}
                 >
-                  <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                    <InputLabel id="demo-simple-select-standard-label">Exercice:</InputLabel>
-                    <Select
-                      labelId="demo-simple-select-standard-label"
-                      id="demo-simple-select-standard"
-                      value={selectedExerciceId}
-                      label={"valSelect"}
-                      onChange={(e) => handleChangeExercice(e.target.value)}
-                      sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                      MenuProps={{
-                        disableScrollLock: true
-                      }}
-                    >
-                      {listeExercice.map((option) => (
-                        <MenuItem
-                          key={option.id}
-                          value={option.id}
-                        >{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                      ))
-                      }
-                    </Select>
-                  </FormControl>
-
-                  {/* always show the selector; disable/grey if no periods */}
-                  {
-                   <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                      <InputLabel id="periode-select-label"></InputLabel>
-                      <Select
-                        labelId="periode-select-label"
-                        id="periode-select"
-                        value={selectedPeriodeId}
-                        onChange={(e) => handleChangePeriode(e.target.value)}
-                        displayEmpty
-                        disabled={listeSituation.length === 0}
-                        renderValue={(selected) => {
-                          if (!selected) {
-                            return <em>Sélectionner une période...</em>;
-                          }
-                          const periode = listeSituation.find(p => p.id === selected);
-                          return periode ? `${periode.libelle || ''}${formatDate(periode.date_debut)} au ${formatDate(periode.date_fin)}` : '';
-                        }}
-                      sx={{ width: "300px", display: "flex", justifyContent: "left", alignItems: "flex-start", alignContent: "flex-start", textAlign: "left" }}
-                        MenuProps={{
-                          disableScrollLock: true
-                        }}
-                      >
-                        <MenuItem value="" disabled>
-                          <em>Sélectionner une période...</em>
-                        </MenuItem>
-                        {listeSituation?.map((periode) => (
-                          <MenuItem key={periode.id} value={periode.id}>
-                            {periode.libelle || ''}{formatDate(periode.date_debut)} au {formatDate(periode.date_fin)}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  }
+                  <ExercicePeriodeSelector
+                    selectedExerciceId={selectedExerciceId}
+                    selectedPeriodeId={selectedPeriodeId}
+                    onExerciceChange={handleChangeExercice}
+                    onPeriodeChange={handleChangePeriode}
+                    disabled={loading}
+                    size="small"
+                  />
                 </Stack>
               </Stack>
 
-              <Stack width={'100%'} spacing={2}>
+              <Stack
+                width={'100%'}
+              >
                 <Stack
-                  direction={'row'}
-                  width={'100%'}
-                  spacing={gridSpacing}
-                  justifyContent={'space-between'}
-                  alignItems={'stretch'}
+                  direction="row"
+                  spacing={0.5}
                   sx={{
+                    flexWrap: 'nowrap',
                     overflowX: 'auto',
-                    pb: 0.5,
+                    pb: 1,
+                    mt: -5,
+                    gap: 0.5,
+                    justifyContent: 'flex-start',
+                    alignItems: 'stretch',
+                    width: '100%',
+                    '&::-webkit-scrollbar': { display: 'none' },
+                    msOverflowStyle: 'none',
+                    scrollbarWidth: 'none',
                   }}
                 >
-                  <DashboardCard
-                    text={'Résultat'}
-                    type={'total'}
-                    montant={'$5000'}
-                    backgroundColor={'#037934'}
+                  <KPICard
+                    title={'Résultat'}
+                    color={'#037934'}
                     resultatN={resultatN}
                     resultatN1={resultatN1}
                     variationN={variationResultatN}
                     variationN1={variationResultatN1}
                     evolutionN={evolutionResultatN}
                     evolutionN1={evolutionResultatN1}
-                    trendLabels={moisN}
                     trendN={margeBruteNGraph}
                     devise={deviseParDefaut}
                     compact
-                    sx={{
-                      minWidth: dashboardCardMinWidth, height: dashboardCardHeight, flex: '1 1 0', borderRadius: 1, background: 'linear-gradient(135deg, #037934ff 0%, #85bea3ff 100%)'
-                    }}
+                    sx={{ minWidth: dashboardCardMinWidth, height: dashboardCardHeight, flex: '1 1 0' }}
                   />
-                  <DashboardCard
-                    text={'Chiffre d\'affaires'}
-                    type={'comparaison'}
-                    pourcentage={'10'}
-                    backgroundColor={'#037934'}
+
+                  <KPICard
+                    title={"Chiffre d'affaires"}
+                    color={'#037934'}
                     resultatN={resultatChiffreAffaireN}
                     resultatN1={resultatChiffreAffaireN1}
                     variationN={variationChiffreAffaireN}
                     variationN1={variationChiffreAffaireN1}
                     evolutionN={evolutionChiffreAffaireN}
                     evolutionN1={evolutionChiffreAffaireN1}
-                    trendLabels={moisN}
                     trendN={chiffresAffairesNGraph}
-                    trendN1={chiffresAffairesN1Graph}
                     devise={deviseParDefaut}
                     compact
-                    sx={{
-                      minWidth: dashboardCardMinWidth, height: dashboardCardHeight, flex: '1 1 0', borderRadius: 1, background: 'linear-gradient(135deg, #037934ff 0%, #85bea3ff 100%)'
-                    }}
+                    sx={{ minWidth: dashboardCardMinWidth, height: dashboardCardHeight, flex: '1 1 0' }}
                   />
-                  <DashboardCard
-                    text={'Dépenses (Achats)'}
-                    type={'comparaison'}
-                    backgroundColor={'#fb8c00'}
+                  {/* <KPICard
+                    title="Chiffre d'affaires"
+                    color="#037934" // Vert pour la barre du haut
+                    resultatN={resultatChiffreAffaireN}
+                    resultatN1={resultatChiffreAffaireN1}
+                    variationN={variationChiffreAffaireN}
+                    variationN1={variationChiffreAffaireN1}
+                    evolutionN1={evolutionChiffreAffaireN1}
+                    trendN={chiffresAffairesNGraph} // Ton tableau de données
+                    devise={deviseParDefaut}
+                    compact
+                    sx={{ flex: '1 1 0', minWidth: '180px' }}
+                  /> */}
+
+                  <KPICard
+                    title={'Dépenses (Achats)'}
+                    color={'#fb8c00'}
                     resultatN={resultatDepenseAchatN}
                     resultatN1={resultatDepenseAchatN1}
                     variationN={variationDepenseAchatN}
                     variationN1={variationDepenseAchatN1}
                     evolutionN={evolutionDepenseAchatN}
                     evolutionN1={evolutionDepenseAchatN1}
-                    trendLabels={moisN}
                     trendN={chiffresAffairesNGraph}
                     devise={deviseParDefaut}
                     compact
-                    sx={{
-                      minWidth: dashboardCardMinWidth, height: dashboardCardHeight, flex: '1 1 0', borderRadius: 1, background: 'linear-gradient(135deg, #fb8c00 0%, #fbc02d 100%)'
-                    }}
+                    sx={{ minWidth: dashboardCardMinWidth, height: dashboardCardHeight, flex: '1 1 0' }}
                   />
-                  <DashboardCard
-                    text={'Dépenses salariales'}
-                    type={'comparaison'}
-                    backgroundColor={'#fb8c00'}
+
+                  <KPICard
+                    title={'Dépenses salariales'}
+                    color={'#fb8c00'}
                     resultatN={resultatDepenseSalarialeN}
                     resultatN1={resultatDepenseSalarialeN1}
                     variationN={variationDepenseSalarialeN}
                     variationN1={variationDepenseSalarialeN1}
                     evolutionN={evolutionDepenseSalarialeN}
                     evolutionN1={evolutionDepenseSalarialeN1}
-                    trendLabels={moisN}
                     trendN={margeBruteNGraph}
                     devise={deviseParDefaut}
                     compact
-                    sx={{
-                      minWidth: dashboardCardMinWidth, height: dashboardCardHeight, flex: '1 1 0', borderRadius: 1, background: 'linear-gradient(135deg, #fb8c00 0%, #fbc02d 100%)'
-                    }}
+                    sx={{ minWidth: dashboardCardMinWidth, height: dashboardCardHeight, flex: '1 1 0' }}
                   />
-                  <DashboardCard
-                    text={'Trésoreries (Banques)'}
-                    type={'comparaison'}
-                    backgroundColor={'#095a9c'}
+
+                  <KPICard
+                    title={'Trésoreries (Banques)'}
+                    color={'#095a9c'}
                     resultatN={resultatTresorerieBanqueN}
                     resultatN1={resultatTresorerieBanqueN1}
                     variationN={variationTresorerieBanqueN}
                     variationN1={variationTresorerieBanqueN1}
                     evolutionN={evolutionTresorerieBanqueN}
                     evolutionN1={evolutionTresorerieBanqueN1}
-                    trendLabels={moisN}
                     trendN={tresorerieBanqueNGraph}
-                    trendN1={tresorerieBanqueN1Graph}
                     devise={deviseParDefaut}
                     compact
-                    sx={{
-                      minWidth: dashboardCardMinWidth, height: dashboardCardHeight, flex: '1 1 0', borderRadius: 1, background: 'linear-gradient(135deg, #095a9cff 0%, #6dc5eeff 100%)'
-                    }}
+                    sx={{ minWidth: dashboardCardMinWidth, height: dashboardCardHeight, flex: '1 1 0' }}
                   />
-                  <DashboardCard
-                    text={'Trésoreries (Caisse)'}
-                    type={'comparaison'}
-                    backgroundColor={'#095a9c'}
+
+                  <KPICard
+                    title={'Trésoreries (Caisse)'}
+                    color={'#095a9c'}
                     resultatN={resultatTresorerieCaisseN}
                     resultatN1={resultatTresorerieCaisseN1}
                     variationN={variationTresorerieCaisseN}
                     variationN1={variationTresorerieCaisseN1}
                     evolutionN={evolutionTresorerieCaisseN}
                     evolutionN1={evolutionTresorerieCaisseN1}
-                    trendLabels={moisN}
                     trendN={tresorerieCaisseNGraph}
-                    trendN1={tresorerieCaisseN1Graph}
                     devise={deviseParDefaut}
                     compact
-                    sx={{
-                      minWidth: dashboardCardMinWidth, height: dashboardCardHeight, flex: '1 1 0', borderRadius: 1, background: 'linear-gradient(135deg, #095a9cff 0%, #6dc5eeff 100%)'
-                    }}
+                    sx={{ minWidth: dashboardCardMinWidth, height: dashboardCardHeight, flex: '1 1 0' }}
                   />
                 </Stack>
 
-                <Stack
-                  direction={{ xs: 'column', md: 'row' }}
-                  width={'100%'}
-                  spacing={gridSpacing}
-                  alignItems={'stretch'}
-                  sx={{ backgroundColor: '#f8f8f8ff', p: 1, borderRadius: 1 }}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    gap: gridSpacing,
+                    // Passage en colonne si l'écran est petit (xs), en ligne sur desktop (md)
+                    flexDirection: { xs: 'column', md: 'row' },
+                    // Hauteur fixe seulement sur desktop pour l'alignement, auto sur mobile
+                    height: { xs: 'auto', md: 800 },
+                    width: '100%',
+                  }}
                 >
-                  <Stack direction="column" spacing={gridSpacing} sx={{ flex: { xs: '1 1 auto', md: '2 1 0' }, minWidth: 0 }}>
+                  {/* --- COLONNE GAUCHE : GRAPHIQUE PRINCIPAL + TABLEAU --- */}
+                  <Stack
+                    direction="column"
+                    spacing={gridSpacing}
+                    sx={{
+                      flex: { xs: '1 1 auto', md: '2 1 0' }, // Ratio 2/3 de la largeur sur desktop
+                      minWidth: 0,
+                      height: { xs: 'auto', md: '100%' },
+                    }}
+                  >
+                    {/* BLOC GRAPHIQUE CA (60% de la hauteur sur desktop) */}
                     <Box
                       sx={{
+                        flex: { xs: '0 0 400px', md: 0.6 }, // 400px fixe sur mobile pour garder la lisibilité
                         backgroundColor: 'white',
                         boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-                        borderRadius: 1,
-                        p: 1,
-                        minWidth: 0,
-                        height: { xs: 'auto', md: 400 },
+                        borderRadius: 2,
+                        p: 2,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        minHeight: 0,
+                        position: 'relative',
                       }}
                     >
                       <AreaChartComponent
@@ -667,27 +585,46 @@ export default function DashboardComponent() {
                         xAxis1={moisN1}
                         dataN={chiffresAffairesNGraph}
                         dataN1={chiffresAffairesN1Graph}
-                        label={'Chiffre d\'affaires'}
+                        label={"Chiffre d'affaires"}
                       />
                     </Box>
 
-                    <Box sx={{ backgroundColor: 'white', boxShadow: "0 1px 3px rgba(0,0,0,0.08)", borderRadius: 1, p: 1, minWidth: 0, minHeight: 0, height: 389 }}>
-                      <Typography variant='h7' sx={{ color: "black" }} align='left'>Comptes en attente</Typography>
-                      <VirtualTableJournalAttente tableHeader={columns} tableRow={journalData} />
+                    {/* BLOC TABLEAU ATTENTE (40% de la hauteur sur desktop) */}
+                    <Box
+                      sx={{
+                        flex: { xs: '0 0 350px', md: 0.4 },
+                        backgroundColor: 'white',
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                        borderRadius: 2,
+                        p: 2,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        minHeight: 0,
+                      }}
+                    >
+                      <Box sx={{ flexGrow: 1, overflow: 'hidden', height: '100%' }}>
+                        <VirtualTableJournalAttente
+                          tableHeader={columns}
+                          tableRow={journalData}
+                        />
+                      </Box>
                     </Box>
                   </Stack>
 
+                  {/* --- COLONNE DROITE : LES 3 PETITS GRAPHIQUES --- */}
                   <Box
                     sx={{
-                      flex: { xs: '1 1 auto', md: '1 1 0' },
+                      flex: { xs: '1 1 auto', md: '1 1 0' }, // Ratio 1/3 de la largeur sur desktop
                       minWidth: 0,
-                      height: { xs: 'auto', md: 800 },
                       display: 'grid',
                       gap: gridSpacing,
-                      gridTemplateRows: { xs: 'auto', md: 'repeat(3, 1fr)' },
+                      // 3 lignes égales sur desktop, 3 blocs de 300px sur mobile
+                      gridTemplateRows: { xs: 'repeat(3, 300px)', md: 'repeat(3, 1fr)' },
+                      height: { xs: 'auto', md: '100%' },
                     }}
                   >
-                    <Box sx={{ backgroundColor: 'white', boxShadow: "0 1px 3px rgba(0,0,0,0.08)", borderRadius: 1, p: 1, minWidth: 0, minHeight: 0 }}>
+                    {/* MARGE BRUTE */}
+                    <Box sx={{ backgroundColor: 'white', boxShadow: "0 1px 3px rgba(0,0,0,0.08)", borderRadius: 2, p: 1, minHeight: 0 }}>
                       <AreaChartComponent
                         xAxis={moisN}
                         xAxis1={moisN1}
@@ -697,7 +634,8 @@ export default function DashboardComponent() {
                       />
                     </Box>
 
-                    <Box sx={{ backgroundColor: 'white', boxShadow: "0 1px 3px rgba(0,0,0,0.08)", borderRadius: 0, p: 1, minWidth: 0, minHeight: 0 }}>
+                    {/* TRESORERIE BANQUE */}
+                    <Box sx={{ backgroundColor: 'white', boxShadow: "0 1px 3px rgba(0,0,0,0.08)", borderRadius: 2, p: 1, minHeight: 0 }}>
                       <BarChartComponent
                         xAxis={moisN}
                         xAxis1={moisN1}
@@ -707,7 +645,8 @@ export default function DashboardComponent() {
                       />
                     </Box>
 
-                    <Box sx={{ backgroundColor: 'white', boxShadow: "0 1px 3px rgba(0,0,0,0.08)", borderRadius: 0, p: 1, minWidth: 0, minHeight: 0 }}>
+                    {/* TRESORERIE CAISSE */}
+                    <Box sx={{ backgroundColor: 'white', boxShadow: "0 1px 3px rgba(0,0,0,0.08)", borderRadius: 2, p: 1, minHeight: 0 }}>
                       <BarChartComponent
                         xAxis={moisN}
                         xAxis1={moisN1}
@@ -717,43 +656,54 @@ export default function DashboardComponent() {
                       />
                     </Box>
                   </Box>
-                </Stack>
+                </Box>
               </Stack>
 
-              <Box sx={{ width: '100%', mt: 2 }}>
-                <TabContext value={valueRevuAnalytique}>
-                  <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                    <TabList onChange={handleChangeRevuAnalytiqueTab} aria-label="revue analytique tabs" variant="scrollable">
-                      <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="Revu Analytique N/N-1" value="1" />
-                      <Tab style={{ textTransform: 'none', outline: 'none', border: 'none' }} label="Revu Analytique mensuelle" value="2" />
-                    </TabList>
-                  </Box>
+              <Stack sx={{ width: '100%', mt: 5 }}>
+                <Paper sx={sectionPaperStyle} elevation={0}>
+                  <TabContext value={valueRevuAnalytique}>
+                    {/* En-tête des onglets */}
+                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                      <TabList
+                        onChange={handleChangeRevuAnalytiqueTab}
+                        aria-label="revue analytique tabs"
+                        variant="scrollable"
+                        sx={{ minHeight: '40px' }}
+                      >
+                        <Tab label="Revue Analytique N/N-1" sx={tabStyle} value="1" />
+                        <Tab label="Détail Mensuel" sx={tabStyle} value="2" />
+                      </TabList>
+                    </Box>
 
-                  <TabPanel value="1" sx={{ px: 0, pt: 2 }}>
-                    <RevuAnalytiqueNN1
-                      compteId={compteId}
-                      dossierId={fileId}
-                      exerciceId={selectedExerciceId}
-                      dateDebut={selectedPeriodeDates?.date_debut}
-                      dateFin={selectedPeriodeDates?.date_fin}
-                    />
-                  </TabPanel>
+                    {/* Contenu de l'onglet 1 */}
+                    <TabPanel value="1" sx={{ px: 0, pt: 2, pb: 1 }}>
+                      <RevuAnalytiqueNN1
+                        compteId={compteId}
+                        dossierId={fileId}
+                        exerciceId={selectedExerciceId}
+                        dateDebut={selectedPeriodeDates?.date_debut}
+                        dateFin={selectedPeriodeDates?.date_fin}
+                      />
+                    </TabPanel>
 
-                  <TabPanel value="2" sx={{ px: 0, pt: 2 }}>
-                    <RevuAnalytiqueMensuelle
-                      compteId={compteId}
-                      dossierId={fileId}
-                      exerciceId={selectedExerciceId}
-                      dateDebut={selectedPeriodeDates?.date_debut}
-                      dateFin={selectedPeriodeDates?.date_fin}
-                    />
-                  </TabPanel>
-                </TabContext>
-              </Box>
+                    {/* Contenu de l'onglet 2 */}
+                    <TabPanel value="2" sx={{ px: 0, pt: 2, pb: 1 }}>
+                      <RevuAnalytiqueMensuelle
+                        compteId={compteId}
+                        dossierId={fileId}
+                        exerciceId={selectedExerciceId}
+                        dateDebut={selectedPeriodeDates?.date_debut}
+                        dateFin={selectedPeriodeDates?.date_fin}
+                      />
+                    </TabPanel>
+                  </TabContext>
+                </Paper>
+              </Stack>
             </Stack>
           </TabPanel>
         </TabContext>
-      </Box>
+
+      </Box >
     </>
   )
 }

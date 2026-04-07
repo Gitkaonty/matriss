@@ -8,7 +8,23 @@ const round2 = (value) => Math.round(value * 100) / 100;
 exports.getRevuAnalytiqueNN1 = async (req, res) => {
     try {
         const { id_compte, id_dossier, id_exercice } = req.params;
-        const { date_debut, date_fin } = req.query; // Dates de periode si selectionnee
+        let { date_debut, date_fin } = req.query; // Dates de periode si selectionnee
+        const { id_periode } = req.query; // ID de periode alternative
+
+        // Si id_periode est fourni mais pas les dates, récupérer les dates de la période
+        if (id_periode && (!date_debut || !date_fin)) {
+            console.log('[DEBUG NN1] Récupération des dates pour id_periode:', id_periode);
+            const periode = await db.Periode.findOne({
+                where: { id: id_periode }
+            });
+            if (periode) {
+                date_debut = periode.date_debut;
+                date_fin = periode.date_fin;
+                console.log('[DEBUG NN1] Dates récupérées:', { date_debut, date_fin });
+            } else {
+                console.log('[DEBUG NN1] Période non trouvée pour id:', id_periode);
+            }
+        }
 
         if (!id_compte || !id_dossier || !id_exercice) {
             return res.status(400).json({ state: false, message: 'Paramètres manquants' });
@@ -180,6 +196,34 @@ exports.getRevuAnalytiqueNN1 = async (req, res) => {
             type: db.Sequelize.QueryTypes.SELECT
         });
 
+        // Charger les validations depuis revu_analytique (agrégation pour gérer les doublons)
+        console.log('[DEBUG NN1] Chargement validations depuis revu_analytique...');
+        const revuDataRaw = await db.sequelize.query(
+            `SELECT compte, SUM(anomalies_valides) as total_valides
+             FROM revu_analytique
+             WHERE id_compte = :id_compte
+               AND id_dossier = :id_dossier
+               AND id_exercice = :id_exercice
+               AND type_revue = 'analytiqueNN1'
+             GROUP BY compte`,
+            {
+                replacements: { id_compte, id_dossier, id_exercice },
+                type: db.Sequelize.QueryTypes.SELECT,
+                raw: true
+            }
+        );
+        console.log('[DEBUG NN1] Validations trouvées (agrégées):', revuDataRaw.length);
+        
+        // Créer un map des validations par compte (somme des validations)
+        const validationsMap = new Map();
+        revuDataRaw.forEach((item) => {
+            const compteKey = item.compte ? String(item.compte).trim() : '';
+            const isValid = parseInt(item.total_valides) > 0;
+            validationsMap.set(compteKey, isValid);
+            console.log(`[DEBUG NN1] Validation compte "${compteKey}": ${isValid} (total_valides=${item.total_valides})`);
+        });
+        console.log('[DEBUG NN1] Keys dans validationsMap:', Array.from(validationsMap.keys()).slice(0, 10));
+
         // Totaux pour N
         const totals = await db.sequelize.query(
             `SELECT COUNT(*) as lignes, SUM(debit) as total_debit, SUM(credit) as total_credit
@@ -222,53 +266,92 @@ exports.getRevuAnalytiqueNN1 = async (req, res) => {
             const setN1 = new Set((comptesDistinctsN1 || []).map(r => r.compte));
             const onlyInN = Array.from(setN).filter(c => !setN1.has(c));
             const onlyInN1 = Array.from(setN1).filter(c => !setN.has(c));
+
+            // console.log('[revuAnalytiqueNN1] comptes seulement dans N count', onlyInN.length);
+            // console.log('[revuAnalytiqueNN1] comptes seulement dans N sample', onlyInN.slice(0, 30));
+            // console.log('[revuAnalytiqueNN1] comptes seulement dans N-1 count', onlyInN1.length);
+            // console.log('[revuAnalytiqueNN1] comptes seulement dans N-1 sample', onlyInN1.slice(0, 30));
         }
 
-        console.log('[revuAnalytiqueNN1] ===== DÉBOGAGE VAR POURCENT =====');
-        console.log('[revuAnalytiqueNN1] Nombre de résultats:', results?.length);
-        console.log('[revuAnalytiqueNN1] Échantillon brut (3 premiers):', results?.slice(0, 3));
-        console.log('[revuAnalytiqueNN1] Facteur prorata:', facteurProrata);
-        console.log('[revuAnalytiqueNN1] Exercice N-1 existe:', !!exerciceN1);
-        console.log('[revuAnalytiqueNN1] ==================================');
+        // console.log('[revuAnalytiqueNN1] raw results count', results?.length || 0);
+        // console.log('[revuAnalytiqueNN1] raw results sample', results?.slice(0, 10));
+        console.log('[DEBUG NN1] Nombre de results:', results.length);
+        console.log('[DEBUG NN1] Sample results comptes:', results.slice(0, 5).map(r => r.compte));
 
-        const formattedResults = results.map(row => {
-            const soldeN = parseFloat(row.soldeN) || 0;
-            const soldeN1 = row.soldeN1 !== null ? parseFloat(row.soldeN1) : 0;
-            const varPourcentBrut = row.varPourcent;
-            
-            if (soldeN !== 0 && (varPourcentBrut === 0 || varPourcentBrut === null || varPourcentBrut === undefined)) {
-                console.log('[revuAnalytiqueNN1] ⚠️ varPourcent à 0 alors que soldeN non nul:', {
-                    compte: row.compte,
-                    soldeN: soldeN,
-                    soldeN1: soldeN1,
-                    varPourcentBrut: varPourcentBrut,
-                    varPourcentType: typeof varPourcentBrut
-                });
+        // Formatter les résultats
+        let validCount = 0;
+        const formattedResults = results.map((row, index) => {
+            // Nettoyer le compte : enlever les guillemets et trim
+            let compteKey = row.compte ? String(row.compte).trim() : '';
+            compteKey = compteKey.replace(/^"+|"+$/g, ''); // enlever guillemets au début/fin
+            const isValid = validationsMap.get(compteKey) || false;
+            if (isValid) validCount++;
+            // Log pour les premières lignes ou si c'est un compte qui devrait être validé
+            if (index < 10 || ['10130000', '10611000', '10680000', '11000000'].includes(compteKey)) {
+                console.log(`[DEBUG NN1] Row ${index}: compte="${compteKey}", isValid=${isValid}, inMap=${validationsMap.has(compteKey)}`);
             }
-            
             return {
-                compte: row.compte || '',
+                compte: compteKey,
                 libelle: row.libelle || '',
-                soldeN: round2(soldeN),
-                soldeN1: row.soldeN1 !== null && row.soldeN1 !== undefined ? round2(soldeN1) : null,
+                soldeN: round2(parseFloat(row.soldeN) || 0),
+                soldeN1: row.soldeN1 !== null && row.soldeN1 !== undefined ? round2(parseFloat(row.soldeN1)) : null,
                 var: round2(parseFloat(row.var) || 0),
-                varPourcent: varPourcentBrut !== null && varPourcentBrut !== undefined ? round2(parseFloat(varPourcentBrut)) : null,
-                valide_anomalie: !!row.valide_anomalie,
+                varPourcent: row.varPourcent !== null && row.varPourcent !== undefined ? round2(parseFloat(row.varPourcent)) : null,
+                valide_anomalie: isValid,
                 anomalies: !!row.anomalies,
                 commentaire: row.commentaire || ''
             };
         });
-        
-        console.log('[revuAnalytiqueNN1] ===== RÉSULTATS FORMATÉS =====');
-        console.log('[revuAnalytiqueNN1] Échantillon formaté (3 premiers):', formattedResults.slice(0, 3));
-        console.log('[revuAnalytiqueNN1] ===============================');
+        console.log('[DEBUG NN1] Formatted results avec validations:', validCount, 'validés');
+        if (validCount > 0) {
+            console.log('[DEBUG NN1] Exemples de comptes validés:', formattedResults.filter(r => r.valide_anomalie).slice(0, 5).map(r => r.compte));
+        }
+        // console.log('[revuAnalytiqueNN1] formatted results sample', formattedResults.slice(0, 10));
+
+        // Sauvegarder/Mettre à jour les anomalies dans revu_analytique pour la synthèse
+        try {
+            console.log('[DEBUG NN1] Sauvegarde des anomalies dans revu_analytique...');
+            const anomaliesToSave = formattedResults.filter(r => r.anomalies);
+            console.log('[DEBUG NN1] Nombre d\'anomalies à sauvegarder:', anomaliesToSave.length);
+
+            for (const anomaly of anomaliesToSave) {
+                // Vérifier si une entrée existe déjà
+                const [existing] = await db.RevuAnalytique.findOrCreate({
+                    where: {
+                        id_compte,
+                        id_exercice,
+                        id_dossier,
+                        id_periode: null, // N/N1 n'a pas de période
+                        compte: anomaly.compte,
+                        type_revue: 'analytiqueNN1'
+                    },
+                    defaults: {
+                        nbr_anomalies: 1,
+                        anomalies_valides: anomaly.valide_anomalie ? 1 : 0
+                    }
+                });
+
+                if (!existing.isNewRecord) {
+                    // Mettre à jour si nécessaire
+                    await existing.update({
+                        nbr_anomalies: 1,
+                        // Préserver les validations existantes
+                        anomalies_valides: anomaly.valide_anomalie ? 1 : (existing.anomalies_valides || 0)
+                    });
+                }
+            }
+
+            console.log('[DEBUG NN1] Sauvegarde terminée:', anomaliesToSave.length, 'entrées');
+        } catch (saveError) {
+            console.error('[DEBUG NN1] Erreur lors de la sauvegarde:', saveError.message);
+            // Ne pas bloquer la réponse si la sauvegarde échoue
+        }
 
         return res.json({
             data: formattedResults,
             state: true,
             message: 'Données récupérées avec succès'
         });
-
     } catch (error) {
         console.error('Erreur dans getRevuAnalytiqueNN1:', error);
         return res.status(500).json({

@@ -23,14 +23,19 @@ router.post('/:id_compte/:id_dossier/:id_exercice/executeAll', revisionControleA
 // Route pour récupérer les anomalies depuis table_controle_anomalies (par id_controle)
 router.get('/:id_compte/:id_dossier/:id_exercice/anomalies/controle/:id_controle', revisionControleAnomaliesController.getAnomaliesByControle);
 
+// GET - Récupérer les statistiques des anomalies
+router.get('/:id_compte/:id_dossier/:id_exercice/stats', revisionControleAnomaliesController.getStats);
+
 // Route pour valider/annuler/commenter une anomalie
 router.patch('/:id_compte/:id_dossier/:id_exercice/anomalies/:id_anomalie', revisionControleAnomaliesController.updateAnomaly);
 
 // Routes pour la nouvelle table revision_commentaire_anomalies
 // POST pour sauvegarder un commentaire/validation
 router.post('/:id_compte/:id_dossier/:id_exercice/commentaires', revisionControleAutoController.saveCommentaireAnomalie);
+
 // GET pour récupérer tous les commentaires/validations
 router.get('/:id_compte/:id_dossier/:id_exercice/commentaires', revisionControleAutoController.getCommentairesAnomalies);
+
 // Route pour valider une ligne par controle (SENS_SOLDE, SENS_ECRITURE, etc.)
 router.post('/:id_compte/:id_dossier/:id_exercice/controle/:id_controle/validateLine', revisionControleAnomaliesController.validateLineAnomaly);// Routes pour exporter les détails de révision
 router.get('/:id_compte/:id_dossier/:id_exercice/export/pdf/:id_controle', revisionExportController.exportPdf);

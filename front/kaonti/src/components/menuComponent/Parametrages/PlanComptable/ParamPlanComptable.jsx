@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Typography, Stack, Box, Tab, Chip, ButtonGroup, Button, Select, MenuItem, TextField } from '@mui/material';
+import { Typography, Stack, Box, Tab, Chip, ButtonGroup, Button, Select, MenuItem, TextField, Breadcrumbs, InputAdornment } from '@mui/material';
 import Tooltip from '@mui/material/Tooltip';
 import { init } from '../../../../../init';
 import axios from '../../../../../config/axios';
 import toast from 'react-hot-toast';
-import { DataGrid, frFR, GridToolbarContainer, useGridApiContext } from '@mui/x-data-grid';
+import { DataGrid, frFR, useGridApiContext, GridRowModes } from '@mui/x-data-grid';
 import IconButton from '@mui/material/IconButton';
 import { TabContext, TabList, TabPanel } from '@mui/lab';
 import useAuth from '../../../../hooks/useAuth';
@@ -28,6 +28,21 @@ import usePermission from '../../../../hooks/usePermission';
 import useAxiosPrivate from '../../../../hooks/useAxiosPrivate';
 import { TbRefresh } from "react-icons/tb";
 
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/EditOutlined';
+import DeleteIcon from '@mui/icons-material/DeleteOutline';
+import CheckIcon from '@mui/icons-material/Check';
+import CloseIcon from '@mui/icons-material/Close';
+import SaveIcon from '@mui/icons-material/CheckCircleOutline';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import SearchIcon from '@mui/icons-material/Search';
+import CancelIcon from '@mui/icons-material/HighlightOff';
+
+
+const NEON_MINT = '#00FF94';
+const NAV_DARK = '#0B1120';
+const BG_SOFT = '#F8FAFC';
+
 export default function ParamPlanComptable() {
     const { canAdd, canModify, canDelete, canView } = usePermission();
     const axiosPrivate = useAxiosPrivate();
@@ -46,6 +61,8 @@ export default function ParamPlanComptable() {
     const compteId = decoded?.UserInfo?.compteId || 0;
 
     const [pc, setPc] = useState([]);
+    const [filteredPc, setFilteredPc] = useState([]);
+    const [searchText, setSearchText] = useState('');
     const [selectedRow, setSelectedRow] = useState(null);
     const [selectedRowId, setSelectedRowId] = useState(null);
     const [listeCptCollectif, setListeCptCollectif] = useState([]);
@@ -81,6 +98,33 @@ export default function ParamPlanComptable() {
     const [typeAction, setTypeAction] = useState('');
     const [isRefresh, setisRefresh] = useState(false);
 
+    // Fonction de filtrage pour la recherche multi-colonnes
+    const handleSearch = (searchValue) => {
+        setSearchText(searchValue);
+
+        if (!searchValue.trim()) {
+            setFilteredPc(pc);
+            return;
+        }
+
+        const filtered = pc.filter(row => {
+            const searchLower = searchValue.toLowerCase();
+            return (
+                (row.compte && row.compte.toLowerCase().includes(searchLower)) ||
+                (row.libelle && row.libelle.toLowerCase().includes(searchLower)) ||
+                (row.nature && row.nature.toLowerCase().includes(searchLower)) ||
+                (row.baseCompte && row.baseCompte.toString().toLowerCase().includes(searchLower))
+            );
+        });
+
+        setFilteredPc(filtered);
+    };
+
+    // Mettre à jour filteredPc quand pc change
+    useEffect(() => {
+        setFilteredPc(pc);
+    }, [pc]);
+
     // Récupérer la liste des comptes collectifs pour le dropdown (avec logs)
     const recupererListeCptCollectif = useCallback(() => {
         if (!fileId || !compteId) {
@@ -91,17 +135,17 @@ export default function ParamPlanComptable() {
             // console.log('[DEBUG] recupererListeCptCollectif: déjà en chargement');
             return;
         }
-        
+
         // console.log('[DEBUG] recupererListeCptCollectif: début chargement...', { fileId, compteId });
         loadingCollectifRef.current = true;
         setIsLoadingCollectif(true);
         const startTime = Date.now();
-        
+
         axios.post(`/paramPlanComptable/pc`, { fileId: Number(fileId), compteId: Number(compteId) })
             .then((response) => {
                 const elapsed = Date.now() - startTime;
                 // console.log(`[DEBUG] recupererListeCptCollectif: reçu en ${elapsed}ms`);
-                
+
                 const resData = response.data;
                 if (resData.state) {
                     const listePc = resData.liste || [];
@@ -137,7 +181,7 @@ export default function ParamPlanComptable() {
         // Synchroniser la valeur avec le state externe
         useEffect(() => {
             // console.log('[DEBUG] BaseCompteEditCell: useEffect value/liste', { value, nature: currentNature });
-            
+
             if (currentNature === 'General' || currentNature === 'Collectif') {
                 const compteValue = currentCompte || '';
                 setLocalValue(compteValue);
@@ -191,7 +235,7 @@ export default function ParamPlanComptable() {
                     size="small"
                     value={currentCompte || ''}
                     disabled
-                    sx={{ 
+                    sx={{
                         width: '100%',
                         '& .MuiInputBase-root.Mui-disabled': {
                             backgroundColor: '#f5f5f5',
@@ -256,18 +300,18 @@ export default function ParamPlanComptable() {
 
     // Sauvegarder les modifications
     const processRowUpdate = (newRow, oldRow) => {
-        console.log('[DEBUG] processRowUpdate: START', { 
-            newRowId: newRow.id, 
+        console.log('[DEBUG] processRowUpdate: START', {
+            newRowId: newRow.id,
             newRowIdType: typeof newRow.id,
             oldRowId: oldRow.id,
             isNew: newRow.isNew,
             hasIsNewProperty: 'isNew' in newRow
         });
-        
+
         return new Promise((resolve, reject) => {
             try {
                 const isNewRow = newRow.isNew === true;
-                
+
                 // Vérifier les données requises
                 if (!newRow.compte || !newRow.libelle) {
                     console.error('[DEBUG] processRowUpdate: données manquantes', { compte: newRow.compte, libelle: newRow.libelle });
@@ -275,7 +319,7 @@ export default function ParamPlanComptable() {
                     reject(oldRow);
                     return;
                 }
-                
+
                 // Vérifier l'ID pour modification
                 if (!isNewRow && !newRow.id) {
                     console.error('[DEBUG] processRowUpdate: ID manquant pour modification', newRow);
@@ -291,10 +335,10 @@ export default function ParamPlanComptable() {
                     reject(oldRow);
                     return;
                 }
-                
+
                 const itemId = isNewRow ? 0 : newRow.id;
                 // console.log('[DEBUG] processRowUpdate: itemId =', itemId);
-                
+
                 // Quand nature = General ou Collectif: baseCompte doit être le numéro de compte
                 // Quand nature = Auxiliaire: baseCompte est l'ID du compte collectif sélectionné
                 let baseCptValue = null;
@@ -336,21 +380,21 @@ export default function ParamPlanComptable() {
                     compteautre: newRow.compteautre || '',
                     libelleautre: newRow.libelleautre || ''
                 };
-                
+
                 // console.log('[DEBUG] processRowUpdate: envoi API avec payload', { action: payload.action, itemId: payload.itemId });
 
                 axiosPrivate.post(`/paramPlanComptable/AddCpt`, payload)
                     .then((response) => {
                         const resData = response.data;
                         // console.log('[DEBUG] processRowUpdate: réponse API', resData);
-                        
+
                         if (resData.state === true) {
                             toast.success(resData.msg || 'Compte enregistré avec succès');
                             // Mettre à jour avec les nouvelles données d'abord
                             if (!isNewRow && resData?.dataModified) {
                                 // Mapper baseaux vers baseCompte pour l'affichage correct
-                                const updatedRow = { 
-                                    ...newRow, 
+                                const updatedRow = {
+                                    ...newRow,
                                     ...resData.dataModified,
                                     baseCompte: resData.dataModified.baseaux || resData.dataModified.baseCompte || newRow.baseCompte
                                 };
@@ -395,7 +439,7 @@ export default function ParamPlanComptable() {
             // console.log('[DEBUG] handleAddNewRow: chargement comptes collectifs avant ajout');
             recupererListeCptCollectif();
         }
-        
+
         const newId = Date.now(); // ID temporaire
         const newRow = {
             id: newId,
@@ -494,460 +538,184 @@ export default function ParamPlanComptable() {
     }
 
     const columnHeaderDetail = [
-        {
-            field: 'id',
-            headerName: 'ID',
-            type: 'number',
-            sortable: true,
-            width: 70,
-            headerAlign: 'right',
-            headerClassName: 'HeaderbackColor',
-        },
         // {
-        //     field: 'dossier',
-        //     headerName: 'Dossier',
-        //     type: 'string',
-        //     sortable: true,
-        //     width: 100,
+        //     field: 'id',
+        //     headerName: 'ID',
+        //     width: 70,
         //     headerAlign: 'left',
         //     align: 'left',
-        //     headerClassName: 'HeaderbackColor',
+        //     headerClassName: 'grid-header',
         // },
         {
             field: 'compte',
             headerName: 'Compte',
-            type: 'string',
-            sortable: true,
-            width: 100,
+            width: 150,
             editable: true,
             headerAlign: 'left',
-            headerClassName: 'HeaderbackColor',
+            headerClassName: 'grid-header',
+            cellClassName: 'cell-compte',
         },
         {
             field: 'libelle',
             headerName: 'Libellé',
-            type: 'string',
-            sortable: true,
             width: 300,
             editable: true,
             headerAlign: 'left',
-            headerClassName: 'HeaderbackColor',
+            headerClassName: 'grid-header',
         },
-        // {
-        //     field: 'typecomptabilite',
-        //     headerName: 'Type comptabilité',
-        //     type: 'string',
-        //     sortable: true,
-        //     width: 150,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor',
-        // },
         {
             field: 'nature',
             headerName: 'Nature',
-            type: 'singleSelect',
-            sortable: true,
             width: 130,
             editable: true,
-            headerAlign: 'left',
-            headerClassName: 'HeaderbackColor',
+            type: 'singleSelect',
+            headerAlign: 'center',
+            headerClassName: 'grid-header',
+
             valueOptions: [
                 { value: 'General', label: 'Général' },
                 { value: 'Collectif', label: 'Collectif' },
                 { value: 'Aux', label: 'Auxiliaire' }
             ],
             renderCell: (params) => {
-                if (params.row.nature === 'General') {
+                const value = params.value;
+
+                if (value === 'General') {
                     return (
-                        <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-                            <Chip
-                                icon={<TbCircleLetterGFilled style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
-                                label="Général"
-
-                                style={{
-                                    width: "100%",
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    backgroundColor: '#48A6A7',
-                                    color: 'white'
-                                }}
-                            />
-                        </Stack>
-                    )
-                } else if (params.row.nature === 'Collectif') {
-                    return (
-                        <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-
-                            <Chip
-                                icon={<TbCircleLetterCFilled style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
-                                label="Collectif"
-
-                                style={{
-                                    width: "100%",
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    backgroundColor: '#A6D6D6',
-                                    color: 'white'
-                                }}
-                            />
-                        </Stack>
-                    )
-                } else {
-                    return (
-                        <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-
-                            <Chip
-                                icon={<TbCircleLetterAFilled style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
-                                label="Auxiliaire"
-
-                                style={{
-                                    width: "100%",
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    backgroundColor: '#123458',
-                                    color: 'white'
-                                }}
-                            />
-                        </Stack>
-                    )
+                        <Chip
+                            size="small"
+                            label="Général"
+                            sx={{
+                                width: '100%',
+                                fontSize: '12px',
+                                height: '24px',
+                                backgroundColor: '#48A6A7',
+                                color: 'white',
+                                fontWeight: 600
+                            }}
+                        />
+                    );
                 }
+
+                if (value === 'Collectif') {
+                    return (
+                        <Chip
+                            size="small"
+                            label="Collectif"
+                            sx={{
+                                width: '100%',
+                                fontSize: '12px',
+                                height: '24px',
+                                backgroundColor: '#A6D6D6',
+                                color: 'white',
+                                fontWeight: 600
+                            }}
+                        />
+                    );
+                }
+
+                return (
+                    <Chip
+                        size="small"
+                        label="Auxiliaire"
+                        sx={{
+                            width: '100%',
+                            fontSize: '12px',
+                            height: '24px',
+                            backgroundColor: '#123458',
+                            color: 'white',
+                            fontWeight: 600
+                        }}
+                    />
+                );
             }
         },
         {
             field: 'baseCompte',
             headerName: 'Centr. / base aux.',
-            type: 'string',
-            sortable: true,
             width: 175,
             editable: true,
             headerAlign: 'left',
-            headerClassName: 'HeaderbackColor',
+            headerClassName: 'grid-header',
             renderCell: (params) => <BaseCompteRenderCell {...params} />,
             renderEditCell: (params) => <BaseCompteEditCell {...params} />
         },
-        // {
-        //     field: 'cptcharge',
-        //     headerName: 'Cpt charge',
-        //     type: 'string',
-        //     sortable: true,
-        //     width: 100,
-        //     headerAlign: 'right',
-        //     headerClassName: 'HeaderbackColor',
-        //     renderCell: (params) => {
-        //         if (params.row.cptcharge === 0) {
-        //             return (
-        //                 <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-        //                     <div style={{
-        //                         width: 25,
-        //                         height: 25,
-        //                         backgroundColor: '#DBDBDB',
-        //                         borderRadius: 15,
-        //                         display: 'flex',
-        //                         justifyContent: 'center',
-        //                         alignItems: 'center',
-        //                     }}>
-        //                         {params.row.cptcharge}
-        //                     </div>
-        //                 </Stack>
-        //             )
-        //         } else {
-        //             return (
-        //                 <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-        //                     <div style={{
-        //                         width: 25,
-        //                         height: 25,
-        //                         backgroundColor: '#FDA403',
-        //                         borderRadius: 15,
-        //                         display: 'flex',
-        //                         justifyContent: 'center',
-        //                         alignItems: 'center',
-        //                     }}>
-        //                         {params.row.cptcharge}
-        //                     </div>
-        //                 </Stack>
+        {
+            field: 'actions',
+            headerName: 'ACTIONS',
+            width: 80,
+            sortable: false,
+            headerAlign: 'right',
+            align: 'right',
+            headerClassName: 'HeaderbackColor',
+            editable: false,
+            renderCell: (params) => {
+                const isEditing = rowModesModel[params.id]?.mode === GridRowModes.Edit;
+                // const isSelected = selectedRowId.includes(params.id);
 
-        //             )
-        //         }
-        //     }
-        // },
-        // {
-        //     field: 'cpttva',
-        //     headerName: 'Cpt TVA',
-        //     type: 'string',
-        //     sortable: true,
-        //     width: 100,
-        //     headerAlign: 'right',
-        //     headerClassName: 'HeaderbackColor',
-        //     renderCell: (params) => {
-        //         if (params.row.cpttva === 0) {
-        //             return (
-        //                 <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-        //                     <div style={{
-        //                         width: 25,
-        //                         height: 25,
-        //                         backgroundColor: '#DBDBDB',
-        //                         borderRadius: 15,
-        //                         display: 'flex',
-        //                         justifyContent: 'center',
-        //                         alignItems: 'center',
-        //                     }}>
-        //                         {params.row.cpttva}
-        //                     </div>
-        //                 </Stack>
-        //             )
-        //         } else {
-        //             return (
-        //                 <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-        //                     <div style={{
-        //                         width: 25,
-        //                         height: 25,
-        //                         backgroundColor: '#FDA403',
-        //                         borderRadius: 15,
-        //                         display: 'flex',
-        //                         justifyContent: 'center',
-        //                         alignItems: 'center',
-        //                     }}>
-        //                         {params.row.cpttva}
-        //                     </div>
-        //                 </Stack>
-
-        //             )
-        //         }
-        //     }
-        // },
-        // {
-        //     field: 'typetier',
-        //     headerName: 'Type de tier',
-        //     type: 'string',
-        //     sortable: true,
-        //     width: 130,
-        //     headerAlign: 'center',
-        //     headerClassName: 'HeaderbackColor',
-        //     renderCell: (params) => {
-        //         if (params.row.typetier === 'sans-nif') {
-        //             return (
-        //                 <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-        //                     <Chip
-        //                         icon={<BsPersonFillSlash style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
-        //                         label="Sans NIF"
-
-        //                         style={{
-        //                             width: "100%",
-        //                             display: 'flex', // ou block, selon le rendu souhaité
-        //                             justifyContent: 'space-between',
-        //                             backgroundColor: '#FF9149',
-        //                             color: 'white'
-        //                         }}
-        //                     />
-        //                 </Stack>
-        //             )
-        //         } else if (params.row.typetier === 'avec-nif') {
-        //             return (
-        //                 <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-        //                     <Chip
-        //                         icon={<PiIdentificationCardFill style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
-        //                         label="Avec NIF"
-
-        //                         style={{
-        //                             width: "100%",
-        //                             display: 'flex', // ou block, selon le rendu souhaité
-        //                             justifyContent: 'space-between',
-        //                             backgroundColor: '#006A71',
-        //                             color: 'white'
-        //                         }}
-        //                     />
-        //                 </Stack>
-        //             )
-        //         } else if (params.row.typetier === 'general') {
-        //             return (
-        //                 <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-        //                     <Chip
-        //                         icon={<BsCheckCircleFill style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
-        //                         label="Général"
-
-        //                         style={{
-        //                             width: "100%",
-        //                             display: 'flex', // ou block, selon le rendu souhaité
-        //                             justifyContent: 'space-between',
-        //                             backgroundColor: '#67AE6E',
-        //                             color: 'white'
-        //                         }}
-        //                     />
-        //                 </Stack>
-        //             )
-        //         } else if (params.row.typetier === 'etranger') {
-        //             return (
-        //                 <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-        //                     <Chip
-        //                         icon={<FaGlobeAmericas style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
-        //                         label="Etranger"
-        //                         style={{
-        //                             width: "100%",
-        //                             display: 'flex',
-        //                             justifyContent: 'space-between',
-        //                             backgroundColor: '#FBA518',
-        //                             color: 'white'
-        //                         }}
-        //                     />
-        //                 </Stack>
-        //             )
-        //         }
-        //     }
-        // },
-        // {
-        //     field: 'nif',
-        //     headerName: 'Nif',
-        //     type: 'string',
-        //     sortable: true,
-        //     width: 150,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // },
-        // {
-        //     field: 'statistique',
-        //     headerName: 'N° statistique',
-        //     type: 'string',
-        //     sortable: true,
-        //     width: 200,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // },
-        // {
-        //     field: 'adresse',
-        //     headerName: 'Adresse',
-        //     type: 'string',
-        //     sortable: true,
-        //     width: 250,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // },
-        // {
-        //     field: 'cin',
-        //     headerName: 'CIN',
-        //     type: 'string',
-        //     sortable: true,
-        //     width: 150,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // },
-        // {
-        //     field: 'datecin',
-        //     headerName: 'Date CIN',
-        //     type: 'text',
-        //     sortable: true,
-        //     width: 120,
-        //     headerAlign: 'center',
-        //     headerClassName: 'HeaderbackColor',
-        //     renderCell: (params) => {
-        //         if (params.row.datecin !== null) {
-        //             return (
-        //                 <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-        //                     <div>{format(params.row.datecin, "dd/MM/yyyy")}</div>
-        //                 </Stack>
-        //             )
-        //         }
-        //     }
-        // },
-        // {
-        //     field: 'autrepieceid',
-        //     headerName: 'Autre pièces Ident.',
-        //     type: 'text',
-        //     sortable: true,
-        //     width: 200,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // },
-        // {
-        //     field: 'refpieceid',
-        //     headerName: 'Réf pièces Ident.',
-        //     type: 'text',
-        //     sortable: true,
-        //     width: 200,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // },
-        // {
-        //     field: 'adressesansnif',
-        //     headerName: 'Adresse CIN',
-        //     type: 'text',
-        //     sortable: true,
-        //     width: 250,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // },
-        // {
-        //     field: 'nifrepresentant',
-        //     headerName: 'NIF représentant',
-        //     type: 'text',
-        //     sortable: true,
-        //     width: 175,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // },
-        // {
-        //     field: 'addresseetranger',
-        //     headerName: 'Adresse représentant',
-        //     type: 'text',
-        //     sortable: true,
-        //     width: 250,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // },
-        // {
-        //     field: 'pays',
-        //     headerName: 'Pays',
-        //     type: 'text',
-        //     sortable: true,
-        //     width: 150,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // },
-        // {
-        //     field: 'province',
-        //     headerName: 'Province',
-        //     type: 'string',
-        //     sortable: true,
-        //     width: 150,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // },
-        // {
-        //     field: 'region',
-        //     headerName: 'Région',
-        //     type: 'string',
-        //     sortable: true,
-        //     width: 150,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // },
-        // {
-        //     field: 'district',
-        //     headerName: 'District',
-        //     type: 'string',
-        //     sortable: true,
-        //     width: 150,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // },
-        // {
-        //     field: 'commune',
-        //     headerName: 'Commune',
-        //     type: 'string',
-        //     sortable: true,
-        //     width: 180,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // },
-        // {
-        //     field: 'motcle',
-        //     headerName: 'Mot clé',
-        //     type: 'string',
-        //     sortable: true,
-        //     width: 150,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // }
-    ]
+                return (
+                    <Stack direction="row" spacing={0.5} justifyContent="flex-end" sx={{ pr: 1 }}>
+                        {isEditing ? (
+                            <>
+                                <IconButton
+                                    onClick={() => {
+                                        if (selectedRowId == null) return;
+                                        setRowModesModel((prev) => ({
+                                            ...prev,
+                                            [selectedRowId]: { mode: 'view' }
+                                        }));
+                                    }}
+                                    size="small"
+                                    sx={{ color: '#10B981' }}
+                                    title="Sauvegarder"
+                                >
+                                    <SaveIcon sx={{ fontSize: 20 }} />
+                                </IconButton>
+                                <IconButton
+                                    onClick={() => {
+                                        if (selectedRowId == null) return;
+                                        setRowModesModel((prev) => ({
+                                            ...prev,
+                                            [selectedRowId]: { mode: 'view', ignoreModifications: true }
+                                        }));
+                                        if (selectedRow?.isNew) {
+                                            setPc((prev) => prev.filter((r) => r.id !== selectedRowId));
+                                        }
+                                    }}
+                                    size="small"
+                                    sx={{ color: '#F43F5E' }}
+                                    title="Annuler"
+                                >
+                                    <CancelIcon sx={{ fontSize: 20 }} />
+                                </IconButton>
+                            </>
+                        ) : (
+                            <>
+                                <IconButton
+                                    disabled={!canModify || selectedRowId == null}
+                                    onClick={handleEditRow}
+                                    size="small"
+                                    sx={{ color: '#CBD5E1', '&:hover': { color: NAV_DARK } }}
+                                    title="Modifier"
+                                >
+                                    <EditIcon sx={{ fontSize: 20 }} />
+                                </IconButton>
+                                <IconButton
+                                    onClick={handleOpenDialogCptDelete}
+                                    size="small"
+                                    sx={{ color: '#CBD5E1', '&:hover': { color: '#EF4444' } }}
+                                    title="Supprimer"
+                                >
+                                    <DeleteIcon sx={{ fontSize: 20 }} />
+                                </IconButton>
+                            </>
+                        )
+                        }
+                    </Stack>
+                );
+            },
+        },
+    ];
 
     const typeIndex = columnHeaderDetail.findIndex(c => c.field === 'libelle');
 
@@ -1172,225 +940,73 @@ export default function ParamPlanComptable() {
             }
             <Box>
                 <TabContext value={"1"}>
-                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                        <TabList aria-label="lab API tabs example">
-                            <Tab
-                                style={{
-                                    textTransform: 'none',
-                                    outline: 'none',
-                                    border: 'none',
-                                    margin: -5
-                                }}
-                                label={InfoFileStyle(fileInfos?.dossier)} value="1"
-                            />
-                        </TabList>
-                    </Box>
-                    <TabPanel value="1">
-                        <Stack width={"100%"} height={"90%"} spacing={0.5} alignItems={"flex-start"} justifyContent={"stretch"}>
-                            <Typography variant='h7' sx={{ color: "black" }} align='left'>Paramétrages : Plan comptable</Typography>
-                            <Stack width={"100%"} height={"30px"} spacing={0} alignItems={"center"} alignContent={"center"}
-                                direction={"row"} style={{ marginLeft: "0px", marginTop: "30px", justifyContent: "right" }}>
 
-                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                    direction={"row"} justifyContent={"right"}>
-                                    {
-                                        consolidation && (
-                                            <Tooltip title="Actualiser les comptes">
-                                                <span>
-                                                    <IconButton
-                                                        // disabled={statutDeleteButton}  
-                                                        onClick={handleActualize}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "35px", height: '35px',
-                                                            borderRadius: "5px", borderColor: "transparent",
-                                                            backgroundColor: initial.add_new_line_bouton_color,
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
-                                                    >
-                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </span>
-                                            </Tooltip>
-                                        )
-                                    }
-                                    <ButtonGroup
-                                        variant="outlined"
+                    <TabPanel value="1">
+                        <Stack width={"100%"} height={"90%"} spacing={1} alignItems={"flex-start"} justifyContent={"stretch"}>
+                            <Typography variant='h6' sx={{ fontWeight: 800, color: NAV_DARK }}>Plan comptable </Typography>
+                            <Stack
+                                width="100%"
+                                direction="row"
+                                alignItems="center"
+                                justifyContent="flex-end"   // tout passe à droite
+                                sx={{ mt: -4 }}
+                            >
+
+                                {/* DROITE : recherche + bouton */}
+                                <Stack direction="row" spacing={1} alignItems="center">
+
+                                    <TextField
+                                        placeholder="Rechercher ..."
+                                        size="small"
+                                        value={searchText}
+                                        onChange={(e) => handleSearch(e.target.value)}
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <SearchIcon sx={{ fontSize: 18, color: '#94A3B8' }} />
+                                                </InputAdornment>
+                                            ),
+                                        }}
                                         sx={{
-                                            boxShadow: 'none',
-                                            display: 'flex',
-                                            gap: '2px',
-                                            '& .MuiButton-root': {
-                                                borderRadius: 0,
-                                            },
-                                            '& .MuiButtonGroup-grouped': {
-                                                boxShadow: 'none',
-                                                outline: 'none',
-                                                borderColor: 'inherit',
-                                                marginLeft: 0,
-                                                borderRadius: 1,
-                                                border: 'none',
-                                            },
-                                            '& .MuiButtonGroup-grouped:hover': {
-                                                boxShadow: 'none',
-                                                borderColor: 'inherit',
-                                            },
-                                            '& .MuiButtonGroup-grouped.Mui-focusVisible': {
-                                                boxShadow: 'none',
-                                                borderColor: 'inherit',
+                                            width: 250,
+                                            '& .MuiOutlinedInput-root': {
+                                                borderRadius: '8px',
+                                                bgcolor: '#fff',
+                                                height: '32px',
+                                                fontSize: '12px'
+                                            }
+                                        }}
+                                    />
+
+                                    <Button
+                                        variant="contained"
+                                        startIcon={<AddIcon sx={{ fontSize: '16px !important' }} />}
+                                        onClick={handleAddNewRow}
+                                        disabled={!canAdd}
+                                        sx={{
+                                            bgcolor: NEON_MINT,
+                                            textTransform: 'none',
+                                            fontSize: '12px',
+                                            fontWeight: 700,
+                                            mr: 2,
+                                            color: '#000',
+                                            borderRadius: '6px',
+                                            px: 2,
+                                            '&:hover': {
+                                                bgcolor: '#00E685',
+                                                transform: 'translateY(-1px)'
                                             },
                                         }}
                                     >
-                                        <Tooltip title="Ajouter un nouveau compte">
-                                            <span>
-                                                <Button
-                                                    disabled={!canAdd}
-                                                    onClick={handleAddNewRow}
-                                                    sx={{
-                                                        ...buttonStyle,
-                                                        backgroundColor: initial.auth_gradient_end,
-                                                        color: 'white',
-                                                        borderColor: initial.auth_gradient_end,
-                                                        '&:hover': {
-                                                            backgroundColor: initial.auth_gradient_end,
-                                                            boxShadow: 'none',
-                                                            border: 'none',
-                                                        },
-                                                        '&:focus': {
-                                                            backgroundColor: initial.auth_gradient_end,
-                                                            boxShadow: 'none',
-                                                        },
-                                                        '&.Mui-disabled': {
-                                                            backgroundColor: initial.auth_gradient_end,
-                                                            color: 'white',
-                                                            cursor: 'not-allowed',
-                                                            border: 'none',
-                                                        },
-                                                        '&::before': {
-                                                            display: 'none',
-                                                        },
-                                                    }}
-                                                >
-                                                    Ajouter
-                                                </Button>
-                                            </span>
-                                        </Tooltip>
+                                        Ajouter
+                                    </Button>
 
-                                        <Tooltip title="Modifier le compte sélectionné">
-                                            <span>
-                                                <Button
-                                                    disabled={!canModify || selectedRowId == null}
-                                                    onClick={handleEditRow}
-                                                    sx={{
-                                                        ...buttonStyle,
-                                                        backgroundColor: initial.auth_gradient_end,
-                                                        color: 'white',
-                                                        borderColor: initial.auth_gradient_end,
-                                                        '&:hover': {
-                                                            backgroundColor: initial.auth_gradient_end,
-                                                            boxShadow: 'none',
-                                                            border: 'none',
-                                                        },
-                                                        '&.Mui-disabled': {
-                                                            backgroundColor: initial.auth_gradient_end,
-                                                            color: 'white',
-                                                            cursor: 'not-allowed',
-                                                            border: 'none',
-                                                        },
-                                                    }}
-                                                >
-                                                    Modifier
-                                                </Button>
-                                            </span>
-                                        </Tooltip>
-
-                                       
-                                                <Tooltip title="Sauvegarder">
-                                                    <span>
-                                                        <Button
-                                                            onClick={() => {
-                                                                if (selectedRowId == null) return;
-                                                                setRowModesModel((prev) => ({
-                                                                    ...prev,
-                                                                    [selectedRowId]: { mode: 'view' }
-                                                                }));
-                                                            }}
-                                                            sx={{
-                                                                ...buttonStyle,
-                                                                backgroundColor: '#4caf50',
-                                                                color: 'white',
-                                                                borderColor: '#4caf50',
-                                                                '&:hover': {
-                                                                    backgroundColor: '#4caf50',
-                                                                    boxShadow: 'none',
-                                                                    border: 'none',
-                                                                },
-                                                            }}
-                                                        >
-                                                            Sauvegarder
-                                                        </Button>
-                                                    </span>
-                                                </Tooltip>
-                                                <Tooltip title="Annuler">
-                                                    <span>
-                                                        <Button
-                                                            onClick={() => {
-                                                                if (selectedRowId == null) return;
-                                                                setRowModesModel((prev) => ({
-                                                                    ...prev,
-                                                                    [selectedRowId]: { mode: 'view', ignoreModifications: true }
-                                                                }));
-                                                                if (selectedRow?.isNew) {
-                                                                    setPc((prev) => prev.filter((r) => r.id !== selectedRowId));
-                                                                }
-                                                            }}
-                                                            sx={{
-                                                                ...buttonStyle,
-                                                                backgroundColor: initial.annuler_bouton_color,
-                                                                color: 'white',
-                                                                borderColor: initial.annuler_bouton_color,
-                                                                '&:hover': {
-                                                                    backgroundColor: initial.annuler_bouton_color,
-                                                                    boxShadow: 'none',
-                                                                    border: 'none',
-                                                                },
-                                                            }}
-                                                        >
-                                                            Annuler
-                                                        </Button>
-                                                    </span>
-                                                </Tooltip>                                       
-
-                                        <Tooltip title="Supprimer le compte sélectionné">
-                                            <span>
-                                                <Button
-                                                    disabled={!canDelete || selectedRowId == null}
-                                                    onClick={handleOpenDialogCptDelete}
-                                                    sx={{
-                                                        ...buttonStyle,
-                                                        backgroundColor: initial.annuler_bouton_color,
-                                                        color: 'white',
-                                                        borderColor: initial.annuler_bouton_color,
-                                                        '&:hover': {
-                                                            backgroundColor: initial.annuler_bouton_color,
-                                                            border: 'none',
-                                                        },
-                                                        '&.Mui-disabled': {
-                                                            backgroundColor: initial.annuler_bouton_color,
-                                                            color: 'white',
-                                                            cursor: 'not-allowed',
-                                                            border: 'none',
-                                                        },
-                                                    }}
-                                                >
-                                                    Supprimer
-                                                </Button>
-                                            </span>
-                                        </Tooltip>
-                                    </ButtonGroup>
                                 </Stack>
+
                             </Stack>
-                            <Stack height={"70vh"} width={'100%'}>
+
+
+                            <Stack height={"70vh"} width={'100%'} sx={{ mt: 4 }}>
                                 <DataGrid
                                     disableMultipleSelection={DataGridStyle.disableMultipleSelection}
                                     disableColumnSelector={DataGridStyle.disableColumnSelector}
@@ -1398,7 +1014,7 @@ export default function ParamPlanComptable() {
                                     localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
                                     disableRowSelectionOnClick
                                     disableSelectionOnClick={true}
-                                    slots={{ toolbar: QuickFilter }}
+                                    // slots={{ toolbar: QuickFilter }}
                                     editMode="row"
                                     rowModesModel={rowModesModel}
                                     onRowModesModelChange={handleRowModesModelChange}
@@ -1407,61 +1023,105 @@ export default function ParamPlanComptable() {
                                         console.error('Erreur lors de la sauvegarde:', error);
                                         toast.error('Erreur lors de la sauvegarde');
                                     }}
-                                    slotProps={{
-                                        row: {
-                                            onMouseEnter: (event) => {
-                                                event.stopPropagation();
-                                            },
-                                        },
-                                    }}
-                                    sx={{
-                                        ...DataGridStyle.sx,
-                                        '& .MuiDataGrid-columnHeaders': {
-                                            backgroundColor: initial.tableau_theme,
-                                            color: initial.text_theme,
-                                        },
-                                        '& .MuiDataGrid-columnHeaderTitle': {
-                                            color: initial.text_theme,
-                                            fontWeight: 600,
-                                        },
-                                        '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
-                                            color: initial.text_theme,
-                                        },
-                                        '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
-                                            outline: 'none',
-                                            border: 'none',
-                                        },
-                                        '& .highlight-separator': {
-                                            borderBottom: '1px solid red'
-                                        },
-                                        '& .MuiDataGrid-row.highlight-separator': {
-                                            borderBottom: '1px solid red',
-                                        },
-                                        '& .MuiDataGrid-virtualScroller': {
-                                            maxHeight: '700px',
-                                        },
-                                    }}
-                                    rowHeight={DataGridStyle.rowHeight}
-                                    columnHeaderHeight={DataGridStyle.columnHeaderHeight}
                                     getRowId={(row) => row.id || row.compte || Math.random().toString()}
-                                    onRowSelectionModelChange={ids => {
+                                    rows={filteredPc}
+                                    columns={columnHeaderDetail}
+                                    checkboxSelection={DataGridStyle.checkboxSelection}
+                                    rowSelectionModel={pcAllselectedRow}
+                                    onRowSelectionModelChange={(ids) => {
                                         const lastId = ids && ids.length ? ids[ids.length - 1] : null;
                                         listPCSelectedRow(lastId != null ? [lastId] : []);
                                     }}
-                                    rowSelectionModel={pcAllselectedRow}
-                                    rows={pc}
-                                    columns={columnHeaderDetail}
+                                    pageSizeOptions={[50, 100]}
                                     initialState={{
                                         pagination: {
                                             paginationModel: { page: 0, pageSize: 100 },
                                         },
+                                        sorting: {
+                                            sortModel: [{ field: 'baseCompte', sort: 'asc' }],
+                                        },
                                     }}
-                                    experimentalFeatures={{ columnPinning: true }}
-                                    pageSizeOptions={[50, 100]}
-                                    pagination={DataGridStyle.pagination}
-                                    checkboxSelection={DataGridStyle.checkboxSelection}
-                                    columnVisibilityModel={{
-                                        id: false,
+
+                                    /* hauteur identique au Table */
+                                    rowHeight={40}
+                                    columnHeaderHeight={35}
+
+                                    sx={{
+                                        border: '1px solid #F1F5F9',
+                                        fontSize: '13px',
+
+                                        /* HEADER */
+                                        '& .MuiDataGrid-columnHeaders': {
+                                            backgroundColor: '#F8FAFC',
+                                            borderBottom: '1px solid #E2E8F0',
+                                            minHeight: '35px !important',
+                                            maxHeight: '35px !important'
+                                        },
+
+                                        '& .MuiDataGrid-columnHeaderTitle': {
+                                            fontWeight: 800,
+                                            fontSize: '10px',
+                                            textTransform: 'uppercase',
+                                            color: '#94A3B8'
+                                        },
+
+                                        '& .MuiDataGrid-columnHeader': {
+                                            paddingLeft: '8px',
+                                            paddingRight: '8px'
+                                        },
+
+                                        /* LIGNES */
+                                        '& .MuiDataGrid-row': {
+                                            height: '40px !important',
+                                            cursor: 'pointer',
+                                            borderBottom: '1px solid #F1F5F9',
+                                            backgroundColor: '#fff'
+                                        },
+
+                                        '& .MuiDataGrid-row:hover': {
+                                            backgroundColor: '#F1F5F9'
+                                        },
+
+                                        /* CELLULES */
+                                        '& .MuiDataGrid-cell': {
+                                            fontSize: '13px',
+                                            color: '#475569',
+                                            borderBottom: 'none',
+                                            paddingLeft: '8px',
+                                            paddingRight: '8px'
+                                        },
+                                        /* supprimer le focus bleu */
+                                        '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+                                            outline: 'none'
+                                        },
+
+                                        /* checkbox compacte */
+                                        '& .MuiCheckbox-root': {
+                                            padding: '4px'
+                                        },
+
+                                        /* style édition inline */
+                                        '& .MuiInputBase-root': {
+                                            height: '26px',
+                                            fontSize: '12px',
+                                            borderRadius: '4px',
+                                            backgroundColor: '#fff'
+                                        },
+
+                                        '& .MuiDataGrid-virtualScroller': {
+                                            maxHeight: '700px'
+                                        },
+                                        '& .grid-header': {
+                                            fontWeight: 800,
+                                            fontSize: '10px',
+                                            textTransform: 'uppercase',
+                                            color: '#94A3B8'
+                                        },
+
+                                        '& .cell-compte': {
+                                            fontWeight: 700,
+                                            color: '#0F172A'
+                                        }
                                     }}
                                 />
                             </Stack>

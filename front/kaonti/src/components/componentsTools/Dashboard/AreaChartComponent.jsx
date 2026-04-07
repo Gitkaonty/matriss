@@ -9,10 +9,10 @@ import {
     Legend,
     Filler,
 } from 'chart.js';
-import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Line } from 'react-chartjs-2';
-import { Stack } from '@mui/material';
+import { Box } from '@mui/material';
 
+// On n'enregistre PAS ChartDataLabels ici pour éviter l'affichage sur la ligne
 ChartJS.register(
     CategoryScale,
     LinearScale,
@@ -21,40 +21,33 @@ ChartJS.register(
     Title,
     Tooltip,
     Legend,
-    Filler,
-    ChartDataLabels
+    Filler
 );
 
-// const formatValue = (value) => {
-//     if (Math.abs(value) >= 1_000_000_000) return (value / 1_000_000_000).toFixed(1) + 'B';
-//     if (Math.abs(value) >= 1_000_000) return (value / 1_000_000).toFixed(1) + 'M';
-//     if (Math.abs(value) >= 1_000) return (value / 1_000).toFixed(0) + 'k';
-//     return value;
-// };
-
-const AreaChartComponent = ({ xAxis,xAxis1, dataN, dataN1, label }) => {
+const AreaChartComponent = ({ xAxis, dataN, dataN1, label }) => {
     const dataNOnAllLabels = xAxis.map((lbl, idx) => dataN[idx] ?? null);
     const dataN1OnAllLabels = xAxis.map((lbl, idx) => dataN1?.[idx] ?? null);
 
-    const shadowPlugin = {
-        id: 'shadowPlugin',
-        beforeDatasetDraw(chart, args) {
-            const { ctx } = chart;
-            const datasetIndex = args.index;
-            const dataset = chart.data.datasets[datasetIndex];
 
-            if (!dataset) return;
-
-            const color = dataset.borderColor || 'rgba(0,0,0,0.5)';
-
-            ctx.save();
-            ctx.shadowColor = color;
-            ctx.shadowBlur = 20;
-            ctx.shadowOffsetX = 0;
-            ctx.shadowOffsetY = 10;
-        },
-        afterDatasetDraw(chart, args) {
-            chart.ctx.restore();
+    const verticalLinePlugin = {
+        id: 'verticalLine',
+        afterDraw: (chart) => {
+            if (chart.tooltip?._active?.length) {
+                const { ctx } = chart;
+                const activePoint = chart.tooltip._active[0];
+                const { x } = activePoint.element;
+                const topY = chart.scales.y.top;
+                const bottomY = chart.scales.y.bottom;
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(x, topY);
+                ctx.lineTo(x, bottomY);
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = '#E2E8F0';
+                ctx.setLineDash([5, 5]);
+                ctx.stroke();
+                ctx.restore();
+            }
         }
     };
 
@@ -62,75 +55,97 @@ const AreaChartComponent = ({ xAxis,xAxis1, dataN, dataN1, label }) => {
         labels: xAxis,
         datasets: [
             {
-                label: `N`,
+                label: 'N',
                 data: dataNOnAllLabels,
-                borderColor: '#349beb',
-                backgroundColor: 'rgba(52, 155, 235, 0.35)',
-                borderWidth: 2,
-                pointRadius: 10,
-                tension: 0.35,
-                pointHoverRadius: 10,
-                pointBackgroundColor: 'transparent',
-                pointBorderColor: 'transparent',
-                fill: true,
-                datalabels: {
-                    display: false,
+                borderColor: '#3B82F6',
+                backgroundColor: (context) => {
+                    const ctx = context.chart.ctx;
+                    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+                    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.15)');
+                    gradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
+                    return gradient;
                 },
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 0, // Aucun point sur la ligne
+                pointHoverRadius: 6, // Point visible uniquement au survol
             },
             ...(dataN1 && dataN1.length > 0 ? [{
                 label: `N-1`,
                 data: dataN1OnAllLabels,
-                borderColor: '#de5f23',
-                backgroundColor: 'rgba(222, 95, 35, 0.25)',
+                borderColor: '#94A3B8',
+                borderDash: [5, 5],
                 borderWidth: 2,
-                pointRadius: 10,
-                pointHoverRadius: 10,
-                pointBackgroundColor: 'transparent',
-                pointBorderColor: 'transparent',
-                tension: 0.35,
-                fill: true,
+                fill: false,
+                tension: 0.4,
+                pointRadius: 0,
                 datalabels: {
                     display: false,
                 },
             }] : [])
+            // {
+            //     label: 'Année N-1',
+            //     data: dataN1,
+            //     borderColor: '#94A3B8',
+            //     borderDash: [5, 5],
+            //     borderWidth: 2,
+            //     fill: false,
+            //     tension: 0.4,
+            //     pointRadius: 0,
+            // }
         ],
     };
 
     const options = {
         responsive: true,
         maintainAspectRatio: false,
-        layout: { padding: { right: 20 } },
+        interaction: {
+            mode: 'index',
+            intersect: false,
+        },
         plugins: {
             legend: { display: true, position: 'top' },
             title: { display: true, text: label, font: { size: 18 } },
-            tooltip: { enabled: true },
-            datalabels: {},
+            datalabels: { display: false },
+            tooltip: {
+                enabled: true,
+                backgroundColor: '#1E293B',
+                padding: 12,
+                cornerRadius: 8,
+                callbacks: {
+                    // Affichage du montant dans la bulle au survol
+                    label: (context) => {
+                        return ` ${context.dataset.label} : ${new Intl.NumberFormat('fr-FR').format(context.raw)} €`;
+                    }
+                }
+            },
         },
         scales: {
             y: {
-                grid: {
-                    display: false, // enlève la grille
-                },
-                border: {
-                    display: true, // garde l’axe
-                },
+                beginAtZero: true,
+                grid: { color: '#F1F5F9', drawBorder: false },
+                ticks: {
+                    color: '#64748B',
+                    font: { size: 11 },
+                    // Affichage des montants sur l'axe de gauche
+                    callback: (value) => {
+                        if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+                        return new Intl.NumberFormat('fr-FR').format(value);
+                    }
+                }
             },
             x: {
-                grid: {
-                    display: false,
-                },
-                border: {
-                    display: true,
-                },
-            },
-        },
-
+                grid: { display: false },
+                ticks: { color: '#64748B', font: { size: 11 } }
+            }
+        }
     };
 
     return (
-        <Stack flex={1} height={'100%'} width={'100%'} minHeight={0} alignItems="stretch" direction="column">
-            <Line data={chartData} options={options} plugins={[shadowPlugin]} style={{ width: '100%', height: '100%' }} />
-        </Stack>
+        <Box sx={{ height: '100%', width: '100%' }}>
+            <Line data={chartData} options={options} plugins={[verticalLinePlugin]} />
+        </Box>
     );
 };
 

@@ -76,7 +76,7 @@ const getClientEcritures = async (id_compte, id_dossier, id_exercice, date_debut
 };
 
 /**
- * Récupérer les factures ACHAT non réglées depuis plus de 90 jours
+ * Récupérer les factures VENTE non réglées depuis plus de 90 jours
  * Règle: date_controle - date_facture >= 90j et lettrage vide
  */
 const getFactures3MoisNonReglees = async (id_dossier, id_exercice, date_debut, date_fin, date_controle) => {
@@ -116,13 +116,13 @@ const getFactures3MoisNonReglees = async (id_dossier, id_exercice, date_debut, d
       AND (j.compteaux LIKE '411%')
       AND j.dateecriture >= '${dateDebutFormatted}'
       AND j.dateecriture <= '${dateFinFormatted}'
-      AND cj.type = 'ACHAT'
+      AND cj.type = 'VENTE'
       AND (j.lettrage IS NULL OR j.lettrage = '')
       AND ('${dateControleFormatted}'::date - j.dateecriture) >= 90
     ORDER BY j.compteaux, j.dateecriture
   `;
   
-  // Debug: voir toutes les factures ACHAT
+  // Debug: voir toutes les factures VENTE
   const debugQuery = `
     SELECT COUNT(*) as total,
            COUNT(CASE WHEN j.lettrage IS NULL OR j.lettrage = '' THEN 1 END) as sans_lettrage,
@@ -133,12 +133,12 @@ const getFactures3MoisNonReglees = async (id_dossier, id_exercice, date_debut, d
     WHERE j.id_dossier = ${id_dossier}
       AND j.id_exercice = ${id_exercice}
       AND (j.compteaux LIKE '411%')
-      AND cj.type = 'ACHAT'
+      AND cj.type = 'VENTE'
   `;
   const debugResult = await db.sequelize.query(debugQuery, { type: db.Sequelize.QueryTypes.SELECT });
-  // console.log('[DEBUG] Stats ACHAT:', debugResult[0]);
+  // console.log('[DEBUG] Stats VENTE:', debugResult[0]);
   
-  // Debug: voir les factures ACHAT sans lettrage dans la période
+  // Debug: voir les factures VENTE sans lettrage dans la période
   const debugQuery2 = `
     SELECT j.dateecriture, j.lettrage, j.debit, j.credit, j.compteaux,
            ('${dateControleFormatted}'::date - j.dateecriture) as jours
@@ -149,12 +149,12 @@ const getFactures3MoisNonReglees = async (id_dossier, id_exercice, date_debut, d
       AND (j.compteaux LIKE '411%')
       AND j.dateecriture >= '${dateDebutFormatted}'
       AND j.dateecriture <= '${dateFinFormatted}'
-      AND cj.type = 'ACHAT'
+      AND cj.type = 'VENTE'
       AND (j.lettrage IS NULL OR j.lettrage = '')
     ORDER BY j.dateecriture
   `;
   const debugResult2 = await db.sequelize.query(debugQuery2, { type: db.Sequelize.QueryTypes.SELECT });
-  // console.log('[DEBUG] ACHAT sans lettrage dans période:', debugResult2.length);
+  // console.log('[DEBUG] VENTE sans lettrage dans période:', debugResult2.length);
   // console.log('[DEBUG] Détail:', debugResult2);
   
   const results = await db.sequelize.query(query, { type: db.Sequelize.QueryTypes.SELECT });
@@ -166,7 +166,7 @@ const getFactures3MoisNonReglees = async (id_dossier, id_exercice, date_debut, d
 };
 
 /**
- * Récupérer les ajustements non traités (journal != ACHAT/BANQUE/RAN + lettrage vide)
+ * Récupérer les ajustements non traités (journal != VENTE/BANQUE/RAN + lettrage vide)
  */
 const getAjustementsNonTraites = async (id_dossier, id_exercice, date_debut, date_fin) => {
   // console.log('[DEBUG] getAjustementsNonTraites - Paramètres:', { id_dossier, id_exercice, date_debut, date_fin });
@@ -195,7 +195,7 @@ const getAjustementsNonTraites = async (id_dossier, id_exercice, date_debut, dat
       AND (j.compteaux LIKE '411%')
       AND j.dateecriture >= '${dateDebutFormatted}'
       AND j.dateecriture <= '${dateFinFormatted}'
-      AND cj.type NOT IN ('ACHAT', 'BANQUE', 'RAN')
+      AND cj.type NOT IN ('VENTE', 'BANQUE', 'RAN')
       AND (j.lettrage IS NULL OR j.lettrage = '')
     ORDER BY j.compteaux, j.dateecriture
   `;
@@ -278,7 +278,7 @@ const analyzeLine = (line, typeRegle) => {
         sens: 'credit'
       });
     }
-  } else if (typeRegle === 'ACHAT') {
+  } else if (typeRegle === 'VENTE') {
     if (parseFloat(line.credit || 0) > 0) {
       anomalies.push({
         type: ANOMALIE_TYPES.FACTURE_3MOIS_NON_REGLEE,
@@ -353,14 +353,14 @@ exports.executerAnalyse = async (req, res) => {
 
     // ========== RÈGLE 2: Facture +3 mois non réglée ==========
     // console.log('[DEBUG] === RÈGLE 2: Facture >3 mois non réglée ===');
-    const ecrituresAchat = await getFactures3MoisNonReglees(
+    const ecrituresVENTE = await getFactures3MoisNonReglees(
       id_dossier, 
       id_exercice, 
       date_debut, 
       date_fin,
       date_fin  // date de contrôle = date fin période
     );
-    // console.log('[DEBUG] ACHAT >90j trouvées:', ecrituresAchat.length);
+    // console.log('[DEBUG] VENTE >90j trouvées:', ecrituresVENTE.length);
 
     // ========== RÈGLE 3: Ajustements non traités ==========
     // console.log('[DEBUG] === RÈGLE 3: Ajustements non traités ===');
@@ -399,9 +399,9 @@ exports.executerAnalyse = async (req, res) => {
       }
     }
 
-    // Traiter les lignes ACHAT >90j
-    for (const line of ecrituresAchat) {      
-      const anomalies = analyzeLine(line, 'ACHAT');
+    // Traiter les lignes VENTE >90j
+    for (const line of ecrituresVENTE) {      
+      const anomalies = analyzeLine(line, 'VENTE');
             
       if (anomalies.length > 0) {
         await processAnomalieLine(line, anomalies, id_compte, id_dossier, id_exercice, id_periode, lignesAvecAnomalies);

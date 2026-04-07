@@ -19,15 +19,25 @@ import {
     DialogContent,
     DialogContentText,
     DialogTitle,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    InputAdornment,
+    Collapse,
+    Divider,
+    Chip
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
-import { Search, ChevronLeft, ChevronRight } from '@mui/icons-material';
+import { Search, ChevronLeft, ChevronRight, Visibility, ChatBubbleOutline, CheckCircle, WarningAmber, DeleteOutline, DoneAll, CalendarToday, Timer, FilterList } from '@mui/icons-material';
 import { init } from '../../../../../init';
 import useAxiosPrivate from '../../../../hooks/useAxiosPrivate';
 import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
 import PopupActionConfirm from '../../../componentsTools/popupActionConfirm';
 import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFile';
-import { DataGridStyle } from '../../../componentsTools/DatagridToolsStyle';
+import { useExercicePeriode } from '../../../../context/ExercicePeriodeContext';
+import ExercicePeriodeSelector from '../../../componentsTools/ExercicePeriodeSelector/ExercicePeriodeSelector';
 
 
 // Format date as dd-mm-yy
@@ -46,17 +56,25 @@ export default function RechercheDoublon() {
     const axiosPrivate = useAxiosPrivate();
     const navigate = useNavigate();
 
-    const [listeExercice, setListeExercice] = useState([]);
-    const [selectedExerciceId, setSelectedExerciceId] = useState(0);
+    // État pour gérer l'expansion des groupes
+    const [expandedId, setExpandedId] = useState(null);
+    const [validatingGroup, setValidatingGroup] = useState(null); // Pour suivre quel groupe est en cours de validation
+
+    // Utiliser le contexte global pour exercice et période
+    const {
+        selectedExerciceId,
+        selectedPeriodeId,
+        selectedPeriodeDates,
+        handleChangeExercice,
+        handleChangePeriode,
+        loading: contextLoading,
+        getApiParams
+    } = useExercicePeriode();
+
     const [fileInfos, setFileInfos] = useState(null);
     const [loading, setLoading] = useState(false);
     const [noFile, setNoFile] = useState(false);
     const [fileId, setFileId] = useState(0);
-
-    // === Périodes ===
-    const [listePeriodes, setListePeriodes] = useState([]);
-    const [selectedPeriodeId, setSelectedPeriodeId] = useState('');
-    const [selectedPeriodeDates, setSelectedPeriodeDates] = useState(null);
 
     // === Résultats de recherche ===
     const [resultats, setResultats] = useState([]);
@@ -76,6 +94,33 @@ export default function RechercheDoublon() {
 
     // Résultats filtrés par groupe
     const filteredResultats = resultats.filter(row => row.id_doublon === currentGroupe);
+
+    // Grouper les résultats par ID de doublon pour le nouveau format
+    const groupedDoublons = resultats.reduce((groups, row) => {
+        const groupId = row.id_doublon;
+        if (!groups[groupId]) {
+            groups[groupId] = {
+                id: `GRP-${groupId}`,
+                id_doublon: groupId,
+                compte: row.compte,
+                libelle: row.libelle,
+                montant: (parseFloat(row.debit || 0) - parseFloat(row.credit || 0)).toFixed(2),
+                debit: row.debit,
+                credit: row.credit,
+                date: row.date,
+                journal: row.journal,
+                piece: row.piece,
+                ecritures: [],
+                occurences: 0,
+                statut: row.statut || 'NON_VALIDE'  // ← Prendre le statut de la ligne
+            };
+        }
+        groups[groupId].ecritures.push(row);
+        groups[groupId].occurences++;
+        return groups;
+    }, {});
+
+    const doublonsGroups = Object.values(groupedDoublons);
 
     // Obtenir les critères actifs pour l'affichage
     const getActiveCriteresText = () => {
@@ -176,21 +221,21 @@ export default function RechercheDoublon() {
         };
     };
 
-    const fetchExercices = async () => {
-        try {
-            const { id_dossier } = getIds();
-            const response = await axiosPrivate.get(`/paramExercice/listeExercice/${id_dossier}`);
-            const resData = response.data;
-            if (resData.state) {
-                setListeExercice(resData.list);
-                if (resData.list && resData.list.length > 0 && selectedExerciceId === 0) {
-                    setSelectedExerciceId(resData.list[0].id);
-                }
-            }
-        } catch (error) {
-            console.error('Error fetching exercices:', error);
-        }
-    };
+    // const fetchExercices = async () => {
+    //     try {
+    //         const { id_dossier } = getIds();
+    //         const response = await axiosPrivate.get(`/paramExercice/listeExercice/${id_dossier}`);
+    //         const resData = response.data;
+    //         if (resData.state) {
+    //             setListeExercice(resData.list);
+    //             if (resData.list && resData.list.length > 0 && selectedExerciceId === 0) {
+    //                 setSelectedExerciceId(resData.list[0].id);
+    //             }
+    //         }
+    //     } catch (error) {
+    //         console.error('Error fetching exercices:', error);
+    //     }
+    // };
 
     const fetchDossierInfos = async () => {
         try {
@@ -205,53 +250,12 @@ export default function RechercheDoublon() {
         }
     };
 
-    const fetchPeriodes = useCallback(async (exerciceId) => {
-        if (!exerciceId) return;
-        try {
-            const response = await axiosPrivate.get(`/paramExercice/listePeriodes/${exerciceId}`);
-            if (response.data.state) {
-                setListePeriodes(response.data.list || []);
-            } else {
-                setListePeriodes([]);
-            }
-        } catch (error) {
-            console.error('Error fetching periodes:', error);
-            setListePeriodes([]);
-        }
-    }, [axiosPrivate]);
 
     useEffect(() => {
-        fetchExercices();
         fetchDossierInfos();
     }, []);
 
-    useEffect(() => {
-        if (selectedExerciceId > 0) {
-            fetchPeriodes(selectedExerciceId);
-        }
-    }, [selectedExerciceId, fetchPeriodes]);
 
-    const handleChangeExercice = (exerciceId) => {
-        setSelectedExerciceId(exerciceId);
-        setSelectedPeriodeId('');
-        setSelectedPeriodeDates(null);
-        fetchPeriodes(exerciceId);
-    };
-
-    const handleChangePeriode = (periodeId) => {
-        setSelectedPeriodeId(periodeId);
-        if (periodeId && periodeId !== 'exercice') {
-            const periode = listePeriodes.find(p => p.id === periodeId);
-            if (periode) {
-                setSelectedPeriodeDates({
-                    date_debut: periode.date_debut,
-                    date_fin: periode.date_fin
-                });
-            }
-        } else {
-            setSelectedPeriodeDates(null);
-        }
-    };
 
     const handleOpenConfirmDialog = () => {
         if (!selectedExerciceId) return;
@@ -384,6 +388,54 @@ export default function RechercheDoublon() {
         }
     };
 
+    // Fonction pour valider un groupe de doublons
+    const handleValidateGroup = async (groupId) => {
+        console.log('🚀 [FRONT] Validation démarrée pour le groupe:', groupId);
+        setValidatingGroup(groupId);
+        try {
+            const { id_compte, id_dossier, id_exercice } = getIds();
+            console.log('📋 [FRONT] Paramètres:', { id_compte, id_dossier, id_exercice, groupId });
+
+            // Appel API pour valider le groupe
+            const url = `/administration/rechercheDoublon/validerGroupeDoublon/${id_compte}/${id_dossier}/${id_exercice}/${groupId}`;
+            console.log('🌐 [FRONT] URL appelée:', url);
+
+            const response = await axiosPrivate.post(url);
+            console.log('✅ [FRONT] Réponse reçue:', response.data);
+
+            if (response.data.state) {
+                const { nb_ecritures_valides } = response.data.data;
+                console.log('📝 [FRONT] Mise à jour du statut local pour le groupe:', groupId);
+
+                // Mettre à jour le statut du groupe validé au lieu de le retirer
+                setResultats(prev => {
+                    console.log('🔄 [FRONT] Anciens résultats:', prev.length, 'items');
+                    const updated = prev.map(item =>
+                        item.id_doublon === groupId
+                            ? { ...item, statut: 'VALIDE', date_validation: new Date().toISOString() }
+                            : item
+                    );
+                    console.log('🔄 [FRONT] Nouveaux résultats:', updated.length, 'items');
+                    console.log('🔄 [FRONT] Groupe mis à jour:', updated.find(i => i.id_doublon === groupId));
+                    return updated;
+                });
+
+                // Afficher un message de succès
+                alert(`✅ Groupe ${groupId} validé avec succès !\n📊 ${nb_ecritures_valides} écritures traitées`);
+
+                console.log('Groupe validé:', response.data.message);
+            } else {
+                alert(response.data.message || 'Erreur lors de la validation du groupe');
+            }
+
+        } catch (error) {
+            console.error('Error validating group:', error);
+            alert('❌ Erreur lors de la validation du groupe\n' + (error.response?.data?.message || error.message));
+        } finally {
+            setValidatingGroup(null);
+        }
+    };
+
     return (
         <>
             {noFile ? (
@@ -391,96 +443,42 @@ export default function RechercheDoublon() {
                     confirmationState={sendToHome}
                 />
             ) : (
-                <Box sx={{ p: 2, height: '100vh', backgroundColor: '#f5f5f5' }}>
-                    {/* Dossier info */}
-                    <Box sx={{ mb: 1, width: '100px' }}>
-                        {InfoFileStyle(fileInfos?.dossier)}
-                    </Box>
+                <Box sx={{
+                    bgcolor: '#F1F5F9',
+                    minHeight: '100vh',
+                    width: '100vw',
+                    p: 3,
+                    pt: 14,
+                    boxSizing: 'border-box',
+                    position: 'absolute',
+                    left: 0,
+                    top: 0
+                }}>
 
+                    {/* --- HEADER INFOS --- */}
+                    <Paper elevation={0} sx={{ p: 2, mb: 2, borderRadius: '12px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <Typography
+                            variant="h6"
+                            sx={{ fontWeight: 800, color: '#0F172A', mb: 2 }}
+                        >
+                            Recherche Doublon
+                        </Typography>
 
-                    <Box
-                        sx={{
-                            mb: 3,
-                            backgroundColor: 'white',
-                            p: 2,
-                            borderRadius: 1,
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                        }}
-                    >
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                            <Typography component="div" variant="h7" sx={{ fontWeight: 600, color: '#333' }}>
-                                Administration - Recherche des Doublons
-                            </Typography>
-                        </Box>
-
-                        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-                            <Stack direction="row" spacing={0} alignItems="center" sx={{ flex: '0 0 auto' }}>
-                                <Typography sx={{ minWidth: 70, fontSize: 15, mr: 1, whiteSpace: 'nowrap' }}>
-                                    Exercice :
-                                </Typography>
-                                <FormControl size="small" variant="outlined" sx={{ minWidth: 200 }}>
-                                    <Select
-                                        value={selectedExerciceId}
-                                        onChange={(e) => handleChangeExercice(e.target.value)}
-                                        sx={{
-                                            height: 32,
-                                            fontSize: 15,
-                                            '& .MuiSelect-select': { py: 0.5 },
-                                        }}
-                                        MenuProps={{ disableScrollLock: true }}
-                                    >
-                                        {listeExercice.map((exercice) => (
-                                            <MenuItem key={exercice.id} value={exercice.id}>
-                                                {exercice.libelle_rang} - {formatDate(exercice.date_debut)} au {formatDate(exercice.date_fin)}
-                                            </MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
-                            </Stack>
-
-                            {listePeriodes.length > 0 && (
-                                <Stack direction="row" spacing={0} alignItems="center" sx={{ flex: '0 0 auto' }}>
-                                    <Typography sx={{ minWidth: 70, fontSize: 15, mr: 1, whiteSpace: 'nowrap' }}>
-                                        Période :
-                                    </Typography>
-                                    <FormControl size="small" variant="outlined" sx={{ minWidth: 200 }}>
-                                        <Select
-                                            value={selectedPeriodeId}
-                                            onChange={(e) => handleChangePeriode(e.target.value)}
-                                            displayEmpty
-                                            renderValue={(selected) => {
-                                                if (!selected) {
-                                                    return <em>Sélectionner une période...</em>;
-                                                }
-                                                const periode = listePeriodes.find(p => p.id === selected);
-                                                return periode ? `${formatDate(periode.date_debut)} au ${formatDate(periode.date_fin)}` : '';
-                                            }}
-                                            sx={{
-                                                height: 32,
-                                                fontSize: 15,
-                                                '& .MuiSelect-select': { py: 0.5 },
-                                            }}
-                                            MenuProps={{ disableScrollLock: true }}
-                                        >
-                                            <MenuItem value="" disabled>
-                                                <em>Sélectionner une période...</em>
-                                            </MenuItem>
-                                            {listePeriodes.map((periode) => (
-                                                <MenuItem key={periode.id} value={periode.id}>
-                                                    {periode.libelle} {formatDate(periode.date_debut)} au {formatDate(periode.date_fin)}
-                                                </MenuItem>
-                                            ))}
-                                        </Select>
-                                    </FormControl>
-                                </Stack>
-                            )}
+                        <Stack direction="row" spacing={4} alignItems="center">
+                            <ExercicePeriodeSelector
+                                selectedExerciceId={selectedExerciceId}
+                                selectedPeriodeId={selectedPeriodeId}
+                                onExerciceChange={handleChangeExercice}
+                                onPeriodeChange={handleChangePeriode}
+                                disabled={loading}
+                                size="small"
+                            />
 
                             <Button
                                 variant="contained"
                                 onClick={handleOpenConfirmDialog}
                                 disabled={!selectedExerciceId || loading}
-                                // startIcon={<Search />}
-                                style={{
+                                sx={{
                                     textTransform: 'none',
                                     outline: 'none',
                                     backgroundColor: initial.theme,
@@ -490,106 +488,233 @@ export default function RechercheDoublon() {
                             >
                                 {loading ? 'Recherche...' : 'Rechercher'}
                             </Button>
-                        </Box>
+                        </Stack>
 
-                        {/* Section des critères de recherche */}
-                        <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #e0e0e0' }}>
-                            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: '#555' }}>
-                                Critères:
-                            </Typography>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                                <FormControlLabel
-                                    control={
-                                        <Checkbox
-                                            checked={Object.values(criteres).every(v => v)}
-                                            onChange={() => handleCritereChange('tous')}
-                                            size="small"
-                                        />
-                                    }
-                                    label={<Typography variant="body2" sx={{ fontWeight: 600 }}>Tous</Typography>}
-                                    labelPlacement="start"
-                                    sx={{ m: 0, mr: 4 }}
-                                />
-                                <FormControlLabel
-                                    control={
-                                        <Checkbox
-                                            checked={criteres.date}
-                                            onChange={() => handleCritereChange('date')}
-                                            size="small"
-                                        />
-                                    }
-                                    label={<Typography variant="body2">Date</Typography>}
-                                    labelPlacement="start"
-                                    sx={{ m: 0 }}
-                                />
-                                <FormControlLabel
-                                    control={
-                                        <Checkbox
-                                            checked={criteres.compte}
-                                            onChange={() => handleCritereChange('compte')}
-                                            size="small"
-                                        />
-                                    }
-                                    label={<Typography variant="body2">Compte</Typography>}
-                                    labelPlacement="start"
-                                    sx={{ m: 0 }}
-                                />
-                                <FormControlLabel
-                                    control={
-                                        <Checkbox
-                                            checked={criteres.journal}
-                                            onChange={() => handleCritereChange('journal')}
-                                            size="small"
-                                        />
-                                    }
-                                    label={<Typography variant="body2">Journal</Typography>}
-                                    labelPlacement="start"
-                                    sx={{ m: 0 }}
-                                />
-                                <FormControlLabel
-                                    control={
-                                        <Checkbox
-                                            checked={criteres.piece}
-                                            onChange={() => handleCritereChange('piece')}
-                                            size="small"
-                                        />
-                                    }
-                                    label={<Typography variant="body2">Pièce</Typography>}
-                                    labelPlacement="start"
-                                    sx={{ m: 0 }}
-                                />
-                                <FormControlLabel
-                                    control={
-                                        <Checkbox
-                                            checked={criteres.libelle}
-                                            onChange={() => handleCritereChange('libelle')}
-                                            size="small"
-                                        />
-                                    }
-                                    label={<Typography variant="body2">Libellé</Typography>}
-                                    labelPlacement="start"
-                                    sx={{ m: 0 }}
-                                />
-                                <FormControlLabel
-                                    control={
-                                        <Checkbox
-                                            checked={criteres.montant}
-                                            onChange={() => handleCritereChange('montant')}
-                                            size="small"
-                                        />
-                                    }
-                                    label={<Typography variant="body2">Montant</Typography>}
-                                    labelPlacement="start"
-                                    sx={{ m: 0 }}
-                                />
-                            </Box>
-                        </Box>
-                    </Box>
+                        {/* --- CRITÈRES DE RECHERCHE --- */}
+                        <Stack direction="row" spacing={4} alignItems="center">
+                            <TextField
+                                size="small"
+                                placeholder="Rechercher par montant..."
+                                InputProps={{
+                                    startAdornment: <InputAdornment position="start"><Search fontSize="small" /></InputAdornment>,
+                                    sx: { borderRadius: '8px', bgcolor: '#F8FAFC' }
+                                }}
+                                sx={{ width: 300 }}
+                            />
 
-                    {/* Popup d'erreur */}
+                            <Stack direction="row" spacing={1} alignItems="center">
+                                <FilterList sx={{ color: '#64748B', fontSize: '1.1rem' }} />
+                                <Typography variant="caption" sx={{ fontWeight: 800, color: '#64748B', mr: 1, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                    Critères de détection :
+                                </Typography>
+                                <Stack direction="row" spacing={1}>
+                                    <Stack direction="row" spacing={1} flexWrap="wrap">
+
+                                        {[
+                                            { key: 'date', label: 'Date' },
+                                            { key: 'compte', label: 'Compte' },
+                                            { key: 'journal', label: 'Journal' },
+                                            { key: 'piece', label: 'Pièce' },
+                                            { key: 'libelle', label: 'Libellé' },
+                                            { key: 'montant', label: 'Montant' }
+                                        ].map((item) => {
+                                            const isActive = criteres[item.key];
+
+                                            return (
+                                                <Chip
+                                                    key={item.key}
+                                                    label={item.label}
+                                                    onClick={() => handleCritereChange(item.key)}
+                                                    variant={isActive ? "filled" : "outlined"}
+                                                    sx={{
+                                                        fontWeight: 700,
+                                                        fontSize: '0.7rem',
+                                                        height: 26,
+                                                        transition: '0.2s',
+                                                        bgcolor: isActive ? '#064E3B' : 'transparent',
+                                                        color: isActive ? '#fff' : '#64748B',
+                                                        border: '1px solid',
+                                                        borderColor: isActive ? '#064E3B' : '#CBD5E1',
+                                                        '&:hover': {
+                                                            bgcolor: isActive ? '#053e2f' : '#E2E8F0'
+                                                        }
+                                                    }}
+                                                />
+                                            );
+                                        })}
+
+                                    </Stack>
+
+                                </Stack>
+                            </Stack>
+                        </Stack>
+
+                    </Paper>
+
+                    {/* --- TABLEAU PRINCIPAL --- */}
+                    {doublonsGroups.length > 0 && (
+                        <TableContainer component={Paper} elevation={0} sx={{ borderRadius: '12px', border: '1px solid #E2E8F0', overflow: 'hidden' }}>
+                            <Table size="small">
+                                <TableHead>
+                                    <TableRow sx={{ '& th': { bgcolor: '#F8FAFC', fontWeight: 800, color: '#64748B', py: 1.5, fontSize: '0.75rem', textTransform: 'uppercase' } }}>
+                                        <TableCell width={40}></TableCell>
+                                        <TableCell>ID GROUPE</TableCell>
+                                        <TableCell>COMPTE</TableCell>
+                                        <TableCell>LIBELLÉ COMMUN</TableCell>
+                                        <TableCell align="right">MONTANT</TableCell>
+                                        <TableCell align="center">DOUBLONS</TableCell>
+                                        <TableCell align="center">STATUT</TableCell>
+                                        <TableCell align="right">ACTION</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {doublonsGroups.map((group) => (
+                                        <React.Fragment key={group.id}>
+                                            <TableRow hover sx={{ '& > *': { borderBottom: 'unset' } }}>
+                                                <TableCell>
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => setExpandedId(expandedId === group.id ? null : group.id)}
+                                                    >
+                                                        <Visibility fontSize="small" color={expandedId === group.id ? "primary" : "action"} />
+                                                    </IconButton>
+                                                </TableCell>
+                                                <TableCell sx={{ fontWeight: 800, fontSize: '0.85rem' }}>{group.id}</TableCell>
+                                                <TableCell sx={{ fontSize: '0.85rem' }}>{group.compte}</TableCell>
+                                                <TableCell sx={{ fontSize: '0.8rem', color: '#64748B' }}>{group.date},{group.compte},{group.journal},{group.piece},{group.libelle},                                                    {parseFloat(group.montant).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+                                                </TableCell>
+                                                <TableCell align="right" sx={{ fontWeight: 900, fontSize: '0.85rem' }}>
+                                                    {parseFloat(group.montant).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+                                                </TableCell>
+                                                <TableCell align="center">
+                                                    <Chip
+                                                        label={group.occurences}
+                                                        size="small"
+                                                        sx={{ height: 18, fontSize: '0.65rem', fontWeight: 900 }}
+                                                    />
+                                                </TableCell>
+                                                <TableCell align="center">
+                                                    {group.statut === 'VALIDE' ? (
+                                                        <CheckCircle sx={{ color: '#10B981', fontSize: '1.2rem' }} />
+                                                    ) : (
+                                                        <WarningAmber sx={{ color: '#F59E0B', fontSize: '1.2rem' }} />
+                                                    )}
+                                                </TableCell>
+                                                <TableCell align="right">
+                                                    {group.statut === 'VALIDE' ? (
+                                                        <Chip
+                                                            label="VALIDÉ"
+                                                            size="small"
+                                                            color="success"
+                                                            sx={{ fontWeight: 900, fontSize: '0.7rem' }}
+                                                        />
+                                                    ) : (
+                                                        <Button
+                                                            variant="outlined"
+                                                            size="small"
+                                                            color="success"
+                                                            onClick={() => handleValidateGroup(group.id_doublon)}
+                                                            disabled={validatingGroup === group.id_doublon}
+                                                            sx={{ textTransform: 'none', fontWeight: 700, borderRadius: '6px', fontSize: '0.75rem' }}
+                                                        >
+                                                            {validatingGroup === group.id_doublon ? 'Validation...' : 'Valider'}
+                                                        </Button>
+                                                    )}
+                                                </TableCell>
+                                            </TableRow>
+
+                                            {/* --- CONTENU DU COLLAPSE --- */}
+                                            <TableRow>
+                                                <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={9}>
+                                                    <Collapse in={expandedId === group.id} timeout="auto" unmountOnExit>
+                                                        <Box sx={{ py: 3, px: 10, bgcolor: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+
+                                                            <Stack direction="row" spacing={4} sx={{ mb: 3 }}>
+                                                                <Box>
+                                                                    <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 700, textTransform: 'uppercase' }}>Montant détecté</Typography>
+                                                                    <Typography variant="h6" sx={{ fontWeight: 900, color: '#0F172A' }}>
+                                                                        {parseFloat(group.montant).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+                                                                    </Typography>
+                                                                </Box>
+                                                                <Box>
+                                                                    <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 700, textTransform: 'uppercase' }}>Compte concerné</Typography>
+                                                                    <Typography variant="h6" sx={{ fontWeight: 900, color: '#0F172A' }}>{group.compte}</Typography>
+                                                                </Box>
+                                                                <Box sx={{ flexGrow: 1 }} />
+                                                                {/* <Button
+                                                                    variant="contained"
+                                                                    size="small"
+                                                                    startIcon={<CheckCircle />}
+                                                                    sx={{ bgcolor: '#0F172A', height: 'fit-content', mt: 1, textTransform: 'none', fontWeight: 700, borderRadius: '8px' }}
+                                                                    onClick={() => handleValidateGroup(group.id_doublon)}
+                                                                    disabled={validatingGroup === group.id_doublon}
+                                                                >
+                                                                    {validatingGroup === group.id_doublon ? 'Validation...' : 'Valider tout le groupe'}
+                                                                </Button> */}
+                                                            </Stack>
+                                                            <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.5, color: '#475569', display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                Écritures détectées <Chip label={group.occurences} size="small" sx={{ height: 18, fontSize: '0.65rem', fontWeight: 900 }} />
+                                                            </Typography>
+
+                                                            <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                                                                <Table size="small">
+                                                                    <TableHead sx={{ bgcolor: 'white' }}>
+                                                                        <TableRow>
+                                                                            <TableCell sx={{ fontWeight: 700, color: '#64748B', fontSize: '0.7rem' }}>DATE</TableCell>
+                                                                            <TableCell sx={{ fontWeight: 700, color: '#64748B', fontSize: '0.7rem' }}>JOURNAL</TableCell>
+                                                                            <TableCell sx={{ fontWeight: 700, color: '#64748B', fontSize: '0.7rem' }}>LIBELLE</TableCell>
+                                                                            <TableCell sx={{ fontWeight: 700, color: '#64748B', fontSize: '0.7rem' }}>PIÈCE</TableCell>
+                                                                            <TableCell sx={{ fontWeight: 700, color: '#64748B', fontSize: '0.7rem' }}>DÉBIT</TableCell>
+                                                                            <TableCell sx={{ fontWeight: 700, color: '#64748B', fontSize: '0.7rem' }}>CRÉDIT</TableCell>
+                                                                            {/* <TableCell align="center" sx={{ fontWeight: 700, color: '#64748B', fontSize: '0.7rem' }}>ACTIONS</TableCell> */}
+                                                                        </TableRow>
+                                                                    </TableHead>
+                                                                    <TableBody sx={{ bgcolor: 'white' }}>
+                                                                        {group.ecritures.map((ecriture, idx) => (
+                                                                            <TableRow key={idx} sx={{ bgcolor: idx === 0 ? 'rgba(16, 185, 129, 0.05)' : 'inherit' }}>
+                                                                                <TableCell sx={{ fontSize: '0.8rem' }}>{formatDate(ecriture.date)}</TableCell>
+                                                                                <TableCell sx={{ fontSize: '0.8rem' }}>{ecriture.journal}</TableCell>
+                                                                                <TableCell sx={{ fontSize: '0.8rem' }}>{ecriture.libelle}</TableCell>
+                                                                                <TableCell sx={{ fontSize: '0.8rem', fontWeight: 600 }}>{ecriture.piece}</TableCell>
+                                                                                <TableCell sx={{ fontSize: '0.8rem' }}>
+                                                                                    {ecriture.debit ? parseFloat(ecriture.debit).toLocaleString('fr-FR', { minimumFractionDigits: 2 }) : '-'}
+                                                                                </TableCell>
+                                                                                <TableCell sx={{ fontSize: '0.8rem' }}>
+                                                                                    {ecriture.credit ? parseFloat(ecriture.credit).toLocaleString('fr-FR', { minimumFractionDigits: 2 }) : '-'}
+                                                                                </TableCell>
+                                                                                {/* <TableCell align="center">
+                                                                                    {idx === 0 ? (
+                                                                                        <Chip label="CONSERVER" size="small" sx={{ fontWeight: 900, fontSize: '0.6rem', bgcolor: '#DCFCE7', color: '#15803D' }} />
+                                                                                    ) : (
+                                                                                        <Stack direction="row" spacing={1} justifyContent="center">
+                                                                                            <IconButton size="small" sx={{ color: '#64748B' }}>
+                                                                                                <ChatBubbleOutline fontSize="small" />
+                                                                                            </IconButton>
+                                                                                            <IconButton size="small" color="error">
+                                                                                                <DeleteOutline fontSize="small" />
+                                                                                            </IconButton>
+                                                                                        </Stack>
+                                                                                    )}
+                                                                                </TableCell> */}
+                                                                            </TableRow>
+                                                                        ))}
+                                                                    </TableBody>
+                                                                </Table>
+                                                            </TableContainer>
+                                                        </Box>
+                                                    </Collapse>
+                                                </TableCell>
+                                            </TableRow>
+                                        </React.Fragment>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    )}
+
+                    {/* --- POPUPS --- */}
                     <Dialog
                         open={openErrorDialog}
-                        onClose={() => setOpenErrorDialog(false)}
                         maxWidth="sm"
                         fullWidth
                     >
@@ -612,7 +737,6 @@ export default function RechercheDoublon() {
                         </DialogActions>
                     </Dialog>
 
-                    {/* Popup de confirmation */}
                     {openConfirmDialog && (
                         <PopupActionConfirm
                             msg={`Êtes-vous sûr de vouloir lancer la recherche de doublons ?\n\nCritères sélectionnés : ${getActiveCriteresText()}`}
@@ -625,107 +749,8 @@ export default function RechercheDoublon() {
                             isLoading={loading}
                         />
                     )}
-
-                    {/* Navigation par groupe */}
-                    {resultats.length > 0 && (
-                        <Paper sx={{ mb: 2, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, backgroundColor: '#F1D3C9' }}>
-                            <IconButton
-                                onClick={handlePrevGroupe}
-                                disabled={currentGroupe <= 1}
-                                size="small"
-                                sx={{ color: currentGroupe <= 1 ? '#bbb' : '#000' }}
-                            >
-                                <ChevronLeft />
-                            </IconButton>
-
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                {/* <Typography variant="body2" color="textSecondary">
-                            Doublons
-                        </Typography> */}
-                                <TextField
-                                    value={inputGroupe}
-                                    onChange={handleInputChange}
-                                    onKeyDown={handleInputSubmit}
-                                    onBlur={validateAndChangeGroupe}
-                                    variant="standard"
-                                    size="small"
-                                    sx={{
-                                        width: 40,
-                                        '& input': {
-                                            textAlign: 'center',
-                                            color: '#000'
-                                            // color: '#000',
-                                            // fontSize: '1.1rem'
-                                        }
-                                    }}
-                                />
-                                <Typography variant="body1" sx={{ color: '#000' }}>
-                                    / {maxGroupe}
-                                </Typography>
-                            </Box>
-
-                            <IconButton
-                                onClick={handleNextGroupe}
-                                disabled={currentGroupe >= maxGroupe}
-                                size="small"
-                                sx={{ color: currentGroupe >= maxGroupe ? '#bbb' : '#000' }}
-                            >
-                                <ChevronRight />
-                            </IconButton>
-                        </Paper>
-                    )}
-                    <Paper sx={{ boxShadow: '0 2px 4px rgba(0,0,0,0.1)', p: 2, height: 'calc(100vh - 280px)' }}>
-                        <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
-                            Résultats de la recherche de doublons
-                            {/* Résultats de la recherche {resultats.length > 0 && `(${resultats.length} lignes)`} */}
-                        </Typography>
-                        {resultats.length > 0 ? (
-                            <DataGrid
-                                rows={filteredResultats}
-                                columns={columns}
-                                pageSizeOptions={[10, 25, 50, 100]}
-                                initialState={{
-                                    pagination: {
-                                        paginationModel: { pageSize: 25 },
-                                    },
-                                    sorting: {
-                                        sortModel: [{ field: 'id_doublon', sort: 'asc' }],
-                                    },
-                                }}
-                                density="compact"
-                                disableRowSelectionOnClick
-                                sx={{
-                                    ...DataGridStyle.sx,
-                                    '& .MuiDataGrid-columnHeaders': {
-                                        backgroundColor: initial.tableau_theme,
-                                        color: initial.text_theme,
-                                    },
-                                    '& .MuiDataGrid-columnHeaderTitle': {
-                                        color: initial.text_theme,
-                                        fontWeight: 600,
-                                    },
-                                    // Alternance blanc / gris clair standard
-                                    '& .MuiDataGrid-row:nth-of-type(odd)': {
-                                        backgroundColor: '#ffffff !important',
-                                    },
-                                    '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
-                                        color: initial.text_theme,
-                                    },
-                                    '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
-                                        outline: 'none',
-                                        border: 'none',
-                                    }
-                                }}
-                                getRowClassName={() => ''}
-                            />
-                        ) : (
-                            <Typography variant="body1" color="textSecondary" sx={{ textAlign: 'center', py: 4 }}>
-                                {/* Aucun résultat. Sélectionnez des critères et cliquez sur "Valider les critères" pour lancer la recherche. */}
-                            </Typography>
-                        )}
-                    </Paper>
                 </Box>
             )}
         </>
     );
-}
+};

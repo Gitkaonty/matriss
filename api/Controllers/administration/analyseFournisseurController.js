@@ -700,3 +700,78 @@ exports.supprimerAnalyse = async (req, res) => {
     });
   }
 };
+
+/**
+ * GET /administration/analyseFournisseurClient/:id_compte/:id_dossier/:id_exercice/stats
+ * Récupère les statistiques des anomalies (fournisseurs + clients)
+ */
+exports.getStats = async (req, res) => {
+  try {
+    const { id_compte, id_dossier, id_exercice } = req.params;
+    const { id_periode } = req.query;
+
+    // Construire les filtres SQL
+    let periodeFilter = '';
+    if (id_periode) {
+      periodeFilter = `AND id_periode = ${id_periode}`;
+    }
+
+    // Compter les anomalies fournisseurs
+    const fournisseurQuery = `
+      SELECT 
+        COUNT(*) as total,
+        COALESCE(SUM(CASE WHEN valider = true THEN 1 ELSE 0 END), 0) as valides
+      FROM analyse_fournisseur_anomalies
+      WHERE id_dossier = ${id_dossier}
+        AND id_exercice = ${id_exercice}
+        ${periodeFilter}
+    `;
+    const [fournisseurStats] = await db.sequelize.query(fournisseurQuery, { type: db.Sequelize.QueryTypes.SELECT });
+
+    // Compter les anomalies clients
+    const clientQuery = `
+      SELECT 
+        COUNT(*) as total,
+        COALESCE(SUM(CASE WHEN valider = true THEN 1 ELSE 0 END), 0) as valides
+      FROM analyse_client_anomalies
+      WHERE id_dossier = ${id_dossier}
+        AND id_exercice = ${id_exercice}
+        ${periodeFilter}
+    `;
+    const [clientStats] = await db.sequelize.query(clientQuery, { type: db.Sequelize.QueryTypes.SELECT });
+
+    // Additionner les résultats
+    const totalAnomalies = parseInt(fournisseurStats?.total || 0, 10) + parseInt(clientStats?.total || 0, 10);
+    const validesAnomalies = parseInt(fournisseurStats?.valides || 0, 10) + parseInt(clientStats?.valides || 0, 10);
+    const nonValides = Math.max(totalAnomalies - validesAnomalies, 0);
+
+    return res.status(200).json({
+      state: true,
+      data: {
+        total_anomalies: totalAnomalies,
+        total: totalAnomalies,
+        valide: validesAnomalies,
+        restantes: nonValides,
+        nonValide: nonValides,
+        details: {
+          fournisseur: {
+            total: parseInt(fournisseurStats?.total || 0, 10),
+            valides: parseInt(fournisseurStats?.valides || 0, 10)
+          },
+          client: {
+            total: parseInt(clientStats?.total || 0, 10),
+            valides: parseInt(clientStats?.valides || 0, 10)
+          }
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Erreur stats fournisseur/client:', error);
+    return res.status(500).json({
+      state: false,
+      message: 'Erreur lors de la récupération des statistiques',
+      error: error.message
+    });
+  }
+};

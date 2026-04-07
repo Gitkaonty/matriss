@@ -1,42 +1,57 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Typography, Stack, Box, Tab } from '@mui/material';
-import { TabContext, TabList, TabPanel } from '@mui/lab';
+import React, { useState, useEffect } from 'react';
+import {
+    Box, Typography, AppBar, Toolbar, Stack, Button,
+    GlobalStyles, IconButton, Table, TableBody,
+    TableCell, TableContainer, TableHead, TableRow,
+    Paper, Grid, Tooltip, Breadcrumbs
+} from '@mui/material';
 
+// Icônes
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+
+// Importations fonctionnelles
 import { init } from '../../../../../init';
 import axios from '../../../../../config/axios';
 import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFile';
 import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
-
 import useAuth from '../../../../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
+import usePermission from '../../../../hooks/usePermission';
+import { useNavigate, useParams } from 'react-router-dom';
+import TabList from '@mui/lab/TabList';
+import Tab from '@mui/material/Tab';
+import TabContext from '@mui/lab/TabContext';
+import TabPanel from '@mui/lab/TabPanel';
 
 // Importation Datagrid
 import DatagridAnalitiqueAxe from '../../../componentsTools/Analitique/DatagridAnalitique/DatagridAnalitiqueAxe';
 import DatagridAnalitiqueSection from '../../../componentsTools/Analitique/DatagridAnalitique/DatagridAnalitiqueSection';
-import usePermission from '../../../../hooks/usePermission';
+
+const NEON_MINT = '#00FF94';
+const NAV_DARK = '#0B1120';
+const BG_SOFT = '#F8FAFC';
 
 export default function DeclarationCommComponent() {
     const { canAdd, canModify, canDelete, canView } = usePermission();
-
-    let initial = init[0];
-    const [fileInfos, setFileInfos] = useState('');
-    const [fileId, setFileId] = useState(0);
-    const { id } = useParams();
-    const [noFile, setNoFile] = useState(false);
-    const [selectedRowAxeId, setSelectedRowAxeId] = useState([]);
-
-    const [isCaActive, setIsCaActive] = useState(false);
-
-    //récupération infos de connexion
-    const navigate = useNavigate();
-
-    //récupération des informations de connexion
     const { auth } = useAuth();
     const decoded = auth?.accessToken ? jwtDecode(auth.accessToken) : undefined;
     const compteId = decoded.UserInfo.compteId || null;
 
-    // Info du dossier
+    let initial = init[0];
+    const [fileInfos, setFileInfos] = useState('');
+    const [fileId, setFileId] = useState(0);
+    const [noFile, setNoFile] = useState(false);
+    const [selectedRowAxeId, setSelectedRowAxeId] = useState([]);
+    const [isCaActive, setIsCaActive] = useState(false);
+
+    const navigate = useNavigate();
+    const { id } = useParams();
+
+    const sendToHome = (value) => {
+        setNoFile(!value);
+        navigate('/tab/home');
+    }
+
     const GetInfosIdDossier = (id) => {
         axios.get(`/home/FileInfos/${id}`).then((response) => {
             const resData = response.data;
@@ -51,14 +66,7 @@ export default function DeclarationCommComponent() {
         })
     }
 
-    const sendToHome = (value) => {
-        setNoFile(!value);
-        navigate('/tab/home');
-    }
-
-    //récupérer les informations du dossier sélectionné
     useEffect(() => {
-        //tester si la page est renvoyer par useNavigate
         const navigationEntries = performance.getEntriesByType('navigation');
         let idFile = 0;
 
@@ -89,30 +97,30 @@ export default function DeclarationCommComponent() {
                     :
                     null
             }
-            <Box>
-                <TabContext value={"1"} >
-                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                        <TabList aria-label="lab API tabs example">
-                            <Tab
-                                style={{
-                                    textTransform: 'none',
-                                    outline: 'none',
-                                    border: 'none',
-                                    margin: -5
-                                }}
-                                label={InfoFileStyle(fileInfos?.dossier)} value="1"
-                            />
-                        </TabList>
-                    </Box>
-                    <TabPanel value="1" style={{ height: '100%' }}>
-                        <Stack
-                            direction="column"
-                            width="100%"
-                            alignItems="stretch"
-                            justifyContent="flex-start"
-                            spacing={2}
-                        >
-                            {/* Datagrid du haut */}
+            <TabContext value="1">
+                {/* <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                    <TabList aria-label="lab API tabs example">
+                        <Tab
+                            style={{
+                                textTransform: 'none',
+                                outline: 'none',
+                                border: 'none',
+                                margin: -5
+                            }}
+                            label={InfoFileStyle(fileInfos?.dossier)} value="1"
+                        />
+                    </TabList>
+                </Box> */}
+                <TabPanel value="1" sx={{ p: 2 }}>
+
+                        <Typography variant='h6' sx={{ fontWeight: 700, color: NAV_DARK }}>
+                            Analytiques
+                        </Typography>
+                        <br />
+                   
+                    <Grid container spacing={4}>
+                        {/* SECTION AXES */}
+                        <Grid item xs={12} lg={5}>
                             <Box sx={{ width: '100%', minHeight: 380 }}>
                                 <DatagridAnalitiqueAxe
                                     id_compte={compteId}
@@ -126,8 +134,25 @@ export default function DeclarationCommComponent() {
                                     canModify={canModify}
                                 />
                             </Box>
+                        </Grid>
 
-                            {/* Datagrid du bas */}
+                        {/* SECTION SECTIONS */}
+                        <Grid item xs={12} lg={7}>
+                            {/* <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                                <Typography sx={{ fontWeight: 900, color: '#1E293B', fontSize: '18px' }}>Sections</Typography>
+                                <Button
+                                    variant="contained"
+                                    size="small"
+                                    startIcon={<AddIcon sx={{ fontSize: '16px !important' }} />}
+                                    sx={{
+                                        textTransform: 'none', fontSize: '12px', fontWeight: 700,
+                                        bgcolor: NAV_DARK, color: '#fff', borderRadius: '6px', px: 2,
+                                        '&:hover': { bgcolor: '#1E293B' }
+                                    }}
+                                >
+                                    Ajouter section
+                                </Button>
+                            </Stack> */}
                             <Box sx={{ width: '100%', minHeight: 380 }}>
                                 <DatagridAnalitiqueSection
                                     id_compte={compteId}
@@ -140,11 +165,10 @@ export default function DeclarationCommComponent() {
                                     canModify={canModify}
                                 />
                             </Box>
-                        </Stack>
-
-                    </TabPanel>
-                </TabContext>
-            </Box>
+                        </Grid>
+                    </Grid>
+                </TabPanel>
+            </TabContext>
         </>
     )
 }

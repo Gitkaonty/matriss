@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Typography, Stack, Box, Tab, FormHelperText, Button, Badge } from '@mui/material';
+import { Typography, Stack, Box, Tab, FormHelperText, Button, Badge, Stepper, Step, StepLabel, IconButton } from '@mui/material';
+import { DataGrid, frFR } from '@mui/x-data-grid';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
@@ -21,14 +22,20 @@ import Papa from 'papaparse';
 import PopupViewDetailsImportJournal from '../../../componentsTools/popupViewDetailsImportJournal';
 import PopupActionConfirm from '../../../componentsTools/popupActionConfirm';
 import ImportProgressBar from '../../../componentsTools/ImportProgressBar';
-import VirtualTableImportJournal from '../../../componentsTools/Administration/VirtualTableImportJournal';
 import usePermission from '../../../../hooks/usePermission';
 import useSSEImport from '../../../../hooks/useSSEImport';
+import useAxiosPrivate from '../../../../../config/axiosPrivate';
 import PopupCodeJouralNotExist from '../../../componentsTools/PopupCodeJournalNotExist';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
+import { DataGridStyle } from '../../../componentsTools/DatagridToolsStyle';
+import ParamCodeJournalComponent from '../../Parametrages/CodesJournaux/CodesJournaux';
+// import { Dashboard } from '../../Dashboard/Dashboard';
 
 export default function ImportJournal() {
     const [valSelectCptDispatch, setValSelectCptDispatch] = useState('None');
     const { canAdd, canModify, canDelete, canView } = usePermission();
+    const axiosPrivate = useAxiosPrivate();
 
     let initial = init[0];
     const [fileInfos, setFileInfos] = useState('');
@@ -61,6 +68,14 @@ export default function ImportJournal() {
     const [traitementJournalMsg, setTraitementJournalMsg] = useState('');
     const [progressValue, setProgressValue] = useState(0);
     const [longeurCompteStd, setLongeurCompteStd] = useState(0);
+    const [activeStep, setActiveStep] = useState(0);
+    const [ranCodesCreated, setRanCodesCreated] = useState(false);
+    const [ranCodesList, setRanCodesList] = useState([]);
+    const [ranCodeInput, setRanCodeInput] = useState('');
+    const [nextRanId, setNextRanId] = useState(1);
+    const [importLaunched, setImportLaunched] = useState(false);
+    const [nbrImported, setNbrImported] = useState(0);
+    const [nbrTotalLines, setNbrTotalLines] = useState(0);
 
     //récupération infos de connexion
     const { auth } = useAuth();
@@ -163,6 +178,27 @@ export default function ImportJournal() {
             isnumber: false
         },
         {
+            id: 'JournalCode',
+            label: 'Journal',
+            minWidth: 80,
+            align: 'left',
+            isnumber: false
+        },
+        {
+            id: 'PieceRef',
+            label: 'Pièces',
+            minWidth: 150,
+            align: 'left',
+            isnumber: false
+        },
+        {
+            id: 'PieceDate',
+            label: 'Pièce date',
+            minWidth: 150,
+            align: 'center',
+            isnumber: false
+        },
+        {
             id: 'EcritureLib',
             label: 'Libellé gen.',
             minWidth: 380,
@@ -194,27 +230,6 @@ export default function ImportJournal() {
                     : '';
             },
             isnumber: true
-        },
-        {
-            id: 'JournalCode',
-            label: 'Journal',
-            minWidth: 80,
-            align: 'left',
-            isnumber: false
-        },
-        {
-            id: 'PieceRef',
-            label: 'Pièces',
-            minWidth: 150,
-            align: 'left',
-            isnumber: false
-        },
-        {
-            id: 'PieceDate',
-            label: 'Pièce date',
-            minWidth: 150,
-            align: 'center',
-            isnumber: false
         },
         {
             id: 'Idevise',
@@ -404,6 +419,8 @@ export default function ImportJournal() {
             compteassocie: Yup.string()
         }),
         onSubmit: (values) => {
+            setImportLaunched(true);
+            setNbrTotalLines(journalData.length); // Stocker le nombre total de lignes
             handleOpenDialogConfirmImport();
         },
     });
@@ -625,16 +642,16 @@ export default function ImportJournal() {
                             setNbrAnomalie(nbrAnom);
                         }
 
-                        const compteNonValideStd = Number(longeurCompteStd) > 0
-                            ? listeUniqueCompte.some((c) => String(c || '').trim() !== '' && String(c || '').trim().length !== Number(longeurCompteStd))
-                            : false;
+                        // const compteNonValideStd = Number(longeurCompteStd) > 0
+                        //     ? listeUniqueCompte.some((c) => String(c || '').trim() !== '' && String(c || '').trim().length !== Number(longeurCompteStd))
+                        //     : false;
 
-                        if (compteNonValideStd) {
-                            msg.push('Attention, la longueur des comptes dans le fichier csv est différente de celle des comptes dans le paramétrage CRM du dossier.');
-                            nbrAnom = nbrAnom + 1;
-                            setNbrAnomalie(nbrAnom);
-                            setCouleurBoutonAnomalie(couleurAnom);
-                        }
+                        // if (compteNonValideStd) {
+                        //     msg.push('Attention, la longueur des comptes dans le fichier csv est différente de celle des comptes dans le paramétrage CRM du dossier.');
+                        //     nbrAnom = nbrAnom + 1;
+                        //     setNbrAnomalie(nbrAnom);
+                        //     setCouleurBoutonAnomalie(couleurAnom);
+                        // }
 
                         //stocker en 2 variables les comptes généraux et comptesaux pour la création
                         const listeUniqueCompteGenInitial = [
@@ -715,11 +732,11 @@ export default function ImportJournal() {
                             setCouleurBoutonAnomalie(couleurAnom);
                         }
 
-                        // Anomalies devises vides (par défaut MGA)
+                        // Anomalies devises vides (par défaut EUR)
                         if (numberOfEmptyDevises > 0) {
-                            const hasMGA = listeDevisesParams.includes('MGA') || devisesNotInParamsFiltered.includes('MGA');
-                            const suffix = hasMGA ? '' : " (MGA sera créé au besoin)";
-                            msg.push(`Certaines lignes n'ont pas de devise : elles utiliseront la devise par défaut 'MGA'${suffix}.`);
+                            const hasMGA = listeDevisesParams.includes('EUR') || devisesNotInParamsFiltered.includes('EUR');
+                            const suffix = hasMGA ? '' : " (EUR sera créé au besoin)";
+                            msg.push(`Certaines lignes n'ont pas de devise : elles utiliseront la devise par défaut 'EUR'${suffix}.`);
                             nbrAnom = nbrAnom + 1;
                             setNbrAnomalie(nbrAnom);
                             setCouleurBoutonAnomalie(couleurAnom);
@@ -818,6 +835,9 @@ export default function ImportJournal() {
 
                         setJournalData(finalDataCompteFormatted);
                         formikImport.setFieldValue('journalData', finalDataCompteFormatted);
+                        setImportLaunched(false);
+                        setNbrImported(0);
+                        setNbrTotalLines(0);
 
                         const mapGen = new Map();
 
@@ -952,6 +972,7 @@ export default function ImportJournal() {
                             setTraitementJournalMsg('');
                             setTraitementJournalWaiting(false);
                             setProgressValue(0);
+                            setNbrImported(eventData.nbrligne ?? eventData.total ?? eventData.current ?? 0);
                             toast.success(eventData.message, {
                                 duration: 15000
                             });
@@ -979,7 +1000,7 @@ export default function ImportJournal() {
             handleCloseDialogConfirmImport();
         }
     }
-        const buttonStyle = {
+    const buttonStyle = {
         minWidth: 120,
         height: 32,
         px: 2,
@@ -1007,6 +1028,131 @@ export default function ImportJournal() {
         '&.Mui-disabled': {
             opacity: 0.4
         },
+    };
+
+    const steps = ['Création du code journal À nouveau', 'Import du fichier', 'Gestion des types'];
+
+    const handleNext = () => {
+        setActiveStep((prevActiveStep) => prevActiveStep + 1);
+    };
+
+    const handleBack = () => {
+        setActiveStep((prevActiveStep) => prevActiveStep - 1);
+        // Réinitialiser importLaunched quand on revient à l'étape 1
+        if (activeStep === 1) {
+            setImportLaunched(false);
+            setNbrImported(0);
+            setNbrTotalLines(0);
+        }
+    };
+
+    const handleFinish = () => {
+        navigate(`/tab/dashboard/${fileId}`);
+    };
+
+    const handleReset = () => {
+        setActiveStep(0);
+        setRanCodesCreated(false);
+        setRanCodesList([]);
+        setNextRanId(1);
+        setJournalData([]);
+        setNbrAnomalie(0);
+        setMsgAnomalie([]);
+    };
+
+    // Fonctions pour la gestion des codes RAN dans Step 1
+    const handleAddRanCode = () => {
+        if (!ranCodeInput.trim()) {
+            toast.error('Veuillez saisir un code');
+            return;
+        }
+
+        // Vérifier si le code existe déjà dans la liste
+        if (ranCodesList.some(row => row.code.toUpperCase() === ranCodeInput.trim().toUpperCase())) {
+            toast.error('Ce code existe déjà dans la liste');
+            return;
+        }
+
+        const newCode = {
+            id: nextRanId,
+            code: ranCodeInput.trim().toUpperCase(),
+            libelle: 'Report à Nouveau',
+            type: 'RAN'
+        };
+        setRanCodesList([...ranCodesList, newCode]);
+        setNextRanId(nextRanId + 1);
+        setRanCodeInput(''); // Réinitialiser le champ
+    };
+
+    const handleDeleteRanCode = (id) => {
+        setRanCodesList(ranCodesList.filter((row) => row.id !== id));
+    };
+
+    const handleSaveRanCodes = async () => {
+        // Debug: vérifier les valeurs
+        console.log('[handleSaveRanCodes] compteId:', compteId, 'fileId:', fileId);
+        console.log('[handleSaveRanCodes] ranCodesList:', ranCodesList);
+        console.log('[handleSaveRanCodes] codeJournal existants:', codeJournal);
+
+        // Vérifier que compteId et fileId sont définis
+        if (!compteId || !fileId) {
+            toast.error('Erreur: compteId ou fileId non défini. Veuillez rafraîchir la page.');
+            return;
+        }
+
+        // Vérifier que tous les codes sont remplis
+        const emptyCodes = ranCodesList.filter(row => !row.code || row.code.trim() === '');
+        if (emptyCodes.length > 0) {
+            toast.error('Veuillez remplir tous les codes journal');
+            return;
+        }
+
+        // Vérifier si les codes existent déjà dans le dossier (pour un autre type que RAN)
+        const existingCodes = codeJournal.map(cj => cj.code.toUpperCase());
+        const duplicateWithExisting = ranCodesList.filter(row =>
+            existingCodes.includes(row.code.trim().toUpperCase())
+        );
+        if (duplicateWithExisting.length > 0) {
+            toast.error(`Les codes suivants existent déjà : ${duplicateWithExisting.map(r => r.code).join(', ')}`);
+            return;
+        }
+
+        // Vérifier si un code de type RAN existe déjà dans le dossier
+        const existingRanCode = codeJournal.find(cj => cj.type?.toUpperCase() === 'RAN');
+        console.log('[handleSaveRanCodes] existingRanCode:', existingRanCode);
+
+        // Créer ou mettre à jour le code RAN
+        try {
+            const row = ranCodesList[0]; // On ne prend que le premier code (un seul RAN par dossier)
+
+            const codeData = {
+                idCompte: Number(compteId),
+                idDossier: Number(fileId),
+                idCode: existingRanCode ? existingRanCode.id : 0, // ID existant ou 0 pour nouveau
+                code: row.code.trim().toUpperCase(),
+                libelle: row.libelle || 'Report à Nouveau',
+                type: 'RAN',
+                compteassocie: ''
+            };
+
+            console.log('[handleSaveRanCodes] Envoi:', codeData);
+
+            const response = await axiosPrivate.post(`/paramCodeJournaux/codeJournauxAdd`, codeData);
+
+            if (response.data.state) {
+                toast.success(existingRanCode
+                    ? 'Code journal RAN mis à jour avec succès'
+                    : 'Code journal RAN créé avec succès');
+                setRanCodesCreated(true);
+                GetListeCodeJournaux(fileId);
+                handleNext();
+            } else {
+                toast.error(response.data.msg || 'Erreur lors de la sauvegarde');
+            }
+        } catch (error) {
+            console.error('[handleSaveRanCodes] error:', error);
+            toast.error('Erreur lors de la sauvegarde du code RAN: ' + (error.response?.data?.msg || error.message));
+        }
     };
 
     return (
@@ -1049,7 +1195,7 @@ export default function ImportJournal() {
                 )
             }
             <TabContext value={"1"}>
-                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                {/* <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                     <TabList aria-label="lab API tabs example">
                         <Tab
                             style={{
@@ -1061,244 +1207,473 @@ export default function ImportJournal() {
                             label={InfoFileStyle(fileInfos?.dossier)} value="1"
                         />
                     </TabList>
-                </Box>
+                </Box> */}
                 <TabPanel value="1" style={{ height: '85%' }}>
-                    <form onSubmit={formikImport.handleSubmit}>
-                        <Stack width={"100%"} height={"100%"} spacing={4} alignItems={"flex-start"} alignContent={"flex-start"} justifyContent={"stretch"}>
-                            <Typography variant='h6' sx={{ color: "black" }} align='left'>Administration - Import Journal</Typography>
+                    <Stepper activeStep={activeStep} alternativeLabel>
+                        {steps.map((label) => (
+                            <Step key={label}>
+                                <StepLabel>{label}</StepLabel>
+                            </Step>
+                        ))}
+                    </Stepper>
 
-                            <Stack width={"100%"} height={"80px"} spacing={4} alignItems={"left"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "20px" }}>
-                                <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-                                    <Box
+                    {/* Navigation buttons - en haut à droite */}
+                    <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ mt: 2, mb: 2 }}>
+                        {/* Étape 1 */}
+                        {activeStep === 0 && (
+                            <>
+                                <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
+                                    {/* <Button
+                                        variant="outlined"
+                                        onClick={handleNext}
                                         sx={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: 0.3,
-                                            minWidth: "250px",
-                                        }}
-                                    >
-                                        <Typography
-                                            sx={{
-                                                fontWeight: "bold",
-                                                minWidth: "70px",
-                                                flexShrink: 0,
-                                            }}
-                                        >
-                                            Exercice:
-                                        </Typography>
-                                        <Select
-                                            labelId="demo-simple-select-standard-label"
-                                            id="demo-simple-select-standard"
-                                            value={selectedExerciceId}
-                                            label={"valSelect"}
-                                            onChange={(e) => handleChangeExercice(e.target.value)}
-                                            sx={{
-                                                border: "1px solid #ccc",
-                                                borderRadius: "4px",
-                                                minWidth: "300px",
-                                                height: "32px",
-                                                paddingX: 1,
-                                                "& .MuiSelect-select": {
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    paddingY: 0,
-                                                    whiteSpace: "nowrap",
-                                                    overflow: "hidden",
-                                                    textOverflow: "ellipsis",
-                                                },
-                                            }}
-                                        >
-                                            {listeExercice.map((option) => (
-                                                <MenuItem key={option.id} value={option.id}>{option.libelle_rang}: {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}</MenuItem>
-                                            ))
+                                            mr: 1,
+                                            height: 32,
+                                            minHeight: 32,
+                                            textTransform: "none",
+                                            fontSize: 13,
+                                            px: 2
+                                        }}                                >
+                                        Ignorer cette étape
+                                    </Button> */}
+                                    <Button
+                                        variant="contained"
+                                        color="success"
+                                        onClick={async () => {
+                                            if (ranCodeInput.trim()) {
+                                                const existingRanCode = codeJournal.find(cj => cj.type?.toUpperCase() === 'RAN');
+                                                const codeData = {
+                                                    idCompte: Number(compteId),
+                                                    idDossier: Number(fileId),
+                                                    idCode: existingRanCode ? existingRanCode.id : 0,
+                                                    code: ranCodeInput.trim().toUpperCase(),
+                                                    libelle: 'Report à Nouveau',
+                                                    type: 'RAN',
+                                                    compteassocie: ''
+                                                };
+                                                try {
+                                                    const response = await axiosPrivate.post(`/paramCodeJournaux/codeJournauxAdd`, codeData);
+                                                    if (response.data.state) {
+                                                        toast.success(existingRanCode ? 'Code RAN mis à jour' : 'Code RAN créé');
+                                                        setRanCodesCreated(true);
+                                                        GetListeCodeJournaux(fileId);
+                                                        handleNext();
+                                                    } else {
+                                                        toast.error(response.data.msg || 'Erreur lors de la sauvegarde');
+                                                    }
+                                                } catch (error) {
+                                                    toast.error('Erreur lors de la sauvegarde');
+                                                }
+                                            } else {
+                                                handleNext();
                                             }
-                                        </Select>
-                                    </Box>
-                                </Box>
-                            </Stack>
-
-                            <Stack width={"100%"} height={"60px"} spacing={2} alignItems={"center"} alignContent={"center"} direction={"row"} style={{ marginLeft: "0px", marginTop: "0px" }}>
-                                <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-                                    {/* Ligne Label + Select */}
-                                    <Box
+                                        }}
+                                        disabled={!ranCodeInput.trim()}
                                         sx={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: 1,
-                                            minWidth: "250px",
+                                            height: 32,
+                                            minHeight: 32,
+                                            textTransform: "none",
+                                            fontSize: 13,
+                                            px: 2,
+                                            "&.Mui-disabled": {
+                                                backgroundColor: "#e0e0e0",
+                                                color: "#9e9e9e"
+                                            }
+                                        }}                                >
+                                        Suivant
+                                    </Button>
+                                </Box>
+                            </>
+                        )}
+
+                        {/* Étape 2 */}
+                        {activeStep === 1 && (
+                            <>
+                                <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
+                                    <Button
+                                        variant="outlined"
+                                        color="primary"
+                                        onClick={handleBack}
+                                        sx={{
+                                            mr: 1,
+                                            height: 32,
+                                            minHeight: 32,
+                                            textTransform: "none",
+                                            fontSize: 13,
+                                            px: 2
                                         }}
                                     >
-                                        {/* Label à côté */}
-                                        <Typography sx={{ fontWeight: "bold", minWidth: "120px" }}>
-                                            Type de fichier:
+                                        Précédent
+                                    </Button>
+
+                                    <Button
+                                        variant="contained"
+                                        color="success"
+                                        onClick={handleNext}
+                                        disabled={journalData.length === 0 && !importLaunched}
+                                        sx={{
+                                            height: 32,
+                                            minHeight: 32,
+                                            textTransform: "none",
+                                            fontSize: 13,
+                                            px: 2,
+                                            "&.Mui-disabled": {
+                                                backgroundColor: "#e0e0e0",
+                                                color: "#9e9e9e"
+                                            }
+                                        }}
+                                    >
+                                        Suivant
+                                    </Button>
+                                </Box>
+                            </>
+                        )}
+
+                        {/* Étape 3 */}
+                        {activeStep === 2 && (
+                            <>
+                                <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
+                                    <Button
+                                        variant="outlined"
+                                        onClick={handleBack}
+                                        sx={{
+                                            mr: 1,
+                                            height: 32,
+                                            minHeight: 32,
+                                            textTransform: "none",
+                                            fontSize: 13,
+                                            px: 2
+                                        }}                                >
+                                        Précédent
+                                    </Button>
+                                    <Button
+                                        variant="contained"
+                                        color="success"
+                                        onClick={handleFinish}
+                                        sx={{
+                                            height: 32,
+                                            minHeight: 32,
+                                            textTransform: "none",
+                                            fontSize: 13,
+                                            px: 2,
+                                            "&.Mui-disabled": {
+                                                backgroundColor: "#e0e0e0",
+                                                color: "#9e9e9e"
+                                            }
+                                        }}                                >
+                                        Terminer
+                                    </Button>
+                                </Box>
+                            </>
+                        )}
+                    </Stack>
+
+                    {/* Étape 1: Création code journal RAN */}
+                    {activeStep === 0 && (
+                        <Box sx={{ mt: 2 }}>
+                            <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
+                                <Typography sx={{ fontWeight: 'bold', minWidth: 80 }}>Code :</Typography>
+                                <input
+                                    type="text"
+                                    value={ranCodeInput}
+                                    onChange={(e) => setRanCodeInput(e.target.value.toUpperCase())}
+                                    style={{
+                                        height: '32px',
+                                        padding: '0 12px',
+                                        border: '1px solid #ccc',
+                                        borderRadius: '4px',
+                                        fontSize: '14px',
+                                        minWidth: '200px'
+                                    }}
+                                />
+                            </Stack>
+                        </Box>
+                    )}
+
+                    {/* Étape 2: Import du fichier */}
+                    {activeStep === 1 && (
+                        <Box sx={{ mt: 3 }}>
+                            <form onSubmit={formikImport.handleSubmit}>
+                                {/* Row principale: 2 colonnes */}
+                                <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+                                    {/* Panel gauche: Filtres de Configuration */}
+                                    <Box sx={{
+                                        width: '500px',
+                                        minWidth: '350px',
+                                        backgroundColor: '#f8f9fa',
+                                        borderRadius: 1,
+                                        p: 2,
+                                        border: '1px solid #e0e0e0'
+                                    }}>
+                                        <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, color: '#333' }}>
+                                            Filtres de Configuration
                                         </Typography>
 
-                                        <Select
-                                            labelId="demo-simple-select-standard-label"
-                                            id="demo-simple-select-standard"
-                                            value={formikImport.values.type}
-                                            label={"valSelectType"}
-                                            onChange={handleChangeType}
-                                            sx={{
-                                                border: "1px solid #ccc", // contour gris clair
-                                                borderRadius: "4px",
-                                                minWidth: "140px",
-                                                height: "32px", // hauteur réduite
-                                                paddingX: 1,
-                                                "& .MuiSelect-select": {
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    paddingY: 0,
-                                                },
-                                            }}                                        >
-                                            <MenuItem key={"CSV"} value={"CSV"}>CSV</MenuItem>
-                                            <MenuItem key={"FEC"} value={"FEC"}>FEC</MenuItem>
-                                        </Select>
-                                    </Box>
-                                    {formikImport.errors.type && formikImport.touched.type && (
-                                        <FormHelperText sx={{ color: "red", marginLeft: "120px" }}>
-                                            {formikImport.errors.type}
-                                        </FormHelperText>
-                                    )}
-
-                                </Box>
-
-                                <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-                                    <FormControl variant="standard" sx={{ m: 1, minWidth: 250 }}>
-                                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                                            <Typography sx={{ fontWeight: "bold", minWidth: "100px" }}> {/* minWidth réduit */}
-                                                Choix d'import:
+                                        {/* Exercice */}
+                                        <Box sx={{ mb: 2 }}>
+                                            <Typography sx={{ fontWeight: 500, mb: 0.5, color: '#666', fontSize: '0.85rem' }}>
+                                                Exercice
                                             </Typography>
                                             <Select
-                                                labelId="demo-simple-select-standard-label"
-                                                id="demo-simple-select-standard"
-                                                value={formikImport.values.choixImport}
-                                                label={"valSelectCptDispatch"}
-                                                onChange={handleChangeCptDispatch}
+                                                fullWidth
+                                                size="small"
+                                                value={selectedExerciceId}
+                                                onChange={(e) => handleChangeExercice(e.target.value)}
                                                 sx={{
-                                                    border: "1px solid #1976d2",
-                                                    borderRadius: "4px",
-                                                    width: "320px",         // largeur fixe
-                                                    height: "32px",          // hauteur réduite
-                                                    paddingX: 1,
-                                                    "& .MuiSelect-select": {
-                                                        display: "flex",
-                                                        alignItems: "center",
-                                                        paddingY: 0,
-                                                        whiteSpace: "nowrap",        // pas de retour à la ligne
-                                                        overflow: "hidden",          // cacher le dépassement
-                                                        textOverflow: "ellipsis",    // tronquer le texte avec "…"
-                                                    },
+                                                    backgroundColor: 'white',
+                                                    fontSize: '0.9rem'
                                                 }}
                                             >
-                                                <MenuItem key={"None"} value={""}>
+                                                {listeExercice.map((option) => (
+                                                    <MenuItem key={option.id} value={option.id} sx={{ fontSize: '0.9rem' }}>
+                                                        {format(option.date_debut, "dd/MM/yyyy")} - {format(option.date_fin, "dd/MM/yyyy")}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        </Box>
+
+                                        {/* Type de fichier */}
+                                        <Box sx={{ mb: 2 }}>
+                                            <Typography sx={{ fontWeight: 500, mb: 0.5, color: '#666', fontSize: '0.85rem' }}>
+                                                Type de fichier
+                                            </Typography>
+                                            <Select
+                                                fullWidth
+                                                size="small"
+                                                value={formikImport.values.type}
+                                                onChange={handleChangeType}
+                                                sx={{
+                                                    backgroundColor: 'white',
+                                                    fontSize: '0.9rem'
+                                                }}
+                                            >
+                                                <MenuItem value="CSV" sx={{ fontSize: '0.9rem' }}>CSV</MenuItem>
+                                                <MenuItem value="FEC" sx={{ fontSize: '0.9rem' }}>FEC</MenuItem>
+                                            </Select>
+                                        </Box>
+
+                                        <Box sx={{ mb: 2 }}>
+                                            <Typography sx={{ fontWeight: 500, mb: 0.5, color: '#666', fontSize: '0.85rem' }}>
+                                                Choix d'import
+                                            </Typography>
+                                            <Select
+                                                fullWidth
+                                                size="small"
+                                                value={formikImport.values.choixImport}
+                                                onChange={handleChangeCptDispatch}
+                                                displayEmpty
+                                                sx={{
+                                                    backgroundColor: 'white',
+                                                    fontSize: '0.9rem'
+                                                }}
+                                            >
+                                                <MenuItem value="" sx={{ fontSize: '0.9rem' }}>
                                                     <em>None</em>
                                                 </MenuItem>
-                                                <MenuItem key={"ECRASER"} value={"ECRASER"}>Ecraser les données déjà existantes</MenuItem>
-                                                <MenuItem key={"UPDATE"} value={"UPDATE"}>Importer sans écraser</MenuItem>
+                                                <MenuItem value="ECRASER" sx={{ fontSize: '0.9rem' }}>Ecraser les données déjà existantes</MenuItem>
+                                                <MenuItem value="UPDATE" sx={{ fontSize: '0.9rem' }}>Importer sans écraser</MenuItem>
                                             </Select>
-                                        </Box> {/* gap réduit */}
-                                        {/* Message d'erreur */}
-                                        {formikImport.errors.choixImport && formikImport.touched.choixImport && (
-                                            <FormHelperText sx={{ color: "red", marginLeft: "100px" }}> {/* aligné avec label */}
-                                                {formikImport.errors.choixImport}
-                                            </FormHelperText>
-                                        )}
-                                    </FormControl>
-                                </Box>
-
-
-                                <Stack direction="row" alignItems="center" spacing={0.5} sx={{ ml: 4 }}>
-                                  <Button
-                                        variant="contained"
-                                        disabled={!fileTypeCSV}
-                                        onClick={fileTypeCSV ? handleDownloadModel : undefined}
-                                        style={{
-                                            ...buttonStyle,
-                                            backgroundColor: initial.auth_gradient_end
-                                        }}
-                                    >
-                                        Télécharger le Modèle
-                                    </Button>
-
-                                    <input
-                                        type="file"
-                                        accept={fileTypeCSV ? ".csv" : ".txt"}
-                                        onChange={handleFileSelect}
-                                        style={{ display: "none" }}
-                                        id="fileInput"
-                                    />
-
-                                    <Button
-                                        variant="contained"
-                                        onClick={() => document.getElementById("fileInput").click()}
-                                        style={{
-                                            ...buttonStyle,
-                                            backgroundColor: initial.auth_gradient_end
-                                        }}
-                                    >
-                                        Choisir un fichier
-                                    </Button>
-
-                                    <Badge badgeContent={nbrAnomalie} color="warning">
+                                        </Box>
                                         <Button
-                                            onClick={handleOpenAnomalieDetails}
+                                            fullWidth
+                                            size="small"
                                             variant="contained"
-                                            style={{
-                                                ...buttonStyle,
-                                                backgroundColor: nbrAnomalie > 0 ? couleurBoutonAnomalie : initial.delete_line_bouton_color,
-                                                color: 'white'
+                                            disabled={!fileTypeCSV}
+                                            onClick={fileTypeCSV ? handleDownloadModel : undefined}
+                                            sx={{
+                                                backgroundColor: '#2e7d32',
+                                                textTransform: 'none',
+                                                fontWeight: 500,
+                                                fontSize: '0.85rem',
+                                                '&:hover': { backgroundColor: '#1b5e20' }
                                             }}
                                         >
-                                            Anomalies
+                                            Télécharger le Modèle
                                         </Button>
-                                    </Badge>
-                                    <Button
-                                        type='submit'
-                                        variant="contained"
-                                        sx={{
-                                            ...buttonStyle,
-                                            backgroundColor: '#e79754ff',
-                                            color: 'white',
-                                            borderColor: '#e79754ff',
-                                            boxShadow: 'none',
+                                    </Box>
 
+                                    {/* Panel droit: Import du Fichier */}
+                                    <Box sx={{
+                                        width: '500px',
+                                        minWidth: '350px',
+                                        backgroundColor: '#f8f9fa',
+                                        borderRadius: 1,
+                                        p: 2,
+                                        border: '1px solid #e0e0e0'
+                                    }}>
+                                        <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, color: '#333' }}>
+                                            Import du Fichier
+                                        </Typography>
+
+                                        {/* Zone de drop / choix fichier */}
+                                        <Box sx={{
+                                            border: '2px dashed #ccc',
+                                            borderRadius: 1,
+                                            p: 2,
+                                            textAlign: 'center',
+                                            backgroundColor: 'white',
+                                            mb: 2,
+                                            cursor: 'pointer',
                                             '&:hover': {
-                                                backgroundColor: '#e79754ff',
-                                                border: 'none',
-                                                boxShadow: 'none',       // enlève l’effet bleu shadow
-                                            },
-                                            '&:focus': {
-                                                backgroundColor: '#e79754ff',
-                                                border: 'none',
-                                                boxShadow: 'none',       // enlève le focus bleu
-                                            },
-                                            '&.Mui-disabled': {
-                                                backgroundColor: '#e79754ff',
-                                                color: 'white',
-                                                cursor: 'not-allowed',
-                                            },
-                                            '&::before': {
-                                                display: 'none',         // supprime l’overlay bleu de ButtonGroup
-                                            },
+                                                borderColor: '#999',
+                                                backgroundColor: '#fafafa'
+                                            }
                                         }}
-                                    >
-                                        Importer
-                                    </Button>
+                                            onClick={() => document.getElementById("fileInput").click()}
+                                        >
+                                            <Typography sx={{ color: '#666', fontSize: '0.85rem' }}>
+                                                Glisser & Déposer un fichier
+                                            </Typography>
+                                            <Typography sx={{ color: '#666', fontSize: '0.85rem' }}>
+                                                ou Cliquer pour Parcourir
+                                            </Typography>
+                                            <Typography sx={{ color: '#999', fontSize: '0.75rem' }}>
+                                                (.csv, .FEC)
+                                            </Typography>
+                                        </Box>
+
+                                        <input
+                                            type="file"
+                                            accept={fileTypeCSV ? ".csv" : ".txt"}
+                                            onChange={handleFileSelect}
+                                            style={{ display: "none" }}
+                                            id="fileInput"
+                                        />
+
+                                        {/* Liste des fichiers si présents */}
+                                        {journalData.length > 0 && (
+                                            <Box sx={{
+                                                backgroundColor: 'white',
+                                                borderRadius: 1,
+                                                p: 1,
+                                                mb: 2,
+                                                border: '1px solid #e0e0e0'
+                                            }}>
+                                                <Stack direction="row" alignItems="center" spacing={1}>
+                                                    <Typography sx={{ color: '#2e7d32', fontSize: '0.9rem' }}>📄</Typography>
+                                                    <Typography sx={{ flex: 1, fontSize: '0.85rem' }}>
+                                                        {journalData.length} lignes importées
+                                                    </Typography>
+                                                    <Typography sx={{ color: '#666', fontSize: '0.75rem' }}>
+                                                        {fileTypeCSV ? 'CSV' : 'FEC'}
+                                                    </Typography>
+                                                </Stack>
+                                            </Box>
+                                        )}
+
+                                        {/* Boutons d'action */}
+                                        <Stack direction="row" spacing={1}>
+                                            <Button
+                                                variant="contained"
+                                                size="small"
+                                                type="submit"
+                                                disabled={journalData.length === 0}
+                                                sx={{
+                                                    flex: 1,
+                                                    backgroundColor: '#2e7d32',
+                                                    textTransform: 'none',
+                                                    fontWeight: 500,
+                                                    fontSize: '0.85rem',
+                                                    '&:hover': { backgroundColor: '#1b5e20' }
+                                                }}
+                                            >
+                                                Lancer l'Importation
+                                            </Button>
+
+                                            <Button
+                                                variant="contained"
+                                                size="small"
+                                                onClick={handleOpenAnomalieDetails}
+                                                disabled={nbrAnomalie === 0}
+                                                sx={{
+                                                    backgroundColor: nbrAnomalie > 0 ? '#d32f2f' : '#ccc',
+                                                    color: 'white',
+                                                    textTransform: 'none',
+                                                    fontWeight: 500,
+                                                    fontSize: '0.85rem',
+                                                    '&:hover': {
+                                                        backgroundColor: nbrAnomalie > 0 ? '#b71c1c' : '#bbb'
+                                                    }
+                                                }}
+                                            >
+                                                Anomalies : {nbrAnomalie}
+                                            </Button>
+                                        </Stack>
+                                                <br />
+                                        <Stack direction="row" spacing={1}>
+                                            {/* Afficher le nombre de lignes importées après succès, sinon la barre de progression */}
+                                            {nbrImported > 0 ? (
+                                                <Box sx={{
+                                                    backgroundColor: '#e8f5e9',
+                                                    borderRadius: 1,
+                                                    p: 1,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    flex: 1
+                                                }}>
+                                                    <Typography sx={{
+                                                        color: '#2e7d32',
+                                                        fontSize: '0.9rem',
+                                                        fontWeight: 600
+                                                    }}>
+                                                        {nbrImported}/{nbrTotalLines} lignes importées
+                                                    </Typography>
+                                                </Box>
+                                            ) : (
+                                                <ImportProgressBar
+                                                    isVisible={traitementJournalWaiting}
+                                                    message={traitementJournalMsg}
+                                                    variant="determinate"
+                                                    progress={progressValue}
+                                                />
+                                            )}
+                                        </Stack>
+                                    </Box>
                                 </Stack>
-                            </Stack>
 
-                            <ImportProgressBar
-                                isVisible={traitementJournalWaiting}
-                                message={traitementJournalMsg}
-                                variant="determinate"
-                                progress={progressValue}
-                            />
 
-                            <VirtualTableImportJournal tableHeader={columnsTable} tableRow={journalData} />
 
-                        </Stack>
-                    </form>
+                                {/* DataGrid preview */}
+                                {journalData.length > 0 && (
+                                    <Box sx={{ mt: 3 }}>
+                                        <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                                            Détail de l'import
+                                        </Typography>
+                                        <Box sx={{ height: 400, width: '100%' }}>
+                                            <DataGrid
+                                                rows={journalData}
+                                                columns={columnsTable.map(col => ({
+                                                    field: col.id,
+                                                    headerName: col.label,
+                                                    width: col.minWidth,
+                                                    align: col.align,
+                                                    headerAlign: col.align,
+                                                    valueFormatter: col.format ? (params) => col.format(params.value) : undefined
+                                                }))}
+                                                getRowId={(row) => row.id || row.EcritureNum || row.RefInterne || Math.random().toString(36).substr(2, 9)}
+                                                pageSizeOptions={[25, 50, 100]}
+                                                initialState={{
+                                                    pagination: {
+                                                        paginationModel: { pageSize: 25 }
+                                                    }
+                                                }}
+                                                localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
+                                                density="compact"
+                                            />
+                                        </Box>
+                                    </Box>
+                                )}
+                            </form>
+                        </Box>
+                    )}
+
+                    {/* Étape 3: Gestion des types */}
+                    {activeStep === 2 && (
+                        <Box sx={{ mt: 2 }}>
+                            <ParamCodeJournalComponent hideDossier={true} />
+                        </Box>
+                    )}
                 </TabPanel>
             </TabContext>
         </Box >

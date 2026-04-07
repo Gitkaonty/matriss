@@ -48,7 +48,7 @@ const tryReadLogo = () => {
     explicitPath,
     path.join(process.cwd(), 'assets', 'logo.png'),
     path.join(__dirname, '..', '..', 'assets', 'logo.png'),
-    path.join(__dirname, '..', '..', '..', 'front', 'kaonti', 'src', 'img', 'logo5.png')
+    path.join(__dirname, '..', '..', '..', 'front', 'kaonti', 'src', 'img', '30.png')
   ].filter(Boolean);
 
   for (const p of candidatePaths) {

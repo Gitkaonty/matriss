@@ -120,6 +120,7 @@ db.compteRubriquesExternesMatrices = require('./compteRubriqueExterneMatriceMode
 db.rubriquesExternesMatrices = require('./rubriquesExterneMatriceModel')(sequelize, DataTypes);
 db.commentaireAnalytique = require('./commentaireAnalytiqueModel')(sequelize, DataTypes);
 db.commentaireAnalytiqueMensuelle = require('./commentaireAnalytiqueMensuelleModel.js')(sequelize, DataTypes);
+db.RevuAnalytique = require('./revuAnalytiqueModel.js')(sequelize, DataTypes);
 db.revision = require('./revisionModel.js')(sequelize, DataTypes);
 db.revisionControle = require('./revisionControleModel.js')(sequelize, DataTypes);
 db.revisionControleMatrix = require('./revisionControleMatrixModel.js')(sequelize, DataTypes);

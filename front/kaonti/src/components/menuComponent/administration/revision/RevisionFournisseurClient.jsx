@@ -20,8 +20,19 @@ import {
     DialogContent,
     DialogActions,
     TextField,
+    Divider,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Collapse
 } from '@mui/material';
-import { CheckCircle, Cancel, Refresh } from '@mui/icons-material';
+import {
+    ChevronRight, ChatBubbleOutline, KeyboardArrowDown,
+    KeyboardArrowUp, ErrorOutline, CheckCircle, ChevronLeft, DoneAll, History, Search, Cancel
+} from '@mui/icons-material';
 import CommentIcon from '@mui/icons-material/Comment';
 import { DataGrid } from '@mui/x-data-grid';
 import { init } from '../../../../../init';
@@ -29,6 +40,8 @@ import useAxiosPrivate from '../../../../hooks/useAxiosPrivate';
 import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
 import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFile';
 import { DataGridStyle } from '../../../componentsTools/DatagridToolsStyle';
+import ExercicePeriodeSelector from '../../../componentsTools/ExercicePeriodeSelector/ExercicePeriodeSelector';
+import { useExercicePeriode } from '../../../../context/ExercicePeriodeContext';
 
 // Format date as dd-mm-yy
 const formatDate = (dateString) => {
@@ -43,10 +56,26 @@ const formatDate = (dateString) => {
 
 // Types d'anomalies
 const ANOMALIE_TYPES = {
-    paiement_sans_facture: { label: 'Paiement sans facture', color: 'warning' },
-    facture_3mois_non_reglee: { label: 'Facture >3 mois non réglée', color: 'error' },
-    ajustement_non_traite: { label: 'Ajustement non traité', color: 'info' },
-    solde_suspens: { label: 'Solde en suspens', color: 'default' }
+    paiement_sans_facture: {
+        label: 'Paiement sans facture',
+        color: 'warning',
+        description: 'Le paiement a été effectué sans qu’une facture soit enregistrée.'
+    },
+    facture_3mois_non_reglee: {
+        label: 'Factures > 3 mois non réglées',
+        color: 'error',
+        description: 'Cette facture n’a pas été réglée depuis plus de 3 mois.'
+    },
+    ajustement_non_traite: {
+        label: 'Ajustements non traité',
+        color: 'info',
+        description: 'Certains ajustements comptables n’ont pas encore été traités.'
+    },
+    solde_suspens: {
+        label: 'Solde en suspens',
+        color: 'default',
+        description: 'Le compte présente un solde en suspens à vérifier.'
+    }
 };
 
 export default function RevisionFournisseurClient() {
@@ -54,23 +83,27 @@ export default function RevisionFournisseurClient() {
     const axiosPrivate = useAxiosPrivate();
     const navigate = useNavigate();
 
+    // Utiliser le contexte global pour exercice et période
+    const {
+        selectedExerciceId,
+        selectedPeriodeId,
+        selectedPeriodeDates,
+        handleChangeExercice,
+        handleChangePeriode,
+        loading: contextLoading,
+        getApiParams
+    } = useExercicePeriode();
+
     const [activeTab, setActiveTab] = useState(0); // 0 = Fournisseur, 1 = Client
-    const [listeExercice, setListeExercice] = useState([]);
-    const [selectedExerciceId, setSelectedExerciceId] = useState(0);
     const [fileInfos, setFileInfos] = useState(null);
     const [loading, setLoading] = useState(false);
     const [noFile, setNoFile] = useState(false);
     const [fileId, setFileId] = useState(0);
-    
+
     // === Résultats séparés par onglet ===
     const [resultatsFournisseur, setResultatsFournisseur] = useState([]);
     const [resultatsClient, setResultatsClient] = useState([]);
     const [selectedCompte, setSelectedCompte] = useState(null);
-
-    // === Périodes ===
-    const [listePeriodes, setListePeriodes] = useState([]);
-    const [selectedPeriodeId, setSelectedPeriodeId] = useState('');
-    const [selectedPeriodeDates, setSelectedPeriodeDates] = useState(null);
 
     // === Dialog validation ===
     const [openValidationDialog, setOpenValidationDialog] = useState(false);
@@ -90,6 +123,10 @@ export default function RevisionFournisseurClient() {
     // === Pagination par compte (séparée par onglet) ===
     const [compteIndexFournisseur, setCompteIndexFournisseur] = useState(0);
     const [compteIndexClient, setCompteIndexClient] = useState(0);
+
+    const [expandedType, setExpandedType] = useState(null); // ID du type d'anomalie déplié
+
+    const [selectedType, setSelectedType] = useState(null);
 
     const handleOpenCommentDialog = (anomalie) => {
         setSelectedCommentAnomalie(anomalie);
@@ -139,22 +176,6 @@ export default function RevisionFournisseurClient() {
         };
     };
 
-    const fetchExercices = async () => {
-        try {
-            const { id_dossier } = getIds();
-            const response = await axiosPrivate.get(`/paramExercice/listeExercice/${id_dossier}`);
-            const resData = response.data;
-            if (resData.state) {
-                setListeExercice(resData.list);
-                if (resData.list && resData.list.length > 0 && selectedExerciceId === 0) {
-                    setSelectedExerciceId(resData.list[0].id);
-                }
-            }
-        } catch (error) {
-            console.error('Error fetching exercices:', error);
-        }
-    };
-
     const fetchDossierInfos = async () => {
         try {
             const { id_dossier } = getIds();
@@ -168,58 +189,12 @@ export default function RevisionFournisseurClient() {
         }
     };
 
-    const fetchPeriodes = useCallback(async (exerciceId) => {
-        if (!exerciceId) return;
-        try {
-            const response = await axiosPrivate.get(`/paramExercice/listePeriodes/${exerciceId}`);
-            if (response.data.state) {
-                setListePeriodes(response.data.list || []);
-            } else {
-                setListePeriodes([]);
-            }
-        } catch (error) {
-            console.error('Error fetching periodes:', error);
-            setListePeriodes([]);
-        }
-    }, [axiosPrivate]);
-
     useEffect(() => {
-        fetchExercices();
         fetchDossierInfos();
     }, []);
 
-    useEffect(() => {
-        if (selectedExerciceId > 0) {
-            fetchPeriodes(selectedExerciceId);
-        }
-    }, [selectedExerciceId, fetchPeriodes]);
-
-    const handleChangeExercice = (exerciceId) => {
-        setSelectedExerciceId(exerciceId);
-        setSelectedPeriodeId('');
-        setSelectedPeriodeDates(null);
-        setResultatsFournisseur([]);
-        setResultatsClient([]);
-        fetchPeriodes(exerciceId);
-    };
-
-    const handleChangePeriode = (periodeId) => {
-        setSelectedPeriodeId(periodeId);
-        if (periodeId && periodeId !== 'exercice') {
-            const periode = listePeriodes.find(p => p.id === periodeId);
-            if (periode) {
-                setSelectedPeriodeDates({
-                    date_debut: periode.date_debut,
-                    date_fin: periode.date_fin
-                });
-            }
-        } else {
-            setSelectedPeriodeDates(null);
-        }
-    };
-
     const getApiBasePath = () => {
-        return activeTab === 0 
+        return activeTab === 0
             ? '/administration/analyseFournisseurClient'
             : '/administration/analyseClient';
     };
@@ -230,18 +205,14 @@ export default function RevisionFournisseurClient() {
         setLoading(true);
         try {
             const { id_compte, id_dossier, id_exercice } = getIds();
-            
+
             const params = new URLSearchParams();
             if (selectedPeriodeDates) {
                 params.append('date_debut', selectedPeriodeDates.date_debut);
                 params.append('date_fin', selectedPeriodeDates.date_fin);
-            } else {
-                const exercice = listeExercice.find(e => e.id === selectedExerciceId);
-                if (exercice) {
-                    params.append('date_debut', exercice.date_debut);
-                    params.append('date_fin', exercice.date_fin);
-                }
             }
+            // La logique de récupération des dates de l'exercice sera gérée par le composant ExercicePeriodeSelector
+            // et passée via selectedPeriodeDates si nécessaire
             if (selectedPeriodeId) {
                 params.append('id_periode', selectedPeriodeId);
             }
@@ -355,19 +326,6 @@ export default function RevisionFournisseurClient() {
         }
     };
 
-    // Récupérer les dates de l'exercice courant
-    const currentExerciceDates = useMemo(() => {
-        const exercice = listeExercice.find(e => e.id === selectedExerciceId);
-        if (exercice) {
-            return {
-                date_debut: exercice.date_debut,
-                date_fin: exercice.date_fin,
-                libelle_rang: exercice.libelle_rang
-            };
-        }
-        return null;
-    }, [listeExercice, selectedExerciceId]);
-
     // === Données actuelles selon l'onglet actif ===
     const resultats = activeTab === 0 ? resultatsFournisseur : resultatsClient;
     const compteIndex = activeTab === 0 ? compteIndexFournisseur : compteIndexClient;
@@ -427,7 +385,9 @@ export default function RevisionFournisseurClient() {
             });
         });
         return flatRows;
-    }, [resultats, currentCompte]);
+    }, [resultats, currentCompte, activeTab]);
+
+
 
     const columns = [
         // {
@@ -446,7 +406,7 @@ export default function RevisionFournisseurClient() {
             width: 100,
             renderCell: (params) => formatDate(params.value),
         },
-                {
+        {
             field: 'code_journal',
             headerName: 'Journal',
             width: 80,
@@ -577,7 +537,7 @@ export default function RevisionFournisseurClient() {
         return { total, valides, nonValidés: total - valides, parType };
     }, [rows]);
 
-        const buttonStyle = {
+    const buttonStyle = {
         minWidth: 120,
         height: 32,
         px: 2,
@@ -605,326 +565,307 @@ export default function RevisionFournisseurClient() {
         },
     };
 
+    const anomaliesByType = useMemo(() => {
+        const grouped = {};
+
+        rows.forEach(row => {
+            if (!grouped[row.type_anomalie]) {
+                grouped[row.type_anomalie] = [];
+            }
+            grouped[row.type_anomalie].push(row);
+        });
+
+        return grouped;
+    }, [rows]);
+
     return (
         <>
             {noFile ? (
-                <PopupTestSelectedFile
-                    confirmationState={sendToHome}
-                />
+                <PopupTestSelectedFile confirmationState={sendToHome} />
             ) : (
                 <Box sx={{ p: 2, height: '100vh', backgroundColor: '#f5f5f5' }}>
-            {/* Dossier info */}
-            <Box sx={{ mb: 1, width: '100px' }}>
-                {InfoFileStyle(fileInfos?.dossier)}
-            </Box>
 
-            {/* Header with Exercise, Period and Analyser button */}
-            <Box
-                sx={{
-                    mb: 3,
-                    backgroundColor: 'white',
-                    p: 2,
-                    borderRadius: 1,
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                }}
-            >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                    <Typography component="div" variant="h7" sx={{ color: '#333' }}>
-                        Administration - Analyse Fournisseur/Client
-                    </Typography>
-                </Box>
-
-                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <Stack direction="row" spacing={0} alignItems="center" sx={{ flex: '0 0 auto' }}>
-                        <Typography sx={{ minWidth: 70, fontSize: 15, mr: 1, whiteSpace: 'nowrap' }}>
-                            Exercice :
-                        </Typography>
-                        <FormControl size="small" variant="outlined" sx={{ minWidth: 200 }}>
-                            <Select
-                                value={selectedExerciceId}
-                                onChange={(e) => handleChangeExercice(e.target.value)}
-                                sx={{
-                                    height: 32,
-                                    fontSize: 15,
-                                    '& .MuiSelect-select': { py: 0.5 },
-                                }}
-                                MenuProps={{ disableScrollLock: true }}
-                            >
-                                {listeExercice.map((exercice) => (
-                                    <MenuItem key={exercice.id} value={exercice.id}>
-                                        {exercice.libelle_rang} - {formatDate(exercice.date_debut)} au {formatDate(exercice.date_fin)}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                    </Stack>
-
-                    {listePeriodes.length > 0 && (
-                        <Stack direction="row" spacing={0} alignItems="center" sx={{ flex: '0 0 auto' }}>
-                            <Typography sx={{ minWidth: 70, fontSize: 15, mr: 1, whiteSpace: 'nowrap' }}>
-                                Période :
-                            </Typography>
-                            <FormControl size="small" variant="outlined" sx={{ minWidth: 200 }}>
-                                <Select
-                                    value={selectedPeriodeId}
-                                    onChange={(e) => handleChangePeriode(e.target.value)}
-                                    displayEmpty
-                                    renderValue={(selected) => {
-                                        if (!selected) {
-                                            return <em>Sélectionner une période...</em>;
-                                        }
-                                        const periode = listePeriodes.find(p => p.id === selected);
-                                        return periode ? `${formatDate(periode.date_debut)} au ${formatDate(periode.date_fin)}` : '';
-                                    }}
-                                    sx={{
-                                        height: 32,
-                                        fontSize: 15,
-                                        '& .MuiSelect-select': { py: 0.5 },
-                                    }}
-                                    MenuProps={{ disableScrollLock: true }}
-                                >
-                                    <MenuItem value="" disabled>
-                                        <em>Sélectionner une période...</em>
-                                    </MenuItem>
-                                    {listePeriodes.map((periode) => (
-                                        <MenuItem key={periode.id} value={periode.id}>
-                                            {periode.libelle} {formatDate(periode.date_debut)} au {formatDate(periode.date_fin)}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Stack>
-                    )}
-
-                    <Button
-                        variant="contained"
-                        onClick={handleAnalyserClick}
-                        disabled={!selectedExerciceId || loading}
-                        // startIcon={<Refresh />}
-                        style={{
-                            textTransform: 'none',
-                            outline: 'none',
-                            backgroundColor: initial.theme,
-                            color: "white",
-                            height: "32px",
+                    {/* HEADER */}
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            p: 3,
+                            mb: 3,
+                            borderRadius: '12px',
+                            border: '1px solid #E2E8F0',
                         }}
                     >
-                        {loading ? 'Analyse...' : 'Analyser'}
-                    </Button>
-                </Box>
-            </Box>
+                        <Typography
+                            variant="h6"
+                            sx={{ fontWeight: 800, color: '#0F172A', mb: 2 }}
+                        >
+                            Analyse Fournisseur / Client
+                        </Typography>
 
-            {/* Onglets Fournisseur / Client */}
-            <Paper sx={{ boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                <Tabs
-                    value={activeTab}
-                    onChange={(e, newValue) => setActiveTab(newValue)}
-                    sx={{ borderBottom: 1, borderColor: 'divider' }}
-                >
-                    <Tab label="Fournisseur" />
-                    <Tab label="Client" />
-                </Tabs>
+                        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
 
-                <Box sx={{ p: 2 }}>
-                    {activeTab === 0 && (
-                        <>
-                            {resultatsFournisseur.length === 0 ? (
-                                <></>
-                            ) : (
-                                <>
-                                    {/* Navigation par compte et stats - en haut du tableau */}
-                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, mb: 2, flexWrap: 'wrap' }}>
-                                        {/* Afficher la navigation quand il y a au moins un compte */}
-                                        {comptesList.length >= 1 && (
-                                            <>
-                                                <Button
-                                                    variant="outlined"
-                                                    size="small"
-                                                    disabled={safeCompteIndex === 0}
-                                                    onClick={() => setCompteIndexFournisseur((prev) => Math.max(0, prev - 1))}
-                                                    sx={{ minWidth: '40px', px: 1 }}
-                                                >
-                                                    {"<"}
-                                                </Button>
-                                                <Typography variant="body1" sx={{ fontWeight: 600, color: '#1976d2', whiteSpace: 'nowrap' }}>
-                                                    Compte {currentCompte} ({safeCompteIndex + 1} / {comptesList.length})
-                                                </Typography>
-                                                <Button
-                                                    variant="outlined"
-                                                    size="small"
-                                                    disabled={safeCompteIndex === comptesList.length - 1}
-                                                    onClick={() => setCompteIndexFournisseur((prev) => Math.min(comptesList.length - 1, prev + 1))}
-                                                    sx={{ minWidth: '40px', px: 1 }}
-                                                >
-                                                    {">"}
-                                                </Button>
-                                            </>
-                                        )}
-                                        {/* Chips spécifiques au compte courant */}
-                                        <Chip
-                                            label={`Validés: ${stats.valides}`}
-                                            color="success"
-                                            variant="outlined"
-                                        />
-                                        <Chip
-                                            label={`Non validés: ${stats.nonValidés}`}
-                                            color="warning"
-                                            variant="outlined"
-                                        />
+                            <ExercicePeriodeSelector
+                                selectedExerciceId={selectedExerciceId}
+                                selectedPeriodeId={selectedPeriodeId}
+                                onExerciceChange={handleChangeExercice}
+                                onPeriodeChange={handleChangePeriode}
+                                disabled={loading}
+                                size="small"
+                            />
 
-                                    </Box>
-                                    <Box sx={{ height: 500, width: '100%' }}>
-                                        <DataGrid
-                                            rows={rows}
-                                            columns={columns}
-                                            pageSizeOptions={[10, 25, 50, 100]}
-                                            initialState={{
-                                                pagination: { paginationModel: { pageSize: 25 } }
-                                            }}
-                                            disableRowSelectionOnClick
-                                            density="compact"
+                            {/* Bouton analyser */}
+                            <Button
+                                variant="contained"
+                                startIcon={<Search />}
+                                onClick={handleAnalyserClick}
+                                disabled={!selectedExerciceId || loading}
+                                sx={{
+                                    bgcolor: '#064E3B',
+                                    textTransform: 'none',
+                                    fontWeight: 700,
+                                    px: 3,
+                                    borderRadius: '8px'
+                                }}
+                            >
+                                {loading ? 'Analyse...' : 'Analyser'}
+                            </Button>
+                        </Stack>
+                    </Paper>
+
+                    {/* Onglets Fournisseur / Client */}
+                    <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)} sx={{ mb: 2 }}>
+                        <Tab label="FOURNISSEUR" sx={{ fontWeight: 800 }} />
+                        <Tab label="CLIENT" sx={{ fontWeight: 800 }} />
+                    </Tabs>
+
+                    {/* === PAVÉS PAR TYPE D'ANOMALIES === */}
+                    
+                        <Stack spacing={1.5}>
+                            {Object.keys(ANOMALIE_TYPES).map((type) => {
+
+                                const config = ANOMALIE_TYPES[type];
+
+                                const rowsByType = rows.filter(r => r.type_anomalie === type);
+
+                                const total = rowsByType.length;
+                                const remaining = rowsByType.filter(a => !a.valider).length;
+
+                                const hasAnomalies = rowsByType.length > 0;
+
+                                return (
+                                    <Paper
+                                        key={type}
+                                        elevation={0}
+                                        sx={{
+                                            borderRadius: '10px',
+                                            border: '1px solid #E2E8F0',
+                                            overflow: 'hidden'
+                                        }}
+                                    >
+
+                                        {/* ===== HEADER PAVÉ ===== */}
+                                        <Box
+                                            onClick={() => setExpandedType(expandedType === type ? null : type)}
                                             sx={{
-                                                ...DataGridStyle.sx,
-                                                height: '100%',
-                                                '& .MuiDataGrid-columnHeaders': {
-                                                    backgroundColor: initial.tableau_theme,
-                                                    color: initial.text_theme,
-                                                    minHeight: 35,
-                                                    maxHeight: 35,
-                                                },
-                                                '& .MuiDataGrid-columnHeader': {
-                                                    minHeight: 35,
-                                                    maxHeight: 35,
-                                                    lineHeight: '35px',
-                                                },
-                                                '& .MuiDataGrid-columnHeaderTitleContainer': {
-                                                    minHeight: 35,
-                                                    maxHeight: 35,
-                                                },
-                                                '& .MuiDataGrid-columnHeaderTitle': {
-                                                    color: initial.text_theme,
-                                                    fontWeight: 600,
-                                                },
-                                                '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
-                                                    color: initial.text_theme,
-                                                },
-                                                '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
-                                                    outline: 'none',
-                                                    border: 'none',
-                                                },
-                                                '& .MuiDataGrid-row': {
-                                                    minHeight: 35,
-                                                    maxHeight: 35,
-                                                },
+                                                p: 2,
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                position: 'relative',
+                                                bgcolor: expandedType === type ? '#F8FAFC' : 'white',
                                             }}
-                                        />
-                                    </Box>
-                                </>
-                            )}
-                        </>
-                    )}
+                                        >
+                                            {/* BARRE COULEUR GAUCHE */}
+                                            <Box
+                                                sx={{
+                                                    position: 'absolute',
+                                                    left: 0,
+                                                    top: 0,
+                                                    bottom: 0,
+                                                    width: '5px',
+                                                    bgcolor: remaining === 0 ? '#10B981' : '#EF4444',
+                                                }}
+                                            />
 
-                    {activeTab === 1 && (
-                        <>
-                            {resultatsClient.length === 0 ? (
-                                <></>
-                            ) : (
-                                <>
-                                    {/* Navigation par compte et stats - en haut du tableau */}
-                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, mb: 2, flexWrap: 'wrap' }}>
-                                        {/* Afficher la navigation quand il y a au moins un compte */}
-                                        {comptesList.length >= 1 && (
-                                            <>
-                                                <Button
-                                                    variant="outlined"
-                                                    size="small"
-                                                    disabled={safeCompteIndex === 0}
-                                                    onClick={() => setCompteIndexClient((prev) => Math.max(0, prev - 1))}
-                                                    sx={{ minWidth: '40px', px: 1 }}
-                                                >
-                                                    {"<"}
-                                                </Button>
-                                                <Typography variant="body1" sx={{ fontWeight: 600, color: '#1976d2', whiteSpace: 'nowrap' }}>
-                                                    Compte {currentCompte} ({safeCompteIndex + 1} / {comptesList.length})
-                                                </Typography>
-                                                <Button
-                                                    variant="outlined"
-                                                    size="small"
-                                                    disabled={safeCompteIndex === comptesList.length - 1}
-                                                    onClick={() => setCompteIndexClient((prev) => Math.min(comptesList.length - 1, prev + 1))}
-                                                    sx={{ minWidth: '40px', px: 1 }}
-                                                >
-                                                    {">"}
-                                                </Button>
-                                            </>
-                                        )}
-                                        {/* Chips spécifiques au compte courant */}
-                                        <Chip
-                                            label={`Validés: ${stats.valides}`}
-                                            color="success"
-                                            variant="outlined"
-                                        />
-                                        <Chip
-                                            label={`Non validés: ${stats.nonValidés}`}
-                                            color="warning"
-                                            variant="outlined"
-                                        />
+                                            <Stack direction="row" sx={{ width: '100%' }} alignItems="center" spacing={2}>
+                                                {/* Icône gauche */}
+                                                <Box sx={{ ml: 1 }}>
+                                                    {remaining === 0 ? (
+                                                        <CheckCircle sx={{ color: '#10B981', fontSize: 26 }} />
+                                                    ) : (
+                                                        <ErrorOutline sx={{ color: '#EF4444', fontSize: 26 }} />
+                                                    )}
+                                                </Box>
 
-                                    </Box>
-                                    <Box sx={{ height: 500, width: '100%' }}>
-                                        <DataGrid
-                                            rows={rows}
-                                            columns={columns}
-                                            pageSizeOptions={[10, 25, 50, 100]}
-                                            initialState={{
-                                                pagination: { paginationModel: { pageSize: 25 } }
-                                            }}
-                                            disableRowSelectionOnClick
-                                            density="compact"
-                                            sx={{
-                                                ...DataGridStyle.sx,
-                                                height: '100%',
-                                                '& .MuiDataGrid-columnHeaders': {
-                                                    backgroundColor: initial.tableau_theme,
-                                                    color: initial.text_theme,
-                                                    minHeight: 35,
-                                                    maxHeight: 35,
-                                                },
-                                                '& .MuiDataGrid-columnHeader': {
-                                                    minHeight: 35,
-                                                    maxHeight: 35,
-                                                    lineHeight: '35px',
-                                                },
-                                                '& .MuiDataGrid-columnHeaderTitleContainer': {
-                                                    minHeight: 35,
-                                                    maxHeight: 35,
-                                                },
-                                                '& .MuiDataGrid-columnHeaderTitle': {
-                                                    color: initial.text_theme,
-                                                    fontWeight: 600,
-                                                },
-                                                '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
-                                                    color: initial.text_theme,
-                                                },
-                                                '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
-                                                    outline: 'none',
-                                                    border: 'none',
-                                                },
-                                                '& .MuiDataGrid-row': {
-                                                    minHeight: 35,
-                                                    maxHeight: 35,
-                                                },
-                                            }}
-                                        />
-                                    </Box>
-                                </>
-                            )}
-                        </>
+                                                {/* Texte */}
+                                                <Box sx={{ flexGrow: 1 }}>
+                                                    <Typography sx={{ fontWeight: 800, color: '#0F172A' }}>
+                                                        {ANOMALIE_TYPES[type]?.label || type}
+                                                    </Typography>
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        {ANOMALIE_TYPES[type]?.description || ''}
+                                                    </Typography>
+                                                </Box>
+
+                                                {/* Chips alignés à droite, juste avant la flèche */}
+                                                <Stack direction="row" spacing={1}>
+                                                    <Chip
+                                                        label={`${total} TOTAL`}
+                                                        sx={{
+                                                            bgcolor: '#FEE2E2',
+                                                            color: '#B91C1C',
+                                                            fontWeight: 900,
+                                                            borderRadius: '6px',
+                                                            fontSize: '0.75rem',
+                                                        }}
+                                                    />
+                                                    <Chip
+                                                        label={`${remaining} RESTANT`}
+                                                        sx={{
+                                                            bgcolor: remaining === 0 ? '#DCFCE7' : '#E0F7FA',
+                                                            color: remaining === 0 ? '#15803D' : '#00ACC1',
+                                                            fontWeight: 900,
+                                                            borderRadius: '6px',
+                                                            fontSize: '0.75rem',
+                                                        }}
+                                                    />
+                                                </Stack>
+
+                                                {/* Flèche */}
+                                                {expandedType === type ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+                                            </Stack>
+                                        </Box>
+
+                                        {/* ===== TABLEAU QUAND ON CLIQUE ===== */}
+                                        <Collapse in={expandedType === type}>
+                                            <Divider />
+                                            <Box sx={{ p: 3, bgcolor: 'white' }}>
+                                                {rowsByType.length > 0 ? (
+                                                    <TableContainer>
+                                                        <Table size="small">
+                                                            <TableHead sx={{ bgcolor: '#F8FAFC' }}>
+                                                                <TableRow>
+                                                                    <TableCell>Date</TableCell>
+                                                                    <TableCell>Libellé</TableCell>
+                                                                    <TableCell align="right">Débit</TableCell>
+                                                                    <TableCell align="right">Crédit</TableCell>
+                                                                    <TableCell align="center">Validé</TableCell>
+                                                                    <TableCell>Commentaire</TableCell>
+                                                                    <TableCell align="center">Actions</TableCell>
+                                                                </TableRow>
+                                                            </TableHead>
+                                                            <TableBody>
+                                                                {rowsByType.map(row => (
+                                                                    <TableRow key={row.id}>
+                                                                        <TableCell>{row.date_ecriture}</TableCell>
+                                                                        <TableCell>{row.libelle}</TableCell>
+                                                                        <TableCell align="right">{row.debit}</TableCell>
+                                                                        <TableCell align="right">{row.credit}</TableCell>
+                                                                        <TableCell align="center">
+                                                                            <Chip
+                                                                                label={row.valider ? 'Oui' : 'Non'}
+                                                                                color={row.valider ? 'success' : 'warning'}
+                                                                                size="small"
+                                                                            />
+                                                                        </TableCell>
+                                                                        <TableCell>
+                                                                            <Typography variant="body2" sx={{ fontStyle: row.commentaire_validation ? 'normal' : 'italic', color: row.commentaire_validation ? 'inherit' : '#999' }}>
+                                                                                {row.commentaire_validation || ' '}
+                                                                            </Typography>
+                                                                        </TableCell>
+                                                                        <TableCell align="center">
+                                                                            <Stack direction="row" spacing={1} alignItems="center" justifyContent="center" key={row.anomalie_id}>
+                                                                                {/* Bouton commentaire */}
+                                                                                <IconButton size="small" onClick={() => handleOpenCommentDialog({
+                                                                                    id: row.anomalie_id,
+                                                                                    valider: row.valider,
+                                                                                    commentaire_validation: row.commentaire_validation
+                                                                                })}>
+                                                                                    <ChatBubbleOutline fontSize="small" />
+                                                                                </IconButton>
+
+                                                                                {/* Bouton Valider */}
+                                                                                <Button
+                                                                                    variant="outlined"
+                                                                                    size="small"
+                                                                                    color="success"
+                                                                                    sx={{
+                                                                                        textTransform: 'none',
+                                                                                        fontWeight: 700,
+                                                                                        borderRadius: '6px'
+                                                                                    }}
+                                                                                    onClick={() => openValidation({
+                                                                                        id: row.anomalie_id,
+                                                                                        valider: row.valider,
+                                                                                        commentaire_validation: row.commentaire_validation
+                                                                                    })}
+                                                                                >
+                                                                                    {row.valider ? 'Annuler' : 'Valider'}
+                                                                                </Button>
+                                                                            </Stack>
+                                                                        </TableCell>
+                                                                    </TableRow>
+                                                                ))}
+                                                            </TableBody>
+                                                        </Table>
+                                                    </TableContainer>
+                                                ) : (
+                                                    <Typography sx={{ textAlign: 'center', color: '#64748B', py: 2 }}>Aucune anomalie pour ce type.</Typography>
+                                                )}
+                                            </Box>
+                                        </Collapse>
+
+                                    </Paper>
+                                );
+                            })}
+                        </Stack>
+                    
+
+                    {/* === TABLE FILTRÉE PAR TYPE === */}
+                    {selectedType && (
+                        <Paper elevation={0} sx={{ borderRadius: '10px', border: '1px solid #E2E8F0', overflow: 'hidden' }}>
+
+                            <Box sx={{ p: 2, bgcolor: 'white' }}>
+                                <Typography sx={{ fontWeight: 800, mb: 2 }}>
+                                    {ANOMALIE_TYPES[selectedType]?.label}
+                                </Typography>
+
+                                <TableContainer>
+                                    <Table size="small">
+                                        <TableHead sx={{ bgcolor: '#F8FAFC' }}>
+                                            <TableRow>
+                                                {columns.map((col) => (
+                                                    <TableCell key={col.field} sx={{ fontWeight: 700 }}>
+                                                        {col.headerName}
+                                                    </TableCell>
+                                                ))}
+                                            </TableRow>
+                                        </TableHead>
+
+                                        <TableBody>
+                                            {rows
+                                                .filter(r => r.type_anomalie === selectedType)
+                                                .map((row) => (
+                                                    <TableRow key={row.id} hover>
+                                                        {columns.map((col) => (
+                                                            <TableCell key={col.field}>
+                                                                {col.renderCell
+                                                                    ? col.renderCell({ value: row[col.field], row })
+                                                                    : row[col.field]}
+                                                            </TableCell>
+                                                        ))}
+                                                    </TableRow>
+                                                ))}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+
+                            </Box>
+                        </Paper>
                     )}
                 </Box>
-            </Paper>
 
-            {/* Dialog de validation */}
+            )}
             <Dialog
                 open={openValidationDialog}
                 onClose={() => setOpenValidationDialog(false)}
@@ -942,24 +883,24 @@ export default function RevisionFournisseurClient() {
                     </Typography>
                 </DialogContent>
                 <DialogActions>
-                    <Button 
-                    onClick={() => setOpenValidationDialog(false)}
-                    // color="secondary"
-                    sx={{
-                        ...buttonStyle,
-                        backgroundColor: initial.annuler_bouton_color,
-                        color: 'white',
-                        borderColor: initial.annuler_bouton_color,
-                        '&:hover': {
-                            backgroundColor: initial.annuler_bouton_color,
-                            none: 'none',
-                        },
-                        '&.Mui-disabled': {
+                    <Button
+                        onClick={() => setOpenValidationDialog(false)}
+                        // color="secondary"
+                        sx={{
+                            ...buttonStyle,
                             backgroundColor: initial.annuler_bouton_color,
                             color: 'white',
-                            cursor: 'not-allowed',
-                        },
-                    }}
+                            borderColor: initial.annuler_bouton_color,
+                            '&:hover': {
+                                backgroundColor: initial.annuler_bouton_color,
+                                none: 'none',
+                            },
+                            '&.Mui-disabled': {
+                                backgroundColor: initial.annuler_bouton_color,
+                                color: 'white',
+                                cursor: 'not-allowed',
+                            },
+                        }}
                     >
                         Annuler
                     </Button>
@@ -968,20 +909,20 @@ export default function RevisionFournisseurClient() {
                         // color="primary"
                         onClick={() => handleValiderAnomalie(selectedAnomalie, !selectedAnomalie?.valider)}
                         sx={{
-                        ...buttonStyle,
-                        backgroundColor: initial.auth_gradient_end,
-                        color: 'white',
-                        borderColor: initial.auth_gradient_end,
-                        '&:hover': {
-                            backgroundColor: initial.auth_gradient_end,
-                            border: 'none',
-                        },
-                        '&.Mui-disabled': {
+                            ...buttonStyle,
                             backgroundColor: initial.auth_gradient_end,
                             color: 'white',
-                            cursor: 'not-allowed',
-                        },
-                    }}
+                            borderColor: initial.auth_gradient_end,
+                            '&:hover': {
+                                backgroundColor: initial.auth_gradient_end,
+                                border: 'none',
+                            },
+                            '&.Mui-disabled': {
+                                backgroundColor: initial.auth_gradient_end,
+                                color: 'white',
+                                cursor: 'not-allowed',
+                            },
+                        }}
                     >
                         Sauvegarder
                     </Button>
@@ -1011,8 +952,8 @@ export default function RevisionFournisseurClient() {
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button 
-                    onClick={() => setOpenCommentDialog(false)}
+                    <Button
+                        onClick={() => setOpenCommentDialog(false)}
                     >
                         Annuler
                     </Button>
@@ -1042,7 +983,7 @@ export default function RevisionFournisseurClient() {
                     </Typography>
                 </DialogContent>
                 <DialogActions>
-                    <Button 
+                    <Button
                         onClick={() => setOpenConfirmDialog(false)}
                         sx={{
                             ...buttonStyle,
@@ -1106,8 +1047,6 @@ export default function RevisionFournisseurClient() {
                     </Button>
                 </DialogActions>
             </Dialog>
-        </Box>
-        )}
-    </>
+        </>
     );
 }

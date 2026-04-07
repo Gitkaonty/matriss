@@ -98,7 +98,7 @@ const PopupViewDetailsImportJournal = ({msg, confirmationState}) =>{
 
                     <li>
                         <Typography sx={{ ml: 2, mb:2}} variant="h7" component="div" >
-                            Pour la colonne devise, les champs vides seront complétés par MGA automatiquement.
+                            Pour la colonne devise, les champs vides seront complétés par EUR automatiquement.
                         </Typography>
                     </li>
                 </ul>

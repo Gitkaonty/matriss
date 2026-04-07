@@ -3,6 +3,8 @@ const router = express.Router();
 const dashboardController = require('../../Controllers/Dashboard/dashboardController');
 const revuAnalytiqueController = require('../../Controllers/Dashboard/revuAnalytiqueController');
 const revuAnalytiqueMensuelleController = require('../../Controllers/Dashboard/revuAnalytiqueMensuelleController');
+const verifyJWT = require('../../Middlewares/verifyJWT');
+const verifyPermission = require('../../Middlewares/verifyPermission');
 
 // Récupération
 router.get('/getAllInfo/:id_compte/:id_dossier/:id_exercice', dashboardController.getAllInfo);
