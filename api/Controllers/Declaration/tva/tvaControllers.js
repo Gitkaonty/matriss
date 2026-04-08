@@ -709,7 +709,6 @@ exports.getFormulaireDetails = async (req, res) => {
     const mois = req.query?.mois ? Number(req.query.mois) : null;
     const annee = req.query?.annee ? Number(req.query.annee) : null;
 
-    console.log('[TVA][FORM][DETAILS] >>> params', { dossierId, compteId, exerciceId, idCode, mois, annee });
 
     if (!dossierId || !compteId || !exerciceId || !idCode) {
       return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
@@ -717,7 +716,6 @@ exports.getFormulaireDetails = async (req, res) => {
 
     const mat = await FormTvaMatrices.findOne({ where: { id_code: Number(idCode) } });
     const groupe = mat?.groupe || null;
-    console.log('[TVA][FORM][DETAILS] >>> groupe trouvé:', groupe);
 
     if (groupe === '01') {
       // Construire la liste des comptes (classe 7) mappés au code demandé via ParamTVA
@@ -746,21 +744,10 @@ exports.getFormulaireDetails = async (req, res) => {
         whereJ.decltva = true;
         whereJ.decltvamois = Number(mois);
         whereJ.decltvaannee = Number(annee);
-        console.log('[TVA][FORM][DETAILS] >>> Filtrage par mois/annee:', { mois, annee });
       } else {
-        console.log('[TVA][FORM][DETAILS] >>> Pas de filtrage mois/annee, on prend tout');
       }
 
       // DEBUG: afficher le where utilisé pour la période du groupe 01
-      console.log('[G01][WHERE]', {
-        id_dossier: whereJ.id_dossier,
-        id_compte: whereJ.id_compte,
-        id_exercice: whereJ.id_exercice,
-        decltva: whereJ.decltva,
-        decltvamois: whereJ.decltvamois,
-        decltvaannee: whereJ.decltvaannee,
-        filterAccounts: uniqAccounts,
-      });
       const jrns = await Journals.findAll({
         where: uniqAccounts.length > 0 ? { ...whereJ, id_numcpt: { [Op.in]: uniqAccounts } } : { ...whereJ, id_numcpt: -1 },
         attributes: ['id_numcpt', 'debit', 'credit', 'dateecriture', 'libelle', 'decltva', 'decltvamois', 'decltvaannee'],
@@ -787,29 +774,12 @@ exports.getFormulaireDetails = async (req, res) => {
           if (!maxDate || d > maxDate) maxDate = d;
         }
       }
-      console.log('[G01][RESULT]', {
-        count: (jrns || []).length,
-        distinct_declared_periods: Array.from(periods.values()),
-        min_dateecriture: minDate ? minDate.toISOString().slice(0,10) : null,
-        max_dateecriture: maxDate ? maxDate.toISOString().slice(0,10) : null,
-      });
-
-      console.log('[TVA][FORM][DETAILS] >>> Journaux trouvés:', jrns.length);
-
       const detailsEntries = (jrns || []).map((j) => {
         const numero = String(j?.dossierplancomptable?.compte || j.id_numcpt || '');
         const libelle = j?.libelle ? String(j.libelle) : '';
         const debit = Number(j.debit || 0);
         const credit = Number(j.credit || 0);
         const net = credit - debit;
-
-        console.log('[TVA][FORM][DETAILS] Ligne:', {
-          compte: numero,
-          dateecriture: j.dateecriture,
-          debit,
-          credit,
-          net,
-        });
 
         return { compte: numero, libelle, debit, credit, net, dateecriture: j.dateecriture };
       });
@@ -823,14 +793,11 @@ exports.getFormulaireDetails = async (req, res) => {
       }
       const details = Array.from(byAccount.values()).map(r => ({ ...r, net: Number(r.credit) - Number(r.debit) }));
 
-      console.log('[TVA][FORM][DETAILS] >>> Résumé par compte:', details);
 
       const total = detailsEntries.reduce(
         (acc, r) => ({ debit: acc.debit + r.debit, credit: acc.credit + r.credit, net: acc.net + r.net }),
         { debit: 0, credit: 0, net: 0 }
       );
-
-      console.log('[TVA][FORM][DETAILS] >>> Totaux globaux:', total);
 
       // Groupe 01: persister automatiquement le montant du formulaire PAR PERIODE (mois/annee)
       try {
@@ -846,10 +813,8 @@ exports.getFormulaireDetails = async (req, res) => {
         const exist = await FormTva.findOne({ where: key });
         if (exist) {
           await exist.update({ montant });
-          console.log('[G01][FORMTva][PERIOD] update', { ...key, montant });
         } else {
           await FormTva.create({ ...key, montant });
-          console.log('[G01][FORMTva][PERIOD] create', { ...key, montant });
         }
       } catch (e) {
         console.warn('[G01][FORMTva][PERIOD] persist error (non-bloquant):', e?.message || e);
@@ -1521,8 +1486,6 @@ exports.listFormulaire = async (req, res) => {
     const where = { id_dossier: dossierId, id_compte: compteId, id_exercice: exerciceId };
     if (mois != null) where.mois = mois;
     if (annee != null) where.annee = annee;
-    console.log('[FormTVA][LIST] params:', { dossierId, compteId, exerciceId, mois, annee });
-    console.log('[FormTVA][LIST] where:', where);
     // Récupérer trié par code puis updatedAt DESC pour pouvoir dédupliquer
     const rows = await FormTva.findAll({ where, order: [['id_code', 'ASC'], ['updatedAt', 'DESC']] });
 
@@ -1599,8 +1562,6 @@ exports.initializeFormulaire = async (req, res) => {
     const where = { id_dossier: dossierId, id_compte: compteId, id_exercice: exerciceId };
     if (mois != null) where.mois = mois;
     if (annee != null) where.annee = annee;
-    console.log('[FormTVA][INIT] params:', { dossierId, compteId, exerciceId, mois, annee });
-    console.log('[FormTVA][INIT] where:', where);
 
     // Validation de période par rapport à l'exercice
     const chkInit = await assertPeriodInExercice(exerciceId, mois, annee);
@@ -1641,7 +1602,6 @@ exports.initializeFormulaire = async (req, res) => {
       mois: mois == null ? null : mois,
       annee: annee == null ? null : annee,
     }));
-    console.log('[FormTVA][INIT] creating rows:', payloads.length);
     try {
       await FormTva.bulkCreate(payloads);
     } catch (e) {

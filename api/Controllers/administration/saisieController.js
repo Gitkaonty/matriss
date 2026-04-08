@@ -537,7 +537,6 @@ exports.listDetailsImmoLignes = async (req, res) => {
 
 // --- Immobilisations: génération écritures comptables (journal Imau) ---
 exports.generateImmoEcritures = async (req, res) => {
-    console.log('[IMMO][ECRITURES][GENERATE] Fonction appelée avec:', req.body);
     try {
         const fileId = Number(req.body?.fileId);
         const compteId = Number(req.body?.compteId);
@@ -593,13 +592,6 @@ exports.generateImmoEcritures = async (req, res) => {
             }
         });
 
-        // 3) Charger les immobilisations (details_immo) + lignes amort (details_immo_lignes)
-        console.log('[IMMO][DEBUG] Requête details_immo:', {
-            where: { id_dossier: fileId, id_compte: compteId, id_exercice: exerciceId }
-        });
-        console.log('[IMMO][DEBUG] Requête details_immo_lignes:', {
-            where: { id_dossier: fileId, id_compte: compteId, id_exercice: exerciceId }
-        });
 
         const [details, lignes] = await Promise.all([
             // Utiliser SQL avec JOIN pour récupérer le libellé du compte directement
@@ -618,7 +610,6 @@ exports.generateImmoEcritures = async (req, res) => {
                 replacements: { fileId, compteId, exerciceId },
                 type: db.Sequelize.QueryTypes.SELECT,
             }).then(result => {
-                console.log('[IMMO][DEBUG] Résultat details_immo avec JOIN:', result);
                 if (result && result.length > 0) {
                     console.log('[IMMO][DEBUG] Champs disponibles:', Object.keys(result[0]));
                 }
@@ -631,11 +622,6 @@ exports.generateImmoEcritures = async (req, res) => {
             }),
         ]);
 
-        console.log('[IMMO][DEBUG] Données chargées:', {
-            nbDetails: details?.length || 0,
-            nbLignes: lignes?.length || 0,
-            detailedByMonth
-        });
 
         const detailsById = new Map((details || []).map(d => [Number(d.id), d]));
         const lignesByDetailId = new Map();
@@ -645,21 +631,13 @@ exports.generateImmoEcritures = async (req, res) => {
             lignesByDetailId.get(did).push(l);
         }
 
-        console.log('[IMMO][DEBUG] Lignes groupées par détail:',
-            Array.from(lignesByDetailId.entries()).map(([id, lignes]) => ({
-                detailId: id,
-                nbLignes: lignes.length,
-                premierMontant: lignes[0]?.dotation_periode_comp
-            }))
-        );
+       
 
         // Solution de secours : si pas de détails mais des lignes, créer des détails factices
         if (detailsById.size === 0 && lignesByDetailId.size > 0) {
-            console.log('[IMMO][DEBUG] Utilisation de la solution de secours - création de détails factices');
 
             // Récupérer les IDs des immobilisations depuis les lignes
             const detailImmoIds = Array.from(lignesByDetailId.keys());
-            console.log('[IMMO][DEBUG] IDs des immobilisations à récupérer:', detailImmoIds);
 
             // Charger les immobilisations depuis details_immo (sans filtre exercice, dossier, compte)
             const missingDetails = await db.sequelize.query(`
@@ -676,41 +654,15 @@ exports.generateImmoEcritures = async (req, res) => {
                 type: db.Sequelize.QueryTypes.SELECT,
             });
 
-            console.log('[IMMO][DEBUG] Requête SQL exécutée (sans filtre dossier/compte):', {
-                detailIds: detailImmoIds
-            });
-            console.log('[IMMO][DEBUG] Immobilisations récupérées:', missingDetails.length);
-            if (missingDetails.length > 0) {
-                console.log('[IMMO][DEBUG] Première immobilisation:', {
-                    id: missingDetails[0].id,
-                    id_dossier: missingDetails[0].id_dossier,
-                    id_compte: missingDetails[0].id_compte,
-                    id_exercice: missingDetails[0].id_exercice,
-                    code: missingDetails[0].code,
-                    pc_id: missingDetails[0].pc_id,
-                    compte_immo: missingDetails[0].compte_immo,
-                    libelle_compte_immo: missingDetails[0].libelle_compte_immo
-                });
-            } else {
-                console.log('[IMMO][DEBUG] AUCUNE immobilisation trouvée avec id=29 - elle n\'existe pas dans details_immo');
-            }
 
             // Ajouter les immobilisations récupérées à la map
             for (const detail of missingDetails) {
                 detailsById.set(Number(detail.id), detail);
-                console.log('[IMMO][DEBUG] Immobilisation ajoutée:', {
-                    id: detail.id,
-                    code: detail.code,
-                    pc_id: detail.pc_id,
-                    compte_immo: detail.compte_immo,
-                    libelle_compte_immo: detail.libelle_compte_immo
-                });
             }
 
             // Si certaines immobilisations n'ont toujours pas été trouvées, créer des détails factices
             for (const [detailId, lignes] of lignesByDetailId.entries()) {
                 if (!detailsById.has(detailId)) {
-                    console.log('[IMMO][DEBUG] Immobilisation non trouvée, création factice pour ID:', detailId);
                     const premiereLigne = lignes[0] || {};
                     detailsById.set(detailId, {
                         id: detailId,
@@ -724,7 +676,6 @@ exports.generateImmoEcritures = async (req, res) => {
                 }
             }
 
-            console.log('[IMMO][DEBUG] Détails finaux créés:', detailsById.size);
         }
 
         // 4) Helpers plan comptable
@@ -751,7 +702,6 @@ exports.generateImmoEcritures = async (req, res) => {
                     `UPDATE dossierplancomptables SET baseaux_id = id WHERE id = :id`,
                     { replacements: { id: row.id }, type: db.Sequelize.QueryTypes.UPDATE }
                 );
-                console.log(`[IMMO][ECRITURES][GENERATE] Compte créé: ${compte} - ${libelle}`);
             } else if (libelle && (!row.libelle || row.libelle.trim() === '' || row.libelle === `Compte ${compte}`)) {
                 // Mettre à jour le libellé si le compte existe mais n'a pas de libellé ou a un libellé générique
                 await db.dossierplancomptable.update(
@@ -759,7 +709,6 @@ exports.generateImmoEcritures = async (req, res) => {
                     { where: { id: row.id } }
                 );
                 row.libelle = libelle; // Mettre à jour l'objet local
-                console.log(`[IMMO][ECRITURES][GENERATE] Libellé du compte mis à jour: ${compte} - ${libelle}`);
             }
             return row;
         };
@@ -789,19 +738,8 @@ exports.generateImmoEcritures = async (req, res) => {
                 const dureeMois = Number(detail?.duree_amort_mois) || 0;
                 const dateMiseService = detail?.date_mise_service ? new Date(detail.date_mise_service) : null;
 
-                console.log('[IMMO][DEBUG][MONTHLY] Données immobilisation:', {
-                    detailId,
-                    montantHT,
-                    dureeMois,
-                    dateMiseService: dateMiseService?.toISOString(),
-                    compteAmort
-                });
 
                 if (!dateMiseService || isNaN(dateMiseService.getTime()) || montantHT <= 0 || dureeMois <= 0) {
-                    console.log('[IMMO][DEBUG][MONTHLY] Immobilisation ignorée:', {
-                        detailId,
-                        raison: !dateMiseService ? 'pas de date' : isNaN(dateMiseService.getTime()) ? 'date invalide' : montantHT <= 0 ? 'montant invalide' : 'durée invalide'
-                    });
                     continue;
                 }
 
@@ -832,21 +770,12 @@ exports.generateImmoEcritures = async (req, res) => {
                 const finAmort = new Date(dateMiseService);
                 finAmort.setMonth(finAmort.getMonth() + dureeMois);
 
-                console.log('[IMMO][DEBUG][MONTHLY] Début boucle:', {
-                    detailId,
-                    currentDate: currentDate.toISOString(),
-                    exoFin: exoFin.toISOString(),
-                    finAmort: finAmort.toISOString(),
-                    montantHT,
-                    dureeMois,
-                    baseJours
-                });
+             
 
                 let loopCount = 0;
                 while (cumulAmort < montantHT && monthIndex < dureeMois && currentDate < exoFin) {
                     loopCount++;
                     if (loopCount > 100) {
-                        console.log('[IMMO][DEBUG][MONTHLY] Boucle infinie détectée, arrêt');
                         break;
                     }
                     let montantMois = 0;
@@ -929,14 +858,6 @@ exports.generateImmoEcritures = async (req, res) => {
                     monthIndex++;
                 }
 
-                console.log('[IMMO][DEBUG][MONTHLY] Fin boucle:', {
-                    detailId,
-                    loopCount,
-                    cumulAmort,
-                    monthIndex,
-                    currentDate: currentDate.toISOString(),
-                    createdEcritures
-                });
             }
         } else {
             // Mode simple : une écriture par compte classe 2 (compte_immo)
@@ -990,8 +911,6 @@ exports.generateImmoEcritures = async (req, res) => {
                 group.immobilisations.push({ detailId, montant });
             }
 
-            console.log('[IMMO][DEBUG] Groupes créés:', groupedByCompte.size);
-
             // Créer une écriture par groupe (par compte classe 2)
             for (const [groupKey, group] of groupedByCompte.entries()) {
                 const { compteImmo, compteAmort, libelleCompteImmo, montantTotal, immobilisations } = group;
@@ -1010,13 +929,7 @@ exports.generateImmoEcritures = async (req, res) => {
                 ]);
                 if (!rowCharge || !rowAmort) continue;
 
-                console.log('[IMMO][DEBUG][SIMPLE] Groupe traité:', {
-                    compteImmo,
-                    compteAmort,
-                    libelleCompteImmo,
-                    nbImmobilisations: immobilisations.length,
-                    montantTotal
-                });
+                
 
                 const idEcriture = String(Date.now() + Math.floor(Math.random() * 1000));
                 const libelle = `Dot amort ${libelleCompteImmo}`.trim();
@@ -1050,14 +963,6 @@ exports.generateImmoEcritures = async (req, res) => {
                         credit: montantTotal,
                     })
                 ]);
-
-                console.log('[IMMO][DEBUG] Écriture créée pour groupe:', {
-                    compteImmo,
-                    libelleCompteImmo,
-                    debit: { id: lDebit.id, compte: rowCharge.compte, montant: lDebit.debit },
-                    credit: { id: lCredit.id, compte: rowAmort.compte, montant: lCredit.credit },
-                    nbImmobilisations: immobilisations.length
-                });
 
                 inserted.push(lDebit, lCredit);
                 createdEcritures += 1;
@@ -1654,17 +1559,7 @@ exports.previewImmoDegressif = async (req, res) => {
                 const dotDegAnnX = vncX * tauxDegX;
                 const dotLinRestAnnX = vncX / dureeRestanteX;
                 if (modeX === 'degressif' && dotLinRestAnnX > dotDegAnnX) {
-                    if (!didSwitchLogX) {
-                        console.log('[IMMO][DEGRESSIF][SWITCH->LINEAIRE]', {
-                            tab: labelX,
-                            rang: indexX,
-                            date_debut: toYMD(debutX),
-                            date_fin_prevue: toYMD(finX),
-                            vnc: clamp(vncX),
-                            duree_restante_annees: clamp(dureeRestanteX),
-                            dot_deg_annuel: clamp(dotDegAnnX),
-                            dot_lin_rest_annuel: clamp(dotLinRestAnnX),
-                        });
+                    if (!didSwitchLogX) {                     
                         didSwitchLogX = true;
                     }
                     modeX = 'lineaire';
@@ -1852,9 +1747,6 @@ exports.previewImmoDegressif = async (req, res) => {
 
 // --- Immobilisations: sauvegarde des lignes pré-calculées depuis preview ---
 exports.saveImmoLineaire = async (req, res) => {
-    console.log('[IMMO][SAVE] ===== FONCTION SAVE LINEAIRE APPELLEE =====');
-    console.log('[IMMO][SAVE] TYPE D\'AMORTISSEMENT ATTENDU: LINEAIRE');
-    console.log('[IMMO][SAVE] Fonction saveImmoLineaire appelée avec:', req.body);
     try {
         const fileId = Number(req.body?.fileId ?? req.query?.fileId);
         const compteId = Number(req.body?.compteId ?? req.query?.compteId);
@@ -1863,26 +1755,6 @@ exports.saveImmoLineaire = async (req, res) => {
 
         // Récupérer les lignes pré-calculées depuis le frontend
         const { lignes } = req.body || {};
-
-        console.log('=== SAVE LINEAIRE - PARAMETRES RECUS ===');
-        console.log('IDs:', { fileId, compteId, exerciceId, detailImmoId });
-        console.log('Lignes fournies:', lignes ? `OUI (${lignes.length} lignes)` : 'NON');
-        if (lignes && Array.isArray(lignes)) {
-            console.log('PREMIERE LIGNE REÇUE:', lignes[0]);
-            console.log('DERNIERE LIGNE REÇUE:', lignes[lignes.length - 1]);
-        }
-        console.log('=== FIN PARAMETRES ===');
-
-        if (!fileId || !compteId || !exerciceId || !detailImmoId) {
-            console.log('[IMMO][SAVE] Paramètres manquants:', { fileId, compteId, exerciceId, detailImmoId });
-            return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
-        }
-
-        if (!lignes || !Array.isArray(lignes)) {
-            console.log('[IMMO][SAVE] ERREUR: Lignes calculées manquantes pour amortissement LINEAIRE');
-            console.log('[IMMO][SAVE] SOLUTION: Le frontend doit d\'abord appeler previewImmoLineaire');
-            return res.status(400).json({ state: false, msg: 'Lignes calculées manquantes - utilisez d\'abord previewImmoLineaire' });
-        }
 
         // Préparer les lignes pour l'insertion (utiliser les lignes pré-calculées)
         const out = lignes.map((ligne) => ({
@@ -1905,18 +1777,10 @@ exports.saveImmoLineaire = async (req, res) => {
             dot_derogatoire: ligne.dot_derogatoire || 0,
         }));
 
-        console.log('=== SAVE LINEAIRE - LIGNES PREPAREES ===');
-        console.log('NOMBRE DE LIGNES A ENREGISTRER:', out.length);
-        console.log('PREMIERE LIGNE A ENREGISTRER:', out[0]);
-        console.log('TYPE: AMORTISSEMENT LINEAIRE');
-        console.log('=== FIN PREPARATION ===');
-
         await db.detailsImmoLignes.destroy({
             where: { id_dossier: fileId, id_compte: compteId, id_exercice: exerciceId, id_detail_immo: detailImmoId },
         });
         if (out.length > 0) await db.detailsImmoLignes.bulkCreate(out);
-
-        console.log('[IMMO][SAVE] ===== SAUVEGARDE LINEAIRE TERMINEE =====');
         return res.json({ state: true, saved: out.length });
     } catch (err) {
         console.error('[IMMO][SAVE][LINEAIRE] error:', err);
@@ -1926,9 +1790,6 @@ exports.saveImmoLineaire = async (req, res) => {
 
 // --- Immobilisations: sauvegarde des lignes dégressives pré-calculées depuis preview ---
 exports.saveImmoDegressif = async (req, res) => {
-    console.log('[IMMO][SAVE] ===== FONCTION SAVE DEGRESSIVE APPELLEE =====');
-    console.log('[IMMO][SAVE] TYPE D\'AMORTISSEMENT ATTENDU: DEGRESSIF');
-    console.log('[IMMO][SAVE] Fonction saveImmoDegressif appelée avec:', req.body);
     try {
         const fileId = Number(req.body?.fileId ?? req.query?.fileId);
         const compteId = Number(req.body?.compteId ?? req.query?.compteId);
@@ -1938,27 +1799,14 @@ exports.saveImmoDegressif = async (req, res) => {
         // Récupérer les lignes pré-calculées depuis le frontend
         const { lignes } = req.body || {};
 
-        console.log('=== SAVE DEGRESSIF - PARAMETRES RECUS ===');
-        console.log('IDs:', { fileId, compteId, exerciceId, detailImmoId });
-        console.log('Lignes fournies:', lignes ? `OUI (${lignes.length} lignes)` : 'NON');
-        if (lignes && Array.isArray(lignes)) {
-            console.log('PREMIERE LIGNE REÇUE:', lignes[0]);
-            console.log('DERNIERE LIGNE REÇUE:', lignes[lignes.length - 1]);
-        }
-        console.log('=== FIN PARAMETRES ===');
-
         if (!fileId || !compteId || !exerciceId || !detailImmoId) {
             return res.status(400).json({ state: false, msg: 'Paramètres manquants' });
         }
 
         if (!lignes || !Array.isArray(lignes)) {
-            console.log('[IMMO][SAVE] ERREUR: Lignes calculées manquantes pour amortissement DEGRESSIF');
-            console.log('[IMMO][SAVE] MAIS: Le frontend a appelé la fonction dégressive pour un amortissement linéaire');
-            console.log('[IMMO][SAVE] SOLUTION: On essaie avec la fonction linéaire en fallback');
 
             // Fallback : essayer de traiter comme un amortissement linéaire
             try {
-                console.log('[IMMO][SAVE] ===== TENTATIVE FALLBACK LINEAIRE =====');
 
                 // Charger les données nécessaires pour le calcul linéaire
                 const [dossier, exo, detail] = await Promise.all([
@@ -1968,7 +1816,6 @@ exports.saveImmoDegressif = async (req, res) => {
                 ]);
 
                 if (!dossier || !exo || !detail) {
-                    console.log('[IMMO][SAVE] Fallback impossible: données manquantes');
                     return res.status(404).json({ state: false, msg: 'Données introuvables' });
                 }
 
@@ -1980,7 +1827,6 @@ exports.saveImmoDegressif = async (req, res) => {
                 const dureeComp = Math.max(1, Math.floor(Number(detail.duree_amort_mois) || 0));
 
                 if (montantHT <= 0) {
-                    console.log('[IMMO][SAVE] Fallback impossible: montant invalide');
                     return res.status(400).json({ state: false, msg: 'montant HT invalide' });
                 }
 
@@ -2026,18 +1872,14 @@ exports.saveImmoDegressif = async (req, res) => {
                     index++;
                 }
 
-                console.log(`[IMMO][SAVE] FALLBACK REUSSI: ${out.length} lignes calculées (linéaire)`);
-
                 await db.detailsImmoLignes.destroy({
                     where: { id_dossier: fileId, id_compte: compteId, id_exercice: exerciceId, id_detail_immo: detailImmoId },
                 });
                 if (out.length > 0) await db.detailsImmoLignes.bulkCreate(out);
 
-                console.log('[IMMO][SAVE] ===== SAUVEGARDE FALLBACK LINEAIRE TERMINEE =====');
                 return res.json({ state: true, saved: out.length, fallback: 'linear' });
 
             } catch (fallbackError) {
-                console.error('[IMMO][SAVE] Erreur fallback:', fallbackError);
                 return res.status(400).json({
                     state: false,
                     msg: 'Lignes calculées manquantes - utilisez d\'abord previewImmoDegressif ou corrigez le frontend pour utiliser saveImmoLineaire'
@@ -2066,18 +1908,11 @@ exports.saveImmoDegressif = async (req, res) => {
             dot_derogatoire: ligne.dot_derogatoire || 0,
         }));
 
-        console.log('=== SAVE DEGRESSIF - LIGNES PREPAREES ===');
-        console.log('NOMBRE DE LIGNES A ENREGISTRER:', out.length);
-        console.log('PREMIERE LIGNE A ENREGISTRER:', out[0]);
-        console.log('TYPE: AMORTISSEMENT DEGRESSIF');
-        console.log('=== FIN PREPARATION ===');
-
         await db.detailsImmoLignes.destroy({
             where: { id_dossier: fileId, id_compte: compteId, id_exercice: exerciceId, id_detail_immo: detailImmoId },
         });
         if (out.length > 0) await db.detailsImmoLignes.bulkCreate(out);
 
-        console.log('[IMMO][SAVE] ===== SAUVEGARDE DEGRESSIVE TERMINEE =====');
         return res.json({ state: true, saved: out.length });
     } catch (err) {
         console.error('[IMMO][DEGRESSIF][SAVE] error:', err);
@@ -2385,15 +2220,6 @@ exports.getJournal = async (req, res) => {
                 dossier: dossier?.dossier || null
             };
         });
-
-        if (mappedData.length > 0) {
-            console.log('[JOURNAL][GET] Première ligne:', {
-                id: mappedData[0].id,
-                compte: mappedData[0].compte,
-                journal: mappedData[0].journal,
-                libelle: mappedData[0].libelle
-            });
-        }
 
         return res.json(mappedData);
     } catch (error) {
@@ -2827,7 +2653,6 @@ exports.listDetailsImmo = async (req, res) => {
             replacements: { fileId, compteId, exerciceId, pcId },
             type: db.Sequelize.QueryTypes.SELECT,
         });
-        console.log('[IMMO][DETAILS][LIST] Query params:', { fileId, compteId, exerciceId, pcId }, 'Results:', rows.length);
         return res.json({ state: true, list: rows || [] });
     } catch (err) {
         console.error('[IMMO][DETAILS][LIST] error:', err);
@@ -3168,7 +2993,6 @@ exports.deleteDetailsImmo = async (req, res) => {
             replacements: { id, fileId, compteId, exerciceId },
             type: db.Sequelize.QueryTypes.DELETE,
         });
-        console.log('[IMMO][DETAILS][DELETE] Suppression effectuée:', { id, fileId, compteId, exerciceId, result });
         return res.json({ state: true, id });
     } catch (err) {
         console.error('[IMMO][DETAILS][DELETE] error:', err);

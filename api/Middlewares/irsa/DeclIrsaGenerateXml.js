@@ -15,23 +15,9 @@ const generateIrsaXml = async (id_compte, id_dossier, id_exercice, mois, annee, 
       annee: Number(annee)
     }
   });
-  console.log('[IRSA XML] rows count:', rows.length);
   if (rows.length > 0) {
     // Affiche seulement quelques champs utiles pour vérifier la valeur “5”
     const s = rows[0];
-    console.log('[IRSA XML] sample row:', {
-      id: s.id,
-      matricule: s.matricule,
-      mois: s.mois,
-      annee: s.annee,
-      salaireBase: s.salaireBase,
-      heuresSupp: s.heuresSupp,
-      fonction: s.fonction, 
-      primeGratification: s.primeGratification,
-      montantImposable: s.montantImposable,
-      impotCorrespondant: s.impotCorrespondant,
-      impotDu: s.impotDu
-    });
   } else {
     console.log('[IRSA XML] no rows for filter', { id_compte, id_dossier, id_exercice, mois, annee });
   }

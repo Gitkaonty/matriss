@@ -13,7 +13,6 @@ export default function RevuAnalytiqueNN1({ compteId, dossierId, exerciceId, dat
     let initial = init[0];
     const axiosPrivate = useAxiosPrivate();
 
-    console.log('[RevuAnalytiqueNN1] Props reçues:', { compteId, dossierId, exerciceId, dateDebut, dateFin });
 
     const [rows, setRows] = useState([]);
     const [loading, setLoading] = useState(false);

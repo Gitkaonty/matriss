@@ -101,7 +101,6 @@ export default function ExportIrsaDialog({
       const finStr = `${String(dernierJour).padStart(2, '0')}-${String(mois).padStart(2, '0')}-${annee}`;
 
       const idDossier = sessionStorage.getItem('fileId');
-      console.log('IRSA PDF Export - Paramètres:', { compteId, idDossier, exerciceId, mois, annee });
       
       const resp = await fetch(`http://localhost:5200/irsa/irsa/export-pdf-tableau/${compteId}/${idDossier}/${exerciceId}/${mois}/${annee}`, {
         method: 'POST',
@@ -158,7 +157,6 @@ export default function ExportIrsaDialog({
       const finStr = `${String(dernierJour).padStart(2, '0')}-${String(mois).padStart(2, '0')}-${annee}`;
 
       const idDossier = sessionStorage.getItem('fileId');
-      console.log('IRSA Excel Export - Paramètres:', { compteId, idDossier, exerciceId, mois, annee });
       const resp = await fetch(`http://localhost:5200/irsa/irsa/export-excel-tableau/${compteId}/${idDossier}/${exerciceId}/${mois}/${annee}`, {
         method: 'GET',
         headers: { 'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }

@@ -34,10 +34,6 @@ const exportIrsaTableExcel = async (id_compte, id_dossier, id_exercice, mois, an
             });
             fonctionById = new Map(fonctions.map(f => [Number(f.id), String(f.nom)]));
         }
-        try {
-            console.log('[IRSA EXCEL] persByMat size:', persByMat.size);
-            console.log('[IRSA EXCEL] fonctionById size:', fonctionById.size);
-        } catch { }
     } catch (e) {
         console.warn('[IRSA EXCEL] mapping personnels/fonctions failed:', e?.message || e);
     }

@@ -358,13 +358,8 @@ export default function RevisionAnomalieEbilanComponent() {
     const GetDateDebutFinExercice = (id) => {
         axios.get(`/paramExercice/listeExerciceById/${id}`).then((response) => {
             const resData = response.data;
-            console.log("resData : ", resData);
-            console.log("response.data.state : ", response.data.state);
             if (resData.state) {
                 const annee = getAnneesEntreDeuxDates(resData.list.date_debut, resData.list.date_fin);
-                console.log("Date début :", resData.list.date_debut);
-                console.log("Date fin :", resData.list.date_fin);
-                console.log("Annee :", annee);
                 setListeAnnee(annee);
             }
         }).catch((error) => {
