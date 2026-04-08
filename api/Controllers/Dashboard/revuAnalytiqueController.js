@@ -13,14 +13,12 @@ exports.getRevuAnalytiqueNN1 = async (req, res) => {
 
         // Si id_periode est fourni mais pas les dates, récupérer les dates de la période
         if (id_periode && (!date_debut || !date_fin)) {
-            console.log('[DEBUG NN1] Récupération des dates pour id_periode:', id_periode);
             const periode = await db.Periode.findOne({
                 where: { id: id_periode }
             });
             if (periode) {
                 date_debut = periode.date_debut;
                 date_fin = periode.date_fin;
-                console.log('[DEBUG NN1] Dates récupérées:', { date_debut, date_fin });
             } else {
                 console.log('[DEBUG NN1] Période non trouvée pour id:', id_periode);
             }
@@ -30,7 +28,6 @@ exports.getRevuAnalytiqueNN1 = async (req, res) => {
             return res.status(400).json({ state: false, message: 'Paramètres manquants' });
         }
 
-        // console.log('[revuAnalytiqueNN1] params', { id_compte, id_dossier, id_exercice, date_debut, date_fin });
 
         // Récupérer l'exercice N
         const exerciceN = await exercices.findOne({
@@ -228,7 +225,6 @@ exports.getRevuAnalytiqueNN1 = async (req, res) => {
         });
 
         // Charger les validations depuis revu_analytique (agrégation pour gérer les doublons)
-        console.log('[DEBUG NN1] Chargement validations depuis revu_analytique...');
         const revuDataRaw = await db.sequelize.query(
             `SELECT compte, SUM(anomalies_valides) as total_valides
              FROM revu_analytique
@@ -243,7 +239,6 @@ exports.getRevuAnalytiqueNN1 = async (req, res) => {
                 raw: true
             }
         );
-        console.log('[DEBUG NN1] Validations trouvées (agrégées):', revuDataRaw.length);
         
         // Créer un map des validations par compte (somme des validations)
         const validationsMap = new Map();
@@ -251,9 +246,7 @@ exports.getRevuAnalytiqueNN1 = async (req, res) => {
             const compteKey = item.compte ? String(item.compte).trim() : '';
             const isValid = parseInt(item.total_valides) > 0;
             validationsMap.set(compteKey, isValid);
-            console.log(`[DEBUG NN1] Validation compte "${compteKey}": ${isValid} (total_valides=${item.total_valides})`);
         });
-        console.log('[DEBUG NN1] Keys dans validationsMap:', Array.from(validationsMap.keys()).slice(0, 10));
 
         // Totaux pour N
         const totals = await db.sequelize.query(
@@ -265,7 +258,6 @@ exports.getRevuAnalytiqueNN1 = async (req, res) => {
                 type: db.Sequelize.QueryTypes.SELECT
             }
         );
-        // console.log('[revuAnalytiqueNN1] totals N', totals?.[0]);
 
         // Comptes distincts pour N
         const comptesDistincts = await db.sequelize.query(
@@ -302,17 +294,7 @@ exports.getRevuAnalytiqueNN1 = async (req, res) => {
             const setN1 = new Set((comptesDistinctsN1 || []).map(r => r.compte));
             const onlyInN = Array.from(setN).filter(c => !setN1.has(c));
             const onlyInN1 = Array.from(setN1).filter(c => !setN.has(c));
-
-            // console.log('[revuAnalytiqueNN1] comptes seulement dans N count', onlyInN.length);
-            // console.log('[revuAnalytiqueNN1] comptes seulement dans N sample', onlyInN.slice(0, 30));
-            // console.log('[revuAnalytiqueNN1] comptes seulement dans N-1 count', onlyInN1.length);
-            // console.log('[revuAnalytiqueNN1] comptes seulement dans N-1 sample', onlyInN1.slice(0, 30));
         }
-
-        // console.log('[revuAnalytiqueNN1] raw results count', results?.length || 0);
-        // console.log('[revuAnalytiqueNN1] raw results sample', results?.slice(0, 10));
-        console.log('[DEBUG NN1] Nombre de results:', results.length);
-        console.log('[DEBUG NN1] Sample results comptes:', results.slice(0, 5).map(r => r.compte));
 
         // Formatter les résultats
         let validCount = 0;
@@ -322,10 +304,6 @@ exports.getRevuAnalytiqueNN1 = async (req, res) => {
             compteKey = compteKey.replace(/^"+|"+$/g, ''); // enlever guillemets au début/fin
             const isValid = validationsMap.get(compteKey) || false;
             if (isValid) validCount++;
-            // Log pour les premières lignes ou si c'est un compte qui devrait être validé
-            if (index < 10 || ['10130000', '10611000', '10680000', '11000000'].includes(compteKey)) {
-                console.log(`[DEBUG NN1] Row ${index}: compte="${compteKey}", isValid=${isValid}, inMap=${validationsMap.has(compteKey)}`);
-            }
             return {
                 compte: compteKey,
                 libelle: row.libelle || '',
@@ -338,17 +316,11 @@ exports.getRevuAnalytiqueNN1 = async (req, res) => {
                 commentaire: row.commentaire || ''
             };
         });
-        console.log('[DEBUG NN1] Formatted results avec validations:', validCount, 'validés');
-        if (validCount > 0) {
-            console.log('[DEBUG NN1] Exemples de comptes validés:', formattedResults.filter(r => r.valide_anomalie).slice(0, 5).map(r => r.compte));
-        }
-        // console.log('[revuAnalytiqueNN1] formatted results sample', formattedResults.slice(0, 10));
+
 
         // Sauvegarder/Mettre à jour les anomalies dans revu_analytique pour la synthèse
         try {
-            console.log('[DEBUG NN1] Sauvegarde des anomalies dans revu_analytique...');
             const anomaliesToSave = formattedResults.filter(r => r.anomalies);
-            console.log('[DEBUG NN1] Nombre d\'anomalies à sauvegarder:', anomaliesToSave.length);
 
             for (const anomaly of anomaliesToSave) {
                 // Vérifier si une entrée existe déjà
@@ -377,7 +349,6 @@ exports.getRevuAnalytiqueNN1 = async (req, res) => {
                 }
             }
 
-            console.log('[DEBUG NN1] Sauvegarde terminée:', anomaliesToSave.length, 'entrées');
         } catch (saveError) {
             console.error('[DEBUG NN1] Erreur lors de la sauvegarde:', saveError.message);
             // Ne pas bloquer la réponse si la sauvegarde échoue

@@ -101,6 +101,8 @@ app.use('/administration/etatFinancierAnalytique', require('./Routes/Administrat
 // Routes pour les révisions
 app.use('/administration/revision', require('./Routes/revision/revisionRoutes'));
 
+app.use('/administration/dossierRevision', require('./Routes/revision/dossierRevisionRoutes'));
+
 app.use('/administration/revisionControleAuto', require('./Routes/revision/revisionControleAutoRoutes'));
 
 // Routes pour l'analyse fournisseur/client

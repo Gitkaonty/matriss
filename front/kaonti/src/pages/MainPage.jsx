@@ -222,7 +222,6 @@ const FinalUserDashboard = () => {
     // Fonctions pour les breadcrumbs
     const getNavigationLevel1 = () => {
         const path = location.pathname.toLowerCase();
-        console.log('🔍 Debug - Path:', path);
 
         if (path.includes('/administration')) return 'Administration';
         if (path.includes('/parametrages')) return 'Paramétrages';
@@ -537,7 +536,6 @@ const FinalUserDashboard = () => {
                                 <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#0B1120' }}>
                                     {(() => {
                                         const dossierName = fileInfos?.dossier || `Dossier ${idDossier || '...'}`;
-                                        console.log('🔍 Debug - Dossier name:', dossierName);
                                         return dossierName;
                                     })()}
                                 </Typography>
@@ -548,14 +546,12 @@ const FinalUserDashboard = () => {
                             <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#94A3B8' }}>
                                 {(() => {
                                     const level1 = getNavigationLevel1();
-                                    console.log('🔍 Debug - Level1 rendered:', level1);
                                     return level1;
                                 })()}
                             </Typography>
                             <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#00FF94' }}>
                                 {(() => {
                                     const level2 = getNavigationLevel2();
-                                    console.log('🔍 Debug - Level2 rendered:', level2);
                                     return level2;
                                 })()}
                             </Typography>

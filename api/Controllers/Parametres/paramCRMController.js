@@ -616,15 +616,6 @@ const updateAccountsLength = async (req, res) => {
       autocompletion
     } = req.body;
 
-    console.log('Mise à jour longueur comptes:', {
-      fileId,
-      compteId,
-      oldLongueurStd,
-      newLongueurStd,
-      oldLongueurAux,
-      newLongueurAux,
-      autocompletion
-    });
 
     // Récupérer tous les comptes du dossier
     const comptes = await dossierplancomptable.findAll({
@@ -634,16 +625,6 @@ const updateAccountsLength = async (req, res) => {
       }
     });
 
-    console.log(`Nombre de comptes trouvés: ${comptes.length}`);
-    if (comptes.length > 0) {
-      console.log('Échantillon des premiers comptes:', comptes.slice(0, 3).map(c => ({
-        id: c.id,
-        compte: c.compte,
-        libelle: c.libelle,
-        nature: c.nature,
-        baseaux: c.baseaux
-      })));
-    }
 
     let updatedCount = 0;
 
@@ -667,10 +648,8 @@ const updateAccountsLength = async (req, res) => {
         (compte.baseaux && compte.baseaux !== currentCompte)
       );
 
-      console.log(`Traitement compte ${currentCompte}: nature=${compte.nature}, isAuxiliaire=${isCompteAuxiliaire}, baseaux="${compte.baseaux}", baseaux_id=${compte.baseaux_id}, longueur=${currentCompte.length}`);
 
       if (isCompteAuxiliaire && oldLongueurAux !== newLongueurAux) {
-        console.log(`Compte auxiliaire ${currentCompte}: ${oldLongueurAux} -> ${newLongueurAux}, autocompletion=${autocompletion}`);
         // Traitement des comptes auxiliaires
         if (newLongueurAux > currentCompte.length) {
           // Cas 1: Nombre de caractères inférieur à celui modifié dans CRM
@@ -679,7 +658,6 @@ const updateAccountsLength = async (req, res) => {
             const zerosToAdd = newLongueurAux - currentCompte.length;
             newCompte = currentCompte + '0'.repeat(zerosToAdd);
             shouldUpdate = true;
-            console.log(`Autocomplétion: ajout de ${zerosToAdd} zéros: ${currentCompte} -> ${newCompte}`);
           } else {
             // Laisser le compte tel quel si autocomplétion désactivée
             console.log(`Autocomplétion désactivée: compte ${currentCompte} laissé tel quel`);
@@ -689,22 +667,18 @@ const updateAccountsLength = async (req, res) => {
           // Toujours tronquer pour avoir le nombre exact de caractères
           newCompte = currentCompte.substring(0, newLongueurAux);
           shouldUpdate = true;
-          console.log(`Troncature: ${currentCompte} -> ${newCompte}`);
         }
       } else if (!isCompteAuxiliaire && oldLongueurStd !== newLongueurStd) {
-        console.log(`Compte standard ${currentCompte}: ${oldLongueurStd} -> ${newLongueurStd}`);
         // Traitement des comptes standard
         if (newLongueurStd > currentCompte.length) {
           // Ajouter des zéros à droite
           const zerosToAdd = newLongueurStd - currentCompte.length;
           newCompte = currentCompte + '0'.repeat(zerosToAdd);
           shouldUpdate = true;
-          console.log(`Ajout de ${zerosToAdd} zéros: ${currentCompte} -> ${newCompte}`);
         } else if (newLongueurStd < currentCompte.length) {
           // Tronquer le compte
           newCompte = currentCompte.substring(0, newLongueurStd);
           shouldUpdate = true;
-          console.log(`Troncature: ${currentCompte} -> ${newCompte}`);
         }
       } else {
         console.log(`Compte ${currentCompte} ignoré: pas de changement nécessaire`);
@@ -717,7 +691,6 @@ const updateAccountsLength = async (req, res) => {
         // Pour les comptes standard, mettre à jour aussi la centralisation (baseaux)
         if (!isCompteAuxiliaire) {
           updateData.baseaux = newCompte;
-          console.log(`Mise à jour centralisation: baseaux = ${newCompte}`);
         }
 
         await dossierplancomptable.update(
@@ -725,7 +698,6 @@ const updateAccountsLength = async (req, res) => {
           { where: { id: compte.id } }
         );
         updatedCount++;
-        console.log(`Compte mis à jour: ${currentCompte} -> ${newCompte}`);
       }
     }
 

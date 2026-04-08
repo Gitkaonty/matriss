@@ -787,7 +787,7 @@ export default function ParamExerciceComponent() {
                 </TabList>
             </Box> */}
             <TabPanel value="1" sx={{ p: 0 }}>
-                <Box sx={{ p: 3, width: '100%' }}>
+                <Box sx={{ p: 3, width: '97%' }}>
                     {/* BREADCRUMBS */}
                     {/* <Breadcrumbs
                         separator={<NavigateNextIcon fontSize="small" sx={{ color: '#94A3B8' }} />}

@@ -595,9 +595,7 @@ exports.validerGroupeDoublon = async (req, res) => {
                 },
                 transaction
             }
-        );
-        console.log('✅ [BACK] rechercheDoublons mis à jour:', updateRechercheResult, 'lignes');
-        
+        );        
         // Vérifier après
         const apres = await db.rechercheDoublons.findAll({
             where: { 

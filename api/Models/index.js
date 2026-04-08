@@ -128,6 +128,12 @@ db.tableControleAnomalies = require('./tableControleAnomaliesModel.js')(sequeliz
 db.revisionCommentaireAnomalies = require('./revisionCommentaireAnomaliesModel.js')(sequelize, DataTypes);
 db.revisionAnalytiqueResultats = require('./revisionAnalytiqueResultatModel.js')(sequelize, DataTypes);
 
+// Dossier Revision Matrice (cycles de révision)
+db.dossierRevisionMatrice = require('./dossierRevisionMatriceModel')(sequelize, DataTypes);
+db.dossierRevision = require('./dossierRevisionModel')(sequelize, DataTypes);
+db.dossierRevisionSynthese = require('./dossierRevisionSyntheseModel')(sequelize, DataTypes);
+db.dossierRevisionCommentaire = require('./dossierRevisionCommentaireModel')(sequelize, DataTypes);
+
 // Analyse Fournisseur/Client
 db.analyseFournisseurLignes = require('./analyseFournisseurLigneModel')(sequelize, DataTypes);
 db.analyseFournisseurAnomalies = require('./analyseFournisseurAnomalieModel')(sequelize, DataTypes);

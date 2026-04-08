@@ -1601,13 +1601,8 @@ export default function DeclarationIRSAComponent() {
   const GetDateDebutFinExercice = (id) => {
     axios.get(`/paramExercice/listeExerciceById/${id}`).then((response) => {
       const resData = response.data;
-      console.log("resData : ", resData);
-      console.log("response.data.state : ", response.data.state);
       if (resData.state) {
         const annee = getAnneesEntreDeuxDates(resData.list.date_debut, resData.list.date_fin);
-        console.log("Date début :", resData.list.date_debut);
-        console.log("Date fin :", resData.list.date_fin);
-        console.log("Annee :", annee);
         setListeAnnee(annee);
       }
     }).catch((error) => {
@@ -1622,7 +1617,6 @@ export default function DeclarationIRSAComponent() {
     return (params) => {
       const handleChange = (event) => {
         const newValue = Number(event.target.value) || 0;
-        console.log(`Calcul pour ${fieldName}:`, newValue);
         // 
         // Met à jour le champ actuel
         params.api.setEditCellValue({
@@ -1809,7 +1803,6 @@ export default function DeclarationIRSAComponent() {
     setLoading(true);
     axios.get(`/paie/paie/${compteId}/${id}/${selectedExerciceId}`)
       .then(response => {
-        console.log("Reponse GET :paie/paie :", response.data);
         if (response.data.state && Array.isArray(response.data.list)) {
           setPaieData(response.data.list);
         } else {
@@ -2124,7 +2117,6 @@ export default function DeclarationIRSAComponent() {
       id: 'totalSalaireBrut', label: 'Total Salaire Brut', minWidth: 200, align: 'right', isnumber: true, valueGetter: ({ row }) => {
         const val = row.totalSalaireBrut;
         const numVal = Number(val);
-        console.log(`[DEBUG] totalSalaireBrut valueGetter - row.id: ${row.id}, val:`, val, typeof val, 'numVal:', numVal);
         return (val !== undefined && val !== null && val !== '' && !isNaN(numVal) && numVal !== 0) ? numVal : 0;
       }, editable: false, format: value => (value && value !== 0) ? Number(value).toLocaleString('fr-FR', { minimumFractionDigits: 2 }) : '0,00'
     },

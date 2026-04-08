@@ -191,8 +191,6 @@ export default function ControlesMatrix() {
     try {
       const payload = { ...values };
 
-      console.log('Payload to send:', payload);
-
       // Utiliser le même endpoint POST pour l'ajout et la modification
       // Le backend gère automatiquement la mise à jour si id_controle existe
       await axiosPrivate.post('/param/revisionControleMatrix', payload);

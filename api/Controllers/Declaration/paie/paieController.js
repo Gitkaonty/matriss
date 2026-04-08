@@ -59,7 +59,6 @@ const computePaieFields = require('../../../Utils/computePaieFields');
 
 exports.create = async (req, res) => {
   try {
-    console.log('----Reçu à l\'API:', req.body);
 
     // Vérifier si les champs calculés sont déjà présents (import CSV)
     const hasCalculatedFields = req.body.totalSalaireBrut !== undefined &&
@@ -68,7 +67,6 @@ exports.create = async (req, res) => {
 
     if (!hasCalculatedFields) {
       // Calcul automatique des champs dérivés si données brutes fournies
-      console.log('[DEBUG] Calcul des champs côté backend car non calculés');
       const calculs = computePaieFields(req.body, req.body.nombre_enfants_charge);
       // Fusionne les champs calculés dans req.body
       Object.assign(req.body, calculs);
@@ -76,7 +74,6 @@ exports.create = async (req, res) => {
       console.log('[DEBUG] Champs déjà calculés côté frontend, pas de recalcul');
     }
 
-    console.log('[DEBUG] totalSalaireBrut reçu:', req.body.totalSalaireBrut);
     // Accepter matricule ou personnelId. Si personnelId manquant mais matricule présent, on résout côté backend
     let { personnelId } = req.body;
     const matricule = req.body.matricule ? String(req.body.matricule).trim() : '';
@@ -93,8 +90,6 @@ exports.create = async (req, res) => {
     if (!req.body.personnelId) {
       return res.status(400).json({ state: false, msg: 'personnelId ou matricule est requis' });
     }
-    console.log(req.body.mois, req.body.annee)
-    console.log('[DEBUG] totalSalaireBrut envoyé à Sequelize:', req.body.totalSalaireBrut);
     const paie = await Paie.create({
       personnelId: req.body.personnelId,
       matricule: req.body.matricule,
@@ -138,7 +133,6 @@ exports.create = async (req, res) => {
       id_exercice: req.body.id_exercice,
 
     });
-    console.log('[DEBUG] paie créée:', paie && paie.totalSalaireBrut);
     return res.json({ state: true, msg: 'Paie créée avec succès', data: paie });
   } catch (error) {
     console.error('Erreur création paie:', error);

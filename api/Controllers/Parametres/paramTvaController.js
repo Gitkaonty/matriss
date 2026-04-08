@@ -219,7 +219,6 @@ async function listJournalsByCompte(req, res) {
     
     return res.json({ state: true, list: mappedRows, msg: 'OK' });
   } catch (error) {
-    console.log('[paramTva] listJournalsByCompte error', error);
     return res.json({ state: false, list: [], msg: 'Erreur serveur' });
   }
 }
@@ -257,7 +256,6 @@ const createJournal = async (req, res) => {
     const created = await Journals.create(payload);
     return res.json({ state: true, item: created, msg: 'Écriture ajoutée' });
   } catch (error) {
-    console.log('[paramTva] createJournal error', error);
     return res.json({ state: false, msg: 'Erreur serveur lors de la création' });
   }
 }
@@ -265,7 +263,6 @@ const createJournal = async (req, res) => {
 const ajoutMoisAnnee = async (req, res) => {
   try {
       const { selectedDetailRows, decltvamois, decltvaannee, id_compte, id_dossier, id_exercice } = req.body;
-    console.log("aaaaaaaaa",req.body);
       if (!selectedDetailRows || !decltvamois || !decltvaannee) {
           return res.status(400).json({ state: false, message: 'Données manquantes' });
       }
@@ -299,7 +296,6 @@ const ajoutMoisAnnee = async (req, res) => {
               };
           })
       );
-      console.log('[AJOUT][PAYLOAD]', { selected: selectedDetailRows, decltvamois, decltvaannee });
       console.table(mappedAllJournalsData.map(x => ({
         id: x.id, journalCode: x.journalCode, journalType: x.journalType, compte: x.compte
       })));
@@ -321,12 +317,10 @@ const ajoutMoisAnnee = async (req, res) => {
         );
         totalUpdated += Number(cnt || 0);
       }
-      console.log('[AJOUT][PARTITION]', { bankIds, nonBankIds });
       const idEcritures = (nonBankIds.length > 0
         ? journalData.filter(j => nonBankIds.includes(j.id)).map(j => j.id_ecriture)
         : []);
       // console.log("yvgbhunj,kl;",idEcritures);
-      console.log('[AJOUT][UPDATED]', { totalUpdated });
       // Récupérer toutes les écritures liées
       const allJournals = await Journals.findAll({
           where: { id_ecriture: idEcritures, id_compte, id_dossier, id_exercice },
@@ -479,7 +473,6 @@ const updateJournalsDeclFlag = async (req, res) => {
     );
     return res.json({ state: true, msg: `Mise à jour ${count} écriture(s)` });
   } catch (error) {
-    console.log('[paramTva] updateJournalsDeclFlag error', error);
     return res.json({ state: false, msg: 'Erreur serveur lors de la mise à jour' });
   }
 }
@@ -1140,26 +1133,7 @@ const generateAnnexeDeclarationAuto = async (req, res) => {
 
       const result = computed.map(x => x.row);
       const tierDebugRows = computed.map(x => x.tierDebug);
-
-      console.log('[ANNEXE][GEN] tiers info (debug)');
-      console.table(
-        tierDebugRows.map(r => ({
-          id_ecriture: r.id_ecriture,
-          journal_type: r.journal_type,
-          tiers_compte: r.tiers_compte,
-          tiers_libelle: r.tiers_libelle_pc || r.tiers_libelle_ligne,
-          tiers_id_numcpt: r.tiers_id_numcpt,
-          tiers_nif: r.tiers_nif,
-          tiers_stat: r.tiers_stat,
-          tiers_adresse: r.tiers_adresse,
-          tva_compte: r.tva_compte,
-          tva_id_numcpt: r.tva_id_numcpt,
-          montant_tva: r.montant_tva,
-          montant_ht: r.montant_ht,
-          montant_ttc: r.montant_ttc,
-          anomalies: r.anomalies,
-        }))
-      );
+  
       // Si tu veux tout voir (objet complet), décommente la ligne ci-dessous
       // console.dir(tierDebugRows, { depth: null });
 
@@ -1241,13 +1215,11 @@ const generateTvaAutoDetail = async (req, res) => {
         // console.log("nvsidvbusd",startDate);
         const startDate = new Date(annee, mois - 4, 1);
         const formatted = startDate.toLocaleDateString('sv-SE'); // format YYYY-MM-DD
-        console.log("startDate",formatted); 
 
 
         const endDate = new Date(annee, mois, 0);
         endDate.setHours(23, 59, 59, 999);
         const formattedEndDate = endDate.toLocaleDateString('sv-SE'); // format YYYY-MM-DD
-        console.log("endDate",formattedEndDate);
       
         dateFilter = { dateecriture: { [Op.between]: [startDate, endDate] } };
       }

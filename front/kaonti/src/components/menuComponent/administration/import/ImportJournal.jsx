@@ -1089,12 +1089,7 @@ export default function ImportJournal() {
     };
 
     const handleSaveRanCodes = async () => {
-        // Debug: vérifier les valeurs
-        console.log('[handleSaveRanCodes] compteId:', compteId, 'fileId:', fileId);
-        console.log('[handleSaveRanCodes] ranCodesList:', ranCodesList);
-        console.log('[handleSaveRanCodes] codeJournal existants:', codeJournal);
-
-        // Vérifier que compteId et fileId sont définis
+        // Debug: vérifier les valeurs     
         if (!compteId || !fileId) {
             toast.error('Erreur: compteId ou fileId non défini. Veuillez rafraîchir la page.');
             return;
@@ -1119,7 +1114,6 @@ export default function ImportJournal() {
 
         // Vérifier si un code de type RAN existe déjà dans le dossier
         const existingRanCode = codeJournal.find(cj => cj.type?.toUpperCase() === 'RAN');
-        console.log('[handleSaveRanCodes] existingRanCode:', existingRanCode);
 
         // Créer ou mettre à jour le code RAN
         try {
@@ -1134,8 +1128,6 @@ export default function ImportJournal() {
                 type: 'RAN',
                 compteassocie: ''
             };
-
-            console.log('[handleSaveRanCodes] Envoi:', codeData);
 
             const response = await axiosPrivate.post(`/paramCodeJournaux/codeJournauxAdd`, codeData);
 

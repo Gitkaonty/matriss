@@ -197,7 +197,7 @@ const PortefeuillePage = () => {
         },
         {
             field: 'nom',
-            headerName: 'Nom du portefeuille',
+            headerName: 'Nom de la portefeuille',
             flex: 1,    
             editable: true,
             headerAlign: 'left',
