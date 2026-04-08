@@ -184,13 +184,10 @@ export default function AuditDashboard() {
                     break;
             }
 
-            console.log('[SyntheseAnomalies] URL appelée:', url);
             const response = await axiosPrivate.get(url);
-            console.log('[SyntheseAnomalies] 📥 Réponse brute:', response.data);
 
             if (response.data.state && response.data.data) {
                 const data = response.data.data;
-                console.log('[SyntheseAnomalies] 📊 Données extraites:', data);
                 return {
                     anomalies: data.total_anomalies || data.nbLignes || data.total || 0,
                     remaining: data.restantes || data.remaining || data.nbGroupes || data.nonValide || 0
@@ -208,13 +205,11 @@ export default function AuditDashboard() {
         if (!selectedExerciceId) return;
 
         setLoadingStats(true);
-        console.log('[SyntheseAnomalies] 🔄 Début loadAllStats pour exercice:', selectedExerciceId, 'periode:', selectedPeriodeId);
         try {
             const { id_compte, id_dossier, id_exercice } = getIds();
 
             // D'abord, déclencher la sauvegarde des anomalies pour la période sélectionnée
             if (selectedPeriodeDates) {
-                console.log('[SyntheseAnomalies] Sauvegarde des anomalies pour la période...');
                 try {
                     // Appeler l'endpoint de revue analytique N/N-1 pour sauvegarder les anomalies
                     await axiosPrivate.get(`/dashboard/revuAnalytiqueNN1/${id_compte}/${id_dossier}/${id_exercice}?date_debut=${selectedPeriodeDates.date_debut}&date_fin=${selectedPeriodeDates.date_fin}&id_periode=${selectedPeriodeId}`);
@@ -222,7 +217,6 @@ export default function AuditDashboard() {
                     // Appeler l'endpoint de revue analytique mensuelle pour sauvegarder les anomalies
                     await axiosPrivate.get(`/dashboard/revuAnalytiqueMensuelle/${id_compte}/${id_dossier}/${id_exercice}?date_debut=${selectedPeriodeDates.date_debut}&date_fin=${selectedPeriodeDates.date_fin}&id_periode=${selectedPeriodeId}`);
 
-                    console.log('[SyntheseAnomalies] Anomalies sauvegardées avec succès');
                 } catch (error) {
                     console.error('[SyntheseAnomalies] Erreur lors de la sauvegarde des anomalies:', error);
                 }
@@ -233,22 +227,18 @@ export default function AuditDashboard() {
             for (let section of updatedSections) {
                 for (let item of section.items) {
                     if (item.hasAnomalies && item.typeRevue) {
-                        console.log('[SyntheseAnomalies] 📡 Fetch stats pour', item.typeRevue);
                         const stats = await fetchAnomalyStats(item.typeRevue, item.endpoint);
-                        console.log(`[SyntheseAnomalies] ✅ Stats ${item.typeRevue}:`, stats);
                         item.anomalies = stats.anomalies;
                         item.remaining = stats.remaining;
                     }
                 }
             }
 
-            console.log('[SyntheseAnomalies] 📊 Mise à jour sectionsData:', updatedSections);
             setSectionsData(updatedSections);
         } catch (error) {
             console.error('[SyntheseAnomalies] ❌ Error loading stats:', error);
         } finally {
             setLoadingStats(false);
-            console.log('[SyntheseAnomalies] 🏁 Fin loadAllStats');
         }
     };
 
@@ -428,21 +418,14 @@ export default function AuditDashboard() {
     // Listener pour rafraîchissement automatique après validation depuis un autre composant
     useEffect(() => {
         const handleAnomaliesUpdated = (event) => {
-            console.log('[SyntheseAnomalies] 📨 Event reçu:', event.detail);
             const { id_compte, id_dossier, id_exercice, id_periode } = event.detail || {};
             const currentIds = getIds();
-            console.log('[SyntheseAnomalies] 📊 Current IDs:', currentIds);
-            console.log('[SyntheseAnomalies] 📊 Event IDs:', { id_compte, id_dossier, id_exercice, id_periode });
             
             // Vérifier que l'event concerne bien le contexte actuel
             const matchCompte = String(id_compte) === String(currentIds.id_compte);
             const matchDossier = String(id_dossier) === String(currentIds.id_dossier);
             const matchExercice = String(id_exercice) === String(currentIds.id_exercice);
-            
-            console.log('[SyntheseAnomalies] 🔍 Match compte:', matchCompte, `(event: ${id_compte}, current: ${currentIds.id_compte})`);
-            console.log('[SyntheseAnomalies] 🔍 Match dossier:', matchDossier, `(event: ${id_dossier}, current: ${currentIds.id_dossier})`);
-            console.log('[SyntheseAnomalies] 🔍 Match exercice:', matchExercice, `(event: ${id_exercice}, current: ${currentIds.id_exercice})`);
-            
+                        
             if (matchCompte && matchDossier && matchExercice) {
                 console.log('[SyntheseAnomalies] ✅ Match OK - Rafraîchissement auto après validation');
                 loadAllStats();
@@ -457,7 +440,6 @@ export default function AuditDashboard() {
         // Écouter localStorage (autres onglets)
         const handleStorageChange = (e) => {
             if (e.key === 'anomalies:updated') {
-                console.log('[SyntheseAnomalies] 📨 localStorage change détecté:', e.newValue);
                 try {
                     const payload = JSON.parse(e.newValue);
                     handleAnomaliesUpdated({ detail: payload });
@@ -473,7 +455,6 @@ export default function AuditDashboard() {
             if (document.visibilityState === 'visible') {
                 const pending = localStorage.getItem('anomalies:updated');
                 if (pending) {
-                    console.log('[SyntheseAnomalies] 📨 Mise à jour en attente détectée au focus:', pending);
                     try {
                         const payload = JSON.parse(pending);
                         handleAnomaliesUpdated({ detail: payload });
@@ -496,15 +477,6 @@ export default function AuditDashboard() {
     // Fonction pour naviguer vers les détails dans un nouvel onglet
     const handleNavigateToDetails = (item) => {
         if (!item.route) return;
-
-        console.log('[SyntheseAnomalies] Click details:', {
-            itemId: item.id,
-            route: item.route,
-            selectedExerciceId,
-            selectedPeriodeId,
-            selectedPeriodeDates
-        });
-
         // Cas spécial: Analyse globale => déclencher la révision tout de suite
         if (item.id === 'analyseGlobale') {
             (async () => {
@@ -540,13 +512,6 @@ export default function AuditDashboard() {
                     navParams.append('id_periode', selectedPeriodeId);
                 }
                 url += `?${navParams.toString()}`;
-
-                console.log('[SyntheseAnomalies] Open Revision (analyseGlobale):', {
-                    id_compte,
-                    id_dossier,
-                    id_exercice,
-                    url
-                });
                 window.open(url, '_blank');
             })();
             return;
@@ -574,13 +539,7 @@ export default function AuditDashboard() {
             }
         }
 
-        console.log('[SyntheseAnomalies] Open Revision:', {
-            id_compte,
-            id_dossier,
-            id_exercice,
-            url
-        });
-
+       
         window.open(url, '_blank');
     };
 

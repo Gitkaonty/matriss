@@ -481,19 +481,15 @@ const Immobilisations = () => {
   // Fetch details_immo from backend and filter by selected PCs
   const fetchDetails = useCallback(async () => {
     if (!id || !compteId || !selectedExerciceId) { 
-      console.log('[FETCH_DETAILS] Paramètres manquants:', { id, compteId, selectedExerciceId });
       setDetailsRows([]); 
       return; 
     }
     const onePcId = Array.isArray(selectedPcIds) && selectedPcIds.length > 0 ? Number(selectedPcIds[0]) : null;
-    console.log('[FETCH_DETAILS] Requête avec params:', { fileId: id, compteId: onePcId ?? compteId, exerciceId: selectedExerciceId, pcId: onePcId, selectedPcIds });
     const { data } = await axios.get('/administration/traitementSaisie/immobilisations/details', {
       params: { fileId: id, compteId: onePcId ?? compteId, exerciceId: selectedExerciceId, pcId: onePcId || undefined }, timeout: 60000,
     });
 
-    console.log('[FETCH_DETAILS] Réponse du backend:', data);
     const list = Array.isArray(data?.list) ? data.list : [];
-    console.log('[FETCH_DETAILS] Liste extraite:', list, 'Longueur:', list.length);
     const sel = selectedPcIds;
    // const filtered = sel && sel.length > 0 ? list.filter(d => sel.includes(d.pc_id)) : list;
     const filtered = list; // Temporaire : afficher toutes les immobilisations sans filtrage
@@ -580,7 +576,6 @@ const Immobilisations = () => {
     if (!confirmed) return;
 
     const idSel = Array.isArray(detailsSelectionModel) && detailsSelectionModel.length > 0 ? detailsSelectionModel[detailsSelectionModel.length - 1] : null;
-    console.log('[DELETE] idSel:', idSel, 'detailsSelectionModel:', detailsSelectionModel);
     if (!idSel) return;
 
     try {
@@ -588,7 +583,6 @@ const Immobilisations = () => {
       const onePcId = Array.isArray(selectedPcIds) && selectedPcIds.length > 0 ? Number(selectedPcIds[0]) : null;
       const url = `/administration/traitementSaisie/immobilisations/details/${idSel}`;
       const params = { fileId: fid, compteId: onePcId ?? compteId, exerciceId: exoId };
-      console.log('[DELETE] URL:', url, 'Params:', params);
       
       await axios.delete(url, { params });
 
@@ -861,18 +855,12 @@ const Immobilisations = () => {
               }
 
               setLoadingEcritures(true);
-              console.log('[IMMO][FRONTEND] Envoi de la requête de génération:', {
-                fileId: fid, 
-                compteId, 
-                exerciceId: exoId, 
-                detailedByMonth
-              });
+              
               const { data } = await axios.post(
                 '/administration/traitementSaisie/immobilisations/ecritures/generate',
                 { fileId: fid, compteId, exerciceId: exoId, detailedByMonth: detailedByMonth === 'oui' },
                 { timeout: 60000 }
               );
-              console.log('[IMMO][FRONTEND] Réponse du serveur:', data);
               if (data?.state) {
                 toast.success(`${data?.msg || 'Écritures générées'} (${Number(data?.created_lignes) || 0} lignes)`);
                 setOpenConfirmGenerateEcritures(false);
@@ -961,7 +949,6 @@ const Immobilisations = () => {
                       params: { fileId: fid, compteId: firstRow.id, exerciceId: exoId, pcId: firstRow.id },
                       timeout: 60000,
                     });
-                    console.log('[IMPORT_SUCCESS] Détails rechargés:', detailsData);
                     const detailsList = Array.isArray(detailsData?.list) ? detailsData.list : [];
                     setDetailsRows(detailsList);
                   }

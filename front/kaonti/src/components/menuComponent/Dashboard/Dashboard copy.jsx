@@ -52,7 +52,6 @@ export default function RevuAnalytiqueNN1Detail() {
   const [listeExercice, setListeExercice] = useState([]);
   const [selectedExerciceId, setSelectedExerciceId] = useState(() => {
     const storedExerciceId = parseInt(sessionStorage.getItem('exerciceId'));
-    console.log('[RevuAnalytiqueNN1Detail] Initialisation selectedExerciceId depuis sessionStorage:', storedExerciceId);
     return storedExerciceId || 0;
   });
   const [fileInfos, setFileInfos] = useState(null);
@@ -127,16 +126,12 @@ export default function RevuAnalytiqueNN1Detail() {
   }, [id_compte, id_dossier, id_exercice, fileId, selectedExerciceId]);
 
   const fetchExercices = useCallback(async () => {
-    console.log('[RevuAnalytiqueNN1Detail] Début fetchExercices');
     try {
       const { id_dossier } = getIds();
-      console.log('[RevuAnalytiqueNN1Detail] Récupération exercices pour id_dossier:', id_dossier);
       const response = await axiosPrivate.get(`/paramExercice/listeExercice/${id_dossier}`);
       const resData = response.data;
-      console.log('[RevuAnalytiqueNN1Detail] Réponse exercices:', resData);
       if (resData.state) {
         setListeExercice(resData.list);
-        console.log('[RevuAnalytiqueNN1Detail] Liste exercices mise à jour:', resData.list);
         // Sélectionner l'exercice correspondant aux dates URL ou le premier
         if (resData.list && resData.list.length > 0) {
           if (urlDateDebut && urlDateFin) {
@@ -145,14 +140,11 @@ export default function RevuAnalytiqueNN1Detail() {
             );
             if (matchingExercice) {
               setSelectedExerciceId(matchingExercice.id);
-              console.log('[RevuAnalytiqueNN1Detail] Exercice sélectionné par dates URL:', matchingExercice);
             } else {
               setSelectedExerciceId(resData.list[0].id);
-              console.log('[RevuAnalytiqueNN1Detail] Aucun exercice trouvé pour dates URL, sélection du premier:', resData.list[0]);
             }
           } else if (selectedExerciceId === 0) {
             setSelectedExerciceId(resData.list[0].id);
-            console.log('[RevuAnalytiqueNN1Detail] Sélection du premier exercice par défaut:', resData.list[0]);
           }
         }
       } else {
@@ -170,16 +162,12 @@ export default function RevuAnalytiqueNN1Detail() {
   }, [axiosPrivate, getIds, urlDateDebut, urlDateFin, selectedExerciceId]);
 
   const fetchDossierInfos = useCallback(async () => {
-    console.log('[RevuAnalytiqueNN1Detail] Début fetchDossierInfos');
     try {
       const { id_dossier } = getIds();
-      console.log('[RevuAnalytiqueNN1Detail] Récupération infos dossier pour id_dossier:', id_dossier);
       const response = await axiosPrivate.get(`/home/FileInfos/${id_dossier}`);
       const resData = response.data;
-      console.log('[RevuAnalytiqueNN1Detail] Réponse infos dossier:', resData);
       if (resData.state && resData.fileInfos && resData.fileInfos.length > 0) {
         setFileInfos(resData.fileInfos[0]);
-        console.log('[RevuAnalytiqueNN1Detail] Infos dossier mises à jour:', resData.fileInfos[0]);
       } else {
         console.error('[RevuAnalytiqueNN1Detail] Erreur dans la réponse infos dossier - state false ou fileInfos vide:', resData);
       }
@@ -196,19 +184,14 @@ export default function RevuAnalytiqueNN1Detail() {
 
   const fetchPeriodes = useCallback(async (exerciceId) => {
     if (!exerciceId) {
-      console.log('[RevuAnalytiqueNN1Detail] fetchPeriodes: exerciceId manquant');
       return;
     }
-    console.log('[RevuAnalytiqueNN1Detail] Début fetchPeriodes pour exerciceId:', exerciceId);
     try {
       const response = await axiosPrivate.get(`/paramExercice/listePeriodes/${exerciceId}`);
-      console.log('[RevuAnalytiqueNN1Detail] Réponse périodes:', response.data);
       if (response.data.state) {
         setListePeriodes(response.data.list || []);
-        console.log('[RevuAnalytiqueNN1Detail] Liste périodes mise à jour:', response.data.list);
       } else {
         setListePeriodes([]);
-        console.error('[RevuAnalytiqueNN1Detail] Erreur dans la réponse périodes - state false:', response.data);
       }
     } catch (error) {
       console.error('[RevuAnalytiqueNN1Detail] Error fetching periodes:', error);
@@ -257,26 +240,15 @@ export default function RevuAnalytiqueNN1Detail() {
   // Récupérer les données de la revue analytique N/N-1
   useEffect(() => {
     const fetchRevuAnalytique = async () => {
-      console.log('[RevuAnalytiqueNN1Detail] Début fetchRevuAnalytique');
       try {
         setLoading(true);
         const { id_compte, id_dossier, id_exercice } = getIds();
-        console.log('[RevuAnalytiqueNN1Detail] IDs utilisés:', { id_compte, id_dossier, id_exercice });
-        console.log('[RevuAnalytiqueNN1Detail] Période sélectionnée:', selectedPeriodeDates);
-        console.log('[RevuAnalytiqueNN1Detail] selectedExerciceId:', selectedExerciceId, 'listeExercice.length:', listeExercice.length);
 
         // Ne pas faire l'appel si l'exerciceId est la valeur par défaut (1) et que les exercices ne sont pas encore chargés
         // ou si l'exerciceId par défaut est utilisé mais qu'il y a des exercices disponibles
         if (!id_compte || !id_dossier || !id_exercice ||
           (id_exercice === 1 && (listeExercice.length === 0 || selectedExerciceId === 0))) {
           console.error('[RevuAnalytiqueNN1Detail] IDs invalides ou exercice par défaut non souhaité - annulation de la requête');
-          console.log('[RevuAnalytiqueNN1Detail] Condition vérifiée:', {
-            id_compte,
-            id_dossier,
-            id_exercice,
-            listeExerciceLength: listeExercice.length,
-            selectedExerciceId
-          });
           setRows([]);
           return;
         }
@@ -285,10 +257,8 @@ export default function RevuAnalytiqueNN1Detail() {
         if (selectedPeriodeDates) {
           url += `?date_debut=${selectedPeriodeDates.date_debut}&date_fin=${selectedPeriodeDates.date_fin}`;
         }
-        console.log('[RevuAnalytiqueNN1Detail] URL appelée:', url);
 
         const response = await axiosPrivate.get(url);
-        console.log('[RevuAnalytiqueNN1Detail] Réponse revue analytique:', response.data);
 
         if (response.data.state) {
           const formattedRows = response.data.data.map((row, index) => ({
@@ -304,7 +274,6 @@ export default function RevuAnalytiqueNN1Detail() {
             valide_anomalie: row.valide_anomalie
           }));
           setRows(formattedRows);
-          console.log('[RevuAnalytiqueNN1Detail] Données formatées et mises à jour:', formattedRows.length, 'lignes');
         } else {
           console.error('[RevuAnalytiqueNN1Detail] Erreur dans la réponse revue analytique - state false:', response.data);
           setRows([]);

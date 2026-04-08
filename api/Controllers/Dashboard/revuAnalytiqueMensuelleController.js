@@ -58,11 +58,8 @@ function buildDynamicQuery(moisExercice) {
 
 exports.getRevuAnalytiqueMensuelle = async (req, res) => {
     try {
-        console.log('[DEBUG MENSUELLE] === DÉBUT getRevuAnalytiqueMensuelle ===');
-        console.log('[DEBUG MENSUELLE] Route appelée avec params:', req.params, 'query:', req.query);
         const { id_compte, id_dossier, id_exercice } = req.params;
         const { date_debut, date_fin, id_periode } = req.query; // Ajout de id_periode
-        console.log('[DEBUG MENSUELLE] Dates reçues - date_debut:', date_debut, 'date_fin:', date_fin, 'id_periode:', id_periode);
 
         if (!id_compte || !id_dossier || !id_exercice) {
             return res.status(400).json({ state: false, message: 'Paramètres manquants' });
@@ -356,20 +353,10 @@ exports.getRevuAnalytiqueMensuelle = async (req, res) => {
                 }
             }
         });
-        // // console.log(`[INFO] Total comptes avec différences: ${totalCorrections}`);
-        // // console.log('=== FIN VÉRIFICATION ===\n');
-
-        // // console.log('[DEBUG] Après remplissage mensuel');
-        // // console.log('[DEBUG] Sample rows:', Array.from(map.values()).slice(0, 2));
-
-        // NOTE: La détection automatique d'anomalies est désactivée pour la revue mensuelle
-        // L'utilisateur confirme manuellement s'il y a anomalie ou non
-        // Les anomalies sont chargées depuis la base de données (commentaireAnalytiqueMensuelle)
         
         // Sauvegarder les anomalies pour la Synthèse si une période est sélectionnée
         if (id_periode) {
             try {
-                console.log('[DEBUG MENSUELLE] Sauvegarde des anomalies mensuelles pour id_periode:', id_periode);
                 
                 // D'abord, supprimer les anciennes anomalies mensuelles pour ce contexte
                 const deleteWhereClause = {
@@ -416,7 +403,6 @@ exports.getRevuAnalytiqueMensuelle = async (req, res) => {
                     });
                 }
                 
-                console.log(`[DEBUG MENSUELLE] Sauvegardé ${anomaliesCount} anomalies mensuelles, ${validatedCount} validées`);
             } catch (saveError) {
                 console.error('[DEBUG MENSUELLE] Erreur sauvegarde anomalies mensuelles:', saveError);
             }

@@ -289,7 +289,6 @@ export default function RechercheDoublon() {
                 // Reset navigation
                 setCurrentGroupe(1);
                 setInputGroupe('1');
-                console.log('Recherche terminée:', response.data.message);
             } else {
                 alert(response.data.message || 'Erreur lors de la recherche');
             }

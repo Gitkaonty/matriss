@@ -107,7 +107,7 @@ const ExercicePeriodeSelector = ({
     }, [listeExercice, selectedExerciceId]);
 
     return (
-        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
             {!showPeriodeOnly && (
                 <Select
                     size={size}

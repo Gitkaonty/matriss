@@ -7,8 +7,6 @@ const Classification = db.classifications;
 exports.getAll = async (req, res) => {
   try {
     const { id_compte, id_dossier } = req.params;
-    console.log(id_compte, id_dossier);
-    console.log('--- Appel à GET /sociales/personnel ---');
     const list = await Personnel.findAll({
       where: { id_compte: id_compte, id_dossier: id_dossier },
       include: [
@@ -16,10 +14,6 @@ exports.getAll = async (req, res) => {
         { model: Classification, attributes: ['id', 'classe'], as: 'classification' }
       ]
     });
-    console.log('Liste des personnels trouvée:', Array.isArray(list) ? list.length : list);
-    if (Array.isArray(list) && list.length > 0) {
-      console.log('Exemple personnel:', list[0]);
-    }
     return res.json({ state: true, list });
   } catch (error) {
     console.error('Erreur lors de la récupération des personnels:', error);

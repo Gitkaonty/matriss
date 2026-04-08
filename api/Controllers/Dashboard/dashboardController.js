@@ -360,7 +360,6 @@ exports.getAllInfo = async (req, res) => {
                     }
                 }
             }
-            // console.log(' PRORATA:', { nbrMoisPeriodeN, nbrMoisTotalN1, facteurProrata: facteurProrata.toFixed(4) });
         }
 
         let chiffreAffaireN1 = [],
@@ -465,12 +464,6 @@ exports.getAllInfo = async (req, res) => {
             resultatTresorerieBanqueN1 = round2(calculateResultatTresoreriesBanques(mappedDataN1) * facteurProrata);
             resultatTresorerieCaisseN1 = round2(calculateResultatTresoreriesCaisses(mappedDataN1) * facteurProrata);
 
-            // console.log(' Valeurs N-1 après prorata:', {
-            //     resultatN1,
-            //     resultatChiffreAffaireN1,
-            //     resultatDepenseAchatN1,
-            //     facteurProrata
-            // });
         }
 
         if (id_exerciceN2) {

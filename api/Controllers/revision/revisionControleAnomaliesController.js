@@ -89,10 +89,6 @@ exports.getAnomaliesByControle = async (req, res) => {
       periodeFilter = `AND a.id_periode = ${idPeriode}`;
     }
 
-    console.log(`[DEBUG ANOMALIES] idPeriode:`, idPeriode);
-    console.log(`[DEBUG ANOMALIES] periodeFilter:`, periodeFilter);
-    console.log(`[DEBUG ANOMALIES] id_controle:`, id_controle);
-
     const anomaliesRaw = await db.sequelize.query(`
       SELECT 
         a.id,
@@ -685,13 +681,6 @@ exports.updateAnomaly = async (req, res) => {
 
     const responseValide = finalRecord[0]?.valide !== undefined ? finalRecord[0].valide : false;
     const responseCommentaire = finalRecord[0]?.commentaire || '';
-
-    console.log('[updateAnomaly] ✅ Sauvegardé:', {
-      id_controle: anomaly.id_controle,
-      id_jnl: anomaly.id_jnl,
-      valide: responseValide,
-      id_periode: finalPeriodeId
-    });
 
     return res.json({
       state: true,

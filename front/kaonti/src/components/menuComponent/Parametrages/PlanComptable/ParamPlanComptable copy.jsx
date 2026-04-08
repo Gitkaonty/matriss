@@ -1,32 +1,104 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Typography, Stack, Box, Tab, Chip, ButtonGroup, Button, Select, MenuItem, TextField } from '@mui/material';
+import {
+    Typography, Stack, Box, Tab, Chip, ButtonGroup, Button, Select, MenuItem, TextField,
+    Table, TableHead, TableBody, TableRow, TableCell, TableContainer, Paper, Checkbox, Breadcrumbs, InputAdornment,
+    TablePagination
+} from '@mui/material';
 import Tooltip from '@mui/material/Tooltip';
+import IconButton from '@mui/material/IconButton';
 import { init } from '../../../../../init';
 import axios from '../../../../../config/axios';
 import toast from 'react-hot-toast';
-import { DataGrid, frFR, GridToolbarContainer, useGridApiContext } from '@mui/x-data-grid';
-import IconButton from '@mui/material/IconButton';
 import { TabContext, TabList, TabPanel } from '@mui/lab';
 import useAuth from '../../../../hooks/useAuth';
 import { jwtDecode } from 'jwt-decode';
-import QuickFilter from '../../../componentsTools/DatagridToolsStyle';
-import { DataGridStyle } from '../../../componentsTools/DatagridToolsStyle';
 import PopupConfirmDelete from '../../../componentsTools/popupConfirmDelete';
-import { format } from 'date-fns';
 import { InfoFileStyle } from '../../../componentsTools/InfosFileStyle';
 import PopupTestSelectedFile from '../../../componentsTools/popupTestSelectedFile';
 import { TbCircleLetterCFilled, TbCircleLetterGFilled, TbCircleLetterAFilled } from "react-icons/tb";
 import { DetailsInformation } from '../../../componentsTools/DetailsInformation';
-import { BsCheckCircleFill } from "react-icons/bs";
-import { PiIdentificationCardFill } from "react-icons/pi";
-import { BsPersonFillSlash } from "react-icons/bs";
-import { FaGlobeAmericas } from "react-icons/fa";
 import { useSearchParams } from "react-router-dom";
-// import PopupAddNewAccount from '../../../componentsTools/PlanComptable/PopupAddNewAccount';
 import usePermission from '../../../../hooks/usePermission';
 import useAxiosPrivate from '../../../../hooks/useAxiosPrivate';
 import { TbRefresh } from "react-icons/tb";
+
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/EditOutlined';
+import DeleteIcon from '@mui/icons-material/DeleteOutline';
+import CheckIcon from '@mui/icons-material/Check';
+import CloseIcon from '@mui/icons-material/Close';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import SearchIcon from '@mui/icons-material/Search';
+
+// --- CONSTANTES DE STYLE ---
+const NEON_MINT = '#00FF94';
+const NAV_DARK = '#0B1120';
+const BG_SOFT = '#F8FAFC';
+const BORDER_COLOR = '#E2E8F0';
+
+// --- STYLES ---
+const headerStyle = (width, last = false) => ({
+    fontWeight: 800,
+    color: '#94A3B8',
+    fontSize: '10px',
+    textTransform: 'uppercase',
+    width: width,
+    minWidth: width,
+    paddingY: '6px',
+    pr: last ? 2 : 1
+});
+
+const inlineEditStyle = {
+    width: '100%',
+    '& .MuiOutlinedInput-root': {
+        height: '26px',
+        fontSize: '12px',
+        borderRadius: '4px',
+        bgcolor: '#fff'
+    }
+};
+
+const inlineSelectStyle = {
+    width: '100%',
+    '& .MuiOutlinedInput-root': {
+        height: '28px',
+        fontSize: '12px',
+        borderRadius: '4px',
+        bgcolor: 'transparent',
+        '& fieldset': {
+            borderColor: '#CBD5E1',
+            borderWidth: '1px'
+        },
+        '&:hover fieldset': {
+            borderColor: '#94A3B8'
+        },
+        '&.Mui-focused fieldset': {
+            borderColor: '#00FF94',
+            borderWidth: '1px'
+        }
+    },
+    '& .MuiSelect-select': {
+        padding: '4px 8px'
+    }
+};
+
+const cellStyle = {
+    padding: '4px',
+    '&:first-of-type': {
+        paddingLeft: '4px'
+    }
+};
+
+const buttonStyle = {
+    minWidth: 120,
+    height: 32,
+    px: 2,
+    borderRadius: 1,
+    textTransform: 'none',
+    fontWeight: 600,
+    boxShadow: 'none',
+};
 
 export default function ParamPlanComptable() {
     const { canAdd, canModify, canDelete, canView } = usePermission();
@@ -46,12 +118,17 @@ export default function ParamPlanComptable() {
     const compteId = decoded?.UserInfo?.compteId || 0;
 
     const [pc, setPc] = useState([]);
+    const [filteredPc, setFilteredPc] = useState([]);
+    const [searchText, setSearchText] = useState('');
     const [selectedRow, setSelectedRow] = useState(null);
     const [selectedRowId, setSelectedRowId] = useState(null);
     const [listeCptCollectif, setListeCptCollectif] = useState([]);
     const [isLoadingCollectif, setIsLoadingCollectif] = useState(false);
     const loadingCollectifRef = useRef(false);
-    const [rowModesModel, setRowModesModel] = useState({});
+
+    // États pour l'édition inline dans le Table
+    const [editingId, setEditingId] = useState(null);
+    const [editValues, setEditValues] = useState({});
 
     const [listCptChg, setListCptChg] = useState([]);
     const [listCptTva, setListCptTva] = useState([]);
@@ -67,19 +144,40 @@ export default function ParamPlanComptable() {
     const [consolidation, setConsolidation] = useState(false);
     const [isTypeComptaAutre, setIsTypeComptaAutre] = useState(false);
 
-    const buttonStyle = {
-        minWidth: 120,
-        height: 32,
-        px: 2,
-        borderRadius: 1,
-        textTransform: 'none',
-        fontWeight: 600,
-        boxShadow: 'none',
-    };
-
     const [openDialogAddNewAccount, setOpenDialogAddNewAccount] = useState(false);
     const [typeAction, setTypeAction] = useState('');
     const [isRefresh, setisRefresh] = useState(false);
+
+    // Pagination
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(50);
+
+    // Fonction de filtrage pour la recherche multi-colonnes
+    const handleSearch = (searchValue) => {
+        setSearchText(searchValue);
+
+        if (!searchValue.trim()) {
+            setFilteredPc(pc);
+            return;
+        }
+
+        const filtered = pc.filter(row => {
+            const searchLower = searchValue.toLowerCase();
+            return (
+                (row.compte && row.compte.toLowerCase().includes(searchLower)) ||
+                (row.libelle && row.libelle.toLowerCase().includes(searchLower)) ||
+                (row.nature && row.nature.toLowerCase().includes(searchLower)) ||
+                (row.baseCompte && row.baseCompte.toString().toLowerCase().includes(searchLower))
+            );
+        });
+
+        setFilteredPc(filtered);
+    };
+
+    // Mettre à jour filteredPc quand pc change
+    useEffect(() => {
+        setFilteredPc(pc);
+    }, [pc]);
 
     // Récupérer la liste des comptes collectifs pour le dropdown (avec logs)
     const recupererListeCptCollectif = useCallback(() => {
@@ -91,17 +189,17 @@ export default function ParamPlanComptable() {
             // console.log('[DEBUG] recupererListeCptCollectif: déjà en chargement');
             return;
         }
-        
+
         // console.log('[DEBUG] recupererListeCptCollectif: début chargement...', { fileId, compteId });
         loadingCollectifRef.current = true;
         setIsLoadingCollectif(true);
         const startTime = Date.now();
-        
+
         axios.post(`/paramPlanComptable/pc`, { fileId: Number(fileId), compteId: Number(compteId) })
             .then((response) => {
                 const elapsed = Date.now() - startTime;
                 // console.log(`[DEBUG] recupererListeCptCollectif: reçu en ${elapsed}ms`);
-                
+
                 const resData = response.data;
                 if (resData.state) {
                     const listePc = resData.liste || [];
@@ -122,281 +220,18 @@ export default function ParamPlanComptable() {
             });
     }, [fileId, compteId]);
 
-    // Composant d'édition personnalisé pour la colonne baseCompte
-    const BaseCompteEditCell = (props) => {
-        const { id, field, value, row } = props;
-        const [localValue, setLocalValue] = useState('');
-        const [openSelect, setOpenSelect] = useState(false);
-        const apiRef = useGridApiContext();
-        const currentRow = apiRef.current.getRowWithUpdatedValues(id);
-        const currentNature = currentRow?.nature ?? row.nature;
-        const currentCompte = currentRow?.compte ?? row.compte;
-
-        // console.log('[DEBUG] BaseCompteEditCell: render', { id, value, nature: currentNature, listeCptCollectifLength: listeCptCollectif.length });
-
-        // Synchroniser la valeur avec le state externe
-        useEffect(() => {
-            // console.log('[DEBUG] BaseCompteEditCell: useEffect value/liste', { value, nature: currentNature });
-            
-            if (currentNature === 'General' || currentNature === 'Collectif') {
-                const compteValue = currentCompte || '';
-                setLocalValue(compteValue);
-                apiRef.current.setEditCellValue({ id, field, value: compteValue });
-            } else {
-                // Pour Auxiliaire: on stocke l'ID (bigint) du collectif dans baseCompte
-                if (value != null && value !== '' && listeCptCollectif.length > 0) {
-                    const found = listeCptCollectif.find(item => String(item.id) === String(value) || String(item.compte) === String(value));
-                    if (found) {
-                        // console.log('[DEBUG] BaseCompteEditCell: valeur trouvée', found.compte);
-                        setLocalValue(String(found.id));
-                        apiRef.current.setEditCellValue({ id, field, value: String(found.id) });
-                    } else {
-                        // console.log('[DEBUG] BaseCompteEditCell: valeur non trouvée dans liste', value);
-                        setLocalValue('');
-                        apiRef.current.setEditCellValue({ id, field, value: '' });
-                    }
-                } else {
-                    setLocalValue('');
-                }
-            }
-        }, [value, currentNature, currentCompte, listeCptCollectif]);
-
-        useEffect(() => {
-            if (currentNature !== 'Aux' && currentNature !== 'Auxiliaire') {
-                setOpenSelect(false);
-                return;
-            }
-
-            if (listeCptCollectif.length === 0 && !isLoadingCollectif && !loadingCollectifRef.current) {
-                recupererListeCptCollectif();
-            }
-
-            // Ouvrir automatiquement la liste quand on passe en Aux et qu'il y a des options
-            if (listeCptCollectif.length > 0) {
-                setOpenSelect(true);
-            }
-        }, [currentNature, listeCptCollectif.length, isLoadingCollectif]);
-
-        const handleChange = (event) => {
-            const newValue = event.target.value;
-            // console.log('[DEBUG] BaseCompteEditCell: handleChange', newValue);
-            setLocalValue(newValue);
-            apiRef.current.setEditCellValue({ id, field, value: newValue });
-        };
-
-        // Si nature = General ou Collectif: champ grisé avec le compte
-        if (currentNature === 'General' || currentNature === 'Collectif') {
-            return (
-                <TextField
-                    size="small"
-                    value={currentCompte || ''}
-                    disabled
-                    sx={{ 
-                        width: '100%',
-                        '& .MuiInputBase-root.Mui-disabled': {
-                            backgroundColor: '#f5f5f5',
-                        }
-                    }}
-                />
-            );
-        }
-
-        // Si nature = Auxiliaire: dropdown des comptes collectifs
-        return (
-            <Select
-                size="small"
-                value={localValue || ''}
-                onChange={handleChange}
-                disabled={isLoadingCollectif}
-                open={openSelect}
-                onOpen={() => setOpenSelect(true)}
-                onClose={() => setOpenSelect(false)}
-                displayEmpty
-                sx={{ width: '100%' }}
-            >
-                <MenuItem value="">
-                    <em>{isLoadingCollectif ? 'Chargement...' : 'Sélectionner un compte'}</em>
-                </MenuItem>
-                {listeCptCollectif?.map((item) => (
-                    <MenuItem key={item.id} value={String(item.id)}>
-                        {item.compte} - {item.libelle}
-                    </MenuItem>
-                ))}
-            </Select>
-        );
-    };
-
-    // Composant d'affichage pour baseCompte
-    const BaseCompteRenderCell = (params) => {
-        let displayValue = params.row.baseCompte;
-        if (params.row.nature === 'Aux' || params.row.nature === 'Auxiliaire') {
-            const found = listeCptCollectif.find((c) => String(c.id) === String(params.row.baseCompte));
-            if (found) displayValue = found.compte;
-        }
-        return (
-            <span
-                style={{ cursor: 'pointer', width: '100%' }}
-                onClick={() => handleShowCptInfos(params.row)}
-            >
-                {displayValue}
-            </span>
-        );
-    };
-
-    // Gestion du mode édition
-    const handleRowModesModelChange = (newRowModesModel) => {
-        // console.log('[DEBUG] handleRowModesModelChange:', newRowModesModel);
-        if (newRowModesModel && Object.prototype.hasOwnProperty.call(newRowModesModel, 'undefined')) {
-            const { undefined: _discard, ...rest } = newRowModesModel;
-            setRowModesModel(rest);
-            return;
-        }
-        setRowModesModel(newRowModesModel);
-    };
-
-    // Sauvegarder les modifications
-    const processRowUpdate = (newRow, oldRow) => {
-        console.log('[DEBUG] processRowUpdate: START', { 
-            newRowId: newRow.id, 
-            newRowIdType: typeof newRow.id,
-            oldRowId: oldRow.id,
-            isNew: newRow.isNew,
-            hasIsNewProperty: 'isNew' in newRow
-        });
-        
-        return new Promise((resolve, reject) => {
-            try {
-                const isNewRow = newRow.isNew === true;
-                
-                // Vérifier les données requises
-                if (!newRow.compte || !newRow.libelle) {
-                    console.error('[DEBUG] processRowUpdate: données manquantes', { compte: newRow.compte, libelle: newRow.libelle });
-                    toast.error('Le compte et le libellé sont requis');
-                    reject(oldRow);
-                    return;
-                }
-                
-                // Vérifier l'ID pour modification
-                if (!isNewRow && !newRow.id) {
-                    console.error('[DEBUG] processRowUpdate: ID manquant pour modification', newRow);
-                    toast.error('Erreur: ID du compte manquant');
-                    reject(oldRow);
-                    return;
-                }
-
-                // Pour Auxiliaire: baseCompte (ID collectif) obligatoire
-                if ((newRow.nature === 'Aux' || newRow.nature === 'Auxiliaire') && (!newRow.baseCompte || String(newRow.baseCompte).trim() === '')) {
-                    console.error('[DEBUG] processRowUpdate: baseCompte manquant pour Auxiliaire', { baseCompte: newRow.baseCompte });
-                    toast.error('Veuillez sélectionner un compte collectif');
-                    reject(oldRow);
-                    return;
-                }
-                
-                const itemId = isNewRow ? 0 : newRow.id;
-                // console.log('[DEBUG] processRowUpdate: itemId =', itemId);
-                
-                // Quand nature = General ou Collectif: baseCompte doit être le numéro de compte
-                // Quand nature = Auxiliaire: baseCompte est l'ID du compte collectif sélectionné
-                let baseCptValue = null;
-                if (newRow.nature === 'General' || newRow.nature === 'Collectif') {
-                    baseCptValue = newRow.compte ? Number(newRow.compte) : null;
-                } else if (newRow.baseCompte && String(newRow.baseCompte).trim() !== '') {
-                    baseCptValue = Number(newRow.baseCompte);
-                }
-
-                const payload = {
-                    action: isNewRow ? 'new' : 'modify',
-                    itemId: itemId,
-                    idCompte: Number(compteId),
-                    idDossier: Number(fileId),
-                    compte: newRow.compte,
-                    libelle: newRow.libelle,
-                    nature: newRow.nature,
-                    baseCptCollectif: baseCptValue,
-                    typeTier: (newRow.nature === 'General' || newRow.nature === 'Collectif') ? 'general' : (newRow.typeTier || 'sans-nif'),
-                    nif: newRow.nif || '',
-                    stat: newRow.statistique || '',
-                    adresse: newRow.adresse || '',
-                    motcle: newRow.motcle || '',
-                    cin: newRow.cin || '',
-                    dateCin: newRow.datecin && newRow.datecin !== 'Invalid date' ? newRow.datecin : null,
-                    autrePieceID: newRow.autrepieceid || '',
-                    refPieceID: newRow.refpieceid || '',
-                    adresseSansNIF: newRow.adressesansnif || '',
-                    nifRepresentant: newRow.nifrepresentant || '',
-                    adresseEtranger: newRow.adresseetranger || '',
-                    pays: newRow.pays || '',
-                    province: newRow.province || '',
-                    region: newRow.region || '',
-                    district: newRow.district || '',
-                    commune: newRow.commune || '',
-                    listeCptChg: [],
-                    listeCptTva: [],
-                    typecomptabilite: newRow.typecomptabilite || 'Français',
-                    compteautre: newRow.compteautre || '',
-                    libelleautre: newRow.libelleautre || ''
-                };
-                
-                // console.log('[DEBUG] processRowUpdate: envoi API avec payload', { action: payload.action, itemId: payload.itemId });
-
-                axiosPrivate.post(`/paramPlanComptable/AddCpt`, payload)
-                    .then((response) => {
-                        const resData = response.data;
-                        // console.log('[DEBUG] processRowUpdate: réponse API', resData);
-                        
-                        if (resData.state === true) {
-                            toast.success(resData.msg || 'Compte enregistré avec succès');
-                            // Mettre à jour avec les nouvelles données d'abord
-                            if (!isNewRow && resData?.dataModified) {
-                                // Mapper baseaux vers baseCompte pour l'affichage correct
-                                const updatedRow = { 
-                                    ...newRow, 
-                                    ...resData.dataModified,
-                                    baseCompte: resData.dataModified.baseaux || resData.dataModified.baseCompte || newRow.baseCompte
-                                };
-                                // Mettre à jour le state local immédiatement
-                                setPc((prev) => prev.map((row) => row.id === newRow.id ? updatedRow : row));
-                                resolve(updatedRow);
-                            } else {
-                                resolve(newRow);
-                            }
-                            // Puis rafraîchir la liste complète
-                            showPc();
-                        } else {
-                            console.error('[DEBUG] processRowUpdate: erreur API', resData.msg);
-                            toast.error(resData.msg || 'Erreur lors de l\'enregistrement');
-                            reject(oldRow);
-                        }
-                    })
-                    .catch((error) => {
-                        // Ne pas afficher d'erreur si c'est une annulation (Request aborted)
-                        if (error.code === 'ERR_CANCELED' || error.message?.includes('aborted')) {
-                            // console.log('[DEBUG] processRowUpdate: requête annulée (normal si changement rapide)');
-                            reject(oldRow);
-                            return;
-                        }
-                        console.error('[DEBUG] processRowUpdate: erreur réseau', error);
-                        const errMsg = error.response?.data?.message || error.message || "Erreur inconnue";
-                        toast.error(errMsg);
-                        reject(oldRow);
-                    });
-            } catch (err) {
-                console.error('[DEBUG] processRowUpdate: exception', err);
-                toast.error('Erreur inattendue: ' + err.message);
-                reject(oldRow);
-            }
-        });
-    };
-
     // Ajouter une nouvelle ligne
     const handleAddNewRow = () => {
+        if (!canAdd) {
+            toast.error('Vous n\'avez pas les droits d\'ajout');
+            return;
+        }
         // Charger les comptes collectifs si ce n'est pas déjà fait
         if (listeCptCollectif.length === 0 && !loadingCollectifRef.current) {
-            // console.log('[DEBUG] handleAddNewRow: chargement comptes collectifs avant ajout');
             recupererListeCptCollectif();
         }
-        
-        const newId = Date.now(); // ID temporaire
+
+        const newId = Date.now();
         const newRow = {
             id: newId,
             compte: '',
@@ -406,53 +241,146 @@ export default function ParamPlanComptable() {
             isNew: true
         };
         setPc((prev) => [newRow, ...prev]);
-        setRowModesModel((prev) => ({
+        setEditingId(newId);
+        setEditValues(newRow);
+        setSelectedRowId(newId);
+        setSelectedRow(newRow);
+    };
+
+    // Démarrer l'édition d'une ligne
+    const handleEditClick = (row) => {
+        if (!canModify) {
+            toast.error('Vous n\'avez pas les droits de modification');
+            return;
+        }
+        // Charger les comptes collectifs si ce n'est pas déjà fait
+        if (listeCptCollectif.length === 0 && !loadingCollectifRef.current) {
+            recupererListeCptCollectif();
+        }
+        setEditingId(row.id);
+        setEditValues({ ...row });
+        setSelectedRowId(row.id);
+        setSelectedRow(row);
+    };
+
+    // Modifier la valeur d'un champ en édition
+    const handleEditValueChange = (field, value) => {
+        setEditValues(prev => ({
             ...prev,
-            [newId]: { mode: 'edit', fieldToFocus: 'compte' }
+            [field]: value
         }));
     };
 
-    // Modifier une ligne sélectionnée
-    const handleEditRow = () => {
-        if (selectedRowId != null && selectedRow) {
-            // Charger les comptes collectifs si ce n'est pas déjà fait
-            if (listeCptCollectif.length === 0 && !loadingCollectifRef.current) {
-                // console.log('[DEBUG] handleEditRow: chargement comptes collectifs avant édition');
-                recupererListeCptCollectif();
-            }
-            setRowModesModel((prev) => ({
-                ...prev,
-                [selectedRowId]: { mode: 'edit', fieldToFocus: 'compte' }
-            }));
-        } else {
-            toast.error('Veuillez sélectionner un compte à modifier');
+    // Sauvegarder les modifications
+    const handleSaveClick = async () => {
+        if (!editingId) return;
+
+        const row = editValues;
+        const isNewRow = row.isNew === true;
+
+        // Validation
+        if (!row.compte || !row.libelle) {
+            toast.error('Le compte et le libellé sont requis');
+            return;
         }
+
+        // Pour Auxiliaire: baseCompte obligatoire
+        if ((row.nature === 'Aux' || row.nature === 'Auxiliaire') && (!row.baseCompte || String(row.baseCompte).trim() === '')) {
+            toast.error('Veuillez sélectionner un compte collectif');
+            return;
+        }
+
+        const itemId = isNewRow ? 0 : row.id;
+
+        // Quand nature = General ou Collectif: baseCompte doit être le numéro de compte
+        // Quand nature = Auxiliaire: baseCompte est l'ID du compte collectif sélectionné
+        let baseCptValue = null;
+        if (row.nature === 'General' || row.nature === 'Collectif') {
+            baseCptValue = row.compte ? Number(row.compte) : null;
+        } else if (row.baseCompte && String(row.baseCompte).trim() !== '') {
+            baseCptValue = Number(row.baseCompte);
+        }
+
+        const payload = {
+            action: isNewRow ? 'new' : 'modify',
+            itemId: itemId,
+            idCompte: Number(compteId),
+            idDossier: Number(fileId),
+            compte: row.compte,
+            libelle: row.libelle,
+            nature: row.nature,
+            baseCptCollectif: baseCptValue,
+            typeTier: (row.nature === 'General' || row.nature === 'Collectif') ? 'general' : (row.typeTier || 'sans-nif'),
+            nif: row.nif || '',
+            stat: row.statistique || '',
+            adresse: row.adresse || '',
+            motcle: row.motcle || '',
+            cin: row.cin || '',
+            dateCin: row.datecin && row.datecin !== 'Invalid date' ? row.datecin : null,
+            autrePieceID: row.autrepieceid || '',
+            refPieceID: row.refpieceid || '',
+            adresseSansNIF: row.adressesansnif || '',
+            nifRepresentant: row.nifrepresentant || '',
+            adresseEtranger: row.adresseetranger || '',
+            pays: row.pays || '',
+            province: row.province || '',
+            region: row.region || '',
+            district: row.district || '',
+            commune: row.commune || '',
+            listeCptChg: [],
+            listeCptTva: [],
+            typecomptabilite: row.typecomptabilite || 'Français',
+            compteautre: row.compteautre || '',
+            libelleautre: row.libelleautre || ''
+        };
+
+        try {
+            const response = await axiosPrivate.post(`/paramPlanComptable/AddCpt`, payload);
+            const resData = response.data;
+
+            if (resData.state === true) {
+                toast.success(resData.msg || 'Compte enregistré avec succès');
+                setEditingId(null);
+                setEditValues({});
+                showPc();
+            } else {
+                toast.error(resData.msg || 'Erreur lors de l\'enregistrement');
+            }
+        } catch (error) {
+            const errMsg = error.response?.data?.message || error.message || "Erreur inconnue";
+            toast.error(errMsg);
+        }
+    };
+
+    // Annuler l'édition
+    const handleCancelClick = () => {
+        if (editValues?.isNew) {
+            setPc((prev) => prev.filter((r) => r.id !== editingId));
+        }
+        setEditingId(null);
+        setEditValues({});
+    };
+
+    // Pagination handlers
+    const handleChangePage = (event, newPage) => {
+        setPage(newPage);
+    };
+
+    const handleChangeRowsPerPage = (event) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
     };
 
     // Supprimer une ligne
-    const handleDeleteRow = (id) => {
-        if (window.confirm('Êtes-vous sûr de vouloir supprimer ce compte ?')) {
-            axiosPrivate.post(`/paramPlanComptable/deleteItemPc`, { listId: [id], compteId, fileId })
-                .then((response) => {
-                    const resData = response.data;
-                    if (resData.state) {
-                        setPc((prev) => prev.filter((row) => row.id !== id));
-                        toast.success(resData.msg || 'Compte supprimé avec succès');
-                    } else {
-                        toast.error(resData.msg || 'Erreur lors de la suppression');
-                    }
-                })
-                .catch((error) => {
-                    const errMsg = error.response?.data?.message || error.message || "Erreur inconnue";
-                    toast.error(errMsg);
-                });
+    const handleDeleteClick = (row) => {
+        if (!canDelete) {
+            toast.error('Vous n\'avez pas les droits de suppression');
+            return;
         }
+        setSelectedRowId(row.id);
+        setSelectedRow(row);
+        setOpenDialogDeleteItemsPc(true);
     };
-
-    const handleOpenDialogAddNewAccount = (type) => {
-        setTypeAction(type);
-        setOpenDialogAddNewAccount(true);
-    }
 
     const handleCloseDialogAddNewAccount = () => {
         setOpenDialogAddNewAccount(false);
@@ -486,495 +414,10 @@ export default function ParamPlanComptable() {
                 });
         } catch (error) {
             const errMsg = error.response?.data?.message || error.message || "Erreur inconnue";
-            toast.error(errMsg);
             setSelectedRow(null);
             setSelectedRowId(null);
             setPcAllselectedRow([]);
         }
-    }
-
-    const columnHeaderDetail = [
-        {
-            field: 'id',
-            headerName: 'ID',
-            type: 'number',
-            sortable: true,
-            width: 70,
-            headerAlign: 'right',
-            headerClassName: 'HeaderbackColor',
-        },
-        // {
-        //     field: 'dossier',
-        //     headerName: 'Dossier',
-        //     type: 'string',
-        //     sortable: true,
-        //     width: 100,
-        //     headerAlign: 'left',
-        //     align: 'left',
-        //     headerClassName: 'HeaderbackColor',
-        // },
-        {
-            field: 'compte',
-            headerName: 'Compte',
-            type: 'string',
-            sortable: true,
-            width: 100,
-            editable: true,
-            headerAlign: 'left',
-            headerClassName: 'HeaderbackColor',
-        },
-        {
-            field: 'libelle',
-            headerName: 'Libellé',
-            type: 'string',
-            sortable: true,
-            width: 300,
-            editable: true,
-            headerAlign: 'left',
-            headerClassName: 'HeaderbackColor',
-        },
-        // {
-        //     field: 'typecomptabilite',
-        //     headerName: 'Type comptabilité',
-        //     type: 'string',
-        //     sortable: true,
-        //     width: 150,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor',
-        // },
-        {
-            field: 'nature',
-            headerName: 'Nature',
-            type: 'singleSelect',
-            sortable: true,
-            width: 130,
-            editable: true,
-            headerAlign: 'left',
-            headerClassName: 'HeaderbackColor',
-            valueOptions: [
-                { value: 'General', label: 'Général' },
-                { value: 'Collectif', label: 'Collectif' },
-                { value: 'Aux', label: 'Auxiliaire' }
-            ],
-            renderCell: (params) => {
-                if (params.row.nature === 'General') {
-                    return (
-                        <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-                            <Chip
-                                icon={<TbCircleLetterGFilled style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
-                                label="Général"
-
-                                style={{
-                                    width: "100%",
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    backgroundColor: '#48A6A7',
-                                    color: 'white'
-                                }}
-                            />
-                        </Stack>
-                    )
-                } else if (params.row.nature === 'Collectif') {
-                    return (
-                        <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-
-                            <Chip
-                                icon={<TbCircleLetterCFilled style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
-                                label="Collectif"
-
-                                style={{
-                                    width: "100%",
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    backgroundColor: '#A6D6D6',
-                                    color: 'white'
-                                }}
-                            />
-                        </Stack>
-                    )
-                } else {
-                    return (
-                        <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-
-                            <Chip
-                                icon={<TbCircleLetterAFilled style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
-                                label="Auxiliaire"
-
-                                style={{
-                                    width: "100%",
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    backgroundColor: '#123458',
-                                    color: 'white'
-                                }}
-                            />
-                        </Stack>
-                    )
-                }
-            }
-        },
-        {
-            field: 'baseCompte',
-            headerName: 'Centr. / base aux.',
-            type: 'string',
-            sortable: true,
-            width: 175,
-            editable: true,
-            headerAlign: 'left',
-            headerClassName: 'HeaderbackColor',
-            renderCell: (params) => <BaseCompteRenderCell {...params} />,
-            renderEditCell: (params) => <BaseCompteEditCell {...params} />
-        },
-        // {
-        //     field: 'cptcharge',
-        //     headerName: 'Cpt charge',
-        //     type: 'string',
-        //     sortable: true,
-        //     width: 100,
-        //     headerAlign: 'right',
-        //     headerClassName: 'HeaderbackColor',
-        //     renderCell: (params) => {
-        //         if (params.row.cptcharge === 0) {
-        //             return (
-        //                 <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-        //                     <div style={{
-        //                         width: 25,
-        //                         height: 25,
-        //                         backgroundColor: '#DBDBDB',
-        //                         borderRadius: 15,
-        //                         display: 'flex',
-        //                         justifyContent: 'center',
-        //                         alignItems: 'center',
-        //                     }}>
-        //                         {params.row.cptcharge}
-        //                     </div>
-        //                 </Stack>
-        //             )
-        //         } else {
-        //             return (
-        //                 <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-        //                     <div style={{
-        //                         width: 25,
-        //                         height: 25,
-        //                         backgroundColor: '#FDA403',
-        //                         borderRadius: 15,
-        //                         display: 'flex',
-        //                         justifyContent: 'center',
-        //                         alignItems: 'center',
-        //                     }}>
-        //                         {params.row.cptcharge}
-        //                     </div>
-        //                 </Stack>
-
-        //             )
-        //         }
-        //     }
-        // },
-        // {
-        //     field: 'cpttva',
-        //     headerName: 'Cpt TVA',
-        //     type: 'string',
-        //     sortable: true,
-        //     width: 100,
-        //     headerAlign: 'right',
-        //     headerClassName: 'HeaderbackColor',
-        //     renderCell: (params) => {
-        //         if (params.row.cpttva === 0) {
-        //             return (
-        //                 <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-        //                     <div style={{
-        //                         width: 25,
-        //                         height: 25,
-        //                         backgroundColor: '#DBDBDB',
-        //                         borderRadius: 15,
-        //                         display: 'flex',
-        //                         justifyContent: 'center',
-        //                         alignItems: 'center',
-        //                     }}>
-        //                         {params.row.cpttva}
-        //                     </div>
-        //                 </Stack>
-        //             )
-        //         } else {
-        //             return (
-        //                 <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-        //                     <div style={{
-        //                         width: 25,
-        //                         height: 25,
-        //                         backgroundColor: '#FDA403',
-        //                         borderRadius: 15,
-        //                         display: 'flex',
-        //                         justifyContent: 'center',
-        //                         alignItems: 'center',
-        //                     }}>
-        //                         {params.row.cpttva}
-        //                     </div>
-        //                 </Stack>
-
-        //             )
-        //         }
-        //     }
-        // },
-        // {
-        //     field: 'typetier',
-        //     headerName: 'Type de tier',
-        //     type: 'string',
-        //     sortable: true,
-        //     width: 130,
-        //     headerAlign: 'center',
-        //     headerClassName: 'HeaderbackColor',
-        //     renderCell: (params) => {
-        //         if (params.row.typetier === 'sans-nif') {
-        //             return (
-        //                 <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-        //                     <Chip
-        //                         icon={<BsPersonFillSlash style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
-        //                         label="Sans NIF"
-
-        //                         style={{
-        //                             width: "100%",
-        //                             display: 'flex', // ou block, selon le rendu souhaité
-        //                             justifyContent: 'space-between',
-        //                             backgroundColor: '#FF9149',
-        //                             color: 'white'
-        //                         }}
-        //                     />
-        //                 </Stack>
-        //             )
-        //         } else if (params.row.typetier === 'avec-nif') {
-        //             return (
-        //                 <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-        //                     <Chip
-        //                         icon={<PiIdentificationCardFill style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
-        //                         label="Avec NIF"
-
-        //                         style={{
-        //                             width: "100%",
-        //                             display: 'flex', // ou block, selon le rendu souhaité
-        //                             justifyContent: 'space-between',
-        //                             backgroundColor: '#006A71',
-        //                             color: 'white'
-        //                         }}
-        //                     />
-        //                 </Stack>
-        //             )
-        //         } else if (params.row.typetier === 'general') {
-        //             return (
-        //                 <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-        //                     <Chip
-        //                         icon={<BsCheckCircleFill style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
-        //                         label="Général"
-
-        //                         style={{
-        //                             width: "100%",
-        //                             display: 'flex', // ou block, selon le rendu souhaité
-        //                             justifyContent: 'space-between',
-        //                             backgroundColor: '#67AE6E',
-        //                             color: 'white'
-        //                         }}
-        //                     />
-        //                 </Stack>
-        //             )
-        //         } else if (params.row.typetier === 'etranger') {
-        //             return (
-        //                 <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-        //                     <Chip
-        //                         icon={<FaGlobeAmericas style={{ color: 'white', width: 18, height: 18, marginLeft: 10 }} />}
-        //                         label="Etranger"
-        //                         style={{
-        //                             width: "100%",
-        //                             display: 'flex',
-        //                             justifyContent: 'space-between',
-        //                             backgroundColor: '#FBA518',
-        //                             color: 'white'
-        //                         }}
-        //                     />
-        //                 </Stack>
-        //             )
-        //         }
-        //     }
-        // },
-        // {
-        //     field: 'nif',
-        //     headerName: 'Nif',
-        //     type: 'string',
-        //     sortable: true,
-        //     width: 150,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // },
-        // {
-        //     field: 'statistique',
-        //     headerName: 'N° statistique',
-        //     type: 'string',
-        //     sortable: true,
-        //     width: 200,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // },
-        // {
-        //     field: 'adresse',
-        //     headerName: 'Adresse',
-        //     type: 'string',
-        //     sortable: true,
-        //     width: 250,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // },
-        // {
-        //     field: 'cin',
-        //     headerName: 'CIN',
-        //     type: 'string',
-        //     sortable: true,
-        //     width: 150,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // },
-        // {
-        //     field: 'datecin',
-        //     headerName: 'Date CIN',
-        //     type: 'text',
-        //     sortable: true,
-        //     width: 120,
-        //     headerAlign: 'center',
-        //     headerClassName: 'HeaderbackColor',
-        //     renderCell: (params) => {
-        //         if (params.row.datecin !== null) {
-        //             return (
-        //                 <Stack width={'100%'} style={{ display: 'flex', alignContent: 'center', alignItems: 'center', justifyContent: 'center' }}>
-        //                     <div>{format(params.row.datecin, "dd/MM/yyyy")}</div>
-        //                 </Stack>
-        //             )
-        //         }
-        //     }
-        // },
-        // {
-        //     field: 'autrepieceid',
-        //     headerName: 'Autre pièces Ident.',
-        //     type: 'text',
-        //     sortable: true,
-        //     width: 200,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // },
-        // {
-        //     field: 'refpieceid',
-        //     headerName: 'Réf pièces Ident.',
-        //     type: 'text',
-        //     sortable: true,
-        //     width: 200,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // },
-        // {
-        //     field: 'adressesansnif',
-        //     headerName: 'Adresse CIN',
-        //     type: 'text',
-        //     sortable: true,
-        //     width: 250,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // },
-        // {
-        //     field: 'nifrepresentant',
-        //     headerName: 'NIF représentant',
-        //     type: 'text',
-        //     sortable: true,
-        //     width: 175,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // },
-        // {
-        //     field: 'addresseetranger',
-        //     headerName: 'Adresse représentant',
-        //     type: 'text',
-        //     sortable: true,
-        //     width: 250,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // },
-        // {
-        //     field: 'pays',
-        //     headerName: 'Pays',
-        //     type: 'text',
-        //     sortable: true,
-        //     width: 150,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // },
-        // {
-        //     field: 'province',
-        //     headerName: 'Province',
-        //     type: 'string',
-        //     sortable: true,
-        //     width: 150,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // },
-        // {
-        //     field: 'region',
-        //     headerName: 'Région',
-        //     type: 'string',
-        //     sortable: true,
-        //     width: 150,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // },
-        // {
-        //     field: 'district',
-        //     headerName: 'District',
-        //     type: 'string',
-        //     sortable: true,
-        //     width: 150,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // },
-        // {
-        //     field: 'commune',
-        //     headerName: 'Commune',
-        //     type: 'string',
-        //     sortable: true,
-        //     width: 180,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // },
-        // {
-        //     field: 'motcle',
-        //     headerName: 'Mot clé',
-        //     type: 'string',
-        //     sortable: true,
-        //     width: 150,
-        //     headerAlign: 'left',
-        //     headerClassName: 'HeaderbackColor'
-        // }
-    ]
-
-    const typeIndex = columnHeaderDetail.findIndex(c => c.field === 'libelle');
-
-    const typeComptabiliteAutre = [
-        {
-            field: 'compteautre',
-            headerName: 'Compte (Autre)',
-            type: 'number',
-            sortable: true,
-            width: 175,
-            headerAlign: 'right',
-            headerClassName: 'HeaderbackColor',
-        },
-        {
-            field: 'libelleautre',
-            headerName: 'Libelle (Autre)',
-            type: 'string',
-            sortable: true,
-            width: 300,
-            headerAlign: 'left',
-            align: 'left',
-            headerClassName: 'HeaderbackColor',
-        },
-    ]
-
-    if (isTypeComptaAutre && typeIndex !== -1) {
-        columnHeaderDetail.splice(typeIndex + 1, 0, ...typeComptabiliteAutre)
     }
 
     const sendToHome = (value) => {
@@ -1172,296 +615,331 @@ export default function ParamPlanComptable() {
             }
             <Box>
                 <TabContext value={"1"}>
-                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                        <TabList aria-label="lab API tabs example">
-                            <Tab
-                                style={{
-                                    textTransform: 'none',
-                                    outline: 'none',
-                                    border: 'none',
-                                    margin: -5
-                                }}
-                                label={InfoFileStyle(fileInfos?.dossier)} value="1"
-                            />
-                        </TabList>
-                    </Box>
-                    <TabPanel value="1">
-                        <Stack width={"100%"} height={"90%"} spacing={0.5} alignItems={"flex-start"} justifyContent={"stretch"}>
-                            <Typography variant='h7' sx={{ color: "black" }} align='left'>Paramétrages : Plan comptable</Typography>
-                            <Stack width={"100%"} height={"30px"} spacing={0} alignItems={"center"} alignContent={"center"}
-                                direction={"row"} style={{ marginLeft: "0px", marginTop: "30px", justifyContent: "right" }}>
 
-                                <Stack width={"100%"} height={"30px"} spacing={0.5} alignItems={"center"} alignContent={"center"}
-                                    direction={"row"} justifyContent={"right"}>
-                                    {
-                                        consolidation && (
-                                            <Tooltip title="Actualiser les comptes">
-                                                <span>
-                                                    <IconButton
-                                                        // disabled={statutDeleteButton}  
-                                                        onClick={handleActualize}
-                                                        variant="contained"
-                                                        style={{
-                                                            width: "35px", height: '35px',
-                                                            borderRadius: "5px", borderColor: "transparent",
-                                                            backgroundColor: initial.add_new_line_bouton_color,
-                                                            textTransform: 'none', outline: 'none'
-                                                        }}
-                                                    >
-                                                        <TbRefresh style={{ width: '25px', height: '25px', color: 'white' }} />
-                                                    </IconButton>
-                                                </span>
-                                            </Tooltip>
-                                        )
-                                    }
-                                    <ButtonGroup
-                                        variant="outlined"
+                    <TabPanel value="1">
+                        <Stack width={"100%"} height={"90%"} spacing={1} alignItems={"flex-start"} justifyContent={"stretch"}>
+                            <Typography variant='h6' sx={{ fontWeight: 800, color: NAV_DARK }}>Plan comptable </Typography>
+                            <Stack
+                                width="100%"
+                                direction="row"
+                                alignItems="center"
+                                justifyContent="flex-end"   // tout passe à droite
+                                sx={{ mt: -4 }}
+                            >
+
+                                {/* DROITE : recherche + bouton */}
+                                <Stack direction="row" spacing={1} alignItems="center">
+
+                                    <TextField
+                                        placeholder="Rechercher ..."
+                                        size="small"
+                                        value={searchText}
+                                        onChange={(e) => handleSearch(e.target.value)}
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <SearchIcon sx={{ fontSize: 18, color: '#94A3B8' }} />
+                                                </InputAdornment>
+                                            ),
+                                        }}
                                         sx={{
-                                            boxShadow: 'none',
-                                            display: 'flex',
-                                            gap: '2px',
-                                            '& .MuiButton-root': {
-                                                borderRadius: 0,
-                                            },
-                                            '& .MuiButtonGroup-grouped': {
-                                                boxShadow: 'none',
-                                                outline: 'none',
-                                                borderColor: 'inherit',
-                                                marginLeft: 0,
-                                                borderRadius: 1,
-                                                border: 'none',
-                                            },
-                                            '& .MuiButtonGroup-grouped:hover': {
-                                                boxShadow: 'none',
-                                                borderColor: 'inherit',
-                                            },
-                                            '& .MuiButtonGroup-grouped.Mui-focusVisible': {
-                                                boxShadow: 'none',
-                                                borderColor: 'inherit',
+                                            width: 250,
+                                            '& .MuiOutlinedInput-root': {
+                                                borderRadius: '8px',
+                                                bgcolor: '#fff',
+                                                height: '32px',
+                                                fontSize: '12px'
+                                            }
+                                        }}
+                                    />
+
+                                    <Button
+                                        variant="contained"
+                                        startIcon={<AddIcon sx={{ fontSize: '16px !important' }} />}
+                                        onClick={handleAddNewRow}
+                                        disabled={!canAdd}
+                                        sx={{
+                                            bgcolor: NEON_MINT,
+                                            textTransform: 'none',
+                                            fontSize: '12px',
+                                            fontWeight: 700,
+                                            mr: 2,
+                                            color: '#000',
+                                            borderRadius: '6px',
+                                            px: 2,
+                                            '&:hover': {
+                                                bgcolor: '#00E685',
+                                                transform: 'translateY(-1px)'
                                             },
                                         }}
                                     >
-                                        <Tooltip title="Ajouter un nouveau compte">
-                                            <span>
-                                                <Button
-                                                    disabled={!canAdd}
-                                                    onClick={handleAddNewRow}
-                                                    sx={{
-                                                        ...buttonStyle,
-                                                        backgroundColor: initial.auth_gradient_end,
-                                                        color: 'white',
-                                                        borderColor: initial.auth_gradient_end,
-                                                        '&:hover': {
-                                                            backgroundColor: initial.auth_gradient_end,
-                                                            boxShadow: 'none',
-                                                            border: 'none',
-                                                        },
-                                                        '&:focus': {
-                                                            backgroundColor: initial.auth_gradient_end,
-                                                            boxShadow: 'none',
-                                                        },
-                                                        '&.Mui-disabled': {
-                                                            backgroundColor: initial.auth_gradient_end,
-                                                            color: 'white',
-                                                            cursor: 'not-allowed',
-                                                            border: 'none',
-                                                        },
-                                                        '&::before': {
-                                                            display: 'none',
-                                                        },
-                                                    }}
-                                                >
-                                                    Ajouter
-                                                </Button>
-                                            </span>
-                                        </Tooltip>
+                                        Ajouter
+                                    </Button>
 
-                                        <Tooltip title="Modifier le compte sélectionné">
-                                            <span>
-                                                <Button
-                                                    disabled={!canModify || selectedRowId == null}
-                                                    onClick={handleEditRow}
-                                                    sx={{
-                                                        ...buttonStyle,
-                                                        backgroundColor: initial.auth_gradient_end,
-                                                        color: 'white',
-                                                        borderColor: initial.auth_gradient_end,
-                                                        '&:hover': {
-                                                            backgroundColor: initial.auth_gradient_end,
-                                                            boxShadow: 'none',
-                                                            border: 'none',
-                                                        },
-                                                        '&.Mui-disabled': {
-                                                            backgroundColor: initial.auth_gradient_end,
-                                                            color: 'white',
-                                                            cursor: 'not-allowed',
-                                                            border: 'none',
-                                                        },
-                                                    }}
-                                                >
-                                                    Modifier
-                                                </Button>
-                                            </span>
-                                        </Tooltip>
+                                </Stack>
 
-                                       
-                                                <Tooltip title="Sauvegarder">
-                                                    <span>
-                                                        <Button
-                                                            onClick={() => {
-                                                                if (selectedRowId == null) return;
-                                                                setRowModesModel((prev) => ({
-                                                                    ...prev,
-                                                                    [selectedRowId]: { mode: 'view' }
-                                                                }));
-                                                            }}
+                            </Stack>
+
+                            <Stack height={"100vh"} width={'100%'} sx={{ mt: 4 }}>
+                                <TableContainer component={Paper} elevation={0} sx={{ borderRadius: '12px', border: `1px solid ${BORDER_COLOR}`, width: '100%' }}>
+                                    <Table size="small">
+                                        <TableHead sx={{ bgcolor: '#F8FAFC' }}>
+                                            <TableRow sx={{ height: '35px' }}>
+                                                <TableCell padding="checkbox" sx={{ width: '30px', p: '2px' }}>
+                                                    <Checkbox size="small" sx={{ p: '1px' }} />
+                                                </TableCell>
+                                                <TableCell sx={headerStyle(100)}>Compte</TableCell>
+                                                <TableCell sx={headerStyle(350)}>Libellé</TableCell>
+                                                <TableCell sx={headerStyle(150)}>Nature</TableCell>
+                                                <TableCell sx={headerStyle(120)}>Centr. / base aux.</TableCell>
+                                                <TableCell align="right" sx={headerStyle(120, true)}>Actions</TableCell>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {filteredPc
+                                                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                                                .map((row) => {
+                                                    const isEditing = editingId === row.id;
+                                                    const isSelected = selectedRowId === row.id;
+
+                                                    return (
+                                                        <TableRow
+                                                            key={row.id}
                                                             sx={{
-                                                                ...buttonStyle,
-                                                                backgroundColor: '#4caf50',
-                                                                color: 'white',
-                                                                borderColor: '#4caf50',
-                                                                '&:hover': {
-                                                                    backgroundColor: '#4caf50',
-                                                                    boxShadow: 'none',
-                                                                    border: 'none',
-                                                                },
+                                                                '&:hover': { bgcolor: '#F1F5F9' },
+                                                                height: '40px',
+                                                                bgcolor: isSelected ? '#E0F2FE' : 'inherit'
                                                             }}
-                                                        >
-                                                            Sauvegarder
-                                                        </Button>
-                                                    </span>
-                                                </Tooltip>
-                                                <Tooltip title="Annuler">
-                                                    <span>
-                                                        <Button
                                                             onClick={() => {
-                                                                if (selectedRowId == null) return;
-                                                                setRowModesModel((prev) => ({
-                                                                    ...prev,
-                                                                    [selectedRowId]: { mode: 'view', ignoreModifications: true }
-                                                                }));
-                                                                if (selectedRow?.isNew) {
-                                                                    setPc((prev) => prev.filter((r) => r.id !== selectedRowId));
+                                                                if (!editingId) {
+                                                                    listPCSelectedRow([row.id]);
                                                                 }
                                                             }}
-                                                            sx={{
-                                                                ...buttonStyle,
-                                                                backgroundColor: initial.annuler_bouton_color,
-                                                                color: 'white',
-                                                                borderColor: initial.annuler_bouton_color,
-                                                                '&:hover': {
-                                                                    backgroundColor: initial.annuler_bouton_color,
-                                                                    boxShadow: 'none',
-                                                                    border: 'none',
-                                                                },
-                                                            }}
                                                         >
-                                                            Annuler
-                                                        </Button>
-                                                    </span>
-                                                </Tooltip>                                       
+                                                            <TableCell padding="checkbox" sx={{ p: '2px' }}>
+                                                                <Checkbox
+                                                                    size="small"
+                                                                    checked={isSelected}
+                                                                    onChange={() => listPCSelectedRow([row.id])}
+                                                                    sx={{ p: '1px' }}
+                                                                />
+                                                            </TableCell>
 
-                                        <Tooltip title="Supprimer le compte sélectionné">
-                                            <span>
-                                                <Button
-                                                    disabled={!canDelete || selectedRowId == null}
-                                                    onClick={handleOpenDialogCptDelete}
-                                                    sx={{
-                                                        ...buttonStyle,
-                                                        backgroundColor: initial.annuler_bouton_color,
-                                                        color: 'white',
-                                                        borderColor: initial.annuler_bouton_color,
-                                                        '&:hover': {
-                                                            backgroundColor: initial.annuler_bouton_color,
-                                                            border: 'none',
-                                                        },
-                                                        '&.Mui-disabled': {
-                                                            backgroundColor: initial.annuler_bouton_color,
-                                                            color: 'white',
-                                                            cursor: 'not-allowed',
-                                                            border: 'none',
-                                                        },
-                                                    }}
-                                                >
-                                                    Supprimer
-                                                </Button>
-                                            </span>
-                                        </Tooltip>
-                                    </ButtonGroup>
-                                </Stack>
-                            </Stack>
-                            <Stack height={"70vh"} width={'100%'}>
-                                <DataGrid
-                                    disableMultipleSelection={DataGridStyle.disableMultipleSelection}
-                                    disableColumnSelector={DataGridStyle.disableColumnSelector}
-                                    disableDensitySelector={DataGridStyle.disableDensitySelector}
-                                    localeText={frFR.components.MuiDataGrid.defaultProps.localeText}
-                                    disableRowSelectionOnClick
-                                    disableSelectionOnClick={true}
-                                    slots={{ toolbar: QuickFilter }}
-                                    editMode="row"
-                                    rowModesModel={rowModesModel}
-                                    onRowModesModelChange={handleRowModesModelChange}
-                                    processRowUpdate={processRowUpdate}
-                                    onProcessRowUpdateError={(error) => {
-                                        console.error('Erreur lors de la sauvegarde:', error);
-                                        toast.error('Erreur lors de la sauvegarde');
-                                    }}
-                                    slotProps={{
-                                        row: {
-                                            onMouseEnter: (event) => {
-                                                event.stopPropagation();
-                                            },
-                                        },
-                                    }}
+                                                            {/* Compte */}
+                                                            <TableCell sx={cellStyle}>
+                                                                {isEditing ? (
+                                                                    <TextField
+                                                                        size="small"
+                                                                        value={editValues.compte || ''}
+                                                                        onChange={(e) => handleEditValueChange('compte', e.target.value)}
+                                                                        sx={inlineEditStyle}
+                                                                    />
+                                                                ) : (
+                                                                    <Typography sx={{ fontWeight: 700, fontSize: '13px', color: '#0F172A' }}>
+                                                                        {row.compte}
+                                                                    </Typography>
+                                                                )}
+                                                            </TableCell>
+
+                                                            {/* Libellé */}
+                                                            <TableCell sx={cellStyle}>
+                                                                {isEditing ? (
+                                                                    <TextField
+                                                                        size="small"
+                                                                        value={editValues.libelle || ''}
+                                                                        onChange={(e) => handleEditValueChange('libelle', e.target.value)}
+                                                                        sx={inlineEditStyle}
+                                                                    />
+                                                                ) : (
+                                                                    <Typography sx={{ fontSize: '13px', color: '#475569' }}>
+                                                                        {row.libelle}
+                                                                    </Typography>
+                                                                )}
+                                                            </TableCell>
+
+                                                            {/* Nature */}
+                                                            <TableCell sx={cellStyle}>
+                                                                {isEditing ? (
+                                                                    <Select
+                                                                        size="small"
+                                                                        value={editValues.nature || 'General'}
+                                                                        onChange={(e) => handleEditValueChange('nature', e.target.value)}
+                                                                        sx={inlineSelectStyle}
+                                                                    >
+                                                                        <MenuItem value="General">Général</MenuItem>
+                                                                        <MenuItem value="Collectif">Collectif</MenuItem>
+                                                                        <MenuItem value="Aux">Auxiliaire</MenuItem>
+                                                                    </Select>
+                                                                ) : (
+                                                                    row.nature === 'General' ? (
+                                                                        <Chip
+                                                                            icon={<TbCircleLetterGFilled style={{ color: 'white', width: 16, height: 16 }} />}
+                                                                            label="Général"
+                                                                            size="small"
+                                                                            sx={{
+                                                                                height: '24px',
+                                                                                fontSize: '11px',
+                                                                                fontWeight: 700,
+                                                                                backgroundColor: '#48A6A7',
+                                                                                color: 'white',
+                                                                                width: '100%',
+                                                                                justifyContent: 'flex-start'
+                                                                            }}
+                                                                        />
+                                                                    ) : row.nature === 'Collectif' ? (
+                                                                        <Chip
+                                                                            icon={<TbCircleLetterCFilled style={{ color: 'white', width: 16, height: 16 }} />}
+                                                                            label="Collectif"
+                                                                            size="small"
+                                                                            sx={{
+                                                                                height: '24px',
+                                                                                fontSize: '11px',
+                                                                                fontWeight: 700,
+                                                                                backgroundColor: '#A6D6D6',
+                                                                                color: 'white',
+                                                                                width: '100%',
+                                                                                justifyContent: 'flex-start'
+                                                                            }}
+                                                                        />
+                                                                    ) : (
+                                                                        <Chip
+                                                                            icon={<TbCircleLetterAFilled style={{ color: 'white', width: 16, height: 16 }} />}
+                                                                            label="Auxiliaire"
+                                                                            size="small"
+                                                                            sx={{
+                                                                                height: '24px',
+                                                                                fontSize: '11px',
+                                                                                fontWeight: 700,
+                                                                                backgroundColor: '#123458',
+                                                                                color: 'white',
+                                                                                width: '100%',
+                                                                                justifyContent: 'flex-start'
+                                                                            }}
+                                                                        />
+                                                                    )
+                                                                )}
+                                                            </TableCell>
+
+                                                            {/* Centr. / base aux. */}
+                                                            <TableCell sx={cellStyle}>
+                                                                {isEditing ? (
+                                                                    (editValues.nature === 'General' || editValues.nature === 'Collectif') ? (
+                                                                        <TextField
+                                                                            size="small"
+                                                                            value={editValues.compte || ''}
+                                                                            disabled
+                                                                            sx={{
+                                                                                width: '100%',
+                                                                                '& .MuiInputBase-root.Mui-disabled': {
+                                                                                    backgroundColor: '#f5f5f5',
+                                                                                }
+                                                                            }}
+                                                                        />
+                                                                    ) : (
+                                                                        <Select
+                                                                            size="small"
+                                                                            value={editValues.baseCompte || ''}
+                                                                            onChange={(e) => handleEditValueChange('baseCompte', e.target.value)}
+                                                                            disabled={isLoadingCollectif}
+                                                                            displayEmpty
+                                                                            sx={inlineSelectStyle}
+                                                                        >
+                                                                            <MenuItem value="">
+                                                                                <em>{isLoadingCollectif ? 'Chargement...' : 'Sélectionner'}</em>
+                                                                            </MenuItem>
+                                                                            {listeCptCollectif?.map((item) => (
+                                                                                <MenuItem key={item.id} value={String(item.id)}>
+                                                                                    {item.compte} - {item.libelle}
+                                                                                </MenuItem>
+                                                                            ))}
+                                                                        </Select>
+                                                                    )
+                                                                ) : (
+                                                                    <Typography sx={{ fontSize: '13px', color: '#64748B' }}>
+                                                                        {row.nature === 'Aux' || row.nature === 'Auxiliaire'
+                                                                            ? listeCptCollectif.find((c) => String(c.id) === String(row.baseCompte))?.compte || row.baseCompte
+                                                                            : row.baseCompte
+                                                                        }
+                                                                    </Typography>
+                                                                )}
+                                                            </TableCell>
+
+                                                            {/* Actions */}
+                                                            <TableCell align="right" sx={cellStyle}>
+                                                                <Stack direction="row" spacing={0} justifyContent="flex-end">
+                                                                    {isEditing ? (
+                                                                        <>
+                                                                            <IconButton
+                                                                                size="small"
+                                                                                onClick={handleSaveClick}
+                                                                                sx={{ color: '#10B981' }}
+                                                                            >
+                                                                                <CheckIcon fontSize="inherit" />
+                                                                            </IconButton>
+                                                                            <IconButton
+                                                                                size="small"
+                                                                                onClick={handleCancelClick}
+                                                                                sx={{ color: '#EF4444' }}
+                                                                            >
+                                                                                <CloseIcon fontSize="inherit" />
+                                                                            </IconButton>
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <IconButton
+                                                                                size="small"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    handleEditClick(row);
+                                                                                }}
+                                                                                disabled={!canModify}
+                                                                                sx={{ color: canModify ? '#64748B' : '#CBD5E1' }}
+                                                                            >
+                                                                                <EditIcon fontSize="inherit" />
+                                                                            </IconButton>
+                                                                            <IconButton
+                                                                                size="small"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    handleDeleteClick(row);
+                                                                                }}
+                                                                                disabled={!canDelete}
+                                                                                sx={{ color: canDelete ? '#64748B' : '#CBD5E1' }}
+                                                                            >
+                                                                                <DeleteIcon fontSize="inherit" />
+                                                                            </IconButton>
+                                                                        </>
+                                                                    )}
+                                                                </Stack>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    );
+                                                })}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+                                <TablePagination
+                                    component="div"
+                                    count={filteredPc.length}
+                                    page={page}
+                                    onPageChange={handleChangePage}
+                                    rowsPerPage={rowsPerPage}
+                                    onRowsPerPageChange={handleChangeRowsPerPage}
+                                    rowsPerPageOptions={[25, 50, 100]}
+                                    labelRowsPerPage="Lignes par page:"
+                                    labelDisplayedRows={({ from, to, count }) => `${from}-${to} sur ${count}`}
                                     sx={{
-                                        ...DataGridStyle.sx,
-                                        '& .MuiDataGrid-columnHeaders': {
-                                            backgroundColor: initial.tableau_theme,
-                                            color: initial.text_theme,
+                                        '.MuiTablePagination-toolbar': {
+                                            minHeight: '10vh',
+                                            fontSize: '12px',
+                                            height: '20vh'
                                         },
-                                        '& .MuiDataGrid-columnHeaderTitle': {
-                                            color: initial.text_theme,
-                                            fontWeight: 600,
+                                        '.MuiTablePagination-select': {
+                                            fontSize: '12px'
                                         },
-                                        '& .MuiDataGrid-iconButtonContainer, & .MuiDataGrid-sortIcon': {
-                                            color: initial.text_theme,
-                                        },
-                                        '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
-                                            outline: 'none',
-                                            border: 'none',
-                                        },
-                                        '& .highlight-separator': {
-                                            borderBottom: '1px solid red'
-                                        },
-                                        '& .MuiDataGrid-row.highlight-separator': {
-                                            borderBottom: '1px solid red',
-                                        },
-                                        '& .MuiDataGrid-virtualScroller': {
-                                            maxHeight: '700px',
-                                        },
-                                    }}
-                                    rowHeight={DataGridStyle.rowHeight}
-                                    columnHeaderHeight={DataGridStyle.columnHeaderHeight}
-                                    getRowId={(row) => row.id || row.compte || Math.random().toString()}
-                                    onRowSelectionModelChange={ids => {
-                                        const lastId = ids && ids.length ? ids[ids.length - 1] : null;
-                                        listPCSelectedRow(lastId != null ? [lastId] : []);
-                                    }}
-                                    rowSelectionModel={pcAllselectedRow}
-                                    rows={pc}
-                                    columns={columnHeaderDetail}
-                                    initialState={{
-                                        pagination: {
-                                            paginationModel: { page: 0, pageSize: 100 },
-                                        },
-                                    }}
-                                    experimentalFeatures={{ columnPinning: true }}
-                                    pageSizeOptions={[50, 100]}
-                                    pagination={DataGridStyle.pagination}
-                                    checkboxSelection={DataGridStyle.checkboxSelection}
-                                    columnVisibilityModel={{
-                                        id: false,
+                                        '.MuiTablePagination-displayedRows': {
+                                            fontSize: '12px'
+                                        }
                                     }}
                                 />
                             </Stack>

@@ -123,16 +123,12 @@ export default function RevuAnalytiqueMensuelleDetail() {
     }, [id_compte, id_dossier, id_exercice, fileId, selectedExerciceId]);
 
     const fetchExercices = useCallback(async () => {
-        console.log('[RevuAnalytiqueMensuelleDetail] Début fetchExercices');
         try {
             const { id_dossier } = getIds();
-            console.log('[RevuAnalytiqueMensuelleDetail] Récupération exercices pour id_dossier:', id_dossier);
             const response = await axiosPrivate.get(`/paramExercice/listeExercice/${id_dossier}`);
             const resData = response.data;
-            console.log('[RevuAnalytiqueMensuelleDetail] Réponse exercices:', resData);
             if (resData.state) {
                 setListeExercice(resData.list);
-                console.log('[RevuAnalytiqueMensuelleDetail] Liste exercices mise à jour:', resData.list);
                 // Sélectionner l'exercice correspondant aux dates URL ou le premier
                 if (resData.list && resData.list.length > 0) {
                     if (urlDateDebut && urlDateFin) {
@@ -141,14 +137,11 @@ export default function RevuAnalytiqueMensuelleDetail() {
                         );
                         if (matchingExercice) {
                             setSelectedExerciceId(matchingExercice.id);
-                            console.log('[RevuAnalytiqueMensuelleDetail] Exercice sélectionné par dates URL:', matchingExercice);
                         } else {
                             setSelectedExerciceId(resData.list[0].id);
-                            console.log('[RevuAnalytiqueMensuelleDetail] Aucun exercice trouvé pour dates URL, sélection du premier:', resData.list[0]);
                         }
                     } else if (selectedExerciceId === 0) {
                         setSelectedExerciceId(resData.list[0].id);
-                        console.log('[RevuAnalytiqueMensuelleDetail] Sélection du premier exercice par défaut:', resData.list[0]);
                     }
                 }
             } else {
@@ -166,16 +159,12 @@ export default function RevuAnalytiqueMensuelleDetail() {
     }, [axiosPrivate, getIds, urlDateDebut, urlDateFin, selectedExerciceId]);
 
     const fetchDossierInfos = useCallback(async () => {
-        console.log('[RevuAnalytiqueMensuelleDetail] Début fetchDossierInfos');
         try {
             const { id_dossier } = getIds();
-            console.log('[RevuAnalytiqueMensuelleDetail] Récupération infos dossier pour id_dossier:', id_dossier);
             const response = await axiosPrivate.get(`/home/FileInfos/${id_dossier}`);
             const resData = response.data;
-            console.log('[RevuAnalytiqueMensuelleDetail] Réponse infos dossier:', resData);
             if (resData.state && resData.fileInfos && resData.fileInfos.length > 0) {
                 setFileInfos(resData.fileInfos[0]);
-                console.log('[RevuAnalytiqueMensuelleDetail] Infos dossier mises à jour:', resData.fileInfos[0]);
             } else {
                 console.error('[RevuAnalytiqueMensuelleDetail] Erreur dans la réponse infos dossier - state false ou fileInfos vide:', resData);
             }
@@ -201,26 +190,15 @@ export default function RevuAnalytiqueMensuelleDetail() {
     // Récupérer les données de la revue analytique mensuelle
     useEffect(() => {
         const fetchRevuAnalytiqueMensuelle = async () => {
-            console.log('[RevuAnalytiqueMensuelleDetail] Début fetchRevuAnalytiqueMensuelle');
             try {
                 setLoading(true);
                 const { id_compte, id_dossier, id_exercice } = getIds();
-                console.log('[RevuAnalytiqueMensuelleDetail] IDs utilisés:', { id_compte, id_dossier, id_exercice });
-                console.log('[RevuAnalytiqueMensuelleDetail] Période sélectionnée:', selectedPeriodeDates);
-                console.log('[RevuAnalytiqueMensuelleDetail] selectedExerciceId:', selectedExerciceId, 'listeExercice.length:', listeExercice.length);
 
                 // Ne pas faire l'appel si l'exerciceId est la valeur par défaut (1) et que les exercices ne sont pas encore chargés
                 // ou si l'exerciceId par défaut est utilisé mais qu'il y a des exercices disponibles
                 if (!id_compte || !id_dossier || !id_exercice ||
                     (id_exercice === 1 && (listeExercice.length === 0 || selectedExerciceId === 0))) {
                     console.error('[RevuAnalytiqueMensuelleDetail] IDs invalides ou exercice par défaut non souhaité - annulation de la requête');
-                    console.log('[RevuAnalytiqueMensuelleDetail] Condition vérifiée:', {
-                        id_compte,
-                        id_dossier,
-                        id_exercice,
-                        listeExerciceLength: listeExercice.length,
-                        selectedExerciceId
-                    });
                     setRows([]);
                     setMoisColumns([]);
                     return;
@@ -230,19 +208,12 @@ export default function RevuAnalytiqueMensuelleDetail() {
                 if (selectedPeriodeDates) {
                     url += `?date_debut=${selectedPeriodeDates.date_debut}&date_fin=${selectedPeriodeDates.date_fin}`;
                 }
-                console.log('[RevuAnalytiqueMensuelleDetail] URL appelée:', url);
 
                 const response = await axiosPrivate.get(url);
-                console.log('[RevuAnalytiqueMensuelleDetail] Réponse revue analytique mensuelle:', response.data);
 
                 if (response.data.state) {
                     setRows(response.data.data);
                     setMoisColumns(response.data.moisColumns || []);
-                    console.log('[RevuAnalytiqueMensuelleDetail] Données mensuelles mises à jour:', {
-                        nombreLignes: response.data.data?.length || 0,
-                        nombreColonnes: response.data.moisColumns?.length || 0,
-                        colonnes: response.data.moisColumns
-                    });
                 } else {
                     console.error('[RevuAnalytiqueMensuelleDetail] Erreur dans la réponse revue analytique mensuelle - state false:', response.data);
                     setRows([]);

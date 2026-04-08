@@ -54,7 +54,6 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                 id_periode: idPeriode,
                 timestamp: Date.now()
             };
-            console.log('[RevisionDetails] Émission event anomalies:updated', payload);
             
             // 1. Event local (même onglet)
             window.dispatchEvent(new CustomEvent('anomalies:updated', {
@@ -862,28 +861,8 @@ export default function RevisionDetails({ type, controles, onClose, onSaveCommen
                 url += `?${params.toString()}`;
             }
 
-            console.log('[RevisionDetails] fetchAnomalies:', {
-                type,
-                id_controle: currentItem?.id_controle,
-                idCompte,
-                idDossier,
-                idExercice,
-                idPeriode,
-                dateDebut,
-                dateFin,
-                url
-            });
-
-            // console.log('DEBUG fetchAnomalies - URL:', url);
-            // console.log('DEBUG fetchAnomalies - currentItem.Type:', currentItem?.Type);
-
             const response = await axiosPrivate.get(url);
 
-            console.log('[RevisionDetails] fetchAnomalies response:', {
-                id_controle: currentItem?.id_controle,
-                state: response.data.state,
-                anomaliesCount: response.data.anomalies?.length || 0
-            });
 
             if (response.data.state) {
                 // console.log('DEBUG fetchAnomalies - anomalies count:', response.data.anomalies?.length);

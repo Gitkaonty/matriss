@@ -328,7 +328,6 @@ export default function RechercheDoublon() {
                 // Reset navigation
                 setCurrentGroupe(1);
                 setInputGroupe('1');
-                console.log('Recherche terminée:', response.data.message);
             } else {
                 alert(response.data.message || 'Erreur lors de la recherche');
             }
@@ -390,40 +389,31 @@ export default function RechercheDoublon() {
 
     // Fonction pour valider un groupe de doublons
     const handleValidateGroup = async (groupId) => {
-        console.log('🚀 [FRONT] Validation démarrée pour le groupe:', groupId);
         setValidatingGroup(groupId);
         try {
             const { id_compte, id_dossier, id_exercice } = getIds();
-            console.log('📋 [FRONT] Paramètres:', { id_compte, id_dossier, id_exercice, groupId });
 
             // Appel API pour valider le groupe
             const url = `/administration/rechercheDoublon/validerGroupeDoublon/${id_compte}/${id_dossier}/${id_exercice}/${groupId}`;
-            console.log('🌐 [FRONT] URL appelée:', url);
 
             const response = await axiosPrivate.post(url);
-            console.log('✅ [FRONT] Réponse reçue:', response.data);
 
             if (response.data.state) {
                 const { nb_ecritures_valides } = response.data.data;
-                console.log('📝 [FRONT] Mise à jour du statut local pour le groupe:', groupId);
 
                 // Mettre à jour le statut du groupe validé au lieu de le retirer
                 setResultats(prev => {
-                    console.log('🔄 [FRONT] Anciens résultats:', prev.length, 'items');
                     const updated = prev.map(item =>
                         item.id_doublon === groupId
                             ? { ...item, statut: 'VALIDE', date_validation: new Date().toISOString() }
                             : item
                     );
-                    console.log('🔄 [FRONT] Nouveaux résultats:', updated.length, 'items');
-                    console.log('🔄 [FRONT] Groupe mis à jour:', updated.find(i => i.id_doublon === groupId));
                     return updated;
                 });
 
                 // Afficher un message de succès
                 alert(`✅ Groupe ${groupId} validé avec succès !\n📊 ${nb_ecritures_valides} écritures traitées`);
 
-                console.log('Groupe validé:', response.data.message);
             } else {
                 alert(response.data.message || 'Erreur lors de la validation du groupe');
             }

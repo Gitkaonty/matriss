@@ -189,7 +189,6 @@ exports.validateAnomaly = async (req, res) => {
 
         if (!revu) {
             // Créer l'entrée si elle n'existe pas (au lieu de retourner 404)
-            console.log('[DEBUG validateAnomaly] Création nouvelle entrée pour compte:', compte);
             revu = await db.RevuAnalytique.create({
                 id_compte,
                 id_exercice,
@@ -229,8 +228,6 @@ exports.validateAnomaly = async (req, res) => {
 exports.getTotals = async (req, res) => {
     try {
         const { id_compte, id_exercice, id_dossier, id_periode, type_revue, date_debut, date_fin } = req.query;
-        
-        console.log('[DEBUG STATS] Paramètres reçus:', { id_compte, id_exercice, id_dossier, id_periode, type_revue, date_debut, date_fin });
 
         const idCompteNum = Number(id_compte);
         const idExerciceNum = Number(id_exercice);
@@ -295,14 +292,10 @@ exports.getTotals = async (req, res) => {
             ${wherePeriode}
         `;
         
-        console.log('[DEBUG STATS] Requête SQL:', query);
-
         const results = await db.sequelize.query(query, {
             type: db.Sequelize.QueryTypes.SELECT,
             raw: true
         });
-
-        console.log('[DEBUG STATS] Résultats SQL:', results);
 
         const result = results[0] || {
             total_anomalies: 0,

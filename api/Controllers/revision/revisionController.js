@@ -1,10 +1,10 @@
 const db = require('../../Models');
 const { Op } = require('sequelize');
 
+
 // Créer ou mettre à jour une révision
 exports.addOrUpdateRevision = async (req, res) => {
   try {
-    console.log('addOrUpdateRevision - req.body:', req.body);
     const { id_compte, id_dossier, id_exercice, Type, Description, NbrAnomalies, Status, Commentaire } = req.body;
     
     // Validation et nettoyage des données
@@ -35,8 +35,6 @@ exports.addOrUpdateRevision = async (req, res) => {
       }
     });
 
-    console.log('findOrCreate result - created:', created, 'rev:', rev?.toJSON());
-
     if (!created) {
       await rev.update({
         NbrAnomalies: NbrAnomalies || rev.NbrAnomalies,
@@ -56,7 +54,6 @@ exports.addOrUpdateRevision = async (req, res) => {
 exports.getRevisions = async (req, res) => {
   try {
     const { id_compte, id_dossier, id_exercice } = req.params;
-    console.log('getRevisions - params:', { id_compte, id_dossier, id_exercice });
     
     const revisions = await db.revision.findAll({
       where: {
@@ -67,7 +64,6 @@ exports.getRevisions = async (req, res) => {
       order: [['createdAt', 'DESC']]
     });
 
-    console.log('getRevisions - found:', revisions.length, 'revisions');
     res.json({ state: true, revisions });
   } catch (error) {
     console.error('Error in getRevisions:', error);
@@ -113,5 +109,47 @@ exports.deleteRevision = async (req, res) => {
   } catch (error) {
     console.error('Error in deleteRevision:', error);
     res.status(500).json({ state: false, message: error.message });
+  }
+};
+
+// Récupérer la liste des cycles de révision depuis la matrice
+exports.getRevisionCycles = async (req, res) => {
+  try {
+    const query = `
+      SELECT DISTINCT cycle
+      FROM dossier_revision_matrice
+      WHERE cycle IS NOT NULL AND cycle <> ''
+      ORDER BY cycle ASC
+    `;
+
+    const rows = await db.sequelize.query(query, { type: db.Sequelize.QueryTypes.SELECT });
+    const cycles = (rows || []).map(r => r.cycle);
+
+    return res.json({ state: true, cycles });
+  } catch (error) {
+    console.error('Error in getRevisionCycles:', error);
+    return res.status(500).json({ state: false, message: error.message });
+  }
+};
+
+// Récupérer les items (questionnaire) d'un cycle depuis la matrice
+exports.getRevisionItemsByCycle = async (req, res) => {
+  try {
+    const { cycle } = req.params;
+    
+    if (!cycle) {
+      return res.status(400).json({ state: false, message: 'Le paramètre cycle est requis' });
+    }
+
+    const items = await db.dossierRevisionMatrice.findAll({
+      where: { cycle: cycle.toUpperCase() },
+      order: [['code', 'ASC']],
+      raw: true
+    });
+
+    return res.json({ state: true, items: items || [] });
+  } catch (error) {
+    console.error('[getRevisionItemsByCycle] ERREUR:', error);
+    return res.status(500).json({ state: false, message: error.message });
   }
 };

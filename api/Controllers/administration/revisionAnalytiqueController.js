@@ -7,9 +7,6 @@ const { QueryTypes } = require('sequelize');
  * Algorithme : sélectionner toutes les lignes (6* et 7*) dont le total des analytiques = 0
  */
 exports.controlerAnalytiques = async (req, res) => {
-    console.log('[RevisionAnalytique] === DEBUT controlerAnalytiques ===');
-    console.log('[RevisionAnalytique] Params:', req.params);
-    console.log('[RevisionAnalytique] Query:', req.query);
     try {
         const { id_compte, id_dossier, id_exercice } = req.params;
         const { date_debut, date_fin, id_periode } = req.query;
@@ -29,10 +26,8 @@ exports.controlerAnalytiques = async (req, res) => {
             });
         }
 
-        console.log('[RevisionAnalytique] Paramètres validés:', { id_compte, id_dossier, id_exercice, date_debut, date_fin, id_periode });
 
         // Étape 1: Nettoyer les anciens résultats pour cette combinaison
-        console.log('[RevisionAnalytique] Nettoyage des anciens résultats...');
         await db.revisionAnalytiqueResultats.destroy({
             where: {
                 id_compte,
@@ -73,9 +68,6 @@ exports.controlerAnalytiques = async (req, res) => {
                 OR (ABS(COALESCE(SUM(a.credit), 0) - j.credit) > 0.01)
             ORDER BY j.dateecriture, j.comptegen
         `;
-
-        console.log('[RevisionAnalytique] Requête SQL:', query.replace(/\s+/g, ' ').trim());
-        console.log('[RevisionAnalytique] Replacements:', { id_compte, id_dossier, id_exercice, date_debut, date_fin });
 
         // Debug: compter les écritures 6*/7* dans la période
         const debugQuery = `
@@ -121,12 +113,6 @@ exports.controlerAnalytiques = async (req, res) => {
             const row = specificDebug[0];
             const diffDebit = Math.abs(row.ana_debit - row.debit);
             const diffCredit = Math.abs(row.ana_credit - row.credit);
-            console.log('[RevisionAnalytique] DEBUG - Ligne 999765:', row);
-            console.log('[RevisionAnalytique] DEBUG - Diff débit:', diffDebit, '| Diff crédit:', diffCredit);
-            console.log('[RevisionAnalytique] DEBUG - Est 6* ou 7*:', row.comptegen?.startsWith('6') || row.comptegen?.startsWith('7'));
-            console.log('[RevisionAnalytique] DEBUG - Dans période:', row.dateecriture >= date_debut && row.dateecriture <= date_fin);
-        } else {
-            console.log('[RevisionAnalytique] DEBUG - Ligne 999765 non trouvée avec ces critères');
         }
 
         // Debug: voir quelques écritures
@@ -144,7 +130,6 @@ exports.controlerAnalytiques = async (req, res) => {
             type: QueryTypes.SELECT,
             replacements: { id_compte, id_dossier, id_exercice, date_debut, date_fin }
         });
-        console.log('[RevisionAnalytique] DEBUG - Sample 6*/7*:', sampleResult);
 
         // Debug: voir les analytiques pour les samples
         for (const row of sampleResult) {
@@ -170,9 +155,6 @@ exports.controlerAnalytiques = async (req, res) => {
                     id_exercice 
                 }
             });
-            console.log(`[RevisionAnalytique] DEBUG - Journal ${row.id} (${row.comptegen} D:${row.debit} C:${row.credit}):`, 
-                anaResult.length > 0 ? anaResult[0] : 'PAS D\'ANALYTIQUES'
-            );
         }
 
         const results = await db.sequelize.query(query, {
@@ -186,15 +168,7 @@ exports.controlerAnalytiques = async (req, res) => {
             }
         });
 
-        console.log('[RevisionAnalytique] Résultats SQL:', results.length, 'lignes trouvées');
-        if (results.length > 0) {
-            console.log('[RevisionAnalytique] Première ligne:', JSON.stringify(results[0], null, 2));
-        } else {
-            console.log('[RevisionAnalytique] Aucun résultat trouvé - vérifier les données dans la table journals et analytiques');
-        }
-
         // Étape 3: Insérer les résultats dans la table
-        console.log('[RevisionAnalytique] Préparation insertion:', results.length, 'résultats');
         const resultsToInsert = results.map(row => ({
             id_compte: parseInt(id_compte),
             id_dossier: parseInt(id_dossier),
@@ -212,11 +186,8 @@ exports.controlerAnalytiques = async (req, res) => {
         }));
 
         if (resultsToInsert.length > 0) {
-            console.log('[RevisionAnalytique] Insertion dans revisionAnalytiqueResultats...');
             await db.revisionAnalytiqueResultats.bulkCreate(resultsToInsert);
-            console.log('[RevisionAnalytique] Insertion terminée');
         } else {
-            console.log('[RevisionAnalytique] Aucun résultat à insérer');
         }
 
         // Étape 4: Retourner les résultats formatés
@@ -230,8 +201,6 @@ exports.controlerAnalytiques = async (req, res) => {
             credit: item.credit,
             total_analytiques: item.total_analytiques
         }));
-        console.log('[RevisionAnalytique] Formatage réponse:', formattedResults.length, 'éléments');
-        console.log('[RevisionAnalytique] === FIN controlerAnalytiques - Succès ===');
 
         return res.status(200).json({
             state: true,
@@ -256,9 +225,6 @@ exports.controlerAnalytiques = async (req, res) => {
  * Récupère les résultats d'un contrôle précédent
  */
 exports.getResultats = async (req, res) => {
-    console.log('[RevisionAnalytique] === DEBUT getResultats ===');
-    console.log('[RevisionAnalytique] Params:', req.params);
-    console.log('[RevisionAnalytique] Query:', req.query);
     try {
         const { id_compte, id_dossier, id_exercice } = req.params;
         const { id_periode } = req.query;
@@ -270,17 +236,12 @@ exports.getResultats = async (req, res) => {
         };
         if (id_periode) whereClause.id_periode = id_periode;
 
-        console.log('[RevisionAnalytique] whereClause:', whereClause);
-
         const resultats = await db.revisionAnalytiqueResultats.findAll({
             where: whereClause,
             order: [['date', 'ASC'], ['compte', 'ASC']]
         });
 
-        console.log('[RevisionAnalytique] Résultats trouvés en base:', resultats.length);
-        if (resultats.length > 0) {
-            console.log('[RevisionAnalytique] Premier résultat:', JSON.stringify(resultats[0].toJSON(), null, 2));
-        }
+        
 
         const formattedResults = resultats.map((item, index) => ({
             id: index + 1,
@@ -293,8 +254,6 @@ exports.getResultats = async (req, res) => {
             credit: item.credit,
             total_analytiques: item.total_analytiques
         }));
-
-        console.log('[RevisionAnalytique] === FIN getResultats -', formattedResults.length, 'éléments retournés ===');
 
         return res.status(200).json({
             state: true,

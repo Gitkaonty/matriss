@@ -153,7 +153,7 @@ export default function DeclarationCommComponent() {
                                     Ajouter section
                                 </Button>
                             </Stack> */}
-                            <Box sx={{ width: '100%', minHeight: 380 }}>
+                            <Box sx={{ width: '99%', minHeight: 380 }}>
                                 <DatagridAnalitiqueSection
                                     id_compte={compteId}
                                     id_dossier={fileId}

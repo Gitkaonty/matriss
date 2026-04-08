@@ -343,11 +343,13 @@ export default function Periode({ selectedExercice, idCompte, idDossier, axiosPr
                     // p: 1,
                     // border: `1px solid ${BORDER_COLOR}`
                 }}
+                width={'100%'}
+
             >
                 <Typography sx={{ fontWeight: 700, fontSize: '14px', color: NAV_DARK, ml: 1 }}>
                     Périodes détaillées
                 </Typography>
-                 <Box sx={{ ml: 'auto', mr: 3.5 }}>
+                <Box sx={{ mr: 2 }}>
                     <Button
                         size="small"
                         startIcon={<AddIcon />}

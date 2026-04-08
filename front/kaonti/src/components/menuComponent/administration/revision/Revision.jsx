@@ -92,14 +92,6 @@ export default function Revision() {
     useEffect(() => {
         const onFocus = () => {
             const ids = getIds();
-            console.log('[Revision] window focus:', {
-                pathname: window.location.pathname,
-                search: window.location.search,
-                ids,
-                selectedExerciceId,
-                selectedPeriodeId,
-                selectedPeriodeDates
-            });
         };
         window.addEventListener('focus', onFocus);
         return () => window.removeEventListener('focus', onFocus);
@@ -111,11 +103,6 @@ export default function Revision() {
         const dateFinFromUrl = searchParams.get('date_fin');
         const idPeriodeFromUrl = searchParams.get('id_periode');
 
-        console.log('[Revision] URL params:', {
-            date_debut: dateDebutFromUrl,
-            date_fin: dateFinFromUrl,
-            id_periode: idPeriodeFromUrl
-        });
         // La logique URL sera gérée par le contexte maintenant
     }, [searchParams]);
 
@@ -123,7 +110,6 @@ export default function Revision() {
     useEffect(() => {
         const { id_exercice } = getIds();
         if (id_exercice && id_exercice > 0 && id_exercice !== selectedExerciceId) {
-            console.log('[Revision] Sync exercice from URL:', { id_exercice });
             // Le contexte gérera la synchronisation
         }
     }, []);
@@ -182,14 +168,9 @@ export default function Revision() {
             }
 
             const response = await axiosPrivate.get(url);
-            console.log('[Revision fetchControles] Controles reçus:', response.data.controles.map(c => ({
-                Type: c.Type,
-                anomalies: c.anomalies,
-                id_periode: c.id_periode
-            })));
+          
             if (response.data.state) {
                 setControles(response.data.controles);
-                console.log('Types de contrôles reçus:', response.data.controles.map(c => c.Type));
                 setControles(response.data.controles);
             }
         } catch (error) {
